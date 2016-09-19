@@ -10,9 +10,14 @@ module Database.Orville.Core
   , ColumnFlag (..)
   , Now(..)
   , ColumnType (..)
-  , FieldDefinition
+  , FieldDefinition, withPrefix
   , TableDefinition (..)
   , tablePrimaryKey
+  , mkTableDefinition
+  , TableParams(..)
+  , RelationalMap
+  , mapAttr, mapField, attrField
+  , maybeMapper, prefixMap, partialMap, readOnlyMap
 
   , IndexDefinition (..)
   , uniqueIndex, simpleIndex
@@ -26,7 +31,6 @@ module Database.Orville.Core
   , col
   , nullableCol
   , nextColumn
-  , prefixed
 
   , ToSql
   , getField
@@ -88,6 +92,7 @@ import            Database.Orville.Internal.IndexDefinition
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.MigrateSchema
 import            Database.Orville.Internal.OrderBy
+import            Database.Orville.Internal.RelationalMap
 import            Database.Orville.Internal.SelectOptions
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
@@ -254,5 +259,4 @@ deleteRecord tableDef record = do
     then error $ "Expected to delete exactly 1 row for deleteRecord\
                  \but actually deleted" ++ show n
     else pure ()
-
 

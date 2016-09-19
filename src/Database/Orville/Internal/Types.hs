@@ -34,7 +34,6 @@ data ColumnType =
 
 data ColumnFlag =
     PrimaryKey
-  | forall a. ColumnDefault a => InsertDefault a
   | forall a. ColumnDefault a => Default a
   | Null
   | Unique
@@ -97,21 +96,19 @@ data FromSqlError =
 
 instance Exception FromSqlError
 
-newtype FromSql a = FromSql { unFromSql :: ReaderT String
-                                          (StateT [(String, SqlValue)]
-                                          (Either FromSqlError))
+newtype FromSql a = FromSql { unFromSql :: StateT [(String, SqlValue)]
+                                           (Either FromSqlError)
                                            a
                             }
   deriving ( Functor
            , Applicative
            , Monad
            , MonadError FromSqlError
-           , MonadReader String
            , MonadState [(String, SqlValue)]
            )
 
 runFromSql :: FromSql a -> [(String,SqlValue)] -> Either FromSqlError a
-runFromSql = evalStateT . flip runReaderT "" . unFromSql
+runFromSql = evalStateT . unFromSql
 
 newtype ToSql a b = ToSql { unToSql :: ReaderT a
                                        (State [SqlValue])
@@ -160,6 +157,8 @@ instance Show SchemaItem where
   show (DropTable name) = "DropTable " ++ show name
   show (Index indexDef) = "Index (" ++ show indexDef ++ ")"
   show (DropIndex name) = "DropIndex " ++ show name
+  show (Constraint cons) = "Constraint (" ++ show cons ++ ")"
+  show (DropConstraint name table) = "DropConstraint " ++ show name ++ " " ++ show table
 
 type SchemaDefinition = [SchemaItem]
 

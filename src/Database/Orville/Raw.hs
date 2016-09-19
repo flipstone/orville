@@ -12,7 +12,6 @@ import            Control.Exception.Lifted (finally, throw)
 import            Control.Monad
 import            Control.Monad.IO.Class
 import            Data.Maybe
-import            Data.Either
 import            Data.IORef
 import            Database.HDBC hiding (withTransaction)
 
@@ -37,8 +36,13 @@ decodeSqlRows builder rows =
       Right result -> pure $ Just result
 
       (Left (RowDataError msg)) -> do
-        liftIO $ putStrLn $ "** Warning ** Error converting row from sql. " ++
-                            show msg
+        liftIO $ putStrLn $ concat
+          [ "** Warning ** Error converting row from sql: "
+          , show msg
+          , ". First column was was: "
+          , maybe "<no columns present>" show (listToMaybe row)
+          ]
+
         pure Nothing
 
       Left err -> throw err

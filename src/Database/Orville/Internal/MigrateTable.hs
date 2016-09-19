@@ -101,7 +101,6 @@ mkFlagDDL PrimaryKey = "PRIMARY KEY"
 mkFlagDDL Unique = "UNIQUE"
 mkFlagDDL Null = "NULL"
 mkFlagDDL (Default def) = "DEFAULT " ++ toColumnDefaultSql def
-mkFlagDDL (InsertDefault def) = "DEFAULT " ++ toColumnDefaultSql def
 mkFlagDDL (References table field) =
   "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
 

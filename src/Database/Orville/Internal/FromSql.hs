@@ -32,28 +32,16 @@ nextColumn = do
       put rest
       convertFromSql sqlValue
 
-columnPrefix :: FromSql String
-columnPrefix = ask
-
-prefixed :: String -> FromSql a -> FromSql a
-prefixed str = local (++str)
-
-fullColumnName :: ColumnSpecifier col => col -> FromSql String
-fullColumnName colSpec = do
-  prefix <- columnPrefix
-  pure $ prefix ++ columnName colSpec
-
 col :: (ColumnSpecifier col, Convertible SqlValue a)
     => col -> FromSql a
 col colSpec = do
   columns <- get
-  name <- fullColumnName colSpec
 
-  case lookup name columns of
+  case lookup (columnName colSpec) columns of
     Just sqlValue -> convertFromSql sqlValue
     Nothing ->
       throwError $ QueryError $ concat [ "Column "
-                                       , name
+                                       , (columnName colSpec)
                                        , " not found in result set, "
                                        , " actual columns: "
                                        , intercalate "," $ map fst columns

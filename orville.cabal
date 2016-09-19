@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                orville
-version:             0.2.1.0
+version:             0.3.0.0
 synopsis:            ORM
 -- description:         
 license:             AllRightsReserved
@@ -37,6 +37,7 @@ library
                      Database.Orville.Internal.OrderBy,
                      Database.Orville.Internal.QueryCache,
                      Database.Orville.Internal.QueryKey,
+                     Database.Orville.Internal.RelationalMap,
                      Database.Orville.Internal.SelectOptions,
                      Database.Orville.Internal.TableDefinition,
                      Database.Orville.Internal.Types,
