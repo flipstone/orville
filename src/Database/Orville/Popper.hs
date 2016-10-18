@@ -12,6 +12,7 @@ module Database.Orville.Popper
   , fromKern
   , hasMany
   , hasManyIn
+  , hasOneIn
   , hasManyWhere
   , hasOne
   , hasOne'
@@ -106,10 +107,15 @@ hasMany :: TableDefinition entity
         -> Popper Record [entity Record]
 hasMany tableDef fieldDef = PopRecordManyBy tableDef fieldDef mempty
 
-hasManyIn :: TableDefinition entity
+hasOneIn :: TableDefinition entity
         -> FieldDefinition
         -> Popper [Record] (Map.Map Record (entity Record))
-hasManyIn tableDef fieldDef = PopRecordsBy tableDef fieldDef mempty
+hasOneIn tableDef fieldDef = PopRecordsBy tableDef fieldDef mempty
+
+hasManyIn :: TableDefinition entity
+        -> FieldDefinition
+        -> Popper [Record] (Map.Map Record ([entity Record]))
+hasManyIn tableDef fieldDef = PopRecordsManyBy tableDef fieldDef mempty
 
 hasManyWhere :: TableDefinition entity
              -> FieldDefinition
