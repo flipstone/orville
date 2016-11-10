@@ -13,6 +13,7 @@ module Database.Orville.Popper
   , hasMany
   , hasManyIn
   , hasOneIn
+  , hasManyInWhere
   , hasManyWhere
   , hasOne
   , hasOne'
@@ -122,6 +123,12 @@ hasManyWhere :: TableDefinition entity
              -> SelectOptions
              -> Popper Record [entity Record]
 hasManyWhere = PopRecordManyBy
+
+hasManyInWhere :: TableDefinition entity
+               -> FieldDefinition
+               -> SelectOptions
+               -> Popper [Record] (Map.Map Record ([entity Record]))
+hasManyInWhere = PopRecordsManyBy
 
 hasOne :: ( Convertible a SqlValue
           , Convertible SqlValue a
