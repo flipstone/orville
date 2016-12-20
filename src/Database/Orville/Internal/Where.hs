@@ -14,6 +14,7 @@ data WhereCondition =
   | IsNull FieldDefinition
   | IsNotNull FieldDefinition
   | In FieldDefinition [SqlValue]
+  | NotIn FieldDefinition [SqlValue]
   | Or [WhereCondition]
   | And [WhereCondition]
   | AlwaysFalse
@@ -23,6 +24,7 @@ instance QueryKeyable WhereCondition where
   queryKey (IsNull field) = qkOp "IS NULL" field
   queryKey (IsNotNull field) = qkOp "NOT IS NULL" field
   queryKey (In field values) = qkOp2 "IN" field values
+  queryKey (NotIn field values) = qkOp2 "NOT IN" field values
   queryKey (Or conds) = qkOp "OR" conds
   queryKey (And conds) = qkOp "And" conds
   queryKey AlwaysFalse = qkOp "FALSE" QKEmpty
@@ -30,6 +32,10 @@ instance QueryKeyable WhereCondition where
 (.==) :: Convertible a SqlValue
       => FieldDefinition -> a -> WhereCondition
 fieldDef .== a = BinOp "=" fieldDef (convert a)
+
+(.<>) :: Convertible a SqlValue
+      => FieldDefinition -> a -> WhereCondition
+fieldDef .<> a = BinOp "<>" fieldDef (convert a)
 
 (.>) :: Convertible a SqlValue
       => FieldDefinition -> a -> WhereCondition
@@ -71,6 +77,11 @@ whereConditionSql (In fieldDef values) =
   where
     quesses = List.intercalate "," (map (const "?") values)
 
+whereConditionSql (NotIn fieldDef values) =
+    fieldName fieldDef ++ " NOT IN (" ++ quesses ++ ")"
+  where
+    quesses = List.intercalate "," (map (const "?") values)
+
 whereConditionSql AlwaysFalse = "TRUE = FALSE"
 
 whereConditionSql (Or conds) = List.intercalate " OR " condsSql
@@ -86,6 +97,7 @@ whereConditionValues (BinOp _ _ value) = [value]
 whereConditionValues (IsNull _) = []
 whereConditionValues (IsNotNull _) = []
 whereConditionValues (In _ values) = values
+whereConditionValues (NotIn _ values) = values
 whereConditionValues AlwaysFalse = []
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
 whereConditionValues (And conds) = concatMap whereConditionValues conds
@@ -95,6 +107,12 @@ whereAnd = And
 
 whereOr :: [WhereCondition] -> WhereCondition
 whereOr = Or
+
+whereIn :: FieldDefinition -> [SqlValue] -> WhereCondition
+whereIn = In
+
+whereNotIn :: FieldDefinition -> [SqlValue] -> WhereCondition
+whereNotIn = NotIn
 
 isNull :: FieldDefinition -> WhereCondition
 isNull fieldDef = IsNull fieldDef
