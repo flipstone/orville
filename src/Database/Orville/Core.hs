@@ -47,8 +47,8 @@ module Database.Orville.Core
   , noComments, say
 
   , WhereCondition
-  , whereAnd, whereOr, isNull, isNotNull
-  , (.==), (.<-), (%==), (.>), (.>=), (.<), (.<=)
+  , whereAnd, whereOr, whereIn, whereNotIn, isNull, isNotNull
+  , (.==), (.<>), (.<-), (%==), (.>), (.>=), (.<), (.<=)
 
   , SelectOptions(..)
   , where_, order, limit, offset
