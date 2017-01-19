@@ -6,6 +6,7 @@ module Database.Orville.Raw
   , ResultSet
   , updateSql
   , withConnection, withTransaction
+  , catchSqlErr
   ) where
 
 import            Control.Exception.Lifted (finally, throw)
@@ -26,8 +27,9 @@ selectSqlRows sql values = do
     putStrLn sql
 
     query <- prepare conn sql
-    void $ execute query values
-    fetchAllRowsAL' query
+    catchSqlErr sql (do
+                     void $ execute query values
+                     fetchAllRowsAL' query)
 
 decodeSqlRows :: FromSql result -> ResultSet -> Orville [result]
 decodeSqlRows builder rows =
@@ -60,7 +62,7 @@ updateSql :: String
 updateSql sql values =
   withConnection $ \conn -> liftIO $ do
     putStrLn sql
-    run conn sql values
+    catchSqlErr sql (run conn sql values)
 
 startTransaction :: ConnectionEnv conn -> ConnectionEnv conn
 startTransaction c = c { ormTransactionOpen = True }
@@ -90,4 +92,12 @@ withTransaction action =
                                     when (not finished) (rollback conn)
 
         doAction `finally` rollbackUncommitted
+
+catchSqlErr :: String -> IO a -> IO a
+catchSqlErr sql action =
+  catchSql action
+           (\e -> let updatedErr = SqlError (seState e)
+                                            (seNativeError e)
+                                            (seErrorMsg e ++ " SQL: " ++ sql)
+                  in throwSqlError updatedErr)
 

@@ -139,8 +139,9 @@ deleteWhereBuild tableDef conds = do
   let querySql = deleteSql ++ " " ++ whereSql
 
   withConnection $ \conn -> liftIO $ do
-    deletedCount <- run conn querySql values
-    return deletedCount
+    catchSqlErr querySql (do
+                          deletedCount <- run conn querySql values
+                          return deletedCount)
 
 deleteWhere :: TableDefinition entity
             -> [WhereCondition]
@@ -223,9 +224,10 @@ insertRecord tableDef newRecord = do
     print vals
 
     insert <- prepare conn insertSql
-    void $ execute insert vals
-    rows <- fetchAllRows' insert
-    return rows
+    catchSqlErr insertSql (do
+                           void $ execute insert vals
+                           rows <- fetchAllRows' insert
+                           return rows)
 
   case rows of
     [[key]] -> case safeConvert key of
@@ -243,8 +245,9 @@ insertRecordMany tableDef newRecords = do
   let builder = tableToSql tableDef
 
   withConnection $ \conn -> liftIO $ do
-    insert <- prepare conn insertSql
-    executeMany insert (map (runToSql builder) newRecords)
+    catchSqlErr insertSql (do
+                           insert <- prepare conn insertSql
+                           executeMany insert (map (runToSql builder) newRecords))
 
 deleteRecord :: TableDefinition entity
              -> entity Record
