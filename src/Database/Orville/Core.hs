@@ -42,6 +42,7 @@ module Database.Orville.Core
   , SchemaDefinition
   , Record
   , CreatedAt
+  , UpdatedAt
 
   , TableComments
   , noComments, say
