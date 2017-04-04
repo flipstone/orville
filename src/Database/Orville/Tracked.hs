@@ -5,11 +5,13 @@
 module Database.Orville.Tracked
   ( Sign(..)
   , SignType(..)
+
   , signTableAs
+  , signEntityAs
   , signEntityFrom
+  , signEntityGet
 
   , TrackedOrville
-  , Trail(..)
   , MonadTrackedOrville (..)
 
   , insertRecordTracked
@@ -18,7 +20,6 @@ module Database.Orville.Tracked
   , mapTrackedOrville
   , runTrackedOrville
   , trackedMapper
-  , trailToList
   ) where
 
 import            Control.Applicative
@@ -26,7 +27,7 @@ import            Control.Monad.Base
 import            Control.Monad.Catch
 import            Control.Monad.Except
 import            Control.Monad.Trans.Control
-import            Control.Monad.Writer
+import            Control.Monad.RWS.Strict
 import qualified  Data.DList as D
 import            Data.Typeable
 
@@ -48,11 +49,27 @@ signTableAs :: Typeable entity
             -> Maybe (TableDefinition entity)
 signTableAs _ (Sign _ tableDef _) = cast tableDef
 
+signEntityAs :: Typeable entity
+             => p (entity Record)
+             -> Sign
+             -> Maybe (entity Record)
+signEntityAs _ (Sign _ _ entity) = cast entity
+
 signEntityFrom :: Typeable entity
                => TableDefinition entity
                -> Sign
                -> Maybe (entity Record)
 signEntityFrom _ (Sign _ _ entity) = cast entity
+
+signEntityGet :: Typeable entity
+              => (entity Record -> a)
+              -> Sign
+              -> Maybe a
+signEntityGet f sign =
+    f <$> signEntityAs proxy sign
+  where
+    proxy = Nothing
+    _ = f <$> proxy
 
 instance Show Sign where
   show (Sign sType tableDef entity) =
@@ -61,13 +78,8 @@ instance Show Sign where
     tableName tableDef <> " " <>
     show (tableGetKey tableDef entity)
 
-newtype Trail = Trail (D.DList Sign)
-  deriving (Monoid)
-
-newtype TrackedOrville m a = TrackedOrville {
-    unTrackedOrville :: WriterT Trail
-                            m
-                            a
+newtype TrackedOrville t m a = TrackedOrville {
+    unTrackedOrville :: RWST (Sign -> t) t () m a
   } deriving ( Functor
              , Alternative
              , Applicative
@@ -80,26 +92,43 @@ newtype TrackedOrville m a = TrackedOrville {
              , MonadError e
              )
 
-runTrackedOrville :: TrackedOrville m a -> m (a, Trail)
-runTrackedOrville = runWriterT . unTrackedOrville
+runTrackedOrville :: (Monoid t, Monad m)
+                  => (Sign -> t)
+                  -> TrackedOrville t m a
+                  -> m (a, t)
+runTrackedOrville mapSign trackedM =
+  evalRWST (unTrackedOrville trackedM) mapSign ()
 
-trailToList :: Trail -> [Sign]
-trailToList (Trail dList) = D.toList dList
+{-# INLINE discardState #-}
+discardState :: Functor m => m (a, (), t) -> m (a, t)
+discardState = fmap $ \(a, _, t) -> (a, t)
+
+{-# INLINE conjureState #-}
+conjureState :: Functor m => m (a, t) -> m (a, (), t)
+conjureState = fmap $ \(a, t) -> (a, (), t)
 
 class (MonadOrville conn m, MonadThrow m)
       => MonadTrackedOrville conn m where
   track :: Sign -> m ()
 
-mapTrackedOrville :: (m (a,Trail) -> n (b,Trail)) -> TrackedOrville m a -> TrackedOrville n b
-mapTrackedOrville f = TrackedOrville . mapWriterT f . unTrackedOrville
+mapTrackedOrville :: (Functor m, Functor n)
+                  => (m (a,t) -> n (b,t))
+                  -> TrackedOrville t m a
+                  -> TrackedOrville t n b
+mapTrackedOrville f =
+    TrackedOrville . mapRWST (liftMap f) . unTrackedOrville
+  where
+    {-# INLINE liftMap #-}
+    liftMap h = conjureState . h . discardState
 
-trackedMapper :: Monad m => (m a -> m b) -> m (a, Trail) -> m (b, Trail)
+{-# INLINE trackedMapper #-}
+trackedMapper :: Monad m => (m a -> m b) -> m (a, t) -> m (b, t)
 trackedMapper f trackedM = do
   (a, trail) <- trackedM
   b <- f (pure a)
   pure (b, trail)
 
-untracked :: Monad m => m a -> TrackedOrville m a
+untracked :: (Monoid t, Monad m) => m a -> TrackedOrville t m a
 untracked = TrackedOrville . lift
 
 insertRecordTracked :: (MonadTrackedOrville conn m, Typeable entity)
@@ -125,27 +154,31 @@ updateRecordTracked tableDef recordId record = do
 
   pure updated
 
-instance (MonadOrville conn m, MonadThrow m) => MonadTrackedOrville conn (TrackedOrville m) where
-  track = TrackedOrville . tell . Trail . D.singleton
+instance (Monoid t, MonadOrville conn m, MonadThrow m) =>
+         MonadTrackedOrville conn (TrackedOrville t m) where
+  track sign = TrackedOrville $ do
+    mapSign <- ask
+    tell $ mapSign sign
 
-instance MonadTrans TrackedOrville where
+instance Monoid t => MonadTrans (TrackedOrville t) where
   lift = untracked
 
-instance MonadBase IO m => MonadBase IO (TrackedOrville m) where
+instance (Monoid t, MonadBase IO m) => MonadBase IO (TrackedOrville t m) where
   liftBase = lift . liftBase
 
-instance MonadTransControl TrackedOrville where
-  type StT TrackedOrville a = StT (WriterT Trail) a
+instance Monoid t => MonadTransControl (TrackedOrville t) where
+  type StT (TrackedOrville t) a = StT (RWST (Sign -> t) t ()) a
   liftWith = defaultLiftWith TrackedOrville unTrackedOrville
   restoreT = defaultRestoreT TrackedOrville
 
-instance MonadBaseControl IO m =>
-         MonadBaseControl IO (TrackedOrville m) where
-  type StM (TrackedOrville m) a = ComposeSt TrackedOrville m a
+instance (Monoid t, MonadBaseControl IO m) =>
+         MonadBaseControl IO (TrackedOrville t m) where
+  type StM (TrackedOrville t m) a = ComposeSt (TrackedOrville t) m a
   liftBaseWith = defaultLiftBaseWith
   restoreM = defaultRestoreM
 
-instance MonadOrville conn m => MonadOrville conn (TrackedOrville m) where
+instance (Monoid t, MonadOrville conn m) =>
+         MonadOrville conn (TrackedOrville t m) where
   getOrvilleEnv = lift getOrvilleEnv
   localOrvilleEnv f  = mapTrackedOrville (localOrvilleEnv f)
   startTransactionSQL = lift startTransactionSQL
