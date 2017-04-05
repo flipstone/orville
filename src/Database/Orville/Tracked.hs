@@ -16,6 +16,7 @@ module Database.Orville.Tracked
 
   , insertRecordTracked
   , updateRecordTracked
+  , deleteRecordTracked
 
   , mapTrackedOrville
   , runTrackedOrville
@@ -33,7 +34,7 @@ import            Data.Typeable
 
 import            Database.Orville.Core
 
-data SignType = Inserted | Updated
+data SignType = Inserted | Updated | Deleted
   deriving (Eq, Show, Enum)
 
 data Sign = forall entity. (Typeable entity) =>
@@ -90,6 +91,7 @@ newtype TrackedOrville t m a = TrackedOrville {
              , MonadCatch
              , MonadMask
              , MonadError e
+             , MonadWriter t
              )
 
 runTrackedOrville :: (Monoid t, Monad m)
@@ -98,6 +100,7 @@ runTrackedOrville :: (Monoid t, Monad m)
                   -> m (a, t)
 runTrackedOrville mapSign trackedM =
   evalRWST (unTrackedOrville trackedM) mapSign ()
+
 
 {-# INLINE discardState #-}
 discardState :: Functor m => m (a, (), t) -> m (a, t)
@@ -153,6 +156,14 @@ updateRecordTracked tableDef recordId record = do
   track $ Sign Updated tableDef updated
 
   pure updated
+
+deleteRecordTracked :: (MonadTrackedOrville conn m, Typeable entity)
+                    => TableDefinition entity
+                    -> entity Record
+                    -> m ()
+deleteRecordTracked tableDef record = do
+  deleteRecord tableDef record
+  track $ Sign Deleted tableDef record
 
 instance (Monoid t, MonadOrville conn m, MonadThrow m) =>
          MonadTrackedOrville conn (TrackedOrville t m) where
