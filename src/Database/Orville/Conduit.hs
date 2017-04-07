@@ -16,6 +16,7 @@ import            Database.HDBC hiding (withTransaction)
 
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.SelectOptions
+import            Database.Orville.Internal.Sql
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
 
@@ -32,7 +33,7 @@ selectConduit tableDef opts =
         Right ent -> Just ent
         Left _ -> Nothing
 
-    selectClause = mkSelectClause tableDef
+    selectClause = mkSelectClause (tableName tableDef) (tableColumnNames tableDef)
     querySql = List.intercalate " " [
                      selectClause
                    , selectOptClause opts

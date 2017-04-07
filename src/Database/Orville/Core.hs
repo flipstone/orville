@@ -29,8 +29,6 @@ module Database.Orville.Core
   , FromSqlError(..)
   , ColumnSpecifier(..)
   , col
-  , nullableCol
-  , nextColumn
 
   , ToSql
   , getField
@@ -61,6 +59,8 @@ module Database.Orville.Core
   , OrderByClause (..)
   , SortDirection (..)
   , migrateSchema
+  , selectAs
+  , selectFromTableAs
   , selectAll
   , selectFirst
   , deleteRecord
@@ -95,6 +95,7 @@ import            Database.Orville.Internal.MigrateSchema
 import            Database.Orville.Internal.OrderBy
 import            Database.Orville.Internal.RelationalMap
 import            Database.Orville.Internal.SelectOptions
+import            Database.Orville.Internal.Sql
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
 import            Database.Orville.Internal.Where
@@ -107,23 +108,27 @@ getField f = do
   sqlValues <- get
   put (convert value : sqlValues)
 
-selectWhereBuild :: TableDefinition entity
-                 -> FromSql result
-                 -> SelectOptions
-                 -> Orville [result]
-selectWhereBuild tableDef builder opts =
+selectAs :: String -> FromSql result -> SelectOptions -> Orville [result]
+selectAs tblName builder opts =
     selectSql querySql (selectOptValues opts) builder
   where
-    selectClause = mkSelectClause tableDef
+    selectClause = mkSelectClause tblName (fromSqlColumnNames builder)
     querySql = List.intercalate " " [
                      selectClause
                    , selectOptClause opts
                    ]
 
+selectFromTableAs :: TableDefinition entity
+                  -> FromSql result
+                  -> SelectOptions
+                  -> Orville [result]
+selectFromTableAs tableDef builder opts =
+  selectAs (tableName tableDef) builder opts
+
 selectAll :: TableDefinition entity
           -> SelectOptions
           -> Orville [entity Record]
-selectAll tableDef = selectWhereBuild tableDef (tableFromSql tableDef)
+selectAll tableDef = selectFromTableAs tableDef (tableFromSql tableDef)
 
 selectFirst :: TableDefinition entity
             -> SelectOptions
@@ -134,7 +139,7 @@ deleteWhereBuild :: TableDefinition entity
                  -> [WhereCondition]
                  -> Orville Integer
 deleteWhereBuild tableDef conds = do
-  let deleteSql = mkDeleteClause tableDef
+  let deleteSql = mkDeleteClause (tableName tableDef)
   let whereSql = whereClause conds
   let values = whereValues conds
   let querySql = deleteSql ++ " " ++ whereSql
@@ -167,7 +172,7 @@ findRecordsBy :: (Convertible SqlValue fieldValue, Ord fieldValue)
               -> Orville (Map.Map fieldValue [entity Record])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> col field <*> tableFromSql tableDef
-  Map.groupBy' id <$> selectWhereBuild tableDef builder opts
+  Map.groupBy' id <$> selectFromTableAs tableDef builder opts
 
 findRecord :: TableDefinition entity
            -> Record
@@ -188,7 +193,8 @@ updateFields tableDef updates conds =
     condValues = whereValues conds
 
     updateValues = map fieldUpdateValue updates
-    updateClause = mkUpdateClause tableDef updates
+    updateNames  = map fieldUpdateName updates
+    updateClause = mkUpdateClause (tableName tableDef) updateNames
 
 updateRecord :: TableDefinition entity
              -> Record
@@ -216,7 +222,7 @@ insertRecord :: TableDefinition entity
              -> entity ()
              -> Orville (entity Record)
 insertRecord tableDef newRecord = do
-  let insertSql = mkInsertClause tableDef ++ " RETURNING id"
+  let insertSql = mkInsertClause (tableName tableDef) (insertableColumnNames tableDef) ++ " RETURNING id"
   let builder = tableToSql tableDef
 
   rows <- withConnection $ \conn -> liftIO $ do
@@ -242,7 +248,7 @@ insertRecordMany :: TableDefinition entity
                  -> [entity ()]
                  -> Orville ()
 insertRecordMany tableDef newRecords = do
-  let insertSql = mkInsertClause tableDef
+  let insertSql = mkInsertClause (tableName tableDef) (insertableColumnNames tableDef)
   let builder = tableToSql tableDef
 
   withConnection $ \conn -> liftIO $ do

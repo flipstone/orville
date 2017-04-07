@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Internal.Types where
 
@@ -9,6 +10,7 @@ import            Control.Monad.Except
 import            Control.Monad.Reader
 import            Control.Monad.State
 import            Control.Monad.Writer
+import qualified  Data.List as List
 import            Data.Typeable
 import            Database.HDBC
 
@@ -97,19 +99,39 @@ data FromSqlError =
 
 instance Exception FromSqlError
 
-newtype FromSql a = FromSql { unFromSql :: StateT [(String, SqlValue)]
-                                           (Either FromSqlError)
-                                           a
-                            }
-  deriving ( Functor
-           , Applicative
-           , Monad
-           , MonadError FromSqlError
-           , MonadState [(String, SqlValue)]
-           )
+data FromSql a = FromSql
+  { fromSqlColumnNames :: [String]
+  , runFromSql :: [(String, SqlValue)] -> Either FromSqlError a
+  }
 
-runFromSql :: FromSql a -> [(String,SqlValue)] -> Either FromSqlError a
-runFromSql = evalStateT . unFromSql
+instance Functor FromSql where
+  fmap f fA = fA { runFromSql = \values -> f <$> runFromSql fA values }
+
+instance Applicative FromSql where
+  pure a = FromSql [] (\_ -> pure a)
+  fF <*> fA = FromSql
+    { fromSqlColumnNames = fromSqlColumnNames fF ++ fromSqlColumnNames fA
+    , runFromSql = \values -> runFromSql fF values <*> runFromSql fA values
+    }
+
+getColumn :: String -> FromSql SqlValue
+getColumn columnName = FromSql
+  { fromSqlColumnNames = [columnName]
+  , runFromSql = \values -> do
+      case lookup columnName values of
+        Just sqlValue -> pure sqlValue
+        Nothing ->
+          throwError $ QueryError $ concat [ "Column "
+                                           , columnName
+                                           , " not found in result set, "
+                                           , " actual columns: "
+                                           , List.intercalate "," $ map fst values
+                                           ]
+  }
+
+joinFromSqlError :: FromSql (Either FromSqlError a) -> FromSql a
+joinFromSqlError fE = fE { runFromSql = \columns -> join $ runFromSql fE columns }
+
 
 newtype ToSql a b = ToSql { unToSql :: ReaderT a
                                        (State [SqlValue])

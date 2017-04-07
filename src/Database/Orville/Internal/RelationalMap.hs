@@ -10,7 +10,6 @@ module Database.Orville.Internal.RelationalMap
   , maybeMapper, prefixMap, partialMap, readOnlyMap
   ) where
 
-import            Control.Monad.Except (throwError)
 import            Control.Monad (when, join)
 import            Control.Monad.Reader (ask)
 import            Control.Monad.State (modify)
@@ -68,7 +67,7 @@ data RelationalMap a b where
 
 
 instance Functor (RelationalMap a) where
-  fmap f map = pure f <*> map
+  fmap f rm = pure f <*> rm
 
 instance Applicative (RelationalMap a) where
   pure  = RM_Pure
@@ -107,12 +106,12 @@ prefixMap prefix (RM_MaybeTag rm) = RM_MaybeTag (prefixMap prefix rm)
 prefixMap _ rm@(RM_Pure _) = rm
 
 maybeMapper :: RelationalMap a b -> RelationalMap (Maybe a) (Maybe b)
-maybeMapper rm =
+maybeMapper =
     -- rewrite the mapper to handle null fields, then tag
     -- it as having been done so we don't double-map it
     -- in a future `maybeMapper` call.
     --
-    RM_MaybeTag (go rm)
+    RM_MaybeTag . go
   where
     go :: RelationalMap a b -> RelationalMap (Maybe a) (Maybe b)
     go (RM_Nest f rm) = RM_Nest (fmap f) (go rm)
@@ -154,12 +153,9 @@ mkFromSql (RM_MaybeTag rm) = mkFromSql rm
 mkFromSql (RM_Pure b) = pure b
 mkFromSql (RM_Apply rmF rmC) = mkFromSql rmF <*> mkFromSql rmC
 mkFromSql (RM_Partial rm) = do
-  result <- mkFromSql rm
-
-  case result of
-    Right v -> pure v
-    Left err -> throwError $ RowDataError $ err
-
+    joinFromSqlError (wrapError <$> mkFromSql rm)
+  where
+    wrapError = either (Left . RowDataError) Right
 
 mkToSql :: RelationalMap a b -> ToSql a ()
 mkToSql (RM_Field field) =

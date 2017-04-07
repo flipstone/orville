@@ -14,7 +14,6 @@ fieldUpdate def = FieldUpdate def . convert
 (.:=) :: Convertible a SqlValue => FieldDefinition -> a -> FieldUpdate
 (.:=) = fieldUpdate
 
-fieldUpdateSql :: FieldUpdate -> String
-fieldUpdateSql u =
-  fieldName (fieldUpdateField u) ++ " = ?"
+fieldUpdateName :: FieldUpdate -> String
+fieldUpdateName = fieldName . fieldUpdateField
 

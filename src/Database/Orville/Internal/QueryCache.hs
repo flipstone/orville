@@ -27,6 +27,7 @@ import            Database.Orville.Internal.FromSql
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.QueryKey
 import            Database.Orville.Internal.SelectOptions
+import            Database.Orville.Internal.Sql
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
 import            Database.Orville.Internal.Where
@@ -61,7 +62,7 @@ selectCachedRows :: (MonadThrow m, MonadOrville conn m)
 selectCachedRows tableDef opts =
     cached key $ unsafeLift $ selectSqlRows querySql (selectOptValues opts)
   where
-    selectClause = mkSelectClause tableDef
+    selectClause = mkSelectClause (tableName tableDef) (tableColumnNames tableDef)
     key = mconcat [queryKey tableDef, queryKey opts]
 
     querySql = List.intercalate " " [

@@ -16,42 +16,12 @@ import            Database.HDBC
 import            Database.Orville.Internal.FieldDefinition
 import            Database.Orville.Internal.Types
 
-convertFromSql :: Convertible SqlValue a => SqlValue -> FromSql a
-convertFromSql sqlValue =
-  case safeConvert sqlValue of
-    Right value -> return value
-    Left conversionError -> throwError $ RowDataError $ prettyConvertError conversionError
+convertFromSql :: Convertible SqlValue a => SqlValue -> Either FromSqlError a
+convertFromSql =
+  either (Left . RowDataError . prettyConvertError) Right . safeConvert
 
-nextColumn :: Convertible SqlValue a => FromSql a
-nextColumn = do
-  columns <- get
-
-  case columns of
-    [] -> throwError $ QueryError $ "Insufficient column values to build type"
-    (_,sqlValue) : rest -> do
-      put rest
-      convertFromSql sqlValue
-
-col :: (ColumnSpecifier col, Convertible SqlValue a)
-    => col -> FromSql a
-col colSpec = do
-  columns <- get
-
-  case lookup (columnName colSpec) columns of
-    Just sqlValue -> convertFromSql sqlValue
-    Nothing ->
-      throwError $ QueryError $ concat [ "Column "
-                                       , (columnName colSpec)
-                                       , " not found in result set, "
-                                       , " actual columns: "
-                                       , intercalate "," $ map fst columns
-                                       ]
-
--- allows a Nothing to be returned for a (Maybe field) within a (Maybe data_type)
-nullableCol :: (ColumnSpecifier col, Convertible SqlValue a)
-         => col
-         -> FromSql (Maybe (Maybe a))
-nullableCol colSpec = (col colSpec) >>= pure . Just
+col :: (ColumnSpecifier col, Convertible SqlValue a) => col -> FromSql a
+col colSpec = joinFromSqlError (convertFromSql <$> getColumn (columnName colSpec))
 
 class ColumnSpecifier col where
   columnName :: col -> String
