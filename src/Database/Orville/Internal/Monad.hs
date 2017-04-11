@@ -20,13 +20,21 @@ type Orville a = forall m conn.
              (MonadOrville conn m, MonadThrow m)
              => m a
 
-data ConnectionEnv conn = ConnectionEnv {
-    ormTransactionOpen :: Bool
+data ConnectionEnv conn = ConnectionEnv
+  { ormTransactionOpen :: Bool
   , ormConnection :: conn
   }
 
-data OrvilleEnv conn = OrvilleEnv {
-    ormEnvPool :: Pool conn
+data QueryType =
+    SelectQuery
+  | InsertQuery
+  | UpdateQuery
+  | DeleteQuery
+  | DDLQuery
+  deriving (Ord, Eq, Enum, Show, Read)
+
+data OrvilleEnv conn = OrvilleEnv
+  { ormEnvPool :: Pool conn
   , ormEnvConnectionEnv :: Maybe (ConnectionEnv conn)
   }
 
@@ -50,12 +58,10 @@ newtype OrvilleT conn m a = OrvilleT
            )
 
 mapOrvilleT :: Monad n => (m a -> n b) -> OrvilleT conn m a -> OrvilleT conn n b
-mapOrvilleT f (OrvilleT action) = OrvilleT $ do
-  ma <- runReaderT action <$> ask
-  lift (f ma)
+mapOrvilleT f (OrvilleT action) = OrvilleT $ mapReaderT f action
 
-runOrville :: OrvilleT conn m a -> Pool conn -> m a
-runOrville ormt = runReaderT (unOrvilleT ormt) . newOrvilleEnv
+runOrville :: OrvilleT conn m a -> OrvilleEnv conn -> m a
+runOrville = runReaderT . unOrvilleT
 
 newConnectionEnv :: conn -> ConnectionEnv conn
 newConnectionEnv = ConnectionEnv False
@@ -93,6 +99,9 @@ class (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m)
 
   startTransactionSQL :: m String
   startTransactionSQL = pure "START TRANSACTION"
+
+  runningQuery :: QueryType -> String -> m a -> m a
+  runningQuery _ _ action = action
 
 instance (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m)
          => MonadOrville conn (OrvilleT conn m) where

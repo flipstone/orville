@@ -6,7 +6,6 @@ module Database.Orville.Raw
   , ResultSet
   , updateSql
   , withConnection, withTransaction
-  , catchSqlErr
   ) where
 
 import            Control.Exception.Lifted (finally, throw)
@@ -16,6 +15,7 @@ import            Data.Maybe
 import            Data.IORef
 import            Database.HDBC hiding (withTransaction)
 
+import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
 
@@ -23,13 +23,11 @@ type ResultSet = [[(String, SqlValue)]]
 
 selectSqlRows :: String -> [SqlValue] -> Orville ResultSet
 selectSqlRows sql values = do
-  withConnection $ \conn -> liftIO $ do
-    putStrLn sql
-
-    query <- prepare conn sql
-    catchSqlErr sql (do
-                     void $ execute query values
-                     fetchAllRowsAL' query)
+  withConnection $ \conn -> do
+    executingSql SelectQuery sql $ do
+      query <- prepare conn sql
+      void $ execute query values
+      fetchAllRowsAL' query
 
 decodeSqlRows :: FromSql result -> ResultSet -> Orville [result]
 decodeSqlRows builder rows =
@@ -60,9 +58,9 @@ updateSql :: String
           -> [SqlValue]
           -> Orville Integer
 updateSql sql values =
-  withConnection $ \conn -> liftIO $ do
-    putStrLn sql
-    catchSqlErr sql (run conn sql values)
+  withConnection $ \conn -> do
+    executingSql UpdateQuery sql $ do
+      run conn sql values
 
 startTransaction :: ConnectionEnv conn -> ConnectionEnv conn
 startTransaction c = c { ormTransactionOpen = True }
@@ -92,12 +90,4 @@ withTransaction action =
                                     when (not finished) (rollback conn)
 
         doAction `finally` rollbackUncommitted
-
-catchSqlErr :: String -> IO a -> IO a
-catchSqlErr sql action =
-  catchSql action
-           (\e -> let updatedErr = SqlError (seState e)
-                                            (seNativeError e)
-                                            (seErrorMsg e ++ " SQL: " ++ sql)
-                  in throwSqlError updatedErr)
 

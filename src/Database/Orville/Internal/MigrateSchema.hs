@@ -23,40 +23,41 @@ migrationLockId :: Int32
 migrationLockId = 7995632
 
 migrateSchema :: SchemaDefinition -> Orville ()
-migrateSchema schemaDef = withConnection $ \conn -> do
-  withTransaction $ liftIO $ do
-    void $ run conn
-               "SELECT pg_advisory_xact_lock(?,?)"
-               [convert orvilleLockScope, convert migrationLockId]
+migrateSchema schemaDef =
+  withConnection $ \conn -> do
+    withTransaction $ do
+      void $ liftIO $ run conn
+                           "SELECT pg_advisory_xact_lock(?,?)"
+                           [convert orvilleLockScope, convert migrationLockId]
 
-    tables <- getTables conn
-    indexes <- getIndexes conn
-    constraints <- getConstraints conn
+      tables <- liftIO $ getTables conn
+      indexes <- liftIO $ getIndexes conn
+      constraints <- liftIO $ getConstraints conn
 
-    forM_ schemaDef $ \table ->
-      case table of
-      Table tableDef ->
-        if tableName tableDef `elem` tables
-        then migrateTable conn tableDef
-        else createTable conn tableDef
+      forM_ schemaDef $ \table ->
+        case table of
+        Table tableDef ->
+          if tableName tableDef `elem` tables
+          then migrateTable conn tableDef
+          else createTable conn tableDef
 
-      DropTable name ->
-        when (name `elem` tables)
-             (dropTable conn name)
+        DropTable name ->
+          when (name `elem` tables)
+               (dropTable conn name)
 
-      Index indexDef ->
-        when (not $ indexName indexDef `elem` indexes)
-             (createIndex conn indexDef)
+        Index indexDef ->
+          when (not $ indexName indexDef `elem` indexes)
+               (createIndex conn indexDef)
 
-      DropIndex name ->
-        when (name `elem` indexes)
-             (dropIndex conn name)
+        DropIndex name ->
+          when (name `elem` indexes)
+               (dropIndex conn name)
 
-      Constraint constraintDef ->
-        when (not $ constraintName constraintDef `elem` constraints)
-             (createConstraint conn constraintDef)
+        Constraint constraintDef ->
+          when (not $ constraintName constraintDef `elem` constraints)
+               (createConstraint conn constraintDef)
 
-      DropConstraint tableName name ->
-        when (name `elem` constraints)
-             (dropConstraint conn tableName name)
+        DropConstraint tableName name ->
+          when (name `elem` constraints)
+               (dropConstraint conn tableName name)
 

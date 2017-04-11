@@ -29,7 +29,6 @@ import            Control.Monad.Catch
 import            Control.Monad.Except
 import            Control.Monad.Trans.Control
 import            Control.Monad.RWS.Strict
-import qualified  Data.DList as D
 import            Data.Typeable
 
 import            Database.Orville.Core

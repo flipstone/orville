@@ -10,9 +10,11 @@ import            Data.Convertible
 import            Data.List
 import            Database.HDBC
 
+import            Database.Orville.Internal.Execute
+import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
 
-createConstraint :: IConnection conn => conn -> ConstraintDefinition -> IO ()
+createConstraint :: MonadOrville conn m => conn -> ConstraintDefinition -> m ()
 createConstraint conn (ConstraintDefinition {..}) = do
   let ddl = intercalate " " [ "ALTER TABLE"
                             , "\"" ++ constraintTable ++ "\"" 
@@ -21,14 +23,12 @@ createConstraint conn (ConstraintDefinition {..}) = do
                             , constraintBody
                             ]
 
-  putStrLn ddl
-  void $ run conn ddl []
+  executingSql DDLQuery ddl $ void $ run conn ddl []
 
-dropConstraint :: IConnection conn => conn -> String -> String -> IO ()
+dropConstraint :: MonadOrville conn m => conn -> String -> String -> m ()
 dropConstraint conn tableName constraintName = do
   let ddl = "ALTER TABLE " ++ tableName ++ " DROP CONSTRAINT " ++ constraintName
-  putStrLn ddl
-  void $ run conn ddl []
+  executingSql DDLQuery ddl $ void $ run conn ddl []
 
 getConstraints :: IConnection conn => conn -> IO [String]
 getConstraints conn = do

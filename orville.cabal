@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                orville
-version:             0.5.0.0
+version:             0.6.0.0
 synopsis:            ORM
 -- description:
 license:             AllRightsReserved
@@ -26,6 +26,7 @@ library
                      Database.Orville.Tracked
 
   other-modules:     Database.Orville.Internal.ConstraintDefinition,
+                     Database.Orville.Internal.Execute,
                      Database.Orville.Internal.FieldDefinition,
                      Database.Orville.Internal.FieldUpdate,
                      Database.Orville.Internal.FromSql,

@@ -10,9 +10,11 @@ import            Data.Convertible
 import            Data.List
 import            Database.HDBC
 
+import            Database.Orville.Internal.Execute
+import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
 
-createIndex :: IConnection conn => conn -> IndexDefinition -> IO ()
+createIndex :: MonadOrville conn m => conn -> IndexDefinition -> m ()
 createIndex conn (IndexDefinition {..}) = do
   let ddl = intercalate " " [ "CREATE"
                             , if indexUnique then "UNIQUE" else ""
@@ -23,14 +25,12 @@ createIndex conn (IndexDefinition {..}) = do
                             , indexBody
                             ]
 
-  putStrLn ddl
-  void $ run conn ddl []
+  executingSql DDLQuery ddl $ void $ run conn ddl []
 
-dropIndex :: IConnection conn => conn -> String -> IO ()
+dropIndex :: MonadOrville conn m => conn -> String -> m ()
 dropIndex conn name = do
   let ddl = "DROP INDEX " ++ name
-  putStrLn ddl
-  void $ run conn ddl []
+  executingSql DDLQuery ddl $ void $ run conn ddl []
 
 getIndexes :: IConnection conn => conn -> IO [String]
 getIndexes conn = do

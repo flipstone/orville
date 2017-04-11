@@ -14,6 +14,7 @@ import qualified  Data.List as List
 import            Data.Pool
 import            Database.HDBC hiding (withTransaction)
 
+import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.SelectOptions
 import            Database.Orville.Internal.Sql
@@ -88,7 +89,6 @@ selectSqlConduit sql values = do
         conn <- acquire
         query <- liftIO $ prepare conn sql
         addCleanup (const $ liftIO $ finish $ query) $ do
-          liftIO $ putStrLn sql
           void $ liftIO $ execute query values
           feedRows query
 

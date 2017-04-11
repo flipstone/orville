@@ -7,42 +7,43 @@ module Database.Orville.Internal.MigrateTable
   ) where
 
 import            Control.Monad
+import            Control.Monad.IO.Class (liftIO)
 import qualified  Control.Exception as Exc
 import qualified  Data.List as List
 import            Data.Maybe
 import            Data.Typeable
 import            Database.HDBC
 
+import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.FieldDefinition
+import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
 
 
-createTable :: IConnection conn => conn -> TableDefinition entity -> IO ()
+createTable :: MonadOrville conn m => conn -> TableDefinition entity -> m ()
 createTable conn tableDef = do
   let ddl = mkCreateTableDDL tableDef
-  putStrLn ddl
-  void $ run conn ddl []
+  executingSql DDLQuery ddl $ void $ run conn ddl []
 
 
-dropTable :: IConnection conn => conn -> String -> IO ()
+dropTable :: MonadOrville conn m => conn -> String -> m ()
 dropTable conn name = do
   let ddl = "DROP TABLE \"" ++ name ++ "\""
-  putStrLn ddl
-  void $ run conn ddl []
+  executingSql DDLQuery ddl $ void $ run conn ddl []
 
 
-migrateTable :: IConnection conn => conn -> TableDefinition entity -> IO ()
+migrateTable :: MonadOrville conn m => conn -> TableDefinition entity -> m ()
 migrateTable conn tableDef = do
-  columns <- describeTable conn (tableName tableDef)
+  columns <- liftIO $ describeTable conn (tableName tableDef)
 
   case mkMigrateTableDDL columns tableDef of
     Nothing -> return ()
     Just ddl -> do
-      putStrLn ddl
-      stmt <- prepare conn ddl
+      executingSql DDLQuery ddl $ do
+        stmt <- prepare conn ddl
 
-      executeRaw stmt
-        `Exc.catch` (Exc.throw . MTE tableDef)
+        executeRaw stmt
+          `Exc.catch` (Exc.throw . MTE tableDef)
 
 mkMigrateTableDDL :: [(String, SqlColDesc)] -> TableDefinition entity -> Maybe String
 mkMigrateTableDDL columns tableDef =

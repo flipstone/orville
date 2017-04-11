@@ -3,8 +3,12 @@
 module Database.Orville.Core
   ( SqlValue
   , Orville
-  , OrvilleT, unOrvilleT, OrvilleEnv, newOrvilleEnv, ormEnvPool
+  , OrvilleT, unOrvilleT
+  , OrvilleEnv
+  , newOrvilleEnv, ormEnvPool
+
   , MonadOrville(..), runOrville, mapOrvilleT
+  , QueryType(..)
   , withTransaction
 
   , ColumnFlag (..)
@@ -86,6 +90,7 @@ import            Database.HDBC hiding (withTransaction)
 
 import qualified  Data.Map.Helpers as Map
 import            Database.Orville.Internal.ConstraintDefinition
+import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.FieldDefinition
 import            Database.Orville.Internal.FieldUpdate
 import            Database.Orville.Internal.FromSql
@@ -144,10 +149,9 @@ deleteWhereBuild tableDef conds = do
   let values = whereValues conds
   let querySql = deleteSql ++ " " ++ whereSql
 
-  withConnection $ \conn -> liftIO $ do
-    catchSqlErr querySql (do
-                          deletedCount <- run conn querySql values
-                          return deletedCount)
+  withConnection $ \conn -> do
+    executingSql DeleteQuery querySql $ do
+      run conn querySql values
 
 deleteWhere :: TableDefinition entity
             -> [WhereCondition]
@@ -223,18 +227,14 @@ insertRecord :: TableDefinition entity
              -> Orville (entity Record)
 insertRecord tableDef newRecord = do
   let insertSql = mkInsertClause (tableName tableDef) (insertableColumnNames tableDef) ++ " RETURNING id"
-  let builder = tableToSql tableDef
+      builder = tableToSql tableDef
+      vals = runToSql builder newRecord
 
-  rows <- withConnection $ \conn -> liftIO $ do
-    putStrLn insertSql
-    let vals = (runToSql builder newRecord)
-    print vals
-
-    insert <- prepare conn insertSql
-    catchSqlErr insertSql (do
-                           void $ execute insert vals
-                           rows <- fetchAllRows' insert
-                           return rows)
+  rows <- withConnection $ \conn -> do
+    executingSql InsertQuery insertSql $ do
+      insert <- prepare conn insertSql
+      void $ execute insert vals
+      fetchAllRows' insert
 
   case rows of
     [[key]] -> case safeConvert key of
@@ -251,10 +251,10 @@ insertRecordMany tableDef newRecords = do
   let insertSql = mkInsertClause (tableName tableDef) (insertableColumnNames tableDef)
   let builder = tableToSql tableDef
 
-  withConnection $ \conn -> liftIO $ do
-    catchSqlErr insertSql (do
-                           insert <- prepare conn insertSql
-                           executeMany insert (map (runToSql builder) newRecords))
+  withConnection $ \conn -> do
+    executingSql InsertQuery insertSql $ do
+      insert <- prepare conn insertSql
+      executeMany insert (map (runToSql builder) newRecords)
 
 deleteRecord :: TableDefinition entity
              -> entity Record
