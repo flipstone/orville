@@ -8,51 +8,28 @@ module Database.Orville.Raw
   , withConnection, withTransaction
   ) where
 
-import            Control.Exception.Lifted (finally, throw)
+import            Control.Exception.Lifted (finally)
 import            Control.Monad
 import            Control.Monad.IO.Class
-import            Data.Maybe
 import            Data.IORef
 import            Database.HDBC hiding (withTransaction)
 
 import            Database.Orville.Internal.Execute
+import            Database.Orville.Internal.FromSql
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
-
-type ResultSet = [[(String, SqlValue)]]
+import            Database.Orville.Select
 
 selectSqlRows :: String -> [SqlValue] -> Orville ResultSet
-selectSqlRows sql values = do
-  withConnection $ \conn -> do
-    executingSql SelectQuery sql $ do
-      query <- prepare conn sql
-      void $ execute query values
-      fetchAllRowsAL' query
-
-decodeSqlRows :: FromSql result -> ResultSet -> Orville [result]
-decodeSqlRows builder rows =
-  fmap catMaybes $ forM rows $ \row -> do
-    case runFromSql builder row of
-      Right result -> pure $ Just result
-
-      (Left (RowDataError msg)) -> do
-        liftIO $ putStrLn $ concat
-          [ "** Warning ** Error converting row from sql: "
-          , show msg
-          , ". First column was was: "
-          , maybe "<no columns present>" show (listToMaybe row)
-          ]
-
-        pure Nothing
-
-      Left err -> throw err
+selectSqlRows sql values =
+  runSelect $ selectQueryRawRows sql values
 
 selectSql :: String
           -> [SqlValue]
           -> FromSql result
           -> Orville [result]
 selectSql sql values builder =
-  selectSqlRows sql values >>= decodeSqlRows builder
+  runSelect $ selectQueryRaw builder sql values
 
 updateSql :: String
           -> [SqlValue]

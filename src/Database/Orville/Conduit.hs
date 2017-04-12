@@ -1,6 +1,5 @@
 module Database.Orville.Conduit
   ( selectConduit
-  , selectSqlConduit
   ) where
 
 import qualified  Control.Exception as E
@@ -8,39 +7,13 @@ import            Control.Monad
 import            Control.Monad.Catch
 import            Control.Monad.Trans
 import            Data.Conduit
-import qualified  Data.Conduit.List as C
 import            Data.IORef
-import qualified  Data.List as List
 import            Data.Pool
 import            Database.HDBC hiding (withTransaction)
 
-import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.Monad
-import            Database.Orville.Internal.SelectOptions
-import            Database.Orville.Internal.Sql
-import            Database.Orville.Internal.TableDefinition
+import            Database.Orville.Internal.Select
 import            Database.Orville.Internal.Types
-
-selectConduit :: (Monad m, MonadOrville conn m, MonadCatch m)
-              => TableDefinition entity
-              -> SelectOptions
-              -> Source m (entity Record)
-selectConduit tableDef opts =
-    selectSqlConduit querySql (selectOptValues opts) =$=
-      C.mapMaybe decodeRow
-  where
-    decodeRow row =
-      case runFromSql (tableFromSql tableDef) row of
-        Right ent -> Just ent
-        Left _ -> Nothing
-
-    selectClause = mkSelectClause (tableName tableDef) (tableColumnNames tableDef)
-    querySql = List.intercalate " " [
-                     selectClause
-                   , selectOptClause opts
-                   ]
-
-
 
 -- All the masking manual cleanup in this function amounts to a
 -- poor man's ResourceT that I *hope* is correct. The constraints
@@ -67,11 +40,10 @@ selectConduit tableDef opts =
 -- finish actions in vars while masked and then ensure those vars
 -- are read and executed at the appropriate times.
 --
-selectSqlConduit :: (Monad m, MonadOrville conn m, MonadCatch m)
-                 => String
-                 -> [SqlValue]
-                 -> Source m [(String, SqlValue)]
-selectSqlConduit sql values = do
+selectConduit :: (Monad m, MonadOrville conn m, MonadCatch m)
+              => Select row
+              -> Source m row
+selectConduit select = do
   pool <- ormEnvPool <$> lift getOrvilleEnv
   cleanupRef <- liftIO $ newIORef (pure ())
   finishRef  <- liftIO $ newIORef (pure ())
@@ -87,21 +59,21 @@ selectSqlConduit sql values = do
 
       go = do
         conn <- acquire
-        query <- liftIO $ prepare conn sql
+        query <- liftIO $ prepare conn $ selectSql select
         addCleanup (const $ liftIO $ finish $ query) $ do
-          void $ liftIO $ execute query values
-          feedRows query
+          void $ liftIO $ execute query $ selectValues select
+          feedRows (selectBuilder select) query
 
   result <- go `onException` runCleanup
   runFinish
   pure $ result
 
 feedRows :: (Monad m, MonadIO m)
-         => Statement -> Source m [(String, SqlValue)]
-feedRows query = do
+         => FromSql row -> Statement -> Source m row
+feedRows builder query = do
   row <- liftIO $ fetchRowAL query
-  case row of
+  case runFromSql builder <$> row of
      Nothing -> pure ()
-     Just values -> do
-       yield values
-       feedRows query
+     Just (Left _) -> pure ()
+     Just (Right row) -> yield row >> feedRows builder query
+

@@ -93,7 +93,7 @@ mkMigrateColumnDDL fieldDef (Just desc) = catMaybes [
   ]
 
 
-mkDropColumnDDL :: ColumnName -> Maybe SqlColDesc -> [String]
+mkDropColumnDDL :: String -> Maybe SqlColDesc -> [String]
 mkDropColumnDDL _ Nothing = []
 mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ name]
 

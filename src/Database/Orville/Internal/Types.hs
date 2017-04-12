@@ -71,8 +71,6 @@ data FieldUpdate = FieldUpdate {
   , fieldUpdateValue :: SqlValue
   }
 
-type ColumnName = String
-
 data TableComment = TableComment {
     tcWhat :: String
   , tcWhen :: (Int, Int, Int)
@@ -154,7 +152,7 @@ getComponent getComp (ToSql serializer) =
 data TableDefinition entity = TableDefinition {
     tableName :: String
   , tableFields :: [FieldDefinition]
-  , tableSafeToDelete :: [ColumnName]
+  , tableSafeToDelete :: [String]
   , tableFromSql :: FromSql (entity Record)
   , tableToSql :: forall key. ToSql (entity key) ()
   , tableSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2

@@ -23,7 +23,7 @@ import            Database.Orville.Internal.Types
 data TableParams entity = TableParams
   { tblName :: String
   , tblMapper :: RelationalMap (entity Record) (entity Record)
-  , tblSafeToDelete :: [ColumnName]
+  , tblSafeToDelete :: [String]
   , tblSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
   , tblGetKey :: forall key. entity key -> key
   , tblComments :: TableComments ()

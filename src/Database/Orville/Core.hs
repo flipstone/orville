@@ -63,8 +63,6 @@ module Database.Orville.Core
   , OrderByClause (..)
   , SortDirection (..)
   , migrateSchema
-  , selectAs
-  , selectFromTableAs
   , selectAll
   , selectFirst
   , deleteRecord
@@ -104,6 +102,7 @@ import            Database.Orville.Internal.Sql
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
 import            Database.Orville.Internal.Where
+import            Database.Orville.Select
 import            Database.Orville.Raw
 
 getField :: Convertible a SqlValue
@@ -113,27 +112,10 @@ getField f = do
   sqlValues <- get
   put (convert value : sqlValues)
 
-selectAs :: String -> FromSql result -> SelectOptions -> Orville [result]
-selectAs tblName builder opts =
-    selectSql querySql (selectOptValues opts) builder
-  where
-    selectClause = mkSelectClause tblName (fromSqlColumnNames builder)
-    querySql = List.intercalate " " [
-                     selectClause
-                   , selectOptClause opts
-                   ]
-
-selectFromTableAs :: TableDefinition entity
-                  -> FromSql result
-                  -> SelectOptions
-                  -> Orville [result]
-selectFromTableAs tableDef builder opts =
-  selectAs (tableName tableDef) builder opts
-
 selectAll :: TableDefinition entity
           -> SelectOptions
           -> Orville [entity Record]
-selectAll tableDef = selectFromTableAs tableDef (tableFromSql tableDef)
+selectAll tableDef = runSelect . selectQueryTable tableDef
 
 selectFirst :: TableDefinition entity
             -> SelectOptions
@@ -176,7 +158,9 @@ findRecordsBy :: (Convertible SqlValue fieldValue, Ord fieldValue)
               -> Orville (Map.Map fieldValue [entity Record])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> col field <*> tableFromSql tableDef
-  Map.groupBy' id <$> selectFromTableAs tableDef builder opts
+      query = selectQuery builder (fromClauseTable tableDef) opts
+
+  Map.groupBy' id <$> runSelect query
 
 findRecord :: TableDefinition entity
            -> Record

@@ -31,6 +31,7 @@ import            Database.Orville.Internal.Sql
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
 import            Database.Orville.Internal.Where
+import            Database.Orville.Select
 import            Database.Orville.Raw
 
 type QueryCache = Map.Map QueryKey ResultSet
@@ -60,15 +61,13 @@ selectCachedRows :: (MonadThrow m, MonadOrville conn m)
                  -> SelectOptions
                  -> QueryCached m ResultSet
 selectCachedRows tableDef opts =
-    cached key $ unsafeLift $ selectSqlRows querySql (selectOptValues opts)
+    cached key $ unsafeLift $
+      runSelect $ selectQueryRows columns
+                                  (fromClauseTable tableDef)
+                                  opts
   where
-    selectClause = mkSelectClause (tableName tableDef) (tableColumnNames tableDef)
+    columns = columnNameRaw <$> tableColumnNames tableDef
     key = mconcat [queryKey tableDef, queryKey opts]
-
-    querySql = List.intercalate " " [
-                     selectClause
-                   , selectOptClause opts
-                   ]
 
 selectCached :: (MonadThrow m, MonadOrville conn m)
              => TableDefinition entity

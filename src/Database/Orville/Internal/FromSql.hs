@@ -1,19 +1,21 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
 module Database.Orville.Internal.FromSql where
 
-import            Control.Monad.Except
-import            Control.Monad.Reader
-import            Control.Monad.State
+import            Control.Exception.Lifted (throw)
+import            Control.Monad
+import            Control.Monad.IO.Class
+import            Data.Maybe
 import qualified  Data.ByteString.Char8 as BS
 import qualified  Data.ByteString.Lazy.Char8 as LBS
 import            Data.Convertible
-import            Data.List
 import qualified  Data.Text as T
 import qualified  Data.Text.Lazy as LT
 import            Database.HDBC
 
 import            Database.Orville.Internal.FieldDefinition
+import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
 
 convertFromSql :: Convertible SqlValue a => SqlValue -> Either FromSqlError a
@@ -43,4 +45,24 @@ instance ColumnSpecifier BS.ByteString where
 
 instance ColumnSpecifier LBS.ByteString where
   columnName = LBS.unpack
+
+type ResultSet = [[(String, SqlValue)]]
+
+decodeSqlRows :: FromSql result -> ResultSet -> Orville [result]
+decodeSqlRows builder rows =
+  fmap catMaybes $ forM rows $ \row -> do
+    case runFromSql builder row of
+      Right result -> pure $ Just result
+
+      (Left (RowDataError msg)) -> do
+        liftIO $ putStrLn $ concat
+          [ "** Warning ** Error converting row from sql: "
+          , show msg
+          , ". First column was was: "
+          , maybe "<no columns present>" show (listToMaybe row)
+          ]
+
+        pure Nothing
+
+      Left err -> throw err
 

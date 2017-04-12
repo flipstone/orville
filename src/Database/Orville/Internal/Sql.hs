@@ -17,12 +17,6 @@ mkUpdateClause tblName columnNames =
     placeholders = List.intercalate "," $ map columnUpdateSql columnNames
     columnUpdateSql column = column ++ " = ?"
 
-mkSelectClause :: String -> [String] -> String
-mkSelectClause tblName columnNames =
-    "SELECT " ++ columns ++ " FROM " ++ escapedName tblName
-  where
-    columns = List.intercalate ", " columnNames
-
 mkDeleteClause :: String -> String
 mkDeleteClause tblName =
   "DELETE FROM " ++ escapedName tblName
@@ -30,3 +24,5 @@ mkDeleteClause tblName =
 escapedName :: String -> String
 escapedName name = concat ["\"", name, "\""]
 
+-- If you came here looking for mkSelectClause, check out
+-- Database.Orville.Internal.Select
