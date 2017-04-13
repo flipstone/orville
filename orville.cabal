@@ -37,6 +37,7 @@ library
                      Database.Orville.Internal.FieldUpdate,
                      Database.Orville.Internal.FromClause,
                      Database.Orville.Internal.FromSql,
+                     Database.Orville.Internal.GroupBy,
                      Database.Orville.Internal.IndexDefinition,
                      Database.Orville.Internal.MigrateConstraint,
                      Database.Orville.Internal.MigrateIndex,

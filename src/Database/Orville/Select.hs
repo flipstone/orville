@@ -20,7 +20,7 @@ module Database.Orville.Select
 import            Control.Monad (void)
 import            Database.HDBC
 
-import            Database.Orville.Internal.ColumnName
+import            Database.Orville.Internal.ColumnName()
 import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.FromClause
 import            Database.Orville.Internal.FromSql

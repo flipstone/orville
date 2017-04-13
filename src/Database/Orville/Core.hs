@@ -54,7 +54,7 @@ module Database.Orville.Core
   , (.==), (.<>), (.<-), (%==), (.>), (.>=), (.<), (.<=)
 
   , SelectOptions(..)
-  , where_, order, limit, offset
+  , where_, order, limit, offset, group, selectOptClause
   , (<>)
 
   , FieldUpdate(..)
@@ -92,6 +92,7 @@ import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.FieldDefinition
 import            Database.Orville.Internal.FieldUpdate
 import            Database.Orville.Internal.FromSql
+import            Database.Orville.Internal.GroupBy
 import            Database.Orville.Internal.IndexDefinition
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.MigrateSchema

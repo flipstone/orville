@@ -8,6 +8,7 @@ import            Data.Monoid
 import            Database.HDBC
 
 import            Database.Orville.Internal.FieldDefinition ()
+import            Database.Orville.Internal.GroupBy
 import            Database.Orville.Internal.OrderBy
 import            Database.Orville.Internal.Types ()
 import            Database.Orville.Internal.Where
@@ -18,6 +19,7 @@ data SelectOptions = SelectOptions {
   , selectOptOrder :: [OrderByClause]
   , selectOptLimit :: First Int
   , selectOptOffset :: First Int
+  , selectOptGroup :: [GroupByClause]
   }
 
 selectOptLimitSql :: SelectOptions -> Maybe SqlValue
@@ -27,16 +29,18 @@ selectOptOffsetSql :: SelectOptions -> Maybe SqlValue
 selectOptOffsetSql = fmap convert . getFirst . selectOptOffset
 
 instance Monoid SelectOptions where
-  mempty = SelectOptions mempty mempty mempty mempty
+  mempty = SelectOptions mempty mempty mempty mempty mempty
   mappend opt opt' =
     SelectOptions (selectOptWhere opt <> selectOptWhere opt')
                   (selectOptOrder opt <> selectOptOrder opt')
                   (selectOptLimit opt <> selectOptLimit opt')
                   (selectOptOffset opt <> selectOptOffset opt')
+                  (selectOptGroup opt <> selectOptGroup opt')
 
 instance QueryKeyable SelectOptions where
   queryKey opt =
     mconcat [ qkOp "WHERE"  $ selectOptWhere opt
+            , qkOp "GROUP"  $ selectOptGroup opt
             , qkOp "ORDER"  $ selectOptOrder opt
             , qkOp "LIMIT"  $ selectOptLimitSql opt
             , qkOp "OFFSET" $ selectOptOffsetSql opt
@@ -45,6 +49,7 @@ instance QueryKeyable SelectOptions where
 selectOptClause :: SelectOptions -> String
 selectOptClause opts = List.intercalate " "
   [ selectWhereClause opts
+  , selectGroupByClause opts
   , selectOrderByClause opts
   , selectLimitClause opts
   , selectOffsetClause opts
@@ -60,9 +65,17 @@ selectOrderByClause = clause . selectOptOrder
     clause sortClauses =
       "ORDER BY " ++ List.intercalate ", " (map sortingSql sortClauses)
 
+selectGroupByClause :: SelectOptions -> String
+selectGroupByClause = clause . selectOptGroup
+  where
+    clause [] = ""
+    clause groupClauses =
+      "GROUP BY " ++ List.intercalate ", " (map groupingSql groupClauses)
+
 selectOptValues :: SelectOptions -> [SqlValue]
 selectOptValues opts = concat [
     whereValues $ selectOptWhere opts
+  , concatMap groupingValues $ selectOptGroup opts
   , concatMap sortingValues $ selectOptOrder opts
   , maybeToList $ selectOptLimitSql opts
   , maybeToList $ selectOptOffsetSql opts
@@ -85,10 +98,12 @@ where_ clause = SelectOptions [clause]
                               mempty
                               mempty
                               mempty
+                              mempty
 
 order :: ToOrderBy a => a -> SortDirection -> SelectOptions
 order orderable dir = SelectOptions mempty
                                     [toOrderBy orderable dir]
+                                    mempty
                                     mempty
                                     mempty
 
@@ -97,10 +112,18 @@ limit n = SelectOptions mempty
                         mempty
                         (First $ Just n)
                         mempty
+                        mempty
 
 offset :: Int -> SelectOptions
 offset n = SelectOptions mempty
                          mempty
                          mempty
                          (First $ Just n)
+                         mempty
 
+group :: ToGroupBy a => a -> SelectOptions
+group groupable = SelectOptions mempty
+                                mempty
+                                mempty
+                                mempty
+                                [toGroupBy groupable]
