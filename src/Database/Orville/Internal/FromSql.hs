@@ -12,8 +12,10 @@ import qualified  Data.ByteString.Lazy.Char8 as LBS
 import            Data.Convertible
 import qualified  Data.Text as T
 import qualified  Data.Text.Lazy as LT
+import            Data.String (fromString)
 import            Database.HDBC
 
+import            Database.Orville.Internal.Expr
 import            Database.Orville.Internal.FieldDefinition
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.Types
@@ -23,28 +25,34 @@ convertFromSql =
   either (Left . RowDataError . prettyConvertError) Right . safeConvert
 
 col :: (ColumnSpecifier col, Convertible SqlValue a) => col -> FromSql a
-col colSpec = joinFromSqlError (convertFromSql <$> getColumn (columnName colSpec))
+col spec = joinFromSqlError (convertFromSql <$> getColumn (selectForm spec))
 
 class ColumnSpecifier col where
-  columnName :: col -> String
+  selectForm :: col -> SelectForm
+
+instance ColumnSpecifier SelectForm where
+  selectForm = id
+
+instance ColumnSpecifier NameForm where
+  selectForm = selectColumn
 
 instance ColumnSpecifier FieldDefinition where
-  columnName = fieldName
+  selectForm = selectColumn . fromString . fieldName
 
 instance ColumnSpecifier [Char] where
-  columnName = id
+  selectForm = selectColumn . fromString
 
 instance ColumnSpecifier T.Text where
-  columnName = T.unpack
+  selectForm = selectColumn . fromString . T.unpack
 
 instance ColumnSpecifier LT.Text where
-  columnName = LT.unpack
+  selectForm = selectColumn . fromString . LT.unpack
 
 instance ColumnSpecifier BS.ByteString where
-  columnName = BS.unpack
+  selectForm = selectColumn . fromString . BS.unpack
 
 instance ColumnSpecifier LBS.ByteString where
-  columnName = LBS.unpack
+  selectForm = selectColumn . fromString . LBS.unpack
 
 type ResultSet = [[(String, SqlValue)]]
 

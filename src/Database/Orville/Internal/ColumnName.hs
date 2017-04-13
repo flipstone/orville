@@ -21,3 +21,5 @@ columnNameQualified source column =
     , escapedName column
     ]
 
+columnNameOutput :: ColumnName -> String
+columnNameOutput = undefined

@@ -16,6 +16,7 @@ import            Database.HDBC
 
 import qualified  Data.Time as Time
 
+import            Database.Orville.Internal.Expr
 import            Database.Orville.Internal.QueryKey
 
 type Record = Int
@@ -98,7 +99,7 @@ data FromSqlError =
 instance Exception FromSqlError
 
 data FromSql a = FromSql
-  { fromSqlColumnNames :: [String]
+  { fromSqlSelects :: [SelectForm]
   , runFromSql :: [(String, SqlValue)] -> Either FromSqlError a
   }
 
@@ -108,19 +109,21 @@ instance Functor FromSql where
 instance Applicative FromSql where
   pure a = FromSql [] (\_ -> pure a)
   fF <*> fA = FromSql
-    { fromSqlColumnNames = fromSqlColumnNames fF ++ fromSqlColumnNames fA
+    { fromSqlSelects = fromSqlSelects fF ++ fromSqlSelects fA
     , runFromSql = \values -> runFromSql fF values <*> runFromSql fA values
     }
 
-getColumn :: String -> FromSql SqlValue
-getColumn columnName = FromSql
-  { fromSqlColumnNames = [columnName]
+getColumn :: SelectForm -> FromSql SqlValue
+getColumn selectForm = FromSql
+  { fromSqlSelects = [selectForm]
   , runFromSql = \values -> do
-      case lookup columnName values of
+      let output = unescapedName $ selectFormOutput selectForm
+
+      case lookup output values of
         Just sqlValue -> pure sqlValue
         Nothing ->
           throwError $ QueryError $ concat [ "Column "
-                                           , columnName
+                                           , output
                                            , " not found in result set, "
                                            , " actual columns: "
                                            , List.intercalate "," $ map fst values

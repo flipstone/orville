@@ -14,7 +14,7 @@ module Database.Orville.Core
   , ColumnFlag (..)
   , Now(..)
   , ColumnType (..)
-  , FieldDefinition, withPrefix
+  , FieldDefinition, withPrefix, fieldName
   , TableDefinition (..)
   , tablePrimaryKey
   , mkTableDefinition

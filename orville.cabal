@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                orville
-version:             0.7.0.0
+version:             0.8.0.0
 synopsis:            ORM
 -- description:
 license:             AllRightsReserved
@@ -20,15 +20,19 @@ library
   exposed-modules:   Database.Orville,
                      Database.Orville.Conduit,
                      Database.Orville.Core,
+                     Database.Orville.Expr,
                      Database.Orville.Popper,
                      Database.Orville.PostgresSQL,
                      Database.Orville.Raw,
                      Database.Orville.Select,
                      Database.Orville.Tracked
 
-  other-modules:     Database.Orville.Internal.ColumnName,
-                     Database.Orville.Internal.ConstraintDefinition,
+  other-modules:     Database.Orville.Internal.ConstraintDefinition,
                      Database.Orville.Internal.Execute,
+                     Database.Orville.Internal.Expr,
+                     Database.Orville.Internal.Expr.Expr,
+                     Database.Orville.Internal.Expr.NameExpr,
+                     Database.Orville.Internal.Expr.SelectExpr,
                      Database.Orville.Internal.FieldDefinition,
                      Database.Orville.Internal.FieldUpdate,
                      Database.Orville.Internal.FromClause,

@@ -21,8 +21,10 @@ import qualified  Data.Map as Map
 import qualified  Data.Map.Helpers as Map
 import            Data.Maybe
 import            Data.Monoid
+import            Data.String (fromString)
 import            Database.HDBC hiding (withTransaction)
 
+import            Database.Orville.Internal.Expr
 import            Database.Orville.Internal.FromSql
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.QueryKey
@@ -62,11 +64,11 @@ selectCachedRows :: (MonadThrow m, MonadOrville conn m)
                  -> QueryCached m ResultSet
 selectCachedRows tableDef opts =
     cached key $ unsafeLift $
-      runSelect $ selectQueryRows columns
+      runSelect $ selectQueryRows selects
                                   (fromClauseTable tableDef)
                                   opts
   where
-    columns = columnNameRaw <$> tableColumnNames tableDef
+    selects = expr . selectColumn . fromString <$> tableColumnNames tableDef
     key = mconcat [queryKey tableDef, queryKey opts]
 
 selectCached :: (MonadThrow m, MonadOrville conn m)

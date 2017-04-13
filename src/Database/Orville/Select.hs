@@ -8,11 +8,6 @@ module Database.Orville.Select
   , selectQueryRawRows
   , selectQueryColumns
 
-  , ColumnName
-  , columnNameRaw
-  , columnNameSimple
-  , columnNameQualified
-
   , FromClause
   , fromClauseRaw
   , fromClauseTableName

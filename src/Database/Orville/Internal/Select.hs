@@ -4,11 +4,8 @@ import            Control.Monad.Reader
 import qualified  Data.List as List
 import            Database.HDBC
 
-import            Database.Orville.Internal.ColumnName
-import            Database.Orville.Internal.Execute
+import            Database.Orville.Internal.Expr
 import            Database.Orville.Internal.FromClause
-import            Database.Orville.Internal.FromSql
-import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.SelectOptions
 import            Database.Orville.Internal.Types
 
@@ -18,26 +15,27 @@ data Select row = Select
   , selectValues :: [SqlValue]
   }
 
-selectQueryColumns :: [ColumnName] -> FromSql row -> FromClause -> SelectOptions -> Select row
-selectQueryColumns columnNames builder fromClause opts =
+selectQueryColumns :: [SelectExpr] -> FromSql row -> FromClause -> SelectOptions -> Select row
+selectQueryColumns selectExprs builder fromClause opts =
     selectQueryRaw builder querySql (selectOptValues opts)
   where
-    columns = List.intercalate ", " $ map columnNameToSql columnNames
+    columns = List.intercalate ", " $ map (rawExprToSql . generateSql) selectExprs
     querySql = List.concat [ "SELECT "
                            , columns
                            , " "
                            , fromClauseToSql fromClause
+                           , " "
                            , selectOptClause opts
                            ]
 
 selectQuery :: FromSql row -> FromClause -> SelectOptions -> Select row
-selectQuery builder = selectQueryColumns (columnNameRaw <$> fromSqlColumnNames builder) builder
+selectQuery builder = selectQueryColumns (expr <$> fromSqlSelects builder) builder
 
 selectQueryTable :: TableDefinition entity -> SelectOptions -> Select (entity Record)
 selectQueryTable tbl = selectQuery (tableFromSql tbl) (fromClauseTable tbl)
 
-selectQueryRows :: [ColumnName] -> FromClause -> SelectOptions -> Select [(String, SqlValue)]
-selectQueryRows columnNames = selectQueryColumns columnNames rowFromSql
+selectQueryRows :: [SelectExpr] -> FromClause -> SelectOptions -> Select [(String, SqlValue)]
+selectQueryRows exprs = selectQueryColumns exprs rowFromSql
 
 selectQueryRaw :: FromSql row -> String -> [SqlValue] -> Select row
 selectQueryRaw = Select
@@ -52,7 +50,7 @@ selectQueryRawRows = selectQueryRaw rowFromSql
 --
 rowFromSql :: FromSql [(String, SqlValue)]
 rowFromSql = FromSql
-  { fromSqlColumnNames = error "Database.Orville.Select.rowFromSql: fromSqlColumnNames was accessed. This is a bug."
+  { fromSqlSelects = error "Database.Orville.Select.rowFromSql: fromSqlColumnNames was accessed. This is a bug."
   , runFromSql = Right <$> ask
   }
 
