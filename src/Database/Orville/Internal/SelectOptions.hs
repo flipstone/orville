@@ -121,8 +121,8 @@ offset n = SelectOptions mempty
                          (First $ Just n)
                          mempty
 
-group :: ToGroupBy a => a -> SelectOptions
-group groupable = SelectOptions mempty
+groupBy :: ToGroupBy a => a -> SelectOptions
+groupBy groupable = SelectOptions mempty
                                 mempty
                                 mempty
                                 mempty

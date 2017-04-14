@@ -8,6 +8,8 @@ import            Database.Orville.Internal.Expr
 import            Database.Orville.Internal.FromClause
 import            Database.Orville.Internal.SelectOptions
 import            Database.Orville.Internal.Types
+import            Database.Orville.Internal.FieldDefinition (fieldName)
+
 
 data Select row = Select
   { selectBuilder :: FromSql row
@@ -54,3 +56,9 @@ rowFromSql = FromSql
   , runFromSql = Right <$> ask
   }
 
+selectField :: FieldDefinition -> SelectForm
+selectField field = selectColumn (NameForm (fieldName field))
+
+selectFieldAs :: FieldDefinition -> String -> SelectForm
+selectFieldAs field alias = aliased selForm (NameForm alias)
+  where selForm = selectField field

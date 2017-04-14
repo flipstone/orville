@@ -54,7 +54,7 @@ module Database.Orville.Core
   , (.==), (.<>), (.<-), (%==), (.>), (.>=), (.<), (.<=)
 
   , SelectOptions(..)
-  , where_, order, limit, offset, group, selectOptClause, selectOptValues
+  , where_, order, limit, offset, groupBy
   , (<>)
 
   , FieldUpdate(..)

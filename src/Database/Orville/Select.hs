@@ -7,6 +7,8 @@ module Database.Orville.Select
   , selectQueryRaw
   , selectQueryRawRows
   , selectQueryColumns
+  , selectField
+  , selectFieldAs
 
   , FromClause
   , fromClauseRaw
