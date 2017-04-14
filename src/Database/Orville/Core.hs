@@ -74,6 +74,8 @@ module Database.Orville.Core
   , insertRecordMany
   , updateFields
   , updateRecord
+
+  , MigrationError(..)
   ) where
 
 import            Control.Monad.Except
