@@ -58,10 +58,3 @@ rowFromSql = FromSql
 
 selectField :: FieldDefinition -> SelectForm
 selectField field = selectColumn (NameForm (fieldName field))
-
-selectFieldAs :: FieldDefinition -> String -> SelectForm
-selectFieldAs field alias = aliased selForm (NameForm alias)
-  where selForm = selectField field
-
-selectCustomValue :: String -> SelectForm
-selectCustomValue s = selectColumn (NameForm s)

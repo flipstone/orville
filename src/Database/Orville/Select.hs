@@ -8,8 +8,6 @@ module Database.Orville.Select
   , selectQueryRawRows
   , selectQueryColumns
   , selectField
-  , selectFieldAs
-  , selectCustomValue
 
   , FromClause
   , fromClauseRaw
