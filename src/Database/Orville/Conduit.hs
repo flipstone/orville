@@ -75,5 +75,5 @@ feedRows builder query = do
   case runFromSql builder <$> row of
      Nothing -> pure ()
      Just (Left _) -> pure ()
-     Just (Right row) -> yield row >> feedRows builder query
+     Just (Right r) -> yield r >> feedRows builder query
 

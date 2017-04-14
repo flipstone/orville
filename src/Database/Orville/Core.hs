@@ -80,7 +80,6 @@ import            Control.Monad.Except
 import            Control.Monad.Reader
 import            Control.Monad.State
 import            Data.Convertible
-import qualified  Data.List as List
 import            Data.Maybe (listToMaybe)
 import qualified  Data.Map.Strict as Map
 import            Data.Monoid
@@ -92,7 +91,7 @@ import            Database.Orville.Internal.Execute
 import            Database.Orville.Internal.FieldDefinition
 import            Database.Orville.Internal.FieldUpdate
 import            Database.Orville.Internal.FromSql
-import            Database.Orville.Internal.GroupBy
+import            Database.Orville.Internal.GroupBy()
 import            Database.Orville.Internal.IndexDefinition
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.MigrateSchema

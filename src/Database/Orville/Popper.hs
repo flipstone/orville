@@ -44,7 +44,6 @@ import qualified  Data.Map.Strict as Map
 import            Data.Maybe
 
 import            Database.Orville.Core
-import            Database.Orville.Internal.FieldDefinition (fieldName)
 import            Database.Orville.Internal.QueryCache
 
 -- Simple helpers and such that make the public API

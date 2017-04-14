@@ -16,7 +16,6 @@ import            Control.Monad.Catch (MonadThrow)
 import            Control.Monad.Trans
 import            Control.Monad.Trans.State
 import            Data.Convertible
-import qualified  Data.List as List
 import qualified  Data.Map as Map
 import qualified  Data.Map.Helpers as Map
 import            Data.Maybe
@@ -29,12 +28,10 @@ import            Database.Orville.Internal.FromSql
 import            Database.Orville.Internal.Monad
 import            Database.Orville.Internal.QueryKey
 import            Database.Orville.Internal.SelectOptions
-import            Database.Orville.Internal.Sql
 import            Database.Orville.Internal.TableDefinition
 import            Database.Orville.Internal.Types
 import            Database.Orville.Internal.Where
 import            Database.Orville.Select
-import            Database.Orville.Raw
 
 type QueryCache = Map.Map QueryKey ResultSet
 

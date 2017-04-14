@@ -57,7 +57,7 @@ migrateSchema schemaDef =
           when (not $ constraintName constraintDef `elem` constraints)
                (createConstraint conn constraintDef)
 
-        DropConstraint tableName name ->
+        DropConstraint tablName name ->
           when (name `elem` constraints)
-               (dropConstraint conn tableName name)
+               (dropConstraint conn tablName name)
 
