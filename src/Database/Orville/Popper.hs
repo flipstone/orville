@@ -25,6 +25,7 @@ module Database.Orville.Popper
   , pop, popThrow
   , popFirst
   , popMany
+  , onPopMany
   , popMaybe
   , popQuery
   , popRecord
@@ -114,7 +115,7 @@ hasOneIn tableDef fieldDef = PopRecordsBy tableDef fieldDef mempty
 
 hasManyIn :: TableDefinition entity
         -> FieldDefinition
-        -> Popper [Record] (Map.Map Record ([entity Record]))
+        -> Popper [Record] (Map.Map Record [entity Record])
 hasManyIn tableDef fieldDef = PopRecordsManyBy tableDef fieldDef mempty
 
 hasManyWhere :: TableDefinition entity
@@ -126,7 +127,7 @@ hasManyWhere = PopRecordManyBy
 hasManyInWhere :: TableDefinition entity
                -> FieldDefinition
                -> SelectOptions
-               -> Popper [Record] (Map.Map Record ([entity Record]))
+               -> Popper [Record] (Map.Map Record [entity Record])
 hasManyInWhere = PopRecordsManyBy
 
 hasOne :: ( Convertible a SqlValue
@@ -176,6 +177,8 @@ popMissingRecord tableDef fieldDef =
 --
 
 popMany :: Popper a b -> Popper [a] [b]
+popMany (PopOnMany _ manyPopper) = manyPopper
+
 popMany (PopRecord tableDef) =
   zipWith Map.lookup <$> kern
                      <*> (repeat <$> PopRecords tableDef)
@@ -280,6 +283,17 @@ popMany (PopQuery orm) =
   --
   PopQuery (repeat <$> orm)
 
+-- Manually specifies the many handling of a popper. The original popper
+-- is lift unchanged. If it becomes involved in a `popMany` operation, the
+-- provided popper with be substituted for it, rather than apply the normal
+-- popper re-write rules.
+--
+-- This is useful if either of the cases can manually optimized in a way that
+-- is incompatible with the normal popping mechanisms
+--
+onPopMany :: Popper a b -> Popper [a] [b] -> Popper a b
+onPopMany = PopOnMany
+
 -- The Popper guts
 
 data PopError =
@@ -379,6 +393,8 @@ data Popper a b where
   PopArrowFirst :: Popper a b -> Popper (a, c) (b, c)
   PopArrowLeft :: Popper a b -> Popper (Either a c) (Either b c)
 
+  PopOnMany :: Popper a b -> Popper [a] [b] -> Popper a b
+
   PopMaybe :: Popper a b -> Popper (Maybe a) (Maybe b)
 
 instance Functor (Popper a) where
@@ -415,6 +431,9 @@ pop popper a = runQueryCached $ popCached popper a
 
 popCached :: (MonadThrow m, MonadOrville conn m)
           => Popper a b -> a -> QueryCached m (Popped b)
+popCached (PopOnMany singlePopper _) a =
+  popCached singlePopper a
+
 popCached (PopQuery query) _ =
   PoppedValue <$> unsafeLift query
 
