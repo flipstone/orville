@@ -22,6 +22,7 @@ import            Database.Orville.Internal.QueryKey
 type Record = Int
 type CreatedAt = Time.UTCTime
 type UpdatedAt = Time.UTCTime
+type OccurredAt = Time.UTCTime
 
 data ColumnType =
     AutomaticId

@@ -45,6 +45,7 @@ module Database.Orville.Core
   , Record
   , CreatedAt
   , UpdatedAt
+  , OccurredAt
 
   , TableComments
   , noComments, say
