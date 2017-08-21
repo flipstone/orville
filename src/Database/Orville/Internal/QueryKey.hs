@@ -75,10 +75,6 @@ compareSqlValue (SqlInt64 v) (SqlInt64 v') = compare v v'
 compareSqlValue (SqlInt64 _) _ = LT
 compareSqlValue _ (SqlInt64 _) = GT
 
-compareSqlValue (SqlInt32 v) (SqlInt32 v') = compare v v'
-compareSqlValue (SqlInt32 _) _ = LT
-compareSqlValue _ (SqlInt32 _) = GT
-
 compareSqlValue (SqlInteger v) (SqlInteger v') = compare v v'
 compareSqlValue (SqlInteger _) _ = LT
 compareSqlValue _ (SqlInteger _) = GT
@@ -144,6 +140,3 @@ compareSqlValue (SqlTimeDiff _) _ = LT
 compareSqlValue _ (SqlTimeDiff _) = GT
 
 compareSqlValue SqlNull SqlNull = EQ
-compareSqlValue SqlNull _ = LT
-compareSqlValue _ SqlNull = GT
-
