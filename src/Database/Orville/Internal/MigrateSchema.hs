@@ -9,12 +9,10 @@ import            Control.Concurrent (threadDelay)
 import            Control.Monad
 import            Control.Monad.Catch
 import            Control.Monad.IO.Class
-import            Data.Convertible
 import            Data.Data
 import            Data.Int
 import            Data.Monoid
 import            Data.String
-import            Data.Typeable
 import            Database.HDBC hiding (withTransaction)
 
 import            Database.Orville.Internal.Expr
@@ -54,7 +52,7 @@ lockResult = col ("result" :: String)
 
 withLockedTransaction :: (MonadOrville conn m, MonadThrow m) => m a -> m a
 withLockedTransaction action = do
-    go 0
+    go (0 :: Int)
   where
     go attempts = do
       result <- runWithTransaction
