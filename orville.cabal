@@ -4,8 +4,8 @@
 name:                orville
 version:             0.8.2.0
 synopsis:            ORM
--- description:
-license:             AllRightsReserved
+description:         ORM library for PostgreSQL
+license:             MIT
 license-file:        LICENSE
 author:              Flipstone Technology Partners
 maintainer:          development@flipstone.com
