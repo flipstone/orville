@@ -61,7 +61,7 @@ library
                       MultiParamTypeClasses
 
   -- other-extensions:
-  build-depends:       base >=4.8 && <4.9,
+  build-depends:       base >= 4.8 && < 5,
                        bytestring,
                        conduit >= 1.2.4,
                        containers >= 0.5,
