@@ -6,7 +6,7 @@ module Database.Orville.PostgresSQL
 
 import            Data.Pool
 import            Data.Time
-import            Database.HDBC as HDBC
+import            Database.HDBC
 import            Database.HDBC.PostgreSQL
 
 createConnectionPool :: Int -- Stripe Count
