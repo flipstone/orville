@@ -16,7 +16,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  ghc-options:       -Wall -fno-warn-orphans
+  ghc-options:       -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
   exposed-modules:   Database.Orville,
                      Database.Orville.Conduit,
                      Database.Orville.Core,
