@@ -97,13 +97,14 @@ mkDropColumnDDL :: String -> Maybe SqlColDesc -> [String]
 mkDropColumnDDL _ Nothing = []
 mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ name]
 
-mkFlagDDL :: ColumnFlag -> String
-mkFlagDDL PrimaryKey = "PRIMARY KEY"
-mkFlagDDL Unique = "UNIQUE"
-mkFlagDDL Null = "NULL"
-mkFlagDDL (Default def) = "DEFAULT " ++ toColumnDefaultSql def
-mkFlagDDL (References table field) =
+mkFlagDDL :: ColumnFlag -> Maybe String
+mkFlagDDL PrimaryKey = Just "PRIMARY KEY"
+mkFlagDDL Unique = Just "UNIQUE"
+mkFlagDDL Null = Just "NULL"
+mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
+mkFlagDDL (References table field) = Just $
   "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
+mkFlagDDL (ColumnDescription _) = Nothing
 
 mkTypeDDL :: ColumnType -> String
 mkTypeDDL AutomaticId = "SERIAL"
@@ -122,7 +123,7 @@ mkFieldDDL :: FieldDefinition -> String
 mkFieldDDL (name, columnType, flags) =
         name ++ " " ++ sqlType ++ " " ++ flagSql
   where sqlType = mkTypeDDL columnType
-        flagSql = List.intercalate " " (notNull : map mkFlagDDL flags)
+        flagSql = List.intercalate " " (notNull : catMaybes (map mkFlagDDL flags))
         notNull = if any isNullFlag flags then
                     ""
                   else
@@ -205,4 +206,3 @@ formatTableComment c = List.intercalate " - " [
                        , show (tcWhen c)
                        , tcWho c
                        ]
-

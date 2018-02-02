@@ -43,6 +43,7 @@ data ColumnFlag =
   | Null
   | Unique
   | forall entity. References (TableDefinition entity) FieldDefinition
+  | ColumnDescription String
 
 class ColumnDefault a where
   toColumnDefaultSql :: a -> String
@@ -199,4 +200,3 @@ data ConstraintDefinition = ConstraintDefinition {
   , constraintTable :: String
   , constraintBody :: String
   } deriving (Eq, Show)
-
