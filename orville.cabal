@@ -63,7 +63,7 @@ library
   -- other-extensions:
   build-depends:       base >= 4.8 && < 5,
                        bytestring,
-                       conduit >= 1.2.4,
+                       conduit >= 1.2.4 && < 1.3,
                        containers >= 0.5,
                        convertible >= 1.1,
                        dlist >= 0.7,
