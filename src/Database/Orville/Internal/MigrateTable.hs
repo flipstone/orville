@@ -123,7 +123,7 @@ mkFieldDDL :: FieldDefinition -> String
 mkFieldDDL (name, columnType, flags) =
         name ++ " " ++ sqlType ++ " " ++ flagSql
   where sqlType = mkTypeDDL columnType
-        flagSql = List.intercalate " " (notNull : catMaybes (map mkFlagDDL flags))
+        flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL flags)
         notNull = if any isNullFlag flags then
                     ""
                   else
