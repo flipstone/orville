@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.QueryCache
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Internal.QueryCache
@@ -123,5 +129,3 @@ findRecordsByCached tableDef field opts = do
 --
 unsafeLift :: Monad m => m a -> QueryCached m a
 unsafeLift = QueryCached . lift
-
-

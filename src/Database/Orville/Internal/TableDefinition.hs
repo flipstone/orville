@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.TableDefinition
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.TableDefinition where
 
 import qualified  Data.List as List
@@ -16,4 +22,3 @@ tablePrimaryKey tableDef =
   case List.find isPrimaryKeyField (tableFields tableDef) of
     Just field -> field
     Nothing -> error $ "No primary key defined for " ++ tableName tableDef
-

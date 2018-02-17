@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.QueryKey
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.QueryKey where
 
 import            Data.Monoid

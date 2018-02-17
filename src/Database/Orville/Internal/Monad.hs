@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Monad
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -128,4 +134,3 @@ instance MonadBaseControl b m => MonadBaseControl b (OrvilleT conn m) where
   type StM (OrvilleT conn m) a = ComposeSt (OrvilleT conn) m a
   liftBaseWith = defaultLiftBaseWith
   restoreM = defaultRestoreM
-

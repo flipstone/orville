@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.RelationalMap
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}

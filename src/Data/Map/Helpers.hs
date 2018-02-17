@@ -1,3 +1,9 @@
+{-|
+Module    : Data.Map.Helpers
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Data.Map.Helpers
   ( groupBy
   , groupBy'
@@ -13,4 +19,3 @@ groupBy' :: Ord k => (a -> (k,v)) -> [a] -> Map.Map k [v]
 groupBy' mkEntry as = Map.fromListWith (++) (map mkListEntry as)
   where mkListEntry a = let (k,v) = mkEntry a
                         in (k, [v])
-

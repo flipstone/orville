@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Raw
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Raw
   ( selectSql
@@ -67,4 +73,3 @@ withTransaction action =
                                     when (not finished) (rollback conn)
 
         doAction `finally` rollbackUncommitted
-

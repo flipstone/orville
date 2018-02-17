@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Expr.NameExpr
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 module Database.Orville.Internal.Expr.NameExpr where
 
@@ -16,4 +22,3 @@ instance GenerateSql NameForm where
 
 unescapedName :: NameForm -> String
 unescapedName (NameForm s) = s
-

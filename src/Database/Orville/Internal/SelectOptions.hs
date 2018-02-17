@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.SelectOptions
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE RecordWildCards #-}
 module Database.Orville.Internal.SelectOptions where
 

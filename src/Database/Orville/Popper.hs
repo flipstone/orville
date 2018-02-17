@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Popper
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
@@ -511,4 +517,3 @@ popCached (PopMaybe popper) a =
   case a of
     Nothing -> pure (PoppedValue Nothing)
     Just val -> fmap Just <$> popCached popper val
-

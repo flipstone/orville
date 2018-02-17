@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.ContraintDefinition
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.ConstraintDefinition
   ( uniqueConstraint
   , dropConstraint
@@ -18,4 +24,3 @@ uniqueConstraint name tableDef fields =
 
 dropConstraint :: TableDefinition entity -> String -> SchemaItem
 dropConstraint tableDef = DropConstraint (tableName tableDef)
-

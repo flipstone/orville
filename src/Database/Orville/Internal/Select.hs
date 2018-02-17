@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Select
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.Select where
 
 import            Control.Monad.Reader

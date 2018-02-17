@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.FieldDefintion
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.FieldDefinition where
 
 import            Database.Orville.Internal.Types
@@ -37,4 +43,3 @@ isUninsertedField (_, _, flags) = any isUninserted flags
 
 withPrefix :: FieldDefinition -> String -> FieldDefinition
 withPrefix f@(name, _, _) prefix = f `withName` (prefix ++ "_" ++ name)
-

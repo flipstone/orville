@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.FromClause
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.FromClause where
 
 import            Database.Orville.Internal.Sql

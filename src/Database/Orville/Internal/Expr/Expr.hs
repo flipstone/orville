@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Expr.Expr
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.Expr.Expr where
 
 import            Data.String
@@ -43,4 +49,3 @@ rawSqlExpr = Expr . Left . rawSql
 
 expr :: a -> Expr a
 expr = Expr . Right
-

@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.FieldUpdate
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 module Database.Orville.Internal.FieldUpdate where
 
@@ -16,4 +22,3 @@ fieldUpdate def = FieldUpdate def . convert
 
 fieldUpdateName :: FieldUpdate -> String
 fieldUpdateName = fieldName . fieldUpdateField
-

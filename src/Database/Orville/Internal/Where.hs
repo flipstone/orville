@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Where
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 module Database.Orville.Internal.Where where
 
@@ -126,4 +132,3 @@ whereClause conds = "WHERE " ++ whereConditionSql (whereAnd conds)
 
 whereValues :: [WhereCondition] -> [SqlValue]
 whereValues = List.concatMap whereConditionValues
-

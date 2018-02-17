@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Tracked
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -192,4 +198,3 @@ instance (Monoid t, MonadOrville conn m) =>
   getOrvilleEnv = lift getOrvilleEnv
   localOrvilleEnv f  = mapTrackedOrville (localOrvilleEnv f)
   startTransactionSQL = lift startTransactionSQL
-

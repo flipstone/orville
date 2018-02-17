@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.MigrateIndex
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE RecordWildCards #-}
 module Database.Orville.Internal.MigrateIndex
   ( createIndex
@@ -37,4 +43,3 @@ getIndexes conn = do
   query <- prepare conn "SELECT indexname FROM pg_indexes WHERE schemaname = 'public';"
   void $ execute query []
   map (convert . head) <$> fetchAllRows' query
-

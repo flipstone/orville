@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.GroupBy
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleInstances #-}
 module Database.Orville.Internal.GroupBy where
 
@@ -30,4 +36,3 @@ instance ToGroupBy FieldDefinition where
 
 instance ToGroupBy (String, [SqlValue]) where
   toGroupBy (sql, values) = GroupByClause sql values
-

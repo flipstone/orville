@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Sql
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.Sql where
 
 import qualified  Data.List as List

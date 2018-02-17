@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Select
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Select
   ( Select
@@ -40,4 +46,3 @@ runSelect select = do
     sql = selectSql select
     values = selectValues select
     builder = selectBuilder select
-

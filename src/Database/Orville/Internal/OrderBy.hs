@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.OrderBy
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleInstances #-}
 module Database.Orville.Internal.OrderBy where
 
@@ -43,4 +49,3 @@ instance ToOrderBy FieldDefinition where
 
 instance ToOrderBy (String, [SqlValue]) where
   toOrderBy (sql, values) = OrderByClause sql values
-

@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Core
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Core
@@ -256,4 +262,3 @@ deleteRecord tableDef record = do
     then error $ "Expected to delete exactly 1 row for deleteRecord\
                  \but actually deleted" ++ show n
     else pure ()
-

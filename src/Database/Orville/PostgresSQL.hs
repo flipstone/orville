@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.PostgresSQL
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.PostgresSQL
   ( createConnectionPool
   , Pool
@@ -20,4 +26,3 @@ createConnectionPool stripes linger maxRes connString =
              stripes
              linger
              maxRes
-

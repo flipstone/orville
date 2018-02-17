@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Conduit
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Conduit
   ( selectConduit
   ) where
@@ -76,4 +82,3 @@ feedRows builder query = do
      Nothing -> pure ()
      Just (Left _) -> pure ()
      Just (Right r) -> yield r >> feedRows builder query
-

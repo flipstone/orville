@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.FromSql
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
@@ -73,4 +79,3 @@ decodeSqlRows builder rows =
         pure Nothing
 
       Left err -> throw err
-

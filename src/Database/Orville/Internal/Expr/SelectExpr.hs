@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Expr.SelectExpr
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 module Database.Orville.Internal.Expr.SelectExpr where
@@ -41,4 +47,3 @@ qualification (Just name) = generateSql name <> "."
 asOutput :: Maybe NameForm -> RawExpr
 asOutput Nothing = mempty
 asOutput (Just name) = " AS " <> generateSql name
-

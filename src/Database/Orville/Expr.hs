@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Expr
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Expr
   ( RawExpr
   , rawSql

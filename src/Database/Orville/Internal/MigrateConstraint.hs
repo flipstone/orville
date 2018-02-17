@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.MigrateConstraint
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE RecordWildCards #-}
 module Database.Orville.Internal.MigrateConstraint
   ( createConstraint
@@ -17,9 +23,9 @@ import            Database.Orville.Internal.Types
 createConstraint :: MonadOrville conn m => conn -> ConstraintDefinition -> m ()
 createConstraint conn (ConstraintDefinition {..}) = do
   let ddl = intercalate " " [ "ALTER TABLE"
-                            , "\"" ++ constraintTable ++ "\"" 
+                            , "\"" ++ constraintTable ++ "\""
                             , "ADD CONSTRAINT"
-                            , "\"" ++ constraintName ++ "\"" 
+                            , "\"" ++ constraintName ++ "\""
                             , constraintBody
                             ]
 
@@ -39,4 +45,3 @@ getConstraints conn = do
 
   void $ execute query []
   map (convert . head) <$> fetchAllRows' query
-

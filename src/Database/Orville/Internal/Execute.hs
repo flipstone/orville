@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.Execute
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 module Database.Orville.Internal.Execute where
 
 import            Control.Monad.IO.Class
@@ -20,4 +26,3 @@ catchSqlErr sql action =
                                             (seNativeError e)
                                             (seErrorMsg e ++ " SQL: " ++ sql)
                   in throwSqlError updatedErr)
-

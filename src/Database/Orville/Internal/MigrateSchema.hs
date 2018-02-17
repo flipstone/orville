@@ -1,3 +1,9 @@
+{-|
+Module    : Database.Orville.Internal.MigrateSchema
+Copyright : Fliptsone Technology Partners 2016-2018
+License   : MIT
+-}
+
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Internal.MigrateSchema
@@ -125,4 +131,3 @@ data MigrationError =
   deriving (Data, Typeable, Show)
 
 instance Exception MigrationError
-
