@@ -1,6 +1,6 @@
 {-|
 Module    : Database.Orville.Internal.RelationalMap
-Copyright : Fliptsone Technology Partners 2016-2018
+Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
 
