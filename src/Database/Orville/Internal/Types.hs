@@ -160,16 +160,40 @@ getComponent :: (entity -> a) -> ToSql a () -> ToSql entity ()
 getComponent getComp (ToSql serializer) =
   ToSql (withReaderT getComp serializer)
 
-data TableDefinition entity = TableDefinition {
-    tableName :: String
-  , tableFields :: [FieldDefinition]
-  , tableSafeToDelete :: [String]
-  , tableFromSql :: FromSql (entity Record)
-  , tableToSql :: forall key. ToSql (entity key) ()
-  , tableSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
-  , tableGetKey :: forall key. entity key -> key
-  , tableComments :: TableComments ()
-  }
+{-|
+ A 'TableDefinition' is the center of the Orville universe. A 'TableDefinition'
+ defines the structure of a table in the database and associates it with a Haskell
+ datatype, usually a Haskell record type. The 'TableDefinition' must specify how
+ the Haskell type is converted to and from the database schema, as as well as
+ provide same basic utility functions required by Orville for interacting with
+ the Haskell datatype.
+
+  Usually you will use 'TableParams' to construct a 'TableDefinition' in a more
+  concise way. This type is provided as an escape hatch for any situations where
+  'TableParams' is too restrictive for the sql mapping required by a type.
+ -}
+data TableDefinition entity =
+  TableDefinition
+    { tableName :: String
+      -- ^ The name of the table in the database.
+    , tableFields :: [FieldDefinition]
+      -- ^ A list of field definitions defining the table structure
+    , tableSafeToDelete :: [String]
+      -- ^ A list of any columns that may be deleted from the table by Orville.
+      -- (Orville will never delete a column without being told it is safe)
+    , tableFromSql :: FromSql (entity Record)
+      -- ^ A definition of how to convert the haskell type from a sql row
+    , tableToSql :: forall key. ToSql (entity key) ()
+      -- ^ A definition of how to convert the haskell type to a sql row
+    , tableSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
+      -- ^ A function to set the key on the entity
+    , tableGetKey :: forall key. entity key -> key
+      -- ^ A function to get the key on the entity
+    , tableComments :: TableComments ()
+      -- ^ Any comments that might be interesting for developers to see. These
+      -- comments will get printed in the log if there is an erro while attempting
+      -- to migrate the table.
+    }
 
 instance QueryKeyable (TableDefinition entity) where
   queryKey = QKTable . tableName

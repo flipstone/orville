@@ -26,15 +26,56 @@ import            Database.Orville.Internal.FieldDefinition
 import            Database.Orville.Internal.FromSql
 import            Database.Orville.Internal.Types
 
-data TableParams entity = TableParams
-  { tblName :: String
-  , tblMapper :: RelationalMap (entity Record) (entity Record)
-  , tblSafeToDelete :: [String]
-  , tblSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
-  , tblGetKey :: forall key. entity key -> key
-  , tblComments :: TableComments ()
-  }
+{-|
+ 'TableParams' is the simplest way to make a 'TableDefinition'. You
+ can use 'mkTableDefinition' to make a definition from the simplified
+ params. Where 'TableDefinition' requires the 'tableFields', 'tableFromSql',
+ and 'tableToSql' to all be defined separately and kept in sync, 'TableParams'
+ provides a single 'tblMapper' field that specifies all three simultaneously
+ and ensures they are consistent with one another.
+ -}
+data TableParams entity =
+  TableParams
+    { tblName :: String
+      -- ^ The name of the table in the database
+    , tblMapper :: RelationalMap (entity Record) (entity Record)
+      -- ^ The relational mapping that defines how the Haskell entity type
+      -- is converted both to and from sql. The fields utilized in the mapping
+      -- are used to automatically build the list of 'FieldDefinitions' that
+      -- define the structure of the table in the database.
+    , tblSafeToDelete :: [String]
+      -- ^ A list of any columns that may be deleted from the table by Orville.
+      -- (Orville will never delete a column without being told it is safe)
+    , tblSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
+      -- ^ A function to set the key on the entity
+    , tblGetKey :: forall key. entity key -> key
+      -- ^ A function to get the key on the entity
+    , tblComments :: TableComments ()
+      -- ^ Any comments that might be interesting for developers to see. These
+      -- comments will get printed in the log if there is an erro while attempting
+      -- to migrate the table.
+    }
 
+{-|
+ 'mkTableDefinition' converts a 'TableParams' to 'TableDefinition'. Usually
+ this is used directly on a record literal of the 'TableParams'. For
+ example:
+
+ @
+  data Foo key = Foo key { fooId :: Record }
+  myTable :: TableDefinition Foo
+  myTable = mkTableDefinition $
+    TableParams
+      { tblName = "foo"
+      , tblMapper = User <$> attrField fooId idField
+      , tableSafeToDelete = []
+      , tblSetKey = \key foo -> foo { fooId = key }
+      , tblGetKey = fooId
+      , tblComments = []
+      }
+
+ @
+ -}
 mkTableDefinition :: TableParams entity -> TableDefinition entity
 mkTableDefinition p@(TableParams {..}) = TableDefinition
   { tableFields  = fields tblMapper

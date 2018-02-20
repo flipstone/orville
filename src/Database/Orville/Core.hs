@@ -7,7 +7,15 @@ License   : MIT
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.Core
-  ( SqlValue
+  ( TableDefinition (..)
+  , mkTableDefinition
+  , TableParams(..)
+  , RelationalMap
+  , mapAttr, mapField, attrField
+  , maybeMapper, prefixMap, partialMap, readOnlyMap
+  , tablePrimaryKey
+
+  , SqlValue
   , Orville
   , OrvilleT, unOrvilleT
   , OrvilleEnv
@@ -21,14 +29,6 @@ module Database.Orville.Core
   , Now(..)
   , ColumnType (..)
   , FieldDefinition, withPrefix, fieldName
-  , TableDefinition (..)
-  , tablePrimaryKey
-  , mkTableDefinition
-  , TableParams(..)
-  , RelationalMap
-  , mapAttr, mapField, attrField
-  , maybeMapper, prefixMap, partialMap, readOnlyMap
-
   , IndexDefinition (..)
   , uniqueIndex, simpleIndex
 
