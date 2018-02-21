@@ -16,8 +16,9 @@ import            Database.HDBC
 import            Database.HDBC.PostgreSQL
 
 {-|
- 'createConnectionPool' allocations a pool of connections to a PosgreSQL
- server. The returned pool can be used as the endpoint to 'newOrvilleEnv'
+ 'createConnectionPool' allocates a pool of connections to a PosgreSQL
+ server. The returned pool can be used as the endpoint to
+ 'Database.Orville.Core.newOrvilleEnv'
  to construct.
 -}
 createConnectionPool :: Int -- ^ Number of stripes in the connection pool

@@ -52,8 +52,8 @@ data OrvilleEnv conn = OrvilleEnv
 {-|
  'newOrvilleEnv' initialized an 'OrvilleEnv' for service. The connection
  pool provided will be used to obtain connections to the database ase
- required. You can use the 'createConnectionPool' utility function to
- create a connection pool to a PosgreSQL server.
+ required. You can use the 'Database.Orville.PostgresSQL.createConnectionPool'
+ utility function to create a connection pool to a PosgreSQL server.
 -}
 newOrvilleEnv :: Pool conn -> OrvilleEnv conn
 newOrvilleEnv pool = OrvilleEnv pool Nothing
