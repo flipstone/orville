@@ -15,11 +15,14 @@ module Database.Orville.Core
   , maybeMapper, prefixMap, partialMap, readOnlyMap
   , tablePrimaryKey
 
-  , SqlValue
+  , OrvilleEnv
+  , newOrvilleEnv
+  , ormEnvPool
+
   , Orville
   , OrvilleT, unOrvilleT
-  , OrvilleEnv
-  , newOrvilleEnv, ormEnvPool
+
+  , SqlValue
 
   , MonadOrville(..), runOrville, mapOrvilleT
   , QueryType(..)

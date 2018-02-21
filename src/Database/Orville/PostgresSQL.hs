@@ -15,10 +15,15 @@ import            Data.Time
 import            Database.HDBC
 import            Database.HDBC.PostgreSQL
 
-createConnectionPool :: Int -- Stripe Count
-                     -> NominalDiffTime -- Linger time
-                     -> Int -- Max resources per stripe
-                     -> String
+{-|
+ 'createConnectionPool' allocations a pool of connections to a PosgreSQL
+ server. The returned pool can be used as the endpoint to 'newOrvilleEnv'
+ to construct.
+-}
+createConnectionPool :: Int -- ^ Number of stripes in the connection pool
+                     -> NominalDiffTime -- ^ Linger time before closing an idle connection
+                     -> Int -- ^ Max number of connections to allocate per stripe
+                     -> String -- ^ A PostgreSQL connection string
                      -> IO (Pool Connection)
 createConnectionPool stripes linger maxRes connString =
   createPool (connectPostgreSQL' connString)
