@@ -3,6 +3,7 @@ dist
 cabal.sandbox.config
 .DS_Store
 .stack-work/
+orville.cabal
 
 # Ignore TAGS file produced by emacs and vim.
 /TAGS
