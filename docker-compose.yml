@@ -1,5 +1,11 @@
-dev:
-  build: .
-  volumes:
-    - .:/orville
-  working_dir: /orville
+version: "3"
+services:
+  dev:
+    build: .
+    volumes:
+      - .:/orville
+      - stack-root:/stack-root
+    working_dir: /orville
+
+volumes:
+  stack-root:
