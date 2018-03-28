@@ -3,22 +3,21 @@ Module    : Database.Orville.Internal.Expr.Expr
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 module Database.Orville.Internal.Expr.Expr where
 
-import            Data.String
+import Data.String
 
-data RawExpr =
-    RawExprString String
-  | RawExprAppend RawExpr RawExpr
+data RawExpr
+  = RawExprString String
+  | RawExprAppend RawExpr
+                  RawExpr
   | RawExprConcat [RawExpr]
 
 rawSql :: String -> RawExpr
 rawSql = RawExprString
 
 rawExprToSql :: RawExpr -> String
-rawExprToSql =
-    go ""
+rawExprToSql = go ""
   where
     go rest (RawExprString s) = s ++ rest
     go rest (RawExprAppend r1 r2) = go (go rest r2) r1
@@ -32,7 +31,8 @@ instance Monoid RawExpr where
 instance IsString RawExpr where
   fromString = rawSql
 
-newtype Expr a = Expr (Either RawExpr a)
+newtype Expr a =
+  Expr (Either RawExpr a)
 
 class GenerateSql expr where
   generateSql :: expr -> RawExpr

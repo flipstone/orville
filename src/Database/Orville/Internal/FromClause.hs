@@ -3,13 +3,13 @@ Module    : Database.Orville.Internal.FromClause
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 module Database.Orville.Internal.FromClause where
 
-import            Database.Orville.Internal.Sql
-import            Database.Orville.Internal.Types
+import Database.Orville.Internal.Sql
+import Database.Orville.Internal.Types
 
-newtype FromClause = FromClause String
+newtype FromClause =
+  FromClause String
 
 fromClauseRaw :: String -> FromClause
 fromClauseRaw = FromClause

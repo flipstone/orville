@@ -3,28 +3,28 @@ Module    : Database.Orville.Internal.FromSql
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
+
 module Database.Orville.Internal.FromSql where
 
-import            Control.Exception.Lifted (throw)
-import            Control.Monad
-import            Control.Monad.IO.Class
-import            Data.Maybe
-import qualified  Data.ByteString.Char8 as BS
-import qualified  Data.ByteString.Lazy.Char8 as LBS
-import            Data.Convertible
-import qualified  Data.Text as T
-import qualified  Data.Text.Lazy as LT
-import            Data.String (fromString)
-import            Database.HDBC
+import Control.Exception.Lifted (throw)
+import Control.Monad
+import Control.Monad.IO.Class
+import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Convertible
+import Data.Maybe
+import Data.String (fromString)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import Database.HDBC
 
-import            Database.Orville.Internal.Expr
-import            Database.Orville.Internal.FieldDefinition
-import            Database.Orville.Internal.Monad
-import            Database.Orville.Internal.Types
+import Database.Orville.Internal.Expr
+import Database.Orville.Internal.FieldDefinition
+import Database.Orville.Internal.Monad
+import Database.Orville.Internal.Types
 
 convertFromSql :: Convertible SqlValue a => SqlValue -> Either FromSqlError a
 convertFromSql =
@@ -64,18 +64,18 @@ type ResultSet = [[(String, SqlValue)]]
 
 decodeSqlRows :: FromSql result -> ResultSet -> Orville [result]
 decodeSqlRows builder rows =
-  fmap catMaybes $ forM rows $ \row -> do
+  fmap catMaybes $
+  forM rows $ \row -> do
     case runFromSql builder row of
       Right result -> pure $ Just result
-
       (Left (RowDataError msg)) -> do
-        liftIO $ putStrLn $ concat
-          [ "** Warning ** Error converting row from sql: "
-          , show msg
-          , ". First column was was: "
-          , maybe "<no columns present>" show (listToMaybe row)
-          ]
-
+        liftIO $
+          putStrLn $
+          concat
+            [ "** Warning ** Error converting row from sql: "
+            , show msg
+            , ". First column was was: "
+            , maybe "<no columns present>" show (listToMaybe row)
+            ]
         pure Nothing
-
       Left err -> throw err

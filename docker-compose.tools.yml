@@ -1,0 +1,15 @@
+version: "3"
+services:
+  ide:
+    build: .
+    volumes:
+      - .:/orville
+      - stack-root:/stack-root
+    working_dir: /orville
+    stdin_open: true
+    command:
+      - sh
+      - .ide.sh
+
+volumes:
+  stack-root:

@@ -3,8 +3,8 @@ Module    : Database.Orville.Internal.MigrateTable
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 {-# LANGUAGE ExistentialQuantification #-}
+
 module Database.Orville.Internal.MigrateTable
   ( createTable
   , dropTable
@@ -12,92 +12,85 @@ module Database.Orville.Internal.MigrateTable
   , MigrateTableException(..)
   ) where
 
-import            Control.Monad
-import            Control.Monad.IO.Class (liftIO)
-import qualified  Control.Exception as Exc
-import qualified  Data.List as List
-import            Data.Maybe
-import            Data.Typeable
-import            Database.HDBC
+import qualified Control.Exception as Exc
+import Control.Monad
+import Control.Monad.IO.Class (liftIO)
+import qualified Data.List as List
+import Data.Maybe
+import Data.Typeable
+import Database.HDBC
 
-import            Database.Orville.Internal.Execute
-import            Database.Orville.Internal.FieldDefinition
-import            Database.Orville.Internal.Monad
-import            Database.Orville.Internal.Types
-
+import Database.Orville.Internal.Execute
+import Database.Orville.Internal.FieldDefinition
+import Database.Orville.Internal.Monad
+import Database.Orville.Internal.Types
 
 createTable :: MonadOrville conn m => conn -> TableDefinition entity -> m ()
 createTable conn tableDef = do
   let ddl = mkCreateTableDDL tableDef
   executingSql DDLQuery ddl $ void $ run conn ddl []
 
-
 dropTable :: MonadOrville conn m => conn -> String -> m ()
 dropTable conn name = do
   let ddl = "DROP TABLE \"" ++ name ++ "\""
   executingSql DDLQuery ddl $ void $ run conn ddl []
 
-
 migrateTable :: MonadOrville conn m => conn -> TableDefinition entity -> m ()
 migrateTable conn tableDef = do
   columns <- liftIO $ describeTable conn (tableName tableDef)
-
   case mkMigrateTableDDL columns tableDef of
     Nothing -> return ()
     Just ddl -> do
       executingSql DDLQuery ddl $ do
         stmt <- prepare conn ddl
+        executeRaw stmt `Exc.catch` (Exc.throw . MTE tableDef)
 
-        executeRaw stmt
-          `Exc.catch` (Exc.throw . MTE tableDef)
-
-mkMigrateTableDDL :: [(String, SqlColDesc)] -> TableDefinition entity -> Maybe String
+mkMigrateTableDDL ::
+     [(String, SqlColDesc)] -> TableDefinition entity -> Maybe String
 mkMigrateTableDDL columns tableDef =
-    if null stmts then
-      Nothing
-    else
-      Just $ "ALTER TABLE \"" ++ tableName tableDef ++ "\" " ++ cols
-
-  where fields = tableFields tableDef
-        fieldColumn fieldDef = lookup (fieldName fieldDef) columns
-        colStmt = mkMigrateColumnDDL <$> id <*> fieldColumn
-        dropStmt = mkDropColumnDDL <$> id <*> flip lookup columns
-        stmts = List.concatMap colStmt fields ++
-                List.concatMap dropStmt (tableSafeToDelete tableDef)
-        cols = List.intercalate ", " $ stmts
-
+  if null stmts
+    then Nothing
+    else Just $ "ALTER TABLE \"" ++ tableName tableDef ++ "\" " ++ cols
+  where
+    fields = tableFields tableDef
+    fieldColumn fieldDef = lookup (fieldName fieldDef) columns
+    colStmt = mkMigrateColumnDDL <$> id <*> fieldColumn
+    dropStmt = mkDropColumnDDL <$> id <*> flip lookup columns
+    stmts =
+      List.concatMap colStmt fields ++
+      List.concatMap dropStmt (tableSafeToDelete tableDef)
+    cols = List.intercalate ", " $ stmts
 
 mkMigrateColumnTypeDDL :: FieldDefinition -> SqlColDesc -> Maybe String
 mkMigrateColumnTypeDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
-  in if colType fieldDesc /= colType colDesc ||
-        colSize fieldDesc /= colSize colDesc then
-      Just $ "ALTER COLUMN " ++ fieldName fieldDef ++ " SET DATA TYPE " ++
-             mkTypeDDL (fieldType fieldDef)
-     else
-      Nothing
-
+   in if colType fieldDesc /= colType colDesc ||
+         colSize fieldDesc /= colSize colDesc
+        then Just $
+             "ALTER COLUMN " ++
+             fieldName fieldDef ++
+             " SET DATA TYPE " ++ mkTypeDDL (fieldType fieldDef)
+        else Nothing
 
 mkMigrateColumnNullDDL :: FieldDefinition -> SqlColDesc -> Maybe String
 mkMigrateColumnNullDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
       fieldNull = fromMaybe True (colNullable fieldDesc)
       colNull = fromMaybe True (colNullable colDesc)
-  in if fieldNull && not colNull then
-      Just $ "ALTER COLUMN " ++ fieldName fieldDef ++ " DROP NOT NULL"
-     else if not fieldNull && colNull then
-      Just $ "ALTER COLUMN " ++ fieldName fieldDef ++ " SET NOT NULL"
-     else
-      Nothing
-
+   in if fieldNull && not colNull
+        then Just $ "ALTER COLUMN " ++ fieldName fieldDef ++ " DROP NOT NULL"
+        else if not fieldNull && colNull
+               then Just $
+                    "ALTER COLUMN " ++ fieldName fieldDef ++ " SET NOT NULL"
+               else Nothing
 
 mkMigrateColumnDDL :: FieldDefinition -> Maybe SqlColDesc -> [String]
 mkMigrateColumnDDL fieldDef Nothing = ["ADD COLUMN " ++ mkFieldDDL fieldDef]
-mkMigrateColumnDDL fieldDef (Just desc) = catMaybes [
-    mkMigrateColumnTypeDDL fieldDef desc
-  , mkMigrateColumnNullDDL fieldDef desc
-  ]
-
+mkMigrateColumnDDL fieldDef (Just desc) =
+  catMaybes
+    [ mkMigrateColumnTypeDDL fieldDef desc
+    , mkMigrateColumnNullDDL fieldDef desc
+    ]
 
 mkDropColumnDDL :: String -> Maybe SqlColDesc -> [String]
 mkDropColumnDDL _ Nothing = []
@@ -108,8 +101,8 @@ mkFlagDDL PrimaryKey = Just "PRIMARY KEY"
 mkFlagDDL Unique = Just "UNIQUE"
 mkFlagDDL Null = Just "NULL"
 mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
-mkFlagDDL (References table field) = Just $
-  "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
+mkFlagDDL (References table field) =
+  Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
 mkFlagDDL (ColumnDescription _) = Nothing
 
 mkTypeDDL :: ColumnType -> String
@@ -126,19 +119,20 @@ mkTypeDDL (Timestamp) = "TIMESTAMP with time zone"
 mkTypeDDL TextSearchVector = "TSVECTOR"
 
 mkFieldDDL :: FieldDefinition -> String
-mkFieldDDL (name, columnType, flags) =
-        name ++ " " ++ sqlType ++ " " ++ flagSql
-  where sqlType = mkTypeDDL columnType
-        flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL flags)
-        notNull = if any isNullFlag flags then
-                    ""
-                  else
-                    "NOT NULL"
+mkFieldDDL (name, columnType, flags) = name ++ " " ++ sqlType ++ " " ++ flagSql
+  where
+    sqlType = mkTypeDDL columnType
+    flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL flags)
+    notNull =
+      if any isNullFlag flags
+        then ""
+        else "NOT NULL"
 
 mkCreateTableDDL :: TableDefinition entity -> String
 mkCreateTableDDL tableDef =
-    "CREATE TABLE \"" ++ tableName tableDef ++ "\" (" ++ fields ++ ")"
-  where fields = List.intercalate ", " $ map mkFieldDDL (tableFields tableDef)
+  "CREATE TABLE \"" ++ tableName tableDef ++ "\" (" ++ fields ++ ")"
+  where
+    fields = List.intercalate ", " $ map mkFieldDDL (tableFields tableDef)
 
 columnTypeSqlId :: ColumnType -> SqlTypeId
 columnTypeSqlId AutomaticId = SqlBigIntT
@@ -167,16 +161,19 @@ columnTypeSqlSize Timestamp = Just 8
 columnTypeSqlSize TextSearchVector = Nothing
 
 sqlFieldDesc :: FieldDefinition -> SqlColDesc
-sqlFieldDesc (_, columnType, flags) = SqlColDesc {
-    colType = columnTypeSqlId columnType
-  , colSize = columnTypeSqlSize columnType
-  , colNullable = Just (any isNullFlag flags)
-  , colOctetLength = Nothing
-  , colDecDigits = Nothing
-  }
+sqlFieldDesc (_, columnType, flags) =
+  SqlColDesc
+    { colType = columnTypeSqlId columnType
+    , colSize = columnTypeSqlSize columnType
+    , colNullable = Just (any isNullFlag flags)
+    , colOctetLength = Nothing
+    , colDecDigits = Nothing
+    }
 
-data MigrateTableException = forall entity. MTE (TableDefinition entity) Exc.SomeException
-  deriving Typeable
+data MigrateTableException =
+  forall entity. MTE (TableDefinition entity)
+                     Exc.SomeException
+  deriving (Typeable)
 
 instance Show MigrateTableException where
   show = formatMigrationException
@@ -185,30 +182,34 @@ instance Exc.Exception MigrateTableException
 
 formatMigrationException :: MigrateTableException -> String
 formatMigrationException (MTE tableDef exception) = message
-  where message = "There was an error migrating table " ++ name ++ ".\n\
+  where
+    message =
+      "There was an error migrating table " ++
+      name ++
+      ".\n\
                   \The error is:\n\
                   \\n\
-                  \ " ++ Exc.displayException exception ++ "\\n\
+                  \ " ++
+      Exc.displayException exception ++
+      "\\n\
                   \\n\
                   \\n\
                   \Here are the developer comments regarding the table:\n\
                   \\n\
-                  \ " ++ comments ++ "\
+                  \ " ++
+      comments ++
+      "\
                   \\n"
-
-        name = tableName tableDef
-        comments = formatTableComments " " tableDef
+    name = tableName tableDef
+    comments = formatTableComments " " tableDef
 
 formatTableComments :: String -> TableDefinition entity -> String
 formatTableComments indent tableDef =
-    List.intercalate ("\n" ++ indent) commentLines
+  List.intercalate ("\n" ++ indent) commentLines
   where
     commentLines = map formatTableComment comments
     comments = runComments (tableComments tableDef)
 
 formatTableComment :: TableComment -> String
-formatTableComment c = List.intercalate " - " [
-                         tcWhat c
-                       , show (tcWhen c)
-                       , tcWho c
-                       ]
+formatTableComment c =
+  List.intercalate " - " [tcWhat c, show (tcWhen c), tcWho c]

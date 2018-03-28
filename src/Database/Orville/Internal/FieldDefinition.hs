@@ -3,10 +3,9 @@ Module    : Database.Orville.Internal.FieldDefintion
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 module Database.Orville.Internal.FieldDefinition where
 
-import            Database.Orville.Internal.Types
+import Database.Orville.Internal.Types
 
 isPrimaryKey :: ColumnFlag -> Bool
 isPrimaryKey PrimaryKey = True
@@ -27,7 +26,7 @@ escapedFieldName :: FieldDefinition -> String
 escapedFieldName field = "\"" ++ fieldName field ++ "\""
 
 fieldType :: FieldDefinition -> ColumnType
-fieldType (_,typ,_) = typ
+fieldType (_, typ, _) = typ
 
 isPrimaryKeyField :: FieldDefinition -> Bool
 isPrimaryKeyField (_, _, flags) = any isPrimaryKey flags

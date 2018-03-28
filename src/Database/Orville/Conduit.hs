@@ -3,23 +3,22 @@ Module    : Database.Orville.Conduit
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 module Database.Orville.Conduit
   ( selectConduit
   ) where
 
-import qualified  Control.Exception as E
-import            Control.Monad
-import            Control.Monad.Catch
-import            Control.Monad.Trans
-import            Data.Conduit
-import            Data.IORef
-import            Data.Pool
-import            Database.HDBC hiding (withTransaction)
+import qualified Control.Exception as E
+import Control.Monad
+import Control.Monad.Catch
+import Control.Monad.Trans
+import Data.Conduit
+import Data.IORef
+import Data.Pool
+import Database.HDBC hiding (withTransaction)
 
-import            Database.Orville.Internal.Monad
-import            Database.Orville.Internal.Select
-import            Database.Orville.Internal.Types
+import Database.Orville.Internal.Monad
+import Database.Orville.Internal.Select
+import Database.Orville.Internal.Types
 
 -- All the masking manual cleanup in this function amounts to a
 -- poor man's ResourceT that I *hope* is correct. The constraints
@@ -46,39 +45,36 @@ import            Database.Orville.Internal.Types
 -- finish actions in vars while masked and then ensure those vars
 -- are read and executed at the appropriate times.
 --
-selectConduit :: (Monad m, MonadOrville conn m, MonadCatch m)
-              => Select row
-              -> Source m row
+selectConduit ::
+     (Monad m, MonadOrville conn m, MonadCatch m) => Select row -> Source m row
 selectConduit select = do
   pool <- ormEnvPool <$> lift getOrvilleEnv
   cleanupRef <- liftIO $ newIORef (pure ())
-  finishRef  <- liftIO $ newIORef (pure ())
-
-  let acquire = lift $ liftIO $ E.mask_ $ do
-                  (conn, local) <- takeResource pool
-                  writeIORef cleanupRef $ destroyResource pool local conn
-                  writeIORef finishRef $ putResource local conn
-                  pure conn
-
+  finishRef <- liftIO $ newIORef (pure ())
+  let acquire =
+        lift $
+        liftIO $
+        E.mask_ $ do
+          (conn, local) <- takeResource pool
+          writeIORef cleanupRef $ destroyResource pool local conn
+          writeIORef finishRef $ putResource local conn
+          pure conn
       runCleanup = liftIO $ join (readIORef cleanupRef)
       runFinish = liftIO $ join (readIORef finishRef)
-
       go = do
         conn <- acquire
         query <- liftIO $ prepare conn $ selectSql select
         addCleanup (const $ liftIO $ finish $ query) $ do
           void $ liftIO $ execute query $ selectValues select
           feedRows (selectBuilder select) query
-
   result <- go `onException` runCleanup
   runFinish
   pure $ result
 
-feedRows :: (Monad m, MonadIO m)
-         => FromSql row -> Statement -> Source m row
+feedRows :: (Monad m, MonadIO m) => FromSql row -> Statement -> Source m row
 feedRows builder query = do
   row <- liftIO $ fetchRowAL query
   case runFromSql builder <$> row of
-     Nothing -> pure ()
-     Just (Left _) -> pure ()
-     Just (Right r) -> yield r >> feedRows builder query
+    Nothing -> pure ()
+    Just (Left _) -> pure ()
+    Just (Right r) -> yield r >> feedRows builder query
