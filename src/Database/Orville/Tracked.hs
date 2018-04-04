@@ -41,26 +41,32 @@ data SignType
   | Deleted
   deriving (Eq, Show, Enum)
 
-data Sign = forall entity. (Typeable entity) =>
-                           Sign
+data Sign = forall key entity. (Typeable entity, Typeable key) =>
+                               Sign
   { signType :: SignType
-  , signTable :: TableDefinition entity
-  , signEntity :: entity Record
+  , signTable :: TableDefinition entity key
+  , signEntity :: entity key
   }
 
 signTableAs ::
-     Typeable entity
-  => TableDefinition entity
+     (Typeable entity, Typeable key)
+  => TableDefinition entity key
   -> Sign
-  -> Maybe (TableDefinition entity)
+  -> Maybe (TableDefinition entity key)
 signTableAs _ (Sign _ tableDef _) = cast tableDef
 
 signEntityAs ::
-     Typeable entity => p (entity Record) -> Sign -> Maybe (entity Record)
+     (Typeable entity, Typeable key)
+  => p (entity key)
+  -> Sign
+  -> Maybe (entity key)
 signEntityAs _ (Sign _ _ entity) = cast entity
 
 signEntityFrom ::
-     Typeable entity => TableDefinition entity -> Sign -> Maybe (entity Record)
+     (Typeable entity, Typeable key)
+  => TableDefinition entity key
+  -> Sign
+  -> Maybe (entity key)
 signEntityFrom _ (Sign _ _ entity) = cast entity
 
 signEntityGet :: Typeable entity => (entity Record -> a) -> Sign -> Maybe a
@@ -72,7 +78,7 @@ signEntityGet f sign = f <$> signEntityAs proxy sign
 instance Show Sign where
   show (Sign sType tableDef entity) =
     "Sign " <> show sType <> " " <> tableName tableDef <> " " <>
-    show (tableGetKey tableDef entity)
+    show (tableKeyToSql tableDef (tableGetKey tableDef entity))
 
 newtype TrackedOrville t m a = TrackedOrville
   { unTrackedOrville :: RWST (Sign -> t) t () m a
@@ -128,30 +134,30 @@ untracked :: (Monoid t, Monad m) => m a -> TrackedOrville t m a
 untracked = TrackedOrville . lift
 
 insertRecordTracked ::
-     (MonadTrackedOrville conn m, Typeable entity)
-  => TableDefinition entity
+     (MonadTrackedOrville conn m, Typeable entity, Typeable key)
+  => TableDefinition entity key
   -> entity ()
-  -> m (entity Record)
+  -> m (entity key)
 insertRecordTracked tableDef entity = do
   record <- insertRecord tableDef entity
   track $ Sign Inserted tableDef record
   pure record
 
 updateRecordTracked ::
-     (MonadTrackedOrville conn m, Typeable entity)
-  => TableDefinition entity
-  -> Record
-  -> entity key
-  -> m (entity Record)
-updateRecordTracked tableDef recordId record = do
-  updated <- updateRecord tableDef recordId record
+     (MonadTrackedOrville conn m, Typeable entity, Typeable key)
+  => TableDefinition entity key
+  -> key
+  -> entity anyKey
+  -> m (entity key)
+updateRecordTracked tableDef key record = do
+  updated <- updateRecord tableDef key record
   track $ Sign Updated tableDef updated
   pure updated
 
 deleteRecordTracked ::
-     (MonadTrackedOrville conn m, Typeable entity)
-  => TableDefinition entity
-  -> entity Record
+     (MonadTrackedOrville conn m, Typeable entity, Typeable key)
+  => TableDefinition entity key
+  -> entity key
   -> m ()
 deleteRecordTracked tableDef record = do
   deleteRecord tableDef record

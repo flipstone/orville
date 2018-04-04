@@ -10,14 +10,14 @@ import qualified Data.List as List
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
-tableColumnNames :: TableDefinition entity -> [String]
+tableColumnNames :: TableDefinition entity key -> [String]
 tableColumnNames = map fieldName . tableFields
 
-insertableColumnNames :: TableDefinition entity -> [String]
+insertableColumnNames :: TableDefinition entity key -> [String]
 insertableColumnNames =
   map fieldName . filter (not . isUninsertedField) . tableFields
 
-tablePrimaryKey :: TableDefinition entity -> FieldDefinition
+tablePrimaryKey :: TableDefinition entity key -> FieldDefinition
 tablePrimaryKey tableDef =
   case List.find isPrimaryKeyField (tableFields tableDef) of
     Just field -> field

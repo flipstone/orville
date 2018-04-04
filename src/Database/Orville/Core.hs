@@ -138,16 +138,19 @@ getField f = do
   sqlValues <- get
   put (convert value : sqlValues)
 
-selectAll :: TableDefinition entity -> SelectOptions -> Orville [entity Record]
+selectAll ::
+     TableDefinition entity key -> SelectOptions -> Orville [entity key]
 selectAll tableDef = runSelect . selectQueryTable tableDef
 
 selectFirst ::
-     TableDefinition entity -> SelectOptions -> Orville (Maybe (entity Record))
+     TableDefinition entity key
+  -> SelectOptions
+  -> Orville (Maybe (entity key))
 selectFirst tableDef opts =
   listToMaybe <$> selectAll tableDef (limit 1 <> opts)
 
 deleteWhereBuild ::
-     TableDefinition entity -> [WhereCondition] -> Orville Integer
+     TableDefinition entity key -> [WhereCondition] -> Orville Integer
 deleteWhereBuild tableDef conds = do
   let deleteSql = mkDeleteClause (tableName tableDef)
   let whereSql = whereClause conds
@@ -156,39 +159,41 @@ deleteWhereBuild tableDef conds = do
   withConnection $ \conn -> do
     executingSql DeleteQuery querySql $ do run conn querySql values
 
-deleteWhere :: TableDefinition entity -> [WhereCondition] -> Orville Integer
+deleteWhere ::
+     TableDefinition entity key -> [WhereCondition] -> Orville Integer
 deleteWhere tableDef = deleteWhereBuild tableDef
 
 findRecords ::
-     TableDefinition entity
-  -> [Record]
-  -> Orville (Map.Map Record (entity Record))
+     Ord key
+  => TableDefinition entity key
+  -> [key]
+  -> Orville (Map.Map key (entity key))
 findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
   let keyField = tablePrimaryKey tableDef
       mkEntry record = (tableGetKey tableDef record, record)
-  recordList <- selectAll tableDef (where_ $ keyField .<- keys)
+  recordList <-
+    selectAll tableDef (where_ $ keyField .<- tableKeysToSql tableDef keys)
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordsBy ::
      (Convertible SqlValue fieldValue, Ord fieldValue)
-  => TableDefinition entity
+  => TableDefinition entity key
   -> FieldDefinition
   -> SelectOptions
-  -> Orville (Map.Map fieldValue [entity Record])
+  -> Orville (Map.Map fieldValue [entity key])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> col field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
-findRecord ::
-     TableDefinition entity -> Record -> Orville (Maybe (entity Record))
-findRecord tableDef key = do
+findRecord :: TableDefinition entity key -> key -> Orville (Maybe (entity key))
+findRecord tableDef key =
   let keyField = tablePrimaryKey tableDef
-  selectFirst tableDef (where_ $ keyField .== key)
+   in selectFirst tableDef (where_ $ keyField .== tableKeyToSql tableDef key)
 
 updateFields ::
-     TableDefinition entity
+     TableDefinition entity key
   -> [FieldUpdate]
   -> [WhereCondition]
   -> Orville Integer
@@ -202,17 +207,17 @@ updateFields tableDef updates conds =
     updateClause = mkUpdateClause (tableName tableDef) updateNames
 
 updateRecord ::
-     TableDefinition entity -> Record -> entity key -> Orville (entity Record)
-updateRecord tableDef recordId record = do
+     TableDefinition entity key -> key -> entity anyKey -> Orville (entity key)
+updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
-      conds = [keyField .== recordId]
+      conds = [keyField .== tableKeyToSql tableDef key]
       fields = filter (not . isUninsertedField) (tableFields tableDef)
       builder = tableToSql tableDef
       updates = zipWith FieldUpdate fields (runToSql builder record)
   void $ updateFields tableDef updates conds
-  pure $ tableSetKey tableDef recordId record
+  pure $ tableSetKey tableDef key record
 
-insertRecord :: TableDefinition entity -> entity () -> Orville (entity Record)
+insertRecord :: TableDefinition entity key -> entity () -> Orville (entity key)
 insertRecord tableDef newRecord = do
   let insertSql =
         mkInsertClause (tableName tableDef) (insertableColumnNames tableDef) ++
@@ -227,13 +232,20 @@ insertRecord tableDef newRecord = do
         fetchAllRows' insert
   case rows of
     [[key]] ->
-      case safeConvert key of
-        Right int -> return $ tableSetKey tableDef int newRecord
-        _ -> error "Got a non-integer key back from the db!"
+      case tableKeyFromSql tableDef key of
+        Just keyValue -> return $ tableSetKey tableDef keyValue newRecord
+        _ ->
+          error $
+          concat
+            [ "Found a non-decodeable key in table "
+            , tableName tableDef
+            , ": "
+            , show key
+            ]
     [] -> error "Didn't get a key back from the database!"
     _ -> error "Got more than one key back from the database!"
 
-insertRecordMany :: TableDefinition entity -> [entity ()] -> Orville ()
+insertRecordMany :: TableDefinition entity key -> [entity ()] -> Orville ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
         mkInsertClause (tableName tableDef) (insertableColumnNames tableDef)
@@ -243,10 +255,13 @@ insertRecordMany tableDef newRecords = do
       insert <- prepare conn insertSql
       executeMany insert (map (runToSql builder) newRecords)
 
-deleteRecord :: TableDefinition entity -> entity Record -> Orville ()
+deleteRecord :: TableDefinition entity key -> entity key -> Orville ()
 deleteRecord tableDef record = do
   let keyField = tablePrimaryKey tableDef
-  n <- deleteWhere tableDef [keyField .== tableGetKey tableDef record]
+  n <-
+    deleteWhere
+      tableDef
+      [keyField .== tableKeyToSql tableDef (tableGetKey tableDef record)]
   if n /= 1
     then error $
          "Expected to delete exactly 1 row for deleteRecord\

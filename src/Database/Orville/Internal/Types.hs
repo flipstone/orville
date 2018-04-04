@@ -52,8 +52,8 @@ data ColumnFlag
               Default a
   | Null
   | Unique
-  | forall entity. References (TableDefinition entity)
-                              FieldDefinition
+  | forall entity key. References (TableDefinition entity key)
+                                  FieldDefinition
   | ColumnDescription String
 
 class ColumnDefault a where
@@ -181,7 +181,7 @@ getComponent getComp (ToSql serializer) =
   concise way. This type is provided as an escape hatch for any situations where
   'TableParams' is too restrictive for the sql mapping required by a type.
  -}
-data TableDefinition entity = TableDefinition
+data TableDefinition entity key = TableDefinition
   { tableName :: String
       -- ^ The name of the table in the database.
   , tableFields :: [FieldDefinition]
@@ -189,13 +189,17 @@ data TableDefinition entity = TableDefinition
   , tableSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tableFromSql :: FromSql (entity Record)
+  , tableKeyToSql :: key -> SqlValue
+      -- ^ A function to convert the primary key type to SqlValue
+  , tableKeyFromSql :: SqlValue -> Maybe key
+      -- ^ A function to convert the primary key type from SqlValue. Nothing indicates a failure.
+  , tableFromSql :: FromSql (entity key)
       -- ^ A definition of how to convert the haskell type from a sql row
-  , tableToSql :: forall key. ToSql (entity key) ()
+  , tableToSql :: forall anyKey. ToSql (entity anyKey) ()
       -- ^ A definition of how to convert the haskell type to a sql row
-  , tableSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
+  , tableSetKey :: forall anyKey1 anyKey2. anyKey2 -> entity anyKey1 -> entity anyKey2
       -- ^ A function to set the key on the entity
-  , tableGetKey :: forall key. entity key -> key
+  , tableGetKey :: forall anyKey. entity anyKey -> anyKey
       -- ^ A function to get the key on the entity
   , tableComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These
@@ -203,11 +207,14 @@ data TableDefinition entity = TableDefinition
       -- to migrate the table.
   }
 
-instance QueryKeyable (TableDefinition entity) where
+tableKeysToSql :: TableDefinition entity key -> [key] -> [SqlValue]
+tableKeysToSql tableDef = map (tableKeyToSql tableDef)
+
+instance QueryKeyable (TableDefinition entity key) where
   queryKey = QKTable . tableName
 
 data SchemaItem
-  = forall entity. Table (TableDefinition entity)
+  = forall entity key. Table (TableDefinition entity key)
   | DropTable String
   | Index IndexDefinition
   | DropIndex String

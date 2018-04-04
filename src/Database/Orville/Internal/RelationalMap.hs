@@ -39,10 +39,10 @@ import Database.Orville.Internal.Types
  provides a single 'tblMapper' field that specifies all three simultaneously
  and ensures they are consistent with one another.
  -}
-data TableParams entity = TableParams
+data TableParams entity key = TableParams
   { tblName :: String
       -- ^ The name of the table in the database
-  , tblMapper :: RelationalMap (entity Record) (entity Record)
+  , tblMapper :: RelationalMap (entity key) (entity key)
       -- ^ The relational mapping that defines how the Haskell entity type
       -- is converted both to and from sql. The fields utilized in the mapping
       -- are used to automatically build the list of 'FieldDefinitions' that
@@ -50,9 +50,13 @@ data TableParams entity = TableParams
   , tblSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tblSetKey :: forall key1 key2. key2 -> entity key1 -> entity key2
+  , tblKeyToSql :: key -> SqlValue
+      -- ^ A function to convert the primary key type to SqlValue
+  , tblKeyFromSql :: SqlValue -> Maybe key
+      -- ^ A function to convert the primary key type from SqlValue. Nothing indicates a failure.
+  , tblSetKey :: forall anyKey1 anyKey2. anyKey2 -> entity anyKey1 -> entity anyKey2
       -- ^ A function to set the key on the entity
-  , tblGetKey :: forall key. entity key -> key
+  , tblGetKey :: forall anyKey. entity anyKey -> anyKey
       -- ^ A function to get the key on the entity
   , tblComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These
@@ -80,12 +84,14 @@ data TableParams entity = TableParams
 
  @
  -}
-mkTableDefinition :: TableParams entity -> TableDefinition entity
+mkTableDefinition :: TableParams entity key -> TableDefinition entity key
 mkTableDefinition p@(TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
     , tableFromSql = mkFromSql tblMapper
     , tableToSql = getComponent (unsafeSquashPrimaryKey p) (mkToSql tblMapper)
+    , tableKeyToSql = tblKeyToSql
+    , tableKeyFromSql = tblKeyFromSql
     , tableName = tblName
     , tableSafeToDelete = tblSafeToDelete
     , tableSetKey = tblSetKey
@@ -94,7 +100,7 @@ mkTableDefinition p@(TableParams {..}) =
     }
 
 unsafeSquashPrimaryKey ::
-     TableParams entity -> entity key1 -> forall key2. entity key2
+     TableParams entity key -> entity anyKey1 -> forall anyKey2. entity anyKey2
 unsafeSquashPrimaryKey params =
   tblSetKey params (error "Primary key field was used!")
 

@@ -17,7 +17,7 @@ fromClauseRaw = FromClause
 fromClauseTableName :: String -> FromClause
 fromClauseTableName name = fromClauseRaw ("FROM " ++ escapedName name)
 
-fromClauseTable :: TableDefinition entity -> FromClause
+fromClauseTable :: TableDefinition entity key -> FromClause
 fromClauseTable = fromClauseTableName . tableName
 
 fromClauseToSql :: FromClause -> String

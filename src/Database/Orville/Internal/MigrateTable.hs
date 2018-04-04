@@ -25,7 +25,8 @@ import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Monad
 import Database.Orville.Internal.Types
 
-createTable :: MonadOrville conn m => conn -> TableDefinition entity -> m ()
+createTable ::
+     MonadOrville conn m => conn -> TableDefinition entity key -> m ()
 createTable conn tableDef = do
   let ddl = mkCreateTableDDL tableDef
   executingSql DDLQuery ddl $ void $ run conn ddl []
@@ -35,7 +36,8 @@ dropTable conn name = do
   let ddl = "DROP TABLE \"" ++ name ++ "\""
   executingSql DDLQuery ddl $ void $ run conn ddl []
 
-migrateTable :: MonadOrville conn m => conn -> TableDefinition entity -> m ()
+migrateTable ::
+     MonadOrville conn m => conn -> TableDefinition entity key -> m ()
 migrateTable conn tableDef = do
   columns <- liftIO $ describeTable conn (tableName tableDef)
   case mkMigrateTableDDL columns tableDef of
@@ -46,7 +48,7 @@ migrateTable conn tableDef = do
         executeRaw stmt `Exc.catch` (Exc.throw . MTE tableDef)
 
 mkMigrateTableDDL ::
-     [(String, SqlColDesc)] -> TableDefinition entity -> Maybe String
+     [(String, SqlColDesc)] -> TableDefinition entity key -> Maybe String
 mkMigrateTableDDL columns tableDef =
   if null stmts
     then Nothing
@@ -128,7 +130,7 @@ mkFieldDDL (name, columnType, flags) = name ++ " " ++ sqlType ++ " " ++ flagSql
         then ""
         else "NOT NULL"
 
-mkCreateTableDDL :: TableDefinition entity -> String
+mkCreateTableDDL :: TableDefinition entity key -> String
 mkCreateTableDDL tableDef =
   "CREATE TABLE \"" ++ tableName tableDef ++ "\" (" ++ fields ++ ")"
   where
@@ -171,8 +173,8 @@ sqlFieldDesc (_, columnType, flags) =
     }
 
 data MigrateTableException =
-  forall entity. MTE (TableDefinition entity)
-                     Exc.SomeException
+  forall entity key. MTE (TableDefinition entity key)
+                         Exc.SomeException
   deriving (Typeable)
 
 instance Show MigrateTableException where
@@ -203,7 +205,7 @@ formatMigrationException (MTE tableDef exception) = message
     name = tableName tableDef
     comments = formatTableComments " " tableDef
 
-formatTableComments :: String -> TableDefinition entity -> String
+formatTableComments :: String -> TableDefinition entity key -> String
 formatTableComments indent tableDef =
   List.intercalate ("\n" ++ indent) commentLines
   where

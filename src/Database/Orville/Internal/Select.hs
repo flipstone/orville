@@ -43,7 +43,7 @@ selectQuery builder =
   selectQueryColumns (expr <$> fromSqlSelects builder) builder
 
 selectQueryTable ::
-     TableDefinition entity -> SelectOptions -> Select (entity Record)
+     TableDefinition entity key -> SelectOptions -> Select (entity key)
 selectQueryTable tbl = selectQuery (tableFromSql tbl) (fromClauseTable tbl)
 
 selectQueryRows ::

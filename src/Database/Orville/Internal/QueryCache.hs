@@ -61,7 +61,7 @@ cached key action = do
 
 selectCachedRows ::
      (MonadThrow m, MonadOrville conn m)
-  => TableDefinition entity
+  => TableDefinition entity key
   -> SelectOptions
   -> QueryCached m ResultSet
 selectCachedRows tableDef opts =
@@ -74,40 +74,43 @@ selectCachedRows tableDef opts =
 
 selectCached ::
      (MonadThrow m, MonadOrville conn m)
-  => TableDefinition entity
+  => TableDefinition entity key
   -> SelectOptions
-  -> QueryCached m [entity Record]
+  -> QueryCached m [entity key]
 selectCached tableDef opts = do
   rows <- selectCachedRows tableDef opts
   unsafeLift $ decodeSqlRows (tableFromSql tableDef) rows
 
 selectFirstCached ::
      (MonadThrow m, MonadOrville conn m)
-  => TableDefinition entity
+  => TableDefinition entity key
   -> SelectOptions
-  -> QueryCached m (Maybe (entity Record))
+  -> QueryCached m (Maybe (entity key))
 selectFirstCached tableDef opts =
   listToMaybe <$> selectCached tableDef (limit 1 <> opts)
 
 findRecordsCached ::
-     (MonadThrow m, MonadOrville conn m)
-  => TableDefinition entity
-  -> [Record]
-  -> QueryCached m (Map.Map Record (entity Record))
-findRecordsCached tableDef recordIds = do
+     (MonadThrow m, MonadOrville conn m, Ord key)
+  => TableDefinition entity key
+  -> [key]
+  -> QueryCached m (Map.Map key (entity key))
+findRecordsCached tableDef keys = do
   let keyField = tablePrimaryKey tableDef
       mkEntry record = (tableGetKey tableDef record, record)
-  recordList <- selectCached tableDef (where_ $ keyField .<- recordIds)
+  recordList <-
+    selectCached tableDef (where_ $ keyField .<- tableKeysToSql tableDef keys)
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordCached ::
      (MonadThrow m, MonadOrville conn m)
-  => TableDefinition entity
-  -> Record
-  -> QueryCached m (Maybe (entity Record))
-findRecordCached tableDef recordId = do
+  => TableDefinition entity key
+  -> key
+  -> QueryCached m (Maybe (entity key))
+findRecordCached tableDef key =
   let keyField = tablePrimaryKey tableDef
-  selectFirstCached tableDef (where_ $ keyField .== recordId)
+   in selectFirstCached
+        tableDef
+        (where_ $ keyField .== tableKeyToSql tableDef key)
 
 findRecordsByCached ::
      ( Convertible SqlValue fieldValue
@@ -115,10 +118,10 @@ findRecordsByCached ::
      , MonadThrow m
      , MonadOrville conn m
      )
-  => TableDefinition entity
+  => TableDefinition entity key
   -> FieldDefinition
   -> SelectOptions
-  -> QueryCached m (Map.Map fieldValue [entity Record])
+  -> QueryCached m (Map.Map fieldValue [entity key])
 findRecordsByCached tableDef field opts = do
   let builder = (,) <$> col field <*> tableFromSql tableDef
   rows <- selectCachedRows tableDef opts
