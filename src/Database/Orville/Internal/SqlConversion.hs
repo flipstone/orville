@@ -4,6 +4,7 @@ module Database.Orville.Internal.SqlConversion
   ( SqlConversion
   , sqlConversion
   , sqlConversionVia
+  , maybeSqlConversionVia
   , sqlConvertible
   , convertToSql
   , convertFromSql
@@ -30,12 +31,15 @@ nullableConversion aConversion = sqlConversion maybeToSql maybeFromSql
     maybeFromSql SqlNull = Just Nothing
     maybeFromSql sql = Just <$> convertFromSql aConversion sql
 
-sqlConversionVia ::
+maybeSqlConversionVia ::
      (b -> a) -> (a -> Maybe b) -> SqlConversion a -> SqlConversion b
-sqlConversionVia bToA aToB aConversion =
+maybeSqlConversionVia bToA aToB aConversion =
   sqlConversion
     (convertToSql aConversion . bToA)
     (aToB <=< convertFromSql aConversion)
+
+sqlConversionVia :: (b -> a) -> (a -> b) -> SqlConversion a -> SqlConversion b
+sqlConversionVia bToA aToB = maybeSqlConversionVia bToA (Just . aToB)
 
 sqlConvertible ::
      (Convertible a SqlValue, Convertible SqlValue a) => SqlConversion a

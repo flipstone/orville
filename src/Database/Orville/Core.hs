@@ -14,6 +14,8 @@ module Database.Orville.Core
   , SqlConversion
   , sqlConversion
   , sqlConvertible
+  , sqlConversionVia
+  , maybeSqlConversionVia
   , TableParams(..)
   , RelationalMap
   , mapAttr

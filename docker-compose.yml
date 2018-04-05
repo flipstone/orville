@@ -6,6 +6,15 @@ services:
       - .:/orville
       - stack-root:/stack-root
     working_dir: /orville
+    depends_on:
+      - testdb
+    environment:
+      TEST_CONN_STRING: "host=testdb user=orville_test"
+
+  testdb:
+    image: postgres:9.6.8
+    environment:
+      POSTGRES_USER: orville_test
 
 volumes:
   stack-root:

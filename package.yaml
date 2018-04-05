@@ -47,3 +47,14 @@ library:
     - Database.Orville.Raw
     - Database.Orville.Select
     - Database.Orville.Tracked
+tests:
+  spec:
+    main: Driver.hs
+    source-dirs:
+      - test
+    dependencies:
+      - resource-pool
+      - orville
+      - tasty
+      - tasty-discover
+      - tasty-hunit
