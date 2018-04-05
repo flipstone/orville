@@ -14,10 +14,7 @@ import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
 uniqueIndex ::
-     String
-  -> TableDefinition entity key
-  -> [FieldDefinition]
-  -> IndexDefinition
+     String -> TableDefinition entity key -> [SomeField] -> IndexDefinition
 uniqueIndex name tableDef fields =
   IndexDefinition
     { indexName = name
@@ -27,10 +24,7 @@ uniqueIndex name tableDef fields =
     }
 
 simpleIndex ::
-     String
-  -> TableDefinition entity key
-  -> [FieldDefinition]
-  -> IndexDefinition
+     String -> TableDefinition entity key -> [SomeField] -> IndexDefinition
 simpleIndex name tableDef fields =
   IndexDefinition
     { indexName = name
@@ -39,6 +33,7 @@ simpleIndex name tableDef fields =
     , indexBody = indexFieldsBody fields
     }
 
-indexFieldsBody :: [FieldDefinition] -> String
-indexFieldsBody fields =
-  "(" ++ intercalate "," (map escapedFieldName fields) ++ ")"
+indexFieldsBody :: [SomeField] -> String
+indexFieldsBody fields = "(" ++ intercalate "," (map name fields) ++ ")"
+  where
+    name (SomeField field) = escapedFieldName field

@@ -24,11 +24,10 @@ module Database.Orville.Internal.RelationalMap
 import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
-import Data.Convertible
-import Database.HDBC
 
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.FromSql
+import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.Types
 
 {-|
@@ -50,10 +49,8 @@ data TableParams entity key = TableParams
   , tblSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tblKeyToSql :: key -> SqlValue
-      -- ^ A function to convert the primary key type to SqlValue
-  , tblKeyFromSql :: SqlValue -> Maybe key
-      -- ^ A function to convert the primary key type from SqlValue. Nothing indicates a failure.
+  , tblPrimaryKey :: FieldDefinition key
+      -- ^ A FieldDefinition for the primary key.
   , tblSetKey :: forall anyKey1 anyKey2. anyKey2 -> entity anyKey1 -> entity anyKey2
       -- ^ A function to set the key on the entity
   , tblGetKey :: forall anyKey. entity anyKey -> anyKey
@@ -90,8 +87,7 @@ mkTableDefinition p@(TableParams {..}) =
     { tableFields = fields tblMapper
     , tableFromSql = mkFromSql tblMapper
     , tableToSql = getComponent (unsafeSquashPrimaryKey p) (mkToSql tblMapper)
-    , tableKeyToSql = tblKeyToSql
-    , tableKeyFromSql = tblKeyFromSql
+    , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
     , tableSafeToDelete = tblSafeToDelete
     , tableSetKey = tblSetKey
@@ -105,10 +101,7 @@ unsafeSquashPrimaryKey params =
   tblSetKey params (error "Primary key field was used!")
 
 data RelationalMap a b where
-  RM_Field
-    :: (Convertible a SqlValue, Convertible SqlValue a)
-    => FieldDefinition
-    -> RelationalMap a a
+  RM_Field :: FieldDefinition a -> RelationalMap a a
   RM_Nest :: (a -> b) -> RelationalMap b c -> RelationalMap a c
   RM_Pure :: b -> RelationalMap a b
   RM_Apply
@@ -128,10 +121,7 @@ instance Applicative (RelationalMap a) where
 mapAttr :: (a -> b) -> RelationalMap b c -> RelationalMap a c
 mapAttr = RM_Nest
 
-mapField ::
-     (Convertible a SqlValue, Convertible SqlValue a)
-  => FieldDefinition
-  -> RelationalMap a a
+mapField :: FieldDefinition a -> RelationalMap a a
 mapField = RM_Field
 
 partialMap :: RelationalMap a (Either String a) -> RelationalMap a a
@@ -140,11 +130,7 @@ partialMap = RM_Partial
 readOnlyMap :: RelationalMap a b -> RelationalMap c b
 readOnlyMap = RM_ReadOnly
 
-attrField ::
-     (Convertible b SqlValue, Convertible SqlValue b)
-  => (a -> b)
-  -> FieldDefinition
-  -> RelationalMap a b
+attrField :: (a -> b) -> FieldDefinition b -> RelationalMap a b
 attrField get = mapAttr get . mapField
 
 prefixMap :: String -> RelationalMap a b -> RelationalMap a b
@@ -167,7 +153,8 @@ maybeMapper
   where
     go :: RelationalMap a b -> RelationalMap (Maybe a) (Maybe b)
     go (RM_Nest f rm) = RM_Nest (fmap f) (go rm)
-    go (RM_Field f) = RM_Field (f `withFlag` Null)
+    go (RM_Field f) =
+      RM_Field (f `withConversion` nullableConversion `withFlag` Null)
     go (RM_Pure a) = RM_Pure (pure a)
     go (RM_Apply rmF rmA) = RM_Apply (fmap (<*>) $ go rmF) (go rmA)
     go (RM_Partial rm) = RM_Partial (flipError <$> go rm)
@@ -179,8 +166,8 @@ maybeMapper
     go (RM_ReadOnly rm) = RM_ReadOnly (go rm)
     go rm@(RM_MaybeTag _) = fmap Just $ mapAttr join $ rm
 
-fields :: RelationalMap a b -> [FieldDefinition]
-fields (RM_Field field) = [field]
+fields :: RelationalMap a b -> [SomeField]
+fields (RM_Field field) = [SomeField field]
 fields (RM_Apply rm1 rm2) = fields rm1 ++ fields rm2
 fields (RM_Nest _ rm) = fields rm
 fields (RM_Partial rm) = fields rm
@@ -189,7 +176,7 @@ fields (RM_Pure _) = []
 fields (RM_ReadOnly _) = []
 
 mkFromSql :: RelationalMap a b -> FromSql b
-mkFromSql (RM_Field field) = col field
+mkFromSql (RM_Field field) = fieldFromSql field
 mkFromSql (RM_Nest _ rm) = mkFromSql rm
 mkFromSql (RM_ReadOnly rm) = mkFromSql rm
 mkFromSql (RM_MaybeTag rm) = mkFromSql rm
@@ -204,7 +191,7 @@ mkToSql :: RelationalMap a b -> ToSql a ()
 mkToSql (RM_Field field) =
   when (not $ isUninsertedField field) $ do
     value <- ask
-    modify (convert value :)
+    modify (fieldToSqlValue field value :)
 mkToSql (RM_Nest f rm) = getComponent f (mkToSql rm)
 mkToSql (RM_Apply rmF rmC) = mkToSql rmF >> mkToSql rmC
 mkToSql (RM_Partial rm) = mkToSql rm

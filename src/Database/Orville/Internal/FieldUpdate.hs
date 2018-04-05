@@ -7,17 +7,17 @@ License   : MIT
 
 module Database.Orville.Internal.FieldUpdate where
 
-import Data.Convertible
-import Database.HDBC
-
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
-fieldUpdate :: Convertible a SqlValue => FieldDefinition -> a -> FieldUpdate
-fieldUpdate def = FieldUpdate def . convert
+fieldUpdate :: FieldDefinition a -> a -> FieldUpdate
+fieldUpdate fieldDef a =
+  FieldUpdate (SomeField fieldDef) (fieldToSqlValue fieldDef a)
 
-(.:=) :: Convertible a SqlValue => FieldDefinition -> a -> FieldUpdate
+(.:=) :: FieldDefinition a -> a -> FieldUpdate
 (.:=) = fieldUpdate
 
 fieldUpdateName :: FieldUpdate -> String
-fieldUpdateName = fieldName . fieldUpdateField
+fieldUpdateName = someFieldName . fieldUpdateField
+  where
+    someFieldName (SomeField f) = fieldName f

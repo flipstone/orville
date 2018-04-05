@@ -29,7 +29,7 @@ groupingValues (GroupByClause _ values) = values
 class ToGroupBy a where
   toGroupBy :: a -> GroupByClause
 
-instance ToGroupBy FieldDefinition where
+instance ToGroupBy (FieldDefinition a) where
   toGroupBy fieldDef = GroupByClause (fieldName fieldDef) []
 
 instance ToGroupBy (String, [SqlValue]) where

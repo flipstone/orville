@@ -56,14 +56,14 @@ mkMigrateTableDDL columns tableDef =
   where
     fields = tableFields tableDef
     fieldColumn fieldDef = lookup (fieldName fieldDef) columns
-    colStmt = mkMigrateColumnDDL <$> id <*> fieldColumn
-    dropStmt = mkDropColumnDDL <$> id <*> flip lookup columns
+    colStmt (SomeField f) = mkMigrateColumnDDL f (fieldColumn f)
+    dropStmt name = mkDropColumnDDL name (lookup name columns)
     stmts =
       List.concatMap colStmt fields ++
       List.concatMap dropStmt (tableSafeToDelete tableDef)
     cols = List.intercalate ", " $ stmts
 
-mkMigrateColumnTypeDDL :: FieldDefinition -> SqlColDesc -> Maybe String
+mkMigrateColumnTypeDDL :: FieldDefinition a -> SqlColDesc -> Maybe String
 mkMigrateColumnTypeDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
    in if colType fieldDesc /= colType colDesc ||
@@ -74,7 +74,7 @@ mkMigrateColumnTypeDDL fieldDef colDesc =
              " SET DATA TYPE " ++ mkTypeDDL (fieldType fieldDef)
         else Nothing
 
-mkMigrateColumnNullDDL :: FieldDefinition -> SqlColDesc -> Maybe String
+mkMigrateColumnNullDDL :: FieldDefinition a -> SqlColDesc -> Maybe String
 mkMigrateColumnNullDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
       fieldNull = fromMaybe True (colNullable fieldDesc)
@@ -86,7 +86,7 @@ mkMigrateColumnNullDDL fieldDef colDesc =
                     "ALTER COLUMN " ++ fieldName fieldDef ++ " SET NOT NULL"
                else Nothing
 
-mkMigrateColumnDDL :: FieldDefinition -> Maybe SqlColDesc -> [String]
+mkMigrateColumnDDL :: FieldDefinition a -> Maybe SqlColDesc -> [String]
 mkMigrateColumnDDL fieldDef Nothing = ["ADD COLUMN " ++ mkFieldDDL fieldDef]
 mkMigrateColumnDDL fieldDef (Just desc) =
   catMaybes
@@ -120,8 +120,9 @@ mkTypeDDL (Date) = "DATE"
 mkTypeDDL (Timestamp) = "TIMESTAMP with time zone"
 mkTypeDDL TextSearchVector = "TSVECTOR"
 
-mkFieldDDL :: FieldDefinition -> String
-mkFieldDDL (name, columnType, flags) = name ++ " " ++ sqlType ++ " " ++ flagSql
+mkFieldDDL :: FieldDefinition a -> String
+mkFieldDDL (name, columnType, flags, _) =
+  name ++ " " ++ sqlType ++ " " ++ flagSql
   where
     sqlType = mkTypeDDL columnType
     flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL flags)
@@ -134,7 +135,8 @@ mkCreateTableDDL :: TableDefinition entity key -> String
 mkCreateTableDDL tableDef =
   "CREATE TABLE \"" ++ tableName tableDef ++ "\" (" ++ fields ++ ")"
   where
-    fields = List.intercalate ", " $ map mkFieldDDL (tableFields tableDef)
+    fields = List.intercalate ", " $ map mkSomeFieldDDL (tableFields tableDef)
+    mkSomeFieldDDL (SomeField f) = mkFieldDDL f
 
 columnTypeSqlId :: ColumnType -> SqlTypeId
 columnTypeSqlId AutomaticId = SqlBigIntT
@@ -162,8 +164,8 @@ columnTypeSqlSize Date = Just 4
 columnTypeSqlSize Timestamp = Just 8
 columnTypeSqlSize TextSearchVector = Nothing
 
-sqlFieldDesc :: FieldDefinition -> SqlColDesc
-sqlFieldDesc (_, columnType, flags) =
+sqlFieldDesc :: FieldDefinition a -> SqlColDesc
+sqlFieldDesc (_, columnType, flags, _) =
   SqlColDesc
     { colType = columnTypeSqlId columnType
     , colSize = columnTypeSqlSize columnType

@@ -5,20 +5,17 @@ License   : MIT
 -}
 module Database.Orville.Internal.TableDefinition where
 
-import qualified Data.List as List
-
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
 tableColumnNames :: TableDefinition entity key -> [String]
-tableColumnNames = map fieldName . tableFields
+tableColumnNames = map someFieldName . tableFields
+  where
+    someFieldName (SomeField f) = fieldName f
 
 insertableColumnNames :: TableDefinition entity key -> [String]
 insertableColumnNames =
-  map fieldName . filter (not . isUninsertedField) . tableFields
-
-tablePrimaryKey :: TableDefinition entity key -> FieldDefinition
-tablePrimaryKey tableDef =
-  case List.find isPrimaryKeyField (tableFields tableDef) of
-    Just field -> field
-    Nothing -> error $ "No primary key defined for " ++ tableName tableDef
+  map someFieldName . filter (not . isSomeUninsertedField) . tableFields
+  where
+    isSomeUninsertedField (SomeField f) = isUninsertedField f
+    someFieldName (SomeField f) = fieldName f

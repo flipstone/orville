@@ -16,15 +16,17 @@ import Database.Orville.Internal.Types
 uniqueConstraint ::
      String
   -> TableDefinition entity key
-  -> [FieldDefinition]
+  -> [SomeField]
   -> ConstraintDefinition
 uniqueConstraint name tableDef fields =
   ConstraintDefinition
     { constraintName = name
     , constraintTable = tableName tableDef
     , constraintBody =
-        "UNIQUE (" ++ intercalate "," (map escapedFieldName fields) ++ ")"
+        "UNIQUE (" ++ intercalate "," (map someEscapedFieldName fields) ++ ")"
     }
+  where
+    someEscapedFieldName (SomeField f) = escapedFieldName f
 
 dropConstraint :: TableDefinition entity key -> String -> SchemaItem
 dropConstraint tableDef = DropConstraint (tableName tableDef)

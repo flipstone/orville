@@ -20,13 +20,11 @@ module Database.Orville.Internal.QueryCache
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans
 import Control.Monad.Trans.State
-import Data.Convertible
 import qualified Data.Map as Map
 import qualified Data.Map.Helpers as Map
 import Data.Maybe
 import Data.Monoid
 import Data.String (fromString)
-import Database.HDBC hiding (withTransaction)
 
 import Database.Orville.Internal.Expr
 import Database.Orville.Internal.FromSql
@@ -97,8 +95,7 @@ findRecordsCached ::
 findRecordsCached tableDef keys = do
   let keyField = tablePrimaryKey tableDef
       mkEntry record = (tableGetKey tableDef record, record)
-  recordList <-
-    selectCached tableDef (where_ $ keyField .<- tableKeysToSql tableDef keys)
+  recordList <- selectCached tableDef (where_ $ keyField .<- keys)
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordCached ::
@@ -108,22 +105,16 @@ findRecordCached ::
   -> QueryCached m (Maybe (entity key))
 findRecordCached tableDef key =
   let keyField = tablePrimaryKey tableDef
-   in selectFirstCached
-        tableDef
-        (where_ $ keyField .== tableKeyToSql tableDef key)
+   in selectFirstCached tableDef (where_ $ keyField .== key)
 
 findRecordsByCached ::
-     ( Convertible SqlValue fieldValue
-     , Ord fieldValue
-     , MonadThrow m
-     , MonadOrville conn m
-     )
+     (Ord fieldValue, MonadThrow m, MonadOrville conn m)
   => TableDefinition entity key
-  -> FieldDefinition
+  -> FieldDefinition fieldValue
   -> SelectOptions
   -> QueryCached m (Map.Map fieldValue [entity key])
 findRecordsByCached tableDef field opts = do
-  let builder = (,) <$> col field <*> tableFromSql tableDef
+  let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
   rows <- selectCachedRows tableDef opts
   Map.groupBy' id <$> unsafeLift (decodeSqlRows builder rows)
 

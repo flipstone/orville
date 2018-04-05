@@ -9,6 +9,11 @@ License   : MIT
 module Database.Orville.Core
   ( TableDefinition(..)
   , mkTableDefinition
+  , tableKeyToSql
+  , tableKeyFromSql
+  , SqlConversion
+  , sqlConversion
+  , sqlConvertible
   , TableParams(..)
   , RelationalMap
   , mapAttr
@@ -18,7 +23,6 @@ module Database.Orville.Core
   , prefixMap
   , partialMap
   , readOnlyMap
-  , tablePrimaryKey
   , OrvilleEnv
   , newOrvilleEnv
   , ormEnvPool
@@ -35,6 +39,7 @@ module Database.Orville.Core
   , Now(..)
   , ColumnType(..)
   , FieldDefinition
+  , SomeField(..)
   , withPrefix
   , fieldName
   , IndexDefinition(..)
@@ -83,7 +88,7 @@ module Database.Orville.Core
   , offset
   , groupBy
   , (<>)
-  , FieldUpdate(..)
+  , FieldUpdate
   , fieldUpdate
   , (.:=)
   , OrderByClause(..)
@@ -126,6 +131,7 @@ import Database.Orville.Internal.OrderBy
 import Database.Orville.Internal.RelationalMap
 import Database.Orville.Internal.SelectOptions
 import Database.Orville.Internal.Sql
+import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.TableDefinition
 import Database.Orville.Internal.Types
 import Database.Orville.Internal.Where
@@ -172,25 +178,24 @@ findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
   let keyField = tablePrimaryKey tableDef
       mkEntry record = (tableGetKey tableDef record, record)
-  recordList <-
-    selectAll tableDef (where_ $ keyField .<- tableKeysToSql tableDef keys)
+  recordList <- selectAll tableDef (where_ $ keyField .<- keys)
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordsBy ::
-     (Convertible SqlValue fieldValue, Ord fieldValue)
+     (Ord fieldValue)
   => TableDefinition entity key
-  -> FieldDefinition
+  -> FieldDefinition fieldValue
   -> SelectOptions
   -> Orville (Map.Map fieldValue [entity key])
 findRecordsBy tableDef field opts = do
-  let builder = (,) <$> col field <*> tableFromSql tableDef
+  let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
 findRecord :: TableDefinition entity key -> key -> Orville (Maybe (entity key))
 findRecord tableDef key =
   let keyField = tablePrimaryKey tableDef
-   in selectFirst tableDef (where_ $ keyField .== tableKeyToSql tableDef key)
+   in selectFirst tableDef (where_ $ keyField .== key)
 
 updateFields ::
      TableDefinition entity key
@@ -210,8 +215,9 @@ updateRecord ::
      TableDefinition entity key -> key -> entity anyKey -> Orville (entity key)
 updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
-      conds = [keyField .== tableKeyToSql tableDef key]
-      fields = filter (not . isUninsertedField) (tableFields tableDef)
+      conds = [keyField .== key]
+      isSomeUninsertedField (SomeField f) = isUninsertedField f
+      fields = filter (not . isSomeUninsertedField) (tableFields tableDef)
       builder = tableToSql tableDef
       updates = zipWith FieldUpdate fields (runToSql builder record)
   void $ updateFields tableDef updates conds
@@ -258,13 +264,11 @@ insertRecordMany tableDef newRecords = do
 deleteRecord :: TableDefinition entity key -> entity key -> Orville ()
 deleteRecord tableDef record = do
   let keyField = tablePrimaryKey tableDef
-  n <-
-    deleteWhere
-      tableDef
-      [keyField .== tableKeyToSql tableDef (tableGetKey tableDef record)]
+      key = tableGetKey tableDef record
+  n <- deleteWhere tableDef [keyField .== key]
   if n /= 1
     then error $
          "Expected to delete exactly 1 row for deleteRecord\
-                 \but actually deleted" ++
+               \but actually deleted" ++
          show n
     else pure ()

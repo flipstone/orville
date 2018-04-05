@@ -5,6 +5,9 @@ License   : MIT
 -}
 module Database.Orville.Internal.FieldDefinition where
 
+import Database.HDBC
+
+import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.Types
 
 isPrimaryKey :: ColumnFlag -> Bool
@@ -19,26 +22,44 @@ isUninserted :: ColumnFlag -> Bool
 isUninserted PrimaryKey = True
 isUninserted _ = False
 
-fieldName :: FieldDefinition -> String
-fieldName (name, _, _) = name
+fieldName :: FieldDefinition a -> String
+fieldName (name, _, _, _) = name
 
-escapedFieldName :: FieldDefinition -> String
+escapedFieldName :: FieldDefinition a -> String
 escapedFieldName field = "\"" ++ fieldName field ++ "\""
 
-fieldType :: FieldDefinition -> ColumnType
-fieldType (_, typ, _) = typ
+fieldType :: FieldDefinition a -> ColumnType
+fieldType (_, typ, _, _) = typ
 
-isPrimaryKeyField :: FieldDefinition -> Bool
-isPrimaryKeyField (_, _, flags) = any isPrimaryKey flags
+isPrimaryKeyField :: FieldDefinition a -> Bool
+isPrimaryKeyField (_, _, flags, _) = any isPrimaryKey flags
 
-withFlag :: FieldDefinition -> ColumnFlag -> FieldDefinition
-withFlag (name, typ, flags) newFlag = (name, typ, newFlag : flags)
+withFlag :: FieldDefinition a -> ColumnFlag -> FieldDefinition a
+withFlag (name, typ, flags, conversion) newFlag =
+  (name, typ, newFlag : flags, conversion)
 
-withName :: FieldDefinition -> String -> FieldDefinition
-withName (_, typ, flags) newName = (newName, typ, flags)
+withName :: FieldDefinition a -> String -> FieldDefinition a
+withName (_, typ, flags, conversion) newName =
+  (newName, typ, flags, conversion)
 
-isUninsertedField :: FieldDefinition -> Bool
-isUninsertedField (_, _, flags) = any isUninserted flags
+withConversion ::
+     FieldDefinition a
+  -> (SqlConversion a -> SqlConversion b)
+  -> FieldDefinition b
+withConversion (name, typ, flags, aConversion) mapConversion =
+  (name, typ, flags, mapConversion aConversion)
 
-withPrefix :: FieldDefinition -> String -> FieldDefinition
-withPrefix f@(name, _, _) prefix = f `withName` (prefix ++ "_" ++ name)
+isUninsertedField :: FieldDefinition a -> Bool
+isUninsertedField (_, _, flags, _) = any isUninserted flags
+
+withPrefix :: FieldDefinition a -> String -> FieldDefinition a
+withPrefix f@(name, _, _, _) prefix = f `withName` (prefix ++ "_" ++ name)
+
+fieldConversion :: FieldDefinition a -> SqlConversion a
+fieldConversion (_, _, _, conversion) = conversion
+
+fieldToSqlValue :: FieldDefinition a -> a -> SqlValue
+fieldToSqlValue = convertToSql . fieldConversion
+
+fieldFromSqlValue :: FieldDefinition a -> SqlValue -> Maybe a
+fieldFromSqlValue = convertFromSql . fieldConversion

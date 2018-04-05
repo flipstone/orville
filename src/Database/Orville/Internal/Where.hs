@@ -4,10 +4,10 @@ Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ExistentialQuantification #-}
 
 module Database.Orville.Internal.Where where
 
-import Data.Convertible
 import qualified Data.List as List
 import Database.HDBC
 
@@ -15,16 +15,31 @@ import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.QueryKey
 import Database.Orville.Internal.Types
 
+{-
+  It would be nice to match the SqlValues in these with the types from the
+  corresponding FieldDefinitions. However, this would require adding an
+  Eq constraint for List.nub on the .<- operation, which I'm not willing
+  to do at this moment.
+
+  Alternately, we could eliminate storing the entire FieldDefinition here,
+  thereby removing the need for ExistentialQuantification. Currently the
+  field definition is being used in the QueryKeyable instances for WhereCondition
+  for calls to qkOp an friends. Replacing FieldDefinition with just the field
+  name here would be nice. We would probably want a fully-fledged FieldName
+  type whech could provide the appropriate QueryKeyable instance. That then
+  raises questions about the ergonomics users creating FieldDefinition values
+  without requiring OverloadedStrings to be turned on.
+-}
 data WhereCondition
-  = BinOp String
-          FieldDefinition
-          SqlValue
-  | IsNull FieldDefinition
-  | IsNotNull FieldDefinition
-  | In FieldDefinition
-       [SqlValue]
-  | NotIn FieldDefinition
-          [SqlValue]
+  = forall a. BinOp String
+                    (FieldDefinition a)
+                    SqlValue
+  | forall a. IsNull (FieldDefinition a)
+  | forall a. IsNotNull (FieldDefinition a)
+  | forall a. In (FieldDefinition a)
+                 [SqlValue]
+  | forall a. NotIn (FieldDefinition a)
+                    [SqlValue]
   | Or [WhereCondition]
   | And [WhereCondition]
   | AlwaysFalse
@@ -39,30 +54,30 @@ instance QueryKeyable WhereCondition where
   queryKey (And conds) = qkOp "And" conds
   queryKey AlwaysFalse = qkOp "FALSE" QKEmpty
 
-(.==) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef .== a = BinOp "=" fieldDef (convert a)
+(.==) :: FieldDefinition a -> a -> WhereCondition
+fieldDef .== a = BinOp "=" fieldDef (fieldToSqlValue fieldDef a)
 
-(.<>) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef .<> a = BinOp "<>" fieldDef (convert a)
+(.<>) :: FieldDefinition a -> a -> WhereCondition
+fieldDef .<> a = BinOp "<>" fieldDef (fieldToSqlValue fieldDef a)
 
-(.>) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef .> a = BinOp ">" fieldDef (convert a)
+(.>) :: FieldDefinition a -> a -> WhereCondition
+fieldDef .> a = BinOp ">" fieldDef (fieldToSqlValue fieldDef a)
 
-(.>=) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef .>= a = BinOp ">=" fieldDef (convert a)
+(.>=) :: FieldDefinition a -> a -> WhereCondition
+fieldDef .>= a = BinOp ">=" fieldDef (fieldToSqlValue fieldDef a)
 
-(.<) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef .< a = BinOp "<" fieldDef (convert a)
+(.<) :: FieldDefinition a -> a -> WhereCondition
+fieldDef .< a = BinOp "<" fieldDef (fieldToSqlValue fieldDef a)
 
-(.<=) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef .<= a = BinOp "<=" fieldDef (convert a)
+(.<=) :: FieldDefinition a -> a -> WhereCondition
+fieldDef .<= a = BinOp "<=" fieldDef (fieldToSqlValue fieldDef a)
 
-(.<-) :: Convertible a SqlValue => FieldDefinition -> [a] -> WhereCondition
+(.<-) :: FieldDefinition a -> [a] -> WhereCondition
 _ .<- [] = AlwaysFalse
-fieldDef .<- as = In fieldDef (List.nub $ map convert as)
+fieldDef .<- as = In fieldDef (List.nub $ map (fieldToSqlValue fieldDef) as)
 
-(%==) :: Convertible a SqlValue => FieldDefinition -> a -> WhereCondition
-fieldDef %== a = BinOp "@@" fieldDef (convert a)
+(%==) :: FieldDefinition a -> a -> WhereCondition
+fieldDef %== a = BinOp "@@" fieldDef (fieldToSqlValue fieldDef a)
 
 whereConditionSql :: WhereCondition -> String
 whereConditionSql (BinOp op fieldDef _) =
@@ -103,16 +118,17 @@ whereAnd = And
 whereOr :: [WhereCondition] -> WhereCondition
 whereOr = Or
 
-whereIn :: FieldDefinition -> [SqlValue] -> WhereCondition
-whereIn = In
+whereIn :: FieldDefinition a -> [a] -> WhereCondition
+whereIn fieldDef values = In fieldDef (map (fieldToSqlValue fieldDef) values)
 
-whereNotIn :: FieldDefinition -> [SqlValue] -> WhereCondition
-whereNotIn = NotIn
+whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
+whereNotIn fieldDef values =
+  NotIn fieldDef (map (fieldToSqlValue fieldDef) values)
 
-isNull :: FieldDefinition -> WhereCondition
+isNull :: FieldDefinition a -> WhereCondition
 isNull fieldDef = IsNull fieldDef
 
-isNotNull :: FieldDefinition -> WhereCondition
+isNotNull :: FieldDefinition a -> WhereCondition
 isNotNull fieldDef = IsNotNull fieldDef
 
 whereClause :: [WhereCondition] -> String

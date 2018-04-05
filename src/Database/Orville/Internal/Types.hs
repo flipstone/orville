@@ -24,6 +24,7 @@ import qualified Data.Time as Time
 
 import Database.Orville.Internal.Expr
 import Database.Orville.Internal.QueryKey
+import Database.Orville.Internal.SqlConversion
 
 type Record = Int
 
@@ -53,7 +54,7 @@ data ColumnFlag
   | Null
   | Unique
   | forall entity key. References (TableDefinition entity key)
-                                  FieldDefinition
+                                  (FieldDefinition key)
   | ColumnDescription String
 
 class ColumnDefault a where
@@ -75,13 +76,16 @@ instance ColumnDefault Bool where
   toColumnDefaultSql True = "true"
   toColumnDefaultSql False = "false"
 
-type FieldDefinition = (String, ColumnType, [ColumnFlag])
+type FieldDefinition a = (String, ColumnType, [ColumnFlag], SqlConversion a)
 
-instance QueryKeyable (String, ColumnType, [ColumnFlag]) where
-  queryKey (name, _, _) = QKField name
+data SomeField =
+  forall a. SomeField (FieldDefinition a)
+
+instance QueryKeyable (String, ColumnType, [ColumnFlag], SqlConversion a) where
+  queryKey (name, _, _, _) = QKField name
 
 data FieldUpdate = FieldUpdate
-  { fieldUpdateField :: FieldDefinition
+  { fieldUpdateField :: SomeField
   , fieldUpdateValue :: SqlValue
   }
 
@@ -184,15 +188,14 @@ getComponent getComp (ToSql serializer) =
 data TableDefinition entity key = TableDefinition
   { tableName :: String
       -- ^ The name of the table in the database.
-  , tableFields :: [FieldDefinition]
+  , tableFields :: [SomeField]
       -- ^ A list of field definitions defining the table structure
   , tableSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tableKeyToSql :: key -> SqlValue
-      -- ^ A function to convert the primary key type to SqlValue
-  , tableKeyFromSql :: SqlValue -> Maybe key
-      -- ^ A function to convert the primary key type from SqlValue. Nothing indicates a failure.
+  , tablePrimaryKey :: FieldDefinition key
+      -- ^ The statically typed field definition that is the primary key. Currently
+      -- this field must still by listed in `tableFields`
   , tableFromSql :: FromSql (entity key)
       -- ^ A definition of how to convert the haskell type from a sql row
   , tableToSql :: forall anyKey. ToSql (entity anyKey) ()
@@ -206,6 +209,20 @@ data TableDefinition entity key = TableDefinition
       -- comments will get printed in the log if there is an erro while attempting
       -- to migrate the table.
   }
+
+tableKeyConversion :: TableDefinition entity key -> SqlConversion key
+tableKeyConversion tableDef
+  -- This should use fieldConversion once modules and type definitions get
+  -- re-arranged to better avoid cycles
+ =
+  case tablePrimaryKey tableDef of
+    (_, _, _, aConversion) -> aConversion
+
+tableKeyFromSql :: TableDefinition entity key -> SqlValue -> Maybe key
+tableKeyFromSql = convertFromSql . tableKeyConversion
+
+tableKeyToSql :: TableDefinition entity key -> key -> SqlValue
+tableKeyToSql = convertToSql . tableKeyConversion
 
 tableKeysToSql :: TableDefinition entity key -> [key] -> [SqlValue]
 tableKeysToSql tableDef = map (tableKeyToSql tableDef)
