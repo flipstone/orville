@@ -7,6 +7,20 @@ sudo: false
 # Choose a lightweight base image; we provide our own build tools.
 language: generic
 
+services:
+  - postgresql
+
+addons:
+  postgresql: "9.6"
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
+  - psql -c 'create user travis_ci_test;' -U postgres
+
+env:
+  global:
+    - TEST_CONN_STRING="user=travis_ci_test"
+
 # Caching so the next build will be fast too.
 cache:
   directories:
