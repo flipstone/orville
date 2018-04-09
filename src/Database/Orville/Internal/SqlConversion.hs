@@ -9,10 +9,21 @@ module Database.Orville.Internal.SqlConversion
   , convertToSql
   , convertFromSql
   , nullableConversion
+  , textConversion
+  , dayConversion
+  , utcTimeConversion
+  , intConversion
+  , int32Conversion
+  , int64Conversion
+  , doubleConversion
+  , boolConversion
   ) where
 
 import Control.Monad ((<=<))
 import Data.Convertible
+import Data.Int (Int32, Int64)
+import Data.Text (Text)
+import Data.Time (Day, UTCTime)
 
 import Database.HDBC
 
@@ -23,6 +34,30 @@ data SqlConversion a = SqlConversion
 
 sqlConversion :: (a -> SqlValue) -> (SqlValue -> Maybe a) -> SqlConversion a
 sqlConversion = SqlConversion
+
+textConversion :: SqlConversion Text
+textConversion = sqlConvertible
+
+dayConversion :: SqlConversion Day
+dayConversion = sqlConvertible
+
+utcTimeConversion :: SqlConversion UTCTime
+utcTimeConversion = sqlConvertible
+
+intConversion :: SqlConversion Int
+intConversion = sqlConvertible
+
+int32Conversion :: SqlConversion Int32
+int32Conversion = sqlConvertible
+
+int64Conversion :: SqlConversion Int64
+int64Conversion = sqlConvertible
+
+doubleConversion :: SqlConversion Double
+doubleConversion = sqlConvertible
+
+boolConversion :: SqlConversion Bool
+boolConversion = sqlConvertible
 
 nullableConversion :: SqlConversion a -> SqlConversion (Maybe a)
 nullableConversion aConversion = sqlConversion maybeToSql maybeFromSql

@@ -27,14 +27,10 @@ virusTable =
 
 virusIdField :: O.FieldDefinition VirusId
 virusIdField =
-  ( "id"
-  , O.AutomaticId
-  , [O.PrimaryKey]
-  , O.sqlConversionVia unVirusId VirusId O.sqlConvertible)
+  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.sqlConversionVia unVirusId VirusId
 
 virusNameField :: O.FieldDefinition VirusName
 virusNameField =
-  ( "name"
-  , O.VarText 255
-  , []
-  , O.sqlConversionVia unVirusName VirusName O.sqlConvertible)
+  O.textField "name" 255 `O.withConversion`
+  O.sqlConversionVia unVirusName VirusName

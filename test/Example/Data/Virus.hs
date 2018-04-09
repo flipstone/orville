@@ -4,6 +4,8 @@ module Example.Data.Virus
   , VirusName(..)
   ) where
 
+import Data.Text (Text)
+
 data Virus key = Virus
   { virusId :: key
   , virusName :: VirusName
@@ -14,5 +16,5 @@ newtype VirusId = VirusId
   } deriving (Show, Eq)
 
 newtype VirusName = VirusName
-  { unVirusName :: String
+  { unVirusName :: Text
   } deriving (Show, Eq)

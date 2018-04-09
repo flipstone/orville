@@ -5,6 +5,7 @@ module CrudTest where
 import Control.Monad (void)
 import Data.Convertible (convert)
 import Data.Pool (Pool, createPool, destroyAllResources)
+import qualified Data.Text as Text
 import qualified Database.HDBC as HDBC
 import qualified Database.HDBC.PostgreSQL as Postgres
 import System.Environment (getEnv)
@@ -65,11 +66,17 @@ test_crud =
 
 bpsVirus :: Virus ()
 bpsVirus =
-  Virus {virusId = (), virusName = VirusName "Bovine popular stomachitis"}
+  Virus
+    { virusId = ()
+    , virusName = VirusName (Text.pack "Bovine popular stomachitis")
+    }
 
 brnVirus :: Virus ()
 brnVirus =
-  Virus {virusId = (), virusName = VirusName "Black raspberry necrosis"}
+  Virus
+    { virusId = ()
+    , virusName = VirusName (Text.pack "Black raspberry necrosis")
+    }
 
 resetToBlankSchema :: O.SchemaDefinition -> O.Orville ()
 resetToBlankSchema schemaDef = do

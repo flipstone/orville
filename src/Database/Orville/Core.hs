@@ -41,6 +41,20 @@ module Database.Orville.Core
   , Now(..)
   , ColumnType(..)
   , FieldDefinition
+  , textField
+  , fixedTextField
+  , dayField
+  , utcTimeField
+  , int32Field
+  , int64Field
+  , doubleField
+  , boolField
+  , automaticIdField
+  , searchVectorField
+  , nullableField
+  , withFlag
+  , withName
+  , withConversion
   , SomeField(..)
   , withPrefix
   , fieldName
@@ -57,8 +71,6 @@ module Database.Orville.Core
   , ToSql
   , getField
   , getComponent
-  , withFlag
-  , withName
   , SchemaItem(..)
   , SchemaDefinition
   , Record
