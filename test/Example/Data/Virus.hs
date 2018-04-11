@@ -6,8 +6,8 @@ module Example.Data.Virus
 
 import Data.Text (Text)
 
-data Virus key = Virus
-  { virusId :: key
+data Virus = Virus
+  { virusId :: VirusId
   , virusName :: VirusName
   } deriving (Show, Eq)
 

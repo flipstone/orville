@@ -16,7 +16,7 @@ import qualified Database.Orville.Raw as ORaw
 import Test.Tasty (TestTree, testGroup, withResource)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-import Example.Data.Virus (Virus(..), VirusName(..))
+import Example.Data.Virus (Virus(..), VirusId(..), VirusName(..))
 import Example.Schema (schema, virusTable)
 
 type TestPool = Pool Postgres.Connection
@@ -64,17 +64,17 @@ test_crud =
             foundDeletedVirus
       ]
 
-bpsVirus :: Virus ()
+bpsVirus :: Virus
 bpsVirus =
   Virus
-    { virusId = ()
+    { virusId = VirusId 1
     , virusName = VirusName (Text.pack "Bovine popular stomachitis")
     }
 
-brnVirus :: Virus ()
+brnVirus :: Virus
 brnVirus =
   Virus
-    { virusId = ()
+    { virusId = VirusId 2
     , virusName = VirusName (Text.pack "Black raspberry necrosis")
     }
 
