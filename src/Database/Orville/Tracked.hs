@@ -41,7 +41,7 @@ data SignType
   | Deleted
   deriving (Eq, Show, Enum)
 
-data Sign = forall key entity. (Typeable entity, Typeable key) =>
+data Sign = forall entity key. (Typeable entity, Typeable key) =>
                                Sign
   { signType :: SignType
   , signTable :: TableDefinition entity key
@@ -133,22 +133,20 @@ insertRecordTracked ::
      (MonadTrackedOrville conn m, Typeable entity, Typeable key)
   => TableDefinition entity key
   -> entity
-  -> m entity
+  -> m ()
 insertRecordTracked tableDef entity = do
-  record <- insertRecord tableDef entity
-  track $ Sign Inserted tableDef record
-  pure record
+  insertRecord tableDef entity
+  track $ Sign Inserted tableDef entity
 
 updateRecordTracked ::
      (MonadTrackedOrville conn m, Typeable entity, Typeable key)
   => TableDefinition entity key
   -> key
   -> entity
-  -> m entity
-updateRecordTracked tableDef key record = do
-  updated <- updateRecord tableDef key record
-  track $ Sign Updated tableDef updated
-  pure updated
+  -> m ()
+updateRecordTracked tableDef key entity = do
+  updateRecord tableDef key entity
+  track $ Sign Updated tableDef entity
 
 deleteRecordTracked ::
      (MonadTrackedOrville conn m, Typeable entity, Typeable key)

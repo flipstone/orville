@@ -28,36 +28,30 @@ test_crud =
       "CRUD Test"
       [ testCase "Insert and find" $ do
           run (resetToBlankSchema schema)
-          insertedVirus <- run (O.insertRecord virusTable bpsVirus)
-          foundVirus <- run $ O.findRecord virusTable (virusId insertedVirus)
+          run (O.insertRecord virusTable bpsVirus)
+          foundVirus <- run $ O.findRecord virusTable (virusId bpsVirus)
           assertEqual
             "Virus found in database didn't match the originally inserted values"
-            (Just insertedVirus)
+            (Just bpsVirus)
             foundVirus
         --
       , testCase "Update" $ do
           run (resetToBlankSchema schema)
-          insertedVirus <- run (O.insertRecord virusTable bpsVirus)
-          updatedVirus <-
-            run $ O.updateRecord virusTable (virusId insertedVirus) brnVirus
-          newlyFoundVirus <-
-            run $ O.findRecord virusTable (virusId insertedVirus)
-          assertEqual
-            "Virus returned from update didn't match the values passed in for update"
-            (virusName brnVirus)
-            (virusName updatedVirus)
+          run (O.insertRecord virusTable bpsVirus)
+          run $ O.updateRecord virusTable (virusId bpsVirus) brnVirus
+          newlyFoundVirus <- run (O.findRecord virusTable (virusId brnVirus))
           assertEqual
             "Virus found in database didn't match the values returned by from update"
-            (Just updatedVirus)
+            (Just brnVirus)
             newlyFoundVirus
         --
       , testCase "Delete" $ do
           run (resetToBlankSchema schema)
           foundDeletedVirus <-
             run $ do
-              insertedVirus <- O.insertRecord virusTable bpsVirus
-              O.deleteRecord virusTable insertedVirus
-              O.findRecord virusTable (virusId insertedVirus)
+              O.insertRecord virusTable bpsVirus
+              O.deleteRecord virusTable bpsVirus
+              O.findRecord virusTable (virusId bpsVirus)
           assertEqual
             "Virus was found in the database, but it should have been deleted"
             Nothing
