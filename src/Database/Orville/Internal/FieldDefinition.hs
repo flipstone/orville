@@ -8,6 +8,7 @@ module Database.Orville.Internal.FieldDefinition where
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import Data.Time (Day, UTCTime)
+import Data.UUID (UUID)
 import Database.HDBC
 
 import Database.Orville.Internal.SqlConversion
@@ -36,6 +37,9 @@ doubleField = fieldOfType Double doubleConversion
 
 boolField :: String -> FieldDefinition Bool
 boolField = fieldOfType Boolean boolConversion
+
+uuidField :: String -> FieldDefinition UUID
+uuidField = fieldOfType UUID uuidConversion
 
 searchVectorField :: String -> FieldDefinition Text
 searchVectorField = fieldOfType TextSearchVector textConversion

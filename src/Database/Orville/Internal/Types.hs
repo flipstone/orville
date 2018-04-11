@@ -44,6 +44,7 @@ data ColumnType
   | TextSearchVector
   | Double
   | Boolean
+  | UUID
 
 data ColumnFlag
   = PrimaryKey

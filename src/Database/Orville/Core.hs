@@ -25,6 +25,7 @@ module Database.Orville.Core
   , int64Conversion
   , doubleConversion
   , boolConversion
+  , uuidConversion
   , TableParams(..)
   , RelationalMap
   , mapAttr
@@ -59,6 +60,7 @@ module Database.Orville.Core
   , doubleField
   , boolField
   , searchVectorField
+  , uuidField
   , nullableField
   , withFlag
   , withName
