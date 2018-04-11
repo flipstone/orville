@@ -21,7 +21,7 @@ module Database.Orville.Internal.RelationalMap
   , readOnlyMap
   ) where
 
-import Control.Monad (join, when)
+import Control.Monad (join)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 
@@ -41,7 +41,7 @@ import Database.Orville.Internal.Types
 data TableParams entity key = TableParams
   { tblName :: String
       -- ^ The name of the table in the database
-  , tblMapper :: RelationalMap (entity key) (entity key)
+  , tblMapper :: RelationalMap entity entity
       -- ^ The relational mapping that defines how the Haskell entity type
       -- is converted both to and from sql. The fields utilized in the mapping
       -- are used to automatically build the list of 'FieldDefinitions' that
@@ -51,9 +51,9 @@ data TableParams entity key = TableParams
       -- (Orville will never delete a column without being told it is safe)
   , tblPrimaryKey :: FieldDefinition key
       -- ^ A FieldDefinition for the primary key.
-  , tblSetKey :: forall anyKey1 anyKey2. anyKey2 -> entity anyKey1 -> entity anyKey2
+  , tblSetKey :: key -> entity -> entity
       -- ^ A function to set the key on the entity
-  , tblGetKey :: forall anyKey. entity anyKey -> anyKey
+  , tblGetKey :: entity -> key
       -- ^ A function to get the key on the entity
   , tblComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These
@@ -82,11 +82,11 @@ data TableParams entity key = TableParams
  @
  -}
 mkTableDefinition :: TableParams entity key -> TableDefinition entity key
-mkTableDefinition p@(TableParams {..}) =
+mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
     , tableFromSql = mkFromSql tblMapper
-    , tableToSql = getComponent (unsafeSquashPrimaryKey p) (mkToSql tblMapper)
+    , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
     , tableSafeToDelete = tblSafeToDelete
@@ -94,11 +94,6 @@ mkTableDefinition p@(TableParams {..}) =
     , tableGetKey = tblGetKey
     , tableComments = tblComments
     }
-
-unsafeSquashPrimaryKey ::
-     TableParams entity key -> entity anyKey1 -> forall anyKey2. entity anyKey2
-unsafeSquashPrimaryKey params =
-  tblSetKey params (error "Primary key field was used!")
 
 data RelationalMap a b where
   RM_Field :: FieldDefinition a -> RelationalMap a a
@@ -188,10 +183,9 @@ mkFromSql (RM_Partial rm) = do
     wrapError = either (Left . RowDataError) Right
 
 mkToSql :: RelationalMap a b -> ToSql a ()
-mkToSql (RM_Field field) =
-  when (not $ isUninsertedField field) $ do
-    value <- ask
-    modify (fieldToSqlValue field value :)
+mkToSql (RM_Field field) = do
+  value <- ask
+  modify (fieldToSqlValue field value :)
 mkToSql (RM_Nest f rm) = getComponent f (mkToSql rm)
 mkToSql (RM_Apply rmF rmC) = mkToSql rmF >> mkToSql rmC
 mkToSql (RM_Partial rm) = mkToSql rm

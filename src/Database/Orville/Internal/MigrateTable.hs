@@ -108,8 +108,6 @@ mkFlagDDL (References table field) =
 mkFlagDDL (ColumnDescription _) = Nothing
 
 mkTypeDDL :: ColumnType -> String
-mkTypeDDL AutomaticId = "SERIAL"
-mkTypeDDL ForeignId = "INTEGER"
 mkTypeDDL Integer = "INTEGER"
 mkTypeDDL BigInteger = "BIGINT"
 mkTypeDDL Double = "DOUBLE PRECISION"
@@ -119,6 +117,7 @@ mkTypeDDL (VarText len) = "VARCHAR(" ++ show len ++ ")"
 mkTypeDDL (Date) = "DATE"
 mkTypeDDL (Timestamp) = "TIMESTAMP with time zone"
 mkTypeDDL TextSearchVector = "TSVECTOR"
+mkTypeDDL UUID = "UUID"
 
 mkFieldDDL :: FieldDefinition a -> String
 mkFieldDDL (name, columnType, flags, _) =
@@ -139,8 +138,7 @@ mkCreateTableDDL tableDef =
     mkSomeFieldDDL (SomeField f) = mkFieldDDL f
 
 columnTypeSqlId :: ColumnType -> SqlTypeId
-columnTypeSqlId AutomaticId = SqlBigIntT
-columnTypeSqlId ForeignId = SqlBigIntT
+columnTypeSqlId UUID = SqlUnknownT "2950"
 columnTypeSqlId Integer = SqlBigIntT
 columnTypeSqlId Boolean = SqlBitT
 columnTypeSqlId BigInteger = SqlBigIntT
@@ -152,8 +150,7 @@ columnTypeSqlId Timestamp = SqlTimestampWithZoneT
 columnTypeSqlId TextSearchVector = SqlUnknownT "3614"
 
 columnTypeSqlSize :: ColumnType -> Maybe Int
-columnTypeSqlSize AutomaticId = Just 4
-columnTypeSqlSize ForeignId = Just 4
+columnTypeSqlSize UUID = Just 16
 columnTypeSqlSize Integer = Just 4
 columnTypeSqlSize BigInteger = Just 8
 columnTypeSqlSize Double = Just 8

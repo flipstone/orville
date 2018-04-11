@@ -17,6 +17,7 @@ module Database.Orville.Internal.SqlConversion
   , int64Conversion
   , doubleConversion
   , boolConversion
+  , uuidConversion
   ) where
 
 import Control.Monad ((<=<))
@@ -24,6 +25,8 @@ import Data.Convertible
 import Data.Int (Int32, Int64)
 import Data.Text (Text)
 import Data.Time (Day, UTCTime)
+import Data.UUID (UUID)
+import qualified Data.UUID as UUID
 
 import Database.HDBC
 
@@ -58,6 +61,10 @@ doubleConversion = sqlConvertible
 
 boolConversion :: SqlConversion Bool
 boolConversion = sqlConvertible
+
+uuidConversion :: SqlConversion UUID
+uuidConversion =
+  maybeSqlConversionVia (UUID.toText) (UUID.fromText) textConversion
 
 nullableConversion :: SqlConversion a -> SqlConversion (Maybe a)
 nullableConversion aConversion = sqlConversion maybeToSql maybeFromSql

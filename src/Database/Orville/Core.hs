@@ -25,6 +25,7 @@ module Database.Orville.Core
   , int64Conversion
   , doubleConversion
   , boolConversion
+  , uuidConversion
   , TableParams(..)
   , RelationalMap
   , mapAttr
@@ -58,8 +59,8 @@ module Database.Orville.Core
   , int64Field
   , doubleField
   , boolField
-  , automaticIdField
   , searchVectorField
+  , uuidField
   , nullableField
   , withFlag
   , withName
@@ -167,14 +168,11 @@ getField f = do
   sqlValues <- get
   put (convert value : sqlValues)
 
-selectAll ::
-     TableDefinition entity key -> SelectOptions -> Orville [entity key]
+selectAll :: TableDefinition entity key -> SelectOptions -> Orville [entity]
 selectAll tableDef = runSelect . selectQueryTable tableDef
 
 selectFirst ::
-     TableDefinition entity key
-  -> SelectOptions
-  -> Orville (Maybe (entity key))
+     TableDefinition entity key -> SelectOptions -> Orville (Maybe entity)
 selectFirst tableDef opts =
   listToMaybe <$> selectAll tableDef (limit 1 <> opts)
 
@@ -196,7 +194,7 @@ findRecords ::
      Ord key
   => TableDefinition entity key
   -> [key]
-  -> Orville (Map.Map key (entity key))
+  -> Orville (Map.Map key entity)
 findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
   let keyField = tablePrimaryKey tableDef
@@ -209,13 +207,13 @@ findRecordsBy ::
   => TableDefinition entity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Orville (Map.Map fieldValue [entity key])
+  -> Orville (Map.Map fieldValue [entity])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
-findRecord :: TableDefinition entity key -> key -> Orville (Maybe (entity key))
+findRecord :: TableDefinition entity key -> key -> Orville (Maybe entity)
 findRecord tableDef key =
   let keyField = tablePrimaryKey tableDef
    in selectFirst tableDef (where_ $ keyField .== key)
@@ -234,57 +232,39 @@ updateFields tableDef updates conds =
     updateNames = map fieldUpdateName updates
     updateClause = mkUpdateClause (tableName tableDef) updateNames
 
-updateRecord ::
-     TableDefinition entity key -> key -> entity anyKey -> Orville (entity key)
+-- The signature of `updateRecord` allows for updating the primary key field
+-- because the key is passed separate from the entity. I suspect this is a
+-- misfeature, which could be fixed by simply removing the key parameter and
+-- using the key from the entity given.
+updateRecord :: TableDefinition entity key -> key -> entity -> Orville ()
 updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
       conds = [keyField .== key]
-      isSomeUninsertedField (SomeField f) = isUninsertedField f
-      fields = filter (not . isSomeUninsertedField) (tableFields tableDef)
+      fields = tableFields tableDef
       builder = tableToSql tableDef
       updates = zipWith FieldUpdate fields (runToSql builder record)
   void $ updateFields tableDef updates conds
-  pure $ tableSetKey tableDef key record
 
-insertRecord :: TableDefinition entity key -> entity () -> Orville (entity key)
+insertRecord :: TableDefinition entity key -> entity -> Orville ()
 insertRecord tableDef newRecord = do
   let insertSql =
-        mkInsertClause (tableName tableDef) (insertableColumnNames tableDef) ++
-        " RETURNING id"
+        mkInsertClause (tableName tableDef) (tableColumnNames tableDef)
       builder = tableToSql tableDef
       vals = runToSql builder newRecord
-  rows <-
-    withConnection $ \conn -> do
-      executingSql InsertQuery insertSql $ do
-        insert <- prepare conn insertSql
-        void $ execute insert vals
-        fetchAllRows' insert
-  case rows of
-    [[key]] ->
-      case tableKeyFromSql tableDef key of
-        Just keyValue -> return $ tableSetKey tableDef keyValue newRecord
-        _ ->
-          error $
-          concat
-            [ "Found a non-decodeable key in table "
-            , tableName tableDef
-            , ": "
-            , show key
-            ]
-    [] -> error "Didn't get a key back from the database!"
-    _ -> error "Got more than one key back from the database!"
+  withConnection $ \conn -> do
+    executingSql InsertQuery insertSql $ do void $ run conn insertSql vals
 
-insertRecordMany :: TableDefinition entity key -> [entity ()] -> Orville ()
+insertRecordMany :: TableDefinition entity key -> [entity] -> Orville ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
-        mkInsertClause (tableName tableDef) (insertableColumnNames tableDef)
+        mkInsertClause (tableName tableDef) (tableColumnNames tableDef)
   let builder = tableToSql tableDef
   withConnection $ \conn -> do
     executingSql InsertQuery insertSql $ do
       insert <- prepare conn insertSql
       executeMany insert (map (runToSql builder) newRecords)
 
-deleteRecord :: TableDefinition entity key -> entity key -> Orville ()
+deleteRecord :: TableDefinition entity key -> entity -> Orville ()
 deleteRecord tableDef record = do
   let keyField = tablePrimaryKey tableDef
       key = tableGetKey tableDef record
