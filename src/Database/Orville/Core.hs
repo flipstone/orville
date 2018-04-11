@@ -16,6 +16,15 @@ module Database.Orville.Core
   , sqlConvertible
   , sqlConversionVia
   , maybeSqlConversionVia
+  , nullableConversion
+  , textConversion
+  , dayConversion
+  , utcTimeConversion
+  , intConversion
+  , int32Conversion
+  , int64Conversion
+  , doubleConversion
+  , boolConversion
   , TableParams(..)
   , RelationalMap
   , mapAttr
