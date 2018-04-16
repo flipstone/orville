@@ -1,13 +1,11 @@
 module CrudTest where
 
-import qualified Data.Text as Text
-
 import qualified Database.Orville as O
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-import Example.Data.Virus (Virus(..), VirusId(..), VirusName(..))
+import Example.Data.Virus (bpsVirus, brnVirus, virusId)
 import Example.Schema (schema, virusTable)
 import qualified TestDB as TestDB
 
@@ -47,17 +45,3 @@ test_crud =
             Nothing
             foundDeletedVirus
       ]
-
-bpsVirus :: Virus
-bpsVirus =
-  Virus
-    { virusId = VirusId 1
-    , virusName = VirusName (Text.pack "Bovine popular stomachitis")
-    }
-
-brnVirus :: Virus
-brnVirus =
-  Virus
-    { virusId = VirusId 2
-    , virusName = VirusName (Text.pack "Black raspberry necrosis")
-    }

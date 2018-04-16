@@ -11,7 +11,6 @@ module Database.Orville.Internal.FromSql where
 
 import Control.Exception.Lifted (throw)
 import Control.Monad
-import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Convertible
@@ -81,14 +80,4 @@ decodeSqlRows builder rows =
   forM rows $ \row -> do
     case runFromSql builder row of
       Right result -> pure $ Just result
-      (Left (RowDataError msg)) -> do
-        liftIO $
-          putStrLn $
-          concat
-            [ "** Warning ** Error converting row from sql: "
-            , show msg
-            , ". First column was was: "
-            , maybe "<no columns present>" show (listToMaybe row)
-            ]
-        pure Nothing
       Left err -> throw err
