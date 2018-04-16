@@ -1,33 +1,23 @@
-{-# LANGUAGE RankNTypes #-}
-
 module CrudTest where
 
-import Control.Monad (void)
-import Data.Convertible (convert)
-import Data.Pool (Pool, createPool, destroyAllResources)
 import qualified Data.Text as Text
-import qualified Database.HDBC as HDBC
-import qualified Database.HDBC.PostgreSQL as Postgres
-import System.Environment (getEnv)
 
 import qualified Database.Orville as O
-import qualified Database.Orville.Raw as ORaw
 
-import Test.Tasty (TestTree, testGroup, withResource)
+import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
 import Example.Data.Virus (Virus(..), VirusId(..), VirusName(..))
 import Example.Schema (schema, virusTable)
-
-type TestPool = Pool Postgres.Connection
+import qualified TestDB as TestDB
 
 test_crud :: TestTree
 test_crud =
-  withOrvilleRun $ \run ->
+  TestDB.withOrvilleRun $ \run ->
     testGroup
       "CRUD Test"
       [ testCase "Insert and find" $ do
-          run (resetToBlankSchema schema)
+          run (TestDB.reset schema)
           run (O.insertRecord virusTable bpsVirus)
           foundVirus <- run $ O.findRecord virusTable (virusId bpsVirus)
           assertEqual
@@ -36,7 +26,7 @@ test_crud =
             foundVirus
         --
       , testCase "Update" $ do
-          run (resetToBlankSchema schema)
+          run (TestDB.reset schema)
           run (O.insertRecord virusTable bpsVirus)
           run $ O.updateRecord virusTable (virusId bpsVirus) brnVirus
           newlyFoundVirus <- run (O.findRecord virusTable (virusId brnVirus))
@@ -46,7 +36,7 @@ test_crud =
             newlyFoundVirus
         --
       , testCase "Delete" $ do
-          run (resetToBlankSchema schema)
+          run (TestDB.reset schema)
           foundDeletedVirus <-
             run $ do
               O.insertRecord virusTable bpsVirus
@@ -71,31 +61,3 @@ brnVirus =
     { virusId = VirusId 2
     , virusName = VirusName (Text.pack "Black raspberry necrosis")
     }
-
-resetToBlankSchema :: O.SchemaDefinition -> O.Orville ()
-resetToBlankSchema schemaDef = do
-  results <- ORaw.selectSqlRows "SELECT current_user" []
-  case results of
-    [[("current_user", currentUser)]]
-    -- I would like to use placeholders here, but postgres gives my a
-    -- sql syntax error when I do :(
-     -> void $ ORaw.updateSql ("DROP OWNED BY " ++ convert currentUser) []
-    _ ->
-      error $ "Expected single 'current_user' result row, got " ++ show results
-  O.migrateSchema schemaDef
-
-withOrvilleRun :: ((forall a. O.Orville a -> IO a) -> TestTree) -> TestTree
-withOrvilleRun mkOrvilleTree = withDb (\pool -> mkOrvilleTree (run pool))
-  where
-    run :: IO TestPool -> forall a. O.Orville a -> IO a
-    run getPool action = do
-      pool <- getPool
-      O.runOrville action (O.newOrvilleEnv pool)
-
-withDb :: (IO TestPool -> TestTree) -> TestTree
-withDb = withResource acquirePool destroyAllResources
-
-acquirePool :: IO TestPool
-acquirePool = do
-  connString <- getEnv "TEST_CONN_STRING"
-  createPool (Postgres.connectPostgreSQL' connString) HDBC.disconnect 1 60 1
