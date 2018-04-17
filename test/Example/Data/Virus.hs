@@ -6,7 +6,6 @@ module Example.Data.Virus
   , brnVirus
   ) where
 
-import Data.Int (Int32)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -16,7 +15,7 @@ data Virus = Virus
   } deriving (Show, Eq)
 
 newtype VirusId = VirusId
-  { unVirusId :: Int32
+  { unVirusId :: Int
   } deriving (Show, Eq)
 
 newtype VirusName = VirusName

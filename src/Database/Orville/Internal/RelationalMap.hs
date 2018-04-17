@@ -21,7 +21,7 @@ module Database.Orville.Internal.RelationalMap
   , readOnlyMap
   ) where
 
-import Control.Monad (join)
+import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 
@@ -183,9 +183,10 @@ mkFromSql (RM_Partial rm) = do
     wrapError = either (Left . RowDataError) Right
 
 mkToSql :: RelationalMap a b -> ToSql a ()
-mkToSql (RM_Field field) = do
-  value <- ask
-  modify (fieldToSqlValue field value :)
+mkToSql (RM_Field field) =
+  when (not $ isUninsertedField field) $ do
+    value <- ask
+    modify (fieldToSqlValue field value :)
 mkToSql (RM_Nest f rm) = getComponent f (mkToSql rm)
 mkToSql (RM_Apply rmF rmC) = mkToSql rmF >> mkToSql rmC
 mkToSql (RM_Partial rm) = mkToSql rm

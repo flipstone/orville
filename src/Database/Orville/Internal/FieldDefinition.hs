@@ -37,6 +37,9 @@ doubleField = fieldOfType Double doubleConversion
 boolField :: String -> FieldDefinition Bool
 boolField = fieldOfType Boolean boolConversion
 
+automaticIdField :: String -> FieldDefinition Int
+automaticIdField = fieldOfType AutomaticId intConversion
+
 searchVectorField :: String -> FieldDefinition Text
 searchVectorField = fieldOfType TextSearchVector textConversion
 
@@ -50,9 +53,12 @@ foreignKeyField ::
   -> FieldDefinition key
 foreignKeyField name refTable refField =
   ( name
-  , fieldType refField
+  , foreignFieldType (fieldType refField)
   , [References refTable refField]
   , fieldConversion refField)
+  where
+    foreignFieldType AutomaticId = ForeignId
+    foreignFieldType typ = typ
 
 -- This is an internal field for building the basic field types
 -- above. It should not be exposed outside Orville
@@ -66,6 +72,10 @@ isPrimaryKey _ = False
 isNullFlag :: ColumnFlag -> Bool
 isNullFlag Null = True
 isNullFlag _ = False
+
+isUninserted :: ColumnFlag -> Bool
+isUninserted PrimaryKey = True
+isUninserted _ = False
 
 fieldName :: FieldDefinition a -> String
 fieldName (name, _, _, _) = name
@@ -93,6 +103,9 @@ withConversion ::
   -> FieldDefinition b
 withConversion (name, typ, flags, aConversion) mapConversion =
   (name, typ, flags, mapConversion aConversion)
+
+isUninsertedField :: FieldDefinition a -> Bool
+isUninsertedField (_, _, flags, _) = any isUninserted flags
 
 withPrefix :: FieldDefinition a -> String -> FieldDefinition a
 withPrefix f@(name, _, _, _) prefix = f `withName` (prefix ++ "_" ++ name)

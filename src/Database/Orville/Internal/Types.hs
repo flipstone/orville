@@ -35,7 +35,9 @@ type UpdatedAt = Time.UTCTime
 type OccurredAt = Time.UTCTime
 
 data ColumnType
-  = Text Int
+  = AutomaticId
+  | ForeignId
+  | Text Int
   | VarText Int
   | Date
   | Timestamp

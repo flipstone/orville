@@ -12,3 +12,10 @@ tableColumnNames :: TableDefinition entity key -> [String]
 tableColumnNames = map someFieldName . tableFields
   where
     someFieldName (SomeField f) = fieldName f
+
+insertableColumnNames :: TableDefinition entity key -> [String]
+insertableColumnNames =
+  map someFieldName . filter (not . isSomeUninsertedField) . tableFields
+  where
+    isSomeUninsertedField (SomeField f) = isUninsertedField f
+    someFieldName (SomeField f) = fieldName f
