@@ -196,13 +196,13 @@ data TableDefinition entity key = TableDefinition
   , tablePrimaryKey :: FieldDefinition key
       -- ^ The statically typed field definition that is the primary key. Currently
       -- this field must still by listed in `tableFields`
-  , tableFromSql :: FromSql entity
+  , tableFromSql :: FromSql (entity key)
       -- ^ A definition of how to convert the haskell type from a sql row
-  , tableToSql :: ToSql entity ()
+  , tableToSql :: forall anyKey. ToSql (entity anyKey) ()
       -- ^ A definition of how to convert the haskell type to a sql row
-  , tableSetKey :: key -> entity -> entity
+  , tableSetKey :: forall anyKey1 anyKey2. anyKey2 -> entity anyKey1 -> entity anyKey2
       -- ^ A function to set the key on the entity
-  , tableGetKey :: entity -> key
+  , tableGetKey :: forall anyKey. entity anyKey -> anyKey
       -- ^ A function to get the key on the entity
   , tableComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These

@@ -9,8 +9,8 @@ module Example.Data.Virus
 import Data.Text (Text)
 import qualified Data.Text as Text
 
-data Virus = Virus
-  { virusId :: VirusId
+data Virus key = Virus
+  { virusId :: key
   , virusName :: VirusName
   } deriving (Show, Eq)
 
@@ -22,16 +22,16 @@ newtype VirusName = VirusName
   { unVirusName :: Text
   } deriving (Show, Eq)
 
-bpsVirus :: Virus
+bpsVirus :: Virus ()
 bpsVirus =
   Virus
-    { virusId = VirusId 1
+    { virusId = ()
     , virusName = VirusName (Text.pack "Bovine popular stomachitis")
     }
 
-brnVirus :: Virus
+brnVirus :: Virus ()
 brnVirus =
   Virus
-    { virusId = VirusId 2
+    { virusId = ()
     , virusName = VirusName (Text.pack "Black raspberry necrosis")
     }

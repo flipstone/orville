@@ -1,6 +1,7 @@
 module ErrorsTest where
 
 import Control.Exception.Lifted (try)
+import Control.Monad (void)
 
 import qualified Database.Orville as O
 import qualified Database.Orville.Select as S
@@ -20,7 +21,7 @@ test_errors =
       "Errors Test"
       [ testCase "RowDataError is raised on invalid row" $ do
           run (TestDB.reset schema)
-          run (O.insertRecord virusTable bpsVirus)
+          void $ run (O.insertRecord virusTable bpsVirus)
           let badSelect =
                 S.selectQuery
                   badVirusFromSql

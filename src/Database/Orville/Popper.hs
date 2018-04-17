@@ -82,19 +82,22 @@ certainly' msgPopper bPopper =
   (msgPopper &&& bPopper) >>>
   liftPop (\(err, maybeB) -> maybe (PoppedError err) PoppedValue maybeB)
 
-popRecord :: TableDefinition entity key -> key -> Popper a (Maybe entity)
+popRecord :: TableDefinition entity key -> key -> Popper a (Maybe (entity key))
 popRecord tableDef key = popQuery (findRecord tableDef key)
 
-popRecord' :: TableDefinition entity key -> key -> Popper a entity
+popRecord' :: TableDefinition entity key -> key -> Popper a (entity key)
 popRecord' td key = popRecord td key >>> certainly err
   where
     err = MissingRecord td (tablePrimaryKey td) key
 
 popFirst ::
-     TableDefinition entity key -> SelectOptions -> Popper a (Maybe entity)
+     TableDefinition entity key
+  -> SelectOptions
+  -> Popper a (Maybe (entity key))
 popFirst tableDef opts = popQuery (selectFirst tableDef opts)
 
-popTable :: TableDefinition entity key -> SelectOptions -> Popper a [entity]
+popTable ::
+     TableDefinition entity key -> SelectOptions -> Popper a ([entity key])
 popTable tableDef opts = popQuery (selectAll tableDef opts)
 
 popMaybe :: Popper a b -> Popper (Maybe a) (Maybe b)
@@ -104,21 +107,21 @@ hasMany ::
      Ord fieldValue
   => TableDefinition entity key
   -> FieldDefinition fieldValue
-  -> Popper fieldValue [entity]
+  -> Popper fieldValue [entity key]
 hasMany tableDef fieldDef = PopRecordManyBy tableDef fieldDef mempty
 
 hasOneIn ::
      Ord fieldValue
   => TableDefinition entity key
   -> FieldDefinition fieldValue
-  -> Popper [fieldValue] (Map.Map fieldValue entity)
+  -> Popper [fieldValue] (Map.Map fieldValue (entity key))
 hasOneIn tableDef fieldDef = PopRecordsBy tableDef fieldDef mempty
 
 hasManyIn ::
      Ord fieldValue
   => TableDefinition entity key
   -> FieldDefinition fieldValue
-  -> Popper [fieldValue] (Map.Map fieldValue [entity])
+  -> Popper [fieldValue] (Map.Map fieldValue [entity key])
 hasManyIn tableDef fieldDef = PopRecordsManyBy tableDef fieldDef mempty
 
 hasManyWhere ::
@@ -126,7 +129,7 @@ hasManyWhere ::
   => TableDefinition entity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Popper fieldValue [entity]
+  -> Popper fieldValue [entity key]
 hasManyWhere = PopRecordManyBy
 
 hasManyInWhere ::
@@ -134,14 +137,14 @@ hasManyInWhere ::
   => TableDefinition entity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Popper [fieldValue] (Map.Map fieldValue [entity])
+  -> Popper [fieldValue] (Map.Map fieldValue [entity key])
 hasManyInWhere = PopRecordsManyBy
 
 hasOne ::
      Ord fieldValue
   => TableDefinition entity key
   -> FieldDefinition fieldValue
-  -> Popper fieldValue (Maybe entity)
+  -> Popper fieldValue (Maybe (entity key))
 hasOne tableDef fieldDef = hasOneWhere tableDef fieldDef mempty
 
 hasOneWhere ::
@@ -149,14 +152,14 @@ hasOneWhere ::
   => TableDefinition entity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Popper fieldValue (Maybe entity)
+  -> Popper fieldValue (Maybe (entity key))
 hasOneWhere = PopRecordBy
 
 hasOne' ::
      Ord fieldValue
   => TableDefinition entity key
   -> FieldDefinition fieldValue
-  -> Popper fieldValue entity
+  -> Popper fieldValue (entity key)
 hasOne' tableDef fieldDef =
   certainly' (popMissingRecord tableDef fieldDef) (hasOne tableDef fieldDef)
 
@@ -311,35 +314,35 @@ instance Applicative Popped where
 data Popper a b where
   PopQuery :: Orville b -> Popper a b
   PopRecord
-    :: Ord key => TableDefinition entity key -> Popper key (Maybe entity)
+    :: Ord key => TableDefinition entity key -> Popper key (Maybe (entity key))
   PopRecords
     :: Ord key
     => TableDefinition entity key
-    -> Popper [key] (Map.Map key entity)
+    -> Popper [key] (Map.Map key (entity key))
   PopRecordBy
     :: Ord fieldValue
     => TableDefinition entity key
     -> FieldDefinition fieldValue
     -> SelectOptions
-    -> Popper fieldValue (Maybe entity)
+    -> Popper fieldValue (Maybe (entity key))
   PopRecordManyBy
     :: Ord fieldValue
     => TableDefinition entity key
     -> FieldDefinition fieldValue
     -> SelectOptions
-    -> Popper fieldValue [entity]
+    -> Popper fieldValue [entity key]
   PopRecordsBy
     :: Ord fieldValue
     => TableDefinition entity key
     -> FieldDefinition fieldValue
     -> SelectOptions
-    -> Popper [fieldValue] (Map.Map fieldValue entity)
+    -> Popper [fieldValue] (Map.Map fieldValue (entity key))
   PopRecordsManyBy
     :: Ord fieldValue
     => TableDefinition entity key
     -> FieldDefinition fieldValue
     -> SelectOptions
-    -> Popper [fieldValue] (Map.Map fieldValue [entity])
+    -> Popper [fieldValue] (Map.Map fieldValue [entity key])
   PopId :: Popper a a
   PopPure :: b -> Popper a b
   PopLift :: (a -> Popped b) -> Popper a b

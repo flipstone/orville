@@ -168,11 +168,14 @@ getField f = do
   sqlValues <- get
   put (convert value : sqlValues)
 
-selectAll :: TableDefinition entity key -> SelectOptions -> Orville [entity]
+selectAll ::
+     TableDefinition entity key -> SelectOptions -> Orville [entity key]
 selectAll tableDef = runSelect . selectQueryTable tableDef
 
 selectFirst ::
-     TableDefinition entity key -> SelectOptions -> Orville (Maybe entity)
+     TableDefinition entity key
+  -> SelectOptions
+  -> Orville (Maybe (entity key))
 selectFirst tableDef opts =
   listToMaybe <$> selectAll tableDef (limit 1 <> opts)
 
@@ -194,7 +197,7 @@ findRecords ::
      Ord key
   => TableDefinition entity key
   -> [key]
-  -> Orville (Map.Map key entity)
+  -> Orville (Map.Map key (entity key))
 findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
   let keyField = tablePrimaryKey tableDef
@@ -207,13 +210,13 @@ findRecordsBy ::
   => TableDefinition entity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Orville (Map.Map fieldValue [entity])
+  -> Orville (Map.Map fieldValue [entity key])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
-findRecord :: TableDefinition entity key -> key -> Orville (Maybe entity)
+findRecord :: TableDefinition entity key -> key -> Orville (Maybe (entity key))
 findRecord tableDef key =
   let keyField = tablePrimaryKey tableDef
    in selectFirst tableDef (where_ $ keyField .== key)
@@ -232,7 +235,8 @@ updateFields tableDef updates conds =
     updateNames = map fieldUpdateName updates
     updateClause = mkUpdateClause (tableName tableDef) updateNames
 
-updateRecord :: TableDefinition entity key -> key -> entity -> Orville entity
+updateRecord ::
+     TableDefinition entity key -> key -> entity anyKey -> Orville (entity key)
 updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
       conds = [keyField .== key]
@@ -243,7 +247,7 @@ updateRecord tableDef key record = do
   void $ updateFields tableDef updates conds
   pure $ tableSetKey tableDef key record
 
-insertRecord :: TableDefinition entity key -> entity -> Orville entity
+insertRecord :: TableDefinition entity key -> entity () -> Orville (entity key)
 insertRecord tableDef newRecord = do
   let insertSql =
         mkInsertClause (tableName tableDef) (insertableColumnNames tableDef) ++
@@ -271,7 +275,7 @@ insertRecord tableDef newRecord = do
     [] -> error "Didn't get a key back from the database!"
     _ -> error "Got more than one key back from the database!"
 
-insertRecordMany :: TableDefinition entity key -> [entity] -> Orville ()
+insertRecordMany :: TableDefinition entity key -> [entity ()] -> Orville ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
         mkInsertClause (tableName tableDef) (insertableColumnNames tableDef)
@@ -281,7 +285,7 @@ insertRecordMany tableDef newRecords = do
       insert <- prepare conn insertSql
       executeMany insert (map (runToSql builder) newRecords)
 
-deleteRecord :: TableDefinition entity key -> entity -> Orville ()
+deleteRecord :: TableDefinition entity key -> entity key -> Orville ()
 deleteRecord tableDef record = do
   let keyField = tablePrimaryKey tableDef
       key = tableGetKey tableDef record

@@ -41,7 +41,7 @@ import Database.Orville.Internal.Types
 data TableParams entity key = TableParams
   { tblName :: String
       -- ^ The name of the table in the database
-  , tblMapper :: RelationalMap entity entity
+  , tblMapper :: RelationalMap (entity key) (entity key)
       -- ^ The relational mapping that defines how the Haskell entity type
       -- is converted both to and from sql. The fields utilized in the mapping
       -- are used to automatically build the list of 'FieldDefinitions' that
@@ -51,9 +51,9 @@ data TableParams entity key = TableParams
       -- (Orville will never delete a column without being told it is safe)
   , tblPrimaryKey :: FieldDefinition key
       -- ^ A FieldDefinition for the primary key.
-  , tblSetKey :: key -> entity -> entity
+  , tblSetKey :: forall anyKey1 anyKey2. anyKey2 -> entity anyKey1 -> entity anyKey2
       -- ^ A function to set the key on the entity
-  , tblGetKey :: entity -> key
+  , tblGetKey :: forall anyKey. entity anyKey -> anyKey
       -- ^ A function to get the key on the entity
   , tblComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These
@@ -82,11 +82,11 @@ data TableParams entity key = TableParams
  @
  -}
 mkTableDefinition :: TableParams entity key -> TableDefinition entity key
-mkTableDefinition (TableParams {..}) =
+mkTableDefinition p@(TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
     , tableFromSql = mkFromSql tblMapper
-    , tableToSql = mkToSql tblMapper
+    , tableToSql = getComponent (unsafeSquashPrimaryKey p) (mkToSql tblMapper)
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
     , tableSafeToDelete = tblSafeToDelete
@@ -94,6 +94,11 @@ mkTableDefinition (TableParams {..}) =
     , tableGetKey = tblGetKey
     , tableComments = tblComments
     }
+
+unsafeSquashPrimaryKey ::
+     TableParams entity key -> entity anyKey1 -> forall anyKey2. entity anyKey2
+unsafeSquashPrimaryKey params =
+  tblSetKey params (error "Primary key field was used!")
 
 data RelationalMap a b where
   RM_Field :: FieldDefinition a -> RelationalMap a a
