@@ -35,6 +35,18 @@ dependencies:
   - time >=1.5
   - transformers >=0.4
   - transformers-base >=0.4
+
+executables:
+  orville-sample-exe:
+    main:                Main.hs
+    source-dirs:         sample-project
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - orville
+
 library:
   source-dirs: src
   exposed-modules:
