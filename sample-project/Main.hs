@@ -65,7 +65,6 @@ main = do
 
 initialInsert :: O.OrvilleT Postgres.Connection IO (Student StudentId)
 initialInsert = do
-  --O.migrateSchema studentSchema
   resetToBlankSchema studentSchema
   _ <- O.insertRecord studentTable barry
   _ <- O.insertRecord studentTable allan
@@ -74,10 +73,8 @@ initialInsert = do
 
 selectFirstTest :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
 selectFirstTest = do
-  -- let condit = [(O..==) studentIdField (StudentId "1")]
   let condit = [(O..==) studentMajorField (StudentMajor "Business")]
   let options = O.SelectOptions condit mempty mempty mempty mempty
-  --O.findRecord studentTable (studentId insertedStudent)
   O.selectFirst studentTable options
 
 selectAllTest :: O.OrvilleT Postgres.Connection IO [Student StudentId]
@@ -117,9 +114,6 @@ updateFieldsTest = do
   let condit = [(O..==) studentMajorField (StudentMajor "Economics")]
   O.updateFields studentTable updates condit
 
-
-
---------------------------------------------------------
 
 resetToBlankSchema :: O.SchemaDefinition -> O.Orville ()
 resetToBlankSchema schemaDef = do
