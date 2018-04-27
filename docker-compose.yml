@@ -15,8 +15,6 @@ services:
     image: postgres:9.6.8
     environment:
       POSTGRES_USER: orville_test
-    ports:
-      - 54321:5432
 
 volumes:
   stack-root:
