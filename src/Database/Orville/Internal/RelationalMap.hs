@@ -81,7 +81,8 @@ data TableParams entity key = TableParams
 
  @
  -}
-mkTableDefinition :: TableParams entity key -> TableDefinition entity key
+mkTableDefinition ::
+     TableParams entity key -> TableDefinition (entity key) (entity ()) key
 mkTableDefinition p@(TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
@@ -90,7 +91,6 @@ mkTableDefinition p@(TableParams {..}) =
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
     , tableSafeToDelete = tblSafeToDelete
-    , tableSetKey = tblSetKey
     , tableGetKey = tblGetKey
     , tableComments = tblComments
     }

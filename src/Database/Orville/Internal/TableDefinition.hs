@@ -8,12 +8,13 @@ module Database.Orville.Internal.TableDefinition where
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
-tableColumnNames :: TableDefinition entity key -> [String]
+tableColumnNames :: TableDefinition fullEntity partialEntity key -> [String]
 tableColumnNames = map someFieldName . tableFields
   where
     someFieldName (SomeField f) = fieldName f
 
-insertableColumnNames :: TableDefinition entity key -> [String]
+insertableColumnNames ::
+     TableDefinition fullEntity partialEntity key -> [String]
 insertableColumnNames =
   map someFieldName . filter (not . isSomeUninsertedField) . tableFields
   where

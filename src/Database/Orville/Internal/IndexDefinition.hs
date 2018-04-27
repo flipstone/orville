@@ -14,7 +14,10 @@ import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
 uniqueIndex ::
-     String -> TableDefinition entity key -> [SomeField] -> IndexDefinition
+     String
+  -> TableDefinition fullEntity partialEntity key
+  -> [SomeField]
+  -> IndexDefinition
 uniqueIndex name tableDef fields =
   IndexDefinition
     { indexName = name
@@ -24,7 +27,10 @@ uniqueIndex name tableDef fields =
     }
 
 simpleIndex ::
-     String -> TableDefinition entity key -> [SomeField] -> IndexDefinition
+     String
+  -> TableDefinition fullEntity partialEntity key
+  -> [SomeField]
+  -> IndexDefinition
 simpleIndex name tableDef fields =
   IndexDefinition
     { indexName = name

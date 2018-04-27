@@ -8,7 +8,7 @@ import qualified Database.Orville as O
 
 import Example.Data.Virus (Virus(..), VirusId(..), VirusName(..))
 
-virusTable :: O.TableDefinition Virus VirusId
+virusTable :: O.TableDefinition (Virus VirusId) (Virus ()) VirusId
 virusTable =
   O.mkTableDefinition $
   O.TableParams
