@@ -13,10 +13,15 @@ tableColumnNames = map someFieldName . tableFields
   where
     someFieldName (SomeField f) = fieldName f
 
-insertableColumnNames ::
-     TableDefinition fullEntity partialEntity key -> [String]
-insertableColumnNames =
-  map someFieldName . filter (not . isSomeUninsertedField) . tableFields
+tableAssignableFields ::
+     TableDefinition fullEntity partialEntity key -> [SomeField]
+tableAssignableFields =
+  filter (not . isSomeAssignedByDatabaseField) . tableFields
   where
-    isSomeUninsertedField (SomeField f) = isUninsertedField f
+    isSomeAssignedByDatabaseField (SomeField f) = isAssignedByDatabaseField f
+
+tableAssignableColumnNames ::
+     TableDefinition fullEntity partialEntity key -> [String]
+tableAssignableColumnNames = map someFieldName . tableAssignableFields
+  where
     someFieldName (SomeField f) = fieldName f

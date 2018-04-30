@@ -171,7 +171,10 @@ fields (RM_Nest _ rm) = fields rm
 fields (RM_Partial rm) = fields rm
 fields (RM_MaybeTag rm) = fields rm
 fields (RM_Pure _) = []
-fields (RM_ReadOnly rm) = fields rm
+fields (RM_ReadOnly rm) =
+  map (someFieldWithFlag AssignedByDatabase) (fields rm)
+  where
+    someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
 
 mkFromSql :: RelationalMap a b -> FromSql b
 mkFromSql (RM_Field field) = fieldFromSql field
@@ -187,7 +190,7 @@ mkFromSql (RM_Partial rm) = do
 
 mkToSql :: RelationalMap a b -> ToSql a ()
 mkToSql (RM_Field field) =
-  when (not $ isUninsertedField field) $ do
+  when (not $ isAssignedByDatabaseField field) $ do
     value <- ask
     modify (fieldToSqlValue field value :)
 mkToSql (RM_Nest f rm) = getComponent f (mkToSql rm)

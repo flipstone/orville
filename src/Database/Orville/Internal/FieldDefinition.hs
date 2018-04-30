@@ -73,9 +73,9 @@ isNullFlag :: ColumnFlag -> Bool
 isNullFlag Null = True
 isNullFlag _ = False
 
-isUninserted :: ColumnFlag -> Bool
-isUninserted PrimaryKey = True
-isUninserted _ = False
+isAssignedByDatabase :: ColumnFlag -> Bool
+isAssignedByDatabase AssignedByDatabase = True
+isAssignedByDatabase _ = False
 
 fieldName :: FieldDefinition a -> String
 fieldName (name, _, _, _) = name
@@ -104,8 +104,8 @@ withConversion ::
 withConversion (name, typ, flags, aConversion) mapConversion =
   (name, typ, flags, mapConversion aConversion)
 
-isUninsertedField :: FieldDefinition a -> Bool
-isUninsertedField (_, _, flags, _) = any isUninserted flags
+isAssignedByDatabaseField :: FieldDefinition a -> Bool
+isAssignedByDatabaseField (_, _, flags, _) = any isAssignedByDatabase flags
 
 withPrefix :: FieldDefinition a -> String -> FieldDefinition a
 withPrefix f@(name, _, _, _) prefix = f `withName` (prefix ++ "_" ++ name)

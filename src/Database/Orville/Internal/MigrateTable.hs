@@ -114,6 +114,7 @@ mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
 mkFlagDDL (References table field) =
   Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
 mkFlagDDL (ColumnDescription _) = Nothing
+mkFlagDDL AssignedByDatabase = Nothing
 
 mkTypeDDL :: ColumnType -> String
 mkTypeDDL AutomaticId = "SERIAL"

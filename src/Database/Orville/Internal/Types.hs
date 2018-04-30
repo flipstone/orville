@@ -56,6 +56,7 @@ data ColumnFlag
   | forall fullEntity partialEntity key. References (TableDefinition fullEntity partialEntity key)
                                                     (FieldDefinition key)
   | ColumnDescription String
+  | AssignedByDatabase
 
 class ColumnDefault a where
   toColumnDefaultSql :: a -> String

@@ -255,8 +255,7 @@ updateRecord ::
 updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
       conds = [keyField .== key]
-      isSomeUninsertedField (SomeField f) = isUninsertedField f
-      fields = filter (not . isSomeUninsertedField) (tableFields tableDef)
+      fields = tableAssignableFields tableDef
       builder = tableToSql tableDef
       updates = zipWith FieldUpdate fields (runToSql builder record)
   void $ updateFields tableDef updates conds
@@ -271,7 +270,9 @@ insertRecord tableDef newRecord = do
       returnColumns =
         List.intercalate ", " $ map (rawExprToSql . generateSql) returnSelects
       insertSql =
-        mkInsertClause (tableName tableDef) (insertableColumnNames tableDef) ++
+        mkInsertClause
+          (tableName tableDef)
+          (tableAssignableColumnNames tableDef) ++
         " RETURNING " ++ returnColumns
       vals = runToSql (tableToSql tableDef) newRecord
   rows <-
@@ -292,7 +293,9 @@ insertRecordMany ::
   -> Orville ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
-        mkInsertClause (tableName tableDef) (insertableColumnNames tableDef)
+        mkInsertClause
+          (tableName tableDef)
+          (tableAssignableColumnNames tableDef)
   let builder = tableToSql tableDef
   withConnection $ \conn -> do
     executingSql InsertQuery insertSql $ do
