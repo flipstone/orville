@@ -1,4 +1,4 @@
-module Example.Data.Virus
+module ParameterizedEntity.Data.Virus
   ( Virus(..)
   , VirusId(..)
   , VirusName(..)

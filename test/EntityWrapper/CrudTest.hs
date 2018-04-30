@@ -1,23 +1,24 @@
-module CrudTest where
+module EntityWrapper.CrudTest where
 
 import qualified Database.Orville as O
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-import Example.Data.Virus (bpsVirus, brnVirus, virusId)
-import Example.Schema (schema, virusTable)
+import EntityWrapper.Data.Entity (Entity(..))
+import EntityWrapper.Data.Virus (bpsVirus, brnVirus)
+import EntityWrapper.Schema (schema, virusTable)
 import qualified TestDB as TestDB
 
 test_crud :: TestTree
 test_crud =
   TestDB.withOrvilleRun $ \run ->
     testGroup
-      "CRUD Test"
+      "EntityWrapper CRUD Test"
       [ testCase "Insert and find" $ do
           run (TestDB.reset schema)
           insertedVirus <- run (O.insertRecord virusTable bpsVirus)
-          foundVirus <- run $ O.findRecord virusTable (virusId insertedVirus)
+          foundVirus <- run $ O.findRecord virusTable (entityKey insertedVirus)
           assertEqual
             "Virus found in database didn't match the originally inserted values"
             (Just insertedVirus)
@@ -26,14 +27,14 @@ test_crud =
       , testCase "Update" $ do
           run (TestDB.reset schema)
           insertedVirus <- run (O.insertRecord virusTable bpsVirus)
-          run $ O.updateRecord virusTable (virusId insertedVirus) brnVirus
+          run $ O.updateRecord virusTable (entityKey insertedVirus) brnVirus
           --
           -- This value used to be returned by update record. Manually creating
           -- it here for now until that gets sorted out.
           --
-          let updatedVirus = brnVirus {virusId = virusId insertedVirus}
+          let updatedVirus = Entity (entityKey insertedVirus) brnVirus
           newlyFoundVirus <-
-            run $ O.findRecord virusTable (virusId insertedVirus)
+            run $ O.findRecord virusTable (entityKey insertedVirus)
           assertEqual
             "Virus found in database didn't match the values passed in for update"
             (Just updatedVirus)
@@ -45,7 +46,7 @@ test_crud =
             run $ do
               insertedVirus <- O.insertRecord virusTable bpsVirus
               O.deleteRecord virusTable insertedVirus
-              O.findRecord virusTable (virusId insertedVirus)
+              O.findRecord virusTable (entityKey insertedVirus)
           assertEqual
             "Virus was found in the database, but it should have been deleted"
             Nothing
