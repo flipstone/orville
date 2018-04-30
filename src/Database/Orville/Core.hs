@@ -34,6 +34,7 @@ module Database.Orville.Core
   , prefixMap
   , partialMap
   , readOnlyMap
+  , readOnlyField
   , OrvilleEnv
   , newOrvilleEnv
   , ormEnvPool

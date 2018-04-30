@@ -17,10 +17,9 @@ virusTable =
     , O.tblMapper
       -- hindent ;(
        =
-        Virus <$> O.attrField virusId virusIdField <*>
+        Virus <$> O.readOnlyField virusIdField <*>
         O.attrField virusName virusNameField
     , O.tblGetKey = virusId
-    , O.tblSetKey = \key entity -> entity {virusId = key}
     , O.tblSafeToDelete = []
     , O.tblComments = O.noComments
     }
