@@ -8,4 +8,4 @@ import qualified Database.Orville as O
 import Example.Schema.Student
 
 studentSchema :: O.SchemaDefinition
-studentSchema = [O.Table studentTable]
+studentSchema = [O.Table studentTable, O.Table majorTable]

@@ -6,51 +6,51 @@ import Control.Monad (void)
 import Data.Convertible (convert)
 import qualified Database.HDBC.PostgreSQL as Postgres
 import qualified Data.Map.Strict as Map
+import System.Environment (getEnv)
 
 import qualified Database.Orville as O
 import qualified Database.Orville.Raw as ORaw
 import Database.Orville.PostgresSQL
 
-import Example.Data.Major (Major(..), MajorId(..), MajorName(..), MajorCollege(..), College(..))
-import Example.Data.Student ( Student(..), StudentId(..), StudentName(..), StudentMajor(..))
-import Example.Schema.Student ( studentIdField, studentNameField, studentMajorField )
-import Example.SchemaStudent (studentSchema, studentTable)
+import Example.Data.Major ( Major(..), MajorId(..), MajorName(..), MajorCollege(..))
+import Example.Data.Student ( Student(..), StudentId(..), StudentName(..) )
+import Example.Schema.Student ( studentIdField, studentNameField, studentMajorField, majorIdField, majorNameField, majorCollegeField )
+import Example.SchemaStudent ( studentSchema, studentTable, majorTable )
 
 
 main :: IO ()
 main = do
   putStrLn "Connecting to db"
-  -- To do: reference environment variable
-  let connStr = "host=testdb user=orville_test"
+  connStr <- getEnv "TEST_CONN_STRING"
   putStrLn connStr
   poolConn <- createConnectionPool 1 10000 1 connStr
   let env = O.newOrvilleEnv poolConn
-  _ <- O.runOrville initialInsert env
-  _ <- O.runOrville insertManyTest env
+  _ <- O.runOrville initialInsertStudents env
+  _ <- O.runOrville initialInsertMajors env
 
   resultSelect <- O.runOrville selectFirstTest env
   putStrLn "\nSelect first business major result:"
   -- To do: eliminate case statement
   case resultSelect of 
-    Just (student) -> putStrLn $ getStudentName $ studentName student
+    Just (student) -> putStrLn $ studentNameString $ studentName student
     Nothing -> putStrLn "no record returned"
 
   resultFind <- O.runOrville findRecordTest env
   putStrLn "\nFind record with ID 1:"
   case resultFind of
-    Just (student) -> putStrLn $ getStudentName $ studentName student
+    Just (student) -> putStrLn $ studentNameString $ studentName student
     Nothing -> putStrLn "no record returned"
   
   resultSelectAll <- O.runOrville selectAllTest env
   putStrLn "\nSelect all result: "
-  mapM_ (putStrLn . getStudentName . studentName) resultSelectAll
+  mapM_ (putStrLn . studentNameString . studentName) resultSelectAll
  
   deletedStudent <- O.runOrville deleteTest env
-  putStrLn $ "\nInserted and deleted: " ++ (getStudentName $ studentName deletedStudent) ++ ", ID: " ++ (getStudentId $ studentId deletedStudent)
+  putStrLn $ "\nInserted and deleted: " ++ (studentNameString $ studentName deletedStudent) ++ ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
 
   findRecordsResult <- O.runOrville findRecordsTest env
   let resultList = Map.toList findRecordsResult
-  let names = map (\(id, student) -> getStudentName $ studentName student) resultList
+  let names = map (\(id, student) -> studentNameString $ studentName student) resultList
   putStrLn "\nIDs 1-3:"
   mapM_ (putStrLn) names
 
@@ -60,21 +60,25 @@ main = do
 
 
   pure ()
- 
 
-
-initialInsert :: O.OrvilleT Postgres.Connection IO (Student StudentId)
-initialInsert = do
+-- demonstrates insertRecordMary function
+initialInsertStudents :: O.OrvilleT Postgres.Connection IO ()
+initialInsertStudents = do
   resetToBlankSchema studentSchema
-  _ <- O.insertRecord studentTable barry
-  _ <- O.insertRecord studentTable allan
-  _ <- O.insertRecord studentTable christine
-  O.insertRecord studentTable erin
+  let student_list = [barry, allan, christine, erin]
+  O.insertRecordMany studentTable student_list
+
+-- demonstrates insertRecord function
+initialInsertMajors :: O.OrvilleT Postgres.Connection IO (Major MajorId)
+initialInsertMajors = do
+  _ <- O.insertRecord majorTable business
+  _ <- O.insertRecord majorTable econ
+  _ <- O.insertRecord majorTable math
+  O.insertRecord majorTable chem
 
 selectFirstTest :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
 selectFirstTest = do
-  let condit = [(O..==) studentMajorField (StudentMajor "Business")]
-  let options = O.SelectOptions condit mempty mempty mempty mempty
+  let options = O.where_ $ (O..==) studentMajorField (MajorId 1)
   O.selectFirst studentTable options
 
 selectAllTest :: O.OrvilleT Postgres.Connection IO [Student StudentId]
@@ -84,7 +88,7 @@ selectAllTest = do
 
 findRecordTest :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
 findRecordTest = do
-  O.findRecord studentTable (StudentId "1")
+  O.findRecord studentTable (StudentId 1)
 
 deleteTest :: O.OrvilleT Postgres.Connection IO (Student StudentId)
 deleteTest = do
@@ -92,26 +96,20 @@ deleteTest = do
   O.deleteRecord studentTable insertedStudent
   pure insertedStudent
 
-insertManyTest :: O.OrvilleT Postgres.Connection IO ()
-insertManyTest = do
-  let liszt = [allan, barry]
-  O.insertRecordMany studentTable liszt
-
 findRecordsTest :: O.OrvilleT Postgres.Connection IO (Map.Map StudentId (Student StudentId))
 findRecordsTest = do
-  let liszt = [StudentId "1", StudentId "2", StudentId "3"]
-  O.findRecords studentTable liszt
+  let id_list = [StudentId 1, StudentId 2, StudentId 3]
+  O.findRecords studentTable id_list
 
 findRecordsByTest :: O.OrvilleT Postgres.Connection IO (Map.Map StudentId [Student StudentId])
 findRecordsByTest = do
-  let condit = [(O..==) studentMajorField (StudentMajor "Economics")]
-  let options = O.SelectOptions condit mempty mempty mempty mempty
+  let options = O.where_ $ (O..==) studentMajorField (MajorId 2)
   O.findRecordsBy studentTable studentIdField options 
 
 updateFieldsTest :: O.OrvilleT Postgres.Connection IO (Integer)
 updateFieldsTest = do
-  let updates = [O.fieldUpdate studentMajorField (StudentMajor "Econ")] 
-  let condit = [(O..==) studentMajorField (StudentMajor "Economics")]
+  let updates = [O.fieldUpdate studentMajorField (MajorId 4)] 
+  let condit = [(O..==) studentNameField (StudentName "Erin Valentino")]
   O.updateFields studentTable updates condit
 
 
@@ -126,22 +124,34 @@ resetToBlankSchema schemaDef = do
   O.migrateSchema schemaDef
   
 
+business :: Major()
+business = Major {majorId = (), majorName = MajorName "Business", majorCollege = LiberalArts}
+
+econ :: Major()
+econ = Major {majorId = (), majorName = MajorName "Economics", majorCollege = LiberalArts}
+
+math :: Major()
+math = Major {majorId = (), majorName = MajorName "Math", majorCollege = NaturalScience}
+
+chem :: Major()
+chem = Major {majorId = (), majorName = MajorName "Chemistry", majorCollege = NaturalScience}
+
 allan :: Student ()
 allan =
-  Student {studentId = (), studentName = StudentName "Allan Sherwood", studentMajor = StudentMajor "Business"}
+  Student {studentId = (), studentName = StudentName "Allan Sherwood", studentMajor = MajorId 1}
 
 barry :: Student ()
 barry =
-  Student {studentId = (), studentName = StudentName "Barry Zimmer", studentMajor = StudentMajor "Economics"}
+  Student {studentId = (), studentName = StudentName "Barry Zimmer", studentMajor = MajorId 2}
 
 christine :: Student ()
 christine =
-  Student {studentId = (), studentName = StudentName "Christine Brown", studentMajor = StudentMajor "Math"}
+  Student {studentId = (), studentName = StudentName "Christine Brown", studentMajor = MajorId 3}
 
 erin :: Student ()
 erin =
-  Student {studentId = (), studentName = StudentName "Erin Valentino", studentMajor = StudentMajor "Economics"}
+  Student {studentId = (), studentName = StudentName "Erin Valentino", studentMajor = MajorId 2}
 
 erinNew :: Student ()
 erinNew =
-  Student {studentId = (), studentName = StudentName "Erin K. Valentino", studentMajor = StudentMajor "Government"}
+  Student {studentId = (), studentName = StudentName "Erin K. Valentino", studentMajor = MajorId 1}

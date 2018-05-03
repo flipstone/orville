@@ -2,25 +2,23 @@ module Example.Data.Student
   ( Student(..)
   , StudentId(..)
   , StudentName(..)
-  , StudentMajor(..)
   ) where
+
+import Example.Data.Major ( Major(..), MajorId(..), MajorName(..), MajorCollege(..), majorCollegeConversion)
 
 data Student key = Student
   { studentId :: key
   , studentName :: StudentName
-  , studentMajor :: StudentMajor
+  , studentMajor :: MajorId
   } deriving (Show, Eq)
 
 newtype StudentId = StudentId
-  { getStudentId :: String
+  { studentIdInt :: Int
   } deriving (Show, Eq, Ord)
 
 newtype StudentName = StudentName
-  { getStudentName :: String
+  { studentNameString :: String
   } deriving (Show, Eq)
 
-newtype StudentMajor = StudentMajor
-  { getStudentMajor :: String
-  } deriving (Show, Eq)
 
 

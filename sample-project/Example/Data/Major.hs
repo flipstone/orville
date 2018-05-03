@@ -3,8 +3,12 @@ module Example.Data.Major
   , MajorId(..)
   , MajorName(..)
   , MajorCollege(..)
-  , College(..)
+  , majorCollegeConversion
   ) where
+
+import Data.Text (Text, pack, unpack)
+
+import qualified Database.Orville as O
 
 data Major key = Major
   { majorId :: key
@@ -13,18 +17,29 @@ data Major key = Major
   } deriving (Show, Eq)
 
 newtype MajorId = MajorId
-  { getMajorId :: String
+  { majorIdInt :: Int
   } deriving (Show, Eq)
 
 newtype MajorName = MajorName
-  { getMajorName :: String
+  { majorNameString :: String
   } deriving (Show, Eq)
 
-newtype MajorCollege = MajorCollege
-  { getStudentMajor :: College
-  } deriving (Show, Eq)
+data MajorCollege = NaturalScience | LiberalArts deriving (Show, Eq)
 
-data College = NaturalScience | LiberalArts deriving (Show, Eq)
+majorCollegeConversion :: O.SqlConversion MajorCollege
+majorCollegeConversion = O.maybeSqlConversionVia collegeMajorToText maybeCollegeMajor O.textConversion
+  where
+    collegeMajorToText :: MajorCollege -> Text
+    collegeMajorToText col = case col of
+      NaturalScience -> pack "Natural Science"
+      LiberalArts    -> pack "Liberal Arts"
+
+    maybeCollegeMajor :: Text -> Maybe MajorCollege
+    maybeCollegeMajor txt = case unpack txt of
+      "Natural Science" -> Just NaturalScience
+      "Liberal Arts"    -> Just LiberalArts
+      _                 -> Nothing
+
 
 
 
