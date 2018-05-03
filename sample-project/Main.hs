@@ -61,7 +61,7 @@ main = do
 
   pure ()
 
--- demonstrates insertRecordMary function
+-- demonstrates insertRecordMany function
 initialInsertStudents :: O.OrvilleT Postgres.Connection IO ()
 initialInsertStudents = do
   resetToBlankSchema studentSchema
