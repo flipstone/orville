@@ -3,7 +3,8 @@ module Example.Data.Major
   , MajorId(..)
   , MajorName(..)
   , MajorCollege(..)
-  , majorCollegeConversion
+  , collegeMajorToText
+  , textToCollegeMajor
   ) where
 
 import Data.Text (Text, pack, unpack)
@@ -21,24 +22,22 @@ newtype MajorId = MajorId
   } deriving (Show, Eq)
 
 newtype MajorName = MajorName
-  { majorNameString :: String
+  { majorNameText :: Text
   } deriving (Show, Eq)
 
-data MajorCollege = NaturalScience | LiberalArts deriving (Show, Eq)
+data MajorCollege = NaturalScience | LiberalArts | Other deriving (Show, Eq)
 
-majorCollegeConversion :: O.SqlConversion MajorCollege
-majorCollegeConversion = O.maybeSqlConversionVia collegeMajorToText maybeCollegeMajor O.textConversion
-  where
-    collegeMajorToText :: MajorCollege -> Text
-    collegeMajorToText col = case col of
-      NaturalScience -> pack "Natural Science"
-      LiberalArts    -> pack "Liberal Arts"
+collegeMajorToText :: MajorCollege -> Text
+collegeMajorToText col = case col of
+  NaturalScience -> pack "Natural Science"
+  LiberalArts    -> pack "Liberal Arts"
 
-    maybeCollegeMajor :: Text -> Maybe MajorCollege
-    maybeCollegeMajor txt = case unpack txt of
-      "Natural Science" -> Just NaturalScience
-      "Liberal Arts"    -> Just LiberalArts
-      _                 -> Nothing
+textToCollegeMajor :: Text -> MajorCollege
+textToCollegeMajor txt = case unpack txt of
+  "Natural Science" -> NaturalScience
+  "Liberal Arts"    -> LiberalArts
+  _                 -> Other
+
 
 
 

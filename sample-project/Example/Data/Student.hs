@@ -4,7 +4,9 @@ module Example.Data.Student
   , StudentName(..)
   ) where
 
-import Example.Data.Major ( Major(..), MajorId(..), MajorName(..), MajorCollege(..), majorCollegeConversion)
+import Data.Text (Text, pack, unpack)
+
+import Example.Data.Major ( Major(..), MajorId(..), MajorName(..), MajorCollege(..))
 
 data Student key = Student
   { studentId :: key
@@ -17,7 +19,7 @@ newtype StudentId = StudentId
   } deriving (Show, Eq, Ord)
 
 newtype StudentName = StudentName
-  { studentNameString :: String
+  { studentNameText :: Text
   } deriving (Show, Eq)
 
 

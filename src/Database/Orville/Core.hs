@@ -61,6 +61,7 @@ module Database.Orville.Core
   , automaticIdField
   , searchVectorField
   , nullableField
+  , foreignKeyField
   , withFlag
   , withName
   , withConversion

@@ -12,7 +12,42 @@ module Example.Schema.Student
 import qualified Database.Orville as O
 
 import Example.Data.Student (Student(..), StudentId(..), StudentName(..) )
-import Example.Data.Major (Major(..), MajorId(..), MajorName(..), MajorCollege(..), majorCollegeConversion)
+import Example.Data.Major (Major(..), MajorId(..), MajorName(..), MajorCollege(..), collegeMajorToText, textToCollegeMajor)
+
+majorTable :: O.TableDefinition Major MajorId
+majorTable =
+  O.mkTableDefinition $
+  O.TableParams
+    { O.tblName = "majors"
+    , O.tblPrimaryKey = majorIdField
+    , O.tblMapper
+       =
+        Major <$> O.attrField majorId majorIdField <*>
+        O.attrField majorName majorNameField <*>
+        O.attrField majorCollege majorCollegeField
+    , O.tblGetKey = majorId
+    , O.tblSetKey = \key entity -> entity {majorId = key}
+    , O.tblSafeToDelete = []
+    , O.tblComments = O.noComments
+    }
+
+majorIdField :: O.FieldDefinition MajorId
+majorIdField = 
+  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.sqlConversionVia majorIdInt MajorId
+
+majorNameField :: O.FieldDefinition MajorName
+majorNameField =
+  O.textField "name" 255 `O.withConversion`
+  O.sqlConversionVia majorNameText MajorName
+
+
+
+majorCollegeField :: O.FieldDefinition MajorCollege
+majorCollegeField =
+  O.textField "college" 255 `O.withConversion`
+  O.sqlConversionVia collegeMajorToText textToCollegeMajor
+
 
 studentTable :: O.TableDefinition Student StudentId
 studentTable =
@@ -33,59 +68,22 @@ studentTable =
 
 studentIdField :: O.FieldDefinition StudentId
 studentIdField =
-  O.withConversion 
-  (O.withFlag (O.automaticIdField "id") O.PrimaryKey) 
-  (O.sqlConversionVia studentIdInt StudentId)
+  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.sqlConversionVia studentIdInt StudentId
 
 studentNameField :: O.FieldDefinition StudentName
 studentNameField =
-  ( "name"
-  , O.VarText 255
-  , []
-  , O.sqlConversionVia studentNameString StudentName O.sqlConvertible)
+  O.textField "name" 255 `O.withConversion`
+  O.sqlConversionVia studentNameText StudentName
 
 studentMajorField :: O.FieldDefinition MajorId
-studentMajorField =
-  ( "major"
-  , O.ForeignId
-  , []
-  , O.sqlConversionVia majorIdInt MajorId O.sqlConvertible)
+studentMajorField = 
+  O.foreignKeyField "major" majorTable majorIdField
+  
 
 
-majorTable :: O.TableDefinition Major MajorId
-majorTable =
-  O.mkTableDefinition $
-  O.TableParams
-    { O.tblName = "majors"
-    , O.tblPrimaryKey = majorIdField
-    , O.tblMapper
-       =
-        Major <$> O.attrField majorId majorIdField <*>
-        O.attrField majorName majorNameField <*>
-        O.attrField majorCollege majorCollegeField
-    , O.tblGetKey = majorId
-    , O.tblSetKey = \key entity -> entity {majorId = key}
-    , O.tblSafeToDelete = []
-    , O.tblComments = O.noComments
-    }
 
 
-majorIdField :: O.FieldDefinition MajorId
-majorIdField =
-  O.withConversion 
-  (O.withFlag (O.automaticIdField "id") O.PrimaryKey) 
-  (O.sqlConversionVia majorIdInt MajorId)
 
-majorNameField :: O.FieldDefinition MajorName
-majorNameField =
-  ( "name"
-  , O.VarText 255
-  , []
-  , O.sqlConversionVia majorNameString MajorName O.sqlConvertible)
 
-majorCollegeField :: O.FieldDefinition MajorCollege
-majorCollegeField =
-  ( "college"
-  , O.VarText 255
-  , []
-  , majorCollegeConversion)
+
