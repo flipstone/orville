@@ -32,16 +32,9 @@ main = do
   _ <- O.runOrville initialInsertMajors env
   _ <- O.runOrville initialInsertStudents env
   
-  --IN PROGRESS -- example that violates FK constraint
-  -- catchFailureResult <- O.runOrville catchInsertStudent env
-  -- case catchFailureResult of
-  --   Just (student) -> putStrLn "Inserted!"
-  --   Nothing      -> putStrLn "Could not insert record"
-
-  -- catch (O.runOrville insertStudentFail env)
-  --     (\e -> do let err = show (e :: IOException)
-  --               putStrLn ("Warning: Couldn't insert record; " ++ err)
-  --               return "")
+  catch ((O.runOrville insertStudentFail env) >>= T.putStrLn . studentNameText . studentName) 
+        (\e -> do let err = show (e :: SomeException)
+                  putStrLn ("Warning: Could not insert record. Postgres error message:\n\"" ++ err ++ "\"\n"))
 
   resultSelect <- O.runOrville selectFirstTest env
   putStrLn "\nSelect first business major result:"
@@ -61,6 +54,20 @@ main = do
  
   deletedStudent <- O.runOrville deleteTest env
   putStrLn $ "\nInserted and deleted: " ++ unpack (studentNameText $ studentName deletedStudent) ++ ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
+
+  deletedMajor <- O.runOrville deleteMajorSuccess env
+  putStrLn $ "\nInserted and deleted: " ++ unpack (majorNameText $ majorName deletedMajor) ++ ", ID: " ++ show (majorIdInt $ majorId deletedMajor)
+
+  numDeletedMajors <- O.runOrville deleteWhereMajorSuccess env
+  putStrLn $ "\nNumber of records deleted from major table: " ++ (show numDeletedMajors)
+
+  catch ((O.runOrville deleteMajorDoesNotExist env) >>= putStrLn . ("Number of records deleted from major table: " ++) . show) 
+      (\e -> do let err = show (e :: SomeException)
+                putStrLn ("Warning: Could not delete record. Postgres error message:\n\"" ++ err ++ "\"\n"))
+
+  catch ((O.runOrville violateFKDelete env) >>= putStrLn . show) 
+    (\e -> do let err = show (e :: SomeException)
+              putStrLn ("\nWarning: Could not delete record. Postgres error message:\n\"" ++ err ++ "\"\n"))
 
   findRecordsResult <- O.runOrville findRecordsTest env
   let resultList = Map.toList findRecordsResult
@@ -85,7 +92,8 @@ initialInsertMajors = do
   _ <- O.insertRecord majorTable business
   _ <- O.insertRecord majorTable econ
   _ <- O.insertRecord majorTable math
-  O.insertRecord majorTable chem
+  _ <- O.insertRecord majorTable chem
+  O.insertRecord majorTable testMajor
 
 -- demonstrates insertRecordMany function
 initialInsertStudents :: O.OrvilleT Postgres.Connection IO ()
@@ -93,17 +101,10 @@ initialInsertStudents = do
   let student_list = [barry, allan, christine, erin]
   O.insertRecordMany studentTable student_list
 
--- IN PROGRESS
--- insertStudentFail :: O.OrvilleT Postgres.Connection IO (Student StudentId)
--- insertStudentFail = do
---   O.insertRecord studentTable testStudent
-
--- catchInsertStudent :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
--- catchInsertStudent = do
---   result <- insertStudentFail
---   case result of
---     (student) -> pure (Just student)
---     _         -> pure (Nothing)
+-- insert invalid (student has Major Id that is not in major table)
+insertStudentFail :: O.OrvilleT Postgres.Connection IO (Student StudentId)
+insertStudentFail = do
+  O.insertRecord studentTable testStudent
 
 selectFirstTest :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
 selectFirstTest = do
@@ -124,6 +125,29 @@ deleteTest = do
   insertedStudent <- O.insertRecord studentTable allan
   O.deleteRecord studentTable insertedStudent
   pure insertedStudent
+
+deleteMajorSuccess :: O.OrvilleT Postgres.Connection IO (Major MajorId)
+deleteMajorSuccess = do
+  insertedMajor <- O.insertRecord majorTable testMajor
+  O.deleteRecord majorTable insertedMajor
+  pure insertedMajor
+
+deleteWhereMajorSuccess :: O.OrvilleT Postgres.Connection IO (Integer)
+deleteWhereMajorSuccess = do
+  let condit = [(O..==) majorIdField (MajorId 5)]
+  O.deleteWhere majorTable condit
+
+--Will succeed even though major with Id 6 does not exist
+deleteMajorDoesNotExist :: O.OrvilleT Postgres.Connection IO (Integer)
+deleteMajorDoesNotExist = do
+  let condit = [(O..==) majorIdField (MajorId 6)]
+  O.deleteWhere majorTable condit
+
+-- invalid delete (tries to delete major still referenced in student table)
+violateFKDelete :: O.OrvilleT Postgres.Connection IO (Integer)
+violateFKDelete = do
+  let condit = [(O..==) majorIdField (MajorId 2)]
+  O.deleteWhere majorTable condit
 
 findRecordsTest :: O.OrvilleT Postgres.Connection IO (Map.Map StudentId (Student StudentId))
 findRecordsTest = do
@@ -183,6 +207,9 @@ math = Major {majorId = (), majorName = MajorName $ pack "Math", majorCollege = 
 chem :: Major ()
 chem = Major {majorId = (), majorName = MajorName $ pack "Chemistry", majorCollege = NaturalScience}
 
+testMajor :: Major ()
+testMajor = Major {majorId = (), majorName = MajorName $ pack "Test Major", majorCollege = NaturalScience}
+
 allan :: Student ()
 allan =
   Student {studentId = (), studentName = StudentName $ pack "Allan Sherwood", studentMajor = MajorId 1}
@@ -201,7 +228,7 @@ erin =
 
 testStudent :: Student ()
 testStudent =
-  Student {studentId = (), studentName = StudentName $ pack "Test Student", studentMajor = MajorId 4}
+  Student {studentId = (), studentName = StudentName $ pack "Test Student", studentMajor = MajorId 6}
 
 erinNew :: Student ()
 erinNew =
