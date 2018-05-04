@@ -31,6 +31,7 @@ collegeMajorToText :: MajorCollege -> Text
 collegeMajorToText col = case col of
   NaturalScience -> pack "Natural Science"
   LiberalArts    -> pack "Liberal Arts"
+  Other          -> pack "Other"
 
 textToCollegeMajor :: Text -> MajorCollege
 textToCollegeMajor txt = case unpack txt of
