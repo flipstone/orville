@@ -41,8 +41,6 @@ majorNameField =
   O.textField "name" 255 `O.withConversion`
   O.sqlConversionVia majorNameText MajorName
 
-
-
 majorCollegeField :: O.FieldDefinition MajorCollege
 majorCollegeField =
   O.textField "college" 255 `O.withConversion`

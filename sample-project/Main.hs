@@ -11,6 +11,7 @@ import qualified Data.Map.Strict as Map
 import System.Environment (getEnv)
 import qualified Data.Text.IO as T
 import Data.Text (Text, pack, unpack)
+import Control.Arrow
 
 import qualified Database.Orville as O
 import qualified Database.Orville.Raw as ORaw
@@ -50,7 +51,7 @@ main = do
   
   resultSelectAll <- O.runOrville selectAllTest env
   putStrLn "\nSelect all result: "
-  mapM_ (T.putStrLn . studentNameText. studentName) resultSelectAll
+  mapM_ (T.putStrLn . studentNameText . studentName) resultSelectAll
  
   deletedStudent <- O.runOrville deleteTest env
   putStrLn $ "\nInserted and deleted: " ++ unpack (studentNameText $ studentName deletedStudent) ++ ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
@@ -83,7 +84,36 @@ main = do
   putStrLn "\nAll Econ Students"
   mapM_ (T.putStrLn . studentNameText . studentName) allEconStudents
 
+  popOutput <- O.runOrville popRecordTest env
+  putStrLn "\npopRecord' test:"
+  putStrLn $ unpack (studentNameText $ studentName popOutput)
+
+  popHasOutput <- O.runOrville popHasOneTest env
+  putStrLn "\nhasOne' test:"
+  putStrLn $ unpack (studentNameText $ studentName popHasOutput)
+
+  hasManyTest <- O.runOrville popHasManyTest env
+  putStrLn "\nhasMany test:"
+  mapM_ (T.putStrLn . studentNameText . studentName) hasManyTest
+
+  popManyTest <- O.runOrville popManyHasOne env
+  putStrLn "\nhasOne' & popMany:"
+  mapM_ (T.putStrLn . studentNameText . studentName) popManyTest
+
+  popHasManyTest <- O.runOrville popManyHasMany env
+  putStrLn "\nhasMany & popMany:"
+  mapM_ (mapM_ (T.putStrLn . studentNameText . studentName)) popHasManyTest
+
+  majorStudentsTuples <- O.runOrville runAllMajors env
+  putStrLn "\nAll students in each major:"
+  mapM_ printTuple majorStudentsTuples
+
   pure ()
+
+printTuple :: StudentsForMajor -> IO ()
+printTuple (major, studentList) = do
+    putStrLn $ "\n" ++ show (majorNameText (majorName major)) ++ " students:"
+    mapM_ (T.putStrLn . studentNameText . studentName) studentList
 
 -- demonstrates insertRecord function
 initialInsertMajors :: O.OrvilleT Postgres.Connection IO (Major MajorId)
@@ -98,7 +128,7 @@ initialInsertMajors = do
 -- demonstrates insertRecordMany function
 initialInsertStudents :: O.OrvilleT Postgres.Connection IO ()
 initialInsertStudents = do
-  let student_list = [barry, allan, christine, erin]
+  let student_list = [barry, allan, christine, erin, sam]
   O.insertRecordMany studentTable student_list
 
 -- insert invalid (student has Major Id that is not in major table)
@@ -184,6 +214,58 @@ findAllStudentsByMajor majorStr = do
       findStudentsByMajorId (majorId major)
 
 
+popRecordTest :: O.OrvilleT Postgres.Connection IO (Student StudentId)
+popRecordTest = do
+  let poppedRecord = O.popRecord' studentTable (StudentId 1)
+  O.popThrow poppedRecord ()
+
+popHasOneTest :: O.OrvilleT Postgres.Connection IO (Student StudentId)
+popHasOneTest = do
+  let hasOneRec = O.hasOne' studentTable studentMajorField
+  O.popThrow hasOneRec (MajorId 3)
+
+popHasManyTest :: O.OrvilleT Postgres.Connection IO [Student StudentId]
+popHasManyTest = do
+  let manyRecs = O.hasMany studentTable studentMajorField
+  O.popThrow manyRecs (MajorId 3)
+
+popManyHasOne :: O.OrvilleT Postgres.Connection IO [Student StudentId]
+popManyHasOne = do
+  let result = O.hasOne' studentTable studentMajorField
+  let manyResult = O.popMany result
+  O.popThrow manyResult [MajorId 1, MajorId 2, MajorId 3]
+
+popManyHasMany :: O.OrvilleT Postgres.Connection IO [[Student StudentId]]
+popManyHasMany = do
+  let hasManyResult = O.hasMany studentTable studentMajorField
+  let popManyResult = O.popMany hasManyResult
+  O.popThrow popManyResult [MajorId 1, MajorId 2, MajorId 3]
+
+
+type StudentsForMajor = (Major MajorId, [Student StudentId])
+
+runAllMajors :: O.OrvilleT Postgres.Connection IO [StudentsForMajor]
+runAllMajors = O.popThrow (allMajors >>> studentsForMajors) ()
+
+allMajors :: O.Popper a [Major MajorId]
+allMajors = O.popTable majorTable mempty
+
+studentsForMajors :: O.Popper [Major MajorId] [StudentsForMajor]
+studentsForMajors = O.popMany $ studentsWithMajor
+
+studentsWithMajor :: O.Popper (Major MajorId) StudentsForMajor
+studentsWithMajor = O.kern &&& getStudentsByMajor
+
+getStudentsByMajor :: O.Popper (Major MajorId) [Student StudentId]
+getStudentsByMajor = majorIdPopper >>> getStudentsByMajorId
+
+getStudentsByMajorId :: O.Popper (MajorId) [Student StudentId]
+getStudentsByMajorId = O.hasMany studentTable studentMajorField
+
+majorIdPopper :: O.Popper (Major MajorId) (MajorId)
+majorIdPopper = O.fromKern majorId
+
+
 resetToBlankSchema :: O.SchemaDefinition -> O.Orville ()
 resetToBlankSchema schemaDef = do
   results <- ORaw.selectSqlRows "SELECT current_user" []
@@ -225,6 +307,10 @@ christine =
 erin :: Student ()
 erin =
   Student {studentId = (), studentName = StudentName $ pack "Erin Valentino", studentMajor = MajorId 2}
+
+sam :: Student ()
+sam =
+  Student {studentId = (), studentName = StudentName $ pack "Samuel Frazier", studentMajor = MajorId 3}
 
 testStudent :: Student ()
 testStudent =

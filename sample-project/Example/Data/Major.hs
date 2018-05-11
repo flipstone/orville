@@ -19,7 +19,7 @@ data Major key = Major
 
 newtype MajorId = MajorId
   { majorIdInt :: Int
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Ord)
 
 newtype MajorName = MajorName
   { majorNameText :: Text
