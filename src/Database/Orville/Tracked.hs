@@ -41,35 +41,35 @@ data SignType
   | Deleted
   deriving (Eq, Show, Enum)
 
-data Sign = forall key fullEntity partialEntity. ( Typeable fullEntity
-                                                 , Typeable partialEntity
-                                                 , Typeable key
-                                                 ) =>
-                                                 Sign
+data Sign = forall key readEntity writeEntity. ( Typeable readEntity
+                                               , Typeable writeEntity
+                                               , Typeable key
+                                               ) =>
+                                               Sign
   { signType :: SignType
-  , signTable :: TableDefinition fullEntity partialEntity key
-  , signEntity :: fullEntity
+  , signTable :: TableDefinition readEntity writeEntity key
+  , signEntity :: readEntity
   }
 
 signTableAs ::
-     (Typeable fullEntity, Typeable partialEntity, Typeable key)
-  => TableDefinition fullEntity partialEntity key
+     (Typeable readEntity, Typeable writeEntity, Typeable key)
+  => TableDefinition readEntity writeEntity key
   -> Sign
-  -> Maybe (TableDefinition fullEntity partialEntity key)
+  -> Maybe (TableDefinition readEntity writeEntity key)
 signTableAs _ (Sign _ tableDef _) = cast tableDef
 
 signEntityAs ::
-     (Typeable fullEntity) => p fullEntity -> Sign -> Maybe fullEntity
+     (Typeable readEntity) => p readEntity -> Sign -> Maybe readEntity
 signEntityAs _ (Sign _ _ entity) = cast entity
 
 signEntityFrom ::
-     (Typeable fullEntity, Typeable partialEntity, Typeable key)
-  => TableDefinition fullEntity partialEntity key
+     (Typeable readEntity, Typeable writeEntity, Typeable key)
+  => TableDefinition readEntity writeEntity key
   -> Sign
-  -> Maybe fullEntity
+  -> Maybe readEntity
 signEntityFrom _ (Sign _ _ entity) = cast entity
 
-signEntityGet :: Typeable fullEntity => (fullEntity -> a) -> Sign -> Maybe a
+signEntityGet :: Typeable readEntity => (readEntity -> a) -> Sign -> Maybe a
 signEntityGet f sign = f <$> signEntityAs proxy sign
   where
     proxy = Nothing
@@ -135,20 +135,20 @@ untracked = TrackedOrville . lift
 
 insertRecordTracked ::
      ( MonadTrackedOrville conn m
-     , Typeable fullEntity
-     , Typeable partialEntity
+     , Typeable readEntity
+     , Typeable writeEntity
      , Typeable key
      )
-  => TableDefinition fullEntity partialEntity key
-  -> partialEntity
-  -> m fullEntity
+  => TableDefinition readEntity writeEntity key
+  -> writeEntity
+  -> m readEntity
 insertRecordTracked tableDef entity = do
   record <- insertRecord tableDef entity
   track $ Sign Inserted tableDef record
   pure record
 
 --
--- I have commented this out for this spike because it needs the fullEntity that
+-- I have commented this out for this spike because it needs the readEntity that
 -- used to be returned by updateRecord but is no longer returned because of the
 -- switch to updating via partial entity. This would need to be solved in some way
 -- for this approach to work. One approach would be to only allow tracking on
@@ -156,25 +156,25 @@ insertRecordTracked tableDef entity = do
 --
 --updateRecordTracked ::
 --     ( MonadTrackedOrville conn m
---     , Typeable fullEntity
---     , Typeable partialEntity
+--     , Typeable readEntity
+--     , Typeable writeEntity
 --     , Typeable key
 --     )
---  => TableDefinition fullEntity partialEntity key
+--  => TableDefinition readEntity writeEntity key
 --  -> key
---  -> partialEntity
+--  -> writeEntity
 --  -> m ()
 --updateRecordTracked tableDef key record = do
 --  updateRecord tableDef key record
 --  track $ Sign Updated tableDef updated
 deleteRecordTracked ::
      ( MonadTrackedOrville conn m
-     , Typeable fullEntity
-     , Typeable partialEntity
+     , Typeable readEntity
+     , Typeable writeEntity
      , Typeable key
      )
-  => TableDefinition fullEntity partialEntity key
-  -> fullEntity
+  => TableDefinition readEntity writeEntity key
+  -> readEntity
   -> m ()
 deleteRecordTracked tableDef record = do
   deleteRecord tableDef record

@@ -172,20 +172,20 @@ getField f = do
   put (convert value : sqlValues)
 
 selectAll ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> SelectOptions
-  -> Orville [fullEntity]
+  -> Orville [readEntity]
 selectAll tableDef = runSelect . selectQueryTable tableDef
 
 selectFirst ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> SelectOptions
-  -> Orville (Maybe fullEntity)
+  -> Orville (Maybe readEntity)
 selectFirst tableDef opts =
   listToMaybe <$> selectAll tableDef (limit 1 <> opts)
 
 deleteWhereBuild ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> [WhereCondition]
   -> Orville Integer
 deleteWhereBuild tableDef conds = do
@@ -197,16 +197,16 @@ deleteWhereBuild tableDef conds = do
     executingSql DeleteQuery querySql $ do run conn querySql values
 
 deleteWhere ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> [WhereCondition]
   -> Orville Integer
 deleteWhere tableDef = deleteWhereBuild tableDef
 
 findRecords ::
      Ord key
-  => TableDefinition fullEntity partialEntity key
+  => TableDefinition readEntity writeEntity key
   -> [key]
-  -> Orville (Map.Map key fullEntity)
+  -> Orville (Map.Map key readEntity)
 findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
   let keyField = tablePrimaryKey tableDef
@@ -216,25 +216,25 @@ findRecords tableDef keys = do
 
 findRecordsBy ::
      (Ord fieldValue)
-  => TableDefinition fullEntity partialEntity key
+  => TableDefinition readEntity writeEntity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Orville (Map.Map fieldValue [fullEntity])
+  -> Orville (Map.Map fieldValue [readEntity])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
 findRecord ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> key
-  -> Orville (Maybe fullEntity)
+  -> Orville (Maybe readEntity)
 findRecord tableDef key =
   let keyField = tablePrimaryKey tableDef
    in selectFirst tableDef (where_ $ keyField .== key)
 
 updateFields ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> [FieldUpdate]
   -> [WhereCondition]
   -> Orville Integer
@@ -248,9 +248,9 @@ updateFields tableDef updates conds =
     updateClause = mkUpdateClause (tableName tableDef) updateNames
 
 updateRecord ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> key
-  -> partialEntity
+  -> writeEntity
   -> Orville ()
 updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
@@ -261,9 +261,9 @@ updateRecord tableDef key record = do
   void $ updateFields tableDef updates conds
 
 insertRecord ::
-     TableDefinition fullEntity partialEntity key
-  -> partialEntity
-  -> Orville fullEntity
+     TableDefinition readEntity writeEntity key
+  -> writeEntity
+  -> Orville readEntity
 insertRecord tableDef newRecord = do
   let builder = tableFromSql tableDef
       returnSelects = expr <$> fromSqlSelects builder
@@ -288,9 +288,7 @@ insertRecord tableDef newRecord = do
     _ -> error "Got more than one record back from the database!"
 
 insertRecordMany ::
-     TableDefinition fullEntity partialEntity key
-  -> [partialEntity]
-  -> Orville ()
+     TableDefinition readEntity writeEntity key -> [writeEntity] -> Orville ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
         mkInsertClause
@@ -303,7 +301,7 @@ insertRecordMany tableDef newRecords = do
       executeMany insert (map (runToSql builder) newRecords)
 
 deleteRecord ::
-     TableDefinition fullEntity partialEntity key -> fullEntity -> Orville ()
+     TableDefinition readEntity writeEntity key -> readEntity -> Orville ()
 deleteRecord tableDef record = do
   let keyField = tablePrimaryKey tableDef
       key = tableGetKey tableDef record

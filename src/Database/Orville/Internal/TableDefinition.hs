@@ -8,20 +8,20 @@ module Database.Orville.Internal.TableDefinition where
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Types
 
-tableColumnNames :: TableDefinition fullEntity partialEntity key -> [String]
+tableColumnNames :: TableDefinition readEntity writeEntity key -> [String]
 tableColumnNames = map someFieldName . tableFields
   where
     someFieldName (SomeField f) = fieldName f
 
 tableAssignableFields ::
-     TableDefinition fullEntity partialEntity key -> [SomeField]
+     TableDefinition readEntity writeEntity key -> [SomeField]
 tableAssignableFields =
   filter (not . isSomeAssignedByDatabaseField) . tableFields
   where
     isSomeAssignedByDatabaseField (SomeField f) = isAssignedByDatabaseField f
 
 tableAssignableColumnNames ::
-     TableDefinition fullEntity partialEntity key -> [String]
+     TableDefinition readEntity writeEntity key -> [String]
 tableAssignableColumnNames = map someFieldName . tableAssignableFields
   where
     someFieldName (SomeField f) = fieldName f

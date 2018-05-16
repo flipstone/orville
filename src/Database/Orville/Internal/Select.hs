@@ -43,9 +43,9 @@ selectQuery builder =
   selectQueryColumns (expr <$> fromSqlSelects builder) builder
 
 selectQueryTable ::
-     TableDefinition fullEntity partialEntity key
+     TableDefinition readEntity writeEntity key
   -> SelectOptions
-  -> Select fullEntity
+  -> Select readEntity
 selectQueryTable tbl = selectQuery (tableFromSql tbl) (fromClauseTable tbl)
 
 selectQueryRows ::

@@ -39,10 +39,10 @@ import Database.Orville.Internal.Types
  provides a single 'tblMapper' field that specifies all three simultaneously
  and ensures they are consistent with one another.
  -}
-data TableParams fullEntity partialEntity key = TableParams
+data TableParams readEntity writeEntity key = TableParams
   { tblName :: String
       -- ^ The name of the table in the database
-  , tblMapper :: RelationalMap partialEntity fullEntity
+  , tblMapper :: RelationalMap writeEntity readEntity
       -- ^ The relational mapping that defines how the Haskell entity type
       -- is converted both to and from sql. The fields utilized in the mapping
       -- are used to automatically build the list of 'FieldDefinitions' that
@@ -52,7 +52,7 @@ data TableParams fullEntity partialEntity key = TableParams
       -- (Orville will never delete a column without being told it is safe)
   , tblPrimaryKey :: FieldDefinition key
       -- ^ A function to set the key on the entity
-  , tblGetKey :: fullEntity -> key
+  , tblGetKey :: readEntity -> key
       -- ^ A function to get the key on the entity
   , tblComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These
@@ -81,8 +81,8 @@ data TableParams fullEntity partialEntity key = TableParams
  @
  -}
 mkTableDefinition ::
-     TableParams fullEntity partialEntity key
-  -> TableDefinition fullEntity partialEntity key
+     TableParams readEntity writeEntity key
+  -> TableDefinition readEntity writeEntity key
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper

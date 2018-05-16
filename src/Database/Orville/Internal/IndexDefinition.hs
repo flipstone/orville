@@ -15,7 +15,7 @@ import Database.Orville.Internal.Types
 
 uniqueIndex ::
      String
-  -> TableDefinition fullEntity partialEntity key
+  -> TableDefinition readEntity writeEntity key
   -> [SomeField]
   -> IndexDefinition
 uniqueIndex name tableDef fields =
@@ -28,7 +28,7 @@ uniqueIndex name tableDef fields =
 
 simpleIndex ::
      String
-  -> TableDefinition fullEntity partialEntity key
+  -> TableDefinition readEntity writeEntity key
   -> [SomeField]
   -> IndexDefinition
 simpleIndex name tableDef fields =

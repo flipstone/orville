@@ -28,7 +28,7 @@ import Database.Orville.Internal.Types
 createTable ::
      MonadOrville conn m
   => conn
-  -> TableDefinition fullEntity partialEntity key
+  -> TableDefinition readEntity writeEntity key
   -> m ()
 createTable conn tableDef = do
   let ddl = mkCreateTableDDL tableDef
@@ -42,7 +42,7 @@ dropTable conn name = do
 migrateTable ::
      MonadOrville conn m
   => conn
-  -> TableDefinition fullEntity partialEntity key
+  -> TableDefinition readEntity writeEntity key
   -> m ()
 migrateTable conn tableDef = do
   columns <- liftIO $ describeTable conn (tableName tableDef)
@@ -55,7 +55,7 @@ migrateTable conn tableDef = do
 
 mkMigrateTableDDL ::
      [(String, SqlColDesc)]
-  -> TableDefinition fullEntity partialEntity key
+  -> TableDefinition readEntity writeEntity key
   -> Maybe String
 mkMigrateTableDDL columns tableDef =
   if null stmts
@@ -140,7 +140,7 @@ mkFieldDDL (name, columnType, flags, _) =
         then ""
         else "NOT NULL"
 
-mkCreateTableDDL :: TableDefinition fullEntity partialEntity key -> String
+mkCreateTableDDL :: TableDefinition readEntity writeEntity key -> String
 mkCreateTableDDL tableDef =
   "CREATE TABLE \"" ++ tableName tableDef ++ "\" (" ++ fields ++ ")"
   where
@@ -184,8 +184,8 @@ sqlFieldDesc (_, columnType, flags, _) =
     }
 
 data MigrateTableException =
-  forall fullEntity partialEntity key. MTE (TableDefinition fullEntity partialEntity key)
-                                           Exc.SomeException
+  forall readEntity writeEntity key. MTE (TableDefinition readEntity writeEntity key)
+                                         Exc.SomeException
   deriving (Typeable)
 
 instance Show MigrateTableException where
@@ -217,7 +217,7 @@ formatMigrationException (MTE tableDef exception) = message
     comments = formatTableComments " " tableDef
 
 formatTableComments ::
-     String -> TableDefinition fullEntity partialEntity key -> String
+     String -> TableDefinition readEntity writeEntity key -> String
 formatTableComments indent tableDef =
   List.intercalate ("\n" ++ indent) commentLines
   where

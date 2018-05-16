@@ -48,7 +48,7 @@ nullableField field = field `withFlag` Null `withConversion` nullableConversion
 
 foreignKeyField ::
      String
-  -> TableDefinition fullEntity partialEntity key
+  -> TableDefinition readEntity writeEntity key
   -> FieldDefinition key
   -> FieldDefinition key
 foreignKeyField name refTable refField =
