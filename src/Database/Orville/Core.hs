@@ -300,11 +300,9 @@ insertRecordMany tableDef newRecords = do
       insert <- prepare conn insertSql
       executeMany insert (map (runToSql builder) newRecords)
 
-deleteRecord ::
-     TableDefinition readEntity writeEntity key -> readEntity -> Orville ()
-deleteRecord tableDef record = do
+deleteRecord :: TableDefinition readEntity writeEntity key -> key -> Orville ()
+deleteRecord tableDef key = do
   let keyField = tablePrimaryKey tableDef
-      key = tableGetKey tableDef record
   n <- deleteWhere tableDef [keyField .== key]
   if n /= 1
     then error $

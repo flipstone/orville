@@ -61,7 +61,7 @@ test_crud =
           foundDeletedVirus <-
             run $ do
               insertedVirus <- O.insertRecord virusTable bpsVirus
-              O.deleteRecord virusTable insertedVirus
+              O.deleteRecord virusTable testId
               O.findRecord virusTable testId
           assertEqual
             "Virus was found in the database, but it should have been deleted"
