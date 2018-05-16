@@ -4,6 +4,7 @@ services:
     build: .
     volumes:
       - .:/orville
+      - stack-work:/orville/.stack-work
       - stack-root:/stack-root
     working_dir: /orville
     depends_on:
@@ -18,3 +19,4 @@ services:
 
 volumes:
   stack-root:
+  stack-work:

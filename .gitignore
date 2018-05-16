@@ -10,3 +10,4 @@ orville.cabal
 
 # Ignore any local developer overrides to the docker-compose file
 docker-compose.override.yml
+docker-compose.tools-override.yml
