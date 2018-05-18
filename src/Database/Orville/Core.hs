@@ -65,6 +65,7 @@ module Database.Orville.Core
   , withName
   , withConversion
   , fieldFromSql
+  , fieldToSqlValue
   , SomeField(..)
   , withPrefix
   , fieldName
