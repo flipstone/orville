@@ -15,7 +15,7 @@ import Database.Orville.Internal.Types
 
 uniqueConstraint ::
      String
-  -> TableDefinition entity key
+  -> TableDefinition readEntity writeEntity key
   -> [SomeField]
   -> ConstraintDefinition
 uniqueConstraint name tableDef fields =
@@ -28,5 +28,6 @@ uniqueConstraint name tableDef fields =
   where
     someEscapedFieldName (SomeField f) = escapedFieldName f
 
-dropConstraint :: TableDefinition entity key -> String -> SchemaItem
+dropConstraint ::
+     TableDefinition readEntity writeEntity key -> String -> SchemaItem
 dropConstraint tableDef = DropConstraint (tableName tableDef)

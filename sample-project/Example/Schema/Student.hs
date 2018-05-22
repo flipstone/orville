@@ -11,28 +11,33 @@ module Example.Schema.Student
 
 import qualified Database.Orville as O
 
-import Example.Data.Student (Student(..), StudentId(..), StudentName(..) )
-import Example.Data.Major (Major(..), MajorId(..), MajorName(..), MajorCollege(..), collegeMajorToText, textToCollegeMajor)
+import Example.Data.Major
+  ( Major(..)
+  , MajorCollege(..)
+  , MajorId(..)
+  , MajorName(..)
+  , collegeMajorToText
+  , textToCollegeMajor
+  )
+import Example.Data.Student (Student(..), StudentId(..), StudentName(..))
 
-majorTable :: O.TableDefinition Major MajorId
+majorTable :: O.TableDefinition (Major MajorId) (Major ()) MajorId
 majorTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "majors"
     , O.tblPrimaryKey = majorIdField
-    , O.tblMapper
-       =
-        Major <$> O.attrField majorId majorIdField <*>
+    , O.tblMapper =
+        Major <$> O.readOnlyField majorIdField <*>
         O.attrField majorName majorNameField <*>
         O.attrField majorCollege majorCollegeField
     , O.tblGetKey = majorId
-    , O.tblSetKey = \key entity -> entity {majorId = key}
     , O.tblSafeToDelete = []
     , O.tblComments = O.noComments
     }
 
 majorIdField :: O.FieldDefinition MajorId
-majorIdField = 
+majorIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.sqlConversionVia majorIdInt MajorId
 
@@ -46,20 +51,17 @@ majorCollegeField =
   O.textField "college" 255 `O.withConversion`
   O.sqlConversionVia collegeMajorToText textToCollegeMajor
 
-
-studentTable :: O.TableDefinition Student StudentId
+studentTable :: O.TableDefinition (Student StudentId) (Student ()) StudentId
 studentTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "students"
     , O.tblPrimaryKey = studentIdField
-    , O.tblMapper
-       =
-        Student <$> O.attrField studentId studentIdField <*>
+    , O.tblMapper =
+        Student <$> O.readOnlyField studentIdField <*>
         O.attrField studentName studentNameField <*>
         O.attrField studentMajor studentMajorField
     , O.tblGetKey = studentId
-    , O.tblSetKey = \key entity -> entity {studentId = key}
     , O.tblSafeToDelete = []
     , O.tblComments = O.noComments
     }
@@ -75,13 +77,4 @@ studentNameField =
   O.sqlConversionVia studentNameText StudentName
 
 studentMajorField :: O.FieldDefinition MajorId
-studentMajorField = 
-  O.foreignKeyField "major" majorTable majorIdField
-  
-
-
-
-
-
-
-
+studentMajorField = O.foreignKeyField "major" majorTable majorIdField

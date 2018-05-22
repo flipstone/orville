@@ -9,9 +9,14 @@ import qualified Database.Orville.Select as S
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)
 
-import Example.Data.Virus (VirusId, bpsVirus)
+import ParameterizedEntity.Data.Virus (VirusId, bpsVirus)
 
-import Example.Schema (schema, virusIdField, virusNameField, virusTable)
+import ParameterizedEntity.Schema
+  ( schema
+  , virusIdField
+  , virusNameField
+  , virusTable
+  )
 import qualified TestDB as TestDB
 
 test_errors :: TestTree

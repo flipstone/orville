@@ -5,7 +5,7 @@ import qualified Database.Orville as O
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 
-import Example.Schema (schema)
+import ParameterizedEntity.Schema (schema)
 import qualified TestDB as TestDB
 
 test_migrate :: TestTree

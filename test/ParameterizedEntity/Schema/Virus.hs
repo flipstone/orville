@@ -1,4 +1,4 @@
-module Example.Schema.Virus
+module ParameterizedEntity.Schema.Virus
   ( virusTable
   , virusIdField
   , virusNameField
@@ -6,9 +6,9 @@ module Example.Schema.Virus
 
 import qualified Database.Orville as O
 
-import Example.Data.Virus (Virus(..), VirusId(..), VirusName(..))
+import ParameterizedEntity.Data.Virus (Virus(..), VirusId(..), VirusName(..))
 
-virusTable :: O.TableDefinition Virus VirusId
+virusTable :: O.TableDefinition (Virus VirusId) (Virus ()) VirusId
 virusTable =
   O.mkTableDefinition $
   O.TableParams
@@ -17,10 +17,9 @@ virusTable =
     , O.tblMapper
       -- hindent ;(
        =
-        Virus <$> O.attrField virusId virusIdField <*>
+        Virus <$> O.readOnlyField virusIdField <*>
         O.attrField virusName virusNameField
     , O.tblGetKey = virusId
-    , O.tblSetKey = \key entity -> entity {virusId = key}
     , O.tblSafeToDelete = []
     , O.tblComments = O.noComments
     }

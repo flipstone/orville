@@ -2,26 +2,35 @@
 
 module Main where
 
-import Control.Monad.IO.Class
-import Control.Monad (void)
-import Control.Exception
-import Data.Convertible (convert)
-import qualified Database.HDBC.PostgreSQL as Postgres
-import qualified Data.Map.Strict as Map
-import System.Environment (getEnv)
-import qualified Data.Text.IO as T
-import Data.Text (Text, pack, unpack)
 import Control.Arrow
+import Control.Exception
+import Control.Monad (void)
+import Data.Convertible (convert)
+import qualified Data.Map.Strict as Map
+import Data.Text (pack, unpack)
+import qualified Data.Text.IO as T
+import qualified Database.HDBC.PostgreSQL as Postgres
+import System.Environment (getEnv)
 
 import qualified Database.Orville as O
-import qualified Database.Orville.Raw as ORaw
 import Database.Orville.PostgresSQL
+import qualified Database.Orville.Raw as ORaw
 
-import Example.Data.Major ( Major(..), MajorId(..), MajorName(..), MajorCollege(..))
-import Example.Data.Student ( Student(..), StudentId(..), StudentName(..) )
-import Example.Schema.Student ( studentIdField, studentNameField, studentMajorField, majorIdField, majorNameField, majorCollegeField )
-import Example.SchemaStudent ( studentSchema, studentTable, majorTable )
-
+import Example.Data.Major
+  ( Major(..)
+  , MajorCollege(..)
+  , MajorId(..)
+  , MajorName(..)
+  )
+import Example.Data.Student (Student(..), StudentId(..), StudentName(..))
+import Example.Schema.Student
+  ( majorIdField
+  , majorNameField
+  , studentIdField
+  , studentMajorField
+  , studentNameField
+  )
+import Example.SchemaStudent (majorTable, studentSchema, studentTable)
 
 main :: IO ()
 main = do
@@ -32,88 +41,91 @@ main = do
   let env = O.newOrvilleEnv poolConn
   _ <- O.runOrville initialInsertMajors env
   _ <- O.runOrville initialInsertStudents env
-  
-  catch ((O.runOrville insertStudentFail env) >>= T.putStrLn . studentNameText . studentName) 
-        (\e -> do let err = show (e :: SomeException)
-                  putStrLn ("Warning: Could not insert record. Postgres error message:\n\"" ++ err ++ "\"\n"))
-
+  catch
+    ((O.runOrville insertStudentFail env) >>=
+     T.putStrLn . studentNameText . studentName)
+    (\e -> do
+       let err = show (e :: SomeException)
+       putStrLn
+         ("Warning: Could not insert record. Postgres error message:\n\"" ++
+          err ++ "\"\n"))
   resultSelect <- O.runOrville selectFirstTest env
   putStrLn "\nSelect first business major result:"
-  case resultSelect of 
+  case resultSelect of
     Just (student) -> T.putStrLn $ studentNameText $ studentName student
     Nothing -> putStrLn "no record returned"
-
   resultFind <- O.runOrville findRecordTest env
   putStrLn "\nFind record with ID 1:"
   case resultFind of
     Just (student) -> T.putStrLn $ studentNameText $ studentName student
     Nothing -> putStrLn "no record returned"
-  
   resultSelectAll <- O.runOrville selectAllTest env
   putStrLn "\nSelect all result: "
   mapM_ (T.putStrLn . studentNameText . studentName) resultSelectAll
- 
   deletedStudent <- O.runOrville deleteTest env
-  putStrLn $ "\nInserted and deleted: " ++ unpack (studentNameText $ studentName deletedStudent) ++ ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
-
+  putStrLn $
+    "\nInserted and deleted: " ++
+    unpack (studentNameText $ studentName deletedStudent) ++
+    ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
   deletedMajor <- O.runOrville deleteMajorSuccess env
-  putStrLn $ "\nInserted and deleted: " ++ unpack (majorNameText $ majorName deletedMajor) ++ ", ID: " ++ show (majorIdInt $ majorId deletedMajor)
-
+  putStrLn $
+    "\nInserted and deleted: " ++
+    unpack (majorNameText $ majorName deletedMajor) ++
+    ", ID: " ++ show (majorIdInt $ majorId deletedMajor)
   numDeletedMajors <- O.runOrville deleteWhereMajorSuccess env
-  putStrLn $ "\nNumber of records deleted from major table: " ++ (show numDeletedMajors)
-
-  catch ((O.runOrville deleteMajorDoesNotExist env) >>= putStrLn . ("Number of records deleted from major table: " ++) . show) 
-      (\e -> do let err = show (e :: SomeException)
-                putStrLn ("Warning: Could not delete record. Postgres error message:\n\"" ++ err ++ "\"\n"))
-
-  catch ((O.runOrville violateFKDelete env) >>= putStrLn . show) 
-    (\e -> do let err = show (e :: SomeException)
-              putStrLn ("\nWarning: Could not delete record. Postgres error message:\n\"" ++ err ++ "\"\n"))
-
+  putStrLn $
+    "\nNumber of records deleted from major table: " ++ (show numDeletedMajors)
+  catch
+    ((O.runOrville deleteMajorDoesNotExist env) >>=
+     putStrLn . ("Number of records deleted from major table: " ++) . show)
+    (\e -> do
+       let err = show (e :: SomeException)
+       putStrLn
+         ("Warning: Could not delete record. Postgres error message:\n\"" ++
+          err ++ "\"\n"))
+  catch
+    ((O.runOrville violateFKDelete env) >>= putStrLn . show)
+    (\e -> do
+       let err = show (e :: SomeException)
+       putStrLn
+         ("\nWarning: Could not delete record. Postgres error message:\n\"" ++
+          err ++ "\"\n"))
   findRecordsResult <- O.runOrville findRecordsTest env
   let resultList = Map.toList findRecordsResult
-  let names = map (\(id, student) -> studentNameText $ studentName student) resultList
+  let names =
+        map (\(_, student) -> studentNameText $ studentName student) resultList
   putStrLn "\nIDs 1-3:"
   mapM_ (T.putStrLn) names
-
   updateTest <- O.runOrville updateFieldsTest env
   putStr "\nTest update (number updated): "
   putStrLn $ show updateTest
-
   allEconStudents <- O.runOrville (findAllStudentsByMajor "Economics") env
   putStrLn "\nAll Econ Students"
   mapM_ (T.putStrLn . studentNameText . studentName) allEconStudents
-
   popOutput <- O.runOrville popRecordTest env
   putStrLn "\npopRecord' test:"
   putStrLn $ unpack (studentNameText $ studentName popOutput)
-
   popHasOutput <- O.runOrville popHasOneTest env
   putStrLn "\nhasOne' test:"
   putStrLn $ unpack (studentNameText $ studentName popHasOutput)
-
   hasManyTest <- O.runOrville popHasManyTest env
   putStrLn "\nhasMany test:"
   mapM_ (T.putStrLn . studentNameText . studentName) hasManyTest
-
   popManyTest <- O.runOrville popManyHasOne env
   putStrLn "\nhasOne' & popMany:"
   mapM_ (T.putStrLn . studentNameText . studentName) popManyTest
-
-  popHasManyTest <- O.runOrville popManyHasMany env
+  popManyHasManyTest <- O.runOrville popManyHasMany env
   putStrLn "\nhasMany & popMany:"
-  mapM_ (mapM_ (T.putStrLn . studentNameText . studentName)) popHasManyTest
-
+  mapM_ (mapM_ (T.putStrLn . studentNameText . studentName)) popManyHasManyTest
   majorStudentsTuples <- O.runOrville runAllMajors env
   putStrLn "\nAll students in each major:"
   mapM_ printTuple majorStudentsTuples
-
   pure ()
 
 printTuple :: StudentsForMajor -> IO ()
 printTuple (major, studentList) = do
-    putStrLn $ "\n" ++ show (majorNameText (majorName major)) ++ " students:"
-    mapM_ (T.putStrLn . studentNameText . studentName) studentList
+  putStrLn $ "\n" ++ show (majorNameText (majorName major)) ++ " students:"
+  mapM_ (T.putStrLn . studentNameText . studentName) studentList
 
 -- demonstrates insertRecord function
 initialInsertMajors :: O.OrvilleT Postgres.Connection IO (Major MajorId)
@@ -136,7 +148,8 @@ insertStudentFail :: O.OrvilleT Postgres.Connection IO (Student StudentId)
 insertStudentFail = do
   O.insertRecord studentTable testStudent
 
-selectFirstTest :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
+selectFirstTest ::
+     O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))
 selectFirstTest = do
   let options = O.where_ $ (O..==) studentMajorField (MajorId 1)
   O.selectFirst studentTable options
@@ -153,13 +166,13 @@ findRecordTest = do
 deleteTest :: O.OrvilleT Postgres.Connection IO (Student StudentId)
 deleteTest = do
   insertedStudent <- O.insertRecord studentTable allan
-  O.deleteRecord studentTable insertedStudent
+  O.deleteRecord studentTable (studentId insertedStudent)
   pure insertedStudent
 
 deleteMajorSuccess :: O.OrvilleT Postgres.Connection IO (Major MajorId)
 deleteMajorSuccess = do
   insertedMajor <- O.insertRecord majorTable testMajor
-  O.deleteRecord majorTable insertedMajor
+  O.deleteRecord majorTable (majorId insertedMajor)
   pure insertedMajor
 
 deleteWhereMajorSuccess :: O.OrvilleT Postgres.Connection IO (Integer)
@@ -179,40 +192,44 @@ violateFKDelete = do
   let condit = [(O..==) majorIdField (MajorId 2)]
   O.deleteWhere majorTable condit
 
-findRecordsTest :: O.OrvilleT Postgres.Connection IO (Map.Map StudentId (Student StudentId))
+findRecordsTest ::
+     O.OrvilleT Postgres.Connection IO (Map.Map StudentId (Student StudentId))
 findRecordsTest = do
   let id_list = [StudentId 1, StudentId 2, StudentId 3]
   O.findRecords studentTable id_list
 
-findRecordsByTest :: O.OrvilleT Postgres.Connection IO (Map.Map StudentId [Student StudentId])
+findRecordsByTest ::
+     O.OrvilleT Postgres.Connection IO (Map.Map StudentId [Student StudentId])
 findRecordsByTest = do
   let options = O.where_ $ (O..==) studentMajorField (MajorId 2)
-  O.findRecordsBy studentTable studentIdField options 
+  O.findRecordsBy studentTable studentIdField options
 
 updateFieldsTest :: O.OrvilleT Postgres.Connection IO (Integer)
 updateFieldsTest = do
-  let updates = [O.fieldUpdate studentMajorField (MajorId 4)] 
+  let updates = [O.fieldUpdate studentMajorField (MajorId 4)]
   let condit = [(O..==) studentNameField (StudentName $ pack "Erin Valentino")]
   O.updateFields studentTable updates condit
 
-findMajor :: String -> O.OrvilleT Postgres.Connection IO (Maybe (Major MajorId))
+findMajor ::
+     String -> O.OrvilleT Postgres.Connection IO (Maybe (Major MajorId))
 findMajor str = do
   let options = O.where_ $ (O..==) majorNameField (MajorName $ pack str)
   O.selectFirst majorTable options
 
-findStudentsByMajorId :: MajorId -> O.OrvilleT Postgres.Connection IO [Student StudentId]
+findStudentsByMajorId ::
+     MajorId -> O.OrvilleT Postgres.Connection IO [Student StudentId]
 findStudentsByMajorId majId = do
   let options = O.where_ $ (O..==) studentMajorField majId
   O.selectAll studentTable options
 
-findAllStudentsByMajor :: String -> O.OrvilleT Postgres.Connection IO [Student StudentId]
+findAllStudentsByMajor ::
+     String -> O.OrvilleT Postgres.Connection IO [Student StudentId]
 findAllStudentsByMajor majorStr = do
   maybeMajor <- findMajor majorStr
   case maybeMajor of
     Nothing -> pure []
     Just major -> do
       findStudentsByMajorId (majorId major)
-
 
 popRecordTest :: O.OrvilleT Postgres.Connection IO (Student StudentId)
 popRecordTest = do
@@ -241,7 +258,6 @@ popManyHasMany = do
   let popManyResult = O.popMany hasManyResult
   O.popThrow popManyResult [MajorId 1, MajorId 2, MajorId 3]
 
-
 type StudentsForMajor = (Major MajorId, [Student StudentId])
 
 runAllMajors :: O.OrvilleT Postgres.Connection IO [StudentsForMajor]
@@ -265,57 +281,108 @@ getStudentsByMajorId = O.hasMany studentTable studentMajorField
 majorIdPopper :: O.Popper (Major MajorId) (MajorId)
 majorIdPopper = O.fromKern majorId
 
-
 resetToBlankSchema :: O.SchemaDefinition -> O.Orville ()
 resetToBlankSchema schemaDef = do
   results <- ORaw.selectSqlRows "SELECT current_user" []
   case results of
-    [[("current_user", currentUser)]]
-     -> void $ ORaw.updateSql ("DROP OWNED BY " ++ convert currentUser) []
+    [[("current_user", currentUser)]] ->
+      void $ ORaw.updateSql ("DROP OWNED BY " ++ convert currentUser) []
     _ ->
       error $ "Expected single 'current_user' result row, got " ++ show results
   O.migrateSchema schemaDef
-  
 
 business :: Major ()
-business = Major {majorId = (), majorName = MajorName $ pack "Business", majorCollege = LiberalArts}
+business =
+  Major
+    { majorId = ()
+    , majorName = MajorName $ pack "Business"
+    , majorCollege = LiberalArts
+    }
 
 econ :: Major ()
-econ = Major {majorId = (), majorName = MajorName $ pack "Economics", majorCollege = LiberalArts}
+econ =
+  Major
+    { majorId = ()
+    , majorName = MajorName $ pack "Economics"
+    , majorCollege = LiberalArts
+    }
 
 math :: Major ()
-math = Major {majorId = (), majorName = MajorName $ pack "Math", majorCollege = NaturalScience}
+math =
+  Major
+    { majorId = ()
+    , majorName = MajorName $ pack "Math"
+    , majorCollege = NaturalScience
+    }
 
 chem :: Major ()
-chem = Major {majorId = (), majorName = MajorName $ pack "Chemistry", majorCollege = NaturalScience}
+chem =
+  Major
+    { majorId = ()
+    , majorName = MajorName $ pack "Chemistry"
+    , majorCollege = NaturalScience
+    }
 
 testMajor :: Major ()
-testMajor = Major {majorId = (), majorName = MajorName $ pack "Test Major", majorCollege = NaturalScience}
+testMajor =
+  Major
+    { majorId = ()
+    , majorName = MajorName $ pack "Test Major"
+    , majorCollege = NaturalScience
+    }
 
 allan :: Student ()
 allan =
-  Student {studentId = (), studentName = StudentName $ pack "Allan Sherwood", studentMajor = MajorId 1}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Allan Sherwood"
+    , studentMajor = MajorId 1
+    }
 
 barry :: Student ()
 barry =
-  Student {studentId = (), studentName = StudentName $ pack "Barry Zimmer", studentMajor = MajorId 2}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Barry Zimmer"
+    , studentMajor = MajorId 2
+    }
 
 christine :: Student ()
 christine =
-  Student {studentId = (), studentName = StudentName $ pack "Christine Brown", studentMajor = MajorId 3}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Christine Brown"
+    , studentMajor = MajorId 3
+    }
 
 erin :: Student ()
 erin =
-  Student {studentId = (), studentName = StudentName $ pack "Erin Valentino", studentMajor = MajorId 2}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Erin Valentino"
+    , studentMajor = MajorId 2
+    }
 
 sam :: Student ()
 sam =
-  Student {studentId = (), studentName = StudentName $ pack "Samuel Frazier", studentMajor = MajorId 3}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Samuel Frazier"
+    , studentMajor = MajorId 3
+    }
 
 testStudent :: Student ()
 testStudent =
-  Student {studentId = (), studentName = StudentName $ pack "Test Student", studentMajor = MajorId 6}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Test Student"
+    , studentMajor = MajorId 6
+    }
 
 erinNew :: Student ()
 erinNew =
-  Student {studentId = (), studentName = StudentName $ pack "Erin K. Valentino", studentMajor = MajorId 1}
+  Student
+    { studentId = ()
+    , studentName = StudentName $ pack "Erin K. Valentino"
+    , studentMajor = MajorId 1
+    }
