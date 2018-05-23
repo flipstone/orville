@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+stack exec \
+  ghcid \
+  -- \
+  --command 'stack ghci orville:lib orville:exe:orville-sample-exe orville:test:spec --main-is orville:test:spec' \
+  --test main
+

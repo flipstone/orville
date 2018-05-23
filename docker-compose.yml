@@ -11,6 +11,8 @@ services:
       - testdb
     environment:
       TEST_CONN_STRING: "host=testdb user=orville_test"
+    command:
+      - ./ghcid
 
   testdb:
     image: postgres:9.6.8
