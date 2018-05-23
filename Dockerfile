@@ -1,4 +1,4 @@
-FROM flipstone/stack:v1-1.6.5
+FROM flipstone/stack:v2-1.7.1
 
 RUN apt-get update &&\
     apt-get install -y --no-install-recommends libpq5 libpq-dev &&\
