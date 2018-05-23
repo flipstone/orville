@@ -7,6 +7,6 @@ stack install ghcid
 stack exec \
   ghcid \
   -- \
-  --command 'stack ghci orville:lib orville:exe:orville-sample-exe orville:test:spec --main-is orville:test:spec' \
+  --command 'stack ghci --test orville:lib orville:exe:orville-sample-exe orville:test:spec --main-is orville:test:spec' \
   --test main
 
