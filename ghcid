@@ -1,5 +1,9 @@
 #!/usr/bin/env sh
 
+set -e
+
+stack install ghcid
+
 stack exec \
   ghcid \
   -- \
