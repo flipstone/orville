@@ -39,6 +39,8 @@ module Database.Orville.Popper
   , popRecord
   , popRecord'
   , popTable
+  , explain
+  , explainLines
   ) where
 
 import Prelude hiding ((.))
@@ -48,11 +50,13 @@ import Control.Arrow
 import Control.Category
 import Control.Monad.Catch
 import Data.Either
+import Data.List (intercalate)
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 
 import Database.Orville.Core
 import Database.Orville.Internal.QueryCache
+import Database.Orville.Internal.SelectOptions
 
 -- Simple helpers and such that make the public API
 kern :: Popper a a
@@ -70,7 +74,15 @@ liftPop = PopLift
 abortPop :: PopError -> Popper a b
 abortPop = PopAbort
 
-popQuery :: Orville b -> Popper a b
+{-|
+   popQuery embeds an Orville operation in a popper. It is left up to the
+   programmer to ensure that the Orville operation does not do any updates
+   to the database, but only does queries.
+
+   The initial string argument is a description of the query to put into
+   the results of `explain`
+-}
+popQuery :: String -> Orville b -> Popper a b
 popQuery = PopQuery
 
 certainly :: PopError -> Popper (Maybe b) b
@@ -85,7 +97,9 @@ popRecord ::
      TableDefinition readEntity writeEntity key
   -> key
   -> Popper a (Maybe readEntity)
-popRecord tableDef key = popQuery (findRecord tableDef key)
+popRecord tableDef key = popQuery explanation (findRecord tableDef key)
+  where
+    explanation = "popRecord " ++ tableName tableDef
 
 popRecord' ::
      TableDefinition readEntity writeEntity key -> key -> Popper a readEntity
@@ -97,13 +111,18 @@ popFirst ::
      TableDefinition readEntity writeEntity key
   -> SelectOptions
   -> Popper a (Maybe readEntity)
-popFirst tableDef opts = popQuery (selectFirst tableDef opts)
+popFirst tableDef opts = popQuery explanation (selectFirst tableDef opts)
+  where
+    explanation = "popFirst " ++ tableName tableDef
 
 popTable ::
      TableDefinition readEntity writeEntity key
   -> SelectOptions
   -> Popper a [readEntity]
-popTable tableDef opts = popQuery (selectAll tableDef opts)
+popTable tableDef opts = popQuery explanation (selectAll tableDef opts)
+  where
+    explanation =
+      "popTable " ++ tableName tableDef ++ " " ++ selectOptClause opts
 
 popMaybe :: Popper a b -> Popper (Maybe a) (Maybe b)
 popMaybe = PopMaybe
@@ -247,7 +266,7 @@ popMany (PopMaybe singlePopper) =
     rebuildList (Just _:_) [] = [] -- shouldn't happen?
     rebuildList (Nothing:as) bs = Nothing : rebuildList as bs
     rebuildList (Just _:as) (b:bs) = Just b : rebuildList as bs
-popMany (PopQuery orm)
+popMany (PopQuery explanation orm)
   -- the orm query here doesn't depend on the Popper input,
   -- so we can run it once and then construct an infinite
   -- list of the results to be lined up as the outputs for
@@ -255,7 +274,7 @@ popMany (PopQuery orm)
   --
   -- ('repeat' is 'pure' since lists here are zipped)
   --
- = PopQuery (repeat <$> orm)
+ = PopQuery explanation (repeat <$> orm)
 
 -- Manually specifies the many handling of a popper. The original popper
 -- is lift unchanged. If it becomes involved in a `popMany` operation, the
@@ -317,7 +336,7 @@ instance Applicative Popped where
 -- freely as long as the exported API is stable.
 --
 data Popper a b where
-  PopQuery :: Orville b -> Popper a b
+  PopQuery :: String -> Orville b -> Popper a b
   PopRecord
     :: Ord key
     => TableDefinition readEntity writeEntity key
@@ -399,7 +418,7 @@ popCached ::
   -> a
   -> QueryCached m (Popped b)
 popCached (PopOnMany singlePopper _) a = popCached singlePopper a
-popCached (PopQuery query) _ = PoppedValue <$> unsafeLift query
+popCached (PopQuery _ query) _ = PoppedValue <$> unsafeLift query
 popCached (PopRecordBy tableDef fieldDef opts) recordId =
   PoppedValue <$>
   selectFirstCached tableDef (where_ (fieldDef .== recordId) <> opts)
@@ -447,3 +466,84 @@ popCached (PopMaybe popper) a =
   case a of
     Nothing -> pure (PoppedValue Nothing)
     Just val -> fmap Just <$> popCached popper val
+
+explain :: Popper a b -> String
+explain = unlines . explainLines
+
+explainLines :: Popper a b -> [String]
+explainLines subject =
+  case subject of
+    PopQuery explanation _ -> [explanation]
+    PopRecord tableDef ->
+      let entity = tableName tableDef
+          field = fieldName (tablePrimaryKey tableDef)
+       in [intercalate " " ["fetch one", entity, "by one", field]]
+    PopRecords tableDef ->
+      let entity = tableName tableDef
+          field = fieldName (tablePrimaryKey tableDef)
+       in [intercalate " " ["fetch many", entity, "by many", field]]
+    PopRecordBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              ["fetch one", entity, "by one", field, explainSelectOpts opts]
+          ]
+    PopRecordManyBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              ["fetch many", entity, "by one", field, explainSelectOpts opts]
+          ]
+    PopRecordsBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              [ "fetch many"
+              , entity
+              , "by many"
+              , field
+              , "(1-1)"
+              , explainSelectOpts opts
+              ]
+          ]
+    PopRecordsManyBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              [ "fetch many"
+              , entity
+              , "by many"
+              , field
+              , "(*-1)"
+              , explainSelectOpts opts
+              ]
+          ]
+    PopId -> []
+    PopPure _ -> []
+    PopLift _ -> []
+    PopAbort _ -> []
+    PopMap _ popper -> explainLines popper
+    -- Note the argument order to PopApply in comparison to PopChain below
+    PopApply popperA popperB -> explainLines popperA ++ explainLines popperB
+    -- Note the argument order to PopApply in comparison to PopApply above
+    PopChain popperB popperA -> explainLines popperA ++ explainLines popperB
+    PopArrowFirst popper -> explainLines popper
+    PopArrowLeft popper -> explainLines popper
+    PopOnMany singlePopper _
+      -- If a `PopOnMany` is left in the tree at the time of execution, it
+      -- always represents a single pop. Other `popMany` would have removed
+      -- it from the tree and replaced it with a direct reference to the many
+      -- popper that it holds.
+     -> explainLines singlePopper
+    PopMaybe popper -> explainLines popper
+
+explainSelectOpts :: SelectOptions -> String
+explainSelectOpts opts =
+  let clause = selectOptClause opts
+   in if any (/= ' ') clause
+        then concat ["(", clause, "("]
+        else ""
