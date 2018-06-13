@@ -45,6 +45,10 @@ test_popper =
                 pure $
                   QC.classify (length branches > 1) "Num branches > 1" $
                   QC.classify (leafRatio > 1) "Avg leafs/branch > 1" $
+                  QC.classify
+                    (length branches == 1)
+                    "Trivial (Num branches == 1)" $
+                  QC.classify (null branches) "Trivial (Num branches == 0)" $
                   QC.counterexample
                     ("Actual: " ++ show actual)
                     (expected == actual)
@@ -202,7 +206,7 @@ arbitraryLeafCounts
   -- from the `classify` cases listed in the popper test above to generate
   -- small enough test cases for the tests to run efficiently without only
   -- running trivial cases.
- = QC.scale (`div` 4) (QC.listOf (QC.scale (`div` 3) arbitrary))
+ = QC.scale (`div` 3) (QC.listOf (QC.scale (`div` 4) arbitrary))
 
 mkTree :: TreeId -> RootId -> [LeafCount] -> [BranchId] -> [LeafId] -> Tree
 mkTree trId rtId leafCounts brIds lfIds = Tree trId rtId branches
