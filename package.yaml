@@ -69,3 +69,4 @@ tests:
       - tasty
       - tasty-discover
       - tasty-hunit
+      - tasty-quickcheck

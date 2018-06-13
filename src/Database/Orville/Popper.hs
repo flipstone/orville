@@ -83,7 +83,7 @@ abortPop = PopAbort
    the results of `explain`
 -}
 popQuery :: String -> Orville b -> Popper a b
-popQuery = PopQuery
+popQuery explanation orville = PopPrim (PrimQuery explanation orville)
 
 certainly :: PopError -> Popper (Maybe b) b
 certainly err = liftPop $ maybe (PoppedError err) PoppedValue
@@ -132,21 +132,22 @@ hasMany ::
   => TableDefinition readEntity writeEntity key
   -> FieldDefinition fieldValue
   -> Popper fieldValue [readEntity]
-hasMany tableDef fieldDef = PopRecordManyBy tableDef fieldDef mempty
+hasMany tableDef fieldDef = PopPrim (PrimRecordManyBy tableDef fieldDef mempty)
 
 hasOneIn ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
   -> FieldDefinition fieldValue
   -> Popper [fieldValue] (Map.Map fieldValue readEntity)
-hasOneIn tableDef fieldDef = PopRecordsBy tableDef fieldDef mempty
+hasOneIn tableDef fieldDef = PopPrim (PrimRecordsBy tableDef fieldDef mempty)
 
 hasManyIn ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
   -> FieldDefinition fieldValue
   -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
-hasManyIn tableDef fieldDef = PopRecordsManyBy tableDef fieldDef mempty
+hasManyIn tableDef fieldDef =
+  PopPrim (PrimRecordsManyBy tableDef fieldDef mempty)
 
 hasManyWhere ::
      Ord fieldValue
@@ -154,7 +155,8 @@ hasManyWhere ::
   -> FieldDefinition fieldValue
   -> SelectOptions
   -> Popper fieldValue [readEntity]
-hasManyWhere = PopRecordManyBy
+hasManyWhere tableDef fieldDef opts =
+  PopPrim (PrimRecordManyBy tableDef fieldDef opts)
 
 hasManyInWhere ::
      Ord fieldValue
@@ -162,7 +164,8 @@ hasManyInWhere ::
   -> FieldDefinition fieldValue
   -> SelectOptions
   -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
-hasManyInWhere = PopRecordsManyBy
+hasManyInWhere tableDef fieldDef opts =
+  PopPrim (PrimRecordsManyBy tableDef fieldDef opts)
 
 hasOne ::
      Ord fieldValue
@@ -177,7 +180,8 @@ hasOneWhere ::
   -> FieldDefinition fieldValue
   -> SelectOptions
   -> Popper fieldValue (Maybe readEntity)
-hasOneWhere = PopRecordBy
+hasOneWhere tableDef fieldDef opts =
+  PopPrim (PrimRecordBy tableDef fieldDef opts)
 
 hasOne' ::
      Ord fieldValue
@@ -202,32 +206,25 @@ popMissingRecord tableDef fieldDef = fromKern (MissingRecord tableDef fieldDef)
 --
 popMany :: Popper a b -> Popper [a] [b]
 popMany (PopOnMany _ manyPopper) = manyPopper
-popMany (PopRecord tableDef) =
-  zipWith Map.lookup <$> kern <*> (repeat <$> PopRecords tableDef)
-popMany (PopRecordBy tableDef fieldDef selectOptions) =
+popMany (PopPrim (PrimRecordBy tableDef fieldDef selectOptions)) =
   zipWith Map.lookup <$> kern <*>
-  (repeat <$> PopRecordsBy tableDef fieldDef selectOptions)
-popMany (PopRecordManyBy tableDef fieldDef opts) =
+  (repeat <$> PopPrim (PrimRecordsBy tableDef fieldDef selectOptions))
+popMany (PopPrim (PrimRecordManyBy tableDef fieldDef opts)) =
   zipWith getRecords <$> kern <*>
-  (repeat <$> PopRecordsManyBy tableDef fieldDef opts)
+  (repeat <$> PopPrim (PrimRecordsManyBy tableDef fieldDef opts))
   where
     getRecords key = fromMaybe [] . Map.lookup key
-popMany (PopRecords tableDef) =
-  (zipWith restrictMap) <$> kern <*>
-  (fromKern concat >>> PopRecords tableDef >>> fromKern repeat)
-  where
-    restrictMap keys = Map.filterWithKey (isKey keys)
-    isKey keys key _ = key `elem` keys
-popMany (PopRecordsManyBy tableDef fieldDef opts) =
+popMany (PopPrim (PrimRecordsManyBy tableDef fieldDef opts)) =
   (zipWith restrictMap) <$> kern <*>
   (fromKern concat >>>
-   PopRecordsManyBy tableDef fieldDef opts >>> fromKern repeat)
+   PopPrim (PrimRecordsManyBy tableDef fieldDef opts) >>> fromKern repeat)
   where
     restrictMap keys = Map.filterWithKey (isKey keys)
     isKey keys key _ = key `elem` keys
-popMany (PopRecordsBy tableDef fieldDef opts) =
+popMany (PopPrim (PrimRecordsBy tableDef fieldDef opts)) =
   (zipWith restrictMap) <$> kern <*>
-  (fromKern concat >>> PopRecordsBy tableDef fieldDef opts >>> fromKern repeat)
+  (fromKern concat >>>
+   PopPrim (PrimRecordsBy tableDef fieldDef opts) >>> fromKern repeat)
   where
     restrictMap keys = Map.filterWithKey (isKey keys)
     isKey keys key _ = key `elem` keys
@@ -266,7 +263,7 @@ popMany (PopMaybe singlePopper) =
     rebuildList (Just _:_) [] = [] -- shouldn't happen?
     rebuildList (Nothing:as) bs = Nothing : rebuildList as bs
     rebuildList (Just _:as) (b:bs) = Just b : rebuildList as bs
-popMany (PopQuery explanation orm)
+popMany (PopPrim (PrimQuery explanation orm))
   -- the orm query here doesn't depend on the Popper input,
   -- so we can run it once and then construct an infinite
   -- list of the results to be lined up as the outputs for
@@ -274,7 +271,7 @@ popMany (PopQuery explanation orm)
   --
   -- ('repeat' is 'pure' since lists here are zipped)
   --
- = PopQuery explanation (repeat <$> orm)
+ = PopPrim (PrimQuery explanation (repeat <$> orm))
 
 -- Manually specifies the many handling of a popper. The original popper
 -- is lift unchanged. If it becomes involved in a `popMany` operation, the
@@ -330,45 +327,47 @@ instance Applicative Popped where
   (PoppedError err) <*> _ = PoppedError err
   _ <*> (PoppedError err) = PoppedError err
 
+-- Prim GADT. This defines the core database operations that can be performed
+-- as part of popping.
+--
+data Prim a b
+  -- The trivial primitive
+      where
+  PrimQuery :: String -> Orville b -> Prim a b
+  -- The singlar primitives
+  PrimRecordBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim fieldValue (Maybe readEntity)
+  PrimRecordManyBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim fieldValue [readEntity]
+  --  The many primitives (each of these is a fixed point -- its own many)
+  PrimRecordsBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim [fieldValue] (Map.Map fieldValue readEntity)
+  PrimRecordsManyBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim [fieldValue] (Map.Map fieldValue [readEntity])
+
 -- Popper GADT. This defines the popper expression dsl
 -- that is used internally to represent poppers. These
 -- constructors are not exposed, so they can be changed
 -- freely as long as the exported API is stable.
 --
 data Popper a b where
-  PopQuery :: String -> Orville b -> Popper a b
-  PopRecord
-    :: Ord key
-    => TableDefinition readEntity writeEntity key
-    -> Popper key (Maybe readEntity)
-  PopRecords
-    :: Ord key
-    => TableDefinition readEntity writeEntity key
-    -> Popper [key] (Map.Map key readEntity)
-  PopRecordBy
-    :: Ord fieldValue
-    => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
-    -> SelectOptions
-    -> Popper fieldValue (Maybe readEntity)
-  PopRecordManyBy
-    :: Ord fieldValue
-    => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
-    -> SelectOptions
-    -> Popper fieldValue [readEntity]
-  PopRecordsBy
-    :: Ord fieldValue
-    => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
-    -> SelectOptions
-    -> Popper [fieldValue] (Map.Map fieldValue readEntity)
-  PopRecordsManyBy
-    :: Ord fieldValue
-    => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
-    -> SelectOptions
-    -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
+  PopPrim :: Prim a b -> Popper a b
   PopId :: Popper a a
   PopPure :: b -> Popper a b
   PopLift :: (a -> Popped b) -> Popper a b
@@ -412,35 +411,38 @@ popThrow popper a = do
 pop :: Popper a b -> a -> Orville (Popped b)
 pop popper a = runQueryCached $ popCached popper a
 
+popPrim ::
+     (MonadThrow m, MonadOrville conn m)
+  => Prim a b
+  -> a
+  -> QueryCached m (Popped b)
+popPrim (PrimQuery _ query) _ = PoppedValue <$> unsafeLift query
+popPrim (PrimRecordBy tableDef fieldDef opts) recordId =
+  PoppedValue <$>
+  selectFirstCached tableDef (where_ (fieldDef .== recordId) <> opts)
+popPrim (PrimRecordManyBy tableDef fieldDef opts) recordId =
+  PoppedValue <$>
+  selectCached tableDef (where_ (fieldDef .== recordId) <> opts)
+popPrim (PrimRecordsBy tableDef fieldDef opts) recordIds =
+  PoppedValue <$> Map.map head <$>
+  findRecordsByCached
+    tableDef
+    fieldDef
+    (where_ (fieldDef .<- recordIds) <> opts)
+popPrim (PrimRecordsManyBy tableDef fieldDef opts) recordIds =
+  PoppedValue <$>
+  findRecordsByCached
+    tableDef
+    fieldDef
+    (where_ (fieldDef .<- recordIds) <> opts)
+
 popCached ::
      (MonadThrow m, MonadOrville conn m)
   => Popper a b
   -> a
   -> QueryCached m (Popped b)
 popCached (PopOnMany singlePopper _) a = popCached singlePopper a
-popCached (PopQuery _ query) _ = PoppedValue <$> unsafeLift query
-popCached (PopRecordBy tableDef fieldDef opts) recordId =
-  PoppedValue <$>
-  selectFirstCached tableDef (where_ (fieldDef .== recordId) <> opts)
-popCached (PopRecordManyBy tableDef fieldDef opts) recordId =
-  PoppedValue <$>
-  selectCached tableDef (where_ (fieldDef .== recordId) <> opts)
-popCached (PopRecordsBy tableDef fieldDef opts) recordIds =
-  PoppedValue <$> Map.map head <$>
-  findRecordsByCached
-    tableDef
-    fieldDef
-    (where_ (fieldDef .<- recordIds) <> opts)
-popCached (PopRecordsManyBy tableDef fieldDef opts) recordIds =
-  PoppedValue <$>
-  findRecordsByCached
-    tableDef
-    fieldDef
-    (where_ (fieldDef .<- recordIds) <> opts)
-popCached (PopRecord tableDef) recordId =
-  PoppedValue <$> findRecordCached tableDef recordId
-popCached (PopRecords tableDef) recordIds =
-  PoppedValue <$> findRecordsCached tableDef recordIds
+popCached (PopPrim prim) a = popPrim prim a
 popCached (PopAbort err) _ = pure (PoppedError err)
 popCached PopId a = pure (PoppedValue a)
 popCached (PopPure a) _ = pure (PoppedValue a)
@@ -473,55 +475,7 @@ explain = unlines . explainLines
 explainLines :: Popper a b -> [String]
 explainLines subject =
   case subject of
-    PopQuery explanation _ -> [explanation]
-    PopRecord tableDef ->
-      let entity = tableName tableDef
-          field = fieldName (tablePrimaryKey tableDef)
-       in [intercalate " " ["fetch one", entity, "by one", field]]
-    PopRecords tableDef ->
-      let entity = tableName tableDef
-          field = fieldName (tablePrimaryKey tableDef)
-       in [intercalate " " ["fetch many", entity, "by many", field]]
-    PopRecordBy tableDef fieldDef opts ->
-      let entity = tableName tableDef
-          field = fieldName fieldDef
-       in [ intercalate
-              " "
-              ["fetch one", entity, "by one", field, explainSelectOpts opts]
-          ]
-    PopRecordManyBy tableDef fieldDef opts ->
-      let entity = tableName tableDef
-          field = fieldName fieldDef
-       in [ intercalate
-              " "
-              ["fetch many", entity, "by one", field, explainSelectOpts opts]
-          ]
-    PopRecordsBy tableDef fieldDef opts ->
-      let entity = tableName tableDef
-          field = fieldName fieldDef
-       in [ intercalate
-              " "
-              [ "fetch many"
-              , entity
-              , "by many"
-              , field
-              , "(1-1)"
-              , explainSelectOpts opts
-              ]
-          ]
-    PopRecordsManyBy tableDef fieldDef opts ->
-      let entity = tableName tableDef
-          field = fieldName fieldDef
-       in [ intercalate
-              " "
-              [ "fetch many"
-              , entity
-              , "by many"
-              , field
-              , "(*-1)"
-              , explainSelectOpts opts
-              ]
-          ]
+    PopPrim prim -> explainLinesPrim prim
     PopId -> []
     PopPure _ -> []
     PopLift _ -> []
@@ -540,6 +494,51 @@ explainLines subject =
       -- popper that it holds.
      -> explainLines singlePopper
     PopMaybe popper -> explainLines popper
+
+explainLinesPrim :: Prim a b -> [String]
+explainLinesPrim prim =
+  case prim of
+    PrimQuery explanation _ -> [explanation]
+    PrimRecordBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              ["fetch one", entity, "by one", field, explainSelectOpts opts]
+          ]
+    PrimRecordManyBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              ["fetch many", entity, "by one", field, explainSelectOpts opts]
+          ]
+    PrimRecordsBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              [ "fetch many"
+              , entity
+              , "by many"
+              , field
+              , "(1-1)"
+              , explainSelectOpts opts
+              ]
+          ]
+    PrimRecordsManyBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              [ "fetch many"
+              , entity
+              , "by many"
+              , field
+              , "(*-1)"
+              , explainSelectOpts opts
+              ]
+          ]
 
 explainSelectOpts :: SelectOptions -> String
 explainSelectOpts opts =
