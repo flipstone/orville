@@ -7,7 +7,7 @@ License   : MIT
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Database.Orville.Internal.Where
-( WhereCondition
+( WhereCondition(..)
 , (.==)
 , (.<>)
 , (.>)
@@ -22,6 +22,7 @@ module Database.Orville.Internal.Where
 , whereOr
 , whereIn
 , whereNotIn
+, whereQualified
 , isNull
 , isNotNull
 , whereClause
@@ -159,6 +160,9 @@ whereIn fieldDef values = In fieldDef (map (fieldToSqlValue fieldDef) values)
 whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
 whereNotIn fieldDef values =
   NotIn fieldDef (map (fieldToSqlValue fieldDef) values)
+
+whereQualified :: TableDefinition a b c -> WhereCondition -> WhereCondition
+whereQualified tableDef cond = Qualified tableDef cond
 
 isNull :: FieldDefinition a -> WhereCondition
 isNull fieldDef = IsNull fieldDef
