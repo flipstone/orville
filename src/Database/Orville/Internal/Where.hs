@@ -6,7 +6,27 @@ License   : MIT
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
-module Database.Orville.Internal.Where where
+module Database.Orville.Internal.Where
+( WhereCondition
+, (.==)
+, (.<>)
+, (.>)
+, (.>=)
+, (.<)
+, (.<=)
+, (.<-)
+, (%==)
+, whereConditionSql
+, whereConditionValues
+, whereAnd
+, whereOr
+, whereIn
+, whereNotIn
+, isNull
+, isNotNull
+, whereClause
+, whereValues
+) where
 
 import qualified Data.List as List
 import Database.HDBC
@@ -82,29 +102,39 @@ fieldDef .<- as = In fieldDef (List.nub $ map (fieldToSqlValue fieldDef) as)
 fieldDef %== a = BinOp "@@" fieldDef (fieldToSqlValue fieldDef a)
 
 whereConditionSql :: WhereCondition -> String
-whereConditionSql (BinOp op fieldDef _) =
-  fieldName fieldDef ++ " " ++ op ++ " ?"
-whereConditionSql (IsNull fieldDef) = fieldName fieldDef ++ " IS NULL"
-whereConditionSql (IsNotNull fieldDef) = fieldName fieldDef ++ " IS NOT NULL"
-whereConditionSql (In fieldDef values) =
-  fieldName fieldDef ++ " IN (" ++ quesses ++ ")"
+whereConditionSql cond = internalWhereConditionSql Nothing cond
+
+internalWhereConditionSql :: Maybe (TableDefinition a b c) -> WhereCondition -> String
+internalWhereConditionSql tableDef (BinOp op fieldDef _) =
+  getQualifiedFieldName tableDef fieldDef ++ " " ++ op ++ " ?"
+internalWhereConditionSql tableDef (IsNull fieldDef) =
+  getQualifiedFieldName tableDef fieldDef ++ " IS NULL"
+internalWhereConditionSql tableDef (IsNotNull fieldDef) =
+  getQualifiedFieldName tableDef fieldDef ++ " IS NOT NULL"
+internalWhereConditionSql tableDef (In fieldDef values) =
+  getQualifiedFieldName tableDef fieldDef ++ " IN (" ++ quesses ++ ")"
   where
     quesses = List.intercalate "," (map (const "?") values)
-whereConditionSql (NotIn fieldDef values) =
-  fieldName fieldDef ++ " NOT IN (" ++ quesses ++ ")"
+internalWhereConditionSql tableDef (NotIn fieldDef values) =
+  getQualifiedFieldName tableDef fieldDef ++ " NOT IN (" ++ quesses ++ ")"
   where
     quesses = List.intercalate "," (map (const "?") values)
-whereConditionSql AlwaysFalse = "TRUE = FALSE"
-whereConditionSql (Or conds) = List.intercalate " OR " condsSql
+internalWhereConditionSql _ AlwaysFalse = "TRUE = FALSE"
+internalWhereConditionSql tableDef (Or conds) = List.intercalate " OR " condsSql
   where
     condsSql = map condSql conds
-    condSql c = "(" ++ whereConditionSql c ++ ")"
-whereConditionSql (And conds) = List.intercalate " AND " condsSql
+    condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
+internalWhereConditionSql tableDef (And conds) = List.intercalate " AND " condsSql
   where
     condsSql = map condSql conds
-    condSql c = "(" ++ whereConditionSql c ++ ")"
-whereConditionSql (Qualified tableDef cond) =
-  tableName tableDef ++ "." ++ whereConditionSql cond
+    condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
+internalWhereConditionSql _ (Qualified tableDef cond) = internalWhereConditionSql (Just tableDef) cond
+
+getQualifiedFieldName :: Maybe (TableDefinition a b c) -> FieldDefinition d -> String
+getQualifiedFieldName maybeTableDef fieldDef =
+  case maybeTableDef of
+    Just tableDef -> tableName tableDef ++ "." ++ fieldName fieldDef
+    Nothing -> fieldName fieldDef
 
 whereConditionValues :: WhereCondition -> [SqlValue]
 whereConditionValues (BinOp _ _ value) = [value]
