@@ -24,6 +24,7 @@ data WhereCondition =
   | Or [WhereCondition]
   | And [WhereCondition]
   | AlwaysFalse
+  | Qualified String WhereCondition
 
 instance QueryKeyable WhereCondition where
   queryKey (BinOp op field value) = qkOp2 op field value
@@ -34,6 +35,7 @@ instance QueryKeyable WhereCondition where
   queryKey (Or conds) = qkOp "OR" conds
   queryKey (And conds) = qkOp "And" conds
   queryKey AlwaysFalse = qkOp "FALSE" QKEmpty
+  queryKey (Qualified _ cond) = queryKey cond
 
 (.==) :: Convertible a SqlValue
       => FieldDefinition -> a -> WhereCondition
@@ -98,6 +100,9 @@ whereConditionSql (And conds) = List.intercalate " AND " condsSql
   where condsSql = map condSql conds
         condSql c = "(" ++ whereConditionSql c ++ ")"
 
+whereConditionSql (Qualified tableNameStr cond) =
+  tableNameStr ++ "." ++ whereConditionSql cond
+
 whereConditionValues :: WhereCondition -> [SqlValue]
 whereConditionValues (BinOp _ _ value) = [value]
 whereConditionValues (IsNull _) = []
@@ -107,6 +112,7 @@ whereConditionValues (NotIn _ values) = values
 whereConditionValues AlwaysFalse = []
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
 whereConditionValues (And conds) = concatMap whereConditionValues conds
+whereConditionValues (Qualified _ cond) = whereConditionValues cond
 
 whereAnd :: [WhereCondition] -> WhereCondition
 whereAnd = And
