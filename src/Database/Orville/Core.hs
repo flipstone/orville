@@ -101,6 +101,7 @@ module Database.Orville.Core
   , whereQualified
   , isNull
   , isNotNull
+  , whereConditionSql
   , (.==)
   , (.<>)
   , (.<-)
