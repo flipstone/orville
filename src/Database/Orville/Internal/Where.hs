@@ -16,7 +16,6 @@ module Database.Orville.Internal.Where
 , (.<=)
 , (.<-)
 , (%==)
-, whereConditionSql
 , whereConditionValues
 , whereAnd
 , whereOr
