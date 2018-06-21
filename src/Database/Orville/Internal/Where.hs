@@ -107,17 +107,17 @@ whereConditionSql cond = internalWhereConditionSql Nothing cond
 
 internalWhereConditionSql :: Maybe (TableDefinition a b c) -> WhereCondition -> String
 internalWhereConditionSql tableDef (BinOp op fieldDef _) =
-  getQualifiedFieldName tableDef fieldDef ++ " " ++ op ++ " ?"
+  qualifiedFieldName tableDef fieldDef ++ " " ++ op ++ " ?"
 internalWhereConditionSql tableDef (IsNull fieldDef) =
-  getQualifiedFieldName tableDef fieldDef ++ " IS NULL"
+  qualifiedFieldName tableDef fieldDef ++ " IS NULL"
 internalWhereConditionSql tableDef (IsNotNull fieldDef) =
-  getQualifiedFieldName tableDef fieldDef ++ " IS NOT NULL"
+  qualifiedFieldName tableDef fieldDef ++ " IS NOT NULL"
 internalWhereConditionSql tableDef (In fieldDef values) =
-  getQualifiedFieldName tableDef fieldDef ++ " IN (" ++ quesses ++ ")"
+  qualifiedFieldName tableDef fieldDef ++ " IN (" ++ quesses ++ ")"
   where
     quesses = List.intercalate "," (map (const "?") values)
 internalWhereConditionSql tableDef (NotIn fieldDef values) =
-  getQualifiedFieldName tableDef fieldDef ++ " NOT IN (" ++ quesses ++ ")"
+  qualifiedFieldName tableDef fieldDef ++ " NOT IN (" ++ quesses ++ ")"
   where
     quesses = List.intercalate "," (map (const "?") values)
 internalWhereConditionSql _ AlwaysFalse = "TRUE = FALSE"
@@ -131,8 +131,8 @@ internalWhereConditionSql tableDef (And conds) = List.intercalate " AND " condsS
     condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
 internalWhereConditionSql _ (Qualified tableDef cond) = internalWhereConditionSql (Just tableDef) cond
 
-getQualifiedFieldName :: Maybe (TableDefinition a b c) -> FieldDefinition d -> String
-getQualifiedFieldName maybeTableDef fieldDef =
+qualifiedFieldName :: Maybe (TableDefinition a b c) -> FieldDefinition d -> String
+qualifiedFieldName maybeTableDef fieldDef =
   case maybeTableDef of
     Just tableDef -> tableName tableDef ++ "." ++ fieldName fieldDef
     Nothing -> fieldName fieldDef
