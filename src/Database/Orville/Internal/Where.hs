@@ -7,26 +7,26 @@ License   : MIT
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Database.Orville.Internal.Where
-( WhereCondition(..)
-, (.==)
-, (.<>)
-, (.>)
-, (.>=)
-, (.<)
-, (.<=)
-, (.<-)
-, (%==)
-, whereConditionValues
-, whereAnd
-, whereOr
-, whereIn
-, whereNotIn
-, whereQualified
-, isNull
-, isNotNull
-, whereClause
-, whereValues
-) where
+  ( WhereCondition(..)
+  , (.==)
+  , (.<>)
+  , (.>)
+  , (.>=)
+  , (.<)
+  , (.<=)
+  , (.<-)
+  , (%==)
+  , whereConditionValues
+  , whereAnd
+  , whereOr
+  , whereIn
+  , whereNotIn
+  , whereQualified
+  , isNull
+  , isNotNull
+  , whereClause
+  , whereValues
+  ) where
 
 import qualified Data.List as List
 import Database.HDBC
@@ -63,7 +63,8 @@ data WhereCondition
   | Or [WhereCondition]
   | And [WhereCondition]
   | AlwaysFalse
-  | forall a b c. Qualified (TableDefinition a b c) WhereCondition
+  | forall a b c. Qualified (TableDefinition a b c)
+                            WhereCondition
 
 instance QueryKeyable WhereCondition where
   queryKey (BinOp op field value) = qkOp2 op field value
@@ -104,7 +105,8 @@ fieldDef %== a = BinOp "@@" fieldDef (fieldToSqlValue fieldDef a)
 whereConditionSql :: WhereCondition -> String
 whereConditionSql cond = internalWhereConditionSql Nothing cond
 
-internalWhereConditionSql :: Maybe (TableDefinition a b c) -> WhereCondition -> String
+internalWhereConditionSql ::
+     Maybe (TableDefinition a b c) -> WhereCondition -> String
 internalWhereConditionSql tableDef (BinOp op fieldDef _) =
   qualifiedFieldName tableDef fieldDef ++ " " ++ op ++ " ?"
 internalWhereConditionSql tableDef (IsNull fieldDef) =
@@ -120,17 +122,21 @@ internalWhereConditionSql tableDef (NotIn fieldDef values) =
   where
     quesses = List.intercalate "," (map (const "?") values)
 internalWhereConditionSql _ AlwaysFalse = "TRUE = FALSE"
-internalWhereConditionSql tableDef (Or conds) = List.intercalate " OR " condsSql
+internalWhereConditionSql tableDef (Or conds) =
+  List.intercalate " OR " condsSql
   where
     condsSql = map condSql conds
     condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
-internalWhereConditionSql tableDef (And conds) = List.intercalate " AND " condsSql
+internalWhereConditionSql tableDef (And conds) =
+  List.intercalate " AND " condsSql
   where
     condsSql = map condSql conds
     condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
-internalWhereConditionSql _ (Qualified tableDef cond) = internalWhereConditionSql (Just tableDef) cond
+internalWhereConditionSql _ (Qualified tableDef cond) =
+  internalWhereConditionSql (Just tableDef) cond
 
-qualifiedFieldName :: Maybe (TableDefinition a b c) -> FieldDefinition d -> String
+qualifiedFieldName ::
+     Maybe (TableDefinition a b c) -> FieldDefinition d -> String
 qualifiedFieldName maybeTableDef fieldDef =
   case maybeTableDef of
     Just tableDef -> tableName tableDef ++ "." ++ fieldName fieldDef
