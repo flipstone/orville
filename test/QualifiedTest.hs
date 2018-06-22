@@ -28,7 +28,7 @@ test_qualified_name =
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
-                (customerNameField .== (CustomerName "Alice"))
+                (O.whereLike customerNameField "%LI%")
           result <- run (S.runSelect $ completeOrderSelect opts)
           case length result of
             0 ->

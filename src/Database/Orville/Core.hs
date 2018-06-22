@@ -97,6 +97,7 @@ module Database.Orville.Core
   , whereAnd
   , whereOr
   , whereIn
+  , whereLike
   , whereNotIn
   , whereQualified
   , isNull
