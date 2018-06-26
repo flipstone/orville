@@ -60,7 +60,7 @@ data WhereCondition
   | forall a. In (FieldDefinition a)
                  [SqlValue]
   | forall a. Like (FieldDefinition a)
-                   String
+                   SqlValue
   | forall a. NotIn (FieldDefinition a)
                     [SqlValue]
   | Or [WhereCondition]
@@ -74,7 +74,7 @@ instance QueryKeyable WhereCondition where
   queryKey (IsNull field) = qkOp "IS NULL" field
   queryKey (IsNotNull field) = qkOp "NOT IS NULL" field
   queryKey (In field values) = qkOp2 "IN" field values
-  queryKey (Like field raw) = qkOp ("LIKE LOWER('" ++ raw ++ "')") field
+  queryKey (Like field value) = qkOp2 "LIKE" field value
   queryKey (NotIn field values) = qkOp2 "NOT IN" field values
   queryKey (Or conds) = qkOp "OR" conds
   queryKey (And conds) = qkOp "And" conds
@@ -121,8 +121,8 @@ internalWhereConditionSql tableDef (In fieldDef values) =
   qualifiedFieldName tableDef fieldDef ++ " IN (" ++ quesses ++ ")"
   where
     quesses = List.intercalate "," (map (const "?") values)
-internalWhereConditionSql tableDef (Like fieldDef raw) =
-  "LOWER(" ++ (qualifiedFieldName tableDef fieldDef) ++ ") LIKE LOWER('" ++ raw ++ "')"
+internalWhereConditionSql tableDef (Like fieldDef _) =
+  qualifiedFieldName tableDef fieldDef ++ " LIKE ?"
 internalWhereConditionSql tableDef (NotIn fieldDef values) =
   qualifiedFieldName tableDef fieldDef ++ " NOT IN (" ++ quesses ++ ")"
   where
@@ -153,7 +153,7 @@ whereConditionValues (BinOp _ _ value) = [value]
 whereConditionValues (IsNull _) = []
 whereConditionValues (IsNotNull _) = []
 whereConditionValues (In _ values) = values
-whereConditionValues (Like _ _) = []
+whereConditionValues (Like _ value) = [value]
 whereConditionValues (NotIn _ values) = values
 whereConditionValues AlwaysFalse = []
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
@@ -170,7 +170,7 @@ whereIn :: FieldDefinition a -> [a] -> WhereCondition
 whereIn fieldDef values = In fieldDef (map (fieldToSqlValue fieldDef) values)
 
 whereLike :: FieldDefinition a -> String -> WhereCondition
-whereLike fieldDef raw = Like fieldDef raw
+whereLike fieldDef raw = Like fieldDef (SqlString raw)
 
 whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
 whereNotIn fieldDef values =

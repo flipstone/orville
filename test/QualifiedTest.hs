@@ -9,7 +9,6 @@ import qualified TestDB as TestDB
 
 import Control.Monad (void)
 import Data.Int (Int64)
-import Database.Orville ((.==))
 import Database.Orville.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, assertFailure, testCase)
