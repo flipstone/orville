@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 
 module QualifiedTest where
 
@@ -9,21 +10,18 @@ import qualified TestDB as TestDB
 
 import Control.Monad (void)
 import Data.Int (Int64)
+import Database.Orville ((.==))
 import Database.Orville.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-test_qualified_name :: TestTree
-test_qualified_name =
+test_where_qualified :: TestTree
+test_where_qualified =
   TestDB.withOrvilleRun $ \run ->
     testGroup
-      "QualifiedTest"
-      [ testCase "Qualified Names" $ do
-          run (TestDB.reset schema)
-          void $ run (O.insertRecord orderTable foobarOrder)
-          void $ run (O.insertRecord orderTable orderNamedAlice)
-          void $ run (O.insertRecord customerTable aliceCustomer)
-          void $ run (O.insertRecord customerTable bobCustomer)
+      "Qualified where query"
+      [ testCase "Qualified where like" $ do
+          resetDB run
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
@@ -33,7 +31,37 @@ test_qualified_name =
             "Order returned didn't match expected result"
             [CompleteOrder {order = "foobar", customer = "Alice"}]
             result
+      , testCase "Qualified where like insensitive" $ do
+          resetDB run
+          let opts =
+                O.where_ $
+                O.whereQualified customerTable $
+                O.whereLikeInsensitive customerNameField "%LI%"
+          result <- run (S.runSelect $ completeOrderSelect opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [CompleteOrder {order = "foobar", customer = "Alice"}]
+            result
+      , testCase "Qualified where" $ do
+          resetDB run
+          let opts =
+                O.where_ $
+                O.whereQualified customerTable $
+                (customerNameField .== customerName aliceCustomer)
+          result <- run (S.runSelect $ completeOrderSelect opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [CompleteOrder {order = "foobar", customer = "Alice"}]
+            result
       ]
+
+resetDB :: (forall a. TestDB.TestMonad a -> IO a) -> IO ()
+resetDB run = do
+  run (TestDB.reset schema)
+  void $ run (O.insertRecord orderTable foobarOrder)
+  void $ run (O.insertRecord orderTable orderNamedAlice)
+  void $ run (O.insertRecord customerTable aliceCustomer)
+  void $ run (O.insertRecord customerTable bobCustomer)
 
 data CompleteOrder = CompleteOrder
   { order :: T.Text
