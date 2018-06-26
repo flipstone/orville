@@ -27,7 +27,7 @@ test_qualified_name =
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
-                O.whereLike customerNameField "%LI%"
+                O.whereLike customerNameField "%li%"
           result <- run (S.runSelect $ completeOrderSelect opts)
           assertEqual
             "Order returned didn't match expected result"

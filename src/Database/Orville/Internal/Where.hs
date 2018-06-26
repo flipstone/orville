@@ -170,7 +170,7 @@ whereIn :: FieldDefinition a -> [a] -> WhereCondition
 whereIn fieldDef values = In fieldDef (map (fieldToSqlValue fieldDef) values)
 
 whereLike :: FieldDefinition a -> String -> WhereCondition
-whereLike fieldDef raw = Like fieldDef (SqlString raw)
+whereLike fieldDef raw = Like fieldDef (toSql raw)
 
 whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
 whereNotIn fieldDef values =
