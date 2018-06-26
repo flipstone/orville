@@ -12,7 +12,7 @@ import Data.Int (Int64)
 import Database.Orville ((.==))
 import Database.Orville.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (assertEqual, assertFailure, testCase)
+import Test.Tasty.HUnit (assertEqual, testCase)
 
 test_qualified_name :: TestTree
 test_qualified_name =
@@ -22,29 +22,24 @@ test_qualified_name =
       [ testCase "Qualified Names" $ do
           run (TestDB.reset schema)
           void $ run (O.insertRecord orderTable foobarOrder)
-          void $ run (O.insertRecord orderTable badOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
           void $ run (O.insertRecord customerTable aliceCustomer)
           void $ run (O.insertRecord customerTable bobCustomer)
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
-                (customerNameField .== (CustomerName "Alice"))
+                (customerNameField .== (customerName aliceCustomer))
           result <- run (S.runSelect $ completeOrderSelect opts)
-          case length result of
-            0 ->
-              assertFailure "Expected CompleteOrder, but no records returned"
-            1 ->
-              assertEqual
-                "Order returned didn't match expected result"
-                "Alice"
-                (customer $ result !! 0)
-            _ -> assertFailure "Expected one record, but got many records"
+          assertEqual
+            "Order returned didn't match expected result"
+            [CompleteOrder {order = "foobar", customer = "Alice"}]
+            result
       ]
 
 data CompleteOrder = CompleteOrder
   { order :: T.Text
   , customer :: T.Text
-  }
+  } deriving (Eq, Show)
 
 completeOrderSelect :: O.SelectOptions -> S.Select CompleteOrder
 completeOrderSelect = S.selectQuery buildCompleteOrder orderCustomerFrom
@@ -119,8 +114,8 @@ foobarOrder =
     , orderName = OrderName "foobar"
     }
 
-badOrder :: Order
-badOrder =
+orderNamedAlice :: Order
+orderNamedAlice =
   Order
     { orderId = OrderId 2
     , customerFkId = CustomerId 2
