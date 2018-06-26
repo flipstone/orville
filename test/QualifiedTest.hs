@@ -9,7 +9,6 @@ import qualified TestDB as TestDB
 
 import Control.Monad (void)
 import Data.Int (Int64)
-import Database.Orville ((.==))
 import Database.Orville.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
@@ -28,7 +27,7 @@ test_qualified_name =
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
-                (customerNameField .== (customerName aliceCustomer))
+                O.whereLike customerNameField "%li%"
           result <- run (S.runSelect $ completeOrderSelect opts)
           assertEqual
             "Order returned didn't match expected result"
