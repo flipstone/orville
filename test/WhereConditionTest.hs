@@ -19,7 +19,7 @@ test_where_qualified :: TestTree
 test_where_qualified =
   TestDB.withOrvilleRun $ \run ->
     testGroup
-      "Qualified where query"
+      "Where condition queries"
       [ testCase "Qualified where like" $ do
           resetDB run
           let opts =
