@@ -26,7 +26,7 @@ test_where_condition =
           let opts =
                 O.where_ $
                 O.whereLike orderNameField "%li%"
-          result <- run (S.runSelect $ orderSelect opts)
+          result <- run (O.selectAll orderTable opts)
           assertEqual
             "Order returned didn't match expected result"
             [orderNamedAlice]
@@ -38,7 +38,7 @@ test_where_condition =
           let opts =
                 O.where_ $
                 O.whereLikeInsensitive orderNameField "%LI%"
-          result <- run (S.runSelect $ orderSelect opts)
+          result <- run (O.selectAll orderTable opts)
           assertEqual
             "Order returned didn't match expected result"
             [orderNamedAlice]
@@ -129,16 +129,6 @@ newtype OrderId = OrderId
 newtype OrderName = OrderName
   { unOrderName :: T.Text
   } deriving (Show, Eq)
-
-orderSelect :: O.SelectOptions -> S.Select Order
-orderSelect = S.selectQuery buildOrder (S.fromClauseTable orderTable)
-
-buildOrder :: O.FromSql Order
-buildOrder =
-  Order <$>
-  O.fieldFromSql orderIdField <*>
-  O.fieldFromSql customerFkIdField <*>
-  O.fieldFromSql orderNameField
 
 foobarOrder :: Order
 foobarOrder =
