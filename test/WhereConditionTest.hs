@@ -21,7 +21,11 @@ test_where_qualified =
     testGroup
       "Where condition queries"
       [ testCase "Qualified where like" $ do
-          resetDB run
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          void $ run (O.insertRecord customerTable aliceCustomer)
+          void $ run (O.insertRecord customerTable bobCustomer)
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
@@ -32,7 +36,11 @@ test_where_qualified =
             [CompleteOrder {order = "foobar", customer = "Alice"}]
             result
       , testCase "Qualified where like insensitive" $ do
-          resetDB run
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          void $ run (O.insertRecord customerTable aliceCustomer)
+          void $ run (O.insertRecord customerTable bobCustomer)
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
@@ -43,7 +51,11 @@ test_where_qualified =
             [CompleteOrder {order = "foobar", customer = "Alice"}]
             result
       , testCase "Qualified where" $ do
-          resetDB run
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          void $ run (O.insertRecord customerTable aliceCustomer)
+          void $ run (O.insertRecord customerTable bobCustomer)
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
@@ -54,14 +66,6 @@ test_where_qualified =
             [CompleteOrder {order = "foobar", customer = "Alice"}]
             result
       ]
-
-resetDB :: (forall a. TestDB.TestMonad a -> IO a) -> IO ()
-resetDB run = do
-  run (TestDB.reset schema)
-  void $ run (O.insertRecord orderTable foobarOrder)
-  void $ run (O.insertRecord orderTable orderNamedAlice)
-  void $ run (O.insertRecord customerTable aliceCustomer)
-  void $ run (O.insertRecord customerTable bobCustomer)
 
 data CompleteOrder = CompleteOrder
   { order :: T.Text
