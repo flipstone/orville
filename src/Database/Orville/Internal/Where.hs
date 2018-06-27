@@ -21,6 +21,7 @@ module Database.Orville.Internal.Where
   , whereOr
   , whereIn
   , whereLike
+  , whereLikeInsensitive
   , whereNotIn
   , whereQualified
   , isNull
@@ -61,6 +62,8 @@ data WhereCondition
                  [SqlValue]
   | forall a. Like (FieldDefinition a)
                    SqlValue
+  | forall a. LikeInsensitive (FieldDefinition a)
+                              SqlValue
   | forall a. NotIn (FieldDefinition a)
                     [SqlValue]
   | Or [WhereCondition]
@@ -75,6 +78,7 @@ instance QueryKeyable WhereCondition where
   queryKey (IsNotNull field) = qkOp "NOT IS NULL" field
   queryKey (In field values) = qkOp2 "IN" field values
   queryKey (Like field value) = qkOp2 "LIKE" field value
+  queryKey (LikeInsensitive field value) = qkOp2 "ILIKE" field value
   queryKey (NotIn field values) = qkOp2 "NOT IN" field values
   queryKey (Or conds) = qkOp "OR" conds
   queryKey (And conds) = qkOp "And" conds
@@ -123,6 +127,8 @@ internalWhereConditionSql tableDef (In fieldDef values) =
     quesses = List.intercalate "," (map (const "?") values)
 internalWhereConditionSql tableDef (Like fieldDef _) =
   qualifiedFieldName tableDef fieldDef ++ " LIKE ?"
+internalWhereConditionSql tableDef (LikeInsensitive fieldDef _) =
+  qualifiedFieldName tableDef fieldDef ++ " ILIKE ?"
 internalWhereConditionSql tableDef (NotIn fieldDef values) =
   qualifiedFieldName tableDef fieldDef ++ " NOT IN (" ++ quesses ++ ")"
   where
@@ -154,6 +160,7 @@ whereConditionValues (IsNull _) = []
 whereConditionValues (IsNotNull _) = []
 whereConditionValues (In _ values) = values
 whereConditionValues (Like _ value) = [value]
+whereConditionValues (LikeInsensitive _ value) = [value]
 whereConditionValues (NotIn _ values) = values
 whereConditionValues AlwaysFalse = []
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
@@ -171,6 +178,9 @@ whereIn fieldDef values = In fieldDef (map (fieldToSqlValue fieldDef) values)
 
 whereLike :: FieldDefinition a -> String -> WhereCondition
 whereLike fieldDef raw = Like fieldDef (toSql raw)
+
+whereLikeInsensitive :: FieldDefinition a -> String -> WhereCondition
+whereLikeInsensitive fieldDef raw = LikeInsensitive fieldDef (toSql raw)
 
 whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
 whereNotIn fieldDef values =

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module QualifiedTest where
+module WhereConditionTest where
 
 import qualified Data.Text as T
 import qualified Database.Orville as O
@@ -9,16 +9,41 @@ import qualified TestDB as TestDB
 
 import Control.Monad (void)
 import Data.Int (Int64)
+import Database.Orville ((.==))
 import Database.Orville.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-test_qualified_name :: TestTree
-test_qualified_name =
+test_where_condition :: TestTree
+test_where_condition =
   TestDB.withOrvilleRun $ \run ->
     testGroup
-      "QualifiedTest"
-      [ testCase "Qualified Names" $ do
+      "Where condition queries"
+      [ testCase "Where like" $ do
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          let opts =
+                O.where_ $
+                O.whereLike orderNameField "%li%"
+          result <- run (O.selectAll orderTable opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [orderNamedAlice]
+            result
+      , testCase "Where like insensitive" $ do
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          let opts =
+                O.where_ $
+                O.whereLikeInsensitive orderNameField "%LI%"
+          result <- run (O.selectAll orderTable opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [orderNamedAlice]
+            result
+      , testCase "Qualified where" $ do
           run (TestDB.reset schema)
           void $ run (O.insertRecord orderTable foobarOrder)
           void $ run (O.insertRecord orderTable orderNamedAlice)
@@ -27,7 +52,7 @@ test_qualified_name =
           let opts =
                 O.where_ $
                 O.whereQualified customerTable $
-                O.whereLike customerNameField "%li%"
+                (customerNameField .== customerName aliceCustomer)
           result <- run (S.runSelect $ completeOrderSelect opts)
           assertEqual
             "Order returned didn't match expected result"
