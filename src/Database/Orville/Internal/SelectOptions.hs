@@ -21,7 +21,8 @@ import Database.Orville.Internal.Types ()
 import Database.Orville.Internal.Where
 
 data SelectOptions = SelectOptions
-  { selectOptWhere :: [WhereCondition]
+  { selectDistinct :: First Bool
+  , selectOptWhere :: [WhereCondition]
   , selectOptOrder :: [OrderByClause]
   , selectOptLimit :: First Int
   , selectOptOffset :: First Int
@@ -35,9 +36,10 @@ selectOptOffsetSql :: SelectOptions -> Maybe SqlValue
 selectOptOffsetSql = fmap convert . getFirst . selectOptOffset
 
 instance Monoid SelectOptions where
-  mempty = SelectOptions mempty mempty mempty mempty mempty
+  mempty = SelectOptions mempty mempty mempty mempty mempty mempty
   mappend opt opt' =
     SelectOptions
+      (selectDistinct opt <> selectDistinct opt')
       (selectOptWhere opt <> selectOptWhere opt')
       (selectOptOrder opt <> selectOptOrder opt')
       (selectOptLimit opt <> selectOptLimit opt')
@@ -53,6 +55,12 @@ instance QueryKeyable SelectOptions where
       , qkOp "LIMIT" $ selectOptLimitSql opt
       , qkOp "OFFSET" $ selectOptOffsetSql opt
       ]
+
+selectClause :: SelectOptions -> String
+selectClause opts =
+  case selectDistinct opts of
+    First (Just True)  -> "SELECT DISTINCT "
+    _ -> "SELECT "
 
 selectOptClause :: SelectOptions -> String
 selectOptClause opts =
@@ -104,19 +112,22 @@ selectOffsetClause opts =
     Nothing -> ""
     Just _ -> "OFFSET ?"
 
+distinct :: SelectOptions
+distinct = SelectOptions (First $ Just True) mempty mempty mempty mempty mempty
+
 where_ :: WhereCondition -> SelectOptions
-where_ clause = SelectOptions [clause] mempty mempty mempty mempty
+where_ clause = SelectOptions mempty [clause] mempty mempty mempty mempty
 
 order :: ToOrderBy a => a -> SortDirection -> SelectOptions
 order orderable dir =
-  SelectOptions mempty [toOrderBy orderable dir] mempty mempty mempty
+  SelectOptions mempty mempty [toOrderBy orderable dir] mempty mempty mempty
 
 limit :: Int -> SelectOptions
-limit n = SelectOptions mempty mempty (First $ Just n) mempty mempty
+limit n = SelectOptions mempty mempty mempty (First $ Just n) mempty mempty
 
 offset :: Int -> SelectOptions
-offset n = SelectOptions mempty mempty mempty (First $ Just n) mempty
+offset n = SelectOptions mempty mempty mempty mempty (First $ Just n) mempty
 
 groupBy :: ToGroupBy a => a -> SelectOptions
 groupBy groupable =
-  SelectOptions mempty mempty mempty mempty [toGroupBy groupable]
+  SelectOptions mempty mempty mempty mempty mempty [toGroupBy groupable]

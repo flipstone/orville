@@ -156,7 +156,7 @@ selectFirstTest = do
 
 selectAllTest :: O.OrvilleT Postgres.Connection IO [Student StudentId]
 selectAllTest = do
-  let options = O.SelectOptions mempty mempty mempty mempty mempty
+  let options = O.SelectOptions mempty mempty mempty mempty mempty mempty
   O.selectAll studentTable options
 
 findRecordTest :: O.OrvilleT Postgres.Connection IO (Maybe (Student StudentId))

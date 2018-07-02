@@ -19,7 +19,17 @@ test_where_condition =
   TestDB.withOrvilleRun $ \run ->
     testGroup
       "Where condition queries"
-      [ testCase "Where like" $ do
+      [ testCase "Where distinct" $ do
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable anotherFoobarOrder)
+          let opts = O.distinct
+          result <- run (S.runSelect $ orderNameSelect opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [orderName foobarOrder]
+            result
+      , testCase "Where like" $ do
           run (TestDB.reset schema)
           void $ run (O.insertRecord orderTable foobarOrder)
           void $ run (O.insertRecord orderTable orderNamedAlice)
@@ -138,6 +148,14 @@ foobarOrder =
     , orderName = OrderName "foobar"
     }
 
+anotherFoobarOrder :: Order
+anotherFoobarOrder =
+  Order
+    { orderId = OrderId 3
+    , customerFkId = CustomerId 2
+    , orderName = OrderName "foobar"
+    }
+
 orderNamedAlice :: Order
 orderNamedAlice =
   Order
@@ -145,6 +163,15 @@ orderNamedAlice =
     , customerFkId = CustomerId 2
     , orderName = OrderName "Alice"
     }
+
+orderNameSelect :: O.SelectOptions -> S.Select OrderName
+orderNameSelect = S.selectQuery buildOrderName orderNameFrom
+
+buildOrderName :: O.FromSql OrderName
+buildOrderName = OrderName <$> O.col (S.selectField orderNameField)
+
+orderNameFrom :: S.FromClause
+orderNameFrom = S.fromClauseTable orderTable
 
 -- Customer definitions
 customerTable :: O.TableDefinition Customer Customer CustomerId
