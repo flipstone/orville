@@ -30,7 +30,7 @@ selectQueryColumns selectExprs builder fromClause opts =
       List.intercalate ", " $ map (rawExprToSql . generateSql) selectExprs
     querySql =
       List.concat
-        [ "SELECT "
+        [ selectClause opts
         , columns
         , " "
         , fromClauseToSql fromClause

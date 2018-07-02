@@ -113,6 +113,7 @@ module Database.Orville.Core
   , (.<=)
   , SelectOptions(..)
   , where_
+  , whereDistinct
   , order
   , limit
   , offset
