@@ -23,9 +23,7 @@ test_where_condition =
           run (TestDB.reset schema)
           void $ run (O.insertRecord orderTable foobarOrder)
           void $ run (O.insertRecord orderTable anotherFoobarOrder)
-          let opts =
-                O.whereDistinct $
-                (orderNameField .== orderName foobarOrder)
+          let opts = O.distinct
           result <- run (S.runSelect $ orderNameSelect opts)
           assertEqual
             "Order returned didn't match expected result"

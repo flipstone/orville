@@ -112,11 +112,11 @@ selectOffsetClause opts =
     Nothing -> ""
     Just _ -> "OFFSET ?"
 
+distinct :: SelectOptions
+distinct = SelectOptions (First $ Just True) mempty mempty mempty mempty mempty
+
 where_ :: WhereCondition -> SelectOptions
 where_ clause = SelectOptions mempty [clause] mempty mempty mempty mempty
-
-whereDistinct :: WhereCondition -> SelectOptions
-whereDistinct clause = SelectOptions (First $ Just True) [clause] mempty mempty mempty mempty
 
 order :: ToOrderBy a => a -> SortDirection -> SelectOptions
 order orderable dir =
