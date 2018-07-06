@@ -230,10 +230,12 @@ tableKeysToSql ::
 tableKeysToSql tableDef = map (tableKeyToSql tableDef)
 
 qualifiedTableFromSql ::
-     TableDefinition fullEntity writeEntity key -> FromSql a -> FromSql a
-qualifiedTableFromSql table fromSQL = fromSQL { fromSqlSelects = qualifiedSelects }
+     TableDefinition fullEntity writeEntity key -> FromSql fullEntity
+qualifiedTableFromSql tableDef = fromSQL { fromSqlSelects = qualifiedSelects }
   where
-    qualifiedSelects = fmap (`qualified` (NameForm $ tableName table)) $ fromSqlSelects fromSQL
+    fromSQL = tableFromSql tableDef
+    qualifiedSelects =
+      fmap (`qualified` (NameForm $ tableName tableDef)) $ fromSqlSelects fromSQL
 
 instance QueryKeyable (TableDefinition fullEntity writeEntity key) where
   queryKey = QKTable . tableName
