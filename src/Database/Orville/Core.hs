@@ -11,7 +11,6 @@ module Database.Orville.Core
   , mkTableDefinition
   , tableKeyToSql
   , tableKeyFromSql
-  , qualifiedTableFromSql
   , SqlConversion
   , sqlConversion
   , sqlConvertible

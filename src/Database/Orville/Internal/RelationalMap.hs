@@ -26,6 +26,7 @@ import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 
+import Database.Orville.Internal.Expr
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.FromSql
 import Database.Orville.Internal.SqlConversion
@@ -86,7 +87,7 @@ mkTableDefinition ::
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
-    , tableFromSql = mkFromSql tblMapper
+    , tableFromSql = mkQualifiedFromSql tblName tblMapper
     , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
@@ -175,6 +176,12 @@ fields (RM_ReadOnly rm) =
   map (someFieldWithFlag AssignedByDatabase) (fields rm)
   where
     someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
+
+mkQualifiedFromSql :: String -> RelationalMap a b -> FromSql b
+mkQualifiedFromSql tableName relationalMap = unqualifiedFromSql {fromSqlSelects = qualifiedSelects}
+  where
+    unqualifiedFromSql = mkFromSql relationalMap
+    qualifiedSelects = fmap (`qualified` (NameForm tableName)) $ fromSqlSelects unqualifiedFromSql
 
 mkFromSql :: RelationalMap a b -> FromSql b
 mkFromSql (RM_Field field) = fieldFromSql field
