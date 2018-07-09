@@ -101,6 +101,7 @@ module Database.Orville.Core
   , whereLikeInsensitive
   , whereNotIn
   , whereQualified
+  , whereRaw
   , isNull
   , isNotNull
   , (.==)
