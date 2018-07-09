@@ -24,6 +24,7 @@ module Database.Orville.Internal.Where
   , whereLikeInsensitive
   , whereNotIn
   , whereQualified
+  , whereRaw
   , isNull
   , isNotNull
   , whereClause
@@ -71,6 +72,7 @@ data WhereCondition
   | AlwaysFalse
   | forall a b c. Qualified (TableDefinition a b c)
                             WhereCondition
+  | Raw String
 
 instance QueryKeyable WhereCondition where
   queryKey (BinOp op field value) = qkOp2 op field value
@@ -84,6 +86,7 @@ instance QueryKeyable WhereCondition where
   queryKey (And conds) = qkOp "And" conds
   queryKey AlwaysFalse = qkOp "FALSE" QKEmpty
   queryKey (Qualified _ cond) = queryKey cond
+  queryKey (Raw raw) = qkOp raw QKEmpty
 
 (.==) :: FieldDefinition a -> a -> WhereCondition
 fieldDef .== a = BinOp "=" fieldDef (fieldToSqlValue fieldDef a)
@@ -146,6 +149,7 @@ internalWhereConditionSql tableDef (And conds) =
     condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
 internalWhereConditionSql _ (Qualified tableDef cond) =
   internalWhereConditionSql (Just tableDef) cond
+internalWhereConditionSql _ (Raw raw) = raw
 
 qualifiedFieldName ::
      Maybe (TableDefinition a b c) -> FieldDefinition d -> String
@@ -166,6 +170,7 @@ whereConditionValues AlwaysFalse = []
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
 whereConditionValues (And conds) = concatMap whereConditionValues conds
 whereConditionValues (Qualified _ cond) = whereConditionValues cond
+whereConditionValues (Raw _) = []
 
 whereAnd :: [WhereCondition] -> WhereCondition
 whereAnd = And
@@ -188,6 +193,9 @@ whereNotIn fieldDef values =
 
 whereQualified :: TableDefinition a b c -> WhereCondition -> WhereCondition
 whereQualified tableDef cond = Qualified tableDef cond
+
+whereRaw :: String -> WhereCondition
+whereRaw = Raw
 
 isNull :: FieldDefinition a -> WhereCondition
 isNull fieldDef = IsNull fieldDef
