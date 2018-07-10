@@ -87,7 +87,7 @@ mkTableDefinition ::
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
-    , tableFromSql = mkQualifiedFromSql tblName tblMapper
+    , tableFromSql = mkFromSql tblMapper tblName
     , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
@@ -177,21 +177,19 @@ fields (RM_ReadOnly rm) =
   where
     someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
 
-mkQualifiedFromSql :: String -> RelationalMap a b -> FromSql b
-mkQualifiedFromSql tableName relationalMap = unqualifiedFromSql {fromSqlSelects = qualifiedSelects}
-  where
-    unqualifiedFromSql = mkFromSql relationalMap
+mkFromSql :: RelationalMap a b -> String -> FromSql b
+mkFromSql (RM_Field field) tableName =
+  let
+    unqualifiedFromSql = fieldFromSql field
     qualifiedSelects = fmap (`qualified` (NameForm tableName)) $ fromSqlSelects unqualifiedFromSql
-
-mkFromSql :: RelationalMap a b -> FromSql b
-mkFromSql (RM_Field field) = fieldFromSql field
-mkFromSql (RM_Nest _ rm) = mkFromSql rm
-mkFromSql (RM_ReadOnly rm) = mkFromSql rm
-mkFromSql (RM_MaybeTag rm) = mkFromSql rm
-mkFromSql (RM_Pure b) = pure b
-mkFromSql (RM_Apply rmF rmC) = mkFromSql rmF <*> mkFromSql rmC
-mkFromSql (RM_Partial rm) = do
-  joinFromSqlError (wrapError <$> mkFromSql rm)
+  in unqualifiedFromSql {fromSqlSelects = qualifiedSelects}
+mkFromSql (RM_Nest _ rm) tableName = mkFromSql rm tableName
+mkFromSql (RM_ReadOnly rm) tableName = mkFromSql rm tableName
+mkFromSql (RM_MaybeTag rm) tableName = mkFromSql rm tableName
+mkFromSql (RM_Pure b) _ = pure b
+mkFromSql (RM_Apply rmF rmC) tableName = mkFromSql rmF tableName <*> mkFromSql rmC tableName
+mkFromSql (RM_Partial rm) tableName = do
+  joinFromSqlError (wrapError <$> mkFromSql rm tableName)
   where
     wrapError = either (Left . RowDataError) Right
 
