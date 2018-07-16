@@ -10,7 +10,6 @@ import qualified Data.List as List
 import Database.HDBC
 
 import Database.Orville.Internal.Expr
-import Database.Orville.Internal.FieldDefinition (fieldName)
 import Database.Orville.Internal.FromClause
 import Database.Orville.Internal.SelectOptions
 import Database.Orville.Internal.Types
@@ -71,6 +70,3 @@ rowFromSql =
           "Database.Orville.Select.rowFromSql: fromSqlColumnNames was accessed. This is a bug."
     , runFromSql = Right <$> ask
     }
-
-selectField :: FieldDefinition a -> SelectForm
-selectField field = selectColumn (NameForm (fieldName field))

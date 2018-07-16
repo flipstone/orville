@@ -13,7 +13,6 @@ module Database.Orville.Select
   , selectQueryRaw
   , selectQueryRawRows
   , selectQueryColumns
-  , selectField
   , FromClause
   , fromClauseRaw
   , fromClauseTableName

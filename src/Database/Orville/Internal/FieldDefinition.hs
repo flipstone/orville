@@ -6,12 +6,14 @@ License   : MIT
 module Database.Orville.Internal.FieldDefinition where
 
 import Data.Int (Int32, Int64)
+import Data.String (fromString)
 import Data.Text (Text)
 import Data.Time (Day, UTCTime)
 import Database.HDBC
 
 import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.Types
+import Database.Orville.Internal.Expr.NameExpr
 
 textField :: String -> Int -> FieldDefinition Text
 textField name len = (name, VarText len, [], textConversion)
@@ -118,3 +120,6 @@ fieldToSqlValue = convertToSql . fieldConversion
 
 fieldFromSqlValue :: FieldDefinition a -> SqlValue -> Maybe a
 fieldFromSqlValue = convertFromSql . fieldConversion
+
+fieldToNameForm :: FieldDefinition a -> NameForm
+fieldToNameForm = fromString . fieldName
