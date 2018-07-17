@@ -14,12 +14,29 @@ import Database.Orville.Internal.Expr.Expr
 
 type NameExpr = Expr NameForm
 
-newtype NameForm =
-  NameForm String
-  deriving (Eq, Ord, IsString)
+data NameForm =
+  NameForm
+    { nameFormTable :: Maybe String
+    , nameFormName :: String
+    }
+  deriving (Eq, Ord)
+
+instance IsString NameForm where
+  fromString str =
+    NameForm
+      { nameFormTable = Nothing
+      , nameFormName = str
+      }
+
+instance QualifySql NameForm where
+  qualified form table = form {nameFormTable = Just table}
 
 instance GenerateSql NameForm where
-  generateSql (NameForm name) = "\"" <> rawSql name <> "\""
+  generateSql (NameForm Nothing name) =
+    "\"" <> rawSql name <> "\""
+  generateSql (NameForm (Just table) name) =
+    "\"" <> rawSql table <> "\".\"" <> rawSql name <> "\""
 
 unescapedName :: NameForm -> String
-unescapedName (NameForm s) = s
+unescapedName (NameForm Nothing name) = name
+unescapedName (NameForm (Just table) name) = table <> "." <> name

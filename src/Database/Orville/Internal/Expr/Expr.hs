@@ -34,6 +34,13 @@ instance IsString RawExpr where
 newtype Expr a =
   Expr (Either RawExpr a)
 
+class QualifySql form where
+  qualified :: form -> String -> form
+
+instance QualifySql a => QualifySql (Expr a) where
+  qualified (Expr (Right a)) table = Expr . Right $ qualified a table
+  qualified (Expr (Left raw)) _ = Expr . Left $ raw
+
 class GenerateSql expr where
   generateSql :: expr -> RawExpr
 
