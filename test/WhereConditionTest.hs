@@ -4,7 +4,6 @@ module WhereConditionTest where
 
 import qualified Data.Text as T
 import qualified Database.Orville as O
-import qualified Database.Orville.Expr as E
 import qualified Database.Orville.Select as S
 import qualified TestDB as TestDB
 
@@ -81,12 +80,12 @@ completeOrderSelect = S.selectQuery buildCompleteOrder orderCustomerFrom
 
 buildCompleteOrder :: O.FromSql CompleteOrder
 buildCompleteOrder =
-    CompleteOrder <$>
-    O.col (E.selectColumn orderNameForm `aliased` "order_name") <*>
-    O.col (E.selectColumn customerNameForm `aliased` "customer_name")
-  where
-    orderNameForm = (O.fieldToNameForm orderNameField) `qualified` "order"
-    customerNameForm = (O.fieldToNameForm customerNameField) `qualified` "customer"
+  CompleteOrder <$>
+  O.col
+    (S.selectField orderNameField `qualified` "order" `aliased` "order_name") <*>
+  O.col
+    (S.selectField customerNameField `qualified` "customer" `aliased`
+     "customer_name")
 
 orderCustomerFrom :: S.FromClause
 orderCustomerFrom =
@@ -169,7 +168,7 @@ orderNameSelect :: O.SelectOptions -> S.Select OrderName
 orderNameSelect = S.selectQuery buildOrderName orderNameFrom
 
 buildOrderName :: O.FromSql OrderName
-buildOrderName = OrderName <$> O.col (E.selectColumn $ O.fieldToNameForm orderNameField)
+buildOrderName = OrderName <$> O.col (S.selectField orderNameField)
 
 orderNameFrom :: S.FromClause
 orderNameFrom = S.fromClauseTable orderTable

@@ -28,8 +28,8 @@ instance IsString NameForm where
       , nameFormName = str
       }
 
-qualified :: NameForm -> String -> NameForm
-qualified nf name = nf {nameFormTable = Just name}
+instance QualifySql NameForm where
+  qualified form table = form {nameFormTable = Just table}
 
 instance GenerateSql NameForm where
   generateSql (NameForm Nothing name) =

@@ -30,6 +30,10 @@ selectFormOutput = fromMaybe <$> selectFormColumn <*> selectFormAlias
 aliased :: SelectForm -> NameForm -> SelectForm
 aliased sf name = sf {selectFormAlias = Just name}
 
+instance QualifySql SelectForm where
+  qualified form table =
+    form { selectFormColumn = (selectFormColumn form) `qualified` table }
+
 instance GenerateSql SelectForm where
   generateSql (SelectForm {..}) =
     generateSql selectFormColumn <>
