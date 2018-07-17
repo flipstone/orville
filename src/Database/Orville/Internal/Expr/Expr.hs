@@ -37,12 +37,9 @@ newtype Expr a =
 class QualifySql form where
   qualified :: form -> String -> form
 
-instance QualifySql RawExpr where
-  qualified expr _ = expr
-
 instance QualifySql a => QualifySql (Expr a) where
-  qualified a table = qualified a table
-  qualified raw _ = raw
+  qualified (Expr (Right a)) table = Expr . Right $ qualified a table
+  qualified (Expr (Left raw)) _ = Expr . Left $ raw
 
 class GenerateSql expr where
   generateSql :: expr -> RawExpr
