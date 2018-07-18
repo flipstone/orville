@@ -33,7 +33,7 @@ instance QualifySql NameForm where
   qualified form table = form {nameFormTable = Just table}
 
 instance QueryKeyable NameForm where
-  queryKey = QKField . nameFormName
+  queryKey = QKField . unescapedName
 
 instance GenerateSql NameForm where
   generateSql (NameForm Nothing name) =
