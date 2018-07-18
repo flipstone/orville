@@ -65,7 +65,7 @@ whereBinOp op field a = WhereBinOp op nameForm sqlValue
     sqlValue = (fieldToSqlValue field a)
 
 whereValues :: [WhereForm] -> [SqlValue]
-whereValues = List.concatMap whereValues'
+whereValues = List.concatMap whereValuesInternal
 
-whereValues' :: WhereForm -> [SqlValue]
-whereValues' (WhereBinOp _ _ value) = [value]
+whereValuesInternal :: WhereForm -> [SqlValue]
+whereValuesInternal (WhereBinOp _ _ value) = [value]
