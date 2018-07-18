@@ -86,29 +86,50 @@ instance QueryKeyable WhereCondition where
   queryKey (Qualified _ cond) = queryKey cond
 
 (.==) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .== a = WhereConditionForm (fieldDef E..== a)
+fieldDef .== a = WhereConditionForm $ nameForm E..== sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 (.<>) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .<> a = WhereConditionForm (fieldDef E..<> a)
+fieldDef .<> a = WhereConditionForm $ nameForm E..<> sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 (.>) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .> a = WhereConditionForm (fieldDef E..> a)
+fieldDef .> a = WhereConditionForm $ nameForm E..> sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 (.>=) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .>= a = WhereConditionForm (fieldDef E..>= a)
+fieldDef .>= a = WhereConditionForm $ nameForm E..>= sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 (.<) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .< a = WhereConditionForm (fieldDef E..< a)
+fieldDef .< a = WhereConditionForm $ nameForm E..< sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 (.<=) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .<= a = WhereConditionForm (fieldDef E..<= a)
+fieldDef .<= a = WhereConditionForm $ nameForm E..<= sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 (.<-) :: FieldDefinition a -> [a] -> WhereCondition
 _ .<- [] = AlwaysFalse
 fieldDef .<- as = In fieldDef (List.nub $ map (fieldToSqlValue fieldDef) as)
 
 (%==) :: FieldDefinition a -> a -> WhereCondition
-fieldDef %== a = WhereConditionForm (fieldDef E.%== a)
+fieldDef %== a = WhereConditionForm $ nameForm E.%== sqlValue
+  where
+    nameForm = fieldToNameForm fieldDef
+    sqlValue = fieldToSqlValue fieldDef a
 
 whereConditionSql :: WhereCondition -> String
 whereConditionSql cond = internalWhereConditionSql Nothing cond
