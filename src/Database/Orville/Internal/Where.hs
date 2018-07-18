@@ -33,9 +33,11 @@ module Database.Orville.Internal.Where
 import qualified Data.List as List
 import Database.HDBC
 
+import qualified Database.Orville.Internal.Expr.WhereExpr as E
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.QueryKey
 import Database.Orville.Internal.Types
+import Database.Orville.Internal.Expr
 
 {-
   It would be nice to match the SqlValues in these with the types from the
@@ -53,9 +55,7 @@ import Database.Orville.Internal.Types
   without requiring OverloadedStrings to be turned on.
 -}
 data WhereCondition
-  = forall a. BinOp String
-                    (FieldDefinition a)
-                    SqlValue
+  = WhereConditionForm E.WhereForm
   | forall a. IsNull (FieldDefinition a)
   | forall a. IsNotNull (FieldDefinition a)
   | forall a. In (FieldDefinition a)
@@ -73,7 +73,7 @@ data WhereCondition
                             WhereCondition
 
 instance QueryKeyable WhereCondition where
-  queryKey (BinOp op field value) = qkOp2 op field value
+  queryKey (WhereConditionForm form) = queryKey form
   queryKey (IsNull field) = qkOp "IS NULL" field
   queryKey (IsNotNull field) = qkOp "NOT IS NULL" field
   queryKey (In field values) = qkOp2 "IN" field values
@@ -86,37 +86,39 @@ instance QueryKeyable WhereCondition where
   queryKey (Qualified _ cond) = queryKey cond
 
 (.==) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .== a = BinOp "=" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef .== a = WhereConditionForm (fieldDef E..== a)
 
 (.<>) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .<> a = BinOp "<>" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef .<> a = WhereConditionForm (fieldDef E..<> a)
 
 (.>) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .> a = BinOp ">" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef .> a = WhereConditionForm (fieldDef E..> a)
 
 (.>=) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .>= a = BinOp ">=" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef .>= a = WhereConditionForm (fieldDef E..>= a)
 
 (.<) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .< a = BinOp "<" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef .< a = WhereConditionForm (fieldDef E..< a)
 
 (.<=) :: FieldDefinition a -> a -> WhereCondition
-fieldDef .<= a = BinOp "<=" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef .<= a = WhereConditionForm (fieldDef E..<= a)
 
 (.<-) :: FieldDefinition a -> [a] -> WhereCondition
 _ .<- [] = AlwaysFalse
 fieldDef .<- as = In fieldDef (List.nub $ map (fieldToSqlValue fieldDef) as)
 
 (%==) :: FieldDefinition a -> a -> WhereCondition
-fieldDef %== a = BinOp "@@" fieldDef (fieldToSqlValue fieldDef a)
+fieldDef %== a = WhereConditionForm (fieldDef E.%== a)
 
 whereConditionSql :: WhereCondition -> String
 whereConditionSql cond = internalWhereConditionSql Nothing cond
 
 internalWhereConditionSql ::
      Maybe (TableDefinition a b c) -> WhereCondition -> String
-internalWhereConditionSql tableDef (BinOp op fieldDef _) =
-  qualifiedFieldName tableDef fieldDef ++ " " ++ op ++ " ?"
+internalWhereConditionSql (Just tableDef) (WhereConditionForm form) =
+  rawExprToSql . generateSql $ form `qualified` (tableName tableDef)
+internalWhereConditionSql Nothing (WhereConditionForm form) =
+  rawExprToSql . generateSql $ form
 internalWhereConditionSql tableDef (IsNull fieldDef) =
   qualifiedFieldName tableDef fieldDef ++ " IS NULL"
 internalWhereConditionSql tableDef (IsNotNull fieldDef) =
@@ -155,7 +157,7 @@ qualifiedFieldName maybeTableDef fieldDef =
     Nothing -> fieldName fieldDef
 
 whereConditionValues :: WhereCondition -> [SqlValue]
-whereConditionValues (BinOp _ _ value) = [value]
+whereConditionValues (WhereConditionForm form) = E.whereValues [form]
 whereConditionValues (IsNull _) = []
 whereConditionValues (IsNotNull _) = []
 whereConditionValues (In _ values) = values
