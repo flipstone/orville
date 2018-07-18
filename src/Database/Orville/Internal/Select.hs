@@ -73,4 +73,4 @@ rowFromSql =
     }
 
 selectField :: FieldDefinition a -> SelectForm
-selectField field = selectColumn (NameForm (fieldName field))
+selectField field = selectColumn (NameForm Nothing (fieldName field))
