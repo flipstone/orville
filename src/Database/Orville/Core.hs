@@ -227,7 +227,9 @@ findRecordsBy ::
   -> SelectOptions
   -> Orville (Map.Map fieldValue [readEntity])
 findRecordsBy tableDef field opts = do
-  let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
+  let
+      tblNm = tableName tableDef
+      builder = (,) <$> fieldFromSql tblNm field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 

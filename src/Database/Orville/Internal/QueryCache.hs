@@ -114,7 +114,9 @@ findRecordsByCached ::
   -> SelectOptions
   -> QueryCached m (Map.Map fieldValue [readEntity])
 findRecordsByCached tableDef field opts = do
-  let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
+  let
+      tblName = tableName tableDef
+      builder = (,) <$> fieldFromSql tblName field <*> tableFromSql tableDef
   rows <- selectCachedRows tableDef opts
   Map.groupBy' id <$> unsafeLift (decodeSqlRows builder rows)
 

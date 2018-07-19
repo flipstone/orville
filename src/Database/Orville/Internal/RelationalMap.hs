@@ -26,7 +26,6 @@ import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
 
-import Database.Orville.Internal.Expr
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.FromSql
 import Database.Orville.Internal.SqlConversion
@@ -87,7 +86,7 @@ mkTableDefinition ::
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
-    , tableFromSql = mkFromSql tblMapper tblName
+    , tableFromSql = mkFromSql tblName tblMapper
     , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
@@ -177,19 +176,15 @@ fields (RM_ReadOnly rm) =
   where
     someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
 
-mkFromSql :: RelationalMap a b -> String -> FromSql b
-mkFromSql (RM_Field field) tableName =
-  let
-    unqualifiedFromSql = fieldFromSql field
-    qualifiedSelects = fmap (`qualified` (NameForm tableName)) $ fromSqlSelects unqualifiedFromSql
-  in unqualifiedFromSql {fromSqlSelects = qualifiedSelects}
-mkFromSql (RM_Nest _ rm) tableName = mkFromSql rm tableName
-mkFromSql (RM_ReadOnly rm) tableName = mkFromSql rm tableName
-mkFromSql (RM_MaybeTag rm) tableName = mkFromSql rm tableName
-mkFromSql (RM_Pure b) _ = pure b
-mkFromSql (RM_Apply rmF rmC) tableName = mkFromSql rmF tableName <*> mkFromSql rmC tableName
-mkFromSql (RM_Partial rm) tableName = do
-  joinFromSqlError (wrapError <$> mkFromSql rm tableName)
+mkFromSql :: String -> RelationalMap a b -> FromSql b
+mkFromSql tblName (RM_Field field) = fieldFromSql tblName field
+mkFromSql tblName (RM_Nest _ rm) = mkFromSql tblName rm
+mkFromSql tblName (RM_ReadOnly rm) = mkFromSql tblName rm
+mkFromSql tblName (RM_MaybeTag rm) = mkFromSql tblName rm
+mkFromSql       _ (RM_Pure b) = pure b
+mkFromSql tblName (RM_Apply rmF rmC) = mkFromSql tblName rmF <*> mkFromSql tblName rmC
+mkFromSql tblName (RM_Partial rm) = do
+  joinFromSqlError (wrapError <$> mkFromSql tblName rm)
   where
     wrapError = either (Left . RowDataError) Right
 
