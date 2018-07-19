@@ -11,6 +11,7 @@ import Data.Monoid
 import Data.String
 
 import Database.Orville.Internal.Expr.Expr
+import Database.Orville.Internal.QueryKey
 
 type NameExpr = Expr NameForm
 
@@ -30,6 +31,9 @@ instance IsString NameForm where
 
 instance QualifySql NameForm where
   qualified form table = form {nameFormTable = Just table}
+
+instance QueryKeyable NameForm where
+  queryKey = QKField . unescapedName
 
 instance GenerateSql NameForm where
   generateSql (NameForm Nothing name) =

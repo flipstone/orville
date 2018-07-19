@@ -10,6 +10,7 @@ import Data.Text (Text)
 import Data.Time (Day, UTCTime)
 import Database.HDBC
 
+import Database.Orville.Internal.Expr.NameExpr (NameForm(..))
 import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.Types
 
@@ -112,6 +113,9 @@ withPrefix f@(name, _, _, _) prefix = f `withName` (prefix ++ "_" ++ name)
 
 fieldConversion :: FieldDefinition a -> SqlConversion a
 fieldConversion (_, _, _, conversion) = conversion
+
+fieldToNameForm :: FieldDefinition a -> NameForm
+fieldToNameForm field = NameForm Nothing (fieldName field)
 
 fieldToSqlValue :: FieldDefinition a -> a -> SqlValue
 fieldToSqlValue = convertToSql . fieldConversion

@@ -10,7 +10,7 @@ import qualified Data.List as List
 import Database.HDBC
 
 import Database.Orville.Internal.Expr
-import Database.Orville.Internal.FieldDefinition (fieldName)
+import Database.Orville.Internal.FieldDefinition (fieldToNameForm)
 import Database.Orville.Internal.FromClause
 import Database.Orville.Internal.SelectOptions
 import Database.Orville.Internal.Types
@@ -73,4 +73,4 @@ rowFromSql =
     }
 
 selectField :: FieldDefinition a -> SelectForm
-selectField field = selectColumn (NameForm Nothing (fieldName field))
+selectField field = selectColumn (fieldToNameForm field)
