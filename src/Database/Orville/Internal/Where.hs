@@ -56,8 +56,6 @@ import Database.Orville.Internal.Expr
 -}
 data WhereCondition
   = WhereConditionForm E.WhereForm
-  | forall a. IsNull (FieldDefinition a)
-  | forall a. IsNotNull (FieldDefinition a)
   | forall a. In (FieldDefinition a)
                  [SqlValue]
   | forall a. Like (FieldDefinition a)
@@ -74,8 +72,6 @@ data WhereCondition
 
 instance QueryKeyable WhereCondition where
   queryKey (WhereConditionForm form) = queryKey form
-  queryKey (IsNull field) = qkOp "IS NULL" field
-  queryKey (IsNotNull field) = qkOp "NOT IS NULL" field
   queryKey (In field values) = qkOp2 "IN" field values
   queryKey (Like field value) = qkOp2 "LIKE" field value
   queryKey (LikeInsensitive field value) = qkOp2 "ILIKE" field value
@@ -140,10 +136,6 @@ internalWhereConditionSql (Just tableDef) (WhereConditionForm form) =
   rawExprToSql . generateSql $ form `qualified` (tableName tableDef)
 internalWhereConditionSql Nothing (WhereConditionForm form) =
   rawExprToSql . generateSql $ form
-internalWhereConditionSql tableDef (IsNull fieldDef) =
-  qualifiedFieldName tableDef fieldDef ++ " IS NULL"
-internalWhereConditionSql tableDef (IsNotNull fieldDef) =
-  qualifiedFieldName tableDef fieldDef ++ " IS NOT NULL"
 internalWhereConditionSql tableDef (In fieldDef values) =
   qualifiedFieldName tableDef fieldDef ++ " IN (" ++ quesses ++ ")"
   where
@@ -179,8 +171,6 @@ qualifiedFieldName maybeTableDef fieldDef =
 
 whereConditionValues :: WhereCondition -> [SqlValue]
 whereConditionValues (WhereConditionForm form) = E.whereValues [form]
-whereConditionValues (IsNull _) = []
-whereConditionValues (IsNotNull _) = []
 whereConditionValues (In _ values) = values
 whereConditionValues (Like _ value) = [value]
 whereConditionValues (LikeInsensitive _ value) = [value]
@@ -213,10 +203,10 @@ whereQualified :: TableDefinition a b c -> WhereCondition -> WhereCondition
 whereQualified tableDef cond = Qualified tableDef cond
 
 isNull :: FieldDefinition a -> WhereCondition
-isNull fieldDef = IsNull fieldDef
+isNull = WhereConditionForm . E.whereNull . fieldToNameForm
 
 isNotNull :: FieldDefinition a -> WhereCondition
-isNotNull fieldDef = IsNotNull fieldDef
+isNotNull = WhereConditionForm . E.whereNotNull . fieldToNameForm
 
 whereClause :: [WhereCondition] -> String
 whereClause [] = ""
