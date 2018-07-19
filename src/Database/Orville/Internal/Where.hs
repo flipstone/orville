@@ -205,8 +205,8 @@ whereNotIn fieldDef values =
 whereQualified :: TableDefinition a b c -> WhereCondition -> WhereCondition
 whereQualified tableDef cond = Qualified tableDef cond
 
-whereRaw :: String -> WhereCondition
-whereRaw = WhereConditionExpr . rawSqlExpr
+whereRaw :: String -> [SqlValue] -> WhereCondition
+whereRaw str values = WhereConditionExpr . expr $ E.whereRaw str values
 
 isNull :: FieldDefinition a -> WhereCondition
 isNull = WhereConditionExpr . expr . E.whereNull . fieldToNameForm
