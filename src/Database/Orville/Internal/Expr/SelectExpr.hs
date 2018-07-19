@@ -6,9 +6,14 @@ License   : MIT
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Database.Orville.Internal.Expr.SelectExpr where
+module Database.Orville.Internal.Expr.SelectExpr
+( SelectExpr
+, SelectForm
+, selectColumn
+, selectFormOutput
+, aliased
+) where
 
-import Data.Maybe
 import Data.Monoid
 
 import Database.Orville.Internal.Expr.Expr
@@ -22,35 +27,28 @@ data SelectForm = SelectForm
   }
 
 selectColumn :: NameForm -> SelectForm
-selectColumn (NameForm Nothing name) =
-  SelectForm (NameForm Nothing name) Nothing
-selectColumn (NameForm (Just tbl) name) =
-  SelectForm
-    (NameForm (Just tbl) name)
-    (Just $ NameForm Nothing (tbl ++ "." ++ name))
+selectColumn form = SelectForm form Nothing
 
 selectFormOutput :: SelectForm -> NameForm
-selectFormOutput = fromMaybe <$> selectFormColumn <*> selectFormAlias
+selectFormOutput form =
+  case selectFormAlias form of
+    Just alias -> alias
+    Nothing ->
+      case selectFormColumn form of
+        (NameForm Nothing _) -> selectFormColumn form
+        (NameForm (Just table) name) -> (NameForm Nothing (table ++ "." ++ name))
 
 aliased :: SelectForm -> NameForm -> SelectForm
 aliased sf name = sf {selectFormAlias = Just name}
 
 instance QualifySql SelectForm where
   qualified form table =
-    form
-      { selectFormColumn = (selectFormColumn form) `qualified` table
-      , selectFormAlias  = Just $ fromMaybe newAlias existingAlias
-      }
-     where
-       NameForm _ name = selectFormColumn form
-       newAlias = NameForm Nothing (table ++ "." ++ name)
-       existingAlias = selectFormAlias form 
+    form { selectFormColumn = (selectFormColumn form) `qualified` table }
 
 instance GenerateSql SelectForm where
-  generateSql (SelectForm {..}) =
-    generateSql selectFormColumn <>
-    asOutput selectFormAlias
+  generateSql form =
+    generateSql (selectFormColumn form) <>
+    asOutput (selectFormOutput form)
 
-asOutput :: Maybe NameForm -> RawExpr
-asOutput Nothing = mempty
-asOutput (Just name) = " AS " <> generateSql name
+asOutput :: NameForm -> RawExpr
+asOutput name = " AS " <> generateSql name
