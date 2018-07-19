@@ -68,6 +68,20 @@ test_where_condition =
             "Order returned didn't match expected result"
             [CompleteOrder {order = "foobar", customer = "Alice"}]
             result
+      , testCase "Raw where" $ do
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          void $ run (O.insertRecord customerTable aliceCustomer)
+          void $ run (O.insertRecord customerTable bobCustomer)
+          let opts =
+                O.where_ $
+                O.whereRaw $ "customer.name = 'Alice'"
+          result <- run (S.runSelect $ completeOrderSelect opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [CompleteOrder {order = "foobar", customer = "Alice"}]
+            result
       ]
 
 data CompleteOrder = CompleteOrder
