@@ -22,7 +22,12 @@ data SelectForm = SelectForm
   }
 
 selectColumn :: NameForm -> SelectForm
-selectColumn name = SelectForm name Nothing
+selectColumn (NameForm Nothing name) =
+  SelectForm (NameForm Nothing name) Nothing
+selectColumn (NameForm (Just tbl) name) =
+  SelectForm
+    (NameForm (Just tbl) name)
+    (Just $ NameForm Nothing (tbl ++ "." ++ name))
 
 selectFormOutput :: SelectForm -> NameForm
 selectFormOutput = fromMaybe <$> selectFormColumn <*> selectFormAlias
@@ -32,7 +37,14 @@ aliased sf name = sf {selectFormAlias = Just name}
 
 instance QualifySql SelectForm where
   qualified form table =
-    form { selectFormColumn = (selectFormColumn form) `qualified` table }
+    form
+      { selectFormColumn = (selectFormColumn form) `qualified` table
+      , selectFormAlias  = Just $ fromMaybe newAlias existingAlias
+      }
+     where
+       NameForm _ name = selectFormColumn form
+       newAlias = NameForm Nothing (table ++ "." ++ name)
+       existingAlias = selectFormAlias form 
 
 instance GenerateSql SelectForm where
   generateSql (SelectForm {..}) =
