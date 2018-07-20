@@ -182,7 +182,8 @@ mkFromSql tblName (RM_Nest _ rm) = mkFromSql tblName rm
 mkFromSql tblName (RM_ReadOnly rm) = mkFromSql tblName rm
 mkFromSql tblName (RM_MaybeTag rm) = mkFromSql tblName rm
 mkFromSql       _ (RM_Pure b) = pure b
-mkFromSql tblName (RM_Apply rmF rmC) = mkFromSql tblName rmF <*> mkFromSql tblName rmC
+mkFromSql tblName (RM_Apply rmF rmC) =
+  mkFromSql tblName rmF <*> mkFromSql tblName rmC
 mkFromSql tblName (RM_Partial rm) = do
   joinFromSqlError (wrapError <$> mkFromSql tblName rm)
   where

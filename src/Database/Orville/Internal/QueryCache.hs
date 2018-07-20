@@ -67,7 +67,9 @@ selectCachedRows tableDef opts =
   unsafeLift $
   runSelect $ selectQueryRows selects (fromClauseTable tableDef) opts
   where
-    selects = expr . selectColumn . (`qualified` (tableName tableDef)) . fromString <$> tableColumnNames tableDef
+    selectQualifiedColumn = selectColumn . (`qualified` (tableName tableDef))
+    selects =
+      expr . selectQualifiedColumn . fromString <$> tableColumnNames tableDef
     key = mconcat [queryKey tableDef, queryKey opts]
 
 selectCached ::

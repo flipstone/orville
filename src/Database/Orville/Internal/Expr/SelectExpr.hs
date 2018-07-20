@@ -30,13 +30,11 @@ selectColumn :: NameForm -> SelectForm
 selectColumn form = SelectForm form Nothing
 
 selectFormOutput :: SelectForm -> NameForm
-selectFormOutput form =
-  case selectFormAlias form of
-    Just alias -> alias
-    Nothing ->
-      case selectFormColumn form of
-        (NameForm Nothing _) -> selectFormColumn form
-        (NameForm (Just table) name) -> (NameForm Nothing (table ++ "." ++ name))
+selectFormOutput form = case selectFormAlias form of
+  Just alias -> alias
+  Nothing -> case selectFormColumn form of
+    (NameForm Nothing _) -> selectFormColumn form
+    (NameForm (Just table) name) -> (NameForm Nothing (table ++ "." ++ name))
 
 aliased :: SelectForm -> NameForm -> SelectForm
 aliased sf name = sf {selectFormAlias = Just name}
