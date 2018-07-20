@@ -11,6 +11,7 @@ module Database.Orville.Internal.Expr.WhereExpr
 , whereValues
 , whereNull
 , whereNotNull
+, whereRaw
 ) where
 
 import qualified Data.List as List
@@ -27,6 +28,7 @@ data WhereForm
   = WhereBinOp String NameForm SqlValue
   | WhereNull NameForm
   | WhereNotNull NameForm
+  | WhereRaw String [SqlValue]
 
 instance QualifySql WhereForm where
   qualified (WhereBinOp op field value) table =
@@ -35,11 +37,13 @@ instance QualifySql WhereForm where
     WhereNull (field `qualified` table)
   qualified (WhereNotNull field) table =
     WhereNotNull (field `qualified` table)
+  qualified raw@(WhereRaw _ _) _ = raw
 
 instance QueryKeyable WhereForm where
   queryKey (WhereBinOp op field value) = qkOp2 op field value
   queryKey (WhereNull field) = qkOp "IS NULL" field
   queryKey (WhereNotNull field) = qkOp "NOT IS NULL" field
+  queryKey (WhereRaw raw values) = qkOp raw values
 
 instance GenerateSql WhereForm where
   generateSql (WhereBinOp op field _) =
@@ -48,6 +52,7 @@ instance GenerateSql WhereForm where
     (generateSql field) <> rawSql " IS NULL"
   generateSql (WhereNotNull field) =
     (generateSql field) <> rawSql " IS NOT NULL"
+  generateSql (WhereRaw raw _) = rawSql raw
 
 (.==) :: NameForm -> SqlValue -> WhereForm
 name .== value = WhereBinOp "=" name value
@@ -76,6 +81,9 @@ whereNull = WhereNull
 whereNotNull :: NameForm -> WhereForm
 whereNotNull = WhereNotNull
 
+whereRaw :: String -> [SqlValue] -> WhereForm
+whereRaw = WhereRaw
+
 whereValues :: [WhereForm] -> [SqlValue]
 whereValues = List.concatMap whereValuesInternal
 
@@ -83,3 +91,4 @@ whereValuesInternal :: WhereForm -> [SqlValue]
 whereValuesInternal (WhereBinOp _ _ value) = [value]
 whereValuesInternal (WhereNull _) = []
 whereValuesInternal (WhereNotNull _) = []
+whereValuesInternal (WhereRaw _ values) = values

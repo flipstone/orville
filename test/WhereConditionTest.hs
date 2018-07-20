@@ -9,6 +9,7 @@ import qualified TestDB as TestDB
 
 import Control.Monad (void)
 import Data.Int (Int64)
+import Database.HDBC (toSql)
 import Database.Orville ((.==))
 import Database.Orville.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
@@ -63,6 +64,20 @@ test_where_condition =
                 O.where_ $
                 O.whereQualified customerTable $
                 (customerNameField .== customerName aliceCustomer)
+          result <- run (S.runSelect $ completeOrderSelect opts)
+          assertEqual
+            "Order returned didn't match expected result"
+            [CompleteOrder {order = "foobar", customer = "Alice"}]
+            result
+      , testCase "Raw where" $ do
+          run (TestDB.reset schema)
+          void $ run (O.insertRecord orderTable foobarOrder)
+          void $ run (O.insertRecord orderTable orderNamedAlice)
+          void $ run (O.insertRecord customerTable aliceCustomer)
+          void $ run (O.insertRecord customerTable bobCustomer)
+          let opts =
+                O.where_ $
+                O.whereRaw "customer.name = ?" [toSql ("Alice" :: String)]
           result <- run (S.runSelect $ completeOrderSelect opts)
           assertEqual
             "Order returned didn't match expected result"
