@@ -14,7 +14,7 @@ module Database.Orville.Expr
   , NameForm
   , unescapedName
   , SelectExpr
-  , SelectForm(..)
+  , SelectForm
   , selectColumn
   , qualified
   , aliased

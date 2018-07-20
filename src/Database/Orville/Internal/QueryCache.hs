@@ -67,7 +67,9 @@ selectCachedRows tableDef opts =
   unsafeLift $
   runSelect $ selectQueryRows selects (fromClauseTable tableDef) opts
   where
-    selects = expr . selectColumn . fromString <$> tableColumnNames tableDef
+    selectQualifiedColumn = selectColumn . (`qualified` (tableName tableDef))
+    selects =
+      expr . selectQualifiedColumn . fromString <$> tableColumnNames tableDef
     key = mconcat [queryKey tableDef, queryKey opts]
 
 selectCached ::
@@ -114,7 +116,9 @@ findRecordsByCached ::
   -> SelectOptions
   -> QueryCached m (Map.Map fieldValue [readEntity])
 findRecordsByCached tableDef field opts = do
-  let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
+  let
+      tblName = tableName tableDef
+      builder = (,) <$> fieldFromSql tblName field <*> tableFromSql tableDef
   rows <- selectCachedRows tableDef opts
   Map.groupBy' id <$> unsafeLift (decodeSqlRows builder rows)
 

@@ -53,4 +53,7 @@ badVirusNameField = virusNameField `O.withConversion` const O.intConversion
 
 badVirusFromSql :: O.FromSql BadVirus
 badVirusFromSql =
-  BadVirus <$> O.fieldFromSql virusIdField <*> O.fieldFromSql badVirusNameField
+  BadVirus <$> O.fieldFromSql tblName virusIdField
+           <*> O.fieldFromSql tblName badVirusNameField
+  where
+    tblName = O.tableName virusTable

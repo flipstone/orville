@@ -32,10 +32,14 @@ convertFromSql =
 col :: (ColumnSpecifier col, Convertible SqlValue a) => col -> FromSql a
 col spec = joinFromSqlError (convertFromSql <$> getColumn (selectForm spec))
 
-fieldFromSql :: FieldDefinition a -> FromSql a
-fieldFromSql field =
-  joinFromSqlError (fromSqlValue <$> getColumn (selectForm field))
+data FieldDefinitionWithTableName a =
+  FieldDefinitionWithTableName (FieldDefinition a) String
+
+fieldFromSql :: String -> FieldDefinition a -> FromSql a
+fieldFromSql tblName field = joinFromSqlError $
+  fromSqlValue <$> getColumn (selectForm fieldDefAndTblName)
   where
+    fieldDefAndTblName = FieldDefinitionWithTableName field tblName
     fromSqlValue sql =
       case fieldFromSqlValue field sql of
         Just a -> Right a
@@ -43,7 +47,11 @@ fieldFromSql field =
           Left $
           RowDataError $
           concat
-            ["Error decoding data from column ", fieldName field, " value"]
+            [ "Error decoding data from column "
+            , fieldName field
+            , " value on table "
+            , tblName
+            ]
 
 class ColumnSpecifier col where
   selectForm :: col -> SelectForm
@@ -56,6 +64,10 @@ instance ColumnSpecifier NameForm where
 
 instance ColumnSpecifier (FieldDefinition a) where
   selectForm = selectColumn . fromString . fieldName
+
+instance ColumnSpecifier (FieldDefinitionWithTableName a) where
+  selectForm (FieldDefinitionWithTableName field tblName) =
+    selectColumn . (`qualified` tblName) . fromString . fieldName $ field
 
 instance ColumnSpecifier [Char] where
   selectForm = selectColumn . fromString

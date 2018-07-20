@@ -86,7 +86,7 @@ mkTableDefinition ::
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
-    , tableFromSql = mkFromSql tblMapper
+    , tableFromSql = mkFromSql tblName tblMapper
     , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
@@ -176,15 +176,16 @@ fields (RM_ReadOnly rm) =
   where
     someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
 
-mkFromSql :: RelationalMap a b -> FromSql b
-mkFromSql (RM_Field field) = fieldFromSql field
-mkFromSql (RM_Nest _ rm) = mkFromSql rm
-mkFromSql (RM_ReadOnly rm) = mkFromSql rm
-mkFromSql (RM_MaybeTag rm) = mkFromSql rm
-mkFromSql (RM_Pure b) = pure b
-mkFromSql (RM_Apply rmF rmC) = mkFromSql rmF <*> mkFromSql rmC
-mkFromSql (RM_Partial rm) = do
-  joinFromSqlError (wrapError <$> mkFromSql rm)
+mkFromSql :: String -> RelationalMap a b -> FromSql b
+mkFromSql tblName (RM_Field field) = fieldFromSql tblName field
+mkFromSql tblName (RM_Nest _ rm) = mkFromSql tblName rm
+mkFromSql tblName (RM_ReadOnly rm) = mkFromSql tblName rm
+mkFromSql tblName (RM_MaybeTag rm) = mkFromSql tblName rm
+mkFromSql       _ (RM_Pure b) = pure b
+mkFromSql tblName (RM_Apply rmF rmC) =
+  mkFromSql tblName rmF <*> mkFromSql tblName rmC
+mkFromSql tblName (RM_Partial rm) = do
+  joinFromSqlError (wrapError <$> mkFromSql tblName rm)
   where
     wrapError = either (Left . RowDataError) Right
 
