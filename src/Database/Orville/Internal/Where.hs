@@ -57,10 +57,6 @@ import Database.Orville.Internal.Expr
 -}
 data WhereCondition
   = WhereConditionExpr E.WhereExpr
-  | forall a. Like (FieldDefinition a)
-                   SqlValue
-  | forall a. LikeInsensitive (FieldDefinition a)
-                              SqlValue
   | Or [WhereCondition]
   | And [WhereCondition]
   | forall a b c. Qualified (TableDefinition a b c)
@@ -69,8 +65,6 @@ data WhereCondition
 instance QueryKeyable WhereCondition where
   queryKey (WhereConditionExpr (Expr (Right form))) = queryKey form
   queryKey (WhereConditionExpr (Expr (Left raw))) = QKField $ rawExprToSql raw
-  queryKey (Like field value) = qkOp2 "LIKE" field value
-  queryKey (LikeInsensitive field value) = qkOp2 "ILIKE" field value
   queryKey (Or conds) = qkOp "OR" conds
   queryKey (And conds) = qkOp "And" conds
   queryKey (Qualified _ cond) = queryKey cond
@@ -129,10 +123,6 @@ internalWhereConditionSql (Just tableDef) (WhereConditionExpr expression) =
   rawExprToSql . generateSql $ expression `qualified` (tableName tableDef)
 internalWhereConditionSql Nothing (WhereConditionExpr expression) =
   rawExprToSql . generateSql $ expression
-internalWhereConditionSql tableDef (Like fieldDef _) =
-  qualifiedFieldName tableDef fieldDef ++ " LIKE ?"
-internalWhereConditionSql tableDef (LikeInsensitive fieldDef _) =
-  qualifiedFieldName tableDef fieldDef ++ " ILIKE ?"
 internalWhereConditionSql tableDef (Or conds) =
   List.intercalate " OR " condsSql
   where
@@ -156,8 +146,6 @@ qualifiedFieldName maybeTableDef fieldDef =
 whereConditionValues :: WhereCondition -> [SqlValue]
 whereConditionValues (WhereConditionExpr (Expr (Right form))) = E.whereValues [form]
 whereConditionValues (WhereConditionExpr (Expr (Left _))) = []
-whereConditionValues (Like _ value) = [value]
-whereConditionValues (LikeInsensitive _ value) = [value]
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
 whereConditionValues (And conds) = concatMap whereConditionValues conds
 whereConditionValues (Qualified _ cond) = whereConditionValues cond
@@ -173,10 +161,12 @@ whereIn fieldDef values = WhereConditionExpr . expr
   $ E.whereIn (fieldToNameForm fieldDef) (map (fieldToSqlValue fieldDef) values)
 
 whereLike :: FieldDefinition a -> String -> WhereCondition
-whereLike fieldDef raw = Like fieldDef (toSql raw)
+whereLike fieldDef raw = WhereConditionExpr . expr
+  $ E.whereLike (fieldToNameForm fieldDef) (toSql raw)
 
 whereLikeInsensitive :: FieldDefinition a -> String -> WhereCondition
-whereLikeInsensitive fieldDef raw = LikeInsensitive fieldDef (toSql raw)
+whereLikeInsensitive fieldDef raw = WhereConditionExpr .expr
+  $ E.whereLikeInsensitive (fieldToNameForm fieldDef) (toSql raw)
 
 whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
 whereNotIn fieldDef values = WhereConditionExpr . expr
