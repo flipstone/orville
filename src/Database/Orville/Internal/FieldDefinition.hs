@@ -15,10 +15,10 @@ import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.Types
 
 textField :: String -> Int -> FieldDefinition Text
-textField name len = (name, VarText len, [], textConversion)
+textField name len = FieldDefinition name (VarText len) [] textConversion
 
 fixedTextField :: String -> Int -> FieldDefinition Text
-fixedTextField name len = (name, Text len, [], textConversion)
+fixedTextField name len = FieldDefinition name (Text len) [] textConversion
 
 dayField :: String -> FieldDefinition Day
 dayField = fieldOfType Date dayConversion
@@ -53,10 +53,11 @@ foreignKeyField ::
   -> FieldDefinition key
   -> FieldDefinition key
 foreignKeyField name refTable refField =
-  ( name
-  , foreignFieldType (fieldType refField)
-  , [References refTable refField]
-  , fieldConversion refField)
+  FieldDefinition
+    name
+    (foreignFieldType $ fieldType refField)
+    [References refTable refField]
+    (fieldConversion refField)
   where
     foreignFieldType AutomaticId = ForeignId
     foreignFieldType typ = typ
@@ -64,7 +65,7 @@ foreignKeyField name refTable refField =
 -- This is an internal field for building the basic field types
 -- above. It should not be exposed outside Orville
 fieldOfType :: ColumnType -> SqlConversion a -> String -> FieldDefinition a
-fieldOfType columnType conversion name = (name, columnType, [], conversion)
+fieldOfType columnType conversion name = FieldDefinition name columnType [] conversion
 
 isPrimaryKey :: ColumnFlag -> Bool
 isPrimaryKey PrimaryKey = True
@@ -78,41 +79,29 @@ isAssignedByDatabase :: ColumnFlag -> Bool
 isAssignedByDatabase AssignedByDatabase = True
 isAssignedByDatabase _ = False
 
-fieldName :: FieldDefinition a -> String
-fieldName (name, _, _, _) = name
-
 escapedFieldName :: FieldDefinition a -> String
 escapedFieldName field = "\"" ++ fieldName field ++ "\""
 
-fieldType :: FieldDefinition a -> ColumnType
-fieldType (_, typ, _, _) = typ
-
 isPrimaryKeyField :: FieldDefinition a -> Bool
-isPrimaryKeyField (_, _, flags, _) = any isPrimaryKey flags
+isPrimaryKeyField field = any isPrimaryKey $ fieldFlags field
 
 withFlag :: FieldDefinition a -> ColumnFlag -> FieldDefinition a
-withFlag (name, typ, flags, conversion) newFlag =
-  (name, typ, newFlag : flags, conversion)
+withFlag field newFlag = field { fieldFlags = newFlag : fieldFlags field }
 
 withName :: FieldDefinition a -> String -> FieldDefinition a
-withName (_, typ, flags, conversion) newName =
-  (newName, typ, flags, conversion)
+withName field newName = field { fieldName = newName }
 
 withConversion ::
      FieldDefinition a
   -> (SqlConversion a -> SqlConversion b)
   -> FieldDefinition b
-withConversion (name, typ, flags, aConversion) mapConversion =
-  (name, typ, flags, mapConversion aConversion)
+withConversion field mapConversion = field { fieldConversion = mapConversion $ fieldConversion field }
 
 isAssignedByDatabaseField :: FieldDefinition a -> Bool
-isAssignedByDatabaseField (_, _, flags, _) = any isAssignedByDatabase flags
+isAssignedByDatabaseField field = any isAssignedByDatabase $ fieldFlags field
 
 withPrefix :: FieldDefinition a -> String -> FieldDefinition a
-withPrefix f@(name, _, _, _) prefix = f `withName` (prefix ++ "_" ++ name)
-
-fieldConversion :: FieldDefinition a -> SqlConversion a
-fieldConversion (_, _, _, conversion) = conversion
+withPrefix field prefix = field `withName` (prefix ++ "_" ++ fieldName field)
 
 fieldToNameForm :: FieldDefinition a -> NameForm
 fieldToNameForm field = NameForm Nothing (fieldName field)

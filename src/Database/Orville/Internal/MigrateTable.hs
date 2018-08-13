@@ -130,13 +130,14 @@ mkTypeDDL (Timestamp) = "TIMESTAMP with time zone"
 mkTypeDDL TextSearchVector = "TSVECTOR"
 
 mkFieldDDL :: FieldDefinition a -> String
-mkFieldDDL (name, columnType, flags, _) =
+mkFieldDDL field =
   name ++ " " ++ sqlType ++ " " ++ flagSql
   where
-    sqlType = mkTypeDDL columnType
-    flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL flags)
+    name = fieldName field
+    sqlType = mkTypeDDL (fieldType field)
+    flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
     notNull =
-      if any isNullFlag flags
+      if any isNullFlag (fieldFlags field)
         then ""
         else "NOT NULL"
 
@@ -174,11 +175,11 @@ columnTypeSqlSize Timestamp = Just 8
 columnTypeSqlSize TextSearchVector = Nothing
 
 sqlFieldDesc :: FieldDefinition a -> SqlColDesc
-sqlFieldDesc (_, columnType, flags, _) =
+sqlFieldDesc field =
   SqlColDesc
-    { colType = columnTypeSqlId columnType
-    , colSize = columnTypeSqlSize columnType
-    , colNullable = Just (any isNullFlag flags)
+    { colType = columnTypeSqlId $ fieldType field
+    , colSize = columnTypeSqlSize $ fieldType field
+    , colNullable = Just (any isNullFlag $ fieldFlags field)
     , colOctetLength = Nothing
     , colDecDigits = Nothing
     }

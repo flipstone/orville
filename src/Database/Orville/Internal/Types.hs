@@ -77,13 +77,18 @@ instance ColumnDefault Bool where
   toColumnDefaultSql True = "true"
   toColumnDefaultSql False = "false"
 
-type FieldDefinition a = (String, ColumnType, [ColumnFlag], SqlConversion a)
+data FieldDefinition a = FieldDefinition {
+    fieldName :: String
+  , fieldType :: ColumnType
+  , fieldFlags :: [ColumnFlag]
+  , fieldConversion :: SqlConversion a
+  }
 
 data SomeField =
   forall a. SomeField (FieldDefinition a)
 
-instance QueryKeyable (String, ColumnType, [ColumnFlag], SqlConversion a) where
-  queryKey (name, _, _, _) = QKField name
+instance QueryKeyable (FieldDefinition a) where
+  queryKey field = QKField $ fieldName field
 
 data FieldUpdate = FieldUpdate
   { fieldUpdateField :: SomeField
@@ -211,12 +216,7 @@ data TableDefinition fullEntity writeEntity key = TableDefinition
 
 tableKeyConversion ::
      TableDefinition fullEntity writeEntity key -> SqlConversion key
-tableKeyConversion tableDef
-  -- This should use fieldConversion once modules and type definitions get
-  -- re-arranged to better avoid cycles
- =
-  case tablePrimaryKey tableDef of
-    (_, _, _, aConversion) -> aConversion
+tableKeyConversion tableDef = fieldConversion $ tablePrimaryKey tableDef
 
 tableKeyFromSql ::
      TableDefinition fullEntity writeEntity key -> SqlValue -> Maybe key
