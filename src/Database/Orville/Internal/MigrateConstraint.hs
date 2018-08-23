@@ -47,6 +47,6 @@ getConstraints conn = do
       "SELECT conname \
                         \FROM pg_constraint \
                         \JOIN pg_namespace ON pg_namespace.oid = pg_constraint.connamespace \
-                        \WHERE nspname = 'public'"
+                        \WHERE nspname = current_schema()"
   void $ execute query []
   map (convert . head) <$> fetchAllRows' query
