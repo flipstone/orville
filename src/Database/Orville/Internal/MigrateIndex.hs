@@ -47,6 +47,6 @@ getIndexes conn = do
   query <-
     prepare
       conn
-      "SELECT indexname FROM pg_indexes WHERE schemaname = 'public';"
+      "SELECT indexname FROM pg_indexes WHERE schemaname = current_schema();"
   void $ execute query []
   map (convert . head) <$> fetchAllRows' query
