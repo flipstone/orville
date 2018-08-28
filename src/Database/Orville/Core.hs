@@ -71,6 +71,8 @@ module Database.Orville.Core
   , SomeField(..)
   , withPrefix
   , fieldName
+  , fieldType
+  , fieldFlags
   , IndexDefinition(..)
   , uniqueIndex
   , simpleIndex
