@@ -43,7 +43,7 @@ fieldFromSql field =
           Left $
           RowDataError $
           concat
-            ["Error decoding data from column ", fieldName field, " value"]
+            ["Error decoding ", show sql, " from column ", fieldName field, " value"]
 
 class ColumnSpecifier col where
   selectForm :: col -> SelectForm
