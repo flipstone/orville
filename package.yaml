@@ -31,6 +31,7 @@ dependencies:
   - HDBC-postgresql >=2.3
   - mtl >=2.2
   - resource-pool >=0.2
+  - semigroups >=0.18.0.1
   - text
   - time >=1.5
   - transformers >=0.4
