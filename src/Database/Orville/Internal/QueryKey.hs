@@ -3,6 +3,8 @@ Module    : Database.Orville.Internal.QueryKey
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
+{-#LANGUAGE CPP#-}
+
 module Database.Orville.Internal.QueryKey where
 
 import Data.Monoid
@@ -19,10 +21,18 @@ data QueryKey
   | QKEmpty
   deriving (Eq, Ord)
 
+#if __GLASGOW_HASKELL__ >= 841
+instance Semigroup QueryKey where
+  (<>) = appendQueryKeys
+#endif
+
 instance Monoid QueryKey where
   mempty = QKEmpty
-  mappend a b = QKList [a, b]
+  mappend = appendQueryKeys
   mconcat = QKList
+
+appendQueryKeys :: QueryKey -> QueryKey -> QueryKey
+appendQueryKeys a b = QKList [a, b]
 
 class QueryKeyable a where
   queryKey :: a -> QueryKey

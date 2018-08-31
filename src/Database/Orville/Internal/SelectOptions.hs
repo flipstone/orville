@@ -3,6 +3,7 @@ Module    : Database.Orville.Internal.SelectOptions
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
+{-# LANGUAGE CPP#-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Database.Orville.Internal.SelectOptions where
@@ -35,16 +36,24 @@ selectOptLimitSql = fmap convert . getFirst . selectOptLimit
 selectOptOffsetSql :: SelectOptions -> Maybe SqlValue
 selectOptOffsetSql = fmap convert . getFirst . selectOptOffset
 
+#if __GLASGOW_HASKELL__ >= 841
+instance Semigroup SelectOptions where
+  (<>) = appendSelectOptions
+#endif
+
 instance Monoid SelectOptions where
   mempty = SelectOptions mempty mempty mempty mempty mempty mempty
-  mappend opt opt' =
-    SelectOptions
-      (selectDistinct opt <> selectDistinct opt')
-      (selectOptWhere opt <> selectOptWhere opt')
-      (selectOptOrder opt <> selectOptOrder opt')
-      (selectOptLimit opt <> selectOptLimit opt')
-      (selectOptOffset opt <> selectOptOffset opt')
-      (selectOptGroup opt <> selectOptGroup opt')
+  mappend = appendSelectOptions
+
+appendSelectOptions :: SelectOptions -> SelectOptions -> SelectOptions
+appendSelectOptions opt opt' =
+  SelectOptions
+    (selectDistinct  opt <> selectDistinct  opt')
+    (selectOptWhere  opt <> selectOptWhere  opt')
+    (selectOptOrder  opt <> selectOptOrder  opt')
+    (selectOptLimit  opt <> selectOptLimit  opt')
+    (selectOptOffset opt <> selectOptOffset opt')
+    (selectOptGroup  opt <> selectOptGroup  opt')
 
 instance QueryKeyable SelectOptions where
   queryKey opt =
