@@ -11,6 +11,7 @@ import Data.Convertible
 import qualified Data.List as List
 import Data.Maybe
 import Data.Monoid
+import qualified Data.Semigroup as Sem
 import Database.HDBC
 
 import Database.Orville.Internal.FieldDefinition ()
@@ -35,9 +36,8 @@ selectOptLimitSql = fmap convert . getFirst . selectOptLimit
 selectOptOffsetSql :: SelectOptions -> Maybe SqlValue
 selectOptOffsetSql = fmap convert . getFirst . selectOptOffset
 
-instance Monoid SelectOptions where
-  mempty = SelectOptions mempty mempty mempty mempty mempty mempty
-  mappend opt opt' =
+instance Sem.Semigroup SelectOptions where
+  opt <> opt' =
     SelectOptions
       (selectDistinct opt <> selectDistinct opt')
       (selectOptWhere opt <> selectOptWhere opt')
@@ -45,6 +45,10 @@ instance Monoid SelectOptions where
       (selectOptLimit opt <> selectOptLimit opt')
       (selectOptOffset opt <> selectOptOffset opt')
       (selectOptGroup opt <> selectOptGroup opt')
+
+instance Monoid SelectOptions where
+  mempty = SelectOptions mempty mempty mempty mempty mempty mempty
+  mappend = (Sem.<>)
 
 instance QueryKeyable SelectOptions where
   queryKey opt =
