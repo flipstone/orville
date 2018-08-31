@@ -36,7 +36,7 @@ selectOptLimitSql = fmap convert . getFirst . selectOptLimit
 selectOptOffsetSql :: SelectOptions -> Maybe SqlValue
 selectOptOffsetSql = fmap convert . getFirst . selectOptOffset
 
-#if __GLASGOW_HASKELL__ >= 841
+#if MIN_VERSION_base(4,11,0)
 instance Semigroup SelectOptions where
   (<>) = appendSelectOptions
 #endif

@@ -21,7 +21,7 @@ data QueryKey
   | QKEmpty
   deriving (Eq, Ord)
 
-#if __GLASGOW_HASKELL__ >= 841
+#if MIN_VERSION_base(4,11,0)
 instance Semigroup QueryKey where
   (<>) = appendQueryKeys
 #endif

@@ -25,7 +25,7 @@ rawExprToSql = go ""
     go rest (RawExprAppend r1 r2) = go (go rest r2) r1
     go rest (RawExprConcat exprs) = foldr (flip go) rest exprs
 
-#if __GLASGOW_HASKELL__ >= 841
+#if MIN_VERSION_base(4,11,0)
 instance Semigroup RawExpr where
   (<>) = RawExprAppend
 #endif
