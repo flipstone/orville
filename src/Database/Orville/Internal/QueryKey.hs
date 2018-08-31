@@ -6,6 +6,7 @@ License   : MIT
 module Database.Orville.Internal.QueryKey where
 
 import Data.Monoid
+import qualified Data.Semigroup as Sem
 import Data.Time.LocalTime
 import Database.HDBC
 
@@ -19,9 +20,12 @@ data QueryKey
   | QKEmpty
   deriving (Eq, Ord)
 
+instance Sem.Semigroup QueryKey where
+  a <> b = QKList [a, b]
+
 instance Monoid QueryKey where
   mempty = QKEmpty
-  mappend a b = QKList [a, b]
+  mappend = (Sem.<>)
   mconcat = QKList
 
 class QueryKeyable a where

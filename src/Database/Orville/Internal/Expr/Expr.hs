@@ -5,6 +5,7 @@ License   : MIT
 -}
 module Database.Orville.Internal.Expr.Expr where
 
+import qualified Data.Semigroup as Sem
 import Data.String
 
 data RawExpr
@@ -23,9 +24,12 @@ rawExprToSql = go ""
     go rest (RawExprAppend r1 r2) = go (go rest r2) r1
     go rest (RawExprConcat exprs) = foldr (flip go) rest exprs
 
+instance Sem.Semigroup RawExpr where
+  (<>) = RawExprAppend
+
 instance Monoid RawExpr where
   mempty = RawExprString ""
-  mappend = RawExprAppend
+  mappend = (Sem.<>)
   mconcat = RawExprConcat
 
 instance IsString RawExpr where
