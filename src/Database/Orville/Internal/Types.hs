@@ -53,7 +53,7 @@ data ColumnFlag
               Default a
   | Null
   | Unique
-  | forall fullEntity writeEntity key. References (TableDefinition fullEntity writeEntity key)
+  | forall readEntity writeEntity key. References (TableDefinition readEntity writeEntity key)
                                                   (FieldDefinition key)
   | ColumnDescription String
   | AssignedByDatabase
@@ -77,8 +77,8 @@ instance ColumnDefault Bool where
   toColumnDefaultSql True = "true"
   toColumnDefaultSql False = "false"
 
-data FieldDefinition a = FieldDefinition {
-    fieldName :: String
+data FieldDefinition a = FieldDefinition
+  { fieldName :: String
   , fieldType :: ColumnType
   , fieldFlags :: [ColumnFlag]
   , fieldConversion :: SqlConversion a
@@ -191,7 +191,7 @@ getComponent getComp (ToSql serializer) =
   concise way. This type is provided as an escape hatch for any situations where
   'TableParams' is too restrictive for the sql mapping required by a type.
  -}
-data TableDefinition fullEntity writeEntity key = TableDefinition
+data TableDefinition readEntity writeEntity key = TableDefinition
   { tableName :: String
       -- ^ The name of the table in the database.
   , tableFields :: [SomeField]
@@ -202,11 +202,11 @@ data TableDefinition fullEntity writeEntity key = TableDefinition
   , tablePrimaryKey :: FieldDefinition key
       -- ^ The statically typed field definition that is the primary key. Currently
       -- this field must still by listed in `tableFields`
-  , tableFromSql :: FromSql fullEntity
+  , tableFromSql :: FromSql readEntity
       -- ^ A definition of how to convert the haskell type from a sql row
   , tableToSql :: ToSql writeEntity ()
       -- ^ A function to set the key on the entity
-  , tableGetKey :: fullEntity -> key
+  , tableGetKey :: readEntity -> key
       -- ^ A function to get the key on the entity
   , tableComments :: TableComments ()
       -- ^ Any comments that might be interesting for developers to see. These
@@ -215,25 +215,25 @@ data TableDefinition fullEntity writeEntity key = TableDefinition
   }
 
 tableKeyConversion ::
-     TableDefinition fullEntity writeEntity key -> SqlConversion key
+     TableDefinition readEntity writeEntity key -> SqlConversion key
 tableKeyConversion tableDef = fieldConversion $ tablePrimaryKey tableDef
 
 tableKeyFromSql ::
-     TableDefinition fullEntity writeEntity key -> SqlValue -> Maybe key
+     TableDefinition readEntity writeEntity key -> SqlValue -> Maybe key
 tableKeyFromSql = convertFromSql . tableKeyConversion
 
-tableKeyToSql :: TableDefinition fullEntity writeEntity key -> key -> SqlValue
+tableKeyToSql :: TableDefinition readEntity writeEntity key -> key -> SqlValue
 tableKeyToSql = convertToSql . tableKeyConversion
 
 tableKeysToSql ::
-     TableDefinition fullEntity writeEntity key -> [key] -> [SqlValue]
+     TableDefinition readEntity writeEntity key -> [key] -> [SqlValue]
 tableKeysToSql tableDef = map (tableKeyToSql tableDef)
 
-instance QueryKeyable (TableDefinition fullEntity writeEntity key) where
+instance QueryKeyable (TableDefinition readEntity writeEntity key) where
   queryKey = QKTable . tableName
 
 data SchemaItem
-  = forall fullEntity writeEntity key. Table (TableDefinition fullEntity writeEntity key)
+  = forall readEntity writeEntity key. Table (TableDefinition readEntity writeEntity key)
   | DropTable String
   | Index IndexDefinition
   | DropIndex String
