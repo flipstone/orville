@@ -34,11 +34,11 @@ module Database.Orville.Internal.Where
 import qualified Data.List as List
 import Database.HDBC
 
+import Database.Orville.Internal.Expr
 import qualified Database.Orville.Internal.Expr.WhereExpr as E
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.QueryKey
 import Database.Orville.Internal.Types
-import Database.Orville.Internal.Expr
 
 {-
   It would be nice to match the SqlValues in these with the types from the
@@ -136,15 +136,9 @@ internalWhereConditionSql tableDef (And conds) =
 internalWhereConditionSql _ (Qualified tableDef cond) =
   internalWhereConditionSql (Just tableDef) cond
 
-qualifiedFieldName ::
-     Maybe (TableDefinition a b c) -> FieldDefinition d -> String
-qualifiedFieldName maybeTableDef fieldDef =
-  case maybeTableDef of
-    Just tableDef -> tableName tableDef ++ "." ++ fieldName fieldDef
-    Nothing -> fieldName fieldDef
-
 whereConditionValues :: WhereCondition -> [SqlValue]
-whereConditionValues (WhereConditionExpr (Expr (Right form))) = E.whereValues [form]
+whereConditionValues (WhereConditionExpr (Expr (Right form))) =
+  E.whereValues [form]
 whereConditionValues (WhereConditionExpr (Expr (Left _))) = []
 whereConditionValues (Or conds) = concatMap whereConditionValues conds
 whereConditionValues (And conds) = concatMap whereConditionValues conds
@@ -157,20 +151,26 @@ whereOr :: [WhereCondition] -> WhereCondition
 whereOr = Or
 
 whereIn :: FieldDefinition a -> [a] -> WhereCondition
-whereIn fieldDef values = WhereConditionExpr . expr
-  $ E.whereIn (fieldToNameForm fieldDef) (map (fieldToSqlValue fieldDef) values)
+whereIn fieldDef values =
+  WhereConditionExpr . expr $
+  E.whereIn (fieldToNameForm fieldDef) (map (fieldToSqlValue fieldDef) values)
 
 whereLike :: FieldDefinition a -> String -> WhereCondition
-whereLike fieldDef raw = WhereConditionExpr . expr
-  $ E.whereLike (fieldToNameForm fieldDef) (toSql raw)
+whereLike fieldDef raw =
+  WhereConditionExpr . expr $
+  E.whereLike (fieldToNameForm fieldDef) (toSql raw)
 
 whereLikeInsensitive :: FieldDefinition a -> String -> WhereCondition
-whereLikeInsensitive fieldDef raw = WhereConditionExpr .expr
-  $ E.whereLikeInsensitive (fieldToNameForm fieldDef) (toSql raw)
+whereLikeInsensitive fieldDef raw =
+  WhereConditionExpr . expr $
+  E.whereLikeInsensitive (fieldToNameForm fieldDef) (toSql raw)
 
 whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
-whereNotIn fieldDef values = WhereConditionExpr . expr
-  $ E.whereNotIn (fieldToNameForm fieldDef) (map (fieldToSqlValue fieldDef) values)
+whereNotIn fieldDef values =
+  WhereConditionExpr . expr $
+  E.whereNotIn
+    (fieldToNameForm fieldDef)
+    (map (fieldToSqlValue fieldDef) values)
 
 whereQualified :: TableDefinition a b c -> WhereCondition -> WhereCondition
 whereQualified tableDef cond = Qualified tableDef cond

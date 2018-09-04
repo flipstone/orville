@@ -9,7 +9,6 @@ module Database.Orville.Internal.OrderBy where
 
 import Database.HDBC
 
-import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.QueryKey
 import Database.Orville.Internal.Types
 
