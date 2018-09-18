@@ -4,6 +4,7 @@ module AppManagedEntity.Data.Virus
   , VirusName(..)
   , bpsVirusName
   , brnVirusName
+  , bpsVirus
   ) where
 
 import Data.Int (Int64)
@@ -28,3 +29,6 @@ bpsVirusName = VirusName (Text.pack "Bovine popular stomachitis")
 
 brnVirusName :: VirusName
 brnVirusName = VirusName (Text.pack "Black raspberry necrosis")
+
+bpsVirus :: Virus
+bpsVirus = Virus {virusId = VirusId 1, virusName = bpsVirusName}
