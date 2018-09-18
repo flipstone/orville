@@ -37,6 +37,7 @@ module Database.Orville.Core
   , readOnlyField
   , OrvilleEnv
   , newOrvilleEnv
+  , setStartTransactionSQL
   , ormEnvPool
   , Orville
   , OrvilleT

@@ -6,7 +6,7 @@ module TestDB where
 
 import Control.Monad (void)
 import Control.Monad.Base (MonadBase)
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadCatch, MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
@@ -29,7 +29,14 @@ type QueryWriterT = WriterT [(O.QueryType, String)]
 
 newtype TestMonad a = TestMonad
   { runTestMonad :: QueryWriterT (O.OrvilleT Postgres.Connection IO) a
-  } deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO, MonadThrow)
+  } deriving ( Functor
+             , Applicative
+             , Monad
+             , MonadIO
+             , MonadBase IO
+             , MonadThrow
+             , MonadCatch
+             )
 
 queryTrace ::
      (O.QueryType -> Bool) -> TestMonad a -> TestMonad [(O.QueryType, String)]

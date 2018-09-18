@@ -47,7 +47,14 @@ data QueryType
 data OrvilleEnv conn = OrvilleEnv
   { ormEnvPool :: Pool conn
   , ormEnvConnectionEnv :: Maybe (ConnectionEnv conn)
+  , ormEnvStartTransactionSQL :: String
   }
+
+defaultStartTransactionSQL :: String
+defaultStartTransactionSQL = "START TRANSACTION"
+
+setStartTransactionSQL :: String -> OrvilleEnv conn -> OrvilleEnv conn
+setStartTransactionSQL sql env = env {ormEnvStartTransactionSQL = sql}
 
 {-|
  'newOrvilleEnv' initialized an 'OrvilleEnv' for service. The connection
@@ -56,7 +63,7 @@ data OrvilleEnv conn = OrvilleEnv
  utility function to create a connection pool to a PosgreSQL server.
 -}
 newOrvilleEnv :: Pool conn -> OrvilleEnv conn
-newOrvilleEnv pool = OrvilleEnv pool Nothing
+newOrvilleEnv pool = OrvilleEnv pool Nothing defaultStartTransactionSQL
 
 setConnectionEnv :: ConnectionEnv conn -> OrvilleEnv conn -> OrvilleEnv conn
 setConnectionEnv c ormEnv = ormEnv {ormEnvConnectionEnv = Just c}
@@ -115,10 +122,11 @@ class (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m) =>
   where
   getOrvilleEnv :: m (OrvilleEnv conn)
   localOrvilleEnv :: (OrvilleEnv conn -> OrvilleEnv conn) -> m a -> m a
-  startTransactionSQL :: m String
-  startTransactionSQL = pure "START TRANSACTION"
   runningQuery :: QueryType -> String -> m a -> m a
   runningQuery _ _ action = action
+
+startTransactionSQL :: MonadOrville conn m => m String
+startTransactionSQL = ormEnvStartTransactionSQL <$> getOrvilleEnv
 
 instance (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m) =>
          MonadOrville conn (OrvilleT conn m) where
