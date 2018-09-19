@@ -10,7 +10,7 @@ import Control.Monad.Catch (MonadCatch, MonadThrow)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Data.Convertible (convert)
-import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import Data.Pool (Pool, createPool, destroyAllResources)
 import qualified Database.HDBC as HDBC
 import qualified Database.HDBC.PostgreSQL as Postgres
@@ -52,7 +52,7 @@ addTraceToEnv trace =
   O.aroundRunningQuery $ \queryType sql action -> do
     when
       (tracePred trace queryType)
-      (modifyIORef (traceRef trace) ((queryType, sql) :))
+      (modifyIORef' (traceRef trace) ((queryType, sql) :))
     action
 
 withTransactionEvents ::
@@ -65,7 +65,7 @@ withTransactionEvents action = do
 addTransactionTraceToEnv ::
      IORef [O.TransactionEvent] -> O.OrvilleEnv conn -> O.OrvilleEnv conn
 addTransactionTraceToEnv ref =
-  O.addTransactionCallBack $ \event -> modifyIORef ref (event :)
+  O.addTransactionCallBack $ \event -> modifyIORef' ref (event :)
 
 getTransactionEvents ::
      IORef [O.TransactionEvent] -> TestMonad [O.TransactionEvent]
