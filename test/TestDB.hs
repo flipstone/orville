@@ -4,15 +4,13 @@
 
 module TestDB where
 
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadThrow)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans (lift)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.Writer (WriterT)
-import qualified Control.Monad.Writer as Writer
 import Data.Convertible (convert)
+import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import Data.Pool (Pool, createPool, destroyAllResources)
 import qualified Database.HDBC as HDBC
 import qualified Database.HDBC.PostgreSQL as Postgres
@@ -25,10 +23,13 @@ import qualified Database.Orville.Raw as ORaw
 
 type TestPool = Pool Postgres.Connection
 
-type QueryWriterT = WriterT [(O.QueryType, String)]
+data Trace = Trace
+  { tracePred :: O.QueryType -> Bool
+  , traceRef :: IORef [(O.QueryType, String)]
+  }
 
 newtype TestMonad a = TestMonad
-  { runTestMonad :: QueryWriterT (O.OrvilleT Postgres.Connection IO) a
+  { runTestMonad :: O.OrvilleT Postgres.Connection IO a
   } deriving ( Functor
              , Applicative
              , Monad
@@ -36,27 +37,29 @@ newtype TestMonad a = TestMonad
              , MonadBase IO
              , MonadThrow
              , MonadCatch
+             , O.MonadOrville Postgres.Connection
              )
 
 queryTrace ::
      (O.QueryType -> Bool) -> TestMonad a -> TestMonad [(O.QueryType, String)]
-queryTrace queryPred (TestMonad writer) = do
-  (_, fullTrace) <- TestMonad (Writer.listen writer)
-  pure (filter (queryPred . fst) fullTrace)
+queryTrace queryPred action = do
+  ref <- liftIO (newIORef [])
+  void $ O.localOrvilleEnv (addTraceToEnv (Trace queryPred ref)) action
+  reverse <$> liftIO (readIORef ref)
+
+addTraceToEnv :: Trace -> O.OrvilleEnv conn -> O.OrvilleEnv conn
+addTraceToEnv trace =
+  O.aroundRunningQuery $ \queryType sql action -> do
+    when
+      (tracePred trace queryType)
+      (modifyIORef (traceRef trace) ((queryType, sql) :))
+    action
 
 instance MonadBaseControl IO TestMonad where
-  type StM TestMonad a = StM (QueryWriterT (O.OrvilleT Postgres.Connection IO)) a
+  type StM TestMonad a = StM (O.OrvilleT Postgres.Connection IO) a
   liftBaseWith f =
     TestMonad $ liftBaseWith $ \runInBase -> f (\(TestMonad m) -> runInBase m)
   restoreM stm = TestMonad (restoreM stm)
-
-instance O.MonadOrville Postgres.Connection TestMonad where
-  getOrvilleEnv = TestMonad (lift O.getOrvilleEnv)
-  localOrvilleEnv f (TestMonad m) =
-    TestMonad (Writer.mapWriterT (O.localOrvilleEnv f) m)
-  runningQuery typ sql action = do
-    TestMonad (Writer.tell [(typ, sql)])
-    action
 
 reset :: O.SchemaDefinition -> O.Orville ()
 reset schemaDef = do
@@ -74,13 +77,9 @@ withOrvilleRun :: ((forall a. TestMonad a -> IO a) -> TestTree) -> TestTree
 withOrvilleRun mkTree = withDb (\pool -> mkTree (run pool))
   where
     run :: IO TestPool -> forall a. TestMonad a -> IO a
-    run getPool action = do
+    run getPool (TestMonad action) = do
       pool <- getPool
-      fmap
-        fst
-        (O.runOrville
-           (Writer.runWriterT (runTestMonad action))
-           (O.newOrvilleEnv pool))
+      O.runOrville action (O.newOrvilleEnv pool)
 
 withDb :: (IO TestPool -> TestTree) -> TestTree
 withDb = withResource acquirePool destroyAllResources

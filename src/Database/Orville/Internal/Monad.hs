@@ -48,6 +48,7 @@ data OrvilleEnv conn = OrvilleEnv
   { ormEnvPool :: Pool conn
   , ormEnvConnectionEnv :: Maybe (ConnectionEnv conn)
   , ormEnvStartTransactionSQL :: String
+  , ormEnvRunningQuery :: forall a. QueryType -> String -> IO a -> IO a
   }
 
 defaultStartTransactionSQL :: String
@@ -56,6 +57,20 @@ defaultStartTransactionSQL = "START TRANSACTION"
 setStartTransactionSQL :: String -> OrvilleEnv conn -> OrvilleEnv conn
 setStartTransactionSQL sql env = env {ormEnvStartTransactionSQL = sql}
 
+defaultRunningQuery :: QueryType -> String -> IO a -> IO a
+defaultRunningQuery _ _ action = action
+
+aroundRunningQuery ::
+     (forall a. QueryType -> String -> IO a -> IO a)
+  -> OrvilleEnv conn
+  -> OrvilleEnv conn
+aroundRunningQuery outside env = env {ormEnvRunningQuery = layeredAround}
+  where
+    layeredAround, inside :: QueryType -> String -> IO a -> IO a
+    layeredAround queryType sql action =
+      outside queryType sql (inside queryType sql action)
+    inside = ormEnvRunningQuery env
+
 {-|
  'newOrvilleEnv' initialized an 'OrvilleEnv' for service. The connection
  pool provided will be used to obtain connections to the database ase
@@ -63,7 +78,8 @@ setStartTransactionSQL sql env = env {ormEnvStartTransactionSQL = sql}
  utility function to create a connection pool to a PosgreSQL server.
 -}
 newOrvilleEnv :: Pool conn -> OrvilleEnv conn
-newOrvilleEnv pool = OrvilleEnv pool Nothing defaultStartTransactionSQL
+newOrvilleEnv pool =
+  OrvilleEnv pool Nothing defaultStartTransactionSQL defaultRunningQuery
 
 setConnectionEnv :: ConnectionEnv conn -> OrvilleEnv conn -> OrvilleEnv conn
 setConnectionEnv c ormEnv = ormEnv {ormEnvConnectionEnv = Just c}
@@ -122,8 +138,6 @@ class (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m) =>
   where
   getOrvilleEnv :: m (OrvilleEnv conn)
   localOrvilleEnv :: (OrvilleEnv conn -> OrvilleEnv conn) -> m a -> m a
-  runningQuery :: QueryType -> String -> m a -> m a
-  runningQuery _ _ action = action
 
 startTransactionSQL :: MonadOrville conn m => m String
 startTransactionSQL = ormEnvStartTransactionSQL <$> getOrvilleEnv

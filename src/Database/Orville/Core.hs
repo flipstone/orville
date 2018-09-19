@@ -38,6 +38,7 @@ module Database.Orville.Core
   , OrvilleEnv
   , newOrvilleEnv
   , setStartTransactionSQL
+  , aroundRunningQuery
   , ormEnvPool
   , Orville
   , OrvilleT
