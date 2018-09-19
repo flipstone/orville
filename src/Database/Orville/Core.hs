@@ -39,7 +39,9 @@ module Database.Orville.Core
   , newOrvilleEnv
   , setStartTransactionSQL
   , aroundRunningQuery
+  , addTransactionCallBack
   , ormEnvPool
+  , TransactionEvent(..)
   , Orville
   , OrvilleT
   , unOrvilleT

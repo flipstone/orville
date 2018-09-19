@@ -2,7 +2,7 @@ module TransactionTest where
 
 import Control.Exception (Exception)
 import Control.Monad (void)
-import Control.Monad.Catch (throwM, try)
+import Control.Monad.Catch (catch, throwM, try)
 import Data.Typeable (Typeable)
 
 import Test.Tasty (TestTree, testGroup)
@@ -59,4 +59,34 @@ test_transaction =
             "Transaction result was not an error!"
             (Left FakeError)
             transactionResult
+      , testCase "TransactionStart Event" $ do
+          events <-
+            run $
+            TestDB.withTransactionEvents $ \getEvents -> do
+              O.withTransaction $ getEvents
+          assertEqual
+            "Expected (only) TransactionStart to have been triggered inside transaction block"
+            [O.TransactionStart]
+            events
+      , testCase "TransactionCommit Event" $ do
+          events <-
+            run $
+            TestDB.withTransactionEvents $ \getEvents -> do
+              O.withTransaction (pure ())
+              getEvents
+          assertEqual
+            "Expected TransactionStart and TransactionCommit to have been triggered after successful transaction block"
+            [O.TransactionStart, O.TransactionCommit]
+            events
+      , testCase "TransactionRollback Event" $ do
+          events <-
+            run $
+            TestDB.withTransactionEvents $ \getEvents -> do
+              O.withTransaction (throwM FakeError) `catch`
+                (\FakeError -> pure ())
+              getEvents
+          assertEqual
+            "Expected TransactionStart and TransactionRollback to have been triggered after aborted transaction block"
+            [O.TransactionStart, O.TransactionRollback]
+            events
       ]

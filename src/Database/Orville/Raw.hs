@@ -52,15 +52,23 @@ withTransaction action =
   where
     doTransaction =
       withConnection $ \conn -> do
+        txnCallback <- ormEnvTransactionCallback <$> getOrvilleEnv
         committed <- liftIO $ newIORef False
         startTran <- startTransactionSQL
         let doAction = do
-              liftIO $ (executeRaw =<< prepare conn startTran)
+              liftIO $ do
+                (executeRaw =<< prepare conn startTran)
+                txnCallback TransactionStart
               value <- action
-              liftIO $ commit conn >> (writeIORef committed True)
+              liftIO $ do
+                commit conn
+                writeIORef committed True
+                txnCallback TransactionCommit
               return value
         let rollbackUncommitted =
               liftIO $ do
                 finished <- readIORef committed
-                when (not finished) (rollback conn)
+                when (not finished) $ do
+                  rollback conn
+                  txnCallback TransactionRollback
         doAction `finally` rollbackUncommitted

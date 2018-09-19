@@ -45,11 +45,18 @@ data QueryType
  one.
 -}
 data OrvilleEnv conn = OrvilleEnv
-  { ormEnvPool :: Pool conn
-  , ormEnvConnectionEnv :: Maybe (ConnectionEnv conn)
+  { ormEnvConnectionEnv :: Maybe (ConnectionEnv conn)
   , ormEnvStartTransactionSQL :: String
   , ormEnvRunningQuery :: forall a. QueryType -> String -> IO a -> IO a
+  , ormEnvTransactionCallback :: TransactionEvent -> IO ()
+  , ormEnvPool :: Pool conn
   }
+
+data TransactionEvent
+  = TransactionStart
+  | TransactionCommit
+  | TransactionRollback
+  deriving (Ord, Eq, Enum, Show, Read)
 
 defaultStartTransactionSQL :: String
 defaultStartTransactionSQL = "START TRANSACTION"
@@ -59,6 +66,9 @@ setStartTransactionSQL sql env = env {ormEnvStartTransactionSQL = sql}
 
 defaultRunningQuery :: QueryType -> String -> IO a -> IO a
 defaultRunningQuery _ _ action = action
+
+defaultTransactionCallback :: TransactionEvent -> IO ()
+defaultTransactionCallback = const (pure ())
 
 aroundRunningQuery ::
      (forall a. QueryType -> String -> IO a -> IO a)
@@ -71,6 +81,15 @@ aroundRunningQuery outside env = env {ormEnvRunningQuery = layeredAround}
       outside queryType sql (inside queryType sql action)
     inside = ormEnvRunningQuery env
 
+addTransactionCallBack ::
+     (TransactionEvent -> IO ()) -> OrvilleEnv conn -> OrvilleEnv conn
+addTransactionCallBack callback env =
+  env {ormEnvTransactionCallback = wrappedCallback}
+  where
+    wrappedCallback event = do
+      ormEnvTransactionCallback env event
+      callback event
+
 {-|
  'newOrvilleEnv' initialized an 'OrvilleEnv' for service. The connection
  pool provided will be used to obtain connections to the database ase
@@ -78,8 +97,12 @@ aroundRunningQuery outside env = env {ormEnvRunningQuery = layeredAround}
  utility function to create a connection pool to a PosgreSQL server.
 -}
 newOrvilleEnv :: Pool conn -> OrvilleEnv conn
-newOrvilleEnv pool =
-  OrvilleEnv pool Nothing defaultStartTransactionSQL defaultRunningQuery
+newOrvilleEnv =
+  OrvilleEnv
+    Nothing
+    defaultStartTransactionSQL
+    defaultRunningQuery
+    defaultTransactionCallback
 
 setConnectionEnv :: ConnectionEnv conn -> OrvilleEnv conn -> OrvilleEnv conn
 setConnectionEnv c ormEnv = ormEnv {ormEnvConnectionEnv = Just c}

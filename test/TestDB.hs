@@ -55,6 +55,22 @@ addTraceToEnv trace =
       (modifyIORef (traceRef trace) ((queryType, sql) :))
     action
 
+withTransactionEvents ::
+     (TestMonad [O.TransactionEvent] -> TestMonad a) -> TestMonad a
+withTransactionEvents action = do
+  ref <- liftIO (newIORef [])
+  O.localOrvilleEnv (addTransactionTraceToEnv ref) $ do
+    action (getTransactionEvents ref)
+
+addTransactionTraceToEnv ::
+     IORef [O.TransactionEvent] -> O.OrvilleEnv conn -> O.OrvilleEnv conn
+addTransactionTraceToEnv ref =
+  O.addTransactionCallBack $ \event -> modifyIORef ref (event :)
+
+getTransactionEvents ::
+     IORef [O.TransactionEvent] -> TestMonad [O.TransactionEvent]
+getTransactionEvents = fmap reverse . liftIO . readIORef
+
 instance MonadBaseControl IO TestMonad where
   type StM TestMonad a = StM (O.OrvilleT Postgres.Connection IO) a
   liftBaseWith f =
