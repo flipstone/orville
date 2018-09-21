@@ -10,14 +10,10 @@ import Test.Tasty.HUnit (assertEqual, testCase)
 
 import qualified Database.Orville as O
 
-import AppManagedEntity.Data.Virus (Virus(..), VirusId(..), bpsVirusName)
-
+import AppManagedEntity.Data.Virus (Virus(..), bpsVirus)
 import AppManagedEntity.Schema (schema, virusTable)
 
 import qualified TestDB as TestDB
-
-bpsVirus :: Virus
-bpsVirus = Virus {virusId = VirusId 1, virusName = bpsVirusName}
 
 data FakeError =
   FakeError
