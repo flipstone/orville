@@ -13,7 +13,9 @@ module Database.Orville.Trigger
   , DeleteTrigger(deleteTriggers)
   , MonadTrigger(runTriggers)
   , OrvilleTriggerT
-  , RecordedTriggers(..)
+  , RecordedTriggers
+  , committedTriggers
+  , uncommittedTriggers
   , runOrvilleTriggerT
   , askTriggers
   , clearTriggers
@@ -30,6 +32,7 @@ import Control.Monad.Trans.Control
   , defaultLiftBaseWith
   , defaultRestoreM
   )
+import qualified Data.DList as DList
 import Data.IORef
   ( IORef
   , atomicModifyIORef'
@@ -37,6 +40,7 @@ import Data.IORef
   , newIORef
   , readIORef
   )
+import Data.Monoid ((<>))
 import Data.Pool (Pool)
 import qualified Database.HDBC as HDBC
 import qualified Database.Orville as O
@@ -97,9 +101,15 @@ deleteTriggered tableDef readEntity = do
 type RecordedTriggersRef trigger = IORef (RecordedTriggers trigger)
 
 data RecordedTriggers trigger = RecordedTriggers
-  { committedTriggers :: [trigger]
-  , uncommittedTriggers :: Maybe [trigger]
+  { committedTriggersDList :: DList.DList trigger
+  , uncommittedTriggersDList :: Maybe (DList.DList trigger)
   }
+
+committedTriggers :: RecordedTriggers trigger -> [trigger]
+committedTriggers = DList.toList . committedTriggersDList
+
+uncommittedTriggers :: RecordedTriggers trigger -> Maybe [trigger]
+uncommittedTriggers = fmap DList.toList . uncommittedTriggersDList
 
 emptyTriggerData :: RecordedTriggers trigger
 emptyTriggerData = RecordedTriggers mempty mempty
@@ -110,34 +120,41 @@ atomicModifyIORef'_ ref f = atomicModifyIORef' ref (\a -> (f a, ()))
 recordTriggers :: RecordedTriggersRef trigger -> [trigger] -> IO ()
 recordTriggers ref triggers =
   atomicModifyIORef'_ ref $ \recorded ->
-    case uncommittedTriggers recorded of
+    case uncommittedTriggersDList recorded of
       Just uncommitted ->
-        recorded {uncommittedTriggers = Just (uncommitted ++ triggers)}
+        recorded
+          { uncommittedTriggersDList =
+              Just (uncommitted <> DList.fromList triggers)
+          }
       Nothing ->
-        recorded {committedTriggers = committedTriggers recorded ++ triggers}
+        recorded
+          { committedTriggersDList =
+              committedTriggersDList recorded <> DList.fromList triggers
+          }
 
 startTriggerTxn :: RecordedTriggersRef trigger -> IO ()
 startTriggerTxn ref =
   atomicModifyIORef'_ ref $ \recorded ->
     case uncommittedTriggers recorded of
       Just _ -> recorded
-      Nothing -> recorded {uncommittedTriggers = Just []}
+      Nothing -> recorded {uncommittedTriggersDList = Just DList.empty}
 
 commitTriggerTxn :: RecordedTriggersRef trigger -> IO ()
 commitTriggerTxn ref =
   atomicModifyIORef'_ ref $ \recorded ->
-    case uncommittedTriggers recorded of
+    case uncommittedTriggersDList recorded of
       Just uncommitted ->
         recorded
-          { uncommittedTriggers = Nothing
-          , committedTriggers = committedTriggers recorded ++ uncommitted
+          { uncommittedTriggersDList = Nothing
+          , committedTriggersDList =
+              committedTriggersDList recorded <> uncommitted
           }
       Nothing -> recorded
 
 rollbackTriggerTxn :: RecordedTriggersRef trigger -> IO ()
 rollbackTriggerTxn ref =
   atomicModifyIORef'_ ref $ \recorded ->
-    recorded {uncommittedTriggers = Nothing}
+    recorded {uncommittedTriggersDList = Nothing}
 
 newtype OrvilleTriggerT trigger conn m a = OrvilleTriggerT
   { unTriggerT :: ReaderT (RecordedTriggersRef trigger) (O.OrvilleT conn m) a
