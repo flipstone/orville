@@ -25,6 +25,7 @@ module Database.Orville.Internal.RelationalMap
 import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
+import Data.Profunctor(Profunctor(..))
 
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.FromSql
@@ -112,6 +113,10 @@ instance Functor (RelationalMap a) where
 instance Applicative (RelationalMap a) where
   pure = RM_Pure
   (<*>) = RM_Apply
+
+instance Profunctor RelationalMap where
+  rmap = fmap
+  lmap = mapAttr
 
 mapAttr :: (a -> b) -> RelationalMap b c -> RelationalMap a c
 mapAttr = RM_Nest
