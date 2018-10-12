@@ -30,6 +30,7 @@ dependencies:
   - HDBC >=2.4
   - HDBC-postgresql >=2.3
   - mtl >=2.2
+  - profunctors >= 5.2.1
   - resource-pool >=0.2
   - text
   - time >=1.5
