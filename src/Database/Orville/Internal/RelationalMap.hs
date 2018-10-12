@@ -25,7 +25,7 @@ module Database.Orville.Internal.RelationalMap
 import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
-import Data.Profunctor(Profunctor(..))
+import Data.Profunctor(Profunctor(lmap, rmap))
 
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.FromSql
