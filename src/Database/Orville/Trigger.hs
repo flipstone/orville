@@ -22,7 +22,7 @@ module Database.Orville.Trigger
   ) where
 
 import Control.Monad.Base (MonadBase)
-import Control.Monad.Catch (MonadCatch, MonadThrow)
+import Control.Monad.Catch (MonadCatch, MonadThrow, MonadMask)
 import Control.Monad.Except (MonadError(..))
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ReaderT, ask, mapReaderT, runReaderT)
@@ -166,6 +166,7 @@ newtype OrvilleTriggerT trigger conn m a = OrvilleTriggerT
              , MonadBase b
              , MonadThrow
              , MonadCatch
+             , MonadMask
              )
 
 instance MonadTrans (OrvilleTriggerT trigger conn) where
