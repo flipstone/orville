@@ -18,7 +18,6 @@ module Database.Orville.Internal.SqlType
   ) where
 
 import Control.Monad ((<=<))
-import Data.Convertible (safeConvert)
 import qualified Data.Int as Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
@@ -202,10 +201,7 @@ int32FromSql :: HDBC.SqlValue -> Maybe Int.Int32
 int32FromSql sql =
   case sql of
     HDBC.SqlInt32 n -> Just n
-    HDBC.SqlInteger n ->
-      case safeConvert n of
-        Left _ -> Nothing
-        Right int32 -> Just int32
+    HDBC.SqlInteger n -> toBoundedInteger n
     _ -> Nothing
 
 int64ToSql :: Int.Int64 -> HDBC.SqlValue
@@ -215,10 +211,7 @@ int64FromSql :: HDBC.SqlValue -> Maybe Int.Int64
 int64FromSql sql =
   case sql of
     HDBC.SqlInt64 n -> Just n
-    HDBC.SqlInteger n ->
-      case safeConvert n of
-        Left _ -> Nothing
-        Right int64 -> Just int64
+    HDBC.SqlInteger n -> toBoundedInteger n
     _ -> Nothing
 
 textToSql :: T.Text -> HDBC.SqlValue
@@ -266,3 +259,12 @@ utcTimeFromSql sql =
   case sql of
     HDBC.SqlUTCTime t -> Just t
     _ -> Nothing
+
+toBoundedInteger :: (Bounded num, Integral num) => Integer -> Maybe num
+toBoundedInteger source =
+  let truncated = fromInteger source
+      upper = toInteger (maxBound `asTypeOf` truncated)
+      lower = toInteger (minBound `asTypeOf` truncated)
+   in if lower <= source && source <= upper
+        then Just truncated
+        else Nothing
