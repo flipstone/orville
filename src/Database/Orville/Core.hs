@@ -56,6 +56,7 @@ module Database.Orville.Core
   , Now(..)
   , ColumnType(..)
   , FieldDefinition
+  , fieldOfType
   , textField
   , fixedTextField
   , dayField

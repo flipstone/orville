@@ -58,8 +58,6 @@ foreignKeyField name refTable refField =
     (foreignRefType $ fieldType refField)
     [References refTable refField]
 
--- This is an internal field for building the basic field types
--- above. It should not be exposed outside Orville
 fieldOfType :: SqlType a -> String -> FieldDefinition a
 fieldOfType sqlType name = FieldDefinition name sqlType []
 
