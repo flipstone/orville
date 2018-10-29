@@ -7,6 +7,7 @@ module Example.Data.Major
   , textToCollegeMajor
   ) where
 
+import Data.Int (Int32)
 import Data.Text (Text, pack, unpack)
 
 data Major key = Major
@@ -16,7 +17,7 @@ data Major key = Major
   } deriving (Show, Eq)
 
 newtype MajorId = MajorId
-  { majorIdInt :: Int
+  { majorIdInt :: Int32
   } deriving (Show, Eq, Ord)
 
 newtype MajorName = MajorName

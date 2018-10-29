@@ -6,6 +6,7 @@ module EntityWrapper.Data.Virus
   , brnVirus
   ) where
 
+import Data.Int (Int32)
 import Data.Text (Text)
 import qualified Data.Text as Text
 
@@ -14,7 +15,7 @@ data Virus = Virus
   } deriving (Show, Eq)
 
 newtype VirusId = VirusId
-  { unVirusId :: Int
+  { unVirusId :: Int32
   } deriving (Show, Eq)
 
 newtype VirusName = VirusName

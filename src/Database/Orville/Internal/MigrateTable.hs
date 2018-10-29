@@ -21,8 +21,8 @@ import Data.Typeable
 import Database.HDBC
 
 import Database.Orville.Internal.Execute
-import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.Monad
+import Database.Orville.Internal.SqlType
 import Database.Orville.Internal.Types
 
 createTable ::
@@ -79,7 +79,7 @@ mkMigrateColumnTypeDDL fieldDef colDesc =
         then Just $
              "ALTER COLUMN " ++
              fieldName fieldDef ++
-             " SET DATA TYPE " ++ mkTypeDDL (fieldType fieldDef)
+             " SET DATA TYPE " ++ sqlTypeDDL (fieldType fieldDef)
         else Nothing
 
 mkMigrateColumnNullDDL :: FieldDefinition a -> SqlColDesc -> Maybe String
@@ -109,36 +109,22 @@ mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ name]
 mkFlagDDL :: ColumnFlag -> Maybe String
 mkFlagDDL PrimaryKey = Just "PRIMARY KEY"
 mkFlagDDL Unique = Just "UNIQUE"
-mkFlagDDL Null = Just "NULL"
 mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
 mkFlagDDL (References table field) =
   Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
 mkFlagDDL (ColumnDescription _) = Nothing
 mkFlagDDL AssignedByDatabase = Nothing
 
-mkTypeDDL :: ColumnType -> String
-mkTypeDDL AutomaticId = "SERIAL"
-mkTypeDDL ForeignId = "INTEGER"
-mkTypeDDL Integer = "INTEGER"
-mkTypeDDL BigInteger = "BIGINT"
-mkTypeDDL Double = "DOUBLE PRECISION"
-mkTypeDDL Boolean = "BOOLEAN"
-mkTypeDDL (Text len) = "CHAR(" ++ show len ++ ")"
-mkTypeDDL (VarText len) = "VARCHAR(" ++ show len ++ ")"
-mkTypeDDL (Date) = "DATE"
-mkTypeDDL (Timestamp) = "TIMESTAMP with time zone"
-mkTypeDDL TextSearchVector = "TSVECTOR"
-
 mkFieldDDL :: FieldDefinition a -> String
-mkFieldDDL field =
-  name ++ " " ++ sqlType ++ " " ++ flagSql
+mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
   where
     name = fieldName field
-    sqlType = mkTypeDDL (fieldType field)
-    flagSql = List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
+    sqlType = sqlTypeDDL (fieldType field)
+    flagSql =
+      List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
     notNull =
-      if any isNullFlag (fieldFlags field)
-        then ""
+      if sqlTypeNullable (fieldType field)
+        then "NULL"
         else "NOT NULL"
 
 mkCreateTableDDL :: TableDefinition readEntity writeEntity key -> String
@@ -148,38 +134,12 @@ mkCreateTableDDL tableDef =
     fields = List.intercalate ", " $ map mkSomeFieldDDL (tableFields tableDef)
     mkSomeFieldDDL (SomeField f) = mkFieldDDL f
 
-columnTypeSqlId :: ColumnType -> SqlTypeId
-columnTypeSqlId AutomaticId = SqlBigIntT
-columnTypeSqlId ForeignId = SqlBigIntT
-columnTypeSqlId Integer = SqlBigIntT
-columnTypeSqlId Boolean = SqlBitT
-columnTypeSqlId BigInteger = SqlBigIntT
-columnTypeSqlId Double = SqlFloatT
-columnTypeSqlId (VarText _) = SqlVarCharT
-columnTypeSqlId (Text _) = SqlCharT
-columnTypeSqlId Date = SqlDateT
-columnTypeSqlId Timestamp = SqlTimestampWithZoneT
-columnTypeSqlId TextSearchVector = SqlUnknownT "3614"
-
-columnTypeSqlSize :: ColumnType -> Maybe Int
-columnTypeSqlSize AutomaticId = Just 4
-columnTypeSqlSize ForeignId = Just 4
-columnTypeSqlSize Integer = Just 4
-columnTypeSqlSize BigInteger = Just 8
-columnTypeSqlSize Double = Just 8
-columnTypeSqlSize Boolean = Just 1
-columnTypeSqlSize (VarText n) = Just n
-columnTypeSqlSize (Text n) = Just n
-columnTypeSqlSize Date = Just 4
-columnTypeSqlSize Timestamp = Just 8
-columnTypeSqlSize TextSearchVector = Nothing
-
 sqlFieldDesc :: FieldDefinition a -> SqlColDesc
 sqlFieldDesc field =
   SqlColDesc
-    { colType = columnTypeSqlId $ fieldType field
-    , colSize = columnTypeSqlSize $ fieldType field
-    , colNullable = Just (any isNullFlag $ fieldFlags field)
+    { colType = sqlTypeId $ fieldType field
+    , colSize = sqlTypeSqlSize $ fieldType field
+    , colNullable = Just (sqlTypeNullable $ fieldType field)
     , colOctetLength = Nothing
     , colDecDigits = Nothing
     }

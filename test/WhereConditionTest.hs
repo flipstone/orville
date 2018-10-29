@@ -34,9 +34,7 @@ test_where_condition =
           run (TestDB.reset schema)
           void $ run (O.insertRecord orderTable foobarOrder)
           void $ run (O.insertRecord orderTable orderNamedAlice)
-          let opts =
-                O.where_ $
-                O.whereLike orderNameField "%li%"
+          let opts = O.where_ $ O.whereLike orderNameField "%li%"
           result <- run (O.selectAll orderTable opts)
           assertEqual
             "Order returned didn't match expected result"
@@ -46,9 +44,7 @@ test_where_condition =
           run (TestDB.reset schema)
           void $ run (O.insertRecord orderTable foobarOrder)
           void $ run (O.insertRecord orderTable orderNamedAlice)
-          let opts =
-                O.where_ $
-                O.whereLikeInsensitive orderNameField "%LI%"
+          let opts = O.where_ $ O.whereLikeInsensitive orderNameField "%LI%"
           result <- run (O.selectAll orderTable opts)
           assertEqual
             "Order returned didn't match expected result"
@@ -129,17 +125,17 @@ orderTable =
 orderIdField :: O.FieldDefinition OrderId
 orderIdField =
   O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
-  O.sqlConversionVia unOrderId OrderId
+  O.convertSqlType unOrderId OrderId
 
 customerFkIdField :: O.FieldDefinition CustomerId
 customerFkIdField =
   O.int64Field "customer_id" `O.withConversion`
-  O.sqlConversionVia unCustomerId CustomerId
+  O.convertSqlType unCustomerId CustomerId
 
 orderNameField :: O.FieldDefinition OrderName
 orderNameField =
   O.textField "name" 255 `O.withConversion`
-  O.sqlConversionVia unOrderName OrderName
+  O.convertSqlType unOrderName OrderName
 
 data Order = Order
   { orderId :: OrderId
@@ -206,12 +202,12 @@ customerTable =
 customerIdField :: O.FieldDefinition CustomerId
 customerIdField =
   O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
-  O.sqlConversionVia unCustomerId CustomerId
+  O.convertSqlType unCustomerId CustomerId
 
 customerNameField :: O.FieldDefinition CustomerName
 customerNameField =
   O.textField "name" 255 `O.withConversion`
-  O.sqlConversionVia unCustomerName CustomerName
+  O.convertSqlType unCustomerName CustomerName
 
 data Customer = Customer
   { customerId :: CustomerId

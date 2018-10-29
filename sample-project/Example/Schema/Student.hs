@@ -39,17 +39,17 @@ majorTable =
 majorIdField :: O.FieldDefinition MajorId
 majorIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
-  O.sqlConversionVia majorIdInt MajorId
+  O.convertSqlType majorIdInt MajorId
 
 majorNameField :: O.FieldDefinition MajorName
 majorNameField =
   O.textField "name" 255 `O.withConversion`
-  O.sqlConversionVia majorNameText MajorName
+  O.convertSqlType majorNameText MajorName
 
 majorCollegeField :: O.FieldDefinition MajorCollege
 majorCollegeField =
   O.textField "college" 255 `O.withConversion`
-  O.sqlConversionVia collegeMajorToText textToCollegeMajor
+  O.convertSqlType collegeMajorToText textToCollegeMajor
 
 studentTable :: O.TableDefinition (Student StudentId) (Student ()) StudentId
 studentTable =
@@ -69,12 +69,12 @@ studentTable =
 studentIdField :: O.FieldDefinition StudentId
 studentIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
-  O.sqlConversionVia studentIdInt StudentId
+  O.convertSqlType studentIdInt StudentId
 
 studentNameField :: O.FieldDefinition StudentName
 studentNameField =
   O.textField "name" 255 `O.withConversion`
-  O.sqlConversionVia studentNameText StudentName
+  O.convertSqlType studentNameText StudentName
 
 studentMajorField :: O.FieldDefinition MajorId
 studentMajorField = O.foreignKeyField "major" majorTable majorIdField

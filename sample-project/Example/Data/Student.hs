@@ -4,6 +4,7 @@ module Example.Data.Student
   , StudentName(..)
   ) where
 
+import Data.Int (Int32)
 import Data.Text (Text)
 
 import Example.Data.Major (MajorId)
@@ -15,7 +16,7 @@ data Student key = Student
   } deriving (Show, Eq)
 
 newtype StudentId = StudentId
-  { studentIdInt :: Int
+  { studentIdInt :: Int32
   } deriving (Show, Eq, Ord)
 
 newtype StudentName = StudentName

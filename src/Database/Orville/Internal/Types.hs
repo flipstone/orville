@@ -24,7 +24,7 @@ import qualified Data.Time as Time
 
 import Database.Orville.Internal.Expr
 import Database.Orville.Internal.QueryKey
-import Database.Orville.Internal.SqlConversion
+import Database.Orville.Internal.SqlType
 
 type Record = Int
 
@@ -51,7 +51,6 @@ data ColumnFlag
   = PrimaryKey
   | forall a. ColumnDefault a =>
               Default a
-  | Null
   | Unique
   | forall readEntity writeEntity key. References (TableDefinition readEntity writeEntity key)
                                                   (FieldDefinition key)
@@ -79,9 +78,8 @@ instance ColumnDefault Bool where
 
 data FieldDefinition a = FieldDefinition
   { fieldName :: String
-  , fieldType :: ColumnType
+  , fieldType :: SqlType a
   , fieldFlags :: [ColumnFlag]
-  , fieldConversion :: SqlConversion a
   }
 
 data SomeField =
@@ -112,8 +110,8 @@ noComments :: TableComments ()
 noComments = return ()
 
 say :: String -> (Int, Int, Int) -> String -> TableComments ()
-say msg date commenter =
-  TableComments $ writer ((), [TableComment msg date commenter])
+say msg msgDate commenter =
+  TableComments $ writer ((), [TableComment msg msgDate commenter])
 
 data FromSqlError
   = RowDataError String
@@ -214,16 +212,15 @@ data TableDefinition readEntity writeEntity key = TableDefinition
       -- to migrate the table.
   }
 
-tableKeyConversion ::
-     TableDefinition readEntity writeEntity key -> SqlConversion key
-tableKeyConversion tableDef = fieldConversion $ tablePrimaryKey tableDef
+tableKeyType :: TableDefinition readEntity writeEntity key -> SqlType key
+tableKeyType tableDef = fieldType $ tablePrimaryKey tableDef
 
 tableKeyFromSql ::
      TableDefinition readEntity writeEntity key -> SqlValue -> Maybe key
-tableKeyFromSql = convertFromSql . tableKeyConversion
+tableKeyFromSql = sqlTypeFromSql . tableKeyType
 
 tableKeyToSql :: TableDefinition readEntity writeEntity key -> key -> SqlValue
-tableKeyToSql = convertToSql . tableKeyConversion
+tableKeyToSql = sqlTypeToSql . tableKeyType
 
 tableKeysToSql ::
      TableDefinition readEntity writeEntity key -> [key] -> [SqlValue]

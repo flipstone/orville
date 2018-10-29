@@ -25,11 +25,10 @@ module Database.Orville.Internal.RelationalMap
 import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
-import Data.Profunctor(Profunctor(lmap, rmap))
+import Data.Profunctor (Profunctor(lmap, rmap))
 
 import Database.Orville.Internal.FieldDefinition
 import Database.Orville.Internal.FromSql
-import Database.Orville.Internal.SqlConversion
 import Database.Orville.Internal.Types
 
 {-|
@@ -156,8 +155,7 @@ maybeMapper
   where
     go :: RelationalMap a b -> RelationalMap (Maybe a) (Maybe b)
     go (RM_Nest f rm) = RM_Nest (fmap f) (go rm)
-    go (RM_Field f) =
-      RM_Field (f `withConversion` nullableConversion `withFlag` Null)
+    go (RM_Field f) = RM_Field (nullableField f)
     go (RM_Pure a) = RM_Pure (pure a)
     go (RM_Apply rmF rmA) = RM_Apply (fmap (<*>) $ go rmF) (go rmA)
     go (RM_Partial rm) = RM_Partial (flipError <$> go rm)

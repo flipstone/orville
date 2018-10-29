@@ -130,22 +130,21 @@ idField :: O.FieldDefinition Int32
 idField = O.int32Field "id"
 
 rootIdField :: O.FieldDefinition RootId
-rootIdField = idField `O.withConversion` O.sqlConversionVia rootIdToInt RootId
+rootIdField = idField `O.withConversion` O.convertSqlType rootIdToInt RootId
 
 branchIdField :: O.FieldDefinition BranchId
 branchIdField =
-  idField `O.withConversion` O.sqlConversionVia branchIdToInt BranchId
+  idField `O.withConversion` O.convertSqlType branchIdToInt BranchId
 
 branchForeignIdField :: O.FieldDefinition BranchId
 branchForeignIdField = branchIdField `O.withName` "branch_id"
 
 leafIdField :: O.FieldDefinition LeafId
-leafIdField = idField `O.withConversion` O.sqlConversionVia leafIdToInt LeafId
+leafIdField = idField `O.withConversion` O.convertSqlType leafIdToInt LeafId
 
 treeIdField :: O.FieldDefinition TreeId
 treeIdField =
-  O.int32Field "tree_id" `O.withConversion`
-  O.sqlConversionVia treeIdToInt TreeId
+  O.int32Field "tree_id" `O.withConversion` O.convertSqlType treeIdToInt TreeId
 
 testSchema :: O.SchemaDefinition
 testSchema = [O.Table rootTable, O.Table branchTable, O.Table leafTable]

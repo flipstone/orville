@@ -2,6 +2,7 @@ module ErrorsTest where
 
 import Control.Exception.Lifted (try)
 import Control.Monad (void)
+import Data.Int (Int32)
 
 import qualified Database.Orville as O
 import qualified Database.Orville.Select as S
@@ -45,11 +46,11 @@ test_errors =
 
 data BadVirus = BadVirus
   { badVirusId :: VirusId
-  , badVirusName :: Int -- Virus name is actually Text, not Int!
+  , badVirusName :: Int32 -- Virus name is actually Text, not Int32!
   } deriving (Show)
 
-badVirusNameField :: O.FieldDefinition Int
-badVirusNameField = virusNameField `O.withConversion` const O.intConversion
+badVirusNameField :: O.FieldDefinition Int32
+badVirusNameField = virusNameField `O.withConversion` const O.integer
 
 badVirusFromSql :: O.FromSql BadVirus
 badVirusFromSql =

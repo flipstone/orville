@@ -11,20 +11,21 @@ module Database.Orville.Core
   , mkTableDefinition
   , tableKeyToSql
   , tableKeyFromSql
-  , SqlConversion
-  , sqlConversion
-  , sqlConvertible
-  , sqlConversionVia
-  , maybeSqlConversionVia
-  , nullableConversion
-  , textConversion
-  , dayConversion
-  , utcTimeConversion
-  , intConversion
-  , int32Conversion
-  , int64Conversion
-  , doubleConversion
-  , boolConversion
+  , SqlType(..)
+  , serial
+  , bigserial
+  , text
+  , varText
+  , integer
+  , bigInteger
+  , double
+  , boolean
+  , date
+  , timestamp
+  , textSearchVector
+  , convertSqlType
+  , maybeConvertSqlType
+  , nullableType
   , TableParams(..)
   , RelationalMap
   , mapAttr
@@ -171,7 +172,7 @@ import Database.Orville.Internal.OrderBy
 import Database.Orville.Internal.RelationalMap
 import Database.Orville.Internal.SelectOptions
 import Database.Orville.Internal.Sql
-import Database.Orville.Internal.SqlConversion
+import Database.Orville.Internal.SqlType
 import Database.Orville.Internal.TableDefinition
 import Database.Orville.Internal.Types
 import Database.Orville.Internal.Where

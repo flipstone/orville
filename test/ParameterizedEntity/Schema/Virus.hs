@@ -27,9 +27,9 @@ virusTable =
 virusIdField :: O.FieldDefinition VirusId
 virusIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
-  O.sqlConversionVia unVirusId VirusId
+  O.convertSqlType unVirusId VirusId
 
 virusNameField :: O.FieldDefinition VirusName
 virusNameField =
   O.textField "name" 255 `O.withConversion`
-  O.sqlConversionVia unVirusName VirusName
+  O.convertSqlType unVirusName VirusName
