@@ -55,16 +55,8 @@ foreignKeyField ::
 foreignKeyField name refTable refField =
   FieldDefinition
     name
-    (foreignFieldType $ fieldType refField)
+    (foreignRefType $ fieldType refField)
     [References refTable refField]
-    -- TODO: This is clearly insufficient. Making this change will require
-    -- a better answer for how sql types sometimes get changed when building
-    -- a foreign key column.
-  where
-    foreignFieldType sqlType =
-      if sqlTypeDDL sqlType == "SERIAL"
-        then sqlType {sqlTypeDDL = "INTEGER"}
-        else sqlType
 
 -- This is an internal field for building the basic field types
 -- above. It should not be exposed outside Orville

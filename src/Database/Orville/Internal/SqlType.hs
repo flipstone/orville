@@ -14,6 +14,7 @@ module Database.Orville.Internal.SqlType
   , convertSqlType
   , maybeConvertSqlType
   , nullableType
+  , foreignRefType
   ) where
 
 import Control.Monad ((<=<))
@@ -26,6 +27,7 @@ import qualified Database.HDBC as HDBC
 
 data SqlType a = SqlType
   { sqlTypeDDL :: String
+  , sqlTypeReferenceDDL :: Maybe String
   , sqlTypeNullable :: Bool
   , sqlTypeId :: HDBC.SqlTypeId
   , sqlTypeSqlSize :: Maybe Int
@@ -37,6 +39,7 @@ serial :: SqlType Int.Int32
 serial =
   SqlType
     { sqlTypeDDL = "SERIAL"
+    , sqlTypeReferenceDDL = Just "INTEGER"
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 4
@@ -48,6 +51,7 @@ bigserial :: SqlType Int.Int64
 bigserial =
   SqlType
     { sqlTypeDDL = "BIGSERIAL"
+    , sqlTypeReferenceDDL = Just "BIGINT"
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 8
@@ -59,6 +63,7 @@ text :: Int -> SqlType T.Text
 text len =
   SqlType
     { sqlTypeDDL = concat ["CHAR(", show len, ")"]
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlCharT
     , sqlTypeSqlSize = Just len
@@ -70,6 +75,7 @@ varText :: Int -> SqlType T.Text
 varText len =
   SqlType
     { sqlTypeDDL = concat ["VARCHAR(", show len, ")"]
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlVarCharT
     , sqlTypeSqlSize = Just len
@@ -81,6 +87,7 @@ integer :: SqlType Int.Int32
 integer =
   SqlType
     { sqlTypeDDL = "INTEGER"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 4
@@ -92,6 +99,7 @@ bigInteger :: SqlType Int.Int64
 bigInteger =
   SqlType
     { sqlTypeDDL = "BIGINT"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 8
@@ -103,6 +111,7 @@ double :: SqlType Double
 double =
   SqlType
     { sqlTypeDDL = "DOUBLE PRECISION"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlFloatT
     , sqlTypeSqlSize = Just 8
@@ -114,6 +123,7 @@ boolean :: SqlType Bool
 boolean =
   SqlType
     { sqlTypeDDL = "BOOLEAN"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBitT
     , sqlTypeSqlSize = Just 1
@@ -125,6 +135,7 @@ date :: SqlType Time.Day
 date =
   SqlType
     { sqlTypeDDL = "DATE"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlDateT
     , sqlTypeSqlSize = Just 4
@@ -136,6 +147,7 @@ timestamp :: SqlType Time.UTCTime
 timestamp =
   SqlType
     { sqlTypeDDL = "TIMESTAMP with time zone"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlTimestampWithZoneT
     , sqlTypeSqlSize = Just 8
@@ -147,6 +159,7 @@ textSearchVector :: SqlType T.Text
 textSearchVector =
   SqlType
     { sqlTypeDDL = "TSVECTOR"
+    , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlUnknownT "3614"
     , sqlTypeSqlSize = Nothing
@@ -175,6 +188,12 @@ nullableType sqlType =
             HDBC.SqlNull -> Just Nothing
             _ -> Just <$> sqlTypeFromSql sqlType sql
     }
+
+foreignRefType :: SqlType a -> SqlType a
+foreignRefType sqlType =
+  case sqlTypeReferenceDDL sqlType of
+    Nothing -> sqlType
+    Just refDDL -> sqlType {sqlTypeDDL = refDDL, sqlTypeReferenceDDL = Nothing}
 
 int32ToSql :: Int.Int32 -> HDBC.SqlValue
 int32ToSql = HDBC.SqlInt32
