@@ -279,7 +279,7 @@ getStudentsByMajorId = O.hasMany studentTable studentMajorField
 majorIdPopper :: O.Popper (Major MajorId) (MajorId)
 majorIdPopper = O.fromKern majorId
 
-resetToBlankSchema :: O.SchemaDefinition -> O.Orville ()
+resetToBlankSchema :: O.MonadOrville conn m => O.SchemaDefinition -> m ()
 resetToBlankSchema schemaDef = do
   results <- ORaw.selectSqlRows "SELECT current_user" []
   case results of
