@@ -82,7 +82,11 @@ abortPop = PopAbort
    The initial string argument is a description of the query to put into
    the results of `explain`
 -}
-popQuery :: String -> Orville b -> Popper a b
+popQuery ::
+     String
+  -> (forall conn m. MonadOrville conn m =>
+                       m b)
+  -> Popper a b
 popQuery explanation orville = PopPrim (PrimQuery explanation orville)
 
 certainly :: PopError -> Popper (Maybe b) b
@@ -333,7 +337,11 @@ instance Applicative Popped where
 data Prim a b
   -- The trivial primitive
       where
-  PrimQuery :: String -> Orville b -> Prim a b
+  PrimQuery
+    :: String
+    -> (forall conn m. MonadOrville conn m =>
+                         m b)
+    -> Prim a b
   -- The singlar primitives
   PrimRecordBy
     :: Ord fieldValue
@@ -398,7 +406,7 @@ instance Arrow Popper where
 instance ArrowChoice Popper where
   left = PopArrowLeft
 
-popThrow :: Popper a b -> a -> Orville b
+popThrow :: MonadOrville conn m => Popper a b -> a -> m b
 popThrow popper a = do
   popped <- pop popper a
   case popped of
@@ -408,7 +416,7 @@ popThrow popper a = do
 -- This is where the action happens. pop converts the
 -- Popper DSL into Orville calls with the provided input
 --
-pop :: Popper a b -> a -> Orville (Popped b)
+pop :: MonadOrville conn m => Popper a b -> a -> m (Popped b)
 pop popper a = runQueryCached $ popCached popper a
 
 popPrim ::

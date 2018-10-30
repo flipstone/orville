@@ -22,10 +22,6 @@ import Control.Monad.Trans.Control
 import Data.Pool
 import Database.HDBC hiding (withTransaction)
 
-type Orville a
-   = forall m conn. (MonadOrville conn m, MonadThrow m) =>
-                      m a
-
 data ConnectionEnv conn = ConnectionEnv
   { ormTransactionOpen :: Bool
   , ormConnection :: conn
@@ -155,7 +151,12 @@ instance (MonadError e m) => MonadError e (OrvilleT conn m) where
 instance MonadBase b m => MonadBase b (OrvilleT conn m) where
   liftBase = lift . liftBase
 
-class (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m) =>
+class ( Monad m
+      , MonadIO m
+      , IConnection conn
+      , MonadBaseControl IO m
+      , MonadThrow m
+      ) =>
       MonadOrville conn m
   | m -> conn
   where
@@ -165,7 +166,12 @@ class (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m) =>
 startTransactionSQL :: MonadOrville conn m => m String
 startTransactionSQL = ormEnvStartTransactionSQL <$> getOrvilleEnv
 
-instance (Monad m, MonadIO m, IConnection conn, MonadBaseControl IO m) =>
+instance ( Monad m
+         , MonadIO m
+         , IConnection conn
+         , MonadBaseControl IO m
+         , MonadThrow m
+         ) =>
          MonadOrville conn (OrvilleT conn m) where
   getOrvilleEnv = OrvilleT ask
   localOrvilleEnv modEnv (OrvilleT a) = OrvilleT (local modEnv a)

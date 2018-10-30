@@ -22,7 +22,7 @@ module Database.Orville.Trigger
   ) where
 
 import Control.Monad.Base (MonadBase)
-import Control.Monad.Catch (MonadCatch, MonadThrow, MonadMask)
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Except (MonadError(..))
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ReaderT, ask, mapReaderT, runReaderT)
@@ -172,7 +172,8 @@ newtype OrvilleTriggerT trigger conn m a = OrvilleTriggerT
 instance MonadTrans (OrvilleTriggerT trigger conn) where
   lift = OrvilleTriggerT . lift . lift
 
-instance (MonadError e m) => MonadError e (OrvilleTriggerT trigger conn m) where
+instance (MonadError e m) =>
+         MonadError e (OrvilleTriggerT trigger conn m) where
   throwError = lift . throwError
   catchError action handler =
     OrvilleTriggerT ((unTriggerT action) `catchError` (unTriggerT . handler))
@@ -195,7 +196,12 @@ instance MonadBaseControl b m =>
   liftBaseWith = defaultLiftBaseWith
   restoreM = defaultRestoreM
 
-instance (Monad m, MonadIO m, HDBC.IConnection conn, MonadBaseControl IO m) =>
+instance ( Monad m
+         , MonadIO m
+         , HDBC.IConnection conn
+         , MonadBaseControl IO m
+         , MonadThrow m
+         ) =>
          O.MonadOrville conn (OrvilleTriggerT trigger conn m) where
   getOrvilleEnv = OrvilleTriggerT $ lift O.getOrvilleEnv
   localOrvilleEnv f =

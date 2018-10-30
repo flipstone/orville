@@ -7,7 +7,6 @@ License   : MIT
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.Internal.Types where
 

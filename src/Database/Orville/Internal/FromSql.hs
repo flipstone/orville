@@ -5,7 +5,6 @@ License   : MIT
 -}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.Internal.FromSql where
 
@@ -74,7 +73,8 @@ instance ColumnSpecifier LBS.ByteString where
 
 type ResultSet = [[(String, SqlValue)]]
 
-decodeSqlRows :: FromSql result -> ResultSet -> Orville [result]
+decodeSqlRows ::
+     MonadOrville conn m => FromSql result -> ResultSet -> m [result]
 decodeSqlRows builder rows =
   fmap catMaybes $
   forM rows $ \row -> do

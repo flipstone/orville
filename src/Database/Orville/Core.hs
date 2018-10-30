@@ -4,7 +4,6 @@ Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.Core
   ( TableDefinition(..)
@@ -43,7 +42,6 @@ module Database.Orville.Core
   , addTransactionCallBack
   , ormEnvPool
   , TransactionEvent(..)
-  , Orville
   , OrvilleT
   , unOrvilleT
   , SqlValue
@@ -187,22 +185,25 @@ getField f = do
   put (convert value : sqlValues)
 
 selectAll ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> SelectOptions
-  -> Orville [readEntity]
+  -> m [readEntity]
 selectAll tableDef = runSelect . selectQueryTable tableDef
 
 selectFirst ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> SelectOptions
-  -> Orville (Maybe readEntity)
+  -> m (Maybe readEntity)
 selectFirst tableDef opts =
   listToMaybe <$> selectAll tableDef (limit 1 <> opts)
 
 deleteWhereBuild ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> [WhereCondition]
-  -> Orville Integer
+  -> m Integer
 deleteWhereBuild tableDef conds = do
   let deleteSql = mkDeleteClause (tableName tableDef)
   let whereSql = whereClause conds
@@ -212,16 +213,17 @@ deleteWhereBuild tableDef conds = do
     executingSql DeleteQuery querySql $ do run conn querySql values
 
 deleteWhere ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> [WhereCondition]
-  -> Orville Integer
+  -> m Integer
 deleteWhere tableDef = deleteWhereBuild tableDef
 
 findRecords ::
-     Ord key
+     (Ord key, MonadOrville conn m)
   => TableDefinition readEntity writeEntity key
   -> [key]
-  -> Orville (Map.Map key readEntity)
+  -> m (Map.Map key readEntity)
 findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
   let keyField = tablePrimaryKey tableDef
@@ -230,29 +232,31 @@ findRecords tableDef keys = do
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordsBy ::
-     (Ord fieldValue)
+     (Ord fieldValue, MonadOrville conn m)
   => TableDefinition readEntity writeEntity key
   -> FieldDefinition fieldValue
   -> SelectOptions
-  -> Orville (Map.Map fieldValue [readEntity])
+  -> m (Map.Map fieldValue [readEntity])
 findRecordsBy tableDef field opts = do
   let builder = (,) <$> fieldFromSql field <*> tableFromSql tableDef
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
 findRecord ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> key
-  -> Orville (Maybe readEntity)
+  -> m (Maybe readEntity)
 findRecord tableDef key =
   let keyField = tablePrimaryKey tableDef
    in selectFirst tableDef (where_ $ keyField .== key)
 
 updateFields ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> [FieldUpdate]
   -> [WhereCondition]
-  -> Orville Integer
+  -> m Integer
 updateFields tableDef updates conds =
   updateSql (updateClause ++ " " ++ condClause) (updateValues ++ condValues)
   where
@@ -263,10 +267,11 @@ updateFields tableDef updates conds =
     updateClause = mkUpdateClause (tableName tableDef) updateNames
 
 updateRecord ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> key
   -> writeEntity
-  -> Orville ()
+  -> m ()
 updateRecord tableDef key record = do
   let keyField = tablePrimaryKey tableDef
       conds = [keyField .== key]
@@ -276,9 +281,10 @@ updateRecord tableDef key record = do
   void $ updateFields tableDef updates conds
 
 insertRecord ::
-     TableDefinition readEntity writeEntity key
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
   -> writeEntity
-  -> Orville readEntity
+  -> m readEntity
 insertRecord tableDef newRecord = do
   let builder = tableFromSql tableDef
       returnSelects = expr <$> fromSqlSelects builder
@@ -303,7 +309,10 @@ insertRecord tableDef newRecord = do
     _ -> error "Got more than one record back from the database!"
 
 insertRecordMany ::
-     TableDefinition readEntity writeEntity key -> [writeEntity] -> Orville ()
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
+  -> [writeEntity]
+  -> m ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
         mkInsertClause
@@ -315,7 +324,11 @@ insertRecordMany tableDef newRecords = do
       insert <- prepare conn insertSql
       executeMany insert (map (runToSql builder) newRecords)
 
-deleteRecord :: TableDefinition readEntity writeEntity key -> key -> Orville ()
+deleteRecord ::
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
+  -> key
+  -> m ()
 deleteRecord tableDef key = do
   let keyField = tablePrimaryKey tableDef
   n <- deleteWhere tableDef [keyField .== key]

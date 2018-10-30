@@ -3,8 +3,6 @@ Module    : Database.Orville.Select
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-{-# LANGUAGE RankNTypes #-}
-
 module Database.Orville.Select
   ( Select
   , selectQuery
@@ -30,7 +28,7 @@ import Database.Orville.Internal.FromSql
 import Database.Orville.Internal.Monad
 import Database.Orville.Internal.Select
 
-runSelect :: Select row -> Orville [row]
+runSelect :: MonadOrville conn m => Select row -> m [row]
 runSelect select = do
   rows <-
     withConnection $ \conn -> do

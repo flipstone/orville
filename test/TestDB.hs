@@ -77,7 +77,7 @@ instance MonadBaseControl IO TestMonad where
     TestMonad $ liftBaseWith $ \runInBase -> f (\(TestMonad m) -> runInBase m)
   restoreM stm = TestMonad (restoreM stm)
 
-reset :: O.SchemaDefinition -> O.Orville ()
+reset :: O.MonadOrville conn m => O.SchemaDefinition -> m ()
 reset schemaDef = do
   results <- ORaw.selectSqlRows "SELECT current_user" []
   case results of

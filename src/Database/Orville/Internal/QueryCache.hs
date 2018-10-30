@@ -4,7 +4,6 @@ Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.Internal.QueryCache
   ( QueryCached

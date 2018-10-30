@@ -3,8 +3,6 @@ Module    : Database.Orville.Raw
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-{-# LANGUAGE RankNTypes #-}
-
 module Database.Orville.Raw
   ( selectSql
   , selectSqlRows
@@ -27,13 +25,18 @@ import Database.Orville.Internal.Monad
 import Database.Orville.Internal.Types
 import Database.Orville.Select
 
-selectSqlRows :: String -> [SqlValue] -> Orville ResultSet
+selectSqlRows :: MonadOrville conn m => String -> [SqlValue] -> m ResultSet
 selectSqlRows sql values = runSelect $ selectQueryRawRows sql values
 
-selectSql :: String -> [SqlValue] -> FromSql result -> Orville [result]
+selectSql ::
+     MonadOrville conn m
+  => String
+  -> [SqlValue]
+  -> FromSql result
+  -> m [result]
 selectSql sql values builder = runSelect $ selectQueryRaw builder sql values
 
-updateSql :: String -> [SqlValue] -> Orville Integer
+updateSql :: MonadOrville conn m => String -> [SqlValue] -> m Integer
 updateSql sql values =
   withConnection $ \conn -> do
     executingSql UpdateQuery sql $ do run conn sql values

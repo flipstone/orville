@@ -4,7 +4,6 @@ Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.Internal.MigrateSchema
   ( migrateSchema
@@ -88,7 +87,7 @@ withLockedTransaction action = do
                 mempty
             pure Nothing
 
-migrateSchema :: SchemaDefinition -> Orville ()
+migrateSchema :: MonadOrville conn m => SchemaDefinition -> m ()
 migrateSchema schemaDef =
   withConnection $ \conn -> do
     withLockedTransaction $ do
