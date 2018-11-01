@@ -7,26 +7,30 @@ License   : MIT
 
 module Database.Orville.Internal.MigrateSchema
   ( migrateSchema
-  , MigrationError(..)
+  , generateMigrationPlan
   ) where
 
 import Control.Concurrent (threadDelay)
+import qualified Control.Exception as Exc
 import Control.Monad
 import Control.Monad.Catch
 import Control.Monad.IO.Class
-import Data.Data
 import Data.Int
 import Data.Monoid
 import Data.String
 import Database.HDBC hiding (withTransaction)
 
+import Database.Orville.Internal.Execute
 import Database.Orville.Internal.Expr
 import Database.Orville.Internal.FromClause
 import Database.Orville.Internal.FromSql
 import Database.Orville.Internal.MigrateConstraint
 import Database.Orville.Internal.MigrateIndex
 import Database.Orville.Internal.MigrateTable
+import Database.Orville.Internal.MigrationError
+import Database.Orville.Internal.MigrationPlan
 import Database.Orville.Internal.Monad
+import Database.Orville.Internal.SchemaState
 import Database.Orville.Internal.Select
 import Database.Orville.Internal.Types
 import Database.Orville.Raw
@@ -87,34 +91,60 @@ withLockedTransaction action = do
                 mempty
             pure Nothing
 
+{-|
+   migrateSchema will attempt to make changes to the actual database schema
+   that it it matches the provided SchemaDefinition. Unsafe migrations such as
+   dropping tables or columns are never attempted unless the SchemaDefinition
+   explicitly states that the items are safe to drop. Column types may be changed,
+   but will fail if the database cannot successfully make the request type change.
+  -}
 migrateSchema :: MonadOrville conn m => SchemaDefinition -> m ()
 migrateSchema schemaDef =
   withConnection $ \conn -> do
     withLockedTransaction $ do
-      tables <- liftIO $ getTables conn
-      indexes <- liftIO $ getIndexes conn
-      constraints <- liftIO $ getConstraints conn
-      forM_ schemaDef $ \table ->
-        case table of
-          Table tableDef ->
-            if tableName tableDef `elem` tables
-              then migrateTable conn tableDef
-              else createTable conn tableDef
-          DropTable name -> when (name `elem` tables) (dropTable conn name)
-          Index indexDef ->
-            when
-              (not $ indexName indexDef `elem` indexes)
-              (createIndex conn indexDef)
-          DropIndex name -> when (name `elem` indexes) (dropIndex conn name)
-          Constraint constraintDef ->
-            when
-              (not $ constraintName constraintDef `elem` constraints)
-              (createConstraint conn constraintDef)
-          DropConstraint tablName name ->
-            when (name `elem` constraints) (dropConstraint conn tablName name)
+      plan <- nonTransactionallyGenerateMigrationPlan conn schemaDef
+      case plan of
+        Nothing -> pure ()
+        Just somethingToDo ->
+          nonTransactionallyExecuteMigrationPlan conn somethingToDo
 
-data MigrationError =
-  MigrationLockExcessiveRetryError String
-  deriving (Data, Typeable, Show)
+{-|
+   generateMigrationPlan inspects the state of the actual database schema and
+   constructions a plan describing what changes would be made to make it match
+   the provided SchemaDefinition. If the actual schema already matches the
+   definition, Nothing will be returned.
+ -}
+generateMigrationPlan ::
+     MonadOrville conn m => SchemaDefinition -> m (Maybe MigrationPlan)
+generateMigrationPlan schemaDef =
+  withConnection $ \conn -> do
+    withLockedTransaction $ do
+      nonTransactionallyGenerateMigrationPlan conn schemaDef
 
-instance Exception MigrationError
+nonTransactionallyGenerateMigrationPlan ::
+     MonadOrville conn m => conn -> SchemaDefinition -> m (Maybe MigrationPlan)
+nonTransactionallyGenerateMigrationPlan conn schemaDef =
+  liftIO $ buildMigrationPlan schemaDef <$> loadSchemaState conn
+
+nonTransactionallyExecuteMigrationPlan ::
+     MonadOrville conn m => conn -> MigrationPlan -> m ()
+nonTransactionallyExecuteMigrationPlan conn plan = do
+  forM_ (migrationPlanItems plan) $ \(MigrationItem schemaItem ddl) ->
+    executingSql DDLQuery ddl $ do
+      stmt <- prepare conn ddl
+      executeRaw stmt `Exc.catch`
+        (Exc.throw . MigrationExecutionError schemaItem)
+
+buildMigrationPlan :: SchemaDefinition -> SchemaState -> Maybe MigrationPlan
+buildMigrationPlan schemaDef schemaState = foldMap mkPlan schemaDef
+  where
+    mkPlan element =
+      case element of
+        Table tableDef -> migrateTablePlan tableDef schemaState
+        DropTable name -> dropTablePlan name schemaState
+        Index indexDef -> createIndexPlan indexDef schemaState
+        DropIndex name -> dropIndexPlan name schemaState
+        Constraint constraintDef ->
+          createConstraintPlan constraintDef schemaState
+        DropConstraint tablName name ->
+          dropConstraintPlan tablName name schemaState

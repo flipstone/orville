@@ -132,6 +132,11 @@ module Database.Orville.Core
   , OrderByClause(..)
   , SortDirection(..)
   , migrateSchema
+  , MigrationError(..)
+  , generateMigrationPlan
+  , MigrationPlan
+  , MigrationItem(..)
+  , migrationPlanItems
   , selectAll
   , selectFirst
   , deleteRecord
@@ -143,7 +148,6 @@ module Database.Orville.Core
   , insertRecordMany
   , updateFields
   , updateRecord
-  , MigrationError(..)
   ) where
 
 import Control.Monad.Except
@@ -166,6 +170,8 @@ import Database.Orville.Internal.FromSql
 import Database.Orville.Internal.GroupBy ()
 import Database.Orville.Internal.IndexDefinition
 import Database.Orville.Internal.MigrateSchema
+import Database.Orville.Internal.MigrationError
+import Database.Orville.Internal.MigrationPlan
 import Database.Orville.Internal.Monad
 import Database.Orville.Internal.OrderBy
 import Database.Orville.Internal.RelationalMap

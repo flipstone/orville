@@ -6,52 +6,36 @@ License   : MIT
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Database.Orville.Internal.MigrateTable
-  ( createTable
-  , dropTable
-  , migrateTable
-  , MigrateTableException(..)
+  ( migrateTablePlan
+  , dropTablePlan
   ) where
 
-import qualified Control.Exception as Exc
 import Control.Monad
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.List as List
 import Data.Maybe
-import Data.Typeable
 import Database.HDBC
 
-import Database.Orville.Internal.Execute
-import Database.Orville.Internal.Monad
+import Database.Orville.Internal.MigrationPlan
+import Database.Orville.Internal.SchemaState
 import Database.Orville.Internal.SqlType
 import Database.Orville.Internal.Types
 
-createTable ::
-     MonadOrville conn m
-  => conn
-  -> TableDefinition readEntity writeEntity key
-  -> m ()
-createTable conn tableDef = do
-  let ddl = mkCreateTableDDL tableDef
-  executingSql DDLQuery ddl $ void $ run conn ddl []
+migrateTablePlan ::
+     TableDefinition readEntity writeEntity key
+  -> SchemaState
+  -> Maybe MigrationPlan
+migrateTablePlan tableDef schemaState =
+  case schemaStateTableColumns (tableName tableDef) schemaState of
+    Nothing ->
+      Just $ migrationDDLForItem (Table tableDef) (mkCreateTableDDL tableDef)
+    Just columns ->
+      migrationDDLForItem (Table tableDef) <$>
+      mkMigrateTableDDL columns tableDef
 
-dropTable :: MonadOrville conn m => conn -> String -> m ()
-dropTable conn name = do
-  let ddl = "DROP TABLE \"" ++ name ++ "\""
-  executingSql DDLQuery ddl $ void $ run conn ddl []
-
-migrateTable ::
-     MonadOrville conn m
-  => conn
-  -> TableDefinition readEntity writeEntity key
-  -> m ()
-migrateTable conn tableDef = do
-  columns <- liftIO $ describeTable conn (tableName tableDef)
-  case mkMigrateTableDDL columns tableDef of
-    Nothing -> return ()
-    Just ddl -> do
-      executingSql DDLQuery ddl $ do
-        stmt <- prepare conn ddl
-        executeRaw stmt `Exc.catch` (Exc.throw . MTE tableDef)
+dropTablePlan :: String -> SchemaState -> Maybe MigrationPlan
+dropTablePlan name schemaState = do
+  guard (schemaStateTableExists name schemaState)
+  pure $ migrationDDLForItem (DropTable name) (mkDropTableDDL name)
 
 mkMigrateTableDDL ::
      [(String, SqlColDesc)]
@@ -134,6 +118,9 @@ mkCreateTableDDL tableDef =
     fields = List.intercalate ", " $ map mkSomeFieldDDL (tableFields tableDef)
     mkSomeFieldDDL (SomeField f) = mkFieldDDL f
 
+mkDropTableDDL :: String -> String
+mkDropTableDDL name = "DROP TABLE \"" ++ name ++ "\""
+
 sqlFieldDesc :: FieldDefinition a -> SqlColDesc
 sqlFieldDesc field =
   SqlColDesc
@@ -143,48 +130,3 @@ sqlFieldDesc field =
     , colOctetLength = Nothing
     , colDecDigits = Nothing
     }
-
-data MigrateTableException =
-  forall readEntity writeEntity key. MTE (TableDefinition readEntity writeEntity key)
-                                         Exc.SomeException
-  deriving (Typeable)
-
-instance Show MigrateTableException where
-  show = formatMigrationException
-
-instance Exc.Exception MigrateTableException
-
-formatMigrationException :: MigrateTableException -> String
-formatMigrationException (MTE tableDef exception) = message
-  where
-    message =
-      "There was an error migrating table " ++
-      name ++
-      ".\n\
-                  \The error is:\n\
-                  \\n\
-                  \ " ++
-      Exc.displayException exception ++
-      "\\n\
-                  \\n\
-                  \\n\
-                  \Here are the developer comments regarding the table:\n\
-                  \\n\
-                  \ " ++
-      comments ++
-      "\
-                  \\n"
-    name = tableName tableDef
-    comments = formatTableComments " " tableDef
-
-formatTableComments ::
-     String -> TableDefinition readEntity writeEntity key -> String
-formatTableComments indent tableDef =
-  List.intercalate ("\n" ++ indent) commentLines
-  where
-    commentLines = map formatTableComment comments
-    comments = runComments (tableComments tableDef)
-
-formatTableComment :: TableComment -> String
-formatTableComment c =
-  List.intercalate " - " [tcWhat c, show (tcWhen c), tcWho c]
