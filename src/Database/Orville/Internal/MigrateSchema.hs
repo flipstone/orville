@@ -110,8 +110,8 @@ migrateSchema schemaDef =
 
 {-|
    generateMigrationPlan inspects the state of the actual database schema and
-   constructions a plan describing what changes would be made to make it match
-   the provided SchemaDefinition. If the actual schema already matches the
+   constructs a plan describing what changes would be made to make it match the
+   provided SchemaDefinition. If the actual schema already matches the
    definition, Nothing will be returned.
  -}
 generateMigrationPlan ::
