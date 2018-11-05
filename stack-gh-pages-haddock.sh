@@ -5,7 +5,7 @@ set -e
 
 stack haddock --haddock-hyperlink-source --no-haddock-deps
 
-version_number=`cat orville.cabal | grep "version:" | cut -d : -f 2 | cut -w -f 2 | head -n 1`
+version_number=`cat orville.cabal | grep "version:" | head -n 1 | awk '{print $2}'`
 docs=`stack path --local-doc-root`/orville-$version_number
 
 git stash
