@@ -1,0 +1,183 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 3de2b6dba09a60fdd3600acf5c58f7e486547add5240a828e74b0a55b4d661d6
+
+name:           orville
+version:        0.8.3.0
+synopsis:       ORM
+description:    ORM library for PostgreSQL
+category:       Database
+author:         Flipstone Technology Partners
+maintainer:     development@flipstone.com
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: git@github.com:flipstone/orville.git
+
+library
+  exposed-modules:
+      Database.Orville
+      Database.Orville.Conduit
+      Database.Orville.Core
+      Database.Orville.Expr
+      Database.Orville.Popper
+      Database.Orville.PostgresSQL
+      Database.Orville.Raw
+      Database.Orville.Select
+      Database.Orville.Trigger
+  other-modules:
+      Data.Map.Helpers
+      Database.Orville.Internal.ConstraintDefinition
+      Database.Orville.Internal.Execute
+      Database.Orville.Internal.Expr
+      Database.Orville.Internal.Expr.Expr
+      Database.Orville.Internal.Expr.NameExpr
+      Database.Orville.Internal.Expr.SelectExpr
+      Database.Orville.Internal.Expr.WhereExpr
+      Database.Orville.Internal.FieldDefinition
+      Database.Orville.Internal.FieldUpdate
+      Database.Orville.Internal.FromClause
+      Database.Orville.Internal.FromSql
+      Database.Orville.Internal.GroupBy
+      Database.Orville.Internal.IndexDefinition
+      Database.Orville.Internal.MigrateConstraint
+      Database.Orville.Internal.MigrateIndex
+      Database.Orville.Internal.MigrateSchema
+      Database.Orville.Internal.MigrateTable
+      Database.Orville.Internal.MigrationError
+      Database.Orville.Internal.MigrationPlan
+      Database.Orville.Internal.Monad
+      Database.Orville.Internal.OrderBy
+      Database.Orville.Internal.QueryCache
+      Database.Orville.Internal.QueryKey
+      Database.Orville.Internal.RelationalMap
+      Database.Orville.Internal.SchemaState
+      Database.Orville.Internal.Select
+      Database.Orville.Internal.SelectOptions
+      Database.Orville.Internal.Sql
+      Database.Orville.Internal.SqlType
+      Database.Orville.Internal.TableDefinition
+      Database.Orville.Internal.Types
+      Database.Orville.Internal.Where
+      Paths_orville
+  hs-source-dirs:
+      src
+  default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
+  ghc-options: -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  build-depends:
+      HDBC >=2.4
+    , HDBC-postgresql >=2.3
+    , base >=4.8 && <5
+    , bytestring
+    , conduit >=1.2.4 && <1.3
+    , containers >=0.5
+    , convertible >=1.1
+    , dlist >=0.7
+    , exceptions >=0.8
+    , lifted-base >=0.2
+    , monad-control >=1.0
+    , mtl >=2.2
+    , profunctors >=5.2.1
+    , resource-pool >=0.2
+    , text
+    , time >=1.5
+    , transformers >=0.4
+    , transformers-base >=0.4
+  default-language: Haskell2010
+
+executable orville-sample-exe
+  main-is: Main.hs
+  other-modules:
+      Example.Data.Major
+      Example.Data.Student
+      Example.Schema.Student
+      Example.SchemaStudent
+      Paths_orville
+  hs-source-dirs:
+      sample-project
+  default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
+  ghc-options: -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HDBC >=2.4
+    , HDBC-postgresql >=2.3
+    , base >=4.8 && <5
+    , bytestring
+    , conduit >=1.2.4 && <1.3
+    , containers >=0.5
+    , convertible >=1.1
+    , dlist >=0.7
+    , exceptions >=0.8
+    , lifted-base >=0.2
+    , monad-control >=1.0
+    , mtl >=2.2
+    , orville
+    , profunctors >=5.2.1
+    , resource-pool >=0.2
+    , text
+    , time >=1.5
+    , transformers >=0.4
+    , transformers-base >=0.4
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      AppManagedEntity.CrudTest
+      AppManagedEntity.Data.Virus
+      AppManagedEntity.Schema
+      AppManagedEntity.Schema.Virus
+      EntityWrapper.CrudTest
+      EntityWrapper.Data.Entity
+      EntityWrapper.Data.Virus
+      EntityWrapper.Schema
+      EntityWrapper.Schema.Virus
+      ErrorsTest
+      MigrateTest
+      ParameterizedEntity.CrudTest
+      ParameterizedEntity.Data.Virus
+      ParameterizedEntity.Schema
+      ParameterizedEntity.Schema.Virus
+      PopperTest
+      TestDB
+      TransactionTest
+      TriggerTest
+      WhereConditionTest
+      Paths_orville
+  hs-source-dirs:
+      test
+  default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
+  ghc-options: -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  build-depends:
+      HDBC >=2.4
+    , HDBC-postgresql >=2.3
+    , base >=4.8 && <5
+    , bytestring
+    , conduit >=1.2.4 && <1.3
+    , containers >=0.5
+    , convertible >=1.1
+    , dlist >=0.7
+    , exceptions >=0.8
+    , lifted-base >=0.2
+    , monad-control >=1.0
+    , mtl >=2.2
+    , orville
+    , profunctors >=5.2.1
+    , resource-pool
+    , tasty
+    , tasty-discover
+    , tasty-hunit
+    , tasty-quickcheck
+    , text
+    , time >=1.5
+    , transformers >=0.4
+    , transformers-base >=0.4
+  default-language: Haskell2010
