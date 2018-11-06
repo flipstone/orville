@@ -54,6 +54,10 @@ matrix:
   - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC 8.0.2"
     addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+    
+  - env: BUILD=cabal GHCVER=8.4.4 CABALVER=2.2 HAPPYVER=1.19.5 ALEXVER=3.1.7
+    compiler: ": #GHC 8.0.2"
+    addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}   
 
   - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC HEAD"
@@ -81,6 +85,10 @@ matrix:
   # - env: BUILD=stack ARGS="--resolver lts-8"
   #   compiler: ": #stack 8.0.2 (lts-8)"
   #   addons: {apt: {packages: [libgmp-dev]}}
+  
+  - env: BUILD=stack ARGS="--resolver lts-12"
+    compiler: ": #stack 8.4.4 (lts-12)"
+    addons: {apt: {packages: [libgmp-dev]}}
 
   - env: BUILD=stack ARGS="--resolver nightly"
     compiler: ": #stack nightly"
