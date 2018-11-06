@@ -3,43 +3,40 @@ Module    : Database.Orville.Internal.MigrateIndex
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 {-# LANGUAGE RecordWildCards #-}
+
 module Database.Orville.Internal.MigrateIndex
-  ( createIndex
-  , dropIndex
-  , getIndexes
+  ( createIndexPlan
+  , dropIndexPlan
   ) where
 
-import            Control.Monad
-import            Data.Convertible
-import            Data.List
-import            Database.HDBC
+import Control.Monad
+import Data.List
 
-import            Database.Orville.Internal.Execute
-import            Database.Orville.Internal.Monad
-import            Database.Orville.Internal.Types
+import Database.Orville.Internal.MigrationPlan
+import Database.Orville.Internal.SchemaState
+import Database.Orville.Internal.Types
 
-createIndex :: MonadOrville conn m => conn -> IndexDefinition -> m ()
-createIndex conn (IndexDefinition {..}) = do
-  let ddl = intercalate " " [ "CREATE"
-                            , if indexUnique then "UNIQUE" else ""
-                            , "INDEX"
-                            , indexName
-                            , "ON"
-                            , "\"" ++ indexTable ++ "\""
-                            , indexBody
-                            ]
+createIndexPlan :: IndexDefinition -> SchemaState -> Maybe MigrationPlan
+createIndexPlan indexDef schemaState = do
+  guard (not $ schemaStateIndexExists (indexName indexDef) schemaState)
+  pure $
+    migrationDDLForItem
+      (Index indexDef)
+      (intercalate
+         " "
+         [ "CREATE"
+         , if indexUnique indexDef
+             then "UNIQUE"
+             else ""
+         , "INDEX"
+         , indexName indexDef
+         , "ON"
+         , "\"" ++ indexTable indexDef ++ "\""
+         , indexBody indexDef
+         ])
 
-  executingSql DDLQuery ddl $ void $ run conn ddl []
-
-dropIndex :: MonadOrville conn m => conn -> String -> m ()
-dropIndex conn name = do
-  let ddl = "DROP INDEX " ++ name
-  executingSql DDLQuery ddl $ void $ run conn ddl []
-
-getIndexes :: IConnection conn => conn -> IO [String]
-getIndexes conn = do
-  query <- prepare conn "SELECT indexname FROM pg_indexes WHERE schemaname = 'public';"
-  void $ execute query []
-  map (convert . head) <$> fetchAllRows' query
+dropIndexPlan :: String -> SchemaState -> Maybe MigrationPlan
+dropIndexPlan name schemaState = do
+  guard (schemaStateIndexExists name schemaState)
+  pure $ migrationDDLForItem (DropIndex name) ("DROP INDEX " ++ name)

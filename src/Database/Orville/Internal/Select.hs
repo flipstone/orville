@@ -3,19 +3,17 @@ Module    : Database.Orville.Internal.Select
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 module Database.Orville.Internal.Select where
 
-import            Control.Monad.Reader
-import qualified  Data.List as List
-import            Database.HDBC
+import Control.Monad.Reader
+import qualified Data.List as List
+import Database.HDBC
 
-import            Database.Orville.Internal.Expr
-import            Database.Orville.Internal.FromClause
-import            Database.Orville.Internal.SelectOptions
-import            Database.Orville.Internal.Types
-import            Database.Orville.Internal.FieldDefinition (fieldName)
-
+import Database.Orville.Internal.Expr
+import Database.Orville.Internal.FieldDefinition (fieldToNameForm)
+import Database.Orville.Internal.FromClause
+import Database.Orville.Internal.SelectOptions
+import Database.Orville.Internal.Types
 
 data Select row = Select
   { selectBuilder :: FromSql row
@@ -23,26 +21,35 @@ data Select row = Select
   , selectValues :: [SqlValue]
   }
 
-selectQueryColumns :: [SelectExpr] -> FromSql row -> FromClause -> SelectOptions -> Select row
+selectQueryColumns ::
+     [SelectExpr] -> FromSql row -> FromClause -> SelectOptions -> Select row
 selectQueryColumns selectExprs builder fromClause opts =
-    selectQueryRaw builder querySql (selectOptValues opts)
+  selectQueryRaw builder querySql (selectOptValues opts)
   where
-    columns = List.intercalate ", " $ map (rawExprToSql . generateSql) selectExprs
-    querySql = List.concat [ "SELECT "
-                           , columns
-                           , " "
-                           , fromClauseToSql fromClause
-                           , " "
-                           , selectOptClause opts
-                           ]
+    columns =
+      List.intercalate ", " $ map (rawExprToSql . generateSql) selectExprs
+    querySql =
+      List.concat
+        [ selectClause opts
+        , columns
+        , " "
+        , fromClauseToSql fromClause
+        , " "
+        , selectOptClause opts
+        ]
 
 selectQuery :: FromSql row -> FromClause -> SelectOptions -> Select row
-selectQuery builder = selectQueryColumns (expr <$> fromSqlSelects builder) builder
+selectQuery builder =
+  selectQueryColumns (expr <$> fromSqlSelects builder) builder
 
-selectQueryTable :: TableDefinition entity -> SelectOptions -> Select (entity Record)
+selectQueryTable ::
+     TableDefinition readEntity writeEntity key
+  -> SelectOptions
+  -> Select readEntity
 selectQueryTable tbl = selectQuery (tableFromSql tbl) (fromClauseTable tbl)
 
-selectQueryRows :: [SelectExpr] -> FromClause -> SelectOptions -> Select [(String, SqlValue)]
+selectQueryRows ::
+     [SelectExpr] -> FromClause -> SelectOptions -> Select [(String, SqlValue)]
 selectQueryRows exprs = selectQueryColumns exprs rowFromSql
 
 selectQueryRaw :: FromSql row -> String -> [SqlValue] -> Select row
@@ -57,10 +64,13 @@ selectQueryRawRows = selectQueryRaw rowFromSql
 -- a select clause. It is not exposed publically for this reason.
 --
 rowFromSql :: FromSql [(String, SqlValue)]
-rowFromSql = FromSql
-  { fromSqlSelects = error "Database.Orville.Select.rowFromSql: fromSqlColumnNames was accessed. This is a bug."
-  , runFromSql = Right <$> ask
-  }
+rowFromSql =
+  FromSql
+    { fromSqlSelects =
+        error
+          "Database.Orville.Select.rowFromSql: fromSqlColumnNames was accessed. This is a bug."
+    , runFromSql = Right <$> ask
+    }
 
-selectField :: FieldDefinition -> SelectForm
-selectField field = selectColumn (NameForm (fieldName field))
+selectField :: FieldDefinition a -> SelectForm
+selectField field = selectColumn (fieldToNameForm field)

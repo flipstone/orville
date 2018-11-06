@@ -65,3 +65,6 @@ extra-package-dbs: []
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+extra-deps:
+  - HDBC-postgresql-2.3.2.5
+

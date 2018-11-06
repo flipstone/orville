@@ -3,46 +3,41 @@ Module    : Database.Orville.Internal.Expr.SelectExpr
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+
 module Database.Orville.Internal.Expr.SelectExpr where
 
-import                Data.Maybe
-import                Data.Monoid
+import Data.Maybe
+import Data.Monoid
 
-import                Database.Orville.Internal.Expr.Expr
-import                Database.Orville.Internal.Expr.NameExpr
+import Database.Orville.Internal.Expr.Expr
+import Database.Orville.Internal.Expr.NameExpr
 
 type SelectExpr = Expr SelectForm
 
 data SelectForm = SelectForm
-  { selectFormColumn  :: NameForm
-  , selectFormTable   :: Maybe NameForm
-  , selectFormAlias   :: Maybe NameForm
+  { selectFormColumn :: NameForm
+  , selectFormAlias :: Maybe NameForm
   }
 
 selectColumn :: NameForm -> SelectForm
-selectColumn name = SelectForm name Nothing Nothing
+selectColumn name = SelectForm name Nothing
 
 selectFormOutput :: SelectForm -> NameForm
 selectFormOutput = fromMaybe <$> selectFormColumn <*> selectFormAlias
 
-qualified :: SelectForm -> NameForm -> SelectForm
-qualified sf name = sf { selectFormTable = Just name }
-
 aliased :: SelectForm -> NameForm -> SelectForm
-aliased sf name = sf { selectFormAlias = Just name }
+aliased sf name = sf {selectFormAlias = Just name}
+
+instance QualifySql SelectForm where
+  qualified form table =
+    form { selectFormColumn = (selectFormColumn form) `qualified` table }
 
 instance GenerateSql SelectForm where
   generateSql (SelectForm {..}) =
-       qualification selectFormTable
-    <> generateSql selectFormColumn
-    <> asOutput selectFormAlias
-
-qualification :: Maybe NameForm -> RawExpr
-qualification Nothing = mempty
-qualification (Just name) = generateSql name <> "."
+    generateSql selectFormColumn <>
+    asOutput selectFormAlias
 
 asOutput :: Maybe NameForm -> RawExpr
 asOutput Nothing = mempty

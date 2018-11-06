@@ -1,5 +1,28 @@
-dev:
-  build: .
-  volumes:
-    - .:/orville
-  working_dir: /orville
+version: "3"
+services:
+  dev:
+    build: .
+    volumes:
+      - .:/orville
+      - stack-work:/orville/.stack-work
+      - stack-root:/stack-root
+    working_dir: /orville
+    depends_on:
+      - testdb
+    environment:
+      TEST_CONN_STRING: "host=testdb user=orville_test"
+    command:
+      - ./test-loop
+    # A TTY is required for the test-loop script to use
+    # stack test. stdin_open would be sufficient, but
+    # allocating a tty provides colorful test output :)
+    tty: true
+
+  testdb:
+    image: postgres:9.6.8
+    environment:
+      POSTGRES_USER: orville_test
+
+volumes:
+  stack-root:
+  stack-work:

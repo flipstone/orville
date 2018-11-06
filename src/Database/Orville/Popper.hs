@@ -3,15 +3,16 @@ Module    : Database.Orville.Popper
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+
 module Database.Orville.Popper
   ( PopError(..)
   , Popper
   , Popped(..)
-  , (>>>), (<<<)
+  , (>>>)
+  , (<<<)
   , abortPop
   , certainly
   , certainly'
@@ -28,7 +29,8 @@ module Database.Orville.Popper
   , missingRecordMessage
   , popMissingRecord
   , onKern
-  , pop, popThrow
+  , pop
+  , popThrow
   , popFirst
   , popMany
   , onPopMany
@@ -37,24 +39,26 @@ module Database.Orville.Popper
   , popRecord
   , popRecord'
   , popTable
+  , explain
+  , explainLines
   ) where
 
-import            Prelude hiding ((.))
+import Prelude hiding ((.))
 
-import            Control.Arrow
-import            Control.Applicative
-import            Control.Category
-import            Control.Monad.Catch
-import            Data.Convertible
-import            Data.Either
-import qualified  Data.Map.Strict as Map
-import            Data.Maybe
+import Control.Applicative
+import Control.Arrow
+import Control.Category
+import Control.Monad.Catch
+import Data.Either
+import Data.List (intercalate)
+import qualified Data.Map.Strict as Map
+import Data.Maybe
 
-import            Database.Orville.Core
-import            Database.Orville.Internal.QueryCache
+import Database.Orville.Core
+import Database.Orville.Internal.QueryCache
+import Database.Orville.Internal.SelectOptions
 
 -- Simple helpers and such that make the public API
-
 kern :: Popper a a
 kern = PopId
 
@@ -70,109 +74,132 @@ liftPop = PopLift
 abortPop :: PopError -> Popper a b
 abortPop = PopAbort
 
-popQuery :: Orville b -> Popper a b
-popQuery = PopQuery
+{-|
+   popQuery embeds an Orville operation in a popper. It is left up to the
+   programmer to ensure that the Orville operation does not do any updates
+   to the database, but only does queries.
 
-certainly :: PopError-> Popper (Maybe b) b
+   The initial string argument is a description of the query to put into
+   the results of `explain`
+-}
+popQuery ::
+     String
+  -> (forall conn m. MonadOrville conn m =>
+                       m b)
+  -> Popper a b
+popQuery explanation orville = PopPrim (PrimQuery explanation orville)
+
+certainly :: PopError -> Popper (Maybe b) b
 certainly err = liftPop $ maybe (PoppedError err) PoppedValue
 
-certainly' :: Popper a PopError
-           -> Popper a (Maybe b)
-           -> Popper a b
+certainly' :: Popper a PopError -> Popper a (Maybe b) -> Popper a b
 certainly' msgPopper bPopper =
   (msgPopper &&& bPopper) >>>
   liftPop (\(err, maybeB) -> maybe (PoppedError err) PoppedValue maybeB)
 
-popRecord :: TableDefinition entity
-          -> Record
-          -> Popper a (Maybe (entity Record))
-popRecord tableDef recordId = popQuery (findRecord tableDef recordId)
-
-popRecord' :: TableDefinition entity
-           -> Record
-           -> Popper a (entity Record)
-popRecord' td ri =
-    popRecord td ri >>> certainly err
+popRecord ::
+     TableDefinition readEntity writeEntity key
+  -> key
+  -> Popper a (Maybe readEntity)
+popRecord tableDef key = popQuery explanation (findRecord tableDef key)
   where
-    err = MissingRecord td (tablePrimaryKey td) (convert ri)
+    explanation = "popRecord " ++ tableName tableDef
 
-popFirst :: TableDefinition entity
-         -> SelectOptions
-         -> Popper a (Maybe (entity Record))
-popFirst tableDef opts = popQuery (selectFirst tableDef opts)
+popRecord' ::
+     TableDefinition readEntity writeEntity key -> key -> Popper a readEntity
+popRecord' td key = popRecord td key >>> certainly err
+  where
+    err = MissingRecord td (tablePrimaryKey td) key
 
-popTable :: TableDefinition entity
-         -> SelectOptions
-         -> Popper a ([entity Record])
-popTable tableDef opts = popQuery (selectAll tableDef opts)
+popFirst ::
+     TableDefinition readEntity writeEntity key
+  -> SelectOptions
+  -> Popper a (Maybe readEntity)
+popFirst tableDef opts = popQuery explanation (selectFirst tableDef opts)
+  where
+    explanation = "popFirst " ++ tableName tableDef
+
+popTable ::
+     TableDefinition readEntity writeEntity key
+  -> SelectOptions
+  -> Popper a [readEntity]
+popTable tableDef opts = popQuery explanation (selectAll tableDef opts)
+  where
+    explanation =
+      "popTable " ++ tableName tableDef ++ " " ++ selectOptClause opts
 
 popMaybe :: Popper a b -> Popper (Maybe a) (Maybe b)
 popMaybe = PopMaybe
 
-hasMany :: TableDefinition entity
-        -> FieldDefinition
-        -> Popper Record [entity Record]
-hasMany tableDef fieldDef = PopRecordManyBy tableDef fieldDef mempty
+hasMany ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> Popper fieldValue [readEntity]
+hasMany tableDef fieldDef = PopPrim (PrimRecordManyBy tableDef fieldDef mempty)
 
-hasOneIn :: TableDefinition entity
-        -> FieldDefinition
-        -> Popper [Record] (Map.Map Record (entity Record))
-hasOneIn tableDef fieldDef = PopRecordsBy tableDef fieldDef mempty
+hasOneIn ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> Popper [fieldValue] (Map.Map fieldValue readEntity)
+hasOneIn tableDef fieldDef = PopPrim (PrimRecordsBy tableDef fieldDef mempty)
 
-hasManyIn :: TableDefinition entity
-        -> FieldDefinition
-        -> Popper [Record] (Map.Map Record [entity Record])
-hasManyIn tableDef fieldDef = PopRecordsManyBy tableDef fieldDef mempty
+hasManyIn ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
+hasManyIn tableDef fieldDef =
+  PopPrim (PrimRecordsManyBy tableDef fieldDef mempty)
 
-hasManyWhere :: TableDefinition entity
-             -> FieldDefinition
-             -> SelectOptions
-             -> Popper Record [entity Record]
-hasManyWhere = PopRecordManyBy
+hasManyWhere ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> SelectOptions
+  -> Popper fieldValue [readEntity]
+hasManyWhere tableDef fieldDef opts =
+  PopPrim (PrimRecordManyBy tableDef fieldDef opts)
 
-hasManyInWhere :: TableDefinition entity
-               -> FieldDefinition
-               -> SelectOptions
-               -> Popper [Record] (Map.Map Record [entity Record])
-hasManyInWhere = PopRecordsManyBy
+hasManyInWhere ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> SelectOptions
+  -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
+hasManyInWhere tableDef fieldDef opts =
+  PopPrim (PrimRecordsManyBy tableDef fieldDef opts)
 
-hasOne :: ( Convertible a SqlValue
-          , Convertible SqlValue a
-          , Ord a
-          )
-       => TableDefinition entity
-       -> FieldDefinition
-       -> Popper a (Maybe (entity Record))
-hasOne tableDef fieldDef =
-  hasOneWhere tableDef fieldDef mempty
+hasOne ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> Popper fieldValue (Maybe readEntity)
+hasOne tableDef fieldDef = hasOneWhere tableDef fieldDef mempty
 
-hasOneWhere :: ( Convertible a SqlValue
-               , Convertible SqlValue a
-               , Ord a
-               )
-            => TableDefinition entity
-            -> FieldDefinition
-            -> SelectOptions
-            -> Popper a (Maybe (entity Record))
-hasOneWhere = PopRecordBy
+hasOneWhere ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> SelectOptions
+  -> Popper fieldValue (Maybe readEntity)
+hasOneWhere tableDef fieldDef opts =
+  PopPrim (PrimRecordBy tableDef fieldDef opts)
 
-hasOne' :: ( Convertible a SqlValue
-           , Convertible SqlValue a
-           , Ord a
-           )
-        => TableDefinition entity
-        -> FieldDefinition
-        -> Popper a (entity Record)
+hasOne' ::
+     Ord fieldValue
+  => TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> Popper fieldValue readEntity
 hasOne' tableDef fieldDef =
   certainly' (popMissingRecord tableDef fieldDef) (hasOne tableDef fieldDef)
 
-popMissingRecord :: Convertible a SqlValue
-                 => TableDefinition entity
-                 -> FieldDefinition
-                 -> Popper a PopError
-popMissingRecord tableDef fieldDef =
-  fromKern (MissingRecord tableDef fieldDef . convert)
-
+popMissingRecord ::
+     TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> Popper fieldValue PopError
+popMissingRecord tableDef fieldDef = fromKern (MissingRecord tableDef fieldDef)
 
 -- popMany is the most involved helper. It recursively
 -- rewrites the entire Popper expression to avoid
@@ -181,105 +208,66 @@ popMissingRecord tableDef fieldDef =
 --
 -- This is where the magic happens.
 --
-
 popMany :: Popper a b -> Popper [a] [b]
 popMany (PopOnMany _ manyPopper) = manyPopper
-
-popMany (PopRecord tableDef) =
-  zipWith Map.lookup <$> kern
-                     <*> (repeat <$> PopRecords tableDef)
-
-popMany (PopRecordBy tableDef fieldDef selectOptions) =
-  zipWith Map.lookup <$> kern
-                     <*> (repeat <$> PopRecordsBy tableDef fieldDef selectOptions)
-
-popMany (PopRecordManyBy tableDef fieldDef opts) =
-    zipWith getRecords <$> kern
-                       <*> (repeat <$> PopRecordsManyBy tableDef fieldDef opts)
+popMany (PopPrim (PrimRecordBy tableDef fieldDef selectOptions)) =
+  zipWith Map.lookup <$> kern <*>
+  (repeat <$> PopPrim (PrimRecordsBy tableDef fieldDef selectOptions))
+popMany (PopPrim (PrimRecordManyBy tableDef fieldDef opts)) =
+  zipWith getRecords <$> kern <*>
+  (repeat <$> PopPrim (PrimRecordsManyBy tableDef fieldDef opts))
   where
-
     getRecords key = fromMaybe [] . Map.lookup key
-
-popMany (PopRecords tableDef) =
-    (zipWith restrictMap)
-      <$> kern
-      <*> (fromKern concat >>>
-           PopRecords tableDef >>>
-           fromKern repeat)
-
-  where restrictMap keys = Map.filterWithKey (isKey keys)
-        isKey keys key _ = key `elem` keys
-
-popMany (PopRecordsManyBy tableDef fieldDef opts) =
-    (zipWith restrictMap)
-      <$> kern
-      <*> (fromKern concat >>>
-           PopRecordsManyBy tableDef fieldDef opts >>>
-           fromKern repeat)
-
-  where restrictMap keys = Map.filterWithKey (isKey keys)
-        isKey keys key _ = key `elem` keys
-
-popMany (PopRecordsBy tableDef fieldDef opts) =
-    (zipWith restrictMap)
-      <$> kern
-      <*> (fromKern concat >>>
-           PopRecordsBy tableDef fieldDef opts >>>
-           fromKern repeat)
-
-  where restrictMap keys = Map.filterWithKey (isKey keys)
-        isKey keys key _ = key `elem` keys
-
+popMany (PopPrim (PrimRecordsManyBy tableDef fieldDef opts)) =
+  (zipWith restrictMap) <$> kern <*>
+  (fromKern concat >>>
+   PopPrim (PrimRecordsManyBy tableDef fieldDef opts) >>> fromKern repeat)
+  where
+    restrictMap keys = Map.filterWithKey (isKey keys)
+    isKey keys key _ = key `elem` keys
+popMany (PopPrim (PrimRecordsBy tableDef fieldDef opts)) =
+  (zipWith restrictMap) <$> kern <*>
+  (fromKern concat >>>
+   PopPrim (PrimRecordsBy tableDef fieldDef opts) >>> fromKern repeat)
+  where
+    restrictMap keys = Map.filterWithKey (isKey keys)
+    isKey keys key _ = key `elem` keys
 popMany PopId = PopId
 popMany (PopAbort err) = (PopAbort err)
-popMany (PopPure a) =
-  PopPure (repeat a) -- lists here should be treated as
+popMany (PopPure a) = PopPure (repeat a) -- lists here should be treated as
                      -- ZipLists, so 'repeat' is 'pure'
-
-popMany (PopLift f) = PopLift $ \inputs ->
-  let poppeds = map f inputs
-
-      extract (PoppedValue b) (PoppedValue bs) = PoppedValue (b : bs)
-      extract _ (PoppedError err) = PoppedError err
-      extract (PoppedError err) _ = PoppedError err
-
-  in foldr extract (PoppedValue []) poppeds
-
+popMany (PopLift f) =
+  PopLift $ \inputs ->
+    let poppeds = map f inputs
+        extract (PoppedValue b) (PoppedValue bs) = PoppedValue (b : bs)
+        extract _ (PoppedError err) = PoppedError err
+        extract (PoppedError err) _ = PoppedError err
+     in foldr extract (PoppedValue []) poppeds
 popMany (PopMap f popper) = PopMap (fmap f) (popMany popper)
 popMany (PopApply fPopper aPopper) =
   getZipList <$>
-    PopApply (fmap (<*>) (ZipList <$> popMany fPopper))
-             (ZipList <$> popMany aPopper)
-
+  PopApply
+    (fmap (<*>) (ZipList <$> popMany fPopper))
+    (ZipList <$> popMany aPopper)
 popMany (PopChain bPopper aPopper) =
   PopChain (popMany bPopper) (popMany aPopper)
-
 popMany (PopArrowFirst popper) =
-  fromKern unzip >>>
-  first (popMany popper) >>>
-  fromKern (uncurry zip)
-
+  fromKern unzip >>> first (popMany popper) >>> fromKern (uncurry zip)
 popMany (PopArrowLeft popper) =
-    rebuildList <$> kern
-                <*> (fromKern lefts >>> popMany popper)
+  rebuildList <$> kern <*> (fromKern lefts >>> popMany popper)
   where
     rebuildList [] _ = []
-    rebuildList (Left _ : _) [] = [] -- shouldn't happen?
-
-    rebuildList (Right c : eacs) bs = Right c : rebuildList eacs bs
-    rebuildList (Left _ : eacs) (b : bs) = Left b : rebuildList eacs bs
-
+    rebuildList (Left _:_) [] = [] -- shouldn't happen?
+    rebuildList (Right c:eacs) bs = Right c : rebuildList eacs bs
+    rebuildList (Left _:eacs) (b:bs) = Left b : rebuildList eacs bs
 popMany (PopMaybe singlePopper) =
-    rebuildList <$> kern
-                <*> (fromKern catMaybes >>> popMany singlePopper)
+  rebuildList <$> kern <*> (fromKern catMaybes >>> popMany singlePopper)
   where
     rebuildList [] _ = []
-    rebuildList (Just _ : _) [] = [] -- shouldn't happen?
-
-    rebuildList (Nothing : as) bs = Nothing : rebuildList as bs
-    rebuildList (Just _ : as) (b : bs) = Just b : rebuildList as bs
-
-popMany (PopQuery orm) =
+    rebuildList (Just _:_) [] = [] -- shouldn't happen?
+    rebuildList (Nothing:as) bs = Nothing : rebuildList as bs
+    rebuildList (Just _:as) (b:bs) = Just b : rebuildList as bs
+popMany (PopPrim (PrimQuery explanation orm))
   -- the orm query here doesn't depend on the Popper input,
   -- so we can run it once and then construct an infinite
   -- list of the results to be lined up as the outputs for
@@ -287,7 +275,7 @@ popMany (PopQuery orm) =
   --
   -- ('repeat' is 'pure' since lists here are zipped)
   --
-  PopQuery (repeat <$> orm)
+ = PopPrim (PrimQuery explanation (repeat <$> orm))
 
 -- Manually specifies the many handling of a popper. The original popper
 -- is lift unchanged. If it becomes involved in a `popMany` operation, the
@@ -301,35 +289,36 @@ onPopMany :: Popper a b -> Popper [a] [b] -> Popper a b
 onPopMany = PopOnMany
 
 -- The Popper guts
-
-data PopError =
-    forall ent. MissingRecord (TableDefinition ent) FieldDefinition SqlValue
+data PopError
+  = forall readEntity writeEntity key fieldValue. MissingRecord (TableDefinition readEntity writeEntity key)
+                                                                (FieldDefinition fieldValue)
+                                                                fieldValue
   | Unpoppable String
 
 instance Show PopError where
   show (MissingRecord tableDef fieldDef fieldValue) =
     "MissingRecord: " ++ missingRecordMessage tableDef fieldDef fieldValue
+  show (Unpoppable msg) = "Unpoppable: " ++ msg
 
-  show (Unpoppable msg) =
-    "Unpoppable: " ++ msg
-
-missingRecordMessage :: TableDefinition entity
-                     -> FieldDefinition
-                     -> SqlValue
-                     -> String
+missingRecordMessage ::
+     TableDefinition readEntity writeEntity key
+  -> FieldDefinition fieldValue
+  -> fieldValue
+  -> String
 missingRecordMessage tableDef fieldDef fieldValue =
-  concat [ "Unable to find "
-         , tableName tableDef
-         , " with "
-         , fieldName fieldDef
-         , " = "
-         , show fieldValue
-         ]
+  concat
+    [ "Unable to find "
+    , tableName tableDef
+    , " with "
+    , fieldName fieldDef
+    , " = "
+    , show (fieldToSqlValue fieldDef fieldValue)
+    ]
 
 instance Exception PopError
 
-data Popped a =
-    PoppedValue a
+data Popped a
+  = PoppedValue a
   | PoppedError PopError
 
 instance Functor Popped where
@@ -342,6 +331,43 @@ instance Applicative Popped where
   (PoppedError err) <*> _ = PoppedError err
   _ <*> (PoppedError err) = PoppedError err
 
+-- Prim GADT. This defines the core database operations that can be performed
+-- as part of popping.
+--
+data Prim a b
+  -- The trivial primitive
+      where
+  PrimQuery
+    :: String
+    -> (forall conn m. MonadOrville conn m =>
+                         m b)
+    -> Prim a b
+  -- The singlar primitives
+  PrimRecordBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim fieldValue (Maybe readEntity)
+  PrimRecordManyBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim fieldValue [readEntity]
+  --  The many primitives (each of these is a fixed point -- its own many)
+  PrimRecordsBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim [fieldValue] (Map.Map fieldValue readEntity)
+  PrimRecordsManyBy
+    :: Ord fieldValue
+    => TableDefinition readEntity writeEntity key
+    -> FieldDefinition fieldValue
+    -> SelectOptions
+    -> Prim [fieldValue] (Map.Map fieldValue [readEntity])
 
 -- Popper GADT. This defines the popper expression dsl
 -- that is used internally to represent poppers. These
@@ -349,58 +375,17 @@ instance Applicative Popped where
 -- freely as long as the exported API is stable.
 --
 data Popper a b where
-  PopQuery :: Orville b -> Popper a b
-
-  PopRecord :: TableDefinition entity
-            -> Popper Record (Maybe (entity Record))
-
-  PopRecords :: TableDefinition entity
-             -> Popper [Record] (Map.Map Record (entity Record))
-
-  PopRecordBy :: ( Convertible c SqlValue
-                 , Convertible SqlValue c
-                 , Ord c
-                 )
-              => TableDefinition entity
-              -> FieldDefinition
-              -> SelectOptions
-              -> Popper c (Maybe (entity Record))
-
-  PopRecordManyBy :: TableDefinition entity
-                  -> FieldDefinition
-                  -> SelectOptions
-                  -> Popper Record [entity Record]
-
-  PopRecordsBy :: ( Convertible c SqlValue
-                  , Convertible SqlValue c
-                  , Ord c
-                  )
-               => TableDefinition entity
-               -> FieldDefinition
-               -> SelectOptions
-               -> Popper [c] (Map.Map c (entity Record))
-
-  PopRecordsManyBy :: TableDefinition entity
-                   -> FieldDefinition
-                   -> SelectOptions
-                   -> Popper [Record] (Map.Map Record [entity Record])
-
+  PopPrim :: Prim a b -> Popper a b
   PopId :: Popper a a
   PopPure :: b -> Popper a b
   PopLift :: (a -> Popped b) -> Popper a b
   PopAbort :: PopError -> Popper a b
-
   PopMap :: (b -> c) -> Popper a b -> Popper a c
-  PopApply :: Popper a (b -> c)
-           -> Popper a b
-           -> Popper a c
-
+  PopApply :: Popper a (b -> c) -> Popper a b -> Popper a c
   PopChain :: Popper b c -> Popper a b -> Popper a c
   PopArrowFirst :: Popper a b -> Popper (a, c) (b, c)
   PopArrowLeft :: Popper a b -> Popper (Either a c) (Either b c)
-
   PopOnMany :: Popper a b -> Popper [a] [b] -> Popper a b
-
   PopMaybe :: Popper a b -> Popper (Maybe a) (Maybe b)
 
 instance Functor (Popper a) where
@@ -421,10 +406,9 @@ instance Arrow Popper where
 instance ArrowChoice Popper where
   left = PopArrowLeft
 
-popThrow :: Popper a b -> a -> Orville b
+popThrow :: MonadOrville conn m => Popper a b -> a -> m b
 popThrow popper a = do
   popped <- pop popper a
-
   case popped of
     PoppedValue b -> return b
     PoppedError e -> throwM e
@@ -432,88 +416,141 @@ popThrow popper a = do
 -- This is where the action happens. pop converts the
 -- Popper DSL into Orville calls with the provided input
 --
-pop :: Popper a b -> a -> Orville (Popped b)
+pop :: MonadOrville conn m => Popper a b -> a -> m (Popped b)
 pop popper a = runQueryCached $ popCached popper a
 
-popCached :: (MonadThrow m, MonadOrville conn m)
-          => Popper a b -> a -> QueryCached m (Popped b)
-popCached (PopOnMany singlePopper _) a =
-  popCached singlePopper a
+popPrim ::
+     (MonadThrow m, MonadOrville conn m)
+  => Prim a b
+  -> a
+  -> QueryCached m (Popped b)
+popPrim (PrimQuery _ query) _ = PoppedValue <$> unsafeLift query
+popPrim (PrimRecordBy tableDef fieldDef opts) recordId =
+  PoppedValue <$>
+  selectFirstCached tableDef (where_ (fieldDef .== recordId) <> opts)
+popPrim (PrimRecordManyBy tableDef fieldDef opts) recordId =
+  PoppedValue <$>
+  selectCached tableDef (where_ (fieldDef .== recordId) <> opts)
+popPrim (PrimRecordsBy tableDef fieldDef opts) recordIds =
+  PoppedValue <$> Map.map head <$>
+  findRecordsByCached
+    tableDef
+    fieldDef
+    (where_ (fieldDef .<- recordIds) <> opts)
+popPrim (PrimRecordsManyBy tableDef fieldDef opts) recordIds =
+  PoppedValue <$>
+  findRecordsByCached
+    tableDef
+    fieldDef
+    (where_ (fieldDef .<- recordIds) <> opts)
 
-popCached (PopQuery query) _ =
-  PoppedValue <$> unsafeLift query
-
-popCached (PopRecordBy tableDef fieldDef opts) recordId =
-  PoppedValue <$> selectFirstCached tableDef
-                                    (  where_ (fieldDef .== recordId)
-                                    <> opts
-                                    )
-
-popCached (PopRecordManyBy tableDef fieldDef opts) recordId =
-  PoppedValue <$> selectCached tableDef
-                               (  where_ (fieldDef .== recordId)
-                               <> opts
-                               )
-
-popCached (PopRecordsBy tableDef fieldDef opts) recordIds =
-  PoppedValue <$> Map.map head
-              <$> findRecordsByCached tableDef
-                                      fieldDef
-                                      (  where_ (fieldDef .<- recordIds)
-                                      <> opts
-                                      )
-
-popCached (PopRecordsManyBy tableDef fieldDef opts) recordIds =
-  PoppedValue <$> findRecordsByCached tableDef
-                                      fieldDef
-                                      (  where_ (fieldDef .<- recordIds)
-                                      <> opts
-                                      )
-
-popCached (PopRecord tableDef) recordId =
-  PoppedValue <$> findRecordCached tableDef recordId
-
-popCached (PopRecords tableDef) recordIds =
-  PoppedValue <$> findRecordsCached tableDef recordIds
-
-popCached (PopAbort err) _ =
-  pure (PoppedError err)
-
-popCached PopId a =
-  pure (PoppedValue a)
-
-popCached (PopPure a) _ =
-  pure (PoppedValue a)
-
-popCached (PopLift f) a =
-  pure (f a)
-
-popCached (PopMap f popper) a =
-  fmap f <$> popCached popper a
-
+popCached ::
+     (MonadThrow m, MonadOrville conn m)
+  => Popper a b
+  -> a
+  -> QueryCached m (Popped b)
+popCached (PopOnMany singlePopper _) a = popCached singlePopper a
+popCached (PopPrim prim) a = popPrim prim a
+popCached (PopAbort err) _ = pure (PoppedError err)
+popCached PopId a = pure (PoppedValue a)
+popCached (PopPure a) _ = pure (PoppedValue a)
+popCached (PopLift f) a = pure (f a)
+popCached (PopMap f popper) a = fmap f <$> popCached popper a
 popCached (PopApply fPopper bPopper) a =
   (fmap (<*>) (popCached fPopper a)) <*> popCached bPopper a
-
 popCached (PopChain popperB popperA) a = do
   value <- popCached popperA a
-
   case value of
     PoppedError err -> pure (PoppedError err)
     PoppedValue b -> popCached popperB b
-
-popCached (PopArrowFirst popper) (a,c) = do
+popCached (PopArrowFirst popper) (a, c) = do
   poppedB <- popCached popper a
-
   case poppedB of
     PoppedValue b -> return (PoppedValue (b, c))
     PoppedError err -> return (PoppedError err)
-
 popCached (PopArrowLeft popper) ac = do
   case ac of
     Left a -> fmap Left <$> popCached popper a
     Right c -> pure (PoppedValue (Right c))
-
 popCached (PopMaybe popper) a =
   case a of
     Nothing -> pure (PoppedValue Nothing)
     Just val -> fmap Just <$> popCached popper val
+
+explain :: Popper a b -> String
+explain = unlines . explainLines
+
+explainLines :: Popper a b -> [String]
+explainLines subject =
+  case subject of
+    PopPrim prim -> explainLinesPrim prim
+    PopId -> []
+    PopPure _ -> []
+    PopLift _ -> []
+    PopAbort _ -> []
+    PopMap _ popper -> explainLines popper
+    -- Note the argument order to PopApply in comparison to PopChain below
+    PopApply popperA popperB -> explainLines popperA ++ explainLines popperB
+    -- Note the argument order to PopApply in comparison to PopApply above
+    PopChain popperB popperA -> explainLines popperA ++ explainLines popperB
+    PopArrowFirst popper -> explainLines popper
+    PopArrowLeft popper -> explainLines popper
+    PopOnMany singlePopper _
+      -- If a `PopOnMany` is left in the tree at the time of execution, it
+      -- always represents a single pop. Other `popMany` would have removed
+      -- it from the tree and replaced it with a direct reference to the many
+      -- popper that it holds.
+     -> explainLines singlePopper
+    PopMaybe popper -> explainLines popper
+
+explainLinesPrim :: Prim a b -> [String]
+explainLinesPrim prim =
+  case prim of
+    PrimQuery explanation _ -> [explanation]
+    PrimRecordBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              ["fetch one", entity, "by one", field, explainSelectOpts opts]
+          ]
+    PrimRecordManyBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              ["fetch many", entity, "by one", field, explainSelectOpts opts]
+          ]
+    PrimRecordsBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              [ "fetch many"
+              , entity
+              , "by many"
+              , field
+              , "(1-1)"
+              , explainSelectOpts opts
+              ]
+          ]
+    PrimRecordsManyBy tableDef fieldDef opts ->
+      let entity = tableName tableDef
+          field = fieldName fieldDef
+       in [ intercalate
+              " "
+              [ "fetch many"
+              , entity
+              , "by many"
+              , field
+              , "(*-1)"
+              , explainSelectOpts opts
+              ]
+          ]
+
+explainSelectOpts :: SelectOptions -> String
+explainSelectOpts opts =
+  let clause = selectOptClause opts
+   in if any (/= ' ') clause
+        then concat ["(", clause, "("]
+        else ""

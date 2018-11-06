@@ -3,45 +3,42 @@ Module    : Database.Orville.Internal.MigrateConstraint
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-
 {-# LANGUAGE RecordWildCards #-}
+
 module Database.Orville.Internal.MigrateConstraint
-  ( createConstraint
-  , dropConstraint
-  , getConstraints
+  ( createConstraintPlan
+  , dropConstraintPlan
   ) where
 
-import            Control.Monad
-import            Data.Convertible
-import            Data.List
-import            Database.HDBC
+import Control.Monad
+import Data.List
 
-import            Database.Orville.Internal.Execute
-import            Database.Orville.Internal.Monad
-import            Database.Orville.Internal.Types
+import Database.Orville.Internal.MigrationPlan
+import Database.Orville.Internal.SchemaState
+import Database.Orville.Internal.Types
 
-createConstraint :: MonadOrville conn m => conn -> ConstraintDefinition -> m ()
-createConstraint conn (ConstraintDefinition {..}) = do
-  let ddl = intercalate " " [ "ALTER TABLE"
-                            , "\"" ++ constraintTable ++ "\""
-                            , "ADD CONSTRAINT"
-                            , "\"" ++ constraintName ++ "\""
-                            , constraintBody
-                            ]
+createConstraintPlan ::
+     ConstraintDefinition -> SchemaState -> Maybe MigrationPlan
+createConstraintPlan constraintDef schemaState = do
+  guard
+    (not $
+     schemaStateConstraintExists (constraintName constraintDef) schemaState)
+  pure $
+    migrationDDLForItem
+      (Constraint constraintDef)
+      (intercalate
+         " "
+         [ "ALTER TABLE"
+         , "\"" ++ constraintTable constraintDef ++ "\""
+         , "ADD CONSTRAINT"
+         , "\"" ++ constraintName constraintDef ++ "\""
+         , constraintBody constraintDef
+         ])
 
-  executingSql DDLQuery ddl $ void $ run conn ddl []
-
-dropConstraint :: MonadOrville conn m => conn -> String -> String -> m ()
-dropConstraint conn tableName constraintName = do
-  let ddl = "ALTER TABLE " ++ tableName ++ " DROP CONSTRAINT " ++ constraintName
-  executingSql DDLQuery ddl $ void $ run conn ddl []
-
-getConstraints :: IConnection conn => conn -> IO [String]
-getConstraints conn = do
-  query <- prepare conn "SELECT conname \
-                        \FROM pg_constraint \
-                        \JOIN pg_namespace ON pg_namespace.oid = pg_constraint.connamespace \
-                        \WHERE nspname = 'public'"
-
-  void $ execute query []
-  map (convert . head) <$> fetchAllRows' query
+dropConstraintPlan :: String -> String -> SchemaState -> Maybe MigrationPlan
+dropConstraintPlan tableName constraintName schemaState = do
+  guard (schemaStateConstraintExists constraintName schemaState)
+  pure $
+    migrationDDLForItem
+      (DropConstraint tableName constraintName)
+      ("ALTER TABLE " ++ tableName ++ " DROP CONSTRAINT " ++ constraintName)

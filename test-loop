@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+set -e
+
+# This used to use ghcid, but I was not able to get ghcid to both run the test
+# suite *and* compile the sample project to detect errors there.  stack test
+# --fast is a bit slower than ghcid, but we need to catch all the errors :(
+stack test --fast --file-watch
