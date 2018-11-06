@@ -39,16 +39,17 @@ append (MigrationPlan itemA restA) (MigrationPlan itemB restB) =
 migrationPlanItems :: MigrationPlan -> [MigrationItem]
 migrationPlanItems (MigrationPlan item rest) =
   DList.toList $ DList.cons item rest
+
 #if MIN_VERSION_base(4,11,0)
-instance Semigroup RawExpr where
+instance Semigroup MigrationPlan where
   (<>) = append
 #else
 instance Monoid MigrationPlan
--- MigrationPlan doesn't support mempty, so don't provide a Monoid instance for
--- base versions that have migrated to Semigroup.
-                                                  where
-  mempty =
-    error
-      "mempty for MigrationPlan used, but MigrationPlan cannot be empty! MigrationPlan only support Monoid prior to base 4.11.0"
-  mappend = append
+  -- MigrationPlan doesn't support mempty, so don't provide a Monoid instance for
+  -- base versions that have migrated to Semigroup.
+  where
+    mempty =
+      error
+        "mempty for MigrationPlan used, but MigrationPlan cannot be empty! MigrationPlan only support Monoid prior to base 4.11.0"
+    mappend = append
 #endif
