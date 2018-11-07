@@ -6,7 +6,12 @@ module AppManagedEntity.Schema.Virus
 
 import qualified Database.Orville as O
 
-import AppManagedEntity.Data.Virus (Virus(..), VirusId(..), VirusName(..))
+import AppManagedEntity.Data.Virus(
+    Virus(..)
+  , VirusDiscoveredAt(..)
+  , VirusId(..)
+  , VirusName(..)
+  )
 
 virusTable :: O.TableDefinition Virus Virus VirusId
 virusTable =
@@ -14,11 +19,11 @@ virusTable =
   O.TableParams
     { O.tblName = "virus"
     , O.tblPrimaryKey = virusIdField
-    , O.tblMapper
-      -- hindent ;(
-       =
-        Virus <$> O.attrField virusId virusIdField <*>
-        O.attrField virusName virusNameField
+    , O.tblMapper =
+        Virus
+        <$> O.attrField virusId virusIdField
+        <*> O.attrField virusName virusNameField
+        <*> O.attrField virusDiscoveredAt virusDiscoveredAtField
     , O.tblGetKey = virusId
     , O.tblSafeToDelete = []
     , O.tblComments = O.noComments
@@ -33,3 +38,8 @@ virusNameField :: O.FieldDefinition VirusName
 virusNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType unVirusName VirusName
+
+virusDiscoveredAtField :: O.FieldDefinition VirusDiscoveredAt
+virusDiscoveredAtField =
+  O.utcTimeField "discovered_at" `O.withConversion`
+  O.convertSqlType unVirusDiscoveredAt VirusDiscoveredAt
