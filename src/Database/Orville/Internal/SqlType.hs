@@ -358,7 +358,8 @@ utcTimeToSql = HDBC.SqlUTCTime
 utcTimeFromSql :: HDBC.SqlValue -> Maybe Time.UTCTime
 utcTimeFromSql sql =
   case sql of
-    HDBC.SqlUTCTime t -> Just t
+    HDBC.SqlUTCTime   t -> Just t
+    HDBC.SqlZonedTime t -> Just (Time.zonedTimeToUTC t)
     _ -> Nothing
 
 toBoundedInteger :: (Bounded num, Integral num) => Integer -> Maybe num
