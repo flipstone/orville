@@ -10,7 +10,9 @@ import Test.Tasty.HUnit (assertEqual, testCase)
 import AppManagedEntity.Data.Virus
   ( Virus(..)
   , VirusId(..)
+  , bpsDiscoveredAt
   , bpsVirusName
+  , brnDiscoveredAt
   , brnVirusName
   )
 import AppManagedEntity.Schema (schema, virusTable)
@@ -23,7 +25,7 @@ test_crud =
       "AppManagedEntity CRUD Test"
       [ testCase "Insert and find" $ do
           let testId = VirusId 1234
-              bpsVirus = Virus testId bpsVirusName
+              bpsVirus = Virus testId bpsVirusName bpsDiscoveredAt
           run (TestDB.reset schema)
           insertedVirus <- run (O.insertRecord virusTable bpsVirus)
           assertEqual
@@ -38,8 +40,8 @@ test_crud =
         --
       , testCase "Update" $ do
           let testId = VirusId 1234
-              bpsVirus = Virus testId bpsVirusName
-              brnVirus = Virus testId brnVirusName
+              bpsVirus = Virus testId bpsVirusName bpsDiscoveredAt
+              brnVirus = Virus testId brnVirusName brnDiscoveredAt
           run (TestDB.reset schema)
           void (run (O.insertRecord virusTable bpsVirus))
           run $ O.updateRecord virusTable testId brnVirus
@@ -56,7 +58,7 @@ test_crud =
         --
       , testCase "Delete" $ do
           let testId = VirusId 1234
-              bpsVirus = Virus testId bpsVirusName
+              bpsVirus = Virus testId bpsVirusName bpsDiscoveredAt
           run (TestDB.reset schema)
           foundDeletedVirus <-
             run $ do
