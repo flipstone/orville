@@ -8,6 +8,7 @@ import Control.Monad (void, when)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadThrow)
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Unlift as UL
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Data.Convertible (convert)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
@@ -20,6 +21,7 @@ import Test.Tasty (TestTree, withResource)
 
 import qualified Database.Orville as O
 import qualified Database.Orville.MonadBaseControl as OMBC
+import qualified Database.Orville.MonadUnliftIO ()
 import qualified Database.Orville.Raw as ORaw
 
 type TestPool = Pool Postgres.Connection
@@ -86,6 +88,14 @@ instance MonadBaseControl IO TestMonad where
   liftBaseWith f =
     TestMonad $ liftBaseWith $ \runInBase -> f (\(TestMonad m) -> runInBase m)
   restoreM stm = TestMonad (restoreM stm)
+
+-- This instance is used by `ConduitTest` because runConduit requires the underlying
+-- monad to be `MonadUnliftIO` since conduit 1.3
+instance UL.MonadUnliftIO TestMonad where
+  askUnliftIO =
+    TestMonad $ do
+      unlio <- UL.askUnliftIO
+      pure $ UL.UnliftIO (UL.unliftIO unlio . runTestMonad)
 
 instance O.MonadOrvilleControl TestMonad where
   liftWithConnection = OMBC.liftWithConnectionViaBaseControl

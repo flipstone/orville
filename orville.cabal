@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aac4e11fd334ef1bed06baf6d3200c0b50cfb974602a09751fec28951c6ea9e3
+-- hash: d7790f3e7dea3b40e1132734b194a00886028a10d6ccd3049ccf85c116a8c566
 
 name:           orville
 version:        0.8.3.0
@@ -34,6 +34,7 @@ library
       Database.Orville.Popper
       Database.Orville.PostgresSQL
       Database.Orville.Raw
+      Database.Orville.ResourceT
       Database.Orville.Select
       Database.Orville.Trigger
   other-modules:
@@ -51,6 +52,7 @@ library
       Database.Orville.Internal.FromSql
       Database.Orville.Internal.GroupBy
       Database.Orville.Internal.IndexDefinition
+      Database.Orville.Internal.MappendCompat
       Database.Orville.Internal.MigrateConstraint
       Database.Orville.Internal.MigrateIndex
       Database.Orville.Internal.MigrateSchema
@@ -81,7 +83,7 @@ library
     , HDBC-postgresql >=2.3
     , base >=4.8 && <5
     , bytestring
-    , conduit >=1.2.4 && <1.3
+    , conduit >=1.2 && <1.4
     , containers >=0.5
     , convertible >=1.1
     , dlist >=0.7
@@ -91,6 +93,7 @@ library
     , mtl >=2.2
     , profunctors >=5.2
     , resource-pool >=0.2
+    , resourcet >=1.1
     , text
     , time >=1.5
     , transformers >=0.4
@@ -115,7 +118,7 @@ executable orville-sample-exe
     , HDBC-postgresql >=2.3
     , base >=4.8 && <5
     , bytestring
-    , conduit >=1.2.4 && <1.3
+    , conduit >=1.2 && <1.4
     , containers >=0.5
     , convertible >=1.1
     , dlist >=0.7
@@ -126,6 +129,7 @@ executable orville-sample-exe
     , orville
     , profunctors >=5.2
     , resource-pool >=0.2
+    , resourcet >=1.1
     , text
     , time >=1.5
     , transformers >=0.4
@@ -141,6 +145,7 @@ test-suite spec
       AppManagedEntity.Data.Virus
       AppManagedEntity.Schema
       AppManagedEntity.Schema.Virus
+      ConduitTest
       EntityWrapper.CrudTest
       EntityWrapper.Data.Entity
       EntityWrapper.Data.Virus
@@ -169,7 +174,7 @@ test-suite spec
     , HDBC-postgresql >=2.3
     , base >=4.8 && <5
     , bytestring
-    , conduit >=1.2.4 && <1.3
+    , conduit >=1.2 && <1.4
     , containers >=0.5
     , convertible >=1.1
     , dlist >=0.7
@@ -180,6 +185,7 @@ test-suite spec
     , orville
     , profunctors >=5.2
     , resource-pool
+    , resourcet >=1.1
     , tasty
     , tasty-discover
     , tasty-hunit

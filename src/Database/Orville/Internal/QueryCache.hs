@@ -22,8 +22,10 @@ import Control.Monad.Trans.State
 import qualified Data.Map as Map
 import qualified Data.Map.Helpers as Map
 import Data.Maybe
-import Data.Monoid
+
 import Data.String (fromString)
+
+import Database.Orville.Internal.MappendCompat ((<>))
 
 import Database.Orville.Internal.Expr
 import Database.Orville.Internal.FromSql
