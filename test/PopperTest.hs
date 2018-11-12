@@ -52,6 +52,18 @@ test_popper =
                   QC.counterexample
                     ("Actual: " ++ show actual)
                     (expected == actual)
+    , TestDB.withOrvilleRun $ \run ->
+        testProperty "popMany pure doesn't cause infinite loop" $ \count -> do
+          let roots1Pooper =
+                P.popMany (pure (RootId 1) >>> P.hasOne rootTable rootIdField)
+              inputs = replicate count ()
+              expected = replicate count Nothing
+          QC.ioProperty $ do
+            actual <-
+              run $ do
+                TestDB.reset testSchema
+                P.popThrow roots1Pooper inputs
+            pure (expected == actual)
     ]
 
 -- mkTreeRecords projects a Tree into the Root, Branch and Leaf entities
