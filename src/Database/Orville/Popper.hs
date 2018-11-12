@@ -232,9 +232,15 @@ popMany (PopRecordsBy tableDef fieldDef opts) =
 
 popMany PopId = PopId
 popMany (PopAbort err) = (PopAbort err)
-popMany (PopPure a) =
-  PopPure (repeat a) -- lists here should be treated as
-                     -- ZipLists, so 'repeat' is 'pure'
+popMany (PopPure a)
+  -- Important: Even though lists are ZipLists in the context of popMany, it is
+  -- important that the popMany version of pure actual examines its input and
+  -- produces the correct number of outputs. Using `repeat` here can produce
+  -- a list of infinite results for a finite input list, which can then ultimately
+  -- create an infinite loop when zipped without non-finite lists. Instead of
+  -- using `repeat` here we use `map` to product *exactly a many as* as there are
+  -- input values.
+ = PopLift (PoppedValue . map (const a))
 
 popMany (PopLift f) = PopLift $ \inputs ->
   let poppeds = map f inputs
