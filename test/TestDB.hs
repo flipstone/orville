@@ -19,6 +19,7 @@ import System.Environment (getEnv)
 import Test.Tasty (TestTree, withResource)
 
 import qualified Database.Orville as O
+import qualified Database.Orville.MonadBaseControl as OMBC
 import qualified Database.Orville.Raw as ORaw
 
 type TestPool = Pool Postgres.Connection
@@ -71,11 +72,23 @@ getTransactionEvents ::
      IORef [O.TransactionEvent] -> TestMonad [O.TransactionEvent]
 getTransactionEvents = fmap reverse . liftIO . readIORef
 
+-- This instance is still used by `ErrorsTest` because that test uses
+-- `try` from `Control.Exception.Lifted`. Note that this is no longer
+-- a Orville library problem, but rather an incidental demonstration
+-- of the fact that a library user's Monad stack could use MonadBaseControl
+-- even though Orville is no longer dependent on.
+--
+-- This will likely change to use MonadUnliftIO shortly as the work
+-- to move away from MonadBaseControl continues.
 instance MonadBaseControl IO TestMonad where
   type StM TestMonad a = StM (O.OrvilleT Postgres.Connection IO) a
   liftBaseWith f =
     TestMonad $ liftBaseWith $ \runInBase -> f (\(TestMonad m) -> runInBase m)
   restoreM stm = TestMonad (restoreM stm)
+
+instance O.MonadOrvilleControl TestMonad where
+  liftWithConnection = OMBC.liftWithConnectionViaBaseControl
+  liftFinally = OMBC.liftFinallyViaBaseControl
 
 reset :: O.MonadOrville conn m => O.SchemaDefinition -> m ()
 reset schemaDef = do

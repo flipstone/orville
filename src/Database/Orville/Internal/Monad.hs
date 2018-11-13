@@ -3,11 +3,9 @@ Module    : Database.Orville.Internal.Monad
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Database.Orville.Internal.Monad where
@@ -17,8 +15,6 @@ import Control.Monad.Base
 import Control.Monad.Catch (MonadCatch, MonadMask(..), MonadThrow)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Control.Monad.State
-import Control.Monad.Trans.Control
 import Data.Pool
 import Database.HDBC hiding (withTransaction)
 
@@ -132,7 +128,7 @@ withConnectionEnv action = do
   case ormEnvConnectionEnv ormEnv of
     Just connected -> action connected
     Nothing ->
-      withResource (ormEnvPool ormEnv) $ \conn -> do
+      liftWithConnection (withResource (ormEnvPool ormEnv)) $ \conn -> do
         let connected = newConnectionEnv conn
         localOrvilleEnv (const $ ormEnv {ormEnvConnectionEnv = Just connected}) $
           action connected
@@ -151,17 +147,90 @@ instance (MonadError e m) => MonadError e (OrvilleT conn m) where
 instance MonadBase b m => MonadBase b (OrvilleT conn m) where
   liftBase = lift . liftBase
 
+{-|
+  'MonadOrville' defines the operations that must be available in your
+  own monad to use Orville functions that need access to the database.
+  In most cases you can include 'OrvilleT' in your Monad stack and then
+  automatically derive an instance of 'MonadOrville' where necessary.
+
+  You could also provide your own implementations of these functions
+  instead of using 'OrvilleT', if that is the easiest approach for
+  your Monad.
+ |-}
 class ( Monad m
       , MonadIO m
       , IConnection conn
-      , MonadBaseControl IO m
+      , MonadOrvilleControl m
       , MonadThrow m
       ) =>
       MonadOrville conn m
   | m -> conn
   where
   getOrvilleEnv :: m (OrvilleEnv conn)
-  localOrvilleEnv :: (OrvilleEnv conn -> OrvilleEnv conn) -> m a -> m a
+  -- ^ getOrvilleEnv fetches the Orville environment from the Monad context.
+  -- Analogous to 'ask' from the 'Reader' monad.
+  localOrvilleEnv :: (OrvilleEnv conn -> OrvilleEnv conn) -> m a -> m a -- ^ localOrvilleEnv locally modifies the Orville environment for the
+  -- scope of the provided action. This allows Orville to track with
+  -- a connection is acquired, open transactions, etc. Analogous to 'local'
+  -- from the 'Reader' monad.
+
+{-|
+   'MonadOrvilleControl' provides an interface for the kinds of IO operations
+   that Orville functions need to lift into the Monad providing the
+   'MonadOrville' instance. This typeclass allows users to provide their
+   own lifting strategies in case the Monad stack in question has special
+   needs. If you are only using 'ReaderT' and 'OrvilleT' layers in your
+   monad stack, you can probably implement this for your own Monad wrapper
+   type using the provided default functions and providing functions to
+   wrap and unwrapper your Monad layer:
+
+   @
+    instance MonadOrvilleControl MyMonad where
+      liftWithConnection = defaultLiftWithConnection wrapMyMonad unWrapMyMonad
+      liftFinally = defaultLiftFinally wrapMyMonad unWrapMyMonad
+   @
+ |-}
+class MonadOrvilleControl m where
+  liftWithConnection ::
+       (forall a. (conn -> IO a) -> IO a) -> (conn -> m b) -> m b
+  liftFinally :: (forall a b. IO a -> IO b -> IO a) -> m c -> m d -> m c
+
+instance MonadOrvilleControl IO where
+  liftWithConnection = id
+  liftFinally = id
+
+{-|
+   defaultLiftWithConnection provides a simple definition of
+   'liftWithConnection' for 'MonadOrvilleControl' instances when the Monad in
+   question is a wrapper around a type that already implements
+   'MonadOrvilleControl'
+  |-}
+defaultLiftWithConnection ::
+     MonadOrvilleControl m
+  => (forall a. m a -> n a)
+  -> (forall a. n a -> m a)
+  -> (forall a. (conn -> IO a) -> IO a)
+  -> (conn -> n b)
+  -> n b
+defaultLiftWithConnection wrapT unWrapT ioWithConn action =
+  wrapT $ liftWithConnection ioWithConn (unWrapT . action)
+
+{-|
+   defaultLiftFinally provides a simple definition of
+   'liftWithConnection' for 'MonadOrvilleControl' instances when the Monad in
+   question is a wrapper around a type that already implements
+   'MonadOrvilleControl'
+  |-}
+defaultLiftFinally ::
+     MonadOrvilleControl m
+  => (forall a. m a -> n a)
+  -> (forall a. n a -> m a)
+  -> (forall a b. IO a -> IO b -> IO a)
+  -> n c
+  -> n d
+  -> n c
+defaultLiftFinally wrapT unWrapT ioFinally action cleanup =
+  wrapT $ liftFinally ioFinally (unWrapT action) (unWrapT cleanup)
 
 startTransactionSQL :: MonadOrville conn m => m String
 startTransactionSQL = ormEnvStartTransactionSQL <$> getOrvilleEnv
@@ -169,7 +238,7 @@ startTransactionSQL = ormEnvStartTransactionSQL <$> getOrvilleEnv
 instance ( Monad m
          , MonadIO m
          , IConnection conn
-         , MonadBaseControl IO m
+         , MonadOrvilleControl m
          , MonadThrow m
          ) =>
          MonadOrville conn (OrvilleT conn m) where
@@ -181,17 +250,22 @@ instance MonadOrville conn m => MonadOrville conn (ReaderT a m) where
   localOrvilleEnv modEnv action =
     ReaderT $ \val -> localOrvilleEnv modEnv (runReaderT action val)
 
-instance MonadOrville conn m => MonadOrville conn (StateT a m) where
-  getOrvilleEnv = lift getOrvilleEnv
-  localOrvilleEnv modEnv action =
-    StateT $ \val -> localOrvilleEnv modEnv (runStateT action val)
+-- ReaderT is trivial enough that we just provide a 'MonadOrvilleControl'
+-- instance for it here rather than relying on either MonadUnliftIO or
+-- MonadBaseControl at all. This allows Monad stacks that only use 'ReaderT'
+-- and 'OrvilleT' over IO to be built without needing to know anything more
+-- about lifting IO operations beyond the types in this module.
+instance (Monad m, MonadOrvilleControl m) =>
+         MonadOrvilleControl (ReaderT a m) where
+  liftWithConnection ioWithConn action = do
+    env <- ask
+    lift $ liftWithConnection ioWithConn (flip runReaderT env . action)
+  liftFinally ioFinally action cleanup = do
+    env <- ask
+    lift $
+      liftFinally ioFinally (runReaderT action env) (runReaderT cleanup env)
 
-instance MonadTransControl (OrvilleT conn) where
-  type StT (OrvilleT conn) a = StT (ReaderT (OrvilleEnv conn)) a
-  liftWith = defaultLiftWith OrvilleT unOrvilleT
-  restoreT = defaultRestoreT OrvilleT
-
-instance MonadBaseControl b m => MonadBaseControl b (OrvilleT conn m) where
-  type StM (OrvilleT conn m) a = ComposeSt (OrvilleT conn) m a
-  liftBaseWith = defaultLiftBaseWith
-  restoreM = defaultRestoreM
+instance (Monad m, MonadOrvilleControl m) =>
+         MonadOrvilleControl (OrvilleT conn m) where
+  liftWithConnection = defaultLiftWithConnection OrvilleT unOrvilleT
+  liftFinally = defaultLiftFinally OrvilleT unOrvilleT

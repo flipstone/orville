@@ -5,10 +5,8 @@ module TriggerTest where
 
 import Control.Exception (Exception)
 import Control.Monad (void)
-import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Control.Monad.Trans.Control (MonadBaseControl(..))
 import qualified Data.Text as Text
 import Data.Typeable (Typeable)
 import qualified Database.HDBC.PostgreSQL as Postgres
@@ -126,7 +124,6 @@ newtype TriggerTestMonad a = TriggerTestMonad
              , Applicative
              , Monad
              , MonadIO
-             , MonadBase IO
              , MonadThrow
              , MonadCatch
              , O.MonadOrville Postgres.Connection
@@ -149,12 +146,10 @@ assertTriggersCommitted description expected = do
   actual <- OT.committedTriggers <$> TriggerTestMonad OT.askTriggers
   liftIO $ assertEqual description expected actual
 
-instance MonadBaseControl IO TriggerTestMonad where
-  type StM TriggerTestMonad a = StM TestDB.TestMonad a
-  liftBaseWith f =
-    TriggerTestMonad $
-    liftBaseWith $ \runInBase -> f (\(TriggerTestMonad m) -> runInBase m)
-  restoreM stm = TriggerTestMonad (restoreM stm)
+instance O.MonadOrvilleControl TriggerTestMonad where
+  liftWithConnection =
+    O.defaultLiftWithConnection TriggerTestMonad unTriggerTest
+  liftFinally = O.defaultLiftFinally TriggerTestMonad unTriggerTest
 
 data AbortTransaction =
   AbortTransaction

@@ -55,6 +55,7 @@ library:
     - Database.Orville.Conduit
     - Database.Orville.Core
     - Database.Orville.Expr
+    - Database.Orville.MonadBaseControl
     - Database.Orville.Popper
     - Database.Orville.PostgresSQL
     - Database.Orville.Raw

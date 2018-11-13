@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3de2b6dba09a60fdd3600acf5c58f7e486547add5240a828e74b0a55b4d661d6
+-- hash: 358f1434af15d0e40e0659a31f7c6ba29711accdfa5ce40c1892107f615c60e3
 
 name:           orville
 version:        0.8.3.0
@@ -28,6 +28,7 @@ library
       Database.Orville.Conduit
       Database.Orville.Core
       Database.Orville.Expr
+      Database.Orville.MonadBaseControl
       Database.Orville.Popper
       Database.Orville.PostgresSQL
       Database.Orville.Raw

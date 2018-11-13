@@ -27,12 +27,6 @@ import Control.Monad.Except (MonadError(..))
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ReaderT, ask, mapReaderT, runReaderT)
 import Control.Monad.Trans (MonadTrans(lift))
-import Control.Monad.Trans.Control
-  ( MonadBaseControl(..)
-  , MonadTransControl(..)
-  , defaultLiftBaseWith
-  , defaultRestoreM
-  )
 import qualified Data.DList as DList
 import Data.IORef
   ( IORef
@@ -178,28 +172,10 @@ instance (MonadError e m) =>
   catchError action handler =
     OrvilleTriggerT ((unTriggerT action) `catchError` (unTriggerT . handler))
 
---
--- Because OrvilleTriggerT is a stack of two transformers, the default MonadTransControl functions
--- don't work here, so we have to implement them manually.
---
-instance MonadTransControl (OrvilleTriggerT trigger conn) where
-  type StT (OrvilleTriggerT trigger conn) a = StT (ReaderT (RecordedTriggersRef trigger)) (StT (O.OrvilleT conn) a)
-  liftWith f =
-    OrvilleTriggerT $
-    liftWith $ \runReader ->
-      liftWith $ \runOrville -> f (runOrville . runReader . unTriggerT)
-  restoreT = OrvilleTriggerT . restoreT . restoreT
-
-instance MonadBaseControl b m =>
-         MonadBaseControl b (OrvilleTriggerT trigger conn m) where
-  type StM (OrvilleTriggerT trigger conn m) a = StM (ReaderT (RecordedTriggersRef trigger) m) a
-  liftBaseWith = defaultLiftBaseWith
-  restoreM = defaultRestoreM
-
 instance ( Monad m
          , MonadIO m
          , HDBC.IConnection conn
-         , MonadBaseControl IO m
+         , O.MonadOrvilleControl m
          , MonadThrow m
          ) =>
          O.MonadOrville conn (OrvilleTriggerT trigger conn m) where
@@ -213,6 +189,11 @@ instance MonadIO m =>
     OrvilleTriggerT $ do
       recordedTriggers <- ask
       liftIO $ recordTriggers recordedTriggers triggers
+
+instance (Monad m, O.MonadOrvilleControl m) =>
+         O.MonadOrvilleControl (OrvilleTriggerT trigger conn m) where
+  liftWithConnection = O.defaultLiftWithConnection OrvilleTriggerT unTriggerT
+  liftFinally = O.defaultLiftFinally OrvilleTriggerT unTriggerT
 
 {-
    `askTriggers` retrieves triggers that have been recorded thus far. If you
@@ -252,7 +233,7 @@ clearTriggers =
    `askTriggers` to retrieve the triggers inside the exception handler.
  -}
 runOrvilleTriggerT ::
-     (MonadIO m, MonadBaseControl IO m)
+     (MonadIO m)
   => OrvilleTriggerT trigger conn m a
   -> Pool conn
   -> m (a, [trigger])

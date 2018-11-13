@@ -13,7 +13,7 @@ module Database.Orville.Raw
   , withTransaction
   ) where
 
-import Control.Exception.Lifted (finally)
+import Control.Exception (finally)
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.IORef
@@ -74,4 +74,4 @@ withTransaction action =
                 when (not finished) $ do
                   rollback conn
                   txnCallback TransactionRollback
-        doAction `finally` rollbackUncommitted
+        liftFinally finally doAction rollbackUncommitted

@@ -48,6 +48,9 @@ module Database.Orville.Core
   , MonadOrville(..)
   , runOrville
   , mapOrvilleT
+  , MonadOrvilleControl(..)
+  , defaultLiftWithConnection
+  , defaultLiftFinally
   , QueryType(..)
   , withTransaction
   , ColumnFlag(..)
