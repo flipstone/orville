@@ -39,7 +39,9 @@ import Control.Monad.Trans (lift)
 import qualified Control.Monad.Trans.Control as MTC
 
 import qualified Database.Orville as O
-import qualified Database.Orville.Internal.Monad as Internal
+import qualified Database.Orville.Internal.Monad as InternalMonad
+import qualified Database.Orville.Internal.Trigger as InternalTrigger
+import qualified Database.Orville.Trigger as OT
 
 {-|
    liftWithConnectionViaBaseControl can be use as the implementation of
@@ -100,8 +102,9 @@ instance (MTC.MonadBaseControl IO m, O.MonadOrville conn m) =>
   |-}
 instance MTC.MonadTransControl (O.OrvilleT conn) where
   type StT (O.OrvilleT conn) a = MTC.StT (ReaderT (O.OrvilleEnv conn)) a
-  liftWith = MTC.defaultLiftWith Internal.OrvilleT Internal.unOrvilleT
-  restoreT = MTC.defaultRestoreT Internal.OrvilleT
+  liftWith =
+    MTC.defaultLiftWith InternalMonad.OrvilleT InternalMonad.unOrvilleT
+  restoreT = MTC.defaultRestoreT InternalMonad.OrvilleT
 
 {-|
    Because we recommend using 'MonadUnliftIO' rather than 'MonadBaseControl',
@@ -112,5 +115,20 @@ instance MTC.MonadTransControl (O.OrvilleT conn) where
 instance MTC.MonadBaseControl b m =>
          MTC.MonadBaseControl b (O.OrvilleT conn m) where
   type StM (O.OrvilleT conn m) a = MTC.ComposeSt (O.OrvilleT conn) m a
+  liftBaseWith = MTC.defaultLiftBaseWith
+  restoreM = MTC.defaultRestoreM
+
+instance MTC.MonadTransControl (OT.OrvilleTriggerT trigger conn) where
+  type StT (OT.OrvilleTriggerT trigger conn) a = MTC.StT (ReaderT (InternalTrigger.RecordedTriggersRef trigger)) (MTC.StT (O.OrvilleT conn) a)
+  liftWith f =
+    InternalTrigger.OrvilleTriggerT $
+    MTC.liftWith $ \runReader ->
+      MTC.liftWith $ \runOrville ->
+        f (runOrville . runReader . InternalTrigger.unTriggerT)
+  restoreT = InternalTrigger.OrvilleTriggerT . MTC.restoreT . MTC.restoreT
+
+instance MTC.MonadBaseControl b m =>
+         MTC.MonadBaseControl b (OT.OrvilleTriggerT trigger conn m) where
+  type StM (OT.OrvilleTriggerT trigger conn m) a = MTC.StM (ReaderT (InternalTrigger.RecordedTriggersRef trigger) m) a
   liftBaseWith = MTC.defaultLiftBaseWith
   restoreM = MTC.defaultRestoreM

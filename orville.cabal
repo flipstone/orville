@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 358f1434af15d0e40e0659a31f7c6ba29711accdfa5ce40c1892107f615c60e3
+-- hash: c5fd7779b4d320abcf36b279057892f7585c711e87e5008c3edf3c09d21eafd7
 
 name:           orville
 version:        0.8.3.0
@@ -66,6 +66,7 @@ library
       Database.Orville.Internal.Sql
       Database.Orville.Internal.SqlType
       Database.Orville.Internal.TableDefinition
+      Database.Orville.Internal.Trigger
       Database.Orville.Internal.Types
       Database.Orville.Internal.Where
       Paths_orville
