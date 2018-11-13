@@ -95,7 +95,7 @@ instance (MTC.MonadBaseControl IO m, O.MonadOrville conn m) =>
 {-|
    Because we recommend using 'MonadUnliftIO' rather than 'MonadTransControl',
    we do not provide 'MonadTransControl' instance for 'OrvilleT' by default
-   along wit the definition. If you do need to use 'MonadTransControl',
+   along with the definition. If you do need to use 'MonadTransControl',
    however, this is the canonical instance for 'OrvilleT'.
   |-}
 instance MTC.MonadTransControl (O.OrvilleT conn) where
@@ -106,7 +106,7 @@ instance MTC.MonadTransControl (O.OrvilleT conn) where
 {-|
    Because we recommend using 'MonadUnliftIO' rather than 'MonadBaseControl',
    we do not provide 'MonadBaseControl' instance for 'OrvilleT' by default
-   along wit the definition. If you do need to use 'MonadBaseControl',
+   along with the definition. If you do need to use 'MonadBaseControl',
    however, this is the canonical instance for 'OrvilleT'.
   |-}
 instance MTC.MonadBaseControl b m =>
