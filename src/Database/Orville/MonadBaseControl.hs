@@ -26,8 +26,9 @@
    @
 
    This module also provides a 'MonadOrvilleControl' for 'StateT' as well as
-   'MonadBaseControl' and 'MonadTransControl' instances for 'OrvilleT'.
- |-}
+   'MonadBaseControl' and 'MonadTransControl' instances for 'OrvilleT' and
+   'OrvilleTriggerT'.
+  |-}
 module Database.Orville.MonadBaseControl
   ( liftWithConnectionViaBaseControl
   , liftFinallyViaBaseControl

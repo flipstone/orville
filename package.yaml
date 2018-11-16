@@ -36,6 +36,7 @@ dependencies:
   - time >=1.5
   - transformers >=0.4
   - transformers-base >=0.4
+  - unliftio-core >= 0.1
 
 executables:
   orville-sample-exe:
@@ -56,6 +57,7 @@ library:
     - Database.Orville.Core
     - Database.Orville.Expr
     - Database.Orville.MonadBaseControl
+    - Database.Orville.MonadUnliftIO
     - Database.Orville.Popper
     - Database.Orville.PostgresSQL
     - Database.Orville.Raw

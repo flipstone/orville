@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c5fd7779b4d320abcf36b279057892f7585c711e87e5008c3edf3c09d21eafd7
+-- hash: 62042f25d9401cb71f84fe356b1e1a883494786af00ac6c0faae07323f16a9e4
 
 name:           orville
 version:        0.8.3.0
@@ -29,6 +29,7 @@ library
       Database.Orville.Core
       Database.Orville.Expr
       Database.Orville.MonadBaseControl
+      Database.Orville.MonadUnliftIO
       Database.Orville.Popper
       Database.Orville.PostgresSQL
       Database.Orville.Raw
@@ -93,6 +94,7 @@ library
     , time >=1.5
     , transformers >=0.4
     , transformers-base >=0.4
+    , unliftio-core >=0.1
   default-language: Haskell2010
 
 executable orville-sample-exe
@@ -127,6 +129,7 @@ executable orville-sample-exe
     , time >=1.5
     , transformers >=0.4
     , transformers-base >=0.4
+    , unliftio-core >=0.1
   default-language: Haskell2010
 
 test-suite spec
@@ -152,6 +155,7 @@ test-suite spec
       TestDB
       TransactionTest
       TriggerTest
+      UnliftIOTest
       WhereConditionTest
       Paths_orville
   hs-source-dirs:
@@ -182,4 +186,5 @@ test-suite spec
     , time >=1.5
     , transformers >=0.4
     , transformers-base >=0.4
+    , unliftio-core >=0.1
   default-language: Haskell2010
