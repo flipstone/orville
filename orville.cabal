@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 62042f25d9401cb71f84fe356b1e1a883494786af00ac6c0faae07323f16a9e4
+-- hash: 2887e13eb28b2250509d3b06828be61801f3a68888aee11e5967d10545ecd865
 
 name:           orville
 version:        0.8.3.0
@@ -147,6 +147,7 @@ test-suite spec
       EntityWrapper.Schema.Virus
       ErrorsTest
       MigrateTest
+      MonadBaseControlTest
       ParameterizedEntity.CrudTest
       ParameterizedEntity.Data.Virus
       ParameterizedEntity.Schema
