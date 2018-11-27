@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2887e13eb28b2250509d3b06828be61801f3a68888aee11e5967d10545ecd865
+-- hash: 6dd8d1596748e1ce9f0ccf7693158ae5b3b721be90ba0901b9fa3dd54e638744
 
 name:           orville
 version:        0.8.3.0
@@ -88,7 +88,7 @@ library
     , lifted-base >=0.2
     , monad-control >=1.0
     , mtl >=2.2
-    , profunctors >=5.2.1
+    , profunctors >=5.2
     , resource-pool >=0.2
     , text
     , time >=1.5
@@ -123,7 +123,7 @@ executable orville-sample-exe
     , monad-control >=1.0
     , mtl >=2.2
     , orville
-    , profunctors >=5.2.1
+    , profunctors >=5.2
     , resource-pool >=0.2
     , text
     , time >=1.5
@@ -177,7 +177,7 @@ test-suite spec
     , monad-control >=1.0
     , mtl >=2.2
     , orville
-    , profunctors >=5.2.1
+    , profunctors >=5.2
     , resource-pool
     , tasty
     , tasty-discover

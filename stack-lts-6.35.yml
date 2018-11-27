@@ -1,0 +1,12 @@
+resolver: lts-6.35
+packages:
+  - .
+extra-deps:
+  - HDBC-postgresql-2.3.2.5
+  - unliftio-core-0.1.2.0
+
+  # the following dependencies are for
+  # the test suite
+  - tasty-discover-4.2.1
+  - Glob-0.9.3
+
