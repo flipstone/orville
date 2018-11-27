@@ -45,7 +45,8 @@ module Database.Orville.Core
   , OrvilleT
   , unOrvilleT
   , SqlValue
-  , MonadOrville(..)
+  , HasOrvilleContext(..)
+  , MonadOrville
   , runOrville
   , mapOrvilleT
   , MonadOrvilleControl(..)

@@ -28,15 +28,14 @@
    This module also provides a 'MonadOrvilleControl' for 'StateT' as well as
    'MonadBaseControl' and 'MonadTransControl' instances for 'OrvilleT' and
    'OrvilleTriggerT'.
-  |-}
+  -}
 module Database.Orville.MonadBaseControl
   ( liftWithConnectionViaBaseControl
   , liftFinallyViaBaseControl
   ) where
 
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.State (StateT(StateT, runStateT))
-import Control.Monad.Trans (lift)
+import Control.Monad.State (StateT)
 import qualified Control.Monad.Trans.Control as MTC
 
 import qualified Database.Orville as O
@@ -48,7 +47,7 @@ import qualified Database.Orville.Trigger as OT
    liftWithConnectionViaBaseControl can be use as the implementation of
    'liftWithConnection' for 'MonadOrvilleControl' when the 'Monad'
    implements 'MonadBaseControl'.
- |-}
+ -}
 liftWithConnectionViaBaseControl ::
      MTC.MonadBaseControl IO m
   => (forall b. (conn -> IO b) -> IO b)
@@ -61,7 +60,7 @@ liftWithConnectionViaBaseControl ioWithConn action =
    liftFinallyViaBaseControl can be use as the implementation of
    'liftFinally for 'MonadOrvilleControl' when the 'Monad'
    implements 'MonadBaseControl'.
- |-}
+ -}
 liftFinallyViaBaseControl ::
      MTC.MonadBaseControl IO m
   => (forall c d. IO c -> IO d -> IO c)
@@ -78,29 +77,17 @@ liftFinallyViaBaseControl ioFinally action cleanup =
    definition. We do not recommend using stateful Monad transformer layers in
    Monad stacks based on IO. For anyone that must, this is the canonical
    instance for 'StateT'
-  |-}
+  -}
 instance MTC.MonadBaseControl IO m => O.MonadOrvilleControl (StateT a m) where
   liftWithConnection = liftWithConnectionViaBaseControl
   liftFinally = liftFinallyViaBaseControl
-
-{-|
-   Because 'MonadOrvilleControl' is a superclass of 'MonadOrville', the
-   'MonadOrville' instace of 'StateT' is provided here instead with the
-   definition of 'MonadOrville'. See the commentary on the other instance
-   for an admonition to not use it :)
-  |-}
-instance (MTC.MonadBaseControl IO m, O.MonadOrville conn m) =>
-         O.MonadOrville conn (StateT a m) where
-  getOrvilleEnv = lift O.getOrvilleEnv
-  localOrvilleEnv modEnv action =
-    StateT $ \val -> O.localOrvilleEnv modEnv (runStateT action val)
 
 {-|
    Because we recommend using 'MonadUnliftIO' rather than 'MonadTransControl',
    we do not provide 'MonadTransControl' instance for 'OrvilleT' by default
    along with the definition. If you do need to use 'MonadTransControl',
    however, this is the canonical instance for 'OrvilleT'.
-  |-}
+  -}
 instance MTC.MonadTransControl (O.OrvilleT conn) where
   type StT (O.OrvilleT conn) a = MTC.StT (ReaderT (O.OrvilleEnv conn)) a
   liftWith =
@@ -112,7 +99,7 @@ instance MTC.MonadTransControl (O.OrvilleT conn) where
    we do not provide 'MonadBaseControl' instance for 'OrvilleT' by default
    along with the definition. If you do need to use 'MonadBaseControl',
    however, this is the canonical instance for 'OrvilleT'.
-  |-}
+  -}
 instance MTC.MonadBaseControl b m =>
          MTC.MonadBaseControl b (O.OrvilleT conn m) where
   type StM (O.OrvilleT conn m) a = MTC.ComposeSt (O.OrvilleT conn) m a

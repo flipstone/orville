@@ -38,6 +38,7 @@ newtype TestMonad a = TestMonad
              , MonadBase IO
              , MonadThrow
              , MonadCatch
+             , O.HasOrvilleContext Postgres.Connection
              , O.MonadOrville Postgres.Connection
              )
 

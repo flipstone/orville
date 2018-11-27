@@ -157,13 +157,8 @@ instance (MonadError e m) =>
   catchError action handler =
     OrvilleTriggerT ((unTriggerT action) `catchError` (unTriggerT . handler))
 
-instance ( Monad m
-         , MonadIO m
-         , HDBC.IConnection conn
-         , O.MonadOrvilleControl m
-         , MonadThrow m
-         ) =>
-         O.MonadOrville conn (OrvilleTriggerT trigger conn m) where
+instance (Monad m, HDBC.IConnection conn) =>
+         O.HasOrvilleContext conn (OrvilleTriggerT trigger conn m) where
   getOrvilleEnv = OrvilleTriggerT $ lift O.getOrvilleEnv
   localOrvilleEnv f =
     OrvilleTriggerT . mapReaderT (O.localOrvilleEnv f) . unTriggerT
@@ -179,6 +174,14 @@ instance (Monad m, O.MonadOrvilleControl m) =>
          O.MonadOrvilleControl (OrvilleTriggerT trigger conn m) where
   liftWithConnection = O.defaultLiftWithConnection OrvilleTriggerT unTriggerT
   liftFinally = O.defaultLiftFinally OrvilleTriggerT unTriggerT
+
+instance ( Monad m
+         , MonadThrow m
+         , MonadIO m
+         , HDBC.IConnection conn
+         , O.MonadOrvilleControl m
+         ) =>
+         O.MonadOrville conn (OrvilleTriggerT trigger conn m)
 
 {-
    `askTriggers` retrieves triggers that have been recorded thus far. If you

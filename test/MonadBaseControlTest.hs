@@ -53,9 +53,17 @@ newtype EndUserMonad a = EndUserMonad
              , Monad
              , MIO.MonadIO
              , MB.MonadBase IO
-             , O.MonadOrville Postgres.Connection
+             , O.HasOrvilleContext Postgres.Connection
              , MonadThrow
              )
+
+{-|
+   This cannot be derived because 'ThirdPartyMonad' does not implement
+   'MonadOrvilleControl'. Declaring an empty instance is trivial, however, and
+   avoids having to provide an orphan instance of 'MonadOrvilleControl' for
+   'ThirdPartyMonad'.
+  -}
+instance O.MonadOrville Postgres.Connection EndUserMonad
 
 {-|
    If the user is using 'MonadBaseControl', then it would be up to them to
@@ -78,17 +86,6 @@ instance MTC.MonadBaseControl IO EndUserMonad where
    they are using 'MonadBaseControl' as their lifting strategy.
   -}
 instance O.MonadOrvilleControl EndUserMonad where
-  liftWithConnection = OMBC.liftWithConnectionViaBaseControl
-  liftFinally = OMBC.liftFinallyViaBaseControl
-
-{-|
-   The organization of the Orville typeclasses currently requires this orphan
-   instance to be provided by the user for third-party monad's they are using.
-   Although it is trivial and relatively innocent, we would prefer to avoid
-   requiring orphan instances when using Orville or even introducing new users
-   to the concept.
-  -}
-instance O.MonadOrvilleControl ThirdPartyMonad where
   liftWithConnection = OMBC.liftWithConnectionViaBaseControl
   liftFinally = OMBC.liftFinallyViaBaseControl
 

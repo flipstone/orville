@@ -126,6 +126,7 @@ newtype TriggerTestMonad a = TriggerTestMonad
              , MonadIO
              , MonadThrow
              , MonadCatch
+             , O.HasOrvilleContext Postgres.Connection
              , O.MonadOrville Postgres.Connection
              , OT.MonadTrigger TestTrigger
              )

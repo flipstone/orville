@@ -39,9 +39,17 @@ newtype EndUserMonad a = EndUserMonad
              , Applicative
              , Monad
              , UL.MonadIO
-             , O.MonadOrville Postgres.Connection
+             , O.HasOrvilleContext Postgres.Connection
              , MonadThrow
              )
+
+{-|
+   This cannot be derived because 'ThirdPartyMonad' does not implement
+   'MonadOrvilleControl'. Declaring an empty instance is trivial, however, and
+   avoids having to provide an orphan instance of 'MonadOrvilleControl' for
+   'ThirdPartyMonad'.
+  -}
+instance O.MonadOrville Postgres.Connection EndUserMonad
 
 {-|
    If the user is using 'MonadUnliftIO', then it would be up to them to provide
@@ -62,17 +70,6 @@ instance UL.MonadUnliftIO EndUserMonad where
    quick start tutorial.
   -}
 instance O.MonadOrvilleControl EndUserMonad where
-  liftWithConnection = OULIO.liftWithConnectionViaUnliftIO
-  liftFinally = OULIO.liftFinallyViaUnliftIO
-
-{-|
-   The organization of the Orville typeclasses currently requires this orphan
-   instance to be provided by the user for third-party monad's they are using.
-   Although it is trivial and relatively innocent, we would prefer to avoid
-   requiring orphan instances when using Orville or even introducing new users
-   to the concept.
-  -}
-instance O.MonadOrvilleControl ThirdPartyMonad where
   liftWithConnection = OULIO.liftWithConnectionViaUnliftIO
   liftFinally = OULIO.liftFinallyViaUnliftIO
 
