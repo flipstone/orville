@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2887e13eb28b2250509d3b06828be61801f3a68888aee11e5967d10545ecd865
+-- hash: aac4e11fd334ef1bed06baf6d3200c0b50cfb974602a09751fec28951c6ea9e3
 
 name:           orville
 version:        0.8.3.0
@@ -13,6 +13,7 @@ author:         Flipstone Technology Partners
 maintainer:     development@flipstone.com
 license:        MIT
 license-file:   LICENSE
+tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
 build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:
@@ -88,7 +89,7 @@ library
     , lifted-base >=0.2
     , monad-control >=1.0
     , mtl >=2.2
-    , profunctors >=5.2.1
+    , profunctors >=5.2
     , resource-pool >=0.2
     , text
     , time >=1.5
@@ -123,7 +124,7 @@ executable orville-sample-exe
     , monad-control >=1.0
     , mtl >=2.2
     , orville
-    , profunctors >=5.2.1
+    , profunctors >=5.2
     , resource-pool >=0.2
     , text
     , time >=1.5
@@ -177,7 +178,7 @@ test-suite spec
     , monad-control >=1.0
     , mtl >=2.2
     , orville
-    , profunctors >=5.2.1
+    , profunctors >=5.2
     , resource-pool
     , tasty
     , tasty-discover

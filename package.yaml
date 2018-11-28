@@ -7,6 +7,7 @@ author: Flipstone Technology Partners
 maintainer: development@flipstone.com
 license: MIT
 git: git@github.com:flipstone/orville.git
+tested-with: GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
 extra-source-files:
   - README.md
 default-extensions:
@@ -30,7 +31,7 @@ dependencies:
   - HDBC >=2.4
   - HDBC-postgresql >=2.3
   - mtl >=2.2
-  - profunctors >= 5.2.1
+  - profunctors >= 5.2
   - resource-pool >=0.2
   - text
   - time >=1.5
