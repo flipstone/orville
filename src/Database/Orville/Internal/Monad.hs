@@ -187,10 +187,10 @@ class IConnection conn =>
       liftFinally = defaultLiftFinally wrapMyMonad unWrapMyMonad
    @
 
-   If you are using transformers in your monad stack other beyond 'ReaderT',
-   they probably don't provide 'MonadOrvilleControl' instances (e.g. third
-   party libraries). In this case, see 'Database.Orville.MonadUnliftIO' for
-   more help. If you're still stuck (because your library doesn't support
+   If you are using transformers in your monad stack beyond 'ReaderT', they
+   probably don't provide 'MonadOrvilleControl' instances (e.g. third party
+   libraries). In this case, see 'Database.Orville.MonadUnliftIO' for more
+   help. If you're still stuck (because your library doesn't support
    'MonadTransControl'), try 'Database.Orville.MonadBaseControl' instead. If
    you're *still* stuck after that, please file an issue on Github at
    https://github.com/flipstone/orville so we can can help out!
