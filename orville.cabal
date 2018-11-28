@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6dd8d1596748e1ce9f0ccf7693158ae5b3b721be90ba0901b9fa3dd54e638744
+-- hash: aac4e11fd334ef1bed06baf6d3200c0b50cfb974602a09751fec28951c6ea9e3
 
 name:           orville
 version:        0.8.3.0
@@ -13,6 +13,7 @@ author:         Flipstone Technology Partners
 maintainer:     development@flipstone.com
 license:        MIT
 license-file:   LICENSE
+tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
 build-type:     Simple
 cabal-version:  >= 1.10
 extra-source-files:
