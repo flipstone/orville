@@ -137,7 +137,6 @@ matrix:
 
   allow_failures:
   - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
-  - env: BUILD=stack ARGS="--resolver lts-12"
   - env: BUILD=stack ARGS="--stack-yaml stack-lts-10.10.yml --resolver nightly"
   - os: osx
 
