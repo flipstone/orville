@@ -7,6 +7,5 @@ extra-deps:
 
   # the following dependencies are for
   # the test suite
-  - tasty-discover-4.2.1
-  - Glob-0.9.3
+  - tasty-discover-2.0.3
 
