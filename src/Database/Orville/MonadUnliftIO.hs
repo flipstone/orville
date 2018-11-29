@@ -1,19 +1,23 @@
+{-|
+Module    : Database.Orville.Internal.Monad
+Copyright : Flipstone Technology Partners 2016-2018
+License   : MIT
+
+'Database.Orville.MonadUnliftIO' provides functions and instances for using
+'MonadOrville' and 'OrvilleT' for Monad transformer stacks that are using
+'MonadUnliftIO'.  The most common way to do this is simply to add the
+following 'MonadOrvilleControl' instance:
+
+@
+ instance MonadOrvilleControl MyMonad where
+   liftWithConnection = liftWithConnectionViaUnliftIO
+   liftFinally = liftFinallyViaUnliftIO
+@
+
+This module also provides a 'MonadUnliftIO' instance for 'OrvilleT' and 'OrvilleTrigger'.
+|-}
 {-# LANGUAGE RankNTypes #-}
 
-{-|
-   'Database.Orville.MonadUnliftIO provides functions and instances for using
-   'MonadOrville' and 'OrvilleT' for Monad transformer stacks that are using
-   'MonadUnliftIO'.  The most common way to do this is simply to add the
-   following 'MonadOrvilleControl' instance:
-
-   @
-    instance MonadOrvilleControl MyMonad where
-      liftWithConnection = liftWithConnectionViaUnliftIO
-      liftFinally = liftFinallyViaUnliftIO
-   @
-
-   This module also provides a 'MonadUnliftIO' instance for 'OrvilleT' and 'OrvilleTrigger'.
- |-}
 module Database.Orville.MonadUnliftIO
   ( liftWithConnectionViaUnliftIO
   , liftFinallyViaUnliftIO

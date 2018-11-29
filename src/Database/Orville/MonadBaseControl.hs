@@ -1,34 +1,38 @@
+{-|
+Module    : Database.Orville.Internal.Monad
+Copyright : Flipstone Technology Partners 2016-2018
+License   : MIT
+
+'Database.Orville.MonadBaseControl' provides functions and instances for
+using 'MonadOrville' and 'OrvilleT' for situations where you need to use
+'MonadBaseControl'. If you do not know if you need 'MonadBaseControl', then
+you probably don't need to use this module. If you are thinking about
+using 'MonadBaseControl' instead of 'MonadUnliftIO', we recommend
+reading Michael Snoyman's excellent "A Tale of Two Brackets"
+(https://www.fpcomplete.com/blog/2017/06/tale-of-two-brackets) if you
+have not already done so.
+
+If you're still here after reading above, this module provides
+the functions you need to implement 'MonadOrvilleControl' for your
+Monad stack using its 'MonadBaseControl' instance. The most common way
+to do this is simply to add the following 'MonadOrvilleControl' instance:
+
+@
+ instance MonadOrvilleControl MyMonad where
+   liftWithConnection = liftWithConnectionViaBaseControl
+   liftFinally = liftFinallyViaBaseControl
+@
+
+This module also provides a 'MonadOrvilleControl' for 'StateT' as well as
+'MonadBaseControl' and 'MonadTransControl' instances for 'OrvilleT' and
+'OrvilleTriggerT'.
+-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{-|
-   'Database.Orville.MonadBaseControl' provides functions and instances for
-   using 'MonadOrville' and 'OrvilleT' for situations where you need to use
-   'MonadBaseControl'. If you do not know if you need 'MonadBaseControl', then
-   you probably don't need to use this module. If you are thinking about
-   using 'MonadBaseControl' instead of 'MonadUnliftIO', we recommend
-   reading Michael Snoyman's excellent "A Tale of Two Brackets"
-   (https://www.fpcomplete.com/blog/2017/06/tale-of-two-brackets) if you
-   have not already done so.
-
-   If you're still here after reading above, this module provides
-   the functions you need to implement 'MonadOrvilleControl' for your
-   Monad stack using its 'MonadBaseControl' instance. The most common way
-   to do this is simply to add the following 'MonadOrvilleControl' instance:
-
-   @
-    instance MonadOrvilleControl MyMonad where
-      liftWithConnection = liftWithConnectionViaBaseControl
-      liftFinally = liftFinallyViaBaseControl
-   @
-
-   This module also provides a 'MonadOrvilleControl' for 'StateT' as well as
-   'MonadBaseControl' and 'MonadTransControl' instances for 'OrvilleT' and
-   'OrvilleTriggerT'.
-  -}
 module Database.Orville.MonadBaseControl
   ( liftWithConnectionViaBaseControl
   , liftFinallyViaBaseControl
