@@ -3,6 +3,7 @@ dist
 cabal.sandbox.config
 .DS_Store
 .stack-work/
+test-all-logs
 
 # Ignore TAGS file produced by emacs and vim.
 /TAGS
