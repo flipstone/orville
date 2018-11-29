@@ -16,9 +16,10 @@ import Control.Monad
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Data.Int
-import Data.Monoid
 import Data.String
 import Database.HDBC hiding (withTransaction)
+
+import Database.Orville.Internal.MappendCompat ((<>))
 
 import Database.Orville.Internal.Execute
 import Database.Orville.Internal.Expr

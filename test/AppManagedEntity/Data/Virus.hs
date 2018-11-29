@@ -8,12 +8,13 @@ module AppManagedEntity.Data.Virus
   , brnDiscoveredAt
   , brnVirusName
   , bpsVirus
+  , brnVirus
   ) where
 
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Data.Time as Time
 import qualified Data.Text as Text
+import qualified Data.Time as Time
 
 data Virus = Virus
   { virusId :: VirusId
@@ -50,7 +51,15 @@ brnDiscoveredAt =
 bpsVirus :: Virus
 bpsVirus =
   Virus
-  { virusId = VirusId 1
-  , virusName = bpsVirusName
-  , virusDiscoveredAt = bpsDiscoveredAt
-  }
+    { virusId = VirusId 1
+    , virusName = bpsVirusName
+    , virusDiscoveredAt = bpsDiscoveredAt
+    }
+
+brnVirus :: Virus
+brnVirus =
+  Virus
+    { virusId = VirusId 2
+    , virusName = brnVirusName
+    , virusDiscoveredAt = brnDiscoveredAt
+    }

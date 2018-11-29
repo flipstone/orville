@@ -3,11 +3,12 @@ Module    : Database.Orville.Internal.QueryKey
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-{-#LANGUAGE CPP#-}
+{-# LANGUAGE CPP #-}
 
 module Database.Orville.Internal.QueryKey where
 
-import Data.Monoid
+import Database.Orville.Internal.MappendCompat ((<>))
+
 import Data.Time.LocalTime
 import Database.HDBC
 
@@ -20,12 +21,10 @@ data QueryKey
   | QKList [QueryKey]
   | QKEmpty
   deriving (Eq, Ord)
-
 #if MIN_VERSION_base(4,11,0)
 instance Semigroup QueryKey where
   (<>) = appendQueryKeys
 #endif
-
 instance Monoid QueryKey where
   mempty = QKEmpty
   mappend = appendQueryKeys

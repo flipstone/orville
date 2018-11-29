@@ -1,27 +1,29 @@
 module Database.Orville.Internal.Expr.WhereExpr
-( WhereExpr
-, WhereForm
-, (.==)
-, (.<>)
-, (.>)
-, (.>=)
-, (.<)
-, (.<=)
-, (%==)
-, (.<-)
-, whereValues
-, whereIn
-, whereNotIn
-, whereLike
-, whereLikeInsensitive
-, whereNull
-, whereNotNull
-, whereRaw
-) where
+  ( WhereExpr
+  , WhereForm
+  , (.==)
+  , (.<>)
+  , (.>)
+  , (.>=)
+  , (.<)
+  , (.<=)
+  , (%==)
+  , (.<-)
+  , whereValues
+  , whereIn
+  , whereNotIn
+  , whereLike
+  , whereLikeInsensitive
+  , whereNull
+  , whereNotNull
+  , whereRaw
+  ) where
 
 import qualified Data.List as List
-import Data.Monoid
+
 import Database.HDBC
+
+import Database.Orville.Internal.MappendCompat ((<>))
 
 import Database.Orville.Internal.Expr.Expr
 import Database.Orville.Internal.Expr.NameExpr
@@ -32,14 +34,21 @@ type WhereExpr = Expr WhereForm
 data WhereForm
   = WhereAlwaysFalse
   | WhereAlwaysTrue
-  | WhereBinOp String NameForm SqlValue
-  | WhereIn NameForm [SqlValue]
-  | WhereNotIn NameForm [SqlValue]
-  | WhereLike NameForm SqlValue
-  | WhereLikeInsensitive NameForm SqlValue
+  | WhereBinOp String
+               NameForm
+               SqlValue
+  | WhereIn NameForm
+            [SqlValue]
+  | WhereNotIn NameForm
+               [SqlValue]
+  | WhereLike NameForm
+              SqlValue
+  | WhereLikeInsensitive NameForm
+                         SqlValue
   | WhereNull NameForm
   | WhereNotNull NameForm
-  | WhereRaw String [SqlValue]
+  | WhereRaw String
+             [SqlValue]
 
 instance QualifySql WhereForm where
   qualified cond@WhereAlwaysFalse _ = cond
@@ -54,10 +63,8 @@ instance QualifySql WhereForm where
     WhereLike (field `qualified` table) value
   qualified (WhereLikeInsensitive field value) table =
     WhereLikeInsensitive (field `qualified` table) value
-  qualified (WhereNull field) table =
-    WhereNull (field `qualified` table)
-  qualified (WhereNotNull field) table =
-    WhereNotNull (field `qualified` table)
+  qualified (WhereNull field) table = WhereNull (field `qualified` table)
+  qualified (WhereNotNull field) table = WhereNotNull (field `qualified` table)
   qualified raw@(WhereRaw _ _) _ = raw
 
 instance QueryKeyable WhereForm where
@@ -85,12 +92,10 @@ instance GenerateSql WhereForm where
     (generateSql field) <> rawSql (" NOT IN (" <> quesses <> ")")
     where
       quesses = List.intercalate "," (map (const "?") values)
-  generateSql (WhereLike field _) =
-    (generateSql field) <> rawSql " LIKE ?"
+  generateSql (WhereLike field _) = (generateSql field) <> rawSql " LIKE ?"
   generateSql (WhereLikeInsensitive field _) =
     (generateSql field) <> rawSql " ILIKE ?"
-  generateSql (WhereNull field) =
-    (generateSql field) <> rawSql " IS NULL"
+  generateSql (WhereNull field) = (generateSql field) <> rawSql " IS NULL"
   generateSql (WhereNotNull field) =
     (generateSql field) <> rawSql " IS NOT NULL"
   generateSql (WhereRaw raw _) = rawSql raw

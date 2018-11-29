@@ -9,7 +9,8 @@ License   : MIT
 module Database.Orville.Internal.Expr.SelectExpr where
 
 import Data.Maybe
-import Data.Monoid
+
+import Database.Orville.Internal.MappendCompat ((<>))
 
 import Database.Orville.Internal.Expr.Expr
 import Database.Orville.Internal.Expr.NameExpr
@@ -32,12 +33,11 @@ aliased sf name = sf {selectFormAlias = Just name}
 
 instance QualifySql SelectForm where
   qualified form table =
-    form { selectFormColumn = (selectFormColumn form) `qualified` table }
+    form {selectFormColumn = (selectFormColumn form) `qualified` table}
 
 instance GenerateSql SelectForm where
   generateSql (SelectForm {..}) =
-    generateSql selectFormColumn <>
-    asOutput selectFormAlias
+    generateSql selectFormColumn <> asOutput selectFormAlias
 
 asOutput :: Maybe NameForm -> RawExpr
 asOutput Nothing = mempty
