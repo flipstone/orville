@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d7790f3e7dea3b40e1132734b194a00886028a10d6ccd3049ccf85c116a8c566
+-- hash: 5511e8eafd0670ec4e99948295656e997088a908f93a9dba53cc6060693c067f
 
 name:           orville
 version:        0.8.3.0
@@ -15,7 +17,6 @@ license:        MIT
 license-file:   LICENSE
 tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
 build-type:     Simple
-cabal-version:  >= 1.10
 extra-source-files:
     README.md
 
