@@ -75,6 +75,9 @@ newtype OrvilleT conn m a = OrvilleT
            , MonadMask
            )
 
+instance Fail.MonadFail m => Fail.MonadFail (OrvilleT conn m) where
+  fail = lift . Fail.fail
+
 mapOrvilleT :: Monad n => (m a -> n b) -> OrvilleT conn m a -> OrvilleT conn n b
 mapOrvilleT f (OrvilleT action) = OrvilleT $ mapReaderT f action
 
