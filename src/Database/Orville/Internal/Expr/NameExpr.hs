@@ -7,7 +7,6 @@ License   : MIT
 {-# LANGUAGE OverloadedStrings #-}
 module Database.Orville.Internal.Expr.NameExpr where
 
-import                Data.Monoid
 import                Data.String
 
 import                Database.Orville.Internal.Expr.Expr

@@ -94,7 +94,6 @@ import            Control.Monad.State
 import            Data.Convertible
 import            Data.Maybe (listToMaybe)
 import qualified  Data.Map.Strict as Map
-import            Data.Monoid
 import            Database.HDBC hiding (withTransaction)
 
 import qualified  Data.Map.Helpers as Map

@@ -18,7 +18,6 @@ cabal-version:       >=1.10
 library
   ghc-options:       -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
   exposed-modules:   Database.Orville,
-                     Database.Orville.Conduit,
                      Database.Orville.Core,
                      Database.Orville.Expr,
                      Database.Orville.Popper,
@@ -63,7 +62,6 @@ library
   -- other-extensions:
   build-depends:       base >= 4.8 && < 5,
                        bytestring,
-                       conduit >= 1.2.4 && < 1.3,
                        containers >= 0.5,
                        convertible >= 1.1,
                        dlist >= 0.7,

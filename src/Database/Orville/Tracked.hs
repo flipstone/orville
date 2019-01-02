@@ -33,6 +33,7 @@ import            Control.Applicative
 import            Control.Monad.Base
 import            Control.Monad.Catch
 import            Control.Monad.Except
+import qualified Control.Monad.Fail as Fail
 import            Control.Monad.Trans.Control
 import            Control.Monad.RWS.Strict
 import            Data.Typeable
@@ -139,7 +140,7 @@ trackedMapper f trackedM = do
 untracked :: (Monoid t, Monad m) => m a -> TrackedOrville t m a
 untracked = TrackedOrville . lift
 
-insertRecordTracked :: (MonadTrackedOrville conn m, Typeable entity)
+insertRecordTracked :: (Fail.MonadFail m, MonadTrackedOrville conn m, Typeable entity)
                     => TableDefinition entity
                     -> entity ()
                     -> m (entity Record)
@@ -150,7 +151,7 @@ insertRecordTracked tableDef entity = do
 
   pure record
 
-updateRecordTracked :: (MonadTrackedOrville conn m, Typeable entity)
+updateRecordTracked :: (Fail.MonadFail m, MonadTrackedOrville conn m, Typeable entity)
                     => TableDefinition entity
                     -> Record
                     -> entity key
@@ -162,7 +163,7 @@ updateRecordTracked tableDef recordId record = do
 
   pure updated
 
-deleteRecordTracked :: (MonadTrackedOrville conn m, Typeable entity)
+deleteRecordTracked :: (Fail.MonadFail m, MonadTrackedOrville conn m, Typeable entity)
                     => TableDefinition entity
                     -> entity Record
                     -> m ()

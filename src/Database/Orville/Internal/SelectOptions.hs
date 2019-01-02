@@ -34,14 +34,17 @@ selectOptLimitSql = fmap convert . getFirst . selectOptLimit
 selectOptOffsetSql :: SelectOptions -> Maybe SqlValue
 selectOptOffsetSql = fmap convert . getFirst . selectOptOffset
 
-instance Monoid SelectOptions where
-  mempty = SelectOptions mempty mempty mempty mempty mempty
-  mappend opt opt' =
+instance Semigroup SelectOptions where
+  opt <> opt' =
     SelectOptions (selectOptWhere opt <> selectOptWhere opt')
                   (selectOptOrder opt <> selectOptOrder opt')
                   (selectOptLimit opt <> selectOptLimit opt')
                   (selectOptOffset opt <> selectOptOffset opt')
                   (selectOptGroup opt <> selectOptGroup opt')
+
+instance Monoid SelectOptions where
+  mempty = SelectOptions mempty mempty mempty mempty mempty
+  mappend = (<>)
 
 instance QueryKeyable SelectOptions where
   queryKey opt =

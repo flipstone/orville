@@ -14,10 +14,10 @@ module Database.Orville.Internal.MigrateSchema
 import            Control.Concurrent (threadDelay)
 import            Control.Monad
 import            Control.Monad.Catch
+import qualified Control.Monad.Fail as Fail
 import            Control.Monad.IO.Class
 import            Data.Data
 import            Data.Int
-import            Data.Monoid
 import            Data.String
 import            Database.HDBC hiding (withTransaction)
 
@@ -56,7 +56,7 @@ waitForLockExpr = rawSqlExpr $ "pg_advisory_xact_lock("
 lockResult :: FromSql Bool
 lockResult = col ("result" :: String)
 
-withLockedTransaction :: (MonadOrville conn m, MonadThrow m) => m a -> m a
+withLockedTransaction :: (Fail.MonadFail m, MonadOrville conn m, MonadThrow m) => m a -> m a
 withLockedTransaction action = do
     go (0 :: Int)
   where

@@ -9,7 +9,6 @@ License   : MIT
 module Database.Orville.Internal.Expr.SelectExpr where
 
 import                Data.Maybe
-import                Data.Monoid
 
 import                Database.Orville.Internal.Expr.Expr
 import                Database.Orville.Internal.Expr.NameExpr

@@ -19,13 +19,13 @@ module Database.Orville.Internal.QueryCache
   where
 
 import            Control.Monad.Catch (MonadThrow)
+import qualified Control.Monad.Fail as Fail
 import            Control.Monad.Trans
 import            Control.Monad.Trans.State
 import            Data.Convertible
 import qualified  Data.Map as Map
 import qualified  Data.Map.Helpers as Map
 import            Data.Maybe
-import            Data.Monoid
 import            Data.String (fromString)
 import            Database.HDBC hiding (withTransaction)
 
@@ -61,7 +61,7 @@ cached key action = do
       QueryCached $ put (Map.insert key result cache)
       pure result
 
-selectCachedRows :: (MonadThrow m, MonadOrville conn m)
+selectCachedRows :: (Fail.MonadFail m, MonadThrow m, MonadOrville conn m)
                  => TableDefinition entity
                  -> SelectOptions
                  -> QueryCached m ResultSet
@@ -74,7 +74,7 @@ selectCachedRows tableDef opts =
     selects = expr . selectColumn . fromString <$> tableColumnNames tableDef
     key = mconcat [queryKey tableDef, queryKey opts]
 
-selectCached :: (MonadThrow m, MonadOrville conn m)
+selectCached :: (Fail.MonadFail m, MonadThrow m, MonadOrville conn m)
              => TableDefinition entity
              -> SelectOptions
              -> QueryCached m [entity Record]
@@ -82,14 +82,14 @@ selectCached tableDef opts = do
   rows <- selectCachedRows tableDef opts
   unsafeLift $ decodeSqlRows (tableFromSql tableDef) rows
 
-selectFirstCached :: (MonadThrow m, MonadOrville conn m)
+selectFirstCached :: (Fail.MonadFail m, MonadThrow m, MonadOrville conn m)
                   => TableDefinition entity
                   -> SelectOptions
                   -> QueryCached m (Maybe (entity Record))
 selectFirstCached tableDef opts =
   listToMaybe <$> selectCached tableDef (limit 1 <> opts)
 
-findRecordsCached :: (MonadThrow m, MonadOrville conn m)
+findRecordsCached :: (Fail.MonadFail m, MonadThrow m, MonadOrville conn m)
                   => TableDefinition entity
                   -> [Record]
                   -> QueryCached m (Map.Map Record (entity Record))
@@ -100,7 +100,7 @@ findRecordsCached tableDef recordIds = do
   recordList <- selectCached tableDef (where_ $ keyField .<- recordIds)
   pure $ Map.fromList (map mkEntry recordList)
 
-findRecordCached :: (MonadThrow m, MonadOrville conn m)
+findRecordCached :: (Fail.MonadFail m, MonadThrow m, MonadOrville conn m)
                  => TableDefinition entity
                  -> Record
                  -> QueryCached m (Maybe (entity Record))
@@ -109,6 +109,7 @@ findRecordCached tableDef recordId = do
   selectFirstCached tableDef (where_ $ keyField .== recordId)
 
 findRecordsByCached :: ( Convertible SqlValue fieldValue
+                       , Fail.MonadFail m
                        , Ord fieldValue
                        , MonadThrow m
                        , MonadOrville conn m)

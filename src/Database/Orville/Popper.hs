@@ -45,6 +45,7 @@ import            Control.Arrow
 import            Control.Applicative
 import            Control.Category
 import            Control.Monad.Catch
+import qualified Control.Monad.Fail as Fail
 import            Data.Convertible
 import            Data.Either
 import qualified  Data.Map.Strict as Map
@@ -441,7 +442,7 @@ popThrow popper a = do
 pop :: Popper a b -> a -> Orville (Popped b)
 pop popper a = runQueryCached $ popCached popper a
 
-popCached :: (MonadThrow m, MonadOrville conn m)
+popCached :: (Fail.MonadFail m, MonadThrow m, MonadOrville conn m)
           => Popper a b -> a -> QueryCached m (Popped b)
 popCached (PopOnMany singlePopper _) a =
   popCached singlePopper a
