@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -24,6 +25,11 @@ import qualified Database.Orville.MonadBaseControl as OMBC
 import qualified Database.Orville.MonadUnliftIO ()
 import qualified Database.Orville.Raw as ORaw
 
+#if MIN_VERSION_base(4,11,0)
+import Control.Monad.Fail (MonadFail)
+#endif
+
+
 type TestPool = Pool Postgres.Connection
 
 data Trace = Trace
@@ -42,6 +48,9 @@ newtype TestMonad a = TestMonad
              , MonadCatch
              , O.HasOrvilleContext Postgres.Connection
              , O.MonadOrville Postgres.Connection
+#if MIN_VERSION_base(4,11,0)
+             , MonadFail
+#endif
              )
 
 queryTrace ::

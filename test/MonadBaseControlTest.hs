@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -16,6 +17,10 @@ import Test.Tasty.HUnit (testCase)
 
 import qualified TestDB as TestDB
 
+#if MIN_VERSION_base(4,11,0)
+import Control.Monad.Fail (MonadFail)
+#endif
+
 {-|
    'ThirdPartyMonad' is a stand in for a Monad (or Monad Transformer) that an
    Orville user might by using from another library that doesn't know anything
@@ -30,6 +35,9 @@ newtype ThirdPartyMonad a = ThirdPartyMonad
              , MIO.MonadIO
              , MB.MonadBase IO
              , MonadThrow
+#if MIN_VERSION_base(4,11,0)
+             , MonadFail
+#endif
              )
 
 instance MTC.MonadBaseControl IO ThirdPartyMonad where
@@ -55,6 +63,9 @@ newtype EndUserMonad a = EndUserMonad
              , MB.MonadBase IO
              , O.HasOrvilleContext Postgres.Connection
              , MonadThrow
+#if MIN_VERSION_base(4,11,0)
+             , MonadFail
+#endif
              )
 
 {-|

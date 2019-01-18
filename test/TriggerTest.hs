@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -21,6 +22,10 @@ import AppManagedEntity.Data.Virus (Virus(..), VirusName(..), bpsVirus)
 import AppManagedEntity.Schema (schema, virusTable)
 
 import qualified TestDB as TestDB
+
+#if MIN_VERSION_base(4,11,0)
+import Control.Monad.Fail (MonadFail)
+#endif
 
 test_trigger :: TestTree
 test_trigger =
@@ -129,6 +134,9 @@ newtype TriggerTestMonad a = TriggerTestMonad
              , O.HasOrvilleContext Postgres.Connection
              , O.MonadOrville Postgres.Connection
              , OT.MonadTrigger TestTrigger
+#if MIN_VERSION_base(4,11,0)
+             , MonadFail
+#endif
              )
 
 --
