@@ -3,6 +3,7 @@ Module    : Database.Orville.Internal.Monad
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE RankNTypes #-}
@@ -18,6 +19,10 @@ import Control.Monad.Reader (ReaderT(..), ask, local, mapReaderT, runReaderT)
 import Control.Monad.State (StateT, mapStateT)
 import Data.Pool
 import Database.HDBC hiding (withTransaction)
+
+#if MIN_VERSION_base(4,11,0)
+import Control.Monad.Fail (MonadFail)
+#endif
 
 data ConnectionEnv conn = ConnectionEnv
   { ormTransactionOpen :: Bool
@@ -111,6 +116,9 @@ newtype OrvilleT conn m a = OrvilleT
              , MonadThrow
              , MonadCatch
              , MonadMask
+#if MIN_VERSION_base (4,11,0)
+             , MonadFail
+#endif
              )
 
 mapOrvilleT ::
@@ -219,6 +227,9 @@ class ( Monad m
       , HasOrvilleContext conn m
       , MonadThrow m
       , MonadOrvilleControl m
+#if MIN_VERSION_base(4,11,0)
+      , MonadFail m
+#endif
       ) =>
       MonadOrville conn m
 
@@ -303,6 +314,9 @@ instance ( Monad m
          , MonadIO m
          , IConnection conn
          , MonadOrvilleControl m
+#if MIN_VERSION_base (4,11,0)
+         , MonadFail m
+#endif
          ) =>
          MonadOrville conn (OrvilleT conn m)
 

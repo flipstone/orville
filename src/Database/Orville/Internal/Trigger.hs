@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -24,6 +25,10 @@ import Data.Monoid ((<>))
 import Data.Pool (Pool)
 import qualified Database.HDBC as HDBC
 import qualified Database.Orville as O
+
+#if MIN_VERSION_base(4,11,0)
+import Control.Monad.Fail (MonadFail)
+#endif
 
 class MonadTrigger trigger m | m -> trigger where
   runTriggers :: [trigger] -> m ()
@@ -146,6 +151,9 @@ newtype OrvilleTriggerT trigger conn m a = OrvilleTriggerT
              , MonadThrow
              , MonadCatch
              , MonadMask
+#if MIN_VERSION_base (4,11,0)
+             , MonadFail
+#endif
              )
 
 instance MonadTrans (OrvilleTriggerT trigger conn) where
@@ -180,6 +188,9 @@ instance ( Monad m
          , MonadIO m
          , HDBC.IConnection conn
          , O.MonadOrvilleControl m
+#if MIN_VERSION_base (4,11,0)
+         , MonadFail m
+#endif
          ) =>
          O.MonadOrville conn (OrvilleTriggerT trigger conn m)
 

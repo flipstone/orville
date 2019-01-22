@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module UnliftIOTest where
 
 import Control.Monad.Catch (MonadThrow)
@@ -10,6 +11,10 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)
 
 import qualified TestDB as TestDB
+
+#if MIN_VERSION_base(4,11,0)
+import Control.Monad.Fail (MonadFail)
+#endif
 
 {-|
    'ThirdPartyMonad' is a stand in for a Monad (or Monad Transformer) that an
@@ -25,6 +30,9 @@ newtype ThirdPartyMonad a = ThirdPartyMonad
              , UL.MonadIO
              , UL.MonadUnliftIO
              , MonadThrow
+#if MIN_VERSION_base(4,11,0)
+             , MonadFail
+#endif
              )
 
 {-|
@@ -41,6 +49,10 @@ newtype EndUserMonad a = EndUserMonad
              , UL.MonadIO
              , O.HasOrvilleContext Postgres.Connection
              , MonadThrow
+#if MIN_VERSION_base(4,11,0)
+             , MonadFail
+#endif
+
              )
 
 {-|

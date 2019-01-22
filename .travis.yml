@@ -75,7 +75,11 @@ matrix:
 
   - env: BUILD=cabal GHCVER=8.4.4 CABALVER=2.2 HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC 8.4.4"
-    addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}   
+    addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
+
+  - env: BUILD=cabal GHCVER=8.6.3 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7
+    compiler: ": #GHC 8.6.3"
+    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
   - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
     compiler: ": #GHC HEAD"
@@ -112,12 +116,11 @@ matrix:
     compiler: ": #stack 8.4.4 (lts-12)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  # conduit dependency keeps this from working right now, so disabling
-  #- env: BUILD=stack ARGS="--resolver lts-12"
-  #  compiler: ": #stack 8.4.4 (lts-12)"
-  #  addons: {apt: {packages: [libgmp-dev]}}
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.3.yml"
+    compiler: ": #stack 8.6.3 (lts-13)"
+    addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.20.yml --resolver nightly"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.3.yml --resolver nightly"
     compiler: ": #stack nightly"
     addons: {apt: {packages: [libgmp-dev]}}
 
@@ -224,4 +227,3 @@ script:
       ;;
   esac
   set +ex
-
