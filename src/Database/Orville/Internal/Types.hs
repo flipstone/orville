@@ -35,6 +35,7 @@ data ColumnType =
   | ForeignId
   | Text Int
   | VarText Int
+  | UnboundedText
   | Date
   | Timestamp
   | Integer
