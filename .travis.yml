@@ -196,6 +196,15 @@ install:
 - if [ -f configure.ac ]; then autoreconf -i; fi
 - |
   set -ex
+  case "$DB" in
+    postgresql)
+      cd orville-postgresql
+      ;;
+    *)
+      echo "unrecognized database subproject. Unable to continue"
+      exit -1
+      ;;
+  esac
   case "$BUILD" in
     stack)
       stack --no-terminal --install-ghc $ARGS test --bench --only-dependencies
