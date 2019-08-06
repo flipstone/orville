@@ -3,6 +3,7 @@ module Database.Orville.Internal.SqlType
   , serial
   , bigserial
   , text
+  , unboundedText
   , varText
   , integer
   , bigInteger
@@ -77,8 +78,8 @@ serial =
     }
 
 {-|
-  'serial' defines a 64-bit auto-incrementing column type. This corresponds to
-  the "BIGSERIAL" type in PostgreSQL.
+  'bigserial' defines a 64-bit auto-incrementing column type. This corresponds to
+  the "BIGSERIAL" type in PostgresSQL.
   -}
 bigserial :: SqlType Int.Int64
 bigserial =
@@ -123,6 +124,23 @@ varText len =
     , sqlTypeToSql = textToSql
     , sqlTypeFromSql = textFromSql
     }
+
+{-|
+  'unboundedText' defines a fixed length text field type. This corresponds to a
+  "TEXT" type in PostgreSQL.
+  -}
+unboundedText :: SqlType T.Text
+unboundedText =
+  SqlType
+    { sqlTypeDDL = concat ["TEXT"]
+    , sqlTypeReferenceDDL = Nothing
+    , sqlTypeNullable = False
+    , sqlTypeId = HDBC.SqlCharT
+    , sqlTypeSqlSize = Nothing
+    , sqlTypeToSql = textToSql
+    , sqlTypeFromSql = textFromSql
+    }
+
 
 {-|
   'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
