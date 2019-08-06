@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+
+#
+# This script will run compile and run the tests against all the
+# stack*.yml files that are found in the root of the repo, reporting
+# whether each one passed or failed.
+#
+# It is generally useful for doing a final check before pushing, rather
+# then as the regular edit/compile/test loop to get feedback during
+# development.
+#
+# You can run it via docker by running:
+#   docker-compose run --rm dev ./test-all
+#
+
+rm -rf test-all-logs
+mkdir test-all-logs
+
+for stack_file in stack-*.yml; do
+  log_file="./test-all-logs/$stack_file.log"
+
+  echo -n "Testing with $stack_file... "
+  stack --stack-yaml $stack_file test --fast  >$log_file 2>&1
+
+  if [ "$?" = "0" ]; then
+    echo "Passed"
+  else
+    SOME_TEST_FAILED=1
+    echo "Failed, see $log_file for details"
+  fi
+done
+
+if [ $SOME_TEST_FAILED ]; then
+  echo ""
+  echo "!!"
+  echo "!! At least one test failed above. Be sure to check it out!"
+  echo "!!"
+  exit 1
+fi
+

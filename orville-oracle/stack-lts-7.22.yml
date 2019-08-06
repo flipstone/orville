@@ -1,0 +1,6 @@
+resolver: lts-7.22
+packages:
+  - .
+extra-deps:
+  - HDBC-odbc-2.6.0.0@sha256:4fbd28f437cb2f1707d77aa81a356870d84407942c89c20c7613f99f3bb0eb5d
+  - unliftio-core-0.1.2.0
