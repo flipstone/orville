@@ -1,9 +1,9 @@
 {-|
-Module    : Database.Orville.PostgresSQL
+Module    : Database.Orville.PostgreSQL
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 -}
-module Database.Orville.PostgresSQL
+module Database.Orville.PostgreSQL
   ( createConnectionPool
   , Pool
   , Connection

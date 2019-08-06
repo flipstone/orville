@@ -1,4 +1,4 @@
-name: orville
+name: orville-postgresql
 version: '0.8.3.0'
 synopsis: ORM
 description: ORM library for PostgreSQL
@@ -41,17 +41,6 @@ dependencies:
   - transformers-base >=0.4
   - unliftio-core >= 0.1
 
-executables:
-  orville-sample-exe:
-    main:                Main.hs
-    source-dirs:         sample-project
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - orville
-
 library:
   source-dirs: src
   exposed-modules:
@@ -62,11 +51,23 @@ library:
     - Database.Orville.MonadBaseControl
     - Database.Orville.MonadUnliftIO
     - Database.Orville.Popper
-    - Database.Orville.PostgresSQL
+    - Database.Orville.PostgreSQL
     - Database.Orville.Raw
     - Database.Orville.ResourceT
     - Database.Orville.Select
     - Database.Orville.Trigger
+
+executables:
+  orville-sample-exe:
+    main:                Main.hs
+    source-dirs:         sample-project
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - orville-postgresql
+
 tests:
   spec:
     main: Driver.hs
@@ -74,7 +75,7 @@ tests:
       - test
     dependencies:
       - resource-pool
-      - orville
+      - orville-postgresql
       - tasty
       - tasty-discover
       - tasty-hunit

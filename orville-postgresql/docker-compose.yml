@@ -3,10 +3,10 @@ services:
   dev:
     build: .
     volumes:
-      - .:/orville
-      - stack-work:/orville/.stack-work
+      - .:/orville-postgresql
+      - stack-work:/orville-postgresql/.stack-work
       - stack-root:/stack-root
-    working_dir: /orville
+    working_dir: /orville-postgresql
     depends_on:
       - testdb
     environment:

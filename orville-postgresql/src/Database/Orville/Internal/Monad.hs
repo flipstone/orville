@@ -91,7 +91,7 @@ addTransactionCallBack callback env =
 {-|
  'newOrvilleEnv' initialized an 'OrvilleEnv' for service. The connection
  pool provided will be used to obtain connections to the database ase
- required. You can use the 'Database.Orville.PostgresSQL.createConnectionPool'
+ required. You can use the 'Database.Orville.PostgreSQL.createConnectionPool'
  utility function to create a connection pool to a PosgreSQL server.
 -}
 newOrvilleEnv :: Pool conn -> OrvilleEnv conn

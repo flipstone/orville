@@ -11,7 +11,7 @@ import qualified Database.HDBC.PostgreSQL as Postgres
 import System.Environment (getEnv)
 
 import qualified Database.Orville as O
-import Database.Orville.PostgresSQL
+import Database.Orville.PostgreSQL
 import qualified Database.Orville.Raw as ORaw
 
 import Example.Data.Major

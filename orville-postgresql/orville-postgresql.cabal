@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5511e8eafd0670ec4e99948295656e997088a908f93a9dba53cc6060693c067f
+-- hash: 0484c147df10d0c04283b89155e6b81afc6029a27f17b464f5e43dbafebc7dc0
 
-name:           orville
+name:           orville-postgresql
 version:        0.8.3.0
 synopsis:       ORM
 description:    ORM library for PostgreSQL
@@ -33,7 +33,7 @@ library
       Database.Orville.MonadBaseControl
       Database.Orville.MonadUnliftIO
       Database.Orville.Popper
-      Database.Orville.PostgresSQL
+      Database.Orville.PostgreSQL
       Database.Orville.Raw
       Database.Orville.ResourceT
       Database.Orville.Select
@@ -74,7 +74,7 @@ library
       Database.Orville.Internal.Trigger
       Database.Orville.Internal.Types
       Database.Orville.Internal.Where
-      Paths_orville
+      Paths_orville_postgresql
   hs-source-dirs:
       src
   default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
@@ -109,7 +109,7 @@ executable orville-sample-exe
       Example.Data.Student
       Example.Schema.Student
       Example.SchemaStudent
-      Paths_orville
+      Paths_orville_postgresql
   hs-source-dirs:
       sample-project
   default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
@@ -127,7 +127,7 @@ executable orville-sample-exe
     , lifted-base >=0.2
     , monad-control >=1.0
     , mtl >=2.2
-    , orville
+    , orville-postgresql
     , profunctors >=5.2
     , resource-pool >=0.2
     , resourcet >=1.1
@@ -165,7 +165,7 @@ test-suite spec
       TriggerTest
       UnliftIOTest
       WhereConditionTest
-      Paths_orville
+      Paths_orville_postgresql
   hs-source-dirs:
       test
   default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
@@ -183,7 +183,7 @@ test-suite spec
     , lifted-base >=0.2
     , monad-control >=1.0
     , mtl >=2.2
-    , orville
+    , orville-postgresql
     , profunctors >=5.2
     , resource-pool
     , resourcet >=1.1

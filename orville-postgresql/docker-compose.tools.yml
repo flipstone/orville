@@ -3,9 +3,9 @@ services:
   ide:
     build: .
     volumes:
-      - .:/orville
+      - .:/orville-postgresql
       - stack-root:/stack-root
-    working_dir: /orville
+    working_dir: /orville-postgresql
     stdin_open: true
     command:
       - sh

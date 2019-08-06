@@ -62,7 +62,7 @@ data SqlType a = SqlType
 
 {-|
   'serial' defines a 32-bit auto-incrementing column type. This corresponds to
-  the "SERIAL" type in PostgresSQL.
+  the "SERIAL" type in PostgreSQL.
   -}
 serial :: SqlType Int.Int32
 serial =
@@ -78,7 +78,7 @@ serial =
 
 {-|
   'serial' defines a 64-bit auto-incrementing column type. This corresponds to
-  the "BIGSERIAL" type in PostgresSQL.
+  the "BIGSERIAL" type in PostgreSQL.
   -}
 bigserial :: SqlType Int.Int64
 bigserial =
@@ -226,7 +226,7 @@ timestamp =
 
 {-|
   'textSearchVector' defines a type for indexed text searching. It corresponds to the
-  "TSVECTOR" type in PostgresSQL.
+  "TSVECTOR" type in PostgreSQL.
   -}
 textSearchVector :: SqlType T.Text
 textSearchVector =

@@ -61,82 +61,82 @@ matrix:
   #   compiler: ": #GHC 7.8.4"
   #   addons: {apt: {packages: [cabal-install-1.18,ghc-7.8.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=7.10.3 CABALVER=1.22 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=7.10.3 CABALVER=1.22 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 7.10.3"
     addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 8.0.2"
     addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.2.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=8.2.2 CABALVER=1.24 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 8.2.2"
     addons: {apt: {packages: [cabal-install-1.24,ghc-8.2.2,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.4.4 CABALVER=2.2 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=8.4.4 CABALVER=2.2 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 8.4.4"
     addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.6.3 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=8.6.3 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 8.6.3"
     addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.3,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.6.4 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=8.6.4 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 8.6.4"
     addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.4,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.6.5 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=8.6.5 CABALVER=2.4 HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC 8.6.5"
     addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
+  - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
     compiler: ": #GHC HEAD"
     addons: {apt: {packages: [cabal-install-head,ghc-head,happy-1.19.5,alex-3.1.7], sources: [hvr-ghc]}}
 
   # The Stack builds. We can pass in arbitrary Stack arguments via the ARGS
   # variable, such as using --stack-yaml to point to a different file.
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-6.0.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-6.0.yml" DB=postgresql
     compiler: ": #stack 7.10.3 (lts-6)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-7.22.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-7.22.yml" DB=postgresql
     compiler: ": #stack 8.0.1 (lts-7)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-8.0.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-8.0.yml" DB=postgresql
     compiler: ": #stack 8.0.2 (lts-8)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-9.0.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-9.0.yml" DB=postgresql
     compiler: ": #stack 8.0.2 (lts-9)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-10.0.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-10.0.yml" DB=postgresql
     compiler: ": #stack 8.2.2 (lts-10)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-11.0.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-11.0.yml" DB=postgresql
     compiler: ": #stack 8.2.2 (lts-11)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml" DB=postgresql
     compiler: ": #stack 8.4.4 (lts-12)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml" DB=postgresql
     compiler: ": #stack 8.6.3 (lts-13)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.12.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.12.yml" DB=postgresql
     compiler: ": #stack 8.6.4 (lts-13)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.20.yml"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.20.yml" DB=postgresql
     compiler: ": #stack 8.6.5 (lts-13)"
     addons: {apt: {packages: [libgmp-dev]}}
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml --resolver nightly"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml --resolver nightly" DB=postgresql
     compiler: ": #stack nightly"
     addons: {apt: {packages: [libgmp-dev]}}
 
@@ -158,13 +158,13 @@ matrix:
   #   compiler: ": #stack 8.0.2 osx"
   #   os: osx
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml --resolver nightly"
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml --resolver nightly" DB=postgresql
     compiler: ": #stack nightly osx"
     os: osx
 
   allow_failures:
-  - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml --resolver nightly"
+  - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml --resolver nightly" DB=postgresql
   - os: osx
 
 before_install:
@@ -217,6 +217,15 @@ install:
 script:
 - |
   set -ex
+  case "$DB" in
+    postgresql)
+      cd orville-postgresql
+      ;;
+    *)
+      echo "unrecognized database subproject. Unable to continue"
+      exit -1
+      ;;
+  esac
   case "$BUILD" in
     stack)
       stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
