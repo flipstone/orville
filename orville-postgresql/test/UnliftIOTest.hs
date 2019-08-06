@@ -4,8 +4,8 @@ module UnliftIOTest where
 import Control.Monad.Catch (MonadThrow)
 import qualified Control.Monad.IO.Unlift as UL
 import qualified Database.HDBC.PostgreSQL as Postgres
-import qualified Database.Orville as O
-import qualified Database.Orville.MonadUnliftIO as OULIO
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.MonadUnliftIO as OULIO
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)

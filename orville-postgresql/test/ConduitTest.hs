@@ -4,10 +4,10 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Data.Conduit (fuse, runConduit)
 import Data.Conduit.List (consume)
 
-import qualified Database.Orville as O
-import qualified Database.Orville.Conduit as OC
-import Database.Orville.ResourceT ()
-import qualified Database.Orville.Select as OS
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.Conduit as OC
+import Database.Orville.PostgreSQL.ResourceT ()
+import qualified Database.Orville.PostgreSQL.Select as OS
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)

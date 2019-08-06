@@ -3,15 +3,15 @@
 module WhereConditionTest where
 
 import qualified Data.Text as T
-import qualified Database.Orville as O
-import qualified Database.Orville.Select as S
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.Select as S
 import qualified TestDB as TestDB
 
 import Control.Monad (void)
 import Data.Int (Int64)
 import Database.HDBC (toSql)
-import Database.Orville ((.==))
-import Database.Orville.Expr (aliased, qualified)
+import Database.Orville.PostgreSQL ((.==))
+import Database.Orville.PostgreSQL.Expr (aliased, qualified)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 

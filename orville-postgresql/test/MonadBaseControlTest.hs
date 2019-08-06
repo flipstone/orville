@@ -9,8 +9,8 @@ import Control.Monad.Catch (MonadThrow)
 import qualified Control.Monad.IO.Class as MIO
 import qualified Control.Monad.Trans.Control as MTC
 import qualified Database.HDBC.PostgreSQL as Postgres
-import qualified Database.Orville as O
-import qualified Database.Orville.MonadBaseControl as OMBC
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.MonadBaseControl as OMBC
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase)

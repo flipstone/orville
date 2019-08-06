@@ -3,7 +3,7 @@ module Example.SchemaStudent
   , module Example.Schema.Student
   ) where
 
-import qualified Database.Orville as O
+import qualified Database.Orville.PostgreSQL as O
 
 import Example.Schema.Student
 

@@ -3,7 +3,7 @@ module ParameterizedEntity.Schema
   , module ParameterizedEntity.Schema.Virus
   ) where
 
-import qualified Database.Orville as O
+import qualified Database.Orville.PostgreSQL as O
 
 import ParameterizedEntity.Schema.Virus
 

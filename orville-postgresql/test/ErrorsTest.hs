@@ -4,8 +4,8 @@ import Control.Exception.Lifted (try)
 import Control.Monad (void)
 import Data.Int (Int32)
 
-import qualified Database.Orville as O
-import qualified Database.Orville.Select as S
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.Select as S
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase)

@@ -44,18 +44,18 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Database.Orville
-    - Database.Orville.Conduit
-    - Database.Orville.Core
-    - Database.Orville.Expr
-    - Database.Orville.MonadBaseControl
-    - Database.Orville.MonadUnliftIO
-    - Database.Orville.Popper
     - Database.Orville.PostgreSQL
-    - Database.Orville.Raw
-    - Database.Orville.ResourceT
-    - Database.Orville.Select
-    - Database.Orville.Trigger
+    - Database.Orville.PostgreSQL.Conduit
+    - Database.Orville.PostgreSQL.Connection
+    - Database.Orville.PostgreSQL.Core
+    - Database.Orville.PostgreSQL.Expr
+    - Database.Orville.PostgreSQL.MonadBaseControl
+    - Database.Orville.PostgreSQL.MonadUnliftIO
+    - Database.Orville.PostgreSQL.Popper
+    - Database.Orville.PostgreSQL.Raw
+    - Database.Orville.PostgreSQL.ResourceT
+    - Database.Orville.PostgreSQL.Select
+    - Database.Orville.PostgreSQL.Trigger
 
 executables:
   orville-sample-exe:

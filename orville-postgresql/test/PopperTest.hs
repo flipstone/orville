@@ -7,9 +7,9 @@ import qualified Data.Map as Map
 import Data.Ratio ((%))
 import qualified Data.Set as Set
 import Data.Word (Word8)
-import qualified Database.Orville as O
-import Database.Orville.Popper ((>>>))
-import qualified Database.Orville.Popper as P
+import qualified Database.Orville.PostgreSQL as O
+import Database.Orville.PostgreSQL.Popper ((>>>))
+import qualified Database.Orville.PostgreSQL.Popper as P
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)

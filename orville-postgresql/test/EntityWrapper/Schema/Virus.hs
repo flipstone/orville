@@ -4,7 +4,7 @@ module EntityWrapper.Schema.Virus
   , virusNameField
   ) where
 
-import qualified Database.Orville as O
+import qualified Database.Orville.PostgreSQL as O
 
 import EntityWrapper.Data.Entity (Entity(..))
 import EntityWrapper.Data.Virus (Virus(..), VirusId(..), VirusName(..))

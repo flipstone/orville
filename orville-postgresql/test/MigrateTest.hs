@@ -2,7 +2,7 @@ module MigrateTest where
 
 import qualified Data.List as List
 
-import qualified Database.Orville as O
+import qualified Database.Orville.PostgreSQL as O
 
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)

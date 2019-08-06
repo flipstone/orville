@@ -20,10 +20,10 @@ import System.Environment (getEnv)
 
 import Test.Tasty (TestTree, withResource)
 
-import qualified Database.Orville as O
-import qualified Database.Orville.MonadBaseControl as OMBC
-import qualified Database.Orville.MonadUnliftIO ()
-import qualified Database.Orville.Raw as ORaw
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.MonadBaseControl as OMBC
+import qualified Database.Orville.PostgreSQL.MonadUnliftIO ()
+import qualified Database.Orville.PostgreSQL.Raw as ORaw
 
 #if MIN_VERSION_base(4,11,0)
 import Control.Monad.Fail (MonadFail)

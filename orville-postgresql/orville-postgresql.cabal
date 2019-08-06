@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0484c147df10d0c04283b89155e6b81afc6029a27f17b464f5e43dbafebc7dc0
+-- hash: ba3c1c2d4ca17e97070e351272c304af86f0d2fbbc490915f57e692541edebac
 
 name:           orville-postgresql
 version:        0.8.3.0
@@ -26,54 +26,54 @@ source-repository head
 
 library
   exposed-modules:
-      Database.Orville
-      Database.Orville.Conduit
-      Database.Orville.Core
-      Database.Orville.Expr
-      Database.Orville.MonadBaseControl
-      Database.Orville.MonadUnliftIO
-      Database.Orville.Popper
       Database.Orville.PostgreSQL
-      Database.Orville.Raw
-      Database.Orville.ResourceT
-      Database.Orville.Select
-      Database.Orville.Trigger
+      Database.Orville.PostgreSQL.Conduit
+      Database.Orville.PostgreSQL.Connection
+      Database.Orville.PostgreSQL.Core
+      Database.Orville.PostgreSQL.Expr
+      Database.Orville.PostgreSQL.MonadBaseControl
+      Database.Orville.PostgreSQL.MonadUnliftIO
+      Database.Orville.PostgreSQL.Popper
+      Database.Orville.PostgreSQL.Raw
+      Database.Orville.PostgreSQL.ResourceT
+      Database.Orville.PostgreSQL.Select
+      Database.Orville.PostgreSQL.Trigger
   other-modules:
       Data.Map.Helpers
-      Database.Orville.Internal.ConstraintDefinition
-      Database.Orville.Internal.Execute
-      Database.Orville.Internal.Expr
-      Database.Orville.Internal.Expr.Expr
-      Database.Orville.Internal.Expr.NameExpr
-      Database.Orville.Internal.Expr.SelectExpr
-      Database.Orville.Internal.Expr.WhereExpr
-      Database.Orville.Internal.FieldDefinition
-      Database.Orville.Internal.FieldUpdate
-      Database.Orville.Internal.FromClause
-      Database.Orville.Internal.FromSql
-      Database.Orville.Internal.GroupBy
-      Database.Orville.Internal.IndexDefinition
-      Database.Orville.Internal.MappendCompat
-      Database.Orville.Internal.MigrateConstraint
-      Database.Orville.Internal.MigrateIndex
-      Database.Orville.Internal.MigrateSchema
-      Database.Orville.Internal.MigrateTable
-      Database.Orville.Internal.MigrationError
-      Database.Orville.Internal.MigrationPlan
-      Database.Orville.Internal.Monad
-      Database.Orville.Internal.OrderBy
-      Database.Orville.Internal.QueryCache
-      Database.Orville.Internal.QueryKey
-      Database.Orville.Internal.RelationalMap
-      Database.Orville.Internal.SchemaState
-      Database.Orville.Internal.Select
-      Database.Orville.Internal.SelectOptions
-      Database.Orville.Internal.Sql
-      Database.Orville.Internal.SqlType
-      Database.Orville.Internal.TableDefinition
-      Database.Orville.Internal.Trigger
-      Database.Orville.Internal.Types
-      Database.Orville.Internal.Where
+      Database.Orville.PostgreSQL.Internal.ConstraintDefinition
+      Database.Orville.PostgreSQL.Internal.Execute
+      Database.Orville.PostgreSQL.Internal.Expr
+      Database.Orville.PostgreSQL.Internal.Expr.Expr
+      Database.Orville.PostgreSQL.Internal.Expr.NameExpr
+      Database.Orville.PostgreSQL.Internal.Expr.SelectExpr
+      Database.Orville.PostgreSQL.Internal.Expr.WhereExpr
+      Database.Orville.PostgreSQL.Internal.FieldDefinition
+      Database.Orville.PostgreSQL.Internal.FieldUpdate
+      Database.Orville.PostgreSQL.Internal.FromClause
+      Database.Orville.PostgreSQL.Internal.FromSql
+      Database.Orville.PostgreSQL.Internal.GroupBy
+      Database.Orville.PostgreSQL.Internal.IndexDefinition
+      Database.Orville.PostgreSQL.Internal.MappendCompat
+      Database.Orville.PostgreSQL.Internal.MigrateConstraint
+      Database.Orville.PostgreSQL.Internal.MigrateIndex
+      Database.Orville.PostgreSQL.Internal.MigrateSchema
+      Database.Orville.PostgreSQL.Internal.MigrateTable
+      Database.Orville.PostgreSQL.Internal.MigrationError
+      Database.Orville.PostgreSQL.Internal.MigrationPlan
+      Database.Orville.PostgreSQL.Internal.Monad
+      Database.Orville.PostgreSQL.Internal.OrderBy
+      Database.Orville.PostgreSQL.Internal.QueryCache
+      Database.Orville.PostgreSQL.Internal.QueryKey
+      Database.Orville.PostgreSQL.Internal.RelationalMap
+      Database.Orville.PostgreSQL.Internal.SchemaState
+      Database.Orville.PostgreSQL.Internal.Select
+      Database.Orville.PostgreSQL.Internal.SelectOptions
+      Database.Orville.PostgreSQL.Internal.Sql
+      Database.Orville.PostgreSQL.Internal.SqlType
+      Database.Orville.PostgreSQL.Internal.TableDefinition
+      Database.Orville.PostgreSQL.Internal.Trigger
+      Database.Orville.PostgreSQL.Internal.Types
+      Database.Orville.PostgreSQL.Internal.Where
       Paths_orville_postgresql
   hs-source-dirs:
       src

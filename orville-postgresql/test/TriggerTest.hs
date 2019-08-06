@@ -15,8 +15,8 @@ import qualified Database.HDBC.PostgreSQL as Postgres
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-import qualified Database.Orville as O
-import qualified Database.Orville.Trigger as OT
+import qualified Database.Orville.PostgreSQL as O
+import qualified Database.Orville.PostgreSQL.Trigger as OT
 
 import AppManagedEntity.Data.Virus (Virus(..), VirusName(..), bpsVirus)
 import AppManagedEntity.Schema (schema, virusTable)
