@@ -226,15 +226,6 @@ install:
 script:
 - |
   set -ex
-  case "$DB" in
-    postgresql)
-      cd orville-postgresql
-      ;;
-    *)
-      echo "unrecognized database subproject. Unable to continue"
-      exit -1
-      ;;
-  esac
   case "$BUILD" in
     stack)
       stack --no-terminal $ARGS test --bench --no-run-benchmarks --haddock --no-haddock-deps
