@@ -17,13 +17,14 @@ module Database.Orville.Oracle.Internal.SqlType
   , doubleNumber
   ) where
 
-import Control.Monad ((<=<))
+import Control.Monad ((<=<), join)
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Time as Time
 import qualified Database.HDBC as HDBC
+import Text.Read(readMaybe)
 
 {-|
   SqlType defines the mapping of a Haskell type (`a`) to a SQL column type in the
@@ -311,7 +312,7 @@ int32FromSql sql =
   case sql of
     HDBC.SqlInt32 n -> Just n
     HDBC.SqlInteger n -> toBoundedInteger n
-    HDBC.SqlByteString n -> toBoundedInteger . read $ B8.unpack n
+    HDBC.SqlByteString n -> join . fmap toBoundedInteger $ (readMaybe . B8.unpack) n
     _ -> Nothing
 
 int64ToSql :: Int.Int64 -> HDBC.SqlValue
@@ -322,7 +323,7 @@ int64FromSql sql =
   case sql of
     HDBC.SqlInt64 n -> Just n
     HDBC.SqlInteger n -> toBoundedInteger n
-    HDBC.SqlByteString n -> toBoundedInteger . read $ B8.unpack n
+    HDBC.SqlByteString n -> join . fmap toBoundedInteger $ (readMaybe . B8.unpack) n
     _ -> Nothing
 
 textToSql :: T.Text -> HDBC.SqlValue
@@ -389,17 +390,16 @@ integerNumberFromSql sql =
    -- Depending on how the column was created the "NUMBER" type can come back as a SqlDouble or a SqlByteString...
   case sql of
     HDBC.SqlDouble val -> doubleToInteger val
-    HDBC.SqlByteString bs -> doubleToInteger . read $ B8.unpack bs
+    HDBC.SqlByteString bs -> join . fmap doubleToInteger $ (readMaybe . B8.unpack) bs
     _ -> Nothing
 
 doubleToInteger :: Double -> Maybe Integer
 doubleToInteger val =
-  let ceil = ceiling val
+  let (n,f) = properFraction val
   in
-    if ceil == floor val
-    then Just ceil
+    if f == 0
+    then Just n
     else Nothing
-
 
 toBoundedInteger :: (Bounded num, Integral num) => Integer -> Maybe num
 toBoundedInteger source =
