@@ -31,7 +31,7 @@ instance QueryKeyable NameForm where
   queryKey = QKField . unescapedName
 
 instance GenerateSql NameForm where
-  generateSql (NameForm Nothing name) = "\"" <> rawSql name <> "\""
+  generateSql (NameForm Nothing name) = rawSql name
   generateSql (NameForm (Just table) name) =
     "\"" <> rawSql table <> "\".\"" <> rawSql name <> "\""
 

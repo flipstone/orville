@@ -14,6 +14,18 @@ import Database.Orville.Oracle.Internal.Expr.NameExpr (NameForm(..))
 import Database.Orville.Oracle.Internal.SqlType
 import Database.Orville.Oracle.Internal.Types
 
+{-| 'integerNumberField' defines a field of given precision, p, as an Oracle "NUMBER(p)" field.
+    Converting to/from the Haskell "Integer" type.
+-}
+integerNumberField :: String -> Int -> FieldDefinition Integer
+integerNumberField name precision = fieldOfType (integerNumber precision) name
+
+{-| 'integerNumberField' defines a field, as an Oracle "NUMBER" field.
+    Converting to/from the Haskell "Double" type.
+-}
+doubleNumberField :: String -> FieldDefinition Double
+doubleNumberField = fieldOfType doubleNumber
+
 textField :: String -> Int -> FieldDefinition Text
 textField name len = FieldDefinition name (varText len) []
 
@@ -40,12 +52,6 @@ doubleField = fieldOfType double
 
 boolField :: String -> FieldDefinition Bool
 boolField = fieldOfType boolean
-
-automaticIdField :: String -> FieldDefinition Int32
-automaticIdField = fieldOfType serial
-
-searchVectorField :: String -> FieldDefinition Text
-searchVectorField = fieldOfType textSearchVector
 
 nullableField :: FieldDefinition a -> FieldDefinition (Maybe a)
 nullableField field = field `withConversion` nullableType

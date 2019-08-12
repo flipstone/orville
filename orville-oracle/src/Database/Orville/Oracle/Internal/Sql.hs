@@ -10,7 +10,7 @@ import qualified Data.List as List
 mkInsertClause :: String -> [String] -> String
 mkInsertClause tblName columnNames =
   "INSERT INTO " ++
-  escapedName tblName ++ " (" ++ columns ++ ") VALUES (" ++ placeholders ++ ")"
+  tblName ++ " (" ++ columns ++ ") VALUES (" ++ placeholders ++ ")"
   where
     columns = List.intercalate "," $ columnNames
     placeholders = List.intercalate "," $ map (const "?") columnNames

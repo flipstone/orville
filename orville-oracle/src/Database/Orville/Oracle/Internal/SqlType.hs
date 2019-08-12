@@ -1,7 +1,5 @@
 module Database.Orville.Oracle.Internal.SqlType
   ( SqlType(..)
-  , serial
-  , bigserial
   , text
   , varText
   , integer
@@ -11,14 +9,16 @@ module Database.Orville.Oracle.Internal.SqlType
   , date
   , timestamp
   , localTimestamp
-  , textSearchVector
   , nullableType
   , foreignRefType
   , convertSqlType
   , maybeConvertSqlType
+  , integerNumber
+  , doubleNumber
   ) where
 
 import Control.Monad ((<=<))
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
@@ -60,38 +60,6 @@ data SqlType a = SqlType
     -- an error if the conversion is impossible. Otherwise it should return
     -- 'Just' the corresponding 'a' value.
   }
-
-{-|
-  'serial' defines a 32-bit auto-incrementing column type. This corresponds to
-  the "SERIAL" type in PostgresSQL.
-  -}
-serial :: SqlType Int.Int32
-serial =
-  SqlType
-    { sqlTypeDDL = "SERIAL"
-    , sqlTypeReferenceDDL = Just "INTEGER"
-    , sqlTypeNullable = False
-    , sqlTypeId = HDBC.SqlIntegerT
-    , sqlTypeSqlSize = Just 4
-    , sqlTypeToSql = int32ToSql
-    , sqlTypeFromSql = int32FromSql
-    }
-
-{-|
-  'bigserial' defines a 64-bit auto-incrementing column type. This corresponds to
-  the "BIGSERIAL" type in PostgresSQL.
-  -}
-bigserial :: SqlType Int.Int64
-bigserial =
-  SqlType
-    { sqlTypeDDL = "BIGSERIAL"
-    , sqlTypeReferenceDDL = Just "BIGINT"
-    , sqlTypeNullable = False
-    , sqlTypeId = HDBC.SqlBigIntT
-    , sqlTypeSqlSize = Just 8
-    , sqlTypeToSql = int64ToSql
-    , sqlTypeFromSql = int64FromSql
-    }
 
 {-|
   'text' defines a fixed length text field type. This corresponds to a
@@ -248,22 +216,37 @@ localTimestamp =
     , sqlTypeFromSql = localTimeFromSql
     }
 
+{-|
+  'integerNumber' defines a type for interacting with "NUMBER" in Oracle that
+   really are integers -- ie "scale" of 0 with "precision" as input.
+-}
+integerNumber :: Int -> SqlType Integer
+integerNumber precision =
+  SqlType
+  { sqlTypeDDL = concat ["NUMBER(", show precision, ")"]
+  , sqlTypeReferenceDDL = Nothing
+  , sqlTypeNullable = False
+  , sqlTypeId = HDBC.SqlDoubleT -- Note that "NUMBER" is always decoded as Double by odbc
+  , sqlTypeSqlSize = Just (22*8) -- "NUMBER"s in Oracle can be up to 22 bytes!
+  , sqlTypeToSql = integerNumberToSql
+  , sqlTypeFromSql = integerNumberFromSql
+  }
 
 {-|
-  'textSearchVector' defines a type for indexed text searching. It corresponds to the
-  "TSVECTOR" type in PostgresSQL.
-  -}
-textSearchVector :: SqlType T.Text
-textSearchVector =
+  'doubleNumber' defines a type for interacting with "NUMBER" in Oracle that
+   really are doubles.
+-}
+doubleNumber :: SqlType Double
+doubleNumber =
   SqlType
-    { sqlTypeDDL = "TSVECTOR"
-    , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
-    , sqlTypeId = HDBC.SqlUnknownT "3614"
-    , sqlTypeSqlSize = Nothing
-    , sqlTypeToSql = textToSql
-    , sqlTypeFromSql = textFromSql
-    }
+  { sqlTypeDDL = "NUMBER"
+  , sqlTypeReferenceDDL = Nothing
+  , sqlTypeNullable = False
+  , sqlTypeId = HDBC.SqlDoubleT
+  , sqlTypeSqlSize = Just (22*8) -- Numbers in Oracle can be up to 22 bytes!
+  , sqlTypeToSql = doubleToSql
+  , sqlTypeFromSql = doubleFromSql
+  }
 
 {-|
    'nullableType' creates a nullable version of an existing 'SqlType'. The underlying
@@ -328,6 +311,7 @@ int32FromSql sql =
   case sql of
     HDBC.SqlInt32 n -> Just n
     HDBC.SqlInteger n -> toBoundedInteger n
+    HDBC.SqlByteString n -> toBoundedInteger . read $ B8.unpack n
     _ -> Nothing
 
 int64ToSql :: Int.Int64 -> HDBC.SqlValue
@@ -338,6 +322,7 @@ int64FromSql sql =
   case sql of
     HDBC.SqlInt64 n -> Just n
     HDBC.SqlInteger n -> toBoundedInteger n
+    HDBC.SqlByteString n -> toBoundedInteger . read $ B8.unpack n
     _ -> Nothing
 
 textToSql :: T.Text -> HDBC.SqlValue
@@ -395,6 +380,26 @@ localTimeFromSql sql =
   case sql of
     HDBC.SqlLocalTime t -> Just t
     _ -> Nothing
+
+integerNumberToSql :: Integer -> HDBC.SqlValue
+integerNumberToSql = HDBC.SqlDouble . fromIntegral
+
+integerNumberFromSql :: HDBC.SqlValue -> Maybe Integer
+integerNumberFromSql sql =
+   -- Depending on how the column was created the "NUMBER" type can come back as a SqlDouble or a SqlByteString...
+  case sql of
+    HDBC.SqlDouble val -> doubleToInteger val
+    HDBC.SqlByteString bs -> doubleToInteger . read $ B8.unpack bs
+    _ -> Nothing
+
+doubleToInteger :: Double -> Maybe Integer
+doubleToInteger val =
+  let ceil = ceiling val
+  in
+    if ceil == floor val
+    then Just ceil
+    else Nothing
+
 
 toBoundedInteger :: (Bounded num, Integral num) => Integer -> Maybe num
 toBoundedInteger source =

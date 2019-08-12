@@ -15,7 +15,7 @@ fromClauseRaw :: String -> FromClause
 fromClauseRaw = FromClause
 
 fromClauseTableName :: String -> FromClause
-fromClauseTableName name = fromClauseRaw ("FROM " ++ escapedName name)
+fromClauseTableName name = fromClauseRaw ("FROM " ++ name)
 
 fromClauseTable :: TableDefinition readEntity writeEntity key -> FromClause
 fromClauseTable = fromClauseTableName . tableName

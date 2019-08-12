@@ -11,8 +11,6 @@ module Database.Orville.Oracle.Core
   , tableKeyToSql
   , tableKeyFromSql
   , SqlType(..)
-  , serial
-  , bigserial
   , text
   , varText
   , integer
@@ -21,7 +19,6 @@ module Database.Orville.Oracle.Core
   , boolean
   , date
   , timestamp
-  , textSearchVector
   , convertSqlType
   , maybeConvertSqlType
   , nullableType
@@ -68,8 +65,8 @@ module Database.Orville.Oracle.Core
   , int64Field
   , doubleField
   , boolField
-  , automaticIdField
-  , searchVectorField
+  , integerNumberField
+  , doubleNumberField
   , nullableField
   , foreignKeyField
   , withFlag
