@@ -5,7 +5,6 @@ License   : MIT
 -}
 module Database.Orville.Oracle.Internal.FromClause where
 
-import Database.Orville.Oracle.Internal.Sql
 import Database.Orville.Oracle.Internal.Types
 
 newtype FromClause =

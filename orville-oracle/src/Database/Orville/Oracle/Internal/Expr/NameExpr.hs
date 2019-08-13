@@ -7,10 +7,9 @@ License   : MIT
 
 module Database.Orville.Oracle.Internal.Expr.NameExpr where
 
-import Data.String
+import Data.String(IsString(fromString))
 
 import Database.Orville.Oracle.Internal.MappendCompat ((<>))
-
 import Database.Orville.Oracle.Internal.Expr.Expr
 import Database.Orville.Oracle.Internal.QueryKey
 

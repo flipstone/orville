@@ -38,17 +38,17 @@ majorTable =
 
 majorIdField :: O.FieldDefinition MajorId
 majorIdField =
-  O.int32Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.int32Field "ID" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType majorIdInt MajorId
 
 majorNameField :: O.FieldDefinition MajorName
 majorNameField =
-  O.textField "name" 255 `O.withConversion`
+  O.textField "NAME" 255 `O.withConversion`
   O.convertSqlType majorNameText MajorName
 
 majorCollegeField :: O.FieldDefinition MajorCollege
 majorCollegeField =
-  O.textField "college" 255 `O.withConversion`
+  O.textField "COLLEGE" 255 `O.withConversion`
   O.convertSqlType collegeMajorToText textToCollegeMajor
 
 studentTable :: O.TableDefinition (Student StudentId) (Student ()) StudentId

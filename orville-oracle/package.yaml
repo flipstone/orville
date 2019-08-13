@@ -7,7 +7,7 @@ author: Flipstone Technology Partners
 maintainer: development@flipstone.com
 license: MIT
 git: git@github.com:flipstone/orville.git
-tested-with: GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
+tested-with: GHC == 8.6.5
 extra-source-files:
   - README.md
 default-extensions:
@@ -22,7 +22,6 @@ dependencies:
   - base >=4.8 && <5
   - bytestring
   - conduit >=1.2 && <1.4
-
   - containers >=0.5
   - convertible >=1.1
   - dlist >=0.7

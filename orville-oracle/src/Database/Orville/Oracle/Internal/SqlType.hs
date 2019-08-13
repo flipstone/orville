@@ -74,7 +74,7 @@ text len =
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlCharT
     , sqlTypeSqlSize = Just len
-    , sqlTypeToSql = textToSql
+    , sqlTypeToSql = textToSql len
     , sqlTypeFromSql = textFromSql
     }
 
@@ -90,7 +90,7 @@ varText len =
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlVarCharT
     , sqlTypeSqlSize = Just len
-    , sqlTypeToSql = textToSql
+    , sqlTypeToSql = textToSql len
     , sqlTypeFromSql = textFromSql
     }
 
@@ -326,14 +326,22 @@ int64FromSql sql =
     HDBC.SqlByteString n -> join . fmap toBoundedInteger $ (readMaybe . B8.unpack) n
     _ -> Nothing
 
-textToSql :: T.Text -> HDBC.SqlValue
-textToSql = HDBC.SqlByteString . Enc.encodeUtf8
+{-|
+  'textToSql' handles padding a text value with spaces on the right to column length as this happens in
+   Oracle anyway and this lets direct comparisons work as expected.
+-}
+textToSql :: Int -> T.Text -> HDBC.SqlValue
+textToSql len = HDBC.SqlString . T.unpack . (T.justifyLeft len ' ')
 
+{-|
+  'textFromSql' strips leading and trailing whitespace from the resulting value to better reflect an
+  inverse of 'textToSql'
+-}
 textFromSql :: HDBC.SqlValue -> Maybe T.Text
 textFromSql sql =
   case sql of
-    HDBC.SqlByteString bytes -> Just $ Enc.decodeUtf8 bytes
-    HDBC.SqlString string -> Just $ T.pack string
+    HDBC.SqlByteString bytes -> Just . T.strip $ Enc.decodeUtf8 bytes
+    HDBC.SqlString string -> Just . T.strip $ T.pack string
     _ -> Nothing
 
 doubleToSql :: Double -> HDBC.SqlValue

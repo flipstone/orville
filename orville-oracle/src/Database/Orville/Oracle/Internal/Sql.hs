@@ -7,6 +7,8 @@ module Database.Orville.Oracle.Internal.Sql where
 
 import qualified Data.List as List
 
+import Data.String.Helpers(escapeString)
+
 mkInsertClause :: String -> [String] -> String
 mkInsertClause tblName columnNames =
   "INSERT INTO " ++
@@ -17,15 +19,13 @@ mkInsertClause tblName columnNames =
 
 mkUpdateClause :: String -> [String] -> String
 mkUpdateClause tblName columnNames =
-  "UPDATE " ++ escapedName tblName ++ " SET " ++ placeholders
+  "UPDATE " <> escapeString tblName <> " SET " <> placeholders
   where
     placeholders = List.intercalate "," $ map columnUpdateSql columnNames
-    columnUpdateSql column = column ++ " = ?"
+    columnUpdateSql column = column <> " = ?"
 
 mkDeleteClause :: String -> String
-mkDeleteClause tblName = "DELETE FROM " ++ escapedName tblName
+mkDeleteClause tblName = "DELETE FROM " <> escapeString tblName
 
-escapedName :: String -> String
-escapedName name = concat ["\"", name, "\""]
 -- If you came here looking for mkSelectClause, check out
 -- Database.Orville.Oracle.Internal.Select

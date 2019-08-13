@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.31.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e02833eaee54681c4746cfd8dc3657460749260491a08784ec99462945be060e
+-- hash: e5688586cd486f347728db6466e2c62da2db7c83d57d531c89a9e352f196c366
 
 name:           orville-oracle
 version:        0.8.3.0
@@ -15,7 +15,7 @@ author:         Flipstone Technology Partners
 maintainer:     development@flipstone.com
 license:        MIT
 license-file:   LICENSE
-tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
+tested-with:    GHC == 8.6.5
 build-type:     Simple
 extra-source-files:
     README.md
@@ -40,6 +40,7 @@ library
       Database.Orville.Oracle.Trigger
   other-modules:
       Data.Map.Helpers
+      Data.String.Helpers
       Database.Orville.Oracle.Internal.ConstraintDefinition
       Database.Orville.Oracle.Internal.Execute
       Database.Orville.Oracle.Internal.Expr
