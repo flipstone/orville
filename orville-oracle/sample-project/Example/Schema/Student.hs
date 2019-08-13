@@ -38,7 +38,7 @@ majorTable =
 
 majorIdField :: O.FieldDefinition MajorId
 majorIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.int32Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType majorIdInt MajorId
 
 majorNameField :: O.FieldDefinition MajorName
@@ -68,7 +68,7 @@ studentTable =
 
 studentIdField :: O.FieldDefinition StudentId
 studentIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.int32Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType studentIdInt StudentId
 
 studentNameField :: O.FieldDefinition StudentName
