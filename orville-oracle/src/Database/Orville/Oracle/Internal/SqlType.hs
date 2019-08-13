@@ -1,7 +1,7 @@
 module Database.Orville.Oracle.Internal.SqlType
   ( SqlType(..)
   , text
-  , varText
+  , autoPadAndStripText
   , integer
   , bigInteger
   , double
@@ -74,24 +74,24 @@ text len =
     , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlCharT
     , sqlTypeSqlSize = Just len
-    , sqlTypeToSql = textToSql len
+    , sqlTypeToSql = textToSql
     , sqlTypeFromSql = textFromSql
     }
 
 {-|
-  'varText' defines a variable text field type with a max length. This
-  corresponds to a "VARCHAR(len)" type in SQL.
+  'autoPadAndStripText' defines a fixed length text field type. This will automatically
+   pad values with spaces on the right going into the database and remove whitespace coming out.
   -}
-varText :: Int -> SqlType T.Text
-varText len =
+autoPadAndStripText :: Int -> SqlType T.Text
+autoPadAndStripText len =
   SqlType
-    { sqlTypeDDL = concat ["VARCHAR(", show len, ")"]
+    { sqlTypeDDL = concat ["CHAR(", show len, ")"]
     , sqlTypeReferenceDDL = Nothing
     , sqlTypeNullable = False
-    , sqlTypeId = HDBC.SqlVarCharT
+    , sqlTypeId = HDBC.SqlCharT
     , sqlTypeSqlSize = Just len
-    , sqlTypeToSql = textToSql len
-    , sqlTypeFromSql = textFromSql
+    , sqlTypeToSql = autoPadTextToSql len
+    , sqlTypeFromSql = autoStripTextFromSql
     }
 
 {-|
@@ -326,23 +326,34 @@ int64FromSql sql =
     HDBC.SqlByteString n -> join . fmap toBoundedInteger $ (readMaybe . B8.unpack) n
     _ -> Nothing
 
-{-|
-  'textToSql' handles padding a text value with spaces on the right to column length as this happens in
-   Oracle anyway and this lets direct comparisons work as expected.
--}
-textToSql :: Int -> T.Text -> HDBC.SqlValue
-textToSql len = HDBC.SqlString . T.unpack . (T.justifyLeft len ' ')
+textToSql :: T.Text -> HDBC.SqlValue
+textToSql = HDBC.SqlString . T.unpack
 
-{-|
-  'textFromSql' strips leading and trailing whitespace from the resulting value to better reflect an
-  inverse of 'textToSql'
--}
 textFromSql :: HDBC.SqlValue -> Maybe T.Text
 textFromSql sql =
+  case sql of
+    HDBC.SqlByteString bytes -> Just $ Enc.decodeUtf8 bytes
+    HDBC.SqlString string -> Just $ T.pack string
+    _ -> Nothing
+
+{-|
+  'autoPadTextToSql' handles padding a text value with spaces on the right to column length as this happens in
+   Oracle anyway and this lets direct comparisons work as expected.
+-}
+autoPadTextToSql :: Int -> T.Text -> HDBC.SqlValue
+autoPadTextToSql len = HDBC.SqlString . T.unpack . (T.justifyLeft len ' ')
+
+{-|
+  'autoStripTextFromSql' strips leading and trailing whitespace from the resulting value to better reflect an
+  inverse of 'autoPadTextToSql'
+-}
+autoStripTextFromSql :: HDBC.SqlValue -> Maybe T.Text
+autoStripTextFromSql sql =
   case sql of
     HDBC.SqlByteString bytes -> Just . T.strip $ Enc.decodeUtf8 bytes
     HDBC.SqlString string -> Just . T.strip $ T.pack string
     _ -> Nothing
+
 
 doubleToSql :: Double -> HDBC.SqlValue
 doubleToSql = HDBC.SqlDouble

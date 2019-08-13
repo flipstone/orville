@@ -12,7 +12,7 @@ module Database.Orville.Oracle.Core
   , tableKeyFromSql
   , SqlType(..)
   , text
-  , varText
+  , autoPadAndStripText
   , integer
   , bigInteger
   , double
@@ -57,7 +57,7 @@ module Database.Orville.Oracle.Core
   , FieldDefinition
   , fieldOfType
   , textField
-  , fixedTextField
+  , autoPadAndStripTextField
   , dayField
   , localTimeField
   , utcTimeField
