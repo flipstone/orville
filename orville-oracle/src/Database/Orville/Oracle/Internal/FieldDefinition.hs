@@ -29,13 +29,6 @@ doubleNumberField = fieldOfType doubleNumber
 textField :: String -> Int -> FieldDefinition Text
 textField name len = FieldDefinition name (text len) []
 
-{-|
-  'autoPadAndStripTextField' defines a fixed-length text field and will be padded
-  with spaces on the left entering the database and such spaces stripped on the way out.
--}
-autoPadAndStripTextField :: String -> Int -> FieldDefinition Text
-autoPadAndStripTextField name len = FieldDefinition name (autoPadAndStripText len) []
-
 dayField :: String -> FieldDefinition Day
 dayField = fieldOfType date
 
