@@ -326,7 +326,10 @@ doubleFromSql :: HDBC.SqlValue -> Maybe Double
 doubleFromSql sql =
   case sql of
     HDBC.SqlDouble d -> Just d
-    HDBC.SqlByteString n -> (readMaybe . B8.unpack) n
+    HDBC.SqlByteString n ->
+      -- Numbers are permitted to begin with a . in Oracle
+      -- So we have this hacky workaround :(
+      readMaybe ("0" <> B8.unpack n)
     _ -> Nothing
 
 booleanToSql :: Bool -> HDBC.SqlValue
