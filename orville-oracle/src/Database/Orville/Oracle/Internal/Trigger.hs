@@ -42,19 +42,19 @@ class UpdateTrigger trigger readEntity writeEntity where
 class DeleteTrigger trigger readEntity where
   deleteTriggers :: readEntity -> [trigger]
 
-insertTriggered ::
-     ( MonadThrow m
-     , O.MonadOrville conn m
-     , MonadTrigger trigger m
-     , InsertTrigger trigger readEntity
-     )
-  => O.TableDefinition readEntity writeEntity key
-  -> writeEntity
-  -> m readEntity
-insertTriggered tableDef writeEntity = do
-  readEntity <- O.insertRecord tableDef writeEntity
-  runTriggers $ insertTriggers readEntity
-  pure readEntity
+-- insertTriggered ::
+--      ( MonadThrow m
+--      , O.MonadOrville conn m
+--      , MonadTrigger trigger m
+--      , InsertTrigger trigger readEntity
+--      )
+--   => O.TableDefinition readEntity writeEntity key
+--   -> writeEntity
+--   -> m readEntity
+-- insertTriggered tableDef writeEntity = do
+--   readEntity <- O.insertRecord tableDef writeEntity
+--   runTriggers $ insertTriggers readEntity
+--   pure readEntity
 
 updateTriggered ::
      ( MonadThrow m

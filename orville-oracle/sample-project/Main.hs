@@ -40,8 +40,9 @@ main = do
   _ <- O.runOrville initialInsertMajors env
   _ <- O.runOrville initialInsertStudents env
   catch
-    ((O.runOrville insertStudentFail env) >>=
-     T.putStrLn . studentNameText . studentName)
+    (pure ())
+    -- ((O.runOrville insertStudentFail env) >>=
+    --  T.putStrLn . studentNameText . studentName)
     (\e -> do
        let err = show (e :: SomeException)
        putStrLn
@@ -60,16 +61,16 @@ main = do
   resultSelectAll <- O.runOrville selectAllTest env
   putStrLn "\nSelect all result: "
   mapM_ (T.putStrLn . studentNameText . studentName) resultSelectAll
-  deletedStudent <- O.runOrville deleteTest env
-  putStrLn $
-    "\nInserted and deleted: " ++
-    unpack (studentNameText $ studentName deletedStudent) ++
-    ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
-  deletedMajor <- O.runOrville deleteMajorSuccess env
-  putStrLn $
-    "\nInserted and deleted: " ++
-    unpack (majorNameText $ majorName deletedMajor) ++
-    ", ID: " ++ show (majorIdInt $ majorId deletedMajor)
+  -- deletedStudent <- O.runOrville deleteTest env
+  -- putStrLn $
+  --   "\nInserted and deleted: " ++
+  --   unpack (studentNameText $ studentName deletedStudent) ++
+  --   ", ID: " ++ show (studentIdInt $ studentId deletedStudent)
+  -- deletedMajor <- O.runOrville deleteMajorSuccess env
+  -- putStrLn $
+  --   "\nInserted and deleted: " ++
+  --   unpack (majorNameText $ majorName deletedMajor) ++
+  --   ", ID: " ++ show (majorIdInt $ majorId deletedMajor)
   numDeletedMajors <- O.runOrville deleteWhereMajorSuccess env
   putStrLn $
     "\nNumber of records deleted from major table: " ++ (show numDeletedMajors)
@@ -126,7 +127,7 @@ printTuple (major, studentList) = do
   mapM_ (T.putStrLn . studentNameText . studentName) studentList
 
 -- demonstrates insertRecord function
-initialInsertMajors :: O.OrvilleT ODBC.Connection IO (Major MajorId)
+initialInsertMajors :: O.OrvilleT ODBC.Connection IO Integer -- (Major MajorId)
 initialInsertMajors = do
   resetToBlankSchema studentSchema
   _ <- O.insertRecord majorTable business
@@ -142,7 +143,7 @@ initialInsertStudents = do
   O.insertRecordMany studentTable student_list
 
 -- insert invalid (student has Major Id that is not in major table)
-insertStudentFail :: O.OrvilleT ODBC.Connection IO (Student StudentId)
+insertStudentFail :: O.OrvilleT ODBC.Connection IO Integer-- (Student StudentId)
 insertStudentFail = do
   O.insertRecord studentTable testStudent
 
@@ -161,17 +162,17 @@ findRecordTest :: O.OrvilleT ODBC.Connection IO (Maybe (Student StudentId))
 findRecordTest = do
   O.findRecord studentTable (StudentId 1)
 
-deleteTest :: O.OrvilleT ODBC.Connection IO (Student StudentId)
-deleteTest = do
-  insertedStudent <- O.insertRecord studentTable allan
-  O.deleteRecord studentTable (studentId insertedStudent)
-  pure insertedStudent
+-- deleteTest :: O.OrvilleT ODBC.Connection IO (Student StudentId)
+-- deleteTest = do
+--   insertedStudent <- O.insertRecord studentTable allan
+--   O.deleteRecord studentTable (studentId insertedStudent)
+--   pure insertedStudent
 
-deleteMajorSuccess :: O.OrvilleT ODBC.Connection IO (Major MajorId)
-deleteMajorSuccess = do
-  insertedMajor <- O.insertRecord majorTable testMajor
-  O.deleteRecord majorTable (majorId insertedMajor)
-  pure insertedMajor
+-- deleteMajorSuccess :: O.OrvilleT ODBC.Connection IO (Major MajorId)
+-- deleteMajorSuccess = do
+--   insertedMajor <- O.insertRecord majorTable testMajor
+--   O.deleteRecord majorTable (majorId insertedMajor)
+--   pure insertedMajor
 
 deleteWhereMajorSuccess :: O.OrvilleT ODBC.Connection IO (Integer)
 deleteWhereMajorSuccess = do

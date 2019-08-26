@@ -1,6 +1,6 @@
 module Database.Orville.Oracle.Trigger
-  ( insertTriggered
-  , InsertTrigger(insertTriggers)
+  ( -- insertTriggered
+  InsertTrigger(insertTriggers)
   , updateTriggered
   , UpdateTrigger(updateTriggers)
   , deleteTriggered

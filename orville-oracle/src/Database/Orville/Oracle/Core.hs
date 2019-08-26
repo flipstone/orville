@@ -150,11 +150,11 @@ module Database.Orville.Oracle.Core
   , updateRecord
   ) where
 
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 import Data.Convertible
-import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 import Data.Maybe (listToMaybe)
 import Database.HDBC hiding (withTransaction)
@@ -164,7 +164,6 @@ import Database.Orville.Oracle.Internal.MappendCompat ((<>))
 import qualified Data.Map.Helpers as Map
 import Database.Orville.Oracle.Internal.ConstraintDefinition
 import Database.Orville.Oracle.Internal.Execute
-import Database.Orville.Oracle.Internal.Expr
 import Database.Orville.Oracle.Internal.FieldDefinition
 import Database.Orville.Oracle.Internal.FieldUpdate
 import Database.Orville.Oracle.Internal.FromSql
@@ -291,29 +290,23 @@ insertRecord ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
   -> writeEntity
-  -> m readEntity
+  -> m Integer
 insertRecord tableDef newRecord = do
-  let builder = tableFromSql tableDef
-      returnSelects = expr <$> fromSqlSelects builder
-      returnColumns =
-        List.intercalate ", " $ map (rawExprToSql . generateSql) returnSelects
-      insertSql =
+  let insertSql =
         mkInsertClause
           (tableName tableDef)
-          (tableAssignableColumnNames tableDef) ++
-        " RETURNING " ++ returnColumns
+          (tableAssignableColumnNames tableDef)
       vals = runToSql (tableToSql tableDef) newRecord
-  rows <-
+  liftIO $ putStrLn insertSql
+  numRows <-
     withConnection $ \conn -> do
       executingSql InsertQuery insertSql $ do
         insert <- prepare conn insertSql
-        void $ execute insert vals
-        fetchAllRowsAL' insert
-  results <- decodeSqlRows builder rows
-  case results of
-    [entity] -> pure entity
-    [] -> error "Didn't get a record back from the database!"
-    _ -> error "Got more than one record back from the database!"
+        execute insert vals
+  case numRows of
+    0 -> error "Insert did not modify any rows!"
+    x | x < 0 -> error "A driver error occured during insert!" -- This should never happen according HDBC docs..
+    x -> pure x
 
 insertRecordMany ::
      MonadOrville conn m
