@@ -136,6 +136,10 @@ matrix:
     compiler: ": #stack 8.6.5 (lts-13)"
     addons: {apt: {packages: [libgmp-dev]}}
 
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-14.0.yml" DB=postgresql
+    compiler: ": #stack 8.6.5 (lts-14)"
+    addons: {apt: {packages: [libgmp-dev]}}
+
   - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml --resolver nightly" DB=postgresql
     compiler: ": #stack nightly"
     addons: {apt: {packages: [libgmp-dev]}}
