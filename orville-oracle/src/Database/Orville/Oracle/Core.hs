@@ -297,7 +297,6 @@ insertRecord tableDef newRecord = do
           (tableName tableDef)
           (tableAssignableColumnNames tableDef)
       vals = runToSql (tableToSql tableDef) newRecord
-  liftIO $ putStrLn insertSql
   numRows <-
     withConnection $ \conn -> do
       executingSql InsertQuery insertSql $ do
