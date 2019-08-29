@@ -8,7 +8,7 @@ services:
       - stack-root:/stack-root
     working_dir: /orville
     depends_on:
-      - testdb
+      - oracle
     environment:
       TEST_CONN_STRING: "DRIVER={PostgreSQL Unicode};Servername=testdb;Username=orville_test;Port=5432;Database=orville_test"
     command:
@@ -19,10 +19,10 @@ services:
     # allocating a tty provides colorful test output :)
     tty: true
 
-  testdb:
-    image: postgres:9.6.8
-    environment:
-      POSTGRES_USER: orville_test
+  oracle:
+    image: store/oracle/database-enterprise:12.2.0.1
+    ports:
+      - 1521:1521
 
 volumes:
   stack-root:
