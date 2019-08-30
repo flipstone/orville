@@ -40,6 +40,7 @@ This is very much a work in progress and many features either do not work or rem
     behind a registration wall to download. To get these do the following:
     - Go to this page https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
     - download both of the following(instantclient files are gitignored to prevent them from being including in the repo on accident)
+      and place them in the orville-oracle directory (alongside this file)
       - instantclient-basic-linux.x64-12.1.0.2.0.zip
       - instantclient-odbc-linux.x64-12.1.0.2.0.zip
 
