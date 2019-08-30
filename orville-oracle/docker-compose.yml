@@ -10,10 +10,11 @@ services:
     depends_on:
       - oracle
     environment:
-      TEST_CONN_STRING: "DRIVER={PostgreSQL Unicode};Servername=testdb;Username=orville_test;Port=5432;Database=orville_test"
-    command:
-      - ./test-loop
-      - stack-lts-13.12.yml
+      TEST_CONN_STRING: "DRIVER={Oracle 12c ODBC driver};DBQ=oracle:1521/ORCLPDB1.localdomain;UID=orville;PWD=test;"
+      LD_LIBRARY_PATH: /opt/oracle/instantclient_12_1:$LD_LIBRARY_PATH
+      TNS_ADMIN: /orville/tnsnames.ora
+    command: sh
+      # ./test-loop stack-lts-13.12.yml
     # A TTY is required for the test-loop script to use
     # stack test. stdin_open would be sufficient, but
     # allocating a tty provides colorful test output :)
