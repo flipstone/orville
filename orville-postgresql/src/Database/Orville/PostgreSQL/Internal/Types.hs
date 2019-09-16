@@ -237,6 +237,8 @@ data SchemaItem
   | Constraint ConstraintDefinition
   | DropConstraint String
                    String
+  | Sequence SequenceDefinition
+  | DropSequence String
 
 instance Show SchemaItem where
   show (Table tableDef) = "Table <" ++ tableName tableDef ++ " definition>"
@@ -246,6 +248,8 @@ instance Show SchemaItem where
   show (Constraint cons) = "Constraint (" ++ show cons ++ ")"
   show (DropConstraint name table) =
     "DropConstraint " ++ show name ++ " " ++ show table
+  show (Sequence name) = "Sequence " ++ show name
+  show (DropSequence name) = "DropSequence " ++ show name
 
 type SchemaDefinition = [SchemaItem]
 
@@ -260,4 +264,14 @@ data ConstraintDefinition = ConstraintDefinition
   { constraintName :: String
   , constraintTable :: String
   , constraintBody :: String
+  } deriving (Eq, Show)
+
+data SequenceDefinition = SequenceDefinition
+  { sequenceName :: String
+  , sequenceIncrement :: Maybe Int
+  , sequenceMinValue :: Maybe Int
+  , sequenceMaxValue :: Maybe Int
+  , sequenceStart :: Maybe Int
+  , sequenceCache :: Maybe Int
+  , sequenceCycle :: Bool
   } deriving (Eq, Show)

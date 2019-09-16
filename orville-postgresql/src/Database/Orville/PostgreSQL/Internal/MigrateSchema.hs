@@ -27,6 +27,7 @@ import Database.Orville.PostgreSQL.Internal.FromClause
 import Database.Orville.PostgreSQL.Internal.FromSql
 import Database.Orville.PostgreSQL.Internal.MigrateConstraint
 import Database.Orville.PostgreSQL.Internal.MigrateIndex
+import Database.Orville.PostgreSQL.Internal.MigrateSequence
 import Database.Orville.PostgreSQL.Internal.MigrateTable
 import Database.Orville.PostgreSQL.Internal.MigrationError
 import Database.Orville.PostgreSQL.Internal.MigrationPlan
@@ -149,3 +150,7 @@ buildMigrationPlan schemaDef schemaState = foldMap mkPlan schemaDef
           createConstraintPlan constraintDef schemaState
         DropConstraint tablName name ->
           dropConstraintPlan tablName name schemaState
+        Sequence seqDef ->
+          createSequencePlan seqDef schemaState
+        DropSequence name ->
+          dropSequencePlan name schemaState

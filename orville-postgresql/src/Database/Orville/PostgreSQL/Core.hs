@@ -85,6 +85,7 @@ module Database.Orville.PostgreSQL.Core
   , uniqueIndex
   , simpleIndex
   , ConstraintDefinition(..)
+  , SequenceDefinition(..)
   , uniqueConstraint
   , dropConstraint
   , FromSql
@@ -152,6 +153,9 @@ module Database.Orville.PostgreSQL.Core
   , insertRecordMany
   , updateFields
   , updateRecord
+  , sequenceNextVal
+  , sequenceSetVal
+  , sequenceCurrVal
   ) where
 
 import Control.Monad.Except
@@ -349,3 +353,40 @@ deleteRecord tableDef key = do
                \but actually deleted" ++
          show n
     else pure ()
+
+sequenceNextVal ::
+     MonadOrville conn m
+  => SequenceDefinition
+  -> m Int
+sequenceNextVal seqDef = do
+  n <- selectSql "SELECT nextval(?)"
+                 [SqlString $ sequenceName seqDef]
+                 (fieldFromSql $ int64Field "nextval")
+  case n of
+    [r] -> pure $ fromIntegral r
+    _ -> error $ "Failed to execute nextval for sequence " ++ sequenceName seqDef ++ "!"
+
+sequenceSetVal ::
+     MonadOrville conn m
+  => SequenceDefinition
+  -> Int
+  -> m Int
+sequenceSetVal seqDef v = do
+  n <- selectSql "SELECT setval(?, ?)"
+                 [SqlString $ sequenceName seqDef, SqlInt64 $ fromIntegral v]
+                 (fieldFromSql $ int64Field "setval")
+  case n of
+    [r] -> pure $ fromIntegral r
+    _ -> error $ "Failed to execute setval for sequence " ++ sequenceName seqDef ++ "!"
+
+sequenceCurrVal ::
+     MonadOrville conn m
+  => SequenceDefinition
+  -> m Int
+sequenceCurrVal seqDef = do
+  n <- selectSql "SELECT currval(?)"
+                 [SqlString $ sequenceName seqDef]
+                 (fieldFromSql $ int64Field "currval")
+  case n of
+    [r] -> pure $ fromIntegral r
+    _ -> error $ "Failed to get current value for sequence " ++ sequenceName seqDef ++ "!"

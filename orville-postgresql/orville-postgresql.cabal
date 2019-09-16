@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ba3c1c2d4ca17e97070e351272c304af86f0d2fbbc490915f57e692541edebac
+-- hash: a2a6c4ca5530fd13151f967575140c08b0abd4567dae387712234047fffa2bdc
 
 name:           orville-postgresql
 version:        0.8.3.0
@@ -57,6 +57,7 @@ library
       Database.Orville.PostgreSQL.Internal.MigrateConstraint
       Database.Orville.PostgreSQL.Internal.MigrateIndex
       Database.Orville.PostgreSQL.Internal.MigrateSchema
+      Database.Orville.PostgreSQL.Internal.MigrateSequence
       Database.Orville.PostgreSQL.Internal.MigrateTable
       Database.Orville.PostgreSQL.Internal.MigrationError
       Database.Orville.PostgreSQL.Internal.MigrationPlan
