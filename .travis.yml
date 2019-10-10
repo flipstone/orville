@@ -162,13 +162,13 @@ matrix:
   #   compiler: ": #stack 8.0.2 osx"
   #   os: osx
 
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml --resolver nightly" DB=postgresql
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml --resolver nightly" DB=postgresql
     compiler: ": #stack nightly osx"
     os: osx
 
   allow_failures:
   - env: BUILD=cabal GHCVER=head CABALVER=head HAPPYVER=1.19.5 ALEXVER=3.1.7 DB=postgresql
-  - env: BUILD=stack ARGS="--stack-yaml stack-lts-12.13.yml --resolver nightly" DB=postgresql
+  - env: BUILD=stack ARGS="--stack-yaml stack-lts-13.0.yml --resolver nightly" DB=postgresql
   - os: osx
 
 before_install:
