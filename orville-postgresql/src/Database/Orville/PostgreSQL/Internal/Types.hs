@@ -33,20 +33,6 @@ type UpdatedAt = Time.UTCTime
 
 type OccurredAt = Time.UTCTime
 
-data ColumnType
-  = AutomaticId
-  | ForeignId
-  | Text Int
-  | UnboundedText
-  | VarText Int
-  | Date
-  | Timestamp
-  | Integer
-  | BigInteger
-  | TextSearchVector
-  | Double
-  | Boolean
-
 data ColumnFlag
   = PrimaryKey
   | forall a. ColumnDefault a =>

@@ -56,7 +56,6 @@ module Database.Orville.PostgreSQL.Core
   , withTransaction
   , ColumnFlag(..)
   , Now(..)
-  , ColumnType(..)
   , FieldDefinition
   , fieldOfType
   , textField
