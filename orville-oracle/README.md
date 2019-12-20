@@ -31,7 +31,8 @@ This is very much a work in progress and many features either do not work or rem
    - `numberDoubleField` refers to the Oracle NUMBER column type specified to be a double
 
 ## Untested
-   Features not listed above may not have been tested and thus may fail in odd and confusing ways
+   Features not listed above may not have been tested and thus may fail in odd and confusing ways.
+   In fact, the tests to not currently even compile.
 
 ## Setting Up Local Development
 
@@ -43,6 +44,15 @@ This is very much a work in progress and many features either do not work or rem
       and place them in the orville-oracle directory (alongside this file)
       - instantclient-basic-linux.x64-12.1.0.2.0.zip
       - instantclient-odbc-linux.x64-12.1.0.2.0.zip
+
+### "Purchasing" the Oracle docker image
+    You will need to "purchase" the Oracle docker image from docker up for the docker
+    commands below to work. There's no actual cost, but you'll need to agree with the
+    Oracle license agreement as part of the process to be able pull the image from
+    docker hub.
+
+    - Visit https://hub.docker.com/_/oracle-database-enterprise-edition an follow the Proceed
+      to Checkout button.
 
 ### Starting and Setting up Oracle
     This is a two step process that assumes you are inside the directory along with this file:
