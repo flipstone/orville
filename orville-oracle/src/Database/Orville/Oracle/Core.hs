@@ -52,7 +52,6 @@ module Database.Orville.Oracle.Core
   , withTransaction
   , ColumnFlag(..)
   , Now(..)
-  , ColumnType(..)
   , FieldDefinition
   , fieldOfType
   , textField
@@ -150,7 +149,6 @@ module Database.Orville.Oracle.Core
   , updateRecord
   ) where
 
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
