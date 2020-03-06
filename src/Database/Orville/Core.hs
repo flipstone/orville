@@ -34,6 +34,7 @@ module Database.Orville.Core
   , FieldDefinition, withPrefix, fieldName
   , IndexDefinition (..)
   , uniqueIndex, simpleIndex
+  , uniquePartialIndex, partialIndex
 
   , ConstraintDefinition (..)
   , uniqueConstraint, dropConstraint
