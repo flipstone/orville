@@ -28,7 +28,7 @@ partialIndex :: String -> TableDefinition entity -> [FieldDefinition] -> [WhereC
 partialIndex name tableDef fields whereConditions =
   IndexDefinition {
     indexName = name
-  , indexUnique = True
+  , indexUnique = False
   , indexTable = tableName tableDef
   , indexBody = intercalate " " [ indexFieldsBody fields, whereClause whereConditions ]
   }
