@@ -39,13 +39,14 @@ instance QueryKeyable WhereCondition where
       => FieldDefinition -> a -> WhereCondition
 fieldDef .== a = BinOp "=" fieldDef (convert a)
 
-(.~~) :: Convertible a SqlValue
-      => FieldDefinition -> a -> WhereCondition
-fieldDef .~~ a = BinOp "~~" fieldDef (convert a)
+(.~~) :: FieldDefinition -> String -> WhereCondition
+fieldDef .~~ a = BinOp "LIKE" fieldDef (convert a)
 
-(.~~*) :: Convertible a SqlValue
-      => FieldDefinition -> a -> WhereCondition
-fieldDef .~~* a = BinOp "~~*" fieldDef (convert a)
+(.!~~) :: FieldDefinition -> String -> WhereCondition
+fieldDef .~~ a = BinOp "NOT LIKE" fieldDef (convert a)
+
+(.!~~*) :: FieldDefinition -> String -> WhereCondition
+fieldDef .~~* a = BinOp "NOT ILIKE" fieldDef (convert a)
 
 (.<>) :: Convertible a SqlValue
       => FieldDefinition -> a -> WhereCondition
@@ -133,6 +134,18 @@ isNull fieldDef = IsNull fieldDef
 
 isNotNull :: FieldDefinition -> WhereCondition
 isNotNull fieldDef = IsNotNull fieldDef
+
+isLike :: FieldDefinition -> String -> WhereCondition
+isLike fieldDef pattern = fieldDef .~~ pattern
+
+isNotLike :: FieldDefinition -> String -> WhereCondition
+isNotLike fieldDef pattern = fieldDef .!~~ pattern
+
+isILike :: FieldDefintion -> String -> WhereCondition
+isLike fieldDef pattern = fieldDef .~~* pattern
+
+isNotILike :: FieldDefinition -> String -> WhereCondition
+isNotILike fieldDef pattern = fieldDef .!~~* pattern
 
 whereClause :: [WhereCondition] -> String
 whereClause [] = ""
