@@ -39,6 +39,14 @@ instance QueryKeyable WhereCondition where
       => FieldDefinition -> a -> WhereCondition
 fieldDef .== a = BinOp "=" fieldDef (convert a)
 
+(.~~) :: Convertible a SqlValue
+      => FieldDefinition -> a -> WhereCondition
+fieldDef .~~ a = BinOp "~~" fieldDef (convert a)
+
+(.~~*) :: Convertible a SqlValue
+      => FieldDefinition -> a -> WhereCondition
+fieldDef .~~* a = BinOp "~~*" fieldDef (convert a)
+
 (.<>) :: Convertible a SqlValue
       => FieldDefinition -> a -> WhereCondition
 fieldDef .<> a = BinOp "<>" fieldDef (convert a)
