@@ -40,13 +40,16 @@ instance QueryKeyable WhereCondition where
 fieldDef .== a = BinOp "=" fieldDef (convert a)
 
 (.~~) :: FieldDefinition -> String -> WhereCondition
-fieldDef .~~ a = BinOp "LIKE" fieldDef (convert a)
+fieldDef .~~ a = isLike fieldDef a
 
 (.!~~) :: FieldDefinition -> String -> WhereCondition
-fieldDef .~~ a = BinOp "NOT LIKE" fieldDef (convert a)
+fieldDef .!~~ a = isNotLike fieldDef a
+
+(.~~*) :: FieldDefinition -> String -> WhereCondition
+fieldDef .~~* a = isILike fieldDef a
 
 (.!~~*) :: FieldDefinition -> String -> WhereCondition
-fieldDef .~~* a = BinOp "NOT ILIKE" fieldDef (convert a)
+fieldDef .!~~* a = isNotILike fieldDef a
 
 (.<>) :: Convertible a SqlValue
       => FieldDefinition -> a -> WhereCondition
@@ -136,16 +139,16 @@ isNotNull :: FieldDefinition -> WhereCondition
 isNotNull fieldDef = IsNotNull fieldDef
 
 isLike :: FieldDefinition -> String -> WhereCondition
-isLike fieldDef pattern = fieldDef .~~ pattern
+isLike fieldDef pattern = BinOp "LIKE" fieldDef (convert pattern)
 
 isNotLike :: FieldDefinition -> String -> WhereCondition
-isNotLike fieldDef pattern = fieldDef .!~~ pattern
+isNotLike fieldDef pattern = BinOp "NOT LIKE" fieldDef (convert pattern)
 
-isILike :: FieldDefintion -> String -> WhereCondition
-isLike fieldDef pattern = fieldDef .~~* pattern
+isILike :: FieldDefinition -> String -> WhereCondition
+isILike fieldDef pattern = BinOp "ILIKE" fieldDef (convert pattern)
 
 isNotILike :: FieldDefinition -> String -> WhereCondition
-isNotILike fieldDef pattern = fieldDef .!~~* pattern
+isNotILike fieldDef pattern = BinOp "NOT ILIKE" fieldDef (convert pattern)
 
 whereClause :: [WhereCondition] -> String
 whereClause [] = ""
