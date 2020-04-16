@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                orville
-version:             0.8.5.1
+version:             0.8.5.2
 synopsis:            ORM
 description:         ORM library for PostgreSQL
 license:             MIT
