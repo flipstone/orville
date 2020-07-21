@@ -20,6 +20,9 @@ textField name len = FieldDefinition name (varText len) []
 fixedTextField :: String -> Int -> FieldDefinition Text
 fixedTextField name len = FieldDefinition name (text len) []
 
+unboundedTextField :: String -> FieldDefinition Text
+unboundedTextField = fieldOfType unboundedText
+
 dayField :: String -> FieldDefinition Day
 dayField = fieldOfType date
 

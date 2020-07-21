@@ -15,6 +15,7 @@ module Database.Orville.PostgreSQL.Core
   , bigserial
   , text
   , varText
+  , unboundedText
   , integer
   , bigInteger
   , double
@@ -60,6 +61,7 @@ module Database.Orville.PostgreSQL.Core
   , fieldOfType
   , textField
   , fixedTextField
+  , unboundedTextField
   , dayField
   , utcTimeField
   , int32Field
