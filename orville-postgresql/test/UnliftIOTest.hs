@@ -70,10 +70,17 @@ instance O.MonadOrville Postgres.Connection EndUserMonad
    as broad as possibly, so we can't use that helper here.
   -}
 instance UL.MonadUnliftIO EndUserMonad where
+#if MIN_VERSION_unliftio_core(0,2,0)
+  withRunInIO inner =
+    EndUserMonad $ do
+      UL.withRunInIO $ \run ->
+        inner (run . runEndUserMonad)
+#else
   askUnliftIO =
     EndUserMonad $ do
       unlio <- UL.askUnliftIO
       pure $ UL.UnliftIO (UL.unliftIO unlio . runEndUserMonad)
+#endif
 
 {-|
    This is the 'MonadOrvilleControl' instance that a user would need to built if

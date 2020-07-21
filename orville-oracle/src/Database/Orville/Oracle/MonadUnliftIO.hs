@@ -16,6 +16,7 @@ following 'MonadOrvilleControl' instance:
 
 This module also provides a 'MonadUnliftIO' instance for 'OrvilleT' and 'OrvilleTrigger'.
 |-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.Oracle.MonadUnliftIO
@@ -59,14 +60,28 @@ liftFinallyViaUnliftIO ioFinally action cleanup = do
   UL.liftIO $ ioFinally (UL.unliftIO unlio action) (UL.unliftIO unlio cleanup)
 
 instance UL.MonadUnliftIO m => UL.MonadUnliftIO (O.OrvilleT conn m) where
+#if MIN_VERSION_unliftio_core(0,2,0)
+  withRunInIO inner =
+    InternalMonad.OrvilleT $ do
+      UL.withRunInIO $ \run ->
+        inner (run . InternalMonad.unOrvilleT)
+#else
   askUnliftIO =
     InternalMonad.OrvilleT $ do
       unlio <- UL.askUnliftIO
       pure $ UL.UnliftIO (UL.unliftIO unlio . InternalMonad.unOrvilleT)
+#endif
 
 instance UL.MonadUnliftIO m =>
          UL.MonadUnliftIO (OT.OrvilleTriggerT trigger conn m) where
+#if MIN_VERSION_unliftio_core(0,2,0)
+  withRunInIO inner =
+    InternalTrigger.OrvilleTriggerT $ do
+      UL.withRunInIO $ \run ->
+        inner (run . InternalTrigger.unTriggerT)
+#else
   askUnliftIO =
     InternalTrigger.OrvilleTriggerT $ do
       unlio <- UL.askUnliftIO
       pure $ UL.UnliftIO (UL.unliftIO unlio . InternalTrigger.unTriggerT)
+#endif

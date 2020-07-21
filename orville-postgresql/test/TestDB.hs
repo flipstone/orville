@@ -101,10 +101,17 @@ instance MonadBaseControl IO TestMonad where
 -- This instance is used by `ConduitTest` because runConduit requires the underlying
 -- monad to be `MonadUnliftIO` since conduit 1.3
 instance UL.MonadUnliftIO TestMonad where
+#if MIN_VERSION_unliftio_core(0,2,0)
+  withRunInIO inner =
+    TestMonad $ do
+      UL.withRunInIO $ \run ->
+        inner (run . runTestMonad)
+#else
   askUnliftIO =
     TestMonad $ do
       unlio <- UL.askUnliftIO
       pure $ UL.UnliftIO (UL.unliftIO unlio . runTestMonad)
+#endif
 
 instance O.MonadOrvilleControl TestMonad where
   liftWithConnection = OMBC.liftWithConnectionViaBaseControl
