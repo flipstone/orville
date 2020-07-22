@@ -15,6 +15,7 @@ import qualified Data.List as List
 import Data.Maybe
 import Database.HDBC
 
+import Database.Orville.PostgreSQL.Internal.Expr
 import Database.Orville.PostgreSQL.Internal.MigrationPlan
 import Database.Orville.PostgreSQL.Internal.SchemaState
 import Database.Orville.PostgreSQL.Internal.SqlType
@@ -47,22 +48,24 @@ mkMigrateTableDDL columns tableDef =
     else Just $ "ALTER TABLE \"" ++ tableName tableDef ++ "\" " ++ cols
   where
     fields = tableFields tableDef
+    fieldNamesToDelete = rawExprToSql . generateSql . NameForm Nothing <$> tableSafeToDelete tableDef
     fieldColumn fieldDef = lookup (fieldName fieldDef) columns
     colStmt (SomeField f) = mkMigrateColumnDDL f (fieldColumn f)
     dropStmt name = mkDropColumnDDL name (lookup name columns)
     stmts =
       List.concatMap colStmt fields ++
-      List.concatMap dropStmt (tableSafeToDelete tableDef)
+      List.concatMap dropStmt fieldNamesToDelete
     cols = List.intercalate ", " $ stmts
 
 mkMigrateColumnTypeDDL :: FieldDefinition a -> SqlColDesc -> Maybe String
 mkMigrateColumnTypeDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
+      name = rawExprToSql . generateSql . NameForm Nothing $ fieldName fieldDef
    in if colType fieldDesc /= colType colDesc ||
          colSize fieldDesc /= colSize colDesc
         then Just $
              "ALTER COLUMN " ++
-             fieldName fieldDef ++
+             name ++
              " SET DATA TYPE " ++ sqlTypeDDL (fieldType fieldDef)
         else Nothing
 
@@ -71,11 +74,12 @@ mkMigrateColumnNullDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
       fieldNull = fromMaybe True (colNullable fieldDesc)
       colNull = fromMaybe True (colNullable colDesc)
+      name = rawExprToSql . generateSql . NameForm Nothing $ fieldName fieldDef
    in if fieldNull && not colNull
-        then Just $ "ALTER COLUMN " ++ fieldName fieldDef ++ " DROP NOT NULL"
+        then Just $ "ALTER COLUMN " ++ name ++ " DROP NOT NULL"
         else if not fieldNull && colNull
                then Just $
-                    "ALTER COLUMN " ++ fieldName fieldDef ++ " SET NOT NULL"
+                    "ALTER COLUMN " ++ name ++ " SET NOT NULL"
                else Nothing
 
 mkMigrateColumnDDL :: FieldDefinition a -> Maybe SqlColDesc -> [String]
@@ -95,14 +99,14 @@ mkFlagDDL PrimaryKey = Just "PRIMARY KEY"
 mkFlagDDL Unique = Just "UNIQUE"
 mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
 mkFlagDDL (References table field) =
-  Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ fieldName field ++ ")"
+  Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ (rawExprToSql . generateSql . NameForm Nothing . fieldName) field ++ ")"
 mkFlagDDL (ColumnDescription _) = Nothing
 mkFlagDDL AssignedByDatabase = Nothing
 
 mkFieldDDL :: FieldDefinition a -> String
 mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
   where
-    name = fieldName field
+    name = rawExprToSql . generateSql . NameForm Nothing . fieldName $ field
     sqlType = sqlTypeDDL (fieldType field)
     flagSql =
       List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
