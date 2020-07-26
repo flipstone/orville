@@ -143,6 +143,8 @@ module Database.Orville.PostgreSQL.Core
   , MigrationPlan
   , MigrationItem(..)
   , migrationPlanItems
+  , Pagination(..)
+  , buildPagination
   , selectAll
   , selectFirst
   , deleteRecord
@@ -191,6 +193,7 @@ import Database.Orville.PostgreSQL.Internal.SqlType
 import Database.Orville.PostgreSQL.Internal.TableDefinition
 import Database.Orville.PostgreSQL.Internal.Types
 import Database.Orville.PostgreSQL.Internal.Where
+import Database.Orville.PostgreSQL.Pagination
 import Database.Orville.PostgreSQL.Raw
 import Database.Orville.PostgreSQL.Select
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e1bd1160c7d4a30389711c2985b88bf253ec618f282d7f423d140084c58e058e
+-- hash: ba90a571910116899596b5b6a86caa405d8511000be2aeedd6483a4a0f8d3d49
 
 name:           orville-postgresql
 version:        0.8.3.0
@@ -75,6 +75,7 @@ library
       Database.Orville.PostgreSQL.Internal.Trigger
       Database.Orville.PostgreSQL.Internal.Types
       Database.Orville.PostgreSQL.Internal.Where
+      Database.Orville.PostgreSQL.Pagination
       Paths_orville_postgresql
   hs-source-dirs:
       src
@@ -96,6 +97,7 @@ library
     , profunctors >=5.2
     , resource-pool >=0.2
     , resourcet >=1.1
+    , safe
     , text
     , time >=1.5
     , transformers >=0.4
@@ -132,6 +134,7 @@ executable orville-sample-exe
     , profunctors >=5.2
     , resource-pool >=0.2
     , resourcet >=1.1
+    , safe
     , text
     , time >=1.5
     , transformers >=0.4
@@ -191,6 +194,7 @@ test-suite spec
     , profunctors >=5.2
     , resource-pool
     , resourcet >=1.1
+    , safe
     , tasty
     , tasty-discover
     , tasty-hunit
