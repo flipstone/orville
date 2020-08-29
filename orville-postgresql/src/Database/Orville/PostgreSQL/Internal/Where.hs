@@ -119,22 +119,31 @@ whereConditionSql cond = internalWhereConditionSql Nothing cond
 
 internalWhereConditionSql ::
      Maybe (TableDefinition a b c) -> WhereCondition -> String
-internalWhereConditionSql (Just tableDef) (WhereConditionExpr expression) =
-  rawExprToSql . generateSql $ expression `qualified` (tableName tableDef)
-internalWhereConditionSql Nothing (WhereConditionExpr expression) =
-  rawExprToSql . generateSql $ expression
-internalWhereConditionSql tableDef (Or conds) =
-  List.intercalate " OR " condsSql
+internalWhereConditionSql mbTableDef whereCondition =
+  case whereCondition of
+    Or [] -> "FALSE"
+    Or conds ->
+      let condsSql = map innerCondSql conds
+       in List.intercalate " OR " condsSql
+
+    And [] -> "TRUE"
+    And conds ->
+      let condsSql = map innerCondSql conds
+       in List.intercalate " AND " condsSql
+
+    WhereConditionExpr expression ->
+      case mbTableDef of
+        Just tableDef ->
+          rawExprToSql . generateSql $ expression `qualified` (tableName tableDef)
+        Nothing ->
+          rawExprToSql . generateSql $ expression
+
+    Qualified tableDef cond ->
+      internalWhereConditionSql (Just tableDef) cond
   where
-    condsSql = map condSql conds
-    condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
-internalWhereConditionSql tableDef (And conds) =
-  List.intercalate " AND " condsSql
-  where
-    condsSql = map condSql conds
-    condSql c = "(" ++ internalWhereConditionSql tableDef c ++ ")"
-internalWhereConditionSql _ (Qualified tableDef cond) =
-  internalWhereConditionSql (Just tableDef) cond
+    innerCondSql c =
+      let sql = internalWhereConditionSql mbTableDef c
+       in "(" ++ sql ++ ")"
 
 whereConditionValues :: WhereCondition -> [SqlValue]
 whereConditionValues (WhereConditionExpr (Expr (Right form))) =
