@@ -48,7 +48,7 @@ mkMigrateTableDDL columns tableDef =
     else Just $ "ALTER TABLE \"" ++ tableName tableDef ++ "\" " ++ cols
   where
     fields = tableFields tableDef
-    fieldNamesToDelete = rawExprToSql . generateSql . NameForm Nothing <$> tableSafeToDelete tableDef
+    fieldNamesToDelete = tableSafeToDelete tableDef
     fieldColumn fieldDef = lookup (fieldName fieldDef) columns
     colStmt (SomeField f) = mkMigrateColumnDDL f (fieldColumn f)
     dropStmt name = mkDropColumnDDL name (lookup name columns)
@@ -92,7 +92,7 @@ mkMigrateColumnDDL fieldDef (Just desc) =
 
 mkDropColumnDDL :: String -> Maybe SqlColDesc -> [String]
 mkDropColumnDDL _ Nothing = []
-mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ name]
+mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ (rawExprToSql . generateSql . NameForm Nothing) name]
 
 mkFlagDDL :: ColumnFlag -> Maybe String
 mkFlagDDL PrimaryKey = Just "PRIMARY KEY"
