@@ -331,14 +331,16 @@ insertRecordMany ::
   -> m ()
 insertRecordMany tableDef newRecords = do
   let insertSql =
-        mkInsertClause
+        mkInsertManyClause
           (tableName tableDef)
           (tableAssignableColumnNames tableDef)
+          (length newRecords)
   let builder = tableToSql tableDef
-  withConnection $ \conn -> do
-    executingSql InsertQuery insertSql $ do
-      insert <- prepare conn insertSql
-      executeMany insert (map (runToSql builder) newRecords)
+  when (not $ null newRecords) $
+    withConnection $ \conn -> do
+      executingSql InsertQuery insertSql $ do
+        insert <- prepare conn insertSql
+        void $ execute insert (concatMap (runToSql builder) newRecords)
 
 deleteRecord ::
      MonadOrville conn m
