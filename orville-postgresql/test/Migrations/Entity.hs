@@ -59,8 +59,3 @@ migrationEntityIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unMigrationEntityId MigrationEntityId
 
---
-type Nullable key = MigrationEntity (Maybe Int32) key
-
-type NotNullable key = MigrationEntity Int32 key
-
