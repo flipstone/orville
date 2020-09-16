@@ -8,20 +8,23 @@ module Database.Orville.Oracle.Internal.Sql where
 import qualified Data.List as List
 
 import Data.String.Helpers(escapeString)
+import Database.Orville.Oracle.Internal.Expr
 
 mkInsertClause :: String -> [String] -> String
 mkInsertClause tblName columnNames =
   "INSERT INTO " ++
   tblName ++ " (" ++ columns ++ ") VALUES (" ++ placeholders ++ ")"
   where
-    columns = List.intercalate "," $ columnNames
+    escapedColumnNames = rawExprToSql . generateSql . NameForm Nothing <$> columnNames
+    columns = List.intercalate "," excapedColumnNames
     placeholders = List.intercalate "," $ map (const "?") columnNames
 
 mkUpdateClause :: String -> [String] -> String
 mkUpdateClause tblName columnNames =
   "UPDATE " <> escapeString tblName <> " SET " <> placeholders
   where
-    placeholders = List.intercalate "," $ map columnUpdateSql columnNames
+    escapedColumnNames = rawExprToSql . generateSql . NameForm Nothing <$> columnNames
+    placeholders = List.intercalate "," $ map columnUpdateSql escapedColumnNames
     columnUpdateSql column = column <> " = ?"
 
 mkDeleteClause :: String -> String

@@ -129,10 +129,12 @@ reset schemaDef = do
       error $ "Expected single 'current_user' result row, got " ++ show results
   O.migrateSchema schemaDef
 
-withOrvilleRun :: ((forall a. TestMonad a -> IO a) -> TestTree) -> TestTree
+type OrvilleRunner = forall a. TestMonad a -> IO a
+
+withOrvilleRun :: (OrvilleRunner -> TestTree) -> TestTree
 withOrvilleRun mkTree = withDb (\pool -> mkTree (run pool))
   where
-    run :: IO TestPool -> forall a. TestMonad a -> IO a
+    run :: IO TestPool -> OrvilleRunner
     run getPool (TestMonad action) = do
       pool <- getPool
       O.runOrville action (O.newOrvilleEnv pool)
