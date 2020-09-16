@@ -7,6 +7,8 @@ module Database.Orville.PostgreSQL.Internal.Sql where
 
 import qualified Data.List as List
 
+import Database.Orville.PostgreSQL.Internal.Expr
+
 mkInsertClause :: String -> [String] -> String
 mkInsertClause tblName columnNames = mkInsertManyClause tblName columnNames 1
 
@@ -22,13 +24,15 @@ mkInsertIntoClause tblName columnNames =
   "INSERT INTO " ++
   escapedName tblName ++ " (" ++ columns ++ ")"
   where
-    columns = List.intercalate "," $ columnNames
+    escapedColumnNames = rawExprToSql . generateSql . NameForm Nothing <$> columnNames
+    columns = List.intercalate "," $ escapedColumnNames
 
 mkUpdateClause :: String -> [String] -> String
 mkUpdateClause tblName columnNames =
   "UPDATE " ++ escapedName tblName ++ " SET " ++ placeholders
   where
-    placeholders = List.intercalate "," $ map columnUpdateSql columnNames
+    escapedColumnNames = rawExprToSql . generateSql . NameForm Nothing <$> columnNames
+    placeholders = List.intercalate "," $ map columnUpdateSql escapedColumnNames
     columnUpdateSql column = column ++ " = ?"
 
 mkDeleteClause :: String -> String
