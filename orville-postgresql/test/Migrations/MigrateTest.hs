@@ -3,7 +3,7 @@
 
 module Migrations.MigrateTest where
 
-#if MIN_VERSION_base(4,5,0)
+#if MIN_VERSION_GLASGOW_HASKELL(8,0,0,0) && MIN_VERSION_base(4,5,0)
 import GHC.Stack (HasCallStack)
 #endif
 
@@ -27,7 +27,7 @@ test_migrate =
 -- given a column name, test the correct migrations are generated for it.
 columnNameMigrationTests :: String -> TestTree
 columnNameMigrationTests columnName =
-    testGroup (columnName <> " can be used as a column name")
+    testGroup (columnName ++ " can be used as a column name")
       [ tableCreationTest columnName
       , nullableConstraintTest columnName
       , addAndDropTest columnName
@@ -94,7 +94,7 @@ alterColumnTypeTest columnName = TestDB.withOrvilleRun $ \run ->
                   MigrationEntityId
     int64TableDef = migrationEntityTable (O.int64Field columnName)
 
-#if MIN_VERSION_base(4,5,0)
+#if MIN_VERSION_GLASGOW_HASKELL(8,0,0,0) && MIN_VERSION_base(4,5,0)
 assertMigrationIdempotent ::
   HasCallStack =>
   TestDB.OrvilleRunner ->
