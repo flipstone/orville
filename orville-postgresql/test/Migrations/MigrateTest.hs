@@ -1,12 +1,15 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE CPP #-}
 
 module Migrations.MigrateTest where
 
+#if MIN_VERSION_base(4,5,0)
+import GHC.Stack (HasCallStack)
+#endif
 
 import qualified Database.Orville.PostgreSQL as O
 import Data.Int (Int32, Int64)
 import qualified Data.List as List
-import GHC.Stack (HasCallStack)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertFailure, testCase)
 import qualified TestDB as TestDB
@@ -91,7 +94,18 @@ alterColumnTypeTest columnName = TestDB.withOrvilleRun $ \run ->
                   MigrationEntityId
     int64TableDef = migrationEntityTable (O.int64Field columnName)
 
-assertMigrationIdempotent :: HasCallStack => TestDB.OrvilleRunner -> O.SchemaDefinition -> IO ()
+#if MIN_VERSION_base(4,5,0)
+assertMigrationIdempotent ::
+  HasCallStack =>
+  TestDB.OrvilleRunner ->
+  O.SchemaDefinition ->
+  IO ()
+#else
+assertMigrationIdempotent ::
+  TestDB.OrvilleRunner ->
+  O.SchemaDefinition ->
+  IO ()
+#endif
 assertMigrationIdempotent run migrationSchema = do
   trace <- run (TestDB.queryTrace isDDL (O.migrateSchema migrationSchema))
   assertBool
