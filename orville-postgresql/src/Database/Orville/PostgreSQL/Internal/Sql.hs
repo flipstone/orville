@@ -8,10 +8,7 @@ module Database.Orville.PostgreSQL.Internal.Sql where
 import qualified Data.List as List
 
 mkInsertClause :: String -> [String] -> String
-mkInsertClause tblName columnNames =
-  mkInsertIntoClause tblName columnNames ++ " VALUES (" ++ placeholders ++ ")"
-  where
-    placeholders = List.intercalate "," $ map (const "?") columnNames
+mkInsertClause tblName columnNames = mkInsertManyClause tblName columnNames 1
 
 mkInsertManyClause :: String -> [String] -> Int -> String
 mkInsertManyClause tblName columnNames recordCount =
