@@ -1,0 +1,41 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: e8c97a996a496f045221621eefb08d42f0e046f5352e175d51576ee91ec631b2
+
+name:           orville-postgresql-libpq
+version:        0.9.0.0
+synopsis:       ORM
+description:    ORM library for PostgreSQL
+category:       Database
+author:         Flipstone Technology Partners
+maintainer:     development@flipstone.com
+license:        MIT
+tested-with:    GHC == 8.6.5
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: git@github.com:flipstone/orville.git
+
+library
+  exposed-modules:
+      Database.Orville.PostgreSQL.Connection
+  other-modules:
+      Paths_orville_postgresql_libpq
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  build-depends:
+      base >=4.8 && <5
+    , bytestring
+    , postgresql-libpq >=0.9.4.2 && <0.10
+    , resource-pool
+    , time >=1.5
+    , unliftio
+  default-language: Haskell2010
