@@ -10,13 +10,12 @@ where
 
 import Control.Concurrent (threadWaitRead, threadWaitWrite)
 import Control.Concurrent.MVar (MVar, newMVar, tryTakeMVar)
-import Control.Exception(mask)
+import Control.Exception(Exception, mask, throwIO)
 import Control.Monad (void)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Data.ByteString (ByteString)
 import Data.Pool (Pool, createPool)
 import Data.Time (NominalDiffTime)
-import UnliftIO.Exception (throwString)
 
 {-|
  'createConnectionPool' allocates a pool of connections to a PosgreSQL
@@ -49,7 +48,11 @@ connect connectionString = do
     checkSocketAndThreadWait conn threadWaitFn = do
       fd <- LibPQ.socket conn
       case fd of
-        Nothing -> throwString "failed to get file descriptor"
+        Nothing -> do
+          libPQError <- LibPQ.errorMessage conn
+          throwIO $ ConnectionError { errorMessage = "failed to get file descriptor"
+                                    , underlyingError = libPQError
+                                    }
         Just fd' -> do
           threadWaitFn fd'
           poll conn
@@ -57,8 +60,10 @@ connect connectionString = do
       pollStatus <- LibPQ.connectPoll conn
       case pollStatus of
         LibPQ.PollingFailed -> do
-          underlyingError <- (LibPQ.errorMessage conn)
-          throwString ("connection failure: " <> show underlyingError)
+          libPQError <- LibPQ.errorMessage conn
+          throwIO $ ConnectionError { errorMessage = "connection failure"
+                                    , underlyingError = libPQError
+                                    }
         LibPQ.PollingReading -> checkSocketAndThreadWait conn threadWaitRead
         LibPQ.PollingWriting -> checkSocketAndThreadWait conn threadWaitWrite
         LibPQ.PollingOk -> do
@@ -81,3 +86,15 @@ close (Connection handle') =
         restore (traverse LibPQ.finish underlyingConnection)
   in
     void $ mask underlyingFinish
+
+
+data ConnectionError = ConnectionError { errorMessage :: String
+                                       , underlyingError :: Maybe ByteString
+                                       }
+
+instance Show ConnectionError where
+  show x = let libPQErrorMsg = maybe "" ((<>) ": " . show ) $ underlyingError x
+           in
+             (errorMessage x) <> libPQErrorMsg
+
+instance Exception ConnectionError
