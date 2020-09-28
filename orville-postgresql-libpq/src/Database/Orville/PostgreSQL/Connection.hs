@@ -59,7 +59,7 @@ connect connectionString = do
       case pollStatus of
         LibPQ.PollingFailed -> do
           underlyingError <- (LibPQ.errorMessage conn)
-          throwString ("connection failure" <> show underlyingError)
+          throwString ("connection failure: " <> show underlyingError)
         LibPQ.PollingReading -> checkSocketAndThreadWait conn threadWaitRead
         LibPQ.PollingWriting -> checkSocketAndThreadWait conn threadWaitWrite
         LibPQ.PollingOk -> do
@@ -72,6 +72,7 @@ connect connectionString = do
   `mask` though, only works for things that not interruptible <https://www.stackage.org/haddock/lts-16.15/base-4.13.0.0/Control-Exception.html#g:13>
   From the previous link, `tryTakeMVar` is not interruptible, where `takeMVar` *is*.
   So by using `tryTakeMVar` along with `mask`, we should be safe from async exceptions causing us to not finish an underlying connection.
+  Notice that the only place the MVar is ever taken is here so `tryTakeMVar` gives us both the non-blocking semantics to protect from async exceptions with `mask` _and_ should never truly return an empty unless two threads were racing to close the connection, in which case.. one of them will close the connection.
 
 -}
 close :: Connection -> IO ()
