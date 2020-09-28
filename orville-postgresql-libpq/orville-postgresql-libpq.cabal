@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 11a3242dd6375034e41f5c15a8a74e079c08e578417236d0e93c445d2add1d24
+-- hash: 8e910de7fb31e0bb8cc0f31eb9be94438812ad9cbc7995761bf4938430a4087e
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -14,7 +14,7 @@ category:       Database
 author:         Flipstone Technology Partners
 maintainer:     development@flipstone.com
 license:        MIT
-tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
+tested-with:    GHC == 8.6.5
 build-type:     Simple
 extra-source-files:
     README.md
