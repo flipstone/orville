@@ -12,7 +12,6 @@ extra-source-files:
   - README.md
 ghc-options:
   - -Wall
-  - -fno-warn-orphans
   - -fwarn-incomplete-uni-patterns
   - -fwarn-incomplete-record-updates
 dependencies:
