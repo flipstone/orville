@@ -15,8 +15,7 @@ module Database.Orville.PostgreSQL.Internal.SqlType
            , sqlTypeFromSql
            )
   , integer
-  )
-where
+  ) where
 
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Attoparsec.ByteString.Char8 (signed, decimal)

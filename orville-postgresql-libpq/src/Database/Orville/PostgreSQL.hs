@@ -16,8 +16,7 @@ module Database.Orville.PostgreSQL
             , sqlTypeFromSql
             )
   , integer
-  )
-where
+  ) where
 
 import Database.Orville.PostgreSQL.Connection (createConnectionPool)
 import Database.Orville.PostgreSQL.Internal.SqlType (SqlType ( SqlType
