@@ -15,6 +15,7 @@ module Database.Orville.PostgreSQL
             , sqlTypeToSql
             , sqlTypeFromSql
             )
+  , integer
   )
 where
 
@@ -28,4 +29,5 @@ import Database.Orville.PostgreSQL.Internal.SqlType (SqlType ( SqlType
                                                              , sqlTypeToSql
                                                              , sqlTypeFromSql
                                                              )
+                                                    , integer
                                                     )

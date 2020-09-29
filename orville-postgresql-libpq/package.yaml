@@ -16,6 +16,7 @@ ghc-options:
   - -fwarn-incomplete-record-updates
 dependencies:
   - base >=4.8 && <5
+  - attoparsec
   - bytestring
   - postgresql-libpq >= 0.9.4.2 && <0.10
   - resource-pool

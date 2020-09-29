@@ -14,10 +14,16 @@ module Database.Orville.PostgreSQL.Internal.SqlType
            , sqlTypeToSql
            , sqlTypeFromSql
            )
+  , integer
   )
 where
 
+import Data.Attoparsec.ByteString (parseOnly)
+import Data.Attoparsec.ByteString.Char8 (signed, decimal)
 import Data.ByteString (ByteString)
+import Data.ByteString.Builder (int32Dec, toLazyByteString)
+import Data.ByteString.Lazy (toStrict)
+import Data.Int (Int32)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 {-|
@@ -49,3 +55,27 @@ data SqlType a = SqlType
     -- an error if the conversion is impossible. Otherwise it should return
     -- 'Just' the corresponding 'a' value.
   }
+
+
+{-|
+  'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
+  -}
+integer :: SqlType Int32
+integer =
+  SqlType
+    { sqlTypeDDL = "INTEGER"
+    , sqlTypeReferenceDDL = Nothing
+    , sqlTypeNullable = False
+    , sqlTypeId = LibPQ.Oid 23
+    , sqlTypeSqlSize = Just 4
+    , sqlTypeToSql = int32ToBS
+    , sqlTypeFromSql = int32FromBS
+    }
+
+int32ToBS :: Int32 -> ByteString
+int32ToBS = toStrict . toLazyByteString . int32Dec
+
+int32FromBS :: ByteString -> Maybe Int32
+int32FromBS bs = case parseOnly (signed decimal) bs of
+  Left _ -> Nothing
+  Right i -> Just i
