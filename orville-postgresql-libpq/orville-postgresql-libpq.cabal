@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e8c97a996a496f045221621eefb08d42f0e046f5352e175d51576ee91ec631b2
+-- hash: 764b2916ff3cee43c61e16ca12b3d7f83230b6c18e2c8ca5fed5ab7505323169
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -25,17 +25,19 @@ source-repository head
 
 library
   exposed-modules:
-      Database.Orville.PostgreSQL.Connection
+      Database.Orville.PostgreSQL
   other-modules:
+      Database.Orville.PostgreSQL.Connection
+      Database.Orville.PostgreSQL.Internal.SqlType
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       src
   ghc-options: -Wall -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
   build-depends:
-      base >=4.8 && <5
+      attoparsec
+    , base >=4.8 && <5
     , bytestring
     , postgresql-libpq >=0.9.4.2 && <0.10
     , resource-pool
     , time >=1.5
-    , unliftio
   default-language: Haskell2010

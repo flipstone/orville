@@ -12,10 +12,10 @@ import Control.Concurrent (threadWaitRead, threadWaitWrite)
 import Control.Concurrent.MVar (MVar, newMVar, tryTakeMVar)
 import Control.Exception(Exception, mask, throwIO)
 import Control.Monad (void)
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Data.ByteString (ByteString)
 import Data.Pool (Pool, createPool)
 import Data.Time (NominalDiffTime)
+import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 {-|
  'createConnectionPool' allocates a pool of connections to a PosgreSQL

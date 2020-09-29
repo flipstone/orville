@@ -16,13 +16,13 @@ ghc-options:
   - -fwarn-incomplete-record-updates
 dependencies:
   - base >=4.8 && <5
+  - attoparsec
   - bytestring
   - postgresql-libpq >= 0.9.4.2 && <0.10
   - resource-pool
   - time >=1.5
-  - unliftio
 
 library:
   source-dirs: src
   exposed-modules:
-    - Database.Orville.PostgreSQL.Connection
+    - Database.Orville.PostgreSQL
