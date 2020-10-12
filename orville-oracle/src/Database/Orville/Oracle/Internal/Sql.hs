@@ -16,7 +16,7 @@ mkInsertClause tblName columnNames =
   tblName ++ " (" ++ columns ++ ") VALUES (" ++ placeholders ++ ")"
   where
     escapedColumnNames = rawExprToSql . generateSql . NameForm Nothing <$> columnNames
-    columns = List.intercalate "," excapedColumnNames
+    columns = List.intercalate "," escapedColumnNames
     placeholders = List.intercalate "," $ map (const "?") columnNames
 
 mkUpdateClause :: String -> [String] -> String

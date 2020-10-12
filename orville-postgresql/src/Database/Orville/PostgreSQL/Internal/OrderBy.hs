@@ -9,6 +9,7 @@ module Database.Orville.PostgreSQL.Internal.OrderBy where
 
 import Database.HDBC
 
+import Database.Orville.PostgreSQL.Internal.Expr
 import Database.Orville.PostgreSQL.Internal.QueryKey
 import Database.Orville.PostgreSQL.Internal.Types
 
@@ -43,7 +44,7 @@ class ToOrderBy a where
   toOrderBy :: a -> SortDirection -> OrderByClause
 
 instance ToOrderBy (FieldDefinition a) where
-  toOrderBy fieldDef = OrderByClause (fieldName fieldDef) []
+  toOrderBy fieldDef = OrderByClause (rawExprToSql . generateSql . NameForm Nothing $ fieldName fieldDef) []
 
 instance ToOrderBy (String, [SqlValue]) where
   toOrderBy (sql, values) = OrderByClause sql values
