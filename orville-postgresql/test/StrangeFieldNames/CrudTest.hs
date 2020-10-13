@@ -2,6 +2,7 @@ module StrangeFieldNames.CrudTest where
 
 import qualified Database.Orville.PostgreSQL as O
 
+import Data.Monoid ((<>))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertBool, assertEqual, testCase)
 
