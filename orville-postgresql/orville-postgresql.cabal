@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 89b477ef0056a6daed9a193e17441c5e68aa7ea140b7c7dc45a4070a682745af
+-- hash: 6d370ce2609a1afe4541e3107c76ccb3e4220f15b7c6dc391a5ad37541762d73
 
 name:           orville-postgresql
 version:        0.8.3.0
@@ -148,6 +148,7 @@ test-suite spec
       AppManagedEntity.Schema
       AppManagedEntity.Schema.Virus
       ConduitTest
+      CrudTests
       EntityWrapper.CrudTest
       EntityWrapper.Data.Entity
       EntityWrapper.Data.Virus
@@ -162,6 +163,8 @@ test-suite spec
       ParameterizedEntity.Schema
       ParameterizedEntity.Schema.Virus
       PopperTest
+      StrangeFieldNames.CrudTest
+      StrangeFieldNames.Entity
       TestDB
       TransactionTest
       TriggerTest
