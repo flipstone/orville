@@ -289,10 +289,10 @@ nullableType :: SqlType a -> SqlType (Maybe a)
 nullableType sqlType =
   sqlType
     { sqlTypeNullable = True
-    , sqlTypeToSql = maybe (toStrict . toLazyByteString $ stringUtf8 "null") (sqlTypeToSql sqlType)
+    , sqlTypeToSql = maybe nullBS (sqlTypeToSql sqlType)
     , sqlTypeFromSql =
         \sql ->
-          if sql == (toStrict . toLazyByteString $ stringUtf8 "null") then
+          if sql == nullBS then
             Just Nothing
           else
             fmap Just (sqlTypeFromSql sqlType sql)
@@ -335,64 +335,85 @@ maybeConvertSqlType bToA aToB sqlType =
   as 'maybeConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
   -}
 convertSqlType :: (b -> a) -> (a -> b) -> SqlType a -> SqlType b
-convertSqlType bToA aToB = maybeConvertSqlType bToA (Just . aToB)
+convertSqlType bToA aToB =
+  maybeConvertSqlType bToA (Just . aToB)
 
 
 int32ToBS :: Int32 -> ByteString
-int32ToBS = toStrict . toLazyByteString . int32Dec
+int32ToBS =
+  toStrict . toLazyByteString . int32Dec
 
 int32FromBS :: ByteString -> Maybe Int32
-int32FromBS bs = case parseOnly (AttoB8.signed AttoB8.decimal) bs of
-  Left _ -> Nothing
-  Right i -> Just i
+int32FromBS bs =
+  case parseOnly (AttoB8.signed AttoB8.decimal) bs of
+    Left _ -> Nothing
+    Right i -> Just i
 
 int64ToBS :: Int64 -> ByteString
-int64ToBS = toStrict . toLazyByteString . int64Dec
+int64ToBS =
+  toStrict . toLazyByteString . int64Dec
 
 int64FromBS :: ByteString -> Maybe Int64
-int64FromBS bs = case parseOnly (AttoB8.signed AttoB8.decimal) bs of
-  Left _ -> Nothing
-  Right i -> Just i
+int64FromBS bs =
+  case parseOnly (AttoB8.signed AttoB8.decimal) bs of
+    Left _ -> Nothing
+    Right i -> Just i
 
 doubleToBS :: Double -> ByteString
-doubleToBS = toStrict . toLazyByteString . doubleDec
+doubleToBS =
+  toStrict . toLazyByteString . doubleDec
 
 doubleFromBS :: ByteString -> Maybe Double
-doubleFromBS bs = case parseOnly (AttoB8.signed AttoB8.double) bs of
-  Left _ -> Nothing
-  Right i -> Just i
+doubleFromBS bs =
+  case parseOnly (AttoB8.signed AttoB8.double) bs of
+    Left _ -> Nothing
+    Right i -> Just i
 
 booleanToBS :: Bool -> ByteString
-booleanToBS True = toStrict . toLazyByteString $ char8 't'
-booleanToBS False = toStrict . toLazyByteString $ char8 'f'
+booleanToBS True =
+  toStrict . toLazyByteString $ char8 't'
+booleanToBS False =
+  toStrict . toLazyByteString $ char8 'f'
 
 booleanFromBS :: ByteString -> Maybe Bool
-booleanFromBS bs = case parseOnly AttoB8.anyChar bs of
-  Right 't' -> Just True
-  Right 'f' -> Just False
-  Right _ -> Nothing
-  Left _ -> Nothing
+booleanFromBS bs =
+  case parseOnly AttoB8.anyChar bs of
+    Right 't' -> Just True
+    Right 'f' -> Just False
+    Right _ -> Nothing
+    Left _ -> Nothing
 
 textToBS :: Text -> ByteString
-textToBS = encodeUtf8
+textToBS =
+  encodeUtf8
 
 textFromBS :: ByteString -> Maybe Text
-textFromBS bs = case decodeUtf8' bs of
-  Right t -> Just t
-  Left _ -> Nothing
+textFromBS bs =
+  case decodeUtf8' bs of
+    Right t -> Just t
+    Left _ -> Nothing
 
 dayToBS :: Time.Day -> ByteString
-dayToBS = B8.pack . Time.showGregorian
+dayToBS =
+  B8.pack . Time.showGregorian
 
 dayFromBS :: ByteString -> Maybe Time.Day
-dayFromBS bs = do
-  txt <- textFromBS bs
-  Time.parseTimeM False Time.defaultTimeLocale (Time.iso8601DateFormat Nothing) (unpack txt)
+dayFromBS bs =
+  do
+    txt <- textFromBS bs
+    Time.parseTimeM False Time.defaultTimeLocale (Time.iso8601DateFormat Nothing) (unpack txt)
 
 utcTimeToBS :: Time.UTCTime -> ByteString
-utcTimeToBS = B8.pack . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat Nothing)
+utcTimeToBS =
+  B8.pack . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat Nothing)
 
 utcTimeFromBS :: ByteString -> Maybe Time.UTCTime
-utcTimeFromBS bs = do
-  txt <- textFromBS bs
-  Time.parseTimeM False Time.defaultTimeLocale (Time.iso8601DateFormat Nothing) (unpack txt)
+utcTimeFromBS bs =
+  do
+    txt <- textFromBS bs
+    Time.parseTimeM False Time.defaultTimeLocale (Time.iso8601DateFormat Nothing) (unpack txt)
+
+-- | NULL as a bytestring
+nullBS :: ByteString
+nullBS =
+  toStrict . toLazyByteString $ stringUtf8 "null"
