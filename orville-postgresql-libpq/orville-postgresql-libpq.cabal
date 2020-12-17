@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 764b2916ff3cee43c61e16ca12b3d7f83230b6c18e2c8ca5fed5ab7505323169
+-- hash: 05815b8a9220e968f85058f84cfa17fd16c98fddcee29c1a53b54183b7ba5140
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -39,5 +39,6 @@ library
     , bytestring
     , postgresql-libpq >=0.9.4.2 && <0.10
     , resource-pool
+    , text
     , time >=1.5
   default-language: Haskell2010

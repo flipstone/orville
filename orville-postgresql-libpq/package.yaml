@@ -20,6 +20,7 @@ dependencies:
   - bytestring
   - postgresql-libpq >= 0.9.4.2 && <0.10
   - resource-pool
+  - text
   - time >=1.5
 
 library:
