@@ -29,7 +29,6 @@ library
   other-modules:
       Database.Orville.PostgreSQL.Connection
       Database.Orville.PostgreSQL.Internal.ExecutionResult
-      Database.Orville.PostgreSQL.Internal.Monad
       Database.Orville.PostgreSQL.Internal.SqlType
       Paths_orville_postgresql_libpq
   hs-source-dirs:
