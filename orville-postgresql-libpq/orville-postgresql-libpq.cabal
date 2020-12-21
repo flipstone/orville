@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 05815b8a9220e968f85058f84cfa17fd16c98fddcee29c1a53b54183b7ba5140
+-- hash: 6c03f5a93af3aa287fb17898b9ff0cc413e54bc427def02c1085f92026f95023
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -28,6 +28,8 @@ library
       Database.Orville.PostgreSQL
   other-modules:
       Database.Orville.PostgreSQL.Connection
+      Database.Orville.PostgreSQL.Internal.ExecutionResult
+      Database.Orville.PostgreSQL.Internal.Monad
       Database.Orville.PostgreSQL.Internal.SqlType
       Paths_orville_postgresql_libpq
   hs-source-dirs:
