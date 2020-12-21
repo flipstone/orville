@@ -24,9 +24,9 @@ module Database.Orville.PostgreSQL.Internal.SqlType
 
   -- textual-ish types
   , boolean
-  , text
+  , unboundedText
+  , fixedText
   , boundedText
-  , varText
   , textSearchVector
 
   -- date types
@@ -82,10 +82,9 @@ data SqlType a = SqlType
     -- 'Just' the corresponding 'a' value.
   }
 
-
 {-|
   'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
-  -}
+-}
 integer :: SqlType Int32
 integer =
   SqlType
@@ -101,7 +100,7 @@ integer =
 {-|
   'serial' defines a 32-bit auto-incrementing column type. This corresponds to
   the "SERIAL" type in PostgreSQL.
-  -}
+-}
 serial :: SqlType Int32
 serial =
   SqlType
@@ -117,7 +116,7 @@ serial =
 {-|
   'bigInteger' defines a 64-bit integer type. This corresponds to the "BIGINT"
   type in SQL.
-  -}
+-}
 bigInteger :: SqlType Int64
 bigInteger =
   SqlType
@@ -133,7 +132,7 @@ bigInteger =
 {-|
   'bigserial' defines a 64-bit auto-incrementing column type. This corresponds to
   the "BIGSERIAL" type in PostgresSQL.
-  -}
+-}
 bigserial :: SqlType Int64
 bigserial =
   SqlType
@@ -149,7 +148,7 @@ bigserial =
 {-|
   'double' defines a floating point numeric type. This corresponds to the "DOUBLE
   PRECISION" type in SQL.
-  -}
+-}
 double :: SqlType Double
 double =
   SqlType
@@ -165,7 +164,7 @@ double =
 {-|
   'boolean' defines a True/False boolean type. This corresponds to the "BOOLEAN"
   type in SQL.
-  -}
+-}
 boolean :: SqlType Bool
 boolean =
   SqlType
@@ -179,11 +178,11 @@ boolean =
     }
 
 {-|
-  'text' defines a fixed length text field type. This corresponds to a
+  'unboundedText' defines a fixed length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
-  -}
-text :: SqlType Text
-text =
+-}
+unboundedText :: SqlType Text
+unboundedText =
   SqlType
     { sqlTypeDDL = "TEXT"
     , sqlTypeReferenceDDL = Nothing
@@ -195,11 +194,11 @@ text =
     }
 
 {-|
-  'boundedText' defines a fixed length text field type. This corresponds to a
+  'fixedText' defines a fixed length text field type. This corresponds to a
   "CHAR(len)" type in PostgreSQL.
-  -}
-boundedText :: Int -> SqlType Text
-boundedText len =
+-}
+fixedText :: Int -> SqlType Text
+fixedText len =
   SqlType
     { sqlTypeDDL = "CHAR(" <> show len <> ")"
     , sqlTypeReferenceDDL = Nothing
@@ -211,11 +210,11 @@ boundedText len =
     }
 
 {-|
-  'varText' defines a variable length text field type. This corresponds to a
+  'boundedText' defines a variable length text field type. This corresponds to a
   "VARCHAR(len)" type in PostgreSQL.
-  -}
-varText :: Int -> SqlType Text
-varText len =
+-}
+boundedText :: Int -> SqlType Text
+boundedText len =
   SqlType
     { sqlTypeDDL = "VARCHAR(" <> show len <> ")"
     , sqlTypeReferenceDDL = Nothing
@@ -229,7 +228,7 @@ varText len =
 {-|
   'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
-  -}
+-}
 date :: SqlType Time.Day
 date =
   SqlType
@@ -250,7 +249,7 @@ date =
   any actual time zone information. For an excellent explanation of the complexities
   involving this type, please see Chris Clark's blog post about it:
   http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
-  -}
+-}
 timestamp :: SqlType Time.UTCTime
 timestamp =
   SqlType
@@ -266,7 +265,7 @@ timestamp =
 {-|
   'textSearchVector' defines a type for indexed text searching. It corresponds to the
   "TSVECTOR" type in PostgreSQL.
-  -}
+-}
 textSearchVector :: SqlType Text
 textSearchVector =
   SqlType
@@ -284,7 +283,7 @@ textSearchVector =
    sql type will be the same as the original, but column will be created with a 'NULL'
    constraint instead a 'NOT NULL' constraint. The Haskell value 'Nothing' will be used
    represent NULL values when converting to and from sql.
-  -}
+-}
 nullableType :: SqlType a -> SqlType (Maybe a)
 nullableType sqlType =
   sqlType
@@ -306,7 +305,7 @@ nullableType sqlType =
   have regular underlying sql type. Each 'SqlType' definition must specify any
   special handling required when creating foreign reference types by setting
   the 'sqlTypeReferenceDDL' field to an appropriate value.
-  -}
+-}
 foreignRefType :: SqlType a -> SqlType a
 foreignRefType sqlType =
   case sqlTypeReferenceDDL sqlType of
@@ -320,7 +319,7 @@ foreignRefType sqlType =
   reading and writing values from the database. When reading an 'a' value from
   the database, the conversion function should produce 'Nothing' if the value
   cannot be successfully converted to a 'b'
-  -}
+-}
 maybeConvertSqlType :: (b -> a) -> (a -> Maybe b) -> SqlType a -> SqlType b
 maybeConvertSqlType bToA aToB sqlType =
   sqlType
@@ -333,7 +332,7 @@ maybeConvertSqlType bToA aToB sqlType =
 {-|
   'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
   as 'maybeConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
-  -}
+-}
 convertSqlType :: (b -> a) -> (a -> b) -> SqlType a -> SqlType b
 convertSqlType bToA aToB =
   maybeConvertSqlType bToA (Just . aToB)
@@ -407,11 +406,14 @@ utcTimeToBS :: Time.UTCTime -> ByteString
 utcTimeToBS =
   B8.pack . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat Nothing)
 
+-- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
+-- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
+-- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
+-- Leading to the ugly hacks below.
 utcTimeFromBS :: ByteString -> Maybe Time.UTCTime
-utcTimeFromBS bs =
-  do
-    txt <- textFromBS bs
-    Time.parseTimeM False Time.defaultTimeLocale (Time.iso8601DateFormat Nothing) (unpack txt)
+utcTimeFromBS bs = do
+  txt <- textFromBS bs
+  Time.parseTimeM False Time.defaultTimeLocale ("%F %T%Q%Z") ((unpack txt) <> "00")
 
 -- | NULL as a bytestring
 nullBS :: ByteString

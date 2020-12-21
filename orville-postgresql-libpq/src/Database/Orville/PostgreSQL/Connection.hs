@@ -5,9 +5,10 @@ License   : MIT
 -}
 
 module Database.Orville.PostgreSQL.Connection
-  ( createConnectionPool
+  ( Connection
+  , createConnectionPool
   , executeRaw
-  , executeRaw'
+  , executeRawVoid
   ) where
 
 import Control.Concurrent (threadWaitRead, threadWaitWrite)
@@ -47,8 +48,8 @@ executeRaw pool bs =
  `executeRaw'` a version of `executeRaw` that completely ignores the result.
  Use with caution.
 -}
-executeRaw' :: Pool Connection -> ByteString -> IO ()
-executeRaw' = fmap void . executeRaw
+executeRawVoid :: Pool Connection -> ByteString -> IO ()
+executeRawVoid = fmap void . executeRaw
 
 {-|
  The basic connection interface.
