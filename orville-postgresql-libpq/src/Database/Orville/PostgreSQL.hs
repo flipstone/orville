@@ -15,7 +15,29 @@ module Database.Orville.PostgreSQL
             , sqlTypeToSql
             , sqlTypeFromSql
             )
+    -- numeric types
   , integer
+  , serial
+  , bigInteger
+  , bigserial
+  , double
+
+    -- textual-ish types
+  , boolean
+  , unboundedText
+  , fixedText
+  , boundedText
+  , textSearchVector
+
+    -- date types
+  , date
+  , timestamp
+
+    -- type conversions
+  , nullableType
+  , foreignRefType
+  , convertSqlType
+  , maybeConvertSqlType
   ) where
 
 import Database.Orville.PostgreSQL.Connection (createConnectionPool)
@@ -28,5 +50,27 @@ import Database.Orville.PostgreSQL.Internal.SqlType (SqlType ( SqlType
                                                              , sqlTypeToSql
                                                              , sqlTypeFromSql
                                                              )
+                                                      -- numeric types
                                                     , integer
+                                                    , serial
+                                                    , bigInteger
+                                                    , bigserial
+                                                    , double
+
+                                                      -- textual-ish types
+                                                    , boolean
+                                                    , unboundedText
+                                                    , fixedText
+                                                    , boundedText
+                                                    , textSearchVector
+
+                                                    -- date types
+                                                    , date
+                                                    , timestamp
+
+                                                    -- type conversions
+                                                    , nullableType
+                                                    , foreignRefType
+                                                    , convertSqlType
+                                                    , maybeConvertSqlType
                                                     )

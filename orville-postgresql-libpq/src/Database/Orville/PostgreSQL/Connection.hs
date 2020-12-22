@@ -5,20 +5,23 @@ License   : MIT
 -}
 
 module Database.Orville.PostgreSQL.Connection
-  (createConnectionPool)
-where
+  ( Connection
+  , createConnectionPool
+  , executeRaw
+  , executeRawVoid
+  ) where
 
 import Control.Concurrent (threadWaitRead, threadWaitWrite)
-import Control.Concurrent.MVar (MVar, newMVar, tryTakeMVar)
+import Control.Concurrent.MVar (MVar, newMVar, tryTakeMVar, readMVar)
 import Control.Exception(Exception, mask, throwIO)
 import Control.Monad (void)
 import Data.ByteString (ByteString)
-import Data.Pool (Pool, createPool)
+import Data.Pool (Pool, createPool, withResource)
 import Data.Time (NominalDiffTime)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 {-|
- 'createConnectionPool' allocates a pool of connections to a PosgreSQL
+ `createConnectionPool` allocates a pool of connections to a PosgreSQL
  server.
 -}
 createConnectionPool ::
@@ -29,6 +32,24 @@ createConnectionPool ::
   -> IO (Pool Connection)
 createConnectionPool stripes linger maxRes connectionString =
   createPool (connect connectionString) close stripes linger maxRes
+
+{-|
+ `executeRaw` runs a given SQL statement returning the raw underlying result.
+ All handling of stepping through the result set is left to the caller.
+ This potentially leaves connections open much longer than one would expect if all of the results
+ are not iterated through immediately *and* the data copied.
+ Use with caution.
+-}
+executeRaw :: Pool Connection -> ByteString -> IO (Maybe LibPQ.Result)
+executeRaw pool bs =
+  withResource pool (underlyingExecute bs)
+
+{-|
+ `executeRaw'` a version of `executeRaw` that completely ignores the result.
+ Use with caution.
+-}
+executeRawVoid :: Pool Connection -> ByteString -> IO ()
+executeRawVoid = fmap void . executeRaw
 
 {-|
  The basic connection interface.
@@ -87,6 +108,18 @@ close (Connection handle') =
   in
     void $ mask underlyingFinish
 
+{-|
+ `underlyingExecute` is the internal, primitive execute function.
+  This is not intended to be directly exposed to end users, but instead wrapped in something using a pool.
+  Note there are potential dragons here in that this calls `readMVar` which is a blocking operation if the `MVar` is not full.
+  The intent is to never expose the ability to empty the `MVar` outside of this module, so unless a connection has been closed
+  it *should* never be empty. And a connection should be closed upon removal from a resource pool (in which case it can't be used
+  for this  function in the first place).
+-}
+underlyingExecute :: ByteString -> Connection -> IO (Maybe LibPQ.Result)
+underlyingExecute bs (Connection handle') = do
+  conn <- readMVar handle'
+  LibPQ.exec conn bs
 
 data ConnectionError = ConnectionError { errorMessage :: String
                                        , underlyingError :: Maybe ByteString
