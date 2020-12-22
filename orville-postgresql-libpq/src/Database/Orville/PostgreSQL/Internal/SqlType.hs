@@ -178,7 +178,7 @@ boolean =
     }
 
 {-|
-  'unboundedText' defines a fixed length text field type. This corresponds to a
+  'unboundedText' defines a unbounded length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
 -}
 unboundedText :: SqlType Text
@@ -226,6 +226,22 @@ boundedText len =
     }
 
 {-|
+  'textSearchVector' defines a type for indexed text searching. It corresponds to the
+  "TSVECTOR" type in PostgreSQL.
+-}
+textSearchVector :: SqlType Text
+textSearchVector =
+  SqlType
+    { sqlTypeDDL = "TSVECTOR"
+    , sqlTypeReferenceDDL = Nothing
+    , sqlTypeNullable = False
+    , sqlTypeId = LibPQ.Oid 3614
+    , sqlTypeSqlSize = Nothing
+    , sqlTypeToSql = textToBS
+    , sqlTypeFromSql = textFromBS
+    }
+
+{-|
   'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
 -}
@@ -260,22 +276,6 @@ timestamp =
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = utcTimeToBS
     , sqlTypeFromSql = utcTimeFromBS
-    }
-
-{-|
-  'textSearchVector' defines a type for indexed text searching. It corresponds to the
-  "TSVECTOR" type in PostgreSQL.
--}
-textSearchVector :: SqlType Text
-textSearchVector =
-  SqlType
-    { sqlTypeDDL = "TSVECTOR"
-    , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
-    , sqlTypeId = LibPQ.Oid 3614
-    , sqlTypeSqlSize = Nothing
-    , sqlTypeToSql = textToBS
-    , sqlTypeFromSql = textFromBS
     }
 
 {-|
