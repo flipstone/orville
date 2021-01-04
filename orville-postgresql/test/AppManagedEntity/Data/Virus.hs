@@ -24,7 +24,7 @@ data Virus = Virus
 
 newtype VirusId = VirusId
   { unVirusId :: Int64
-  } deriving (Show, Eq)
+  } deriving (Bounded, Enum, Eq, Show)
 
 newtype VirusName = VirusName
   { unVirusName :: Text

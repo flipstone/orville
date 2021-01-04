@@ -35,6 +35,7 @@ dependencies:
   - profunctors >= 5.2
   - resource-pool >=0.2
   - resourcet >= 1.1
+  - safe
   - text
   - time >=1.5
   - transformers >=0.4

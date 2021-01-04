@@ -7,6 +7,7 @@ License   : MIT
 
 module Database.Orville.PostgreSQL.Conduit
   ( selectConduit
+  , streamPages
   ) where
 
 {-
@@ -26,6 +27,7 @@ import Conduit
   , allocateAcquire
   , mkAcquire
   , mkAcquireType
+  , yieldMany
   )
 
 import Control.Monad (void)
@@ -39,18 +41,24 @@ import Database.HDBC hiding (withTransaction)
 import Database.Orville.PostgreSQL.Internal.Monad
 import Database.Orville.PostgreSQL.Internal.Select
 import Database.Orville.PostgreSQL.Internal.Types
+import Database.Orville.PostgreSQL.Internal.Where
+import Database.Orville.PostgreSQL.Pagination (Pagination(..), buildPagination)
 
 {-|
    'selectConduit' provides a way to stream the results of a 'Select' query
    from the database one by one using the conduit library. You can 'fuse' the
    conduit built by this function with your own conduit pipeline to handle rows
    individually in whatever fashion you need (e.g. turning them into rows of
-   CSV). This is useful if you want to be able to process many rows one by one
-   without loading them all into memory at once. You can aggregate the results
-   however you require as part of the conduit processing and then use
-   'runConduit' (or 'runConduitRes') from the conduit library to execute the
-   processing pipeline. Alternatively, your web server ('wai', 'servant', etc)
-   may provide support for converting a conduit into a streaming HTTP response.
+   CSV). This is useful if you want to be able to process many rows one by one.
+   You can aggregate the results however you require as part of the conduit
+   processing and then use 'runConduit' (or 'runConduitRes') from the conduit
+   library to execute the processing pipeline. Alternatively, your web server
+   ('wai', 'servant', etc) may provide support for converting a conduit into a
+   streaming HTTP response.
+
+   Beware: this function must load all the results into memory before streaming
+   can begin. For why, see https://www.postgresql.org/docs/9.2/libpq-single-row-mode.html.
+   If memory use is a concern, try 'streamPages' instead.
   -}
 selectConduit ::
      (Monad m, MonadOrville conn m, MonadCatch m, MonadResource m)
@@ -123,6 +131,9 @@ import Database.Orville.PostgreSQL.Internal.Types
 -- finish actions in vars while masked and then ensure those vars
 -- are read and executed at the appropriate times.
 --
+-- Beware: this function must load all the results into memory before streaming
+-- can begin. For why, see https://www.postgresql.org/docs/9.2/libpq-single-row-mode.html.
+-- If memory use is a concern, try 'streamPages' instead.
 selectConduit ::
      (Monad m, MonadOrville conn m, MonadCatch m) => Select row -> Source m row
 selectConduit select = do
@@ -147,7 +158,7 @@ selectConduit select = do
           feedRows (selectBuilder select) query
   result <- go `onException` runCleanup
   runFinish
-  pure $ result
+  pure result
 #endif
 
 feedRows ::
@@ -162,3 +173,28 @@ feedRows builder query = do
     Nothing -> pure ()
     Just (Left _) -> pure ()
     Just (Right r) -> yield r >> feedRows builder query
+
+-- | Build a conduit source that is fed by querying one page worth of results
+-- at a time. When the last row of the last page is consumed, the stream ends.
+streamPages :: (MonadOrville conn m, Bounded key, Enum key)
+            => TableDefinition readEnt write key
+            -> Maybe WhereCondition
+            -> Word -- ^ number of rows fetched per page
+#if MIN_VERSION_conduit(1,3,0)
+            -> ConduitT () readEnt m ()
+#else
+            -> Source m readEnt
+#endif
+streamPages tableDef mbWhereCond pageSize =
+  loop =<< lift (buildPagination tableDef mbWhereCond pageSize)
+    where
+      loop pagination = do
+#if MIN_VERSION_conduit(1,3,0)
+        yieldMany (pageRows pagination)
+#else
+        _ <- traverse yield (pageRows pagination)
+#endif
+        case pageNext pagination of
+          Nothing -> pure ()
+          Just nxtPage -> loop =<< lift nxtPage
+
