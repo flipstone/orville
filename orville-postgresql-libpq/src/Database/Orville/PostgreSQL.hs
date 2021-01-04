@@ -38,6 +38,7 @@ module Database.Orville.PostgreSQL
   , foreignRefType
   , convertSqlType
   , maybeConvertSqlType
+  , Expr.QueryExpr
   ) where
 
 import Database.Orville.PostgreSQL.Connection (createConnectionPool)
@@ -74,3 +75,4 @@ import Database.Orville.PostgreSQL.Internal.SqlType (SqlType ( SqlType
                                                     , convertSqlType
                                                     , maybeConvertSqlType
                                                     )
+import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr

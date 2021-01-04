@@ -5,6 +5,7 @@ module Test
 import Data.Pool (Pool)
 import Data.Foldable (traverse_)
 import qualified Data.ByteString.Char8 as B8
+import qualified Data.Text as T
 
 import Database.Orville.PostgreSQL.Connection (Connection, createConnectionPool, executeRawVoid, executeRaw)
 import Database.Orville.PostgreSQL.Internal.ExecutionResult (decodeRows)
@@ -27,6 +28,7 @@ import Database.Orville.PostgreSQL.Internal.SqlType (SqlType
                                                     , date
                                                     , timestamp
                                                     )
+import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 
 {- The following are just the beginnings of tests that for now at least let us inspect manually
   if the sqltypes are in fact
@@ -141,11 +143,13 @@ visualTest pool sqlType tableName sqlTypeDDL' values = do
   executeRawVoid pool $ B8.pack $ "create table if not exists " <> tableName <> "(foo " <> sqlTypeDDL' <> ")"
   executeRawVoid pool $ B8.pack $ "truncate table " <> tableName
 
+  let insertBS value = Expr.insertExprToSql (Expr.InsertExpr (T.pack tableName) [T.pack value])
   let insertValue value =
-        executeRawVoid pool . B8.pack $ "insert into " <> tableName <> " values (" <> value <> ")"
+        executeRawVoid pool $ insertBS value
   traverse_ insertValue values
 
-  maybeResult <- executeRaw pool $ B8.pack $ "select * from " <> tableName
+  let selectBS = Expr.queryExprToSql (Expr.QueryExpr [T.pack "*"] $ Expr.TableExpr (T.pack tableName))
+  maybeResult <- executeRaw pool selectBS
 
   case maybeResult of
     Nothing ->
