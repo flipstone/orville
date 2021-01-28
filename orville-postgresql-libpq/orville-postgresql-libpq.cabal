@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6c03f5a93af3aa287fb17898b9ff0cc413e54bc427def02c1085f92026f95023
+-- hash: 32bd0864232131518a5654486809c178b592bb4fd0655d263c88747afa571b07
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -26,10 +26,11 @@ source-repository head
 library
   exposed-modules:
       Database.Orville.PostgreSQL
-  other-modules:
       Database.Orville.PostgreSQL.Connection
       Database.Orville.PostgreSQL.Internal.ExecutionResult
+      Database.Orville.PostgreSQL.Internal.Expr
       Database.Orville.PostgreSQL.Internal.SqlType
+  other-modules:
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       src
@@ -42,4 +43,24 @@ library
     , resource-pool
     , text
     , time >=1.5
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Test.SqlType
+  hs-source-dirs:
+      test
+  ghc-options: -j -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wno-implicit-prelude -Wno-safe -Wno-unsafe -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations
+  build-depends:
+      base
+    , bytestring
+    , mtl
+    , orville-postgresql-libpq
+    , resource-pool
+    , tasty
+    , tasty-hspec
+    , text
+    , time
   default-language: Haskell2010
