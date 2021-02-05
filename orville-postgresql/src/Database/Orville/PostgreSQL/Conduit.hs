@@ -7,7 +7,9 @@ License   : MIT
 
 module Database.Orville.PostgreSQL.Conduit
   ( selectConduit
+#if MIN_VERSION_conduit(1,3,0)
   , streamPages
+#endif
   ) where
 
 {-
@@ -174,27 +176,20 @@ feedRows builder query = do
     Just (Left _) -> pure ()
     Just (Right r) -> yield r >> feedRows builder query
 
+#if MIN_VERSION_conduit(1,3,0)
 -- | Build a conduit source that is fed by querying one page worth of results
 -- at a time. When the last row of the last page is consumed, the stream ends.
 streamPages :: (MonadOrville conn m, Bounded key, Enum key)
             => TableDefinition readEnt write key
             -> Maybe WhereCondition
             -> Word -- ^ number of rows fetched per page
-#if MIN_VERSION_conduit(1,3,0)
             -> ConduitT () readEnt m ()
-#else
-            -> Source m readEnt
-#endif
 streamPages tableDef mbWhereCond pageSize =
   loop =<< lift (buildPagination tableDef mbWhereCond pageSize)
     where
       loop pagination = do
-#if MIN_VERSION_conduit(1,3,0)
         yieldMany (pageRows pagination)
-#else
-        _ <- traverse yield (pageRows pagination)
-#endif
         case pageNext pagination of
           Nothing -> pure ()
           Just nxtPage -> loop =<< lift nxtPage
-
+#endif

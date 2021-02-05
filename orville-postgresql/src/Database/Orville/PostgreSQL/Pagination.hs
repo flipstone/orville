@@ -3,6 +3,7 @@ module Database.Orville.PostgreSQL.Pagination
   , buildPagination
   ) where
 
+import Data.Monoid
 import Data.Maybe (maybeToList)
 import Safe (lastMay)
 
