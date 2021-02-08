@@ -11,6 +11,7 @@ module Database.Orville.PostgreSQL.Trigger
   , committedTriggers
   , uncommittedTriggers
   , runOrvilleTriggerT
+  , mapOrvilleTriggerT
   , askTriggers
   , clearTriggers
   ) where

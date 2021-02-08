@@ -245,6 +245,15 @@ runOrvilleTriggerT triggerT pool = do
   triggers <- committedTriggers <$> liftIO (readIORef ref)
   pure (a, triggers)
 
+mapOrvilleTriggerT :: Monad n
+                   => (m a -> n b)
+                   -> OrvilleTriggerT trigger conn m a
+                   -> OrvilleTriggerT trigger conn n b
+mapOrvilleTriggerT f triggerT =
+  OrvilleTriggerT $
+    mapReaderT (O.mapOrvilleT f) $
+      unTriggerT triggerT
+
 trackTransactions :: RecordedTriggersRef trigger -> O.TransactionEvent -> IO ()
 trackTransactions recorded event =
   case event of
