@@ -128,6 +128,6 @@ data ConnectionError = ConnectionError { errorMessage :: String
 instance Show ConnectionError where
   show x = let libPQErrorMsg = maybe "" ((<>) ": " . show ) $ underlyingError x
            in
-             (errorMessage x) <> libPQErrorMsg
+             errorMessage x <> libPQErrorMsg
 
 instance Exception ConnectionError
