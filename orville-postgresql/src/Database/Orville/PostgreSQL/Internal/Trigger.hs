@@ -7,6 +7,8 @@
 
 module Database.Orville.PostgreSQL.Internal.Trigger where
 
+import Control.Applicative (Alternative)
+import Control.Monad (MonadPlus)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Except (MonadError(..))
@@ -144,6 +146,7 @@ rollbackTriggerTxn ref =
 newtype OrvilleTriggerT trigger conn m a = OrvilleTriggerT
   { unTriggerT :: ReaderT (RecordedTriggersRef trigger) (O.OrvilleT conn m) a
   } deriving ( Functor
+             , Alternative
              , Applicative
              , Monad
              , MonadIO
@@ -151,6 +154,7 @@ newtype OrvilleTriggerT trigger conn m a = OrvilleTriggerT
              , MonadThrow
              , MonadCatch
              , MonadMask
+             , MonadPlus
 #if MIN_VERSION_base (4,11,0)
              , MonadFail
 #endif
