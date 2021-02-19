@@ -258,6 +258,9 @@ mapOrvilleTriggerT f triggerT =
     mapReaderT (O.mapOrvilleT f) $
       unTriggerT triggerT
 
+liftOrville :: Monad m => O.OrvilleT conn m a -> OrvilleTriggerT trigger conn m a
+liftOrville = OrvilleTriggerT . lift
+
 trackTransactions :: RecordedTriggersRef trigger -> O.TransactionEvent -> IO ()
 trackTransactions recorded event =
   case event of
