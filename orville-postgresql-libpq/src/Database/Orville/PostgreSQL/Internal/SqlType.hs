@@ -413,7 +413,7 @@ utcTimeToBS =
 utcTimeFromBS :: ByteString -> Maybe Time.UTCTime
 utcTimeFromBS bs = do
   txt <- textFromBS bs
-  Time.parseTimeM False Time.defaultTimeLocale ("%F %T%Q%Z") ((unpack txt) <> "00")
+  Time.parseTimeM False Time.defaultTimeLocale "%F %T%Q%Z" (unpack txt <> "00")
 
 -- | NULL as a bytestring
 nullBS :: ByteString

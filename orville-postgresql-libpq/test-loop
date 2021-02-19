@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+set -e
+
+if [ $# != 1 ]; then
+  echo "Usage: docker-compose run --rm dev ./test-loop <stack-yaml>"
+  exit 1
+fi
+
+STACK_YAML="$1"
+
+echo "Starting test loop using $STACK_YAML. Use \`docker-compose run --rm dev ./test-loop <stack-yaml>\` to change the stack file used."
+
+# This used to use ghcid, but I was not able to get ghcid to both run the test
+# suite *and* compile the sample project to detect errors there.  stack test
+# --fast is a bit slower than ghcid, but we need to catch all the errors :(
+stack --stack-yaml "$STACK_YAML" test --ghc-options=-j --fast --file-watch

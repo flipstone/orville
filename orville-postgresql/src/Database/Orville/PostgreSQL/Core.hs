@@ -54,6 +54,7 @@ module Database.Orville.PostgreSQL.Core
   , defaultLiftWithConnection
   , defaultLiftFinally
   , QueryType(..)
+  , withCachedConnection
   , withTransaction
   , ColumnFlag(..)
   , Now(..)
