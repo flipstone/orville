@@ -57,6 +57,7 @@ module Database.Orville.PostgreSQL.Core
   , withCachedConnection
   , withTransaction
   , ColumnFlag(..)
+  , ColumnDefault(toColumnDefaultSql)
   , Now(..)
   , FieldDefinition
   , fieldOfType
