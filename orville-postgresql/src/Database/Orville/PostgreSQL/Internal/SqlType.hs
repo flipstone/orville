@@ -259,10 +259,13 @@ textSearchVector =
     }
 
 {-|
-   'nullableType' creates a nullable version of an existing 'SqlType'. The underlying
-   sql type will be the same as the original, but column will be created with a 'NULL'
-   constraint instead a 'NOT NULL' constraint. The Haskell value 'Nothing' will be used
-   represent NULL values when converting to and from sql.
+   'nullableType' creates a nullable version of an existing 'SqlType'. The
+   underlying sql type will be the same as the original, but column will be
+   created with a 'NULL' constraint instead a 'NOT NULL' constraint. The
+   Haskell value 'Nothing' will be used represent NULL values when converting
+   to and from sql. Note: if the provided sql type is itself already marked
+   nullable, that type's decoding of 'NULL' values will be used, leading to
+   value of 'Just <value decoded from NULL>' rather than 'Nothing'.
   -}
 nullableType :: SqlType a -> SqlType (Maybe a)
 nullableType sqlType =
@@ -272,8 +275,11 @@ nullableType sqlType =
     , sqlTypeFromSql =
         \sql ->
           case sql of
-            HDBC.SqlNull -> Just Nothing
-            _ -> Just <$> sqlTypeFromSql sqlType sql
+            HDBC.SqlNull | not (sqlTypeNullable sqlType) ->
+              Just Nothing
+
+            _ ->
+              Just <$> sqlTypeFromSql sqlType sql
     }
 
 {-|
