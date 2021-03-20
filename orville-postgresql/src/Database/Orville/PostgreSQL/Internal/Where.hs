@@ -69,46 +69,46 @@ instance QueryKeyable WhereCondition where
   queryKey (And conds) = qkOp "And" conds
   queryKey (Qualified _ cond) = queryKey cond
 
-(.==) :: FieldDefinition a -> a -> WhereCondition
+(.==) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef .== a = WhereConditionExpr . expr $ nameForm E..== sqlValue
   where
     nameForm = fieldToNameForm fieldDef
     sqlValue = fieldToSqlValue fieldDef a
 
-(.<>) :: FieldDefinition a -> a -> WhereCondition
+(.<>) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef .<> a = WhereConditionExpr . expr $ nameForm E..<> sqlValue
   where
     nameForm = fieldToNameForm fieldDef
     sqlValue = fieldToSqlValue fieldDef a
 
-(.>) :: FieldDefinition a -> a -> WhereCondition
+(.>) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef .> a = WhereConditionExpr . expr $ nameForm E..> sqlValue
   where
     nameForm = fieldToNameForm fieldDef
     sqlValue = fieldToSqlValue fieldDef a
 
-(.>=) :: FieldDefinition a -> a -> WhereCondition
+(.>=) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef .>= a = WhereConditionExpr . expr $ nameForm E..>= sqlValue
   where
     nameForm = fieldToNameForm fieldDef
     sqlValue = fieldToSqlValue fieldDef a
 
-(.<) :: FieldDefinition a -> a -> WhereCondition
+(.<) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef .< a = WhereConditionExpr . expr $ nameForm E..< sqlValue
   where
     nameForm = fieldToNameForm fieldDef
     sqlValue = fieldToSqlValue fieldDef a
 
-(.<=) :: FieldDefinition a -> a -> WhereCondition
+(.<=) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef .<= a = WhereConditionExpr . expr $ nameForm E..<= sqlValue
   where
     nameForm = fieldToNameForm fieldDef
     sqlValue = fieldToSqlValue fieldDef a
 
-(.<-) :: FieldDefinition a -> [a] -> WhereCondition
+(.<-) :: FieldDefinition nullability a -> [a] -> WhereCondition
 fieldDef .<- as = whereIn fieldDef as
 
-(%==) :: FieldDefinition a -> a -> WhereCondition
+(%==) :: FieldDefinition nullability a -> a -> WhereCondition
 fieldDef %== a = WhereConditionExpr . expr $ nameForm E.%== sqlValue
   where
     nameForm = fieldToNameForm fieldDef
@@ -159,22 +159,22 @@ whereAnd = And
 whereOr :: [WhereCondition] -> WhereCondition
 whereOr = Or
 
-whereIn :: FieldDefinition a -> [a] -> WhereCondition
+whereIn :: FieldDefinition nullability a -> [a] -> WhereCondition
 whereIn fieldDef values =
   WhereConditionExpr . expr $
   E.whereIn (fieldToNameForm fieldDef) (map (fieldToSqlValue fieldDef) values)
 
-whereLike :: FieldDefinition a -> String -> WhereCondition
+whereLike :: FieldDefinition nullability a -> String -> WhereCondition
 whereLike fieldDef raw =
   WhereConditionExpr . expr $
   E.whereLike (fieldToNameForm fieldDef) (toSql raw)
 
-whereLikeInsensitive :: FieldDefinition a -> String -> WhereCondition
+whereLikeInsensitive :: FieldDefinition nullability a -> String -> WhereCondition
 whereLikeInsensitive fieldDef raw =
   WhereConditionExpr . expr $
   E.whereLikeInsensitive (fieldToNameForm fieldDef) (toSql raw)
 
-whereNotIn :: FieldDefinition a -> [a] -> WhereCondition
+whereNotIn :: FieldDefinition nullability a -> [a] -> WhereCondition
 whereNotIn fieldDef values =
   WhereConditionExpr . expr $
   E.whereNotIn
@@ -187,10 +187,10 @@ whereQualified tableDef cond = Qualified tableDef cond
 whereRaw :: String -> [SqlValue] -> WhereCondition
 whereRaw str values = WhereConditionExpr . expr $ E.whereRaw str values
 
-isNull :: FieldDefinition a -> WhereCondition
+isNull :: FieldDefinition nullability a -> WhereCondition
 isNull = WhereConditionExpr . expr . E.whereNull . fieldToNameForm
 
-isNotNull :: FieldDefinition a -> WhereCondition
+isNotNull :: FieldDefinition nullability a -> WhereCondition
 isNotNull = WhereConditionExpr . expr . E.whereNotNull . fieldToNameForm
 
 whereClause :: [WhereCondition] -> String

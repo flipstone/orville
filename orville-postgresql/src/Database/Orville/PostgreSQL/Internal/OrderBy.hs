@@ -43,7 +43,7 @@ sortingValues (OrderByClause _ values _) = values
 class ToOrderBy a where
   toOrderBy :: a -> SortDirection -> OrderByClause
 
-instance ToOrderBy (FieldDefinition a) where
+instance ToOrderBy (FieldDefinition nullability a) where
   toOrderBy fieldDef = OrderByClause (rawExprToSql . generateSql . NameForm Nothing $ fieldName fieldDef) []
 
 instance ToOrderBy (String, [SqlValue]) where

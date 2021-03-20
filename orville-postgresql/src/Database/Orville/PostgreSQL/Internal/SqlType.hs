@@ -12,7 +12,6 @@ module Database.Orville.PostgreSQL.Internal.SqlType
   , date
   , timestamp
   , textSearchVector
-  , nullableType
   , foreignRefType
   , convertSqlType
   , maybeConvertSqlType
@@ -36,10 +35,6 @@ data SqlType a = SqlType
     -- ^ The raw SQL DDL to use when creating/migrating columns of this type
     -- (not including any NULL or NOT NULL declarations)
   , sqlTypeReferenceDDL :: Maybe String
-    -- ^ The raw SQL DDL to use when creating/migrating columns with foreign
-    -- keys to this type. This is used foreignRefType to build a new SqlType
-    -- when making foreign key fields
-  , sqlTypeNullable :: Bool
     -- ^ Indicates whether columns should be marked NULL or NOT NULL in the
     -- database schema. If this is 'True', then 'sqlTypeFromSql' should
     -- provide a handling of 'SqlNull' that returns an 'a', not 'Nothing'.
@@ -70,7 +65,6 @@ serial =
   SqlType
     { sqlTypeDDL = "SERIAL"
     , sqlTypeReferenceDDL = Just "INTEGER"
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 4
     , sqlTypeToSql = int32ToSql
@@ -86,7 +80,6 @@ bigserial =
   SqlType
     { sqlTypeDDL = "BIGSERIAL"
     , sqlTypeReferenceDDL = Just "BIGINT"
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = int64ToSql
@@ -102,7 +95,6 @@ text len =
   SqlType
     { sqlTypeDDL = concat ["CHAR(", show len, ")"]
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlCharT
     , sqlTypeSqlSize = Just len
     , sqlTypeToSql = textToSql
@@ -118,7 +110,6 @@ varText len =
   SqlType
     { sqlTypeDDL = concat ["VARCHAR(", show len, ")"]
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlVarCharT
     , sqlTypeSqlSize = Just len
     , sqlTypeToSql = textToSql
@@ -134,7 +125,6 @@ unboundedText =
   SqlType
     { sqlTypeDDL = concat ["TEXT"]
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlVarCharT
     , sqlTypeSqlSize = Nothing
     , sqlTypeToSql = textToSql
@@ -150,7 +140,6 @@ integer =
   SqlType
     { sqlTypeDDL = "INTEGER"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 4
     , sqlTypeToSql = int32ToSql
@@ -166,7 +155,6 @@ bigInteger =
   SqlType
     { sqlTypeDDL = "BIGINT"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBigIntT
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = int64ToSql
@@ -182,7 +170,6 @@ double =
   SqlType
     { sqlTypeDDL = "DOUBLE PRECISION"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlFloatT
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = doubleToSql
@@ -198,7 +185,6 @@ boolean =
   SqlType
     { sqlTypeDDL = "BOOLEAN"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlBitT
     , sqlTypeSqlSize = Just 1
     , sqlTypeToSql = booleanToSql
@@ -214,7 +200,6 @@ date =
   SqlType
     { sqlTypeDDL = "DATE"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlDateT
     , sqlTypeSqlSize = Just 4
     , sqlTypeToSql = dayToSql
@@ -235,7 +220,6 @@ timestamp =
   SqlType
     { sqlTypeDDL = "TIMESTAMP with time zone"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlTimestampWithZoneT
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = utcTimeToSql
@@ -251,29 +235,10 @@ textSearchVector =
   SqlType
     { sqlTypeDDL = "TSVECTOR"
     , sqlTypeReferenceDDL = Nothing
-    , sqlTypeNullable = False
     , sqlTypeId = HDBC.SqlUnknownT "3614"
     , sqlTypeSqlSize = Nothing
     , sqlTypeToSql = textToSql
     , sqlTypeFromSql = textFromSql
-    }
-
-{-|
-   'nullableType' creates a nullable version of an existing 'SqlType'. The underlying
-   sql type will be the same as the original, but column will be created with a 'NULL'
-   constraint instead a 'NOT NULL' constraint. The Haskell value 'Nothing' will be used
-   represent NULL values when converting to and from sql.
-  -}
-nullableType :: SqlType a -> SqlType (Maybe a)
-nullableType sqlType =
-  sqlType
-    { sqlTypeNullable = True
-    , sqlTypeToSql = maybe HDBC.SqlNull (sqlTypeToSql sqlType)
-    , sqlTypeFromSql =
-        \sql ->
-          case sql of
-            HDBC.SqlNull -> Just Nothing
-            _ -> Just <$> sqlTypeFromSql sqlType sql
     }
 
 {-|

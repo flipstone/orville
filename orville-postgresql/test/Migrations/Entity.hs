@@ -20,7 +20,8 @@ newtype MigrationEntityId = MigrationEntityId
 -- Take in the field definition so we can force different names and field types
 -- during testing.
 migrationEntityTable ::
-  O.FieldDefinition a ->
+  O.Nullability nullability =>
+  O.FieldDefinition nullability a ->
   O.TableDefinition (MigrationEntity a MigrationEntityId) (MigrationEntity a ()) MigrationEntityId
 migrationEntityTable fieldDef =
   O.mkTableDefinition $
@@ -54,7 +55,7 @@ migrationEntityTableWithDroppedColumn columnName =
     , O.tblComments = O.noComments
     }
 
-migrationEntityIdField :: O.FieldDefinition MigrationEntityId
+migrationEntityIdField :: O.FieldDefinition O.NotNull MigrationEntityId
 migrationEntityIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unMigrationEntityId MigrationEntityId

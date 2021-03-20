@@ -16,6 +16,7 @@ import Data.Maybe
 import Database.HDBC
 
 import Database.Orville.PostgreSQL.Internal.Expr
+import Database.Orville.PostgreSQL.Internal.FieldDefinition
 import Database.Orville.PostgreSQL.Internal.MigrationPlan
 import Database.Orville.PostgreSQL.Internal.SchemaState
 import Database.Orville.PostgreSQL.Internal.SqlType
@@ -57,7 +58,10 @@ mkMigrateTableDDL columns tableDef =
       List.concatMap dropStmt fieldNamesToDelete
     cols = List.intercalate ", " $ stmts
 
-mkMigrateColumnTypeDDL :: FieldDefinition a -> SqlColDesc -> Maybe String
+mkMigrateColumnTypeDDL :: Nullability nullability
+                       => FieldDefinition nullability a
+                       -> SqlColDesc
+                       -> Maybe String
 mkMigrateColumnTypeDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
       name = rawExprToSql . generateSql . NameForm Nothing $ fieldName fieldDef
@@ -69,7 +73,10 @@ mkMigrateColumnTypeDDL fieldDef colDesc =
              " SET DATA TYPE " ++ sqlTypeDDL (fieldType fieldDef)
         else Nothing
 
-mkMigrateColumnNullDDL :: FieldDefinition a -> SqlColDesc -> Maybe String
+mkMigrateColumnNullDDL :: Nullability nullability
+                       => FieldDefinition nullability a
+                       -> SqlColDesc
+                       -> Maybe String
 mkMigrateColumnNullDDL fieldDef colDesc =
   let fieldDesc = sqlFieldDesc fieldDef
       fieldNull = fromMaybe True (colNullable fieldDesc)
@@ -82,7 +89,10 @@ mkMigrateColumnNullDDL fieldDef colDesc =
                     "ALTER COLUMN " ++ name ++ " SET NOT NULL"
                else Nothing
 
-mkMigrateColumnDDL :: FieldDefinition a -> Maybe SqlColDesc -> [String]
+mkMigrateColumnDDL :: Nullability nullability
+                   => FieldDefinition nullability a
+                   -> Maybe SqlColDesc
+                   -> [String]
 mkMigrateColumnDDL fieldDef Nothing = ["ADD COLUMN " ++ mkFieldDDL fieldDef]
 mkMigrateColumnDDL fieldDef (Just desc) =
   catMaybes
@@ -103,7 +113,7 @@ mkFlagDDL (References table field) =
 mkFlagDDL (ColumnDescription _) = Nothing
 mkFlagDDL AssignedByDatabase = Nothing
 
-mkFieldDDL :: FieldDefinition a -> String
+mkFieldDDL :: Nullability nullability => FieldDefinition nullability a -> String
 mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
   where
     name = rawExprToSql . generateSql . NameForm Nothing . fieldName $ field
@@ -111,7 +121,7 @@ mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
     flagSql =
       List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
     notNull =
-      if sqlTypeNullable (fieldType field)
+      if isFieldNullable field
         then "NULL"
         else "NOT NULL"
 
@@ -125,12 +135,12 @@ mkCreateTableDDL tableDef =
 mkDropTableDDL :: String -> String
 mkDropTableDDL name = "DROP TABLE \"" ++ name ++ "\""
 
-sqlFieldDesc :: FieldDefinition a -> SqlColDesc
+sqlFieldDesc :: Nullability nullability => FieldDefinition nullability a -> SqlColDesc
 sqlFieldDesc field =
   SqlColDesc
     { colType = sqlTypeId $ fieldType field
     , colSize = sqlTypeSqlSize $ fieldType field
-    , colNullable = Just (sqlTypeNullable $ fieldType field)
+    , colNullable = Just (isFieldNullable field)
     , colOctetLength = Nothing
     , colDecDigits = Nothing
     }

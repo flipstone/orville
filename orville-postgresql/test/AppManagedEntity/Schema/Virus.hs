@@ -29,17 +29,17 @@ virusTable =
     , O.tblComments = O.noComments
     }
 
-virusIdField :: O.FieldDefinition VirusId
+virusIdField :: O.FieldDefinition O.NotNull VirusId
 virusIdField =
   O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unVirusId VirusId
 
-virusNameField :: O.FieldDefinition VirusName
+virusNameField :: O.FieldDefinition O.NotNull VirusName
 virusNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType unVirusName VirusName
 
-virusDiscoveredAtField :: O.FieldDefinition VirusDiscoveredAt
+virusDiscoveredAtField :: O.FieldDefinition O.NotNull VirusDiscoveredAt
 virusDiscoveredAtField =
   O.utcTimeField "discovered_at" `O.withConversion`
   O.convertSqlType unVirusDiscoveredAt VirusDiscoveredAt

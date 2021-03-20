@@ -72,5 +72,5 @@ rowFromSql =
     , runFromSql = Right <$> ask
     }
 
-selectField :: FieldDefinition a -> SelectForm
+selectField :: FieldDefinition nulability a -> SelectForm
 selectField field = selectColumn (fieldToNameForm field)

@@ -38,8 +38,8 @@ data ColumnFlag
   | forall a. ColumnDefault a =>
               Default a
   | Unique
-  | forall readEntity writeEntity key. References (TableDefinition readEntity writeEntity key)
-                                                  (FieldDefinition key)
+  | forall readEntity writeEntity key nullability. References (TableDefinition readEntity writeEntity key)
+                                                              (FieldDefinition nullability key)
   | ColumnDescription String
   | AssignedByDatabase
 
@@ -62,16 +62,33 @@ instance ColumnDefault Bool where
   toColumnDefaultSql True = "true"
   toColumnDefaultSql False = "false"
 
-data FieldDefinition a = FieldDefinition
+data Nullable
+data NotNull
+
+data NullabilityCheck a
+  = NullableField (FieldDefinition Nullable a)
+  | NotNullField (FieldDefinition NotNull a)
+
+class Nullability nullability where
+  checkNullability :: FieldDefinition nullability a -> NullabilityCheck a
+
+instance Nullability Nullable where
+  checkNullability = NullableField
+
+instance Nullability NotNull where
+  checkNullability = NotNullField
+
+data FieldDefinition nullability a = FieldDefinition
   { fieldName :: String
   , fieldType :: SqlType a
   , fieldFlags :: [ColumnFlag]
   }
 
 data SomeField =
-  forall a. SomeField (FieldDefinition a)
+  forall nullability a.
+    Nullability nullability => SomeField (FieldDefinition nullability a)
 
-instance QueryKeyable (FieldDefinition a) where
+instance QueryKeyable (FieldDefinition nullability a) where
   queryKey field = QKField $ fieldName field
 
 data FieldUpdate = FieldUpdate
@@ -183,7 +200,7 @@ data TableDefinition readEntity writeEntity key = TableDefinition
   , tableSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tablePrimaryKey :: FieldDefinition key
+  , tablePrimaryKey :: FieldDefinition NotNull key
       -- ^ The statically typed field definition that is the primary key. Currently
       -- this field must still by listed in `tableFields`
   , tableFromSql :: FromSql readEntity

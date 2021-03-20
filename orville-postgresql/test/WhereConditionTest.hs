@@ -140,17 +140,17 @@ orderTable =
     , O.tblComments = O.noComments
     }
 
-orderIdField :: O.FieldDefinition OrderId
+orderIdField :: O.FieldDefinition O.NotNull OrderId
 orderIdField =
   O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unOrderId OrderId
 
-customerFkIdField :: O.FieldDefinition CustomerId
+customerFkIdField :: O.FieldDefinition O.NotNull CustomerId
 customerFkIdField =
   O.int64Field "customer_id" `O.withConversion`
   O.convertSqlType unCustomerId CustomerId
 
-orderNameField :: O.FieldDefinition OrderName
+orderNameField :: O.FieldDefinition O.NotNull OrderName
 orderNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType unOrderName OrderName
@@ -217,12 +217,12 @@ customerTable =
     , O.tblComments = O.noComments
     }
 
-customerIdField :: O.FieldDefinition CustomerId
+customerIdField :: O.FieldDefinition O.NotNull CustomerId
 customerIdField =
   O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unCustomerId CustomerId
 
-customerNameField :: O.FieldDefinition CustomerName
+customerNameField :: O.FieldDefinition O.NotNull CustomerName
 customerNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType unCustomerName CustomerName

@@ -25,12 +25,12 @@ virusTable =
     , O.tblComments = O.noComments
     }
 
-virusIdField :: O.FieldDefinition VirusId
+virusIdField :: O.FieldDefinition O.NotNull VirusId
 virusIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unVirusId VirusId
 
-virusNameField :: O.FieldDefinition VirusName
+virusNameField :: O.FieldDefinition O.NotNull VirusName
 virusNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType unVirusName VirusName

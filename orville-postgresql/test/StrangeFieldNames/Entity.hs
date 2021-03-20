@@ -33,11 +33,11 @@ crudEntityTable columnName =
     , O.tblComments = O.noComments
     }
 
-crudEntityIdField :: O.FieldDefinition CrudEntityId
+crudEntityIdField :: O.FieldDefinition O.NotNull CrudEntityId
 crudEntityIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unCrudEntityId CrudEntityId
 
-crudEntityRenameableField :: String -> O.FieldDefinition Int32
+crudEntityRenameableField :: String -> O.FieldDefinition O.NotNull Int32
 crudEntityRenameableField = O.int32Field
 

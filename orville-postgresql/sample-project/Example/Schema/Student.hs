@@ -36,17 +36,17 @@ majorTable =
     , O.tblComments = O.noComments
     }
 
-majorIdField :: O.FieldDefinition MajorId
+majorIdField :: O.FieldDefinition O.NotNull MajorId
 majorIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType majorIdInt MajorId
 
-majorNameField :: O.FieldDefinition MajorName
+majorNameField :: O.FieldDefinition O.NotNull MajorName
 majorNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType majorNameText MajorName
 
-majorCollegeField :: O.FieldDefinition MajorCollege
+majorCollegeField :: O.FieldDefinition O.NotNull MajorCollege
 majorCollegeField =
   O.textField "college" 255 `O.withConversion`
   O.convertSqlType collegeMajorToText textToCollegeMajor
@@ -66,15 +66,15 @@ studentTable =
     , O.tblComments = O.noComments
     }
 
-studentIdField :: O.FieldDefinition StudentId
+studentIdField :: O.FieldDefinition O.NotNull StudentId
 studentIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType studentIdInt StudentId
 
-studentNameField :: O.FieldDefinition StudentName
+studentNameField :: O.FieldDefinition O.NotNull StudentName
 studentNameField =
   O.textField "name" 255 `O.withConversion`
   O.convertSqlType studentNameText StudentName
 
-studentMajorField :: O.FieldDefinition MajorId
+studentMajorField :: O.FieldDefinition O.NotNull MajorId
 studentMajorField = O.foreignKeyField "major" majorTable majorIdField

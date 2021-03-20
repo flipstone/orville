@@ -28,7 +28,7 @@ groupingValues (GroupByClause _ values) = values
 class ToGroupBy a where
   toGroupBy :: a -> GroupByClause
 
-instance ToGroupBy (FieldDefinition a) where
+instance ToGroupBy (FieldDefinition nullability a) where
   toGroupBy fieldDef = GroupByClause (fieldName fieldDef) []
 
 instance ToGroupBy (String, [SqlValue]) where

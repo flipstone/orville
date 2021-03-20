@@ -49,7 +49,7 @@ data BadVirus = BadVirus
   , badVirusName :: Int32 -- Virus name is actually Text, not Int32!
   } deriving (Show)
 
-badVirusNameField :: O.FieldDefinition Int32
+badVirusNameField :: O.FieldDefinition O.NotNull Int32
 badVirusNameField = virusNameField `O.withConversion` const O.integer
 
 badVirusFromSql :: O.FromSql BadVirus

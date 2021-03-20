@@ -31,7 +31,7 @@ convertFromSql =
 col :: (ColumnSpecifier col, Convertible SqlValue a) => col -> FromSql a
 col spec = joinFromSqlError (convertFromSql <$> getColumn (selectForm spec))
 
-fieldFromSql :: FieldDefinition a -> FromSql a
+fieldFromSql :: FieldDefinition nullability a -> FromSql a
 fieldFromSql field =
   joinFromSqlError (fromSqlValue <$> getColumn (selectForm field))
   where
@@ -53,7 +53,7 @@ instance ColumnSpecifier SelectForm where
 instance ColumnSpecifier NameForm where
   selectForm = selectColumn
 
-instance ColumnSpecifier (FieldDefinition a) where
+instance ColumnSpecifier (FieldDefinition nullability a) where
   selectForm = selectColumn . fromString . fieldName
 
 instance ColumnSpecifier [Char] where

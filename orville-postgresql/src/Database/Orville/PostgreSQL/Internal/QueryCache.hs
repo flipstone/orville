@@ -111,7 +111,7 @@ findRecordCached tableDef key =
 findRecordsByCached ::
      (Ord fieldValue, MonadThrow m, MonadOrville conn m)
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> SelectOptions
   -> QueryCached m (Map.Map fieldValue [readEntity])
 findRecordsByCached tableDef field opts = do

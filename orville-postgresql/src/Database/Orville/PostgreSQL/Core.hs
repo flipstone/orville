@@ -25,7 +25,6 @@ module Database.Orville.PostgreSQL.Core
   , textSearchVector
   , convertSqlType
   , maybeConvertSqlType
-  , nullableType
   , TableParams(..)
   , RelationalMap
   , mapAttr
@@ -60,6 +59,9 @@ module Database.Orville.PostgreSQL.Core
   , ColumnDefault(toColumnDefaultSql)
   , Now(..)
   , FieldDefinition
+  , Nullable
+  , NotNull
+  , Nullability
   , fieldOfType
   , textField
   , fixedTextField
@@ -255,7 +257,7 @@ findRecords tableDef keys = do
 findRecordsBy ::
      (Ord fieldValue, MonadOrville conn m)
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> SelectOptions
   -> m (Map.Map fieldValue [readEntity])
 findRecordsBy tableDef field opts = do

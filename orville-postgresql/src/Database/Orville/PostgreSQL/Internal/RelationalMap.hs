@@ -49,7 +49,7 @@ data TableParams readEntity writeEntity key = TableParams
   , tblSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tblPrimaryKey :: FieldDefinition key
+  , tblPrimaryKey :: FieldDefinition NotNull key
       -- ^ A function to set the key on the entity
   , tblGetKey :: readEntity -> key
       -- ^ A function to get the key on the entity
@@ -95,7 +95,7 @@ mkTableDefinition (TableParams {..}) =
     }
 
 data RelationalMap a b where
-  RM_Field :: FieldDefinition a -> RelationalMap a a
+  RM_Field :: Nullability nullability => FieldDefinition nullability a -> RelationalMap a a
   RM_Nest :: (a -> b) -> RelationalMap b c -> RelationalMap a c
   RM_Pure :: b -> RelationalMap a b
   RM_Apply
@@ -119,7 +119,7 @@ instance Profunctor RelationalMap where
 mapAttr :: (a -> b) -> RelationalMap b c -> RelationalMap a c
 mapAttr = RM_Nest
 
-mapField :: FieldDefinition a -> RelationalMap a a
+mapField :: Nullability nullability => FieldDefinition nullability a -> RelationalMap a a
 mapField = RM_Field
 
 partialMap :: RelationalMap a (Either String a) -> RelationalMap a a
@@ -128,10 +128,10 @@ partialMap = RM_Partial
 readOnlyMap :: RelationalMap a b -> RelationalMap c b
 readOnlyMap = RM_ReadOnly
 
-attrField :: (a -> b) -> FieldDefinition b -> RelationalMap a b
+attrField :: Nullability nullability => (a -> b) -> FieldDefinition nullability b -> RelationalMap a b
 attrField get = mapAttr get . mapField
 
-readOnlyField :: FieldDefinition a -> RelationalMap b a
+readOnlyField :: Nullability nullability => FieldDefinition nullability a -> RelationalMap b a
 readOnlyField = readOnlyMap . mapField
 
 prefixMap :: String -> RelationalMap a b -> RelationalMap a b
@@ -154,7 +154,18 @@ maybeMapper
   where
     go :: RelationalMap a b -> RelationalMap (Maybe a) (Maybe b)
     go (RM_Nest f rm) = RM_Nest (fmap f) (go rm)
-    go (RM_Field f) = RM_Field (nullableField f)
+    go (RM_Field f) =
+      case checkNullability f of
+        NotNullField notNullField ->
+          RM_Field (nullableField notNullField)
+
+        NullableField nullField ->
+          -- When the underlying field is already nullable we need to make sure
+          -- that 'NULL' is decoded to a 'Just'. Otherwise when the field is
+          -- 'NULL' it cause the entire 'RelationalMap' to resolve to a
+          -- 'Nothing' as if _all_ fields were 'NULL', even if they were not.
+          RM_Field (assymmetricNullableField nullField)
+
     go (RM_Pure a) = RM_Pure (pure a)
     go (RM_Apply rmF rmA) = RM_Apply (fmap (<*>) $ go rmF) (go rmA)
     go (RM_Partial rm) = RM_Partial (flipError <$> go rm)

@@ -134,21 +134,21 @@ popMaybe = PopMaybe
 hasMany ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> Popper fieldValue [readEntity]
 hasMany tableDef fieldDef = PopPrim (PrimRecordManyBy tableDef fieldDef mempty)
 
 hasOneIn ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> Popper [fieldValue] (Map.Map fieldValue readEntity)
 hasOneIn tableDef fieldDef = PopPrim (PrimRecordsBy tableDef fieldDef mempty)
 
 hasManyIn ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
 hasManyIn tableDef fieldDef =
   PopPrim (PrimRecordsManyBy tableDef fieldDef mempty)
@@ -156,7 +156,7 @@ hasManyIn tableDef fieldDef =
 hasManyWhere ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> SelectOptions
   -> Popper fieldValue [readEntity]
 hasManyWhere tableDef fieldDef opts =
@@ -165,7 +165,7 @@ hasManyWhere tableDef fieldDef opts =
 hasManyInWhere ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> SelectOptions
   -> Popper [fieldValue] (Map.Map fieldValue [readEntity])
 hasManyInWhere tableDef fieldDef opts =
@@ -174,14 +174,14 @@ hasManyInWhere tableDef fieldDef opts =
 hasOne ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> Popper fieldValue (Maybe readEntity)
 hasOne tableDef fieldDef = hasOneWhere tableDef fieldDef mempty
 
 hasOneWhere ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> SelectOptions
   -> Popper fieldValue (Maybe readEntity)
 hasOneWhere tableDef fieldDef opts =
@@ -190,14 +190,14 @@ hasOneWhere tableDef fieldDef opts =
 hasOne' ::
      Ord fieldValue
   => TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> Popper fieldValue readEntity
 hasOne' tableDef fieldDef =
   certainly' (popMissingRecord tableDef fieldDef) (hasOne tableDef fieldDef)
 
 popMissingRecord ::
      TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> Popper fieldValue PopError
 popMissingRecord tableDef fieldDef = fromKern (MissingRecord tableDef fieldDef)
 
@@ -297,9 +297,10 @@ onPopMany = PopOnMany
 
 -- The Popper guts
 data PopError
-  = forall readEntity writeEntity key fieldValue. MissingRecord (TableDefinition readEntity writeEntity key)
-                                                                (FieldDefinition fieldValue)
-                                                                fieldValue
+  = forall readEntity writeEntity key fieldValue nullability.
+    MissingRecord (TableDefinition readEntity writeEntity key)
+                  (FieldDefinition nullability fieldValue)
+                  fieldValue
   | Unpoppable String
 
 instance Show PopError where
@@ -309,7 +310,7 @@ instance Show PopError where
 
 missingRecordMessage ::
      TableDefinition readEntity writeEntity key
-  -> FieldDefinition fieldValue
+  -> FieldDefinition nullability fieldValue
   -> fieldValue
   -> String
 missingRecordMessage tableDef fieldDef fieldValue =
@@ -353,26 +354,26 @@ data Prim a b
   PrimRecordBy
     :: Ord fieldValue
     => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
+    -> FieldDefinition nullability fieldValue
     -> SelectOptions
     -> Prim fieldValue (Maybe readEntity)
   PrimRecordManyBy
     :: Ord fieldValue
     => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
+    -> FieldDefinition nullability fieldValue
     -> SelectOptions
     -> Prim fieldValue [readEntity]
   --  The many primitives (each of these is a fixed point -- its own many)
   PrimRecordsBy
     :: Ord fieldValue
     => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
+    -> FieldDefinition nullability fieldValue
     -> SelectOptions
     -> Prim [fieldValue] (Map.Map fieldValue readEntity)
   PrimRecordsManyBy
     :: Ord fieldValue
     => TableDefinition readEntity writeEntity key
-    -> FieldDefinition fieldValue
+    -> FieldDefinition nullability fieldValue
     -> SelectOptions
     -> Prim [fieldValue] (Map.Map fieldValue [readEntity])
 

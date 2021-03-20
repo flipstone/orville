@@ -36,7 +36,7 @@ badCrudEntityTable =
     , O.tblComments = O.noComments
     }
 
-crudEntityIdField :: O.FieldDefinition CrudEntityId
+crudEntityIdField :: O.FieldDefinition O.NotNull CrudEntityId
 crudEntityIdField =
   O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
   O.convertSqlType unCrudEntityId CrudEntityId
@@ -46,9 +46,9 @@ badComplexFieldMap =
   ComplexField <$> O.attrField complexFieldPart1 complexFieldPart1Field
                <*> O.attrField complexFieldPart2 (O.nullableField complexFieldPart2Field)
 
-complexFieldPart1Field :: O.FieldDefinition Int32
+complexFieldPart1Field :: O.FieldDefinition O.NotNull Int32
 complexFieldPart1Field = O.int32Field "part_1"
 
-complexFieldPart2Field :: O.FieldDefinition T.Text
+complexFieldPart2Field :: O.FieldDefinition O.NotNull T.Text
 complexFieldPart2Field =
   O.withConversion (O.textField "part_2" 255) $ O.maybeConvertSqlType id Just
