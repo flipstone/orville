@@ -15,10 +15,10 @@ import Database.Orville.PostgreSQL.Internal.SqlType
 import Database.Orville.PostgreSQL.Internal.Types
 
 textField :: String -> Int -> FieldDefinition NotNull Text
-textField name len = FieldDefinition name (varText len) []
+textField name len = fieldOfType (varText len) name
 
 fixedTextField :: String -> Int -> FieldDefinition NotNull Text
-fixedTextField name len = FieldDefinition name (text len) []
+fixedTextField name len = fieldOfType (text len) name
 
 unboundedTextField :: String -> FieldDefinition NotNull Text
 unboundedTextField = fieldOfType unboundedText
@@ -73,6 +73,7 @@ nullableField field =
       (fieldName field)
       (nullableType $ fieldType field)
       (fieldFlags field)
+      Nullable
 
 {-|
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
@@ -99,8 +100,9 @@ assymmetricNullableField field =
       (fieldName field)
       (nullableType $ fieldType field)
       (fieldFlags field)
+      Nullable
 
-isFieldNullable :: Nullability nullability => FieldDefinition nullability a -> Bool
+isFieldNullable :: FieldDefinition nullability a -> Bool
 isFieldNullable field =
   case checkNullability field of
     NullableField _ -> True
@@ -116,9 +118,15 @@ foreignKeyField name refTable refField =
     name
     (foreignRefType $ fieldType refField)
     [References refTable refField]
+    (fieldNullability refField)
 
-fieldOfType :: SqlType a -> String -> FieldDefinition nullability a
-fieldOfType sqlType name = FieldDefinition name sqlType []
+fieldOfType :: SqlType a -> String -> FieldDefinition NotNull a
+fieldOfType sqlType name =
+  FieldDefinition
+    name
+    sqlType
+    []
+    NotNull
 
 isPrimaryKey :: ColumnFlag -> Bool
 isPrimaryKey PrimaryKey = True

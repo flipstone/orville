@@ -10,11 +10,11 @@ module Database.Orville.PostgreSQL.Internal.FieldUpdate where
 import Database.Orville.PostgreSQL.Internal.FieldDefinition
 import Database.Orville.PostgreSQL.Internal.Types
 
-fieldUpdate :: Nullability nullability => FieldDefinition nullability a -> a -> FieldUpdate
+fieldUpdate :: FieldDefinition nullability a -> a -> FieldUpdate
 fieldUpdate fieldDef a =
   FieldUpdate (SomeField fieldDef) (fieldToSqlValue fieldDef a)
 
-(.:=) :: Nullability nullability => FieldDefinition nullability a -> a -> FieldUpdate
+(.:=) :: FieldDefinition nullability a -> a -> FieldUpdate
 (.:=) = fieldUpdate
 
 fieldUpdateName :: FieldUpdate -> String

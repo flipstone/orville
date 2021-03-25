@@ -65,28 +65,35 @@ instance ColumnDefault Bool where
 data Nullable
 data NotNull
 
+data Nullability nullability where
+  Nullable :: Nullability Nullable
+  NotNull  :: Nullability NotNull
+
 data NullabilityCheck a
   = NullableField (FieldDefinition Nullable a)
   | NotNullField (FieldDefinition NotNull a)
 
-class Nullability nullability where
-  checkNullability :: FieldDefinition nullability a -> NullabilityCheck a
+-- | Resolves the 'nullablity' of a field to a concreted type based on its
+-- 'fieldNullability'. You can do this directly by pattern matching on the
+-- value of 'fieldNullability' if you have the GADTs extension turned on, but
+-- this function will do that for you so you don't need to turn GADTs on.
+checkNullability :: FieldDefinition nullability a -> NullabilityCheck a
+checkNullability field =
+  case fieldNullability field of
+    Nullable -> NullableField field
+    NotNull  -> NotNullField field
 
-instance Nullability Nullable where
-  checkNullability = NullableField
-
-instance Nullability NotNull where
-  checkNullability = NotNullField
-
-data FieldDefinition nullability a = FieldDefinition
-  { fieldName :: String
-  , fieldType :: SqlType a
-  , fieldFlags :: [ColumnFlag]
-  }
+data FieldDefinition nullability a =
+  FieldDefinition
+    { fieldName        :: String
+    , fieldType        :: SqlType a
+    , fieldFlags       :: [ColumnFlag]
+    , fieldNullability :: Nullability nullability
+    }
 
 data SomeField =
   forall nullability a.
-    Nullability nullability => SomeField (FieldDefinition nullability a)
+    SomeField (FieldDefinition nullability a)
 
 instance QueryKeyable (FieldDefinition nullability a) where
   queryKey field = QKField $ fieldName field

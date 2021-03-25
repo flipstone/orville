@@ -20,7 +20,6 @@ newtype MigrationEntityId = MigrationEntityId
 -- Take in the field definition so we can force different names and field types
 -- during testing.
 migrationEntityTable ::
-  O.Nullability nullability =>
   O.FieldDefinition nullability a ->
   O.TableDefinition (MigrationEntity a MigrationEntityId) (MigrationEntity a ()) MigrationEntityId
 migrationEntityTable fieldDef =

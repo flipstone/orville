@@ -58,8 +58,7 @@ mkMigrateTableDDL columns tableDef =
       List.concatMap dropStmt fieldNamesToDelete
     cols = List.intercalate ", " $ stmts
 
-mkMigrateColumnTypeDDL :: Nullability nullability
-                       => FieldDefinition nullability a
+mkMigrateColumnTypeDDL :: FieldDefinition nullability a
                        -> SqlColDesc
                        -> Maybe String
 mkMigrateColumnTypeDDL fieldDef colDesc =
@@ -73,8 +72,7 @@ mkMigrateColumnTypeDDL fieldDef colDesc =
              " SET DATA TYPE " ++ sqlTypeDDL (fieldType fieldDef)
         else Nothing
 
-mkMigrateColumnNullDDL :: Nullability nullability
-                       => FieldDefinition nullability a
+mkMigrateColumnNullDDL :: FieldDefinition nullability a
                        -> SqlColDesc
                        -> Maybe String
 mkMigrateColumnNullDDL fieldDef colDesc =
@@ -89,8 +87,7 @@ mkMigrateColumnNullDDL fieldDef colDesc =
                     "ALTER COLUMN " ++ name ++ " SET NOT NULL"
                else Nothing
 
-mkMigrateColumnDDL :: Nullability nullability
-                   => FieldDefinition nullability a
+mkMigrateColumnDDL :: FieldDefinition nullability a
                    -> Maybe SqlColDesc
                    -> [String]
 mkMigrateColumnDDL fieldDef Nothing = ["ADD COLUMN " ++ mkFieldDDL fieldDef]
@@ -113,7 +110,7 @@ mkFlagDDL (References table field) =
 mkFlagDDL (ColumnDescription _) = Nothing
 mkFlagDDL AssignedByDatabase = Nothing
 
-mkFieldDDL :: Nullability nullability => FieldDefinition nullability a -> String
+mkFieldDDL :: FieldDefinition nullability a -> String
 mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
   where
     name = rawExprToSql . generateSql . NameForm Nothing . fieldName $ field
@@ -135,7 +132,7 @@ mkCreateTableDDL tableDef =
 mkDropTableDDL :: String -> String
 mkDropTableDDL name = "DROP TABLE \"" ++ name ++ "\""
 
-sqlFieldDesc :: Nullability nullability => FieldDefinition nullability a -> SqlColDesc
+sqlFieldDesc :: FieldDefinition nullability a -> SqlColDesc
 sqlFieldDesc field =
   SqlColDesc
     { colType = sqlTypeId $ fieldType field

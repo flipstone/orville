@@ -95,7 +95,7 @@ mkTableDefinition (TableParams {..}) =
     }
 
 data RelationalMap a b where
-  RM_Field :: Nullability nullability => FieldDefinition nullability a -> RelationalMap a a
+  RM_Field :: FieldDefinition nullability a -> RelationalMap a a
   RM_Nest :: (a -> b) -> RelationalMap b c -> RelationalMap a c
   RM_Pure :: b -> RelationalMap a b
   RM_Apply
@@ -119,7 +119,7 @@ instance Profunctor RelationalMap where
 mapAttr :: (a -> b) -> RelationalMap b c -> RelationalMap a c
 mapAttr = RM_Nest
 
-mapField :: Nullability nullability => FieldDefinition nullability a -> RelationalMap a a
+mapField :: FieldDefinition nullability a -> RelationalMap a a
 mapField = RM_Field
 
 partialMap :: RelationalMap a (Either String a) -> RelationalMap a a
@@ -128,10 +128,10 @@ partialMap = RM_Partial
 readOnlyMap :: RelationalMap a b -> RelationalMap c b
 readOnlyMap = RM_ReadOnly
 
-attrField :: Nullability nullability => (a -> b) -> FieldDefinition nullability b -> RelationalMap a b
+attrField :: (a -> b) -> FieldDefinition nullability b -> RelationalMap a b
 attrField get = mapAttr get . mapField
 
-readOnlyField :: Nullability nullability => FieldDefinition nullability a -> RelationalMap b a
+readOnlyField :: FieldDefinition nullability a -> RelationalMap b a
 readOnlyField = readOnlyMap . mapField
 
 prefixMap :: String -> RelationalMap a b -> RelationalMap a b
