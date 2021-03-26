@@ -78,7 +78,7 @@ nullableField field =
 {-|
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
   'NotNull', you wanted 'nullableField' instead of this function). Note that
-  fields created using this function have assymetric encoding and decode of
+  fields created using this function have asymetric encoding and decode of
   'NULL' values. Because the provide field is 'Nullable', 'NULL' values decode
   from the database already have a representation in the 'a' type, so 'NULL'
   will be decoded as 'Just <value of type a for NULL>'. This means if you
@@ -87,8 +87,8 @@ nullableField field =
   make fields 'Nullable' but need tho value to be decoded in its underlying
   type when reading back (e.g. 'maybeMapper' from 'RelationalMap').
 -}
-assymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
-assymmetricNullableField field =
+asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
+asymmetricNullableField field =
   let
     nullableType sqlType =
       sqlType
@@ -138,9 +138,6 @@ isAssignedByDatabase _ = False
 
 escapedFieldName :: FieldDefinition nullability a -> String
 escapedFieldName field = "\"" ++ fieldName field ++ "\""
-
-isPrimaryKeyField :: FieldDefinition nullability a -> Bool
-isPrimaryKeyField field = any isPrimaryKey $ fieldFlags field
 
 withFlag :: FieldDefinition nullability a -> ColumnFlag -> FieldDefinition nullability a
 withFlag field newFlag = field {fieldFlags = newFlag : fieldFlags field}

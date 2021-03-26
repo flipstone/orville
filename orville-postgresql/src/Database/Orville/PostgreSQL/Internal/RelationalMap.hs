@@ -162,9 +162,9 @@ maybeMapper
         NullableField nullField ->
           -- When the underlying field is already nullable we need to make sure
           -- that 'NULL' is decoded to a 'Just'. Otherwise when the field is
-          -- 'NULL' it cause the entire 'RelationalMap' to resolve to a
+          -- 'NULL' it causes the entire 'RelationalMap' to resolve to a
           -- 'Nothing' as if _all_ fields were 'NULL', even if they were not.
-          RM_Field (assymmetricNullableField nullField)
+          RM_Field (asymmetricNullableField nullField)
 
     go (RM_Pure a) = RM_Pure (pure a)
     go (RM_Apply rmF rmA) = RM_Apply (fmap (<*>) $ go rmF) (go rmA)

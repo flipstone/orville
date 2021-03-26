@@ -187,10 +187,10 @@ whereQualified tableDef cond = Qualified tableDef cond
 whereRaw :: String -> [SqlValue] -> WhereCondition
 whereRaw str values = WhereConditionExpr . expr $ E.whereRaw str values
 
-isNull :: FieldDefinition nullability a -> WhereCondition
+isNull :: FieldDefinition Nullable a -> WhereCondition
 isNull = WhereConditionExpr . expr . E.whereNull . fieldToNameForm
 
-isNotNull :: FieldDefinition nullability a -> WhereCondition
+isNotNull :: FieldDefinition Nullable a -> WhereCondition
 isNotNull = WhereConditionExpr . expr . E.whereNotNull . fieldToNameForm
 
 whereClause :: [WhereCondition] -> String
