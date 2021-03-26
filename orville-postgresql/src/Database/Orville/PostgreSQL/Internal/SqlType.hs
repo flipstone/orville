@@ -35,9 +35,9 @@ data SqlType a = SqlType
     -- ^ The raw SQL DDL to use when creating/migrating columns of this type
     -- (not including any NULL or NOT NULL declarations)
   , sqlTypeReferenceDDL :: Maybe String
-    -- ^ Indicates whether columns should be marked NULL or NOT NULL in the
-    -- database schema. If this is 'True', then 'sqlTypeFromSql' should
-    -- provide a handling of 'SqlNull' that returns an 'a', not 'Nothing'.
+    -- ^ The raw SQL DDL to use when creating/migrating columns with foreign
+    -- keys to this type. This is used foreignRefType to build a new SqlType
+    -- when making foreign key fields
   , sqlTypeId :: HDBC.SqlTypeId
     -- ^ 'sqlTypeId' will be compared to the 'colType' field found in the
     -- 'HDBC.SqlColDesc' return by 'describeTable' when determining whether

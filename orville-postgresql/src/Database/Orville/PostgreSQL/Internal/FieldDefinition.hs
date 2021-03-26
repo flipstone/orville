@@ -78,13 +78,13 @@ nullableField field =
 {-|
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
   'NotNull', you wanted 'nullableField' instead of this function). Note that
-  fields created using this function have asymetric encoding and decode of
-  'NULL' values. Because the provide field is 'Nullable', 'NULL' values decode
+  fields created using this function have asymetric encoding and decoding of
+  'NULL' values. Because the provided field is 'Nullable', 'NULL' values decode
   from the database already have a representation in the 'a' type, so 'NULL'
   will be decoded as 'Just <value of type a for NULL>'. This means if you
   insert a 'Nothing' value using the field, it will be read back as 'Just'
   value. This is useful for building high level combinators that might need to
-  make fields 'Nullable' but need tho value to be decoded in its underlying
+  make fields 'Nullable' but need the value to be decoded in its underlying
   type when reading back (e.g. 'maybeMapper' from 'RelationalMap').
 -}
 asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)

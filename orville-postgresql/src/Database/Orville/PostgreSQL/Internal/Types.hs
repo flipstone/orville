@@ -62,18 +62,35 @@ instance ColumnDefault Bool where
   toColumnDefaultSql True = "true"
   toColumnDefaultSql False = "false"
 
+-- | 'Nullable' is a values-less type used to track that a 'FieldDefinition'
+-- represents a field that is marked nullable in the database schema. See the
+-- 'Nullability' type for the value-level representation of field nullability.
 data Nullable
+
+-- | 'NotNull is a values-less type used to track that a 'FieldDefinition'
+-- represents a field that is marked not-null in the database schema.  See the
+-- 'Nullability' type for the value-level representation of field nullability.
 data NotNull
 
+-- | 'Nullability' represents whether a field will be marked as 'NULL' or 'NOT
+-- NULL' in the database schema. It is a GADT so that the value constructors
+-- can be used to record this knowledge in the type system as well. This allows
+-- functions that work only on 'Nullable' or 'NotNull' fields to indicate this
+-- in their type signatures as appropriate.
 data Nullability nullability where
   Nullable :: Nullability Nullable
   NotNull  :: Nullability NotNull
 
+-- | A 'NullabilityCheck' is returned by the 'checkNullability' function, which
+-- can be used when a function works on both 'Nullable' and 'NotNull' functions
+-- but needs to deal with each type of field separately. It adds wrapper
+-- constructors around the 'FieldDefinition' that you can pattern match on to
+-- then work with a concrete 'Nullable' or 'NotNull' field.
 data NullabilityCheck a
   = NullableField (FieldDefinition Nullable a)
   | NotNullField (FieldDefinition NotNull a)
 
--- | Resolves the 'nullablity' of a field to a concreted type based on its
+-- | Resolves the 'nullablity' of a field to a concrete type based on its
 -- 'fieldNullability'. You can do this directly by pattern matching on the
 -- value of 'fieldNullability' if you have the GADTs extension turned on, but
 -- this function will do that for you so you don't need to turn GADTs on.
