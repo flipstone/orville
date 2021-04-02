@@ -7,9 +7,15 @@ License   : MIT
 
 module Database.Orville.PostgreSQL.Core
   ( TableDefinition(..)
+  , PrimaryKey
+  , primaryKeyIn
+  , primaryKeyEquals
+  , primaryKeyDescription
+  , primaryKeyToSql
+  , primaryKey
+  , compositePrimaryKey
+  , primaryKeyPart
   , mkTableDefinition
-  , tableKeyToSql
-  , tableKeyFromSql
   , SqlType(..)
   , serial
   , bigserial
@@ -190,6 +196,7 @@ import Database.Orville.PostgreSQL.Internal.MigrationError
 import Database.Orville.PostgreSQL.Internal.MigrationPlan
 import Database.Orville.PostgreSQL.Internal.Monad
 import Database.Orville.PostgreSQL.Internal.OrderBy
+import Database.Orville.PostgreSQL.Internal.PrimaryKey
 import Database.Orville.PostgreSQL.Internal.RelationalMap
 import Database.Orville.PostgreSQL.Internal.SelectOptions
 import Database.Orville.PostgreSQL.Internal.Sql
@@ -249,9 +256,9 @@ findRecords ::
   -> m (Map.Map key readEntity)
 findRecords _ [] = return Map.empty
 findRecords tableDef keys = do
-  let keyField = tablePrimaryKey tableDef
+  let keyDef = tablePrimaryKey tableDef
       mkEntry record = (tableGetKey tableDef record, record)
-  recordList <- selectAll tableDef (where_ $ keyField .<- keys)
+  recordList <- selectAll tableDef (where_ $ primaryKeyIn keyDef keys)
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordsBy ::
@@ -271,8 +278,8 @@ findRecord ::
   -> key
   -> m (Maybe readEntity)
 findRecord tableDef key =
-  let keyField = tablePrimaryKey tableDef
-   in selectFirst tableDef (where_ $ keyField .== key)
+  let keyDef = tablePrimaryKey tableDef
+   in selectFirst tableDef (where_ $ primaryKeyEquals keyDef key)
 
 updateFields ::
      MonadOrville conn m
@@ -296,8 +303,8 @@ updateRecord ::
   -> writeEntity
   -> m ()
 updateRecord tableDef key record = do
-  let keyField = tablePrimaryKey tableDef
-      conds = [keyField .== key]
+  let keyDef = tablePrimaryKey tableDef
+      conds = [primaryKeyEquals keyDef key]
       fields = tableAssignableFields tableDef
       builder = tableToSql tableDef
       updates = zipWith FieldUpdate fields (runToSql builder record)
@@ -355,8 +362,8 @@ deleteRecord ::
   -> key
   -> m ()
 deleteRecord tableDef key = do
-  let keyField = tablePrimaryKey tableDef
-  n <- deleteWhere tableDef [keyField .== key]
+  let keyDef = tablePrimaryKey tableDef
+  n <- deleteWhere tableDef [primaryKeyEquals keyDef key]
   if n /= 1
     then error $
          "Expected to delete exactly 1 row for deleteRecord\

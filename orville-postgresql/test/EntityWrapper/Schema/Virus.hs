@@ -14,7 +14,7 @@ virusTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "virus"
-    , O.tblPrimaryKey = virusIdField
+    , O.tblPrimaryKey = O.primaryKey virusIdField
     , O.tblMapper
       -- hindent ;(
        =
@@ -27,7 +27,7 @@ virusTable =
 
 virusIdField :: O.FieldDefinition O.NotNull VirusId
 virusIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.automaticIdField "id" `O.withConversion`
   O.convertSqlType unVirusId VirusId
 
 virusNameField :: O.FieldDefinition O.NotNull VirusName

@@ -26,7 +26,7 @@ migrationEntityTable fieldDef =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "migrationEntity"
-    , O.tblPrimaryKey = migrationEntityIdField
+    , O.tblPrimaryKey = O.primaryKey migrationEntityIdField
     , O.tblMapper =
       MigrationEntity
         <$> O.readOnlyField migrationEntityIdField
@@ -44,7 +44,7 @@ migrationEntityTableWithDroppedColumn columnName =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "migrationEntity"
-    , O.tblPrimaryKey = migrationEntityIdField
+    , O.tblPrimaryKey = O.primaryKey migrationEntityIdField
     , O.tblMapper =
       MigrationEntity
         <$> O.readOnlyField migrationEntityIdField
@@ -56,6 +56,6 @@ migrationEntityTableWithDroppedColumn columnName =
 
 migrationEntityIdField :: O.FieldDefinition O.NotNull MigrationEntityId
 migrationEntityIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.automaticIdField "id" `O.withConversion`
   O.convertSqlType unMigrationEntityId MigrationEntityId
 

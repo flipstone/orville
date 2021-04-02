@@ -34,9 +34,7 @@ type UpdatedAt = Time.UTCTime
 type OccurredAt = Time.UTCTime
 
 data ColumnFlag
-  = PrimaryKey
-  | forall a. ColumnDefault a =>
-              Default a
+  = forall a. ColumnDefault a => Default a
   | Unique
   | forall readEntity writeEntity key nullability. References (TableDefinition readEntity writeEntity key)
                                                               (FieldDefinition nullability key)
@@ -224,7 +222,7 @@ data TableDefinition readEntity writeEntity key = TableDefinition
   , tableSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tablePrimaryKey :: FieldDefinition NotNull key
+  , tablePrimaryKey :: PrimaryKey key
       -- ^ The statically typed field definition that is the primary key. Currently
       -- this field must still by listed in `tableFields`
   , tableFromSql :: FromSql readEntity
@@ -239,19 +237,11 @@ data TableDefinition readEntity writeEntity key = TableDefinition
       -- to migrate the table.
   }
 
-tableKeyType :: TableDefinition readEntity writeEntity key -> SqlType key
-tableKeyType tableDef = fieldType $ tablePrimaryKey tableDef
+data PrimaryKey key
+  = PrimaryKey (PrimaryKeyPart key) [PrimaryKeyPart key]
 
-tableKeyFromSql ::
-     TableDefinition readEntity writeEntity key -> SqlValue -> Maybe key
-tableKeyFromSql = sqlTypeFromSql . tableKeyType
-
-tableKeyToSql :: TableDefinition readEntity writeEntity key -> key -> SqlValue
-tableKeyToSql = sqlTypeToSql . tableKeyType
-
-tableKeysToSql ::
-     TableDefinition readEntity writeEntity key -> [key] -> [SqlValue]
-tableKeysToSql tableDef = map (tableKeyToSql tableDef)
+data PrimaryKeyPart key =
+  forall part. PrimaryKeyPart (key -> part) (FieldDefinition NotNull part)
 
 instance QueryKeyable (TableDefinition readEntity writeEntity key) where
   queryKey = QKTable . tableName

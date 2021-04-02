@@ -10,7 +10,7 @@ import Safe (lastMay)
 import Database.Orville.PostgreSQL.Internal.Monad (MonadOrville)
 import Database.Orville.PostgreSQL.Internal.OrderBy (SortDirection(Ascending))
 import Database.Orville.PostgreSQL.Internal.SelectOptions (limit, order, where_)
-import Database.Orville.PostgreSQL.Internal.Types (TableDefinition(..))
+import Database.Orville.PostgreSQL.Internal.Types (TableDefinition(..), FieldDefinition, NotNull)
 import Database.Orville.PostgreSQL.Internal.Where ((.>=), WhereCondition, whereAnd)
 import Database.Orville.PostgreSQL.Select (runSelect, selectQueryTable)
 
@@ -20,16 +20,18 @@ data Pagination m entity =
     , pageNext :: Maybe (m (Pagination m entity))
     }
 
-buildPagination :: (MonadOrville conn m, Bounded key, Enum key)
+buildPagination :: (MonadOrville conn m, Bounded orderField, Enum orderField)
                 => TableDefinition readEnt write key
+                -> FieldDefinition NotNull orderField
+                -> (readEnt -> orderField)
                 -> Maybe WhereCondition
                 -> Word
                 -> m (Pagination m readEnt)
-buildPagination tableDef mbWhereCond pageSize =
+buildPagination tableDef orderField getOrderField mbWhereCond pageSize =
   let selectOpts bound
-        = order (tablePrimaryKey tableDef) Ascending
+        = order orderField Ascending
        <> limit (fromIntegral pageSize)
-       <> where_ (whereAnd $ tablePrimaryKey tableDef .>= bound
+       <> where_ (whereAnd $ orderField .>= bound
                            : maybeToList mbWhereCond
                  )
 
@@ -40,7 +42,7 @@ buildPagination tableDef mbWhereCond pageSize =
         let nxt =
               case lastMay rows of
                 Just lst | length rows == fromIntegral pageSize ->
-                  Just . mkPagination . succ $ tableGetKey tableDef lst
+                  Just . mkPagination . succ $ getOrderField lst
                 _ -> Nothing
 
         pure $ Pagination

@@ -130,7 +130,7 @@ orderTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "order"
-    , O.tblPrimaryKey = orderIdField
+    , O.tblPrimaryKey = O.primaryKey orderIdField
     , O.tblMapper =
         Order <$> O.attrField orderId orderIdField <*>
         O.attrField customerFkId customerFkIdField <*>
@@ -142,7 +142,7 @@ orderTable =
 
 orderIdField :: O.FieldDefinition O.NotNull OrderId
 orderIdField =
-  O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.int64Field "id" `O.withConversion`
   O.convertSqlType unOrderId OrderId
 
 customerFkIdField :: O.FieldDefinition O.NotNull CustomerId
@@ -208,7 +208,7 @@ customerTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "customer"
-    , O.tblPrimaryKey = customerIdField
+    , O.tblPrimaryKey = O.primaryKey customerIdField
     , O.tblMapper =
         Customer <$> O.attrField customerId customerIdField <*>
         O.attrField customerName customerNameField
@@ -219,7 +219,7 @@ customerTable =
 
 customerIdField :: O.FieldDefinition O.NotNull CustomerId
 customerIdField =
-  O.int64Field "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.int64Field "id" `O.withConversion`
   O.convertSqlType unCustomerId CustomerId
 
 customerNameField :: O.FieldDefinition O.NotNull CustomerName

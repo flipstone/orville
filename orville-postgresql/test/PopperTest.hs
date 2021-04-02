@@ -166,7 +166,7 @@ rootTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "root"
-    , O.tblPrimaryKey = rootIdField
+    , O.tblPrimaryKey = O.primaryKey rootIdField
     , O.tblMapper =
         Root <$> O.attrField rootId rootIdField <*>
         O.attrField rootTreeId treeIdField
@@ -180,7 +180,7 @@ branchTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "branch"
-    , O.tblPrimaryKey = branchIdField
+    , O.tblPrimaryKey = O.primaryKey branchIdField
     , O.tblMapper =
         Branch <$> O.attrField branchId branchIdField <*>
         O.attrField branchTreeId treeIdField
@@ -194,7 +194,7 @@ leafTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "leaf"
-    , O.tblPrimaryKey = leafIdField
+    , O.tblPrimaryKey = O.primaryKey leafIdField
     , O.tblMapper =
         Leaf <$> O.attrField leafId leafIdField <*>
         O.attrField leafBranchId branchForeignIdField

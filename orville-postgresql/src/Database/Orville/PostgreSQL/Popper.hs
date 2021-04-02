@@ -26,7 +26,6 @@ module Database.Orville.PostgreSQL.Popper
   , hasOne'
   , hasOneWhere
   , kern
-  , missingRecordMessage
   , popMissingRecord
   , onKern
   , pop
@@ -199,7 +198,7 @@ popMissingRecord ::
      TableDefinition readEntity writeEntity key
   -> FieldDefinition nullability fieldValue
   -> Popper fieldValue PopError
-popMissingRecord tableDef fieldDef = fromKern (MissingRecord tableDef fieldDef)
+popMissingRecord tableDef fieldDef = fromKern (MissingRecordBy tableDef fieldDef)
 
 -- popMany is the most involved helper. It recursively
 -- rewrites the entire Popper expression to avoid
@@ -297,23 +296,48 @@ onPopMany = PopOnMany
 
 -- The Popper guts
 data PopError
-  = forall readEntity writeEntity key fieldValue nullability.
+  = forall readEntity writeEntity key.
     MissingRecord (TableDefinition readEntity writeEntity key)
-                  (FieldDefinition nullability fieldValue)
-                  fieldValue
+                  (PrimaryKey key)
+                  key
+
+  | forall readEntity writeEntity key fieldValue nullability.
+    MissingRecordBy (TableDefinition readEntity writeEntity key)
+                    (FieldDefinition nullability fieldValue)
+                    fieldValue
+
   | Unpoppable String
 
 instance Show PopError where
-  show (MissingRecord tableDef fieldDef fieldValue) =
-    "MissingRecord: " ++ missingRecordMessage tableDef fieldDef fieldValue
+  show (MissingRecord tableDef keyDef keyValue) =
+    "MissingRecord: " ++ missingRecordMessage tableDef keyDef keyValue
+
+  show (MissingRecordBy tableDef fieldDef fieldValue) =
+    "MissingRecord: " ++ missingRecordByMessage tableDef fieldDef fieldValue
+
   show (Unpoppable msg) = "Unpoppable: " ++ msg
 
 missingRecordMessage ::
      TableDefinition readEntity writeEntity key
+  -> PrimaryKey key
+  -> key
+  -> String
+missingRecordMessage tableDef keyDef keyValue =
+  concat
+    [ "Unable to find "
+    , tableName tableDef
+    , " with "
+    , primaryKeyDescription keyDef
+    , " = "
+    , show (primaryKeyToSql keyDef keyValue)
+    ]
+
+missingRecordByMessage ::
+     TableDefinition readEntity writeEntity key
   -> FieldDefinition nullability fieldValue
   -> fieldValue
   -> String
-missingRecordMessage tableDef fieldDef fieldValue =
+missingRecordByMessage tableDef fieldDef fieldValue =
   concat
     [ "Unable to find "
     , tableName tableDef

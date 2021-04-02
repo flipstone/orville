@@ -23,7 +23,7 @@ crudEntityTable columnName =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "crudEntity"
-    , O.tblPrimaryKey = crudEntityIdField
+    , O.tblPrimaryKey = O.primaryKey crudEntityIdField
     , O.tblMapper =
       CrudEntity
         <$> O.readOnlyField crudEntityIdField
@@ -35,7 +35,7 @@ crudEntityTable columnName =
 
 crudEntityIdField :: O.FieldDefinition O.NotNull CrudEntityId
 crudEntityIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.automaticIdField "id" `O.withConversion`
   O.convertSqlType unCrudEntityId CrudEntityId
 
 crudEntityRenameableField :: String -> O.FieldDefinition O.NotNull Int32

@@ -1,6 +1,7 @@
 module AppManagedEntity.CrudTest where
 
 import Control.Monad (void)
+import qualified Data.Map as Map
 
 import qualified Database.Orville.PostgreSQL as O
 
@@ -37,7 +38,23 @@ test_crud =
             "Virus found in database didn't match the originally inserted values"
             (Just insertedVirus)
             foundVirus
-        --
+
+      , testCase "Insert and find many" $ do
+          let bpsId = VirusId 1234
+              brnId = VirusId 5678
+
+              bpsVirus = Virus bpsId bpsVirusName bpsDiscoveredAt
+              brnVirus = Virus brnId brnVirusName brnDiscoveredAt
+
+          run (TestDB.reset schema)
+          () <- run (O.insertRecordMany virusTable [bpsVirus, brnVirus])
+
+          foundViruses <- run $ O.findRecords virusTable [bpsId, brnId]
+          assertEqual
+            "Viruses found in database didn't match the originally inserted values"
+            (Map.fromList [(bpsId, bpsVirus), (brnId, brnVirus)])
+            foundViruses
+
       , testCase "Update" $ do
           let testId = VirusId 1234
               bpsVirus = Virus testId bpsVirusName bpsDiscoveredAt

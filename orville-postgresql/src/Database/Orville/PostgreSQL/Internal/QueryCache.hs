@@ -30,11 +30,11 @@ import Database.Orville.PostgreSQL.Internal.MappendCompat ((<>))
 import Database.Orville.PostgreSQL.Internal.Expr
 import Database.Orville.PostgreSQL.Internal.FromSql
 import Database.Orville.PostgreSQL.Internal.Monad
+import Database.Orville.PostgreSQL.Internal.PrimaryKey
 import Database.Orville.PostgreSQL.Internal.QueryKey
 import Database.Orville.PostgreSQL.Internal.SelectOptions
 import Database.Orville.PostgreSQL.Internal.TableDefinition
 import Database.Orville.PostgreSQL.Internal.Types
-import Database.Orville.PostgreSQL.Internal.Where
 import Database.Orville.PostgreSQL.Select
 
 type QueryCache = Map.Map QueryKey ResultSet
@@ -94,9 +94,11 @@ findRecordsCached ::
   -> [key]
   -> QueryCached m (Map.Map key readEntity)
 findRecordsCached tableDef keys = do
-  let keyField = tablePrimaryKey tableDef
-      mkEntry record = (tableGetKey tableDef record, record)
-  recordList <- selectCached tableDef (where_ $ keyField .<- keys)
+  let
+    primKey = tablePrimaryKey tableDef
+    mkEntry record = (tableGetKey tableDef record, record)
+
+  recordList <- selectCached tableDef (where_ $ primaryKeyIn primKey keys)
   pure $ Map.fromList (map mkEntry recordList)
 
 findRecordCached ::
@@ -105,8 +107,10 @@ findRecordCached ::
   -> key
   -> QueryCached m (Maybe readEntity)
 findRecordCached tableDef key =
-  let keyField = tablePrimaryKey tableDef
-   in selectFirstCached tableDef (where_ $ keyField .== key)
+  let
+    primKey = tablePrimaryKey tableDef
+   in
+    selectFirstCached tableDef (where_ $ primaryKeyEquals primKey key)
 
 findRecordsByCached ::
      (Ord fieldValue, MonadThrow m, MonadOrville conn m)

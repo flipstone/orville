@@ -26,7 +26,7 @@ majorTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "majors"
-    , O.tblPrimaryKey = majorIdField
+    , O.tblPrimaryKey = O.primaryKey majorIdField
     , O.tblMapper =
         Major <$> O.readOnlyField majorIdField <*>
         O.attrField majorName majorNameField <*>
@@ -38,7 +38,7 @@ majorTable =
 
 majorIdField :: O.FieldDefinition O.NotNull MajorId
 majorIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.automaticIdField "id" `O.withConversion`
   O.convertSqlType majorIdInt MajorId
 
 majorNameField :: O.FieldDefinition O.NotNull MajorName
@@ -56,7 +56,7 @@ studentTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "students"
-    , O.tblPrimaryKey = studentIdField
+    , O.tblPrimaryKey = O.primaryKey studentIdField
     , O.tblMapper =
         Student <$> O.readOnlyField studentIdField <*>
         O.attrField studentName studentNameField <*>
@@ -68,7 +68,7 @@ studentTable =
 
 studentIdField :: O.FieldDefinition O.NotNull StudentId
 studentIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.automaticIdField "id" `O.withConversion`
   O.convertSqlType studentIdInt StudentId
 
 studentNameField :: O.FieldDefinition O.NotNull StudentName

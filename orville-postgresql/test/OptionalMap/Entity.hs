@@ -26,7 +26,7 @@ badCrudEntityTable =
   O.mkTableDefinition $
   O.TableParams
     { O.tblName = "crudEntity"
-    , O.tblPrimaryKey = crudEntityIdField
+    , O.tblPrimaryKey = O.primaryKey crudEntityIdField
     , O.tblMapper =
       CrudEntity
         <$> O.readOnlyField crudEntityIdField
@@ -38,7 +38,7 @@ badCrudEntityTable =
 
 crudEntityIdField :: O.FieldDefinition O.NotNull CrudEntityId
 crudEntityIdField =
-  O.automaticIdField "id" `O.withFlag` O.PrimaryKey `O.withConversion`
+  O.automaticIdField "id" `O.withConversion`
   O.convertSqlType unCrudEntityId CrudEntityId
 
 badComplexFieldMap :: O.RelationalMap ComplexField ComplexField

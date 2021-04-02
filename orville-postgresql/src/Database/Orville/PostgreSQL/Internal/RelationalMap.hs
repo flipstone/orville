@@ -49,7 +49,7 @@ data TableParams readEntity writeEntity key = TableParams
   , tblSafeToDelete :: [String]
       -- ^ A list of any columns that may be deleted from the table by Orville.
       -- (Orville will never delete a column without being told it is safe)
-  , tblPrimaryKey :: FieldDefinition NotNull key
+  , tblPrimaryKey :: PrimaryKey key
       -- ^ A function to set the key on the entity
   , tblGetKey :: readEntity -> key
       -- ^ A function to get the key on the entity

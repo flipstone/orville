@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module ConduitTest where
 
 import Control.Monad.Trans.Resource (runResourceT)
@@ -14,7 +15,7 @@ import Test.Tasty.HUnit (assertEqual, testCase)
 
 import qualified TestDB
 
-import AppManagedEntity.Data.Virus (bpsVirus, brnVirus)
+import AppManagedEntity.Data.Virus (bpsVirus, brnVirus, virusId)
 import AppManagedEntity.Schema (schema, virusIdField, virusTable)
 
 test_conduit :: TestTree
@@ -40,6 +41,7 @@ test_conduit =
             [bpsVirus, brnVirus]
             actual
 
+#if MIN_VERSION_conduit(1,3,0)
     , TestDB.withOrvilleRun $ \run -> do
         testCase "streamPages can read all result rows" $ do
           actual <-
@@ -51,6 +53,8 @@ test_conduit =
                 fuse
                   (OC.streamPages
                      virusTable
+                     virusIdField
+                     virusId
                      Nothing
                      20)
                   consume
@@ -58,4 +62,5 @@ test_conduit =
             "Expected all viruses to be loaded by conduit"
             [bpsVirus, brnVirus]
             actual
+#endif
     ]

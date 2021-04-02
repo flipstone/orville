@@ -179,13 +179,15 @@ feedRows builder query = do
 #if MIN_VERSION_conduit(1,3,0)
 -- | Build a conduit source that is fed by querying one page worth of results
 -- at a time. When the last row of the last page is consumed, the stream ends.
-streamPages :: (MonadOrville conn m, Bounded key, Enum key)
+streamPages :: (MonadOrville conn m, Bounded orderField, Enum orderField)
             => TableDefinition readEnt write key
+            -> FieldDefinition NotNull orderField
+            -> (readEnt -> orderField)
             -> Maybe WhereCondition
             -> Word -- ^ number of rows fetched per page
             -> ConduitT () readEnt m ()
-streamPages tableDef mbWhereCond pageSize =
-  loop =<< lift (buildPagination tableDef mbWhereCond pageSize)
+streamPages tableDef orderField getOrderField mbWhereCond pageSize =
+  loop =<< lift (buildPagination tableDef orderField getOrderField mbWhereCond pageSize)
     where
       loop pagination = do
         yieldMany (pageRows pagination)

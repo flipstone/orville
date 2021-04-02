@@ -18,6 +18,7 @@ import Database.HDBC
 import Database.Orville.PostgreSQL.Internal.Expr
 import Database.Orville.PostgreSQL.Internal.FieldDefinition
 import Database.Orville.PostgreSQL.Internal.MigrationPlan
+import Database.Orville.PostgreSQL.Internal.PrimaryKey
 import Database.Orville.PostgreSQL.Internal.SchemaState
 import Database.Orville.PostgreSQL.Internal.SqlType
 import Database.Orville.PostgreSQL.Internal.Types
@@ -102,7 +103,6 @@ mkDropColumnDDL _ Nothing = []
 mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ (rawExprToSql . generateSql . NameForm Nothing) name]
 
 mkFlagDDL :: ColumnFlag -> Maybe String
-mkFlagDDL PrimaryKey = Just "PRIMARY KEY"
 mkFlagDDL Unique = Just "UNIQUE"
 mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
 mkFlagDDL (References table field) =
@@ -113,7 +113,7 @@ mkFlagDDL AssignedByDatabase = Nothing
 mkFieldDDL :: FieldDefinition nullability a -> String
 mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
   where
-    name = rawExprToSql . generateSql . NameForm Nothing . fieldName $ field
+    name = rawExprToSql . generateSql . fieldToNameForm $ field
     sqlType = sqlTypeDDL (fieldType field)
     flagSql =
       List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
@@ -122,12 +122,39 @@ mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
         then "NULL"
         else "NOT NULL"
 
+mkPrimaryKeyDDL :: PrimaryKey key -> String
+mkPrimaryKeyDDL keyDef =
+  let
+    names =
+      mapPrimaryKeyParts (\_ field -> fieldToNameForm field) keyDef
+  in
+    concat
+      [ "PRIMARY KEY ("
+      , List.intercalate ", " (map (rawExprToSql . generateSql) names)
+      , ")"
+      ]
+
 mkCreateTableDDL :: TableDefinition readEntity writeEntity key -> String
 mkCreateTableDDL tableDef =
-  "CREATE TABLE \"" ++ tableName tableDef ++ "\" (" ++ fields ++ ")"
-  where
-    fields = List.intercalate ", " $ map mkSomeFieldDDL (tableFields tableDef)
-    mkSomeFieldDDL (SomeField f) = mkFieldDDL f
+  let
+    mkSomeFieldDDL (SomeField f) =
+      mkFieldDDL f
+
+    fields =
+      List.intercalate ", " $ map mkSomeFieldDDL (tableFields tableDef)
+
+    primaryKeyDDL =
+      mkPrimaryKeyDDL (tablePrimaryKey tableDef)
+  in
+    concat
+      [ "CREATE TABLE \""
+      , tableName tableDef
+      , "\" ("
+      , fields
+      , ", "
+      , primaryKeyDDL
+      , ")"
+      ]
 
 mkDropTableDDL :: String -> String
 mkDropTableDDL name = "DROP TABLE \"" ++ name ++ "\""

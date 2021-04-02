@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ba90a571910116899596b5b6a86caa405d8511000be2aeedd6483a4a0f8d3d49
+-- hash: d621d9ed1dc2b9c1b8543913b05cf997d4924fc1316a47dabf01a390156ccc9f
 
 name:           orville-postgresql
 version:        0.8.3.0
@@ -63,6 +63,7 @@ library
       Database.Orville.PostgreSQL.Internal.MigrationPlan
       Database.Orville.PostgreSQL.Internal.Monad
       Database.Orville.PostgreSQL.Internal.OrderBy
+      Database.Orville.PostgreSQL.Internal.PrimaryKey
       Database.Orville.PostgreSQL.Internal.QueryCache
       Database.Orville.PostgreSQL.Internal.QueryKey
       Database.Orville.PostgreSQL.Internal.RelationalMap
@@ -150,6 +151,10 @@ test-suite spec
       AppManagedEntity.Data.Virus
       AppManagedEntity.Schema
       AppManagedEntity.Schema.Virus
+      CompositePrimaryKey.CrudTest
+      CompositePrimaryKey.Data.Virus
+      CompositePrimaryKey.Schema
+      CompositePrimaryKey.Schema.Virus
       ConduitTest
       EntityWrapper.CrudTest
       EntityWrapper.Data.Entity
@@ -160,6 +165,8 @@ test-suite spec
       Migrations.Entity
       Migrations.MigrateTest
       MonadBaseControlTest
+      OptionalMap.CrudTest
+      OptionalMap.Entity
       ParameterizedEntity.CrudTest
       ParameterizedEntity.Data.Virus
       ParameterizedEntity.Schema

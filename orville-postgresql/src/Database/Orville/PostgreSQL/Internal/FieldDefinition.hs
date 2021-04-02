@@ -128,10 +128,6 @@ fieldOfType sqlType name =
     []
     NotNull
 
-isPrimaryKey :: ColumnFlag -> Bool
-isPrimaryKey PrimaryKey = True
-isPrimaryKey _ = False
-
 isAssignedByDatabase :: ColumnFlag -> Bool
 isAssignedByDatabase AssignedByDatabase = True
 isAssignedByDatabase _ = False
