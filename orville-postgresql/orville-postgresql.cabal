@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d621d9ed1dc2b9c1b8543913b05cf997d4924fc1316a47dabf01a390156ccc9f
+-- hash: 15667ba1edbbf9688554ef36cc1d03ddc35351056ad4f8e78ed3adfc4b8e5dec
 
 name:           orville-postgresql
 version:        0.8.3.0
@@ -34,6 +34,9 @@ library
       Database.Orville.PostgreSQL.MonadBaseControl
       Database.Orville.PostgreSQL.MonadUnliftIO
       Database.Orville.PostgreSQL.Popper
+      Database.Orville.PostgreSQL.Plan
+      Database.Orville.PostgreSQL.Plan.Many
+      Database.Orville.PostgreSQL.Plan.Operation
       Database.Orville.PostgreSQL.Raw
       Database.Orville.PostgreSQL.ResourceT
       Database.Orville.PostgreSQL.Select
@@ -77,6 +80,7 @@ library
       Database.Orville.PostgreSQL.Internal.Types
       Database.Orville.PostgreSQL.Internal.Where
       Database.Orville.PostgreSQL.Pagination
+      Database.Orville.PostgreSQL.Plan.Explanation
       Paths_orville_postgresql
   hs-source-dirs:
       src
@@ -171,6 +175,7 @@ test-suite spec
       ParameterizedEntity.Data.Virus
       ParameterizedEntity.Schema
       ParameterizedEntity.Schema.Virus
+      PlanTest
       PopperTest
       StrangeFieldNames.CrudTest
       StrangeFieldNames.Entity
