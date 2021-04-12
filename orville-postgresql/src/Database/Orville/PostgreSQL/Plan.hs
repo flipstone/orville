@@ -96,10 +96,16 @@ instance Applicative (Plan scope param) where
   (<*>) = Apply
 
 {-|
-  'One' is an internal tag type used by as the 'scope' variable for
+  'OneScope' is an internal tag type used by as the 'scope' variable for
   'Plan' values when executing them against a single input.
 -}
-data One a
+data OneScope
+
+{-|
+  'ManyScope is an internal tag type used by as the 'scope' variable for
+  'Plan' values when executing them against multiple inputs.
+-}
+data ManyScope k
 
 {-|
   A 'Planned' value is a wrapper around the results of previous run queries
@@ -118,8 +124,8 @@ data One a
   'Applicative' instance for 'Plan'.
 -}
 data Planned scope a where
-  PlannedOne      :: a -> Planned One a
-  PlannedMany     :: Many k a -> Planned (Many k) a
+  PlannedOne      :: a -> Planned OneScope a
+  PlannedMany     :: Many k a -> Planned (ManyScope k) a
   PlannedExplain  :: Planned Explain a
 
 instance Functor (Planned scope) where
@@ -146,14 +152,14 @@ mapPlanned f planned =
   'resolveOne' resolves a 'Planned' value that is known to be in the 'One'
   scope to its single wrapped value.
 -}
-resolveOne :: Planned One a -> a
+resolveOne :: Planned OneScope a -> a
 resolveOne (PlannedOne a) = a
 
 {-|
   'resolveMany resolves a 'Planned' value that is known to be in the 'Many'
   scope to the 'Many' value wrapped inside it.
 -}
-resolveMany :: Planned (Many k) a -> Many k a
+resolveMany :: Planned (ManyScope k) a -> Many k a
 resolveMany (PlannedMany as) = as
 
 {-|
@@ -406,7 +412,7 @@ execute plan param =
   'scope' type to ensure all 'Planned' values are built with 'PlannedOne'.
 -}
 executeOne :: Core.MonadOrville conn m
-           => Plan One param result
+           => Plan OneScope param result
            -> param
            -> m result
 executeOne plan param =
@@ -448,7 +454,7 @@ executeOne plan param =
   'scope' type to ensure all 'Planned' values are built with 'PlannedMany'.
 -}
 executeMany :: Core.MonadOrville conn m
-            => Plan (Many param) param result
+            => Plan (ManyScope param) param result
             -> [param]
             -> m (Many.Many param result)
 executeMany plan params =
@@ -498,9 +504,13 @@ executeMany plan params =
       cs <- executeMany planBC (Many.elems bs)
       pure $ Many.compose cs bs
 
-data Explain a where
-  ExplainOne  :: forall b. Explain b
-  ExplainMany :: forall b. Explain b
+{-|
+  'Explain' is an internal type used to track whether an explanation is
+  being generated for a single input or multiple inputs.
+-}
+data Explain
+  = ExplainOne
+  | ExplainMany
 
 {-|
   'explain' produces a textual description of the steps outlined by
@@ -518,7 +528,7 @@ explain plan =
   'scope' type fixed to 'Explain' to ensure that all 'Planned'
   values are constructed with the 'PlannedExplain' constructor.
 -}
-explainPlan :: (forall b. Explain b)
+explainPlan :: Explain
             -> Plan Explain param result
             -> Exp.Explanation
 explainPlan mult plan =
