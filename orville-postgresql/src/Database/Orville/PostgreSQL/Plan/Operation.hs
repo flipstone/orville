@@ -138,12 +138,11 @@ assertRight =
     }
 
 {-|
-  'findOne' is builds a planning primitive that finds (at most) one row
-  where from the given table where the column value for the provided
-  'FieldDefinition' matches the plan's input parameter. When executed on
-  multiple parameters it fetches all rows where the field matches the inputs
-  and arbitrarily picks at most one of those rows to use as the result for
-  each input.
+  'findOne' builds a planning primitive that finds (at most) one row from the
+  given table where the column value for the provided 'FieldDefinition' matches
+  the plan's input parameter. When executed on multiple parameters it fetches
+  all rows where the field matches the inputs and arbitrarily picks at most one
+  of those rows to use as the result for each input.
 -}
 findOne :: Ord fieldValue
         => Core.TableDefinition readEntity writeEntity key
@@ -302,14 +301,14 @@ data SelectOperation param row result =
     { -- | 'selectOne' will be called to build the 'Select' query that should
       -- be run when there is a single input parameter while executing a plan.
       -- Note that the "One-ness" here refers to the single input parameter
-      -- rather than result. See 'productResult' below for more information
+      -- rather than result. See 'produceResult' below for more information
       -- about returning one values vs. many from a 'SelectOperation'.
       selectOne           :: param -> Select row
 
       -- | 'selectMany will be called to build the 'Select' query that should
       -- be run when there are multiple parameters while executing a plan.
       -- Note that the "Many-ness" here refers to the multiple input parameters
-      -- rather than result. See 'productResult' below for more information
+      -- rather than result. See 'produceResult' below for more information
       -- about returning one values vs. many from a 'SelectOperation'.
     , selectMany          :: [param] -> Select row
 
