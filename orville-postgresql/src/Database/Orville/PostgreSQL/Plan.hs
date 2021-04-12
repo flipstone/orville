@@ -53,13 +53,13 @@ import           Database.Orville.PostgreSQL.Select (Select)
   If you need to do a join with a plan, you can always construction your
   own custom 'Operation' and use 'planOperation' to incorporate into a plan.
 
-  The 'param' type variable indicates what type of value is expected as input
+  The @param@ type variable indicates what type of value is expected as input
   when the plan is executed.
 
-  The 'result' type for a plan indicates what Haskell type is produced
+  The @result@ type for a plan indicates what Haskell type is produced
   when the plan is executed.
 
-  The 'scope' type is used internally by Orville to track the plan is currently
+  The @scope@ type is used internally by Orville to track the plan is currently
   executed against a single input or multiple inputs. This type parameter
   should never specified as a concrete type in user code, but must be exposed
   as a variable to ensure that execute scope is tracked correctly through
@@ -204,7 +204,7 @@ findMaybeOne tableDef fieldDef =
   planOperation (Op.findOne tableDef fieldDef)
 
 {-|
-  'findMaybeOneWhere' is simple to 'findMaybeOne', but allows a
+  'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a
   'WhereCondition' to be specified to restrict which rows are matched by the
   database query.
 -}
@@ -218,7 +218,7 @@ findMaybeOneWhere tableDef fieldDef cond =
 
 {-|
   'findOne' is similar to 'findOneMaybe', but it expects that there will always
-  be a row found matching the plan's input value. If now row is found an
+  be a row found matching the plan's input value. If no row is found an
   'AssertionFailed' exception will be thrown. This is a useful convenience
   when looking up foreign-key associations that are expected to be enforced
   by the database itself.
@@ -298,8 +298,8 @@ findAllWhere tableDef fieldDef cond =
 {-|
   'planMany' adapts a plan that takes a single input parameter to work on
   multiple input parameters. When the new plan is executed each query will
-  in the same basic order, but with adjusted conditions to find all the rows
-  for all inputs at once rather than running the planned queries once for
+  execute in the same basic order, but with adjusted conditions to find all the
+  rows for all inputs at once rather than running the planned queries once for
   each input.
 -}
 planMany :: (forall manyScope. Plan manyScope param result)
@@ -310,14 +310,13 @@ planMany =
 {-|
   'bind' gives access to the results of a plan to use as input values to future
   plans. The plan result is given the input parameter to the provided function,
-  which must produce then produce the remaining 'Plan' to be executed. The
-  value will be wrapped in the 'Planned' type, which may represent either a
-  result or multiple results, depending on whether one plan is currently be
-  executed with one and multiple input parameters. This ensures that the
-  caller produces only a single remaining 'Plan' to be used for
-  all inputs when there are multiple to eliminate the need to possibly run
-  different queries for different inputs (which would an introduce N+1 query
-  execution).
+  which must produce the remaining 'Plan' to be executed. The value will be
+  wrapped in the 'Planned' type, which may represent either a result or
+  multiple results, depending on whether one plan is currently be executed with
+  one and multiple input parameters. This ensures that the caller produces only
+  a single remaining 'Plan' to be used for all inputs when there are multiple
+  to eliminate the need to possibly run different queries for different inputs
+  (which would an introduce N+1 query execution).
 
   The 'Planned' value (or values) provided by 'bind' have actually been
   retrieved from the database, so the value can be used multiple times when
@@ -341,8 +340,8 @@ use =
   Use
 
 {-|
-  'using' uses a 'Planned' value is the input to another 'Plan'. The
-  resulting plan will ignore its input as use the 'Planned' value as
+  'using' uses a 'Planned' value in the input to another 'Plan'. The
+  resulting plan will ignore its input and use the 'Planned' value as
   the input to produce its result instead.
 -}
 using :: Planned scope a
@@ -364,7 +363,7 @@ apply =
 
 {-|
   'chain' connects the output of one plan to the input of another to form a
-  larger plan that will executed the first followed by the second.
+  larger plan that will execute the first followed by the second.
 -}
 chain :: Plan scope a b
       -> (forall chainedScope. Plan chainedScope b c)
@@ -377,7 +376,7 @@ chain =
   an 'AssertionFailed' failed exception during execution if it proves to be
   false. The first parameter is the assertion function, which should return
   either an error message to be given in the exception or the value to be used
-  as the plans result.
+  as the plan's result.
 -}
 assert :: (param -> a -> Either String b)
        -> Plan scope param a
@@ -450,8 +449,8 @@ executeOne plan param =
       executeOne planBC b
 
 {-|
-  'executeMany is an internal helper that executes a 'Plan' with a concrete
-  'scope' type to ensure all 'Planned' values are built with 'PlannedMany'.
+  'executeMany' is an internal helper that executes a 'Plan' with a concrete
+  @scope@ type to ensure all 'Planned' values are built with 'PlannedMany'.
 -}
 executeMany :: Core.MonadOrville conn m
             => Plan (ManyScope param) param result

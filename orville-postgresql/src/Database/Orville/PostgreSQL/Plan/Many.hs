@@ -18,16 +18,16 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
 {-|
-  'NotAKey' is returned from various 'Many' related functions when the
-  are presented with an input parameter that was not one of the original
-  inputs the 'Many' was constructed with.
+  'NotAKey' is returned from various 'Many' related functions when presented
+  with an input parameter that was not one of the original inputs that the
+  'Many' was constructed with.
 -}
 data NotAKey =
   NotAKey
 
 {-|
   A 'Many k a' represents a group of values keyed by list of parameters and
-  in used to return the results of executing a Orville Plan with a list of
+  is used to return the results of executing an Orville Plan with a list of
   input parameters. If you need to find the result of the query associated
   with a particular input parameter, you can use 'lookup' to find it. If you
   don't care about the association with particular inputs, you can simply
@@ -44,10 +44,10 @@ instance Functor (Many k) where
   maps them to their values. The order and duplication of keys in the list will
   be preserved by the 'Many' type in the relevant functions. The mapping
   function provided should be a total function -- i.e. it should not produce a
-  runtime error. If it is not possible to map every 'k' (even those not in the
-  input list provided to 'fromKeys' the desired value, the values should be
-  wrapped in an appropriate type such as 'Maybe' so that an empty or default
-  value can be returned.
+  runtime error. If it is not possible to map every @k@ (even those not in the
+  input list provided to 'fromKeys'), the values should be wrapped in an
+  appropriate type such as 'Maybe' so that an empty or default value can be
+  returned.
 -}
 fromKeys :: [k] -> (k -> Either NotAKey a) -> Many k a
 fromKeys =
@@ -92,7 +92,7 @@ compose manyBC manyAB =
 
 {-|
   'keys' fetches the list of keys from a 'Many'. Note that is a list and not
-  a set. Many preserves the order and duplication of any keys values that were
+  a set. 'Many' preserves the order and duplication of any key values that were
   in the key list at the time of construction.
 -}
 keys :: Many k a -> [k]
@@ -102,8 +102,8 @@ keys (Many ks _) =
 {-|
   'elems' returns all the values that correspond the keys of the 'Many'. The
   values will be returned in the same order that the keys were present at the
-  time of the creation, though if you truly care about this it's probably
-  better to use 'lookup' to make that correspondence explicit.
+  time of creation, though if you truly care about this it's probably better to
+  use 'lookup' to make that correspondence explicit.
 -}
 elems :: Many k a -> [a]
 elems (Many ks keyToValue) =
@@ -126,11 +126,11 @@ toMap (Many ks keyToValue) =
             Just (k, value)
 
 {-|
-  'lookup' returns the value for the given parameter. If the given 'k' is
+  'lookup' returns the value for the given parameter. If the given @k@ is
   not one of the original input values that the 'Many' was constructed with,
   the mapping function given at the contructor will determine what value to
   return. Often this will be whatever a reasonable empty or default value for
-  the type 'a' is.
+  the type @a@ is.
 -}
 lookup :: k -> Many k a -> Either NotAKey a
 lookup k (Many _ keyToValue) =
