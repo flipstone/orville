@@ -16,8 +16,9 @@ module Database.Orville.PostgreSQL.Plan.Operation
   ) where
 
 import qualified Control.Monad.Catch as Catch
+import qualified Data.Foldable as Fold
 import qualified Data.Maybe as Maybe
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 
 import           Database.Orville.PostgreSQL.Core ((.==), (.<-))
@@ -390,14 +391,14 @@ runSelectMany selectOp params = do
       . map (\param -> (param, []))
       $ params
 
-    insertRow row results =
+    insertRow results row =
       Map.alter
         (\mbRows -> Just (row : Maybe.fromMaybe [] mbRows))
         (categorizeRow selectOp row)
         results
 
     rowMap =
-      produceResult selectOp <$> foldr insertRow emptyRowsMap rows
+      produceResult selectOp <$> Fold.foldl' insertRow emptyRowsMap rows
 
     manyRows =
       Many.fromKeys params $ \param ->
