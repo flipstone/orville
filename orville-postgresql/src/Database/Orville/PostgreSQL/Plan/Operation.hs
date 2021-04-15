@@ -33,10 +33,12 @@ import qualified Database.Orville.PostgreSQL.Select as Select
 
 {-|
   'Operation' provides a stucture for building primitive operations that can be
-  incorporated into a 'Plan'. An 'Operation' provides base case implementations
-  of the various plan execution functions. You only need to care about this
-  type if you want to create new custom operations to include in a 'Plan'
-  beyond those already provided in the 'Plan' api.
+  incorporated into a 'Database.Orville.PostgreSQL.Plan.Plan'. An 'Operation'
+  provides base case implementations of the various plan execution functions.
+  You only need to care about this type if you want to create new custom
+  operations to include in a 'Database.Orville.PostgreSQL.Plan.Plan' beyond
+  those already provided in the 'Database.Orville.PostgreSQL.Plan.Plan'
+  api.
 -}
 data Operation param result =
   Operation
@@ -46,7 +48,7 @@ data Operation param result =
                           => param
                           -> m (Either AssertionFailed result)
 
-      -- | 'executeOperationMany will be called when an plan is
+      -- | 'executeOperationMany' will be called when an plan is
       -- executed with multiple input parameters (via 'planMany').
     , executeOperationMany :: forall conn m. (Core.MonadOrville conn m)
                            => [param]
@@ -58,7 +60,7 @@ data Operation param result =
       -- empty explanation.
     , explainOperationOne :: Exp.Explanation
 
-      -- | 'explainOperationMany will be called when producing an explanation
+      -- | 'explainOperationMany' will be called when producing an explanation
       -- of what the plan will do when given multiple input parameters (via
       -- 'planMany'). Plans that do not perform any interesting IO interactions
       -- should generally return an empty explanation.
@@ -66,10 +68,13 @@ data Operation param result =
     }
 
 {-|
-  'AssertionFailed' may be returned from the execute functions of an 'Operation'
-  to indicate that some expected invariant has failed. For example, following
-  a foreign key that is enforced by the database only to find that no record
-  exists.
+  'AssertionFailed' may be returned from the execute functions of an
+  'Operation' to indicate that some expected invariant has failed. For example,
+  following a foreign key that is enforced by the database only to find that no
+  record exists. When an 'Operation' returns an 'AssertionFailed' value during
+  plan execution the error is thrown as an exception using the
+  'Control.Monad.Catch.MonadThrow' instance for whatever monad the plan is
+  executing in.
 -}
 newtype AssertionFailed =
   AssertionFailed String
@@ -140,7 +145,7 @@ assertRight =
 
 {-|
   'findOne' builds a planning primitive that finds (at most) one row from the
-  given table where the column value for the provided 'FieldDefinition' matches
+  given table where the column value for the provided 'Core.FieldDefinition' matches
   the plan's input parameter. When executed on multiple parameters it fetches
   all rows where the field matches the inputs and arbitrarily picks at most one
   of those rows to use as the result for each input.
@@ -306,7 +311,7 @@ data SelectOperation param row result =
       -- about returning one values vs. many from a 'SelectOperation'.
       selectOne           :: param -> Select row
 
-      -- | 'selectMany will be called to build the 'Select' query that should
+      -- | 'selectMany' will be called to build the 'Select' query that should
       -- be run when there are multiple parameters while executing a plan.
       -- Note that the "Many-ness" here refers to the multiple input parameters
       -- rather than result. See 'produceResult' below for more information
@@ -319,7 +324,7 @@ data SelectOperation param row result =
       -- explain a plan without actually running it.
     , explainSelectOne    :: Select row
 
-      -- | 'explainSelectMany should show a representative query of what will
+      -- | 'explainSelectMany' should show a representative query of what will
       -- be returned when 'selectMany is used. No input parameters are available
       -- here to build the query, however, because this value is used to
       -- explain a plan without actually running it.

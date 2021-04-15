@@ -2,8 +2,14 @@
 {-# LANGUAGE RankNTypes #-}
 module Database.Orville.PostgreSQL.Plan
   ( Plan
+  , Planned
   , askParam
 
+  -- * Functions for using a 'Plan' after it is constructed
+  , execute
+  , explain
+
+  -- * Functions that make a 'Plan' to find rows in the database
   , findMaybeOne
   , findMaybeOneWhere
   , findOne
@@ -11,16 +17,16 @@ module Database.Orville.PostgreSQL.Plan
   , findAll
   , findAllWhere
 
-  , apply
+  -- * Functions for combining 'Plan' values together to make
   , bind
-  , chain
   , use
   , using
+  , chain
+  , apply
   , planMany
 
-  , execute
-  , explain
-
+  -- * Lower functions and types that provide a bridge from other types into 'Plan'
+  , Op.AssertionFailed
   , assert
   , planSelect
   , planOperation
@@ -51,7 +57,7 @@ import           Database.Orville.PostgreSQL.Select (Select)
   joins or subqueries. Queries are still executed in the same sequence as
   specified in the plan, just on all the inputs at once rather than in a loop.
   If you need to do a join with a plan, you can always construction your
-  own custom 'Operation' and use 'planOperation' to incorporate into a plan.
+  own custom 'Op.Operation' and use 'planOperation' to incorporate into a plan.
 
   The @param@ type variable indicates what type of value is expected as input
   when the plan is executed.
@@ -163,8 +169,8 @@ resolveMany :: Planned (ManyScope k) a -> Many k a
 resolveMany (PlannedMany as) = as
 
 {-|
-  'planOperation' allows any primitive 'Operation' to be used as an atomic step
-  in a plan. When the plan is executed, the appropriate 'Operation' functions
+  'planOperation' allows any primitive 'Op.Operation' to be used as an atomic step
+  in a plan. When the plan is executed, the appropriate 'Op.Operation' functions
   will be used depending on the execution context.
 -}
 planOperation :: Op.Operation param result
@@ -217,9 +223,9 @@ findMaybeOneWhere tableDef fieldDef cond =
   planOperation (Op.findOneWhere tableDef fieldDef cond)
 
 {-|
-  'findOne' is similar to 'findOneMaybe', but it expects that there will always
+  'findOne' is similar to 'findMaybeOne, but it expects that there will always
   be a row found matching the plan's input value. If no row is found an
-  'AssertionFailed' exception will be thrown. This is a useful convenience
+  'Op.AssertionFailed' exception will be thrown. This is a useful convenience
   when looking up foreign-key associations that are expected to be enforced
   by the database itself.
 -}
@@ -373,7 +379,7 @@ chain =
 
 {-|
   'assert' allows you to make an assertion about a plans result that will throw
-  an 'AssertionFailed' failed exception during execution if it proves to be
+  an 'Op.AssertionFailed' failed exception during execution if it proves to be
   false. The first parameter is the assertion function, which should return
   either an error message to be given in the exception or the value to be used
   as the plan's result.
@@ -392,7 +398,7 @@ assert assertion aPlan =
 
 {-|
   'execute' accepts the input parameter (or parameters) expected by a 'Plan'
-  and runs the plan to completion, either throwing an 'AssertionFailed'
+  and runs the plan to completion, either throwing an 'Op.AssertionFailed'
   exception in the monad 'm' or producing the expected result.
 
   If you have a plan that takes one input and want to provide a list of
