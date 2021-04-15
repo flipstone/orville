@@ -62,7 +62,7 @@ push_to_pages_branch() {
 }
 
 mkdocs orville-postgresql stack-lts-14.0.yml
-mkdocs orville-oracle stack-lts-14.0.yml
+# mkdocs orville-oracle stack-lts-14.0.yml
 mkindex
 push_to_pages_branch
 
