@@ -3,10 +3,10 @@ module Database.Orville.PostgreSQL.Pagination
   , buildPagination
   ) where
 
-import Data.Monoid
 import Data.Maybe (maybeToList)
 import Safe (lastMay)
 
+import Database.Orville.PostgreSQL.Internal.MappendCompat ((<>))
 import Database.Orville.PostgreSQL.Internal.Monad (MonadOrville)
 import Database.Orville.PostgreSQL.Internal.OrderBy (SortDirection(Ascending))
 import Database.Orville.PostgreSQL.Internal.SelectOptions (limit, order, where_)
