@@ -24,6 +24,7 @@ module Database.Orville.PostgreSQL.Internal.RelationalMap
 import Control.Monad (join, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.State (modify)
+import Data.List (intercalate)
 import Data.Profunctor (Profunctor(lmap, rmap))
 
 import Database.Orville.PostgreSQL.Internal.FieldDefinition
@@ -85,7 +86,7 @@ mkTableDefinition ::
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
-    , tableFromSql = mkFromSql tblMapper
+    , tableFromSql = mkFromSql tblPrimaryKey tblMapper
     , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
@@ -189,16 +190,38 @@ fields (RM_ReadOnly rm) =
   where
     someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
 
-mkFromSql :: RelationalMap a b -> FromSql b
-mkFromSql (RM_Field field) = fieldFromSql field
-mkFromSql (RM_Nest _ rm) = mkFromSql rm
-mkFromSql (RM_ReadOnly rm) = mkFromSql rm
-mkFromSql (RM_MaybeTag rm) = mkFromSql rm
-mkFromSql (RM_Pure b) = pure b
-mkFromSql (RM_Apply rmF rmC) = mkFromSql rmF <*> mkFromSql rmC
-mkFromSql (RM_Partial rm) = do
-  joinFromSqlError (wrapError <$> mkFromSql rm)
+mkFromSql :: PrimaryKey key -> RelationalMap a b -> FromSql b
+mkFromSql (PrimaryKey pKeyPart pKeyParts) relMap =
+  fromSql
+    { runFromSql = \columns ->
+        case runFromSql fromSql columns of
+          -- Add the primary key(s) to the row data error message
+          Left (RowDataError err) ->
+            let key = intercalate ", "
+                    $ foldMap (lookupPrimKeyPart columns)
+                              (pKeyPart : pKeyParts)
+
+             in Left . RowDataError $ err <> " (" <> key <> ")"
+
+          x -> x
+    }
   where
+    fromSql = fromRelMap relMap
+
+    lookupPrimKeyPart columns (PrimaryKeyPart _ fieldDef) =
+      case lookup (fieldName fieldDef) columns of
+        Nothing -> []
+        Just sqlValue -> [fieldName fieldDef <> ": " <> show sqlValue]
+
+    fromRelMap :: RelationalMap a b -> FromSql b
+    fromRelMap (RM_Field field) = fieldFromSql field
+    fromRelMap (RM_Nest _ rm) = fromRelMap rm
+    fromRelMap (RM_ReadOnly rm) = fromRelMap rm
+    fromRelMap (RM_MaybeTag rm) = fromRelMap rm
+    fromRelMap (RM_Pure b) = pure b
+    fromRelMap (RM_Apply rmF rmC) = fromRelMap rmF <*> fromRelMap rmC
+    fromRelMap (RM_Partial rm) = do
+      joinFromSqlError (wrapError <$> fromRelMap rm)
     wrapError = either (Left . RowDataError) Right
 
 mkToSql :: RelationalMap a b -> ToSql a ()

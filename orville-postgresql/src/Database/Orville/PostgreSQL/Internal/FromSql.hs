@@ -37,12 +37,12 @@ fieldFromSql field =
   where
     fromSqlValue sql =
       case fieldFromSqlValue field sql of
-        Just a -> Right a
-        Nothing ->
+        Right a -> Right a
+        Left err ->
           Left $
           RowDataError $
           concat
-            ["Error decoding data from column ", fieldName field, " value"]
+            ["Error decoding data from column '", fieldName field, "': ", err]
 
 class ColumnSpecifier col where
   selectForm :: col -> SelectForm
