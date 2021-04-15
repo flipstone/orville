@@ -5,11 +5,11 @@ module Database.Orville.PostgreSQL.Plan
   , Planned
   , askParam
 
-  -- * Using a 'Plan' after it is constructed
+  -- * Using a Plan after it is constructed
   , execute
   , explain
 
-  -- * Making a 'Plan' to find rows in the database
+  -- * Making a Plan to find rows in the database
   , findMaybeOne
   , findMaybeOneWhere
   , findOne
@@ -17,7 +17,7 @@ module Database.Orville.PostgreSQL.Plan
   , findAll
   , findAllWhere
 
-  -- * Creating a multi-step 'Plan' from other 'Plan' values
+  -- * Creating a multi-step Plan from other Plan values
   , bind
   , use
   , using
@@ -25,7 +25,7 @@ module Database.Orville.PostgreSQL.Plan
   , apply
   , planMany
 
-  -- * Bridges from other types into 'Plan'
+  -- * Bridges from other types into Plan
   , Op.AssertionFailed
   , assert
   , planSelect
