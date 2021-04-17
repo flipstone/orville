@@ -5,55 +5,85 @@ License   : MIT
 -}
 
 module Database.Orville.PostgreSQL.Internal.Expr
-  ( QueryExpr( QueryExpr
-              , selectList
-              , tableExpression
-              )
-  , TableExpr ( TableExpr
-              , fromClause
-              )
-  , InsertExpr ( InsertExpr
-               , target
-               , rowValues
-               )
+  ( QueryExpr
+  , queryExpr
+  , SelectList
+  , selectStar
+  , TableExpr
+  , tableExpr
+  , TableName
+  , rawTableName
+  , InsertExpr
+  , insertExpr
   , queryExprToSql
   , insertExprToSql
   ) where
 
 import qualified Data.ByteString.Char8 as B8
 
+import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
-data QueryExpr = QueryExpr
-  { selectList :: [B8.ByteString]
-  , tableExpression :: TableExpr
-  }
+newtype QueryExpr =
+  QueryExpr RawSql
 
-data TableExpr = TableExpr
-  { fromClause :: B8.ByteString
--- where, groupby, having, etc
-  }
+queryExpr :: SelectList -> TableExpr -> QueryExpr
+queryExpr selectList table =
+  QueryExpr $
+    mconcat
+      [ RawSql.fromString "SELECT "
+      , selectListToSql selectList
+      , RawSql.fromString " FROM "
+      , tableExprToSql table
+      ]
 
-queryExprToSql :: QueryExpr -> B8.ByteString
-queryExprToSql queryExpr =
-  B8.concat
-    [ B8.pack "SELECT "
-    , B8.intercalate (B8.pack ",") (selectList queryExpr)
-    , B8.pack " FROM "
-    , fromClause (tableExpression queryExpr)
+queryExprToSql :: QueryExpr -> RawSql
+queryExprToSql (QueryExpr sql) = sql
+
+newtype SelectList =
+  SelectList RawSql
+
+selectStar :: SelectList
+selectStar =
+  SelectList (RawSql.fromString "*")
+
+selectListToSql :: SelectList -> RawSql
+selectListToSql (SelectList sql) =
+  sql
+
+newtype TableExpr =
+  TableExpr RawSql
+
+tableExprToSql :: TableExpr -> RawSql
+tableExprToSql (TableExpr sql) = sql
+
+tableExpr :: TableName -> TableExpr
+tableExpr = TableExpr . tableNameToSql
+
+newtype TableName =
+  TableName RawSql
+
+tableNameToSql :: TableName -> RawSql
+tableNameToSql (TableName sql) = sql
+
+rawTableName :: String -> TableName
+rawTableName =
+  TableName . RawSql.fromString
+
+newtype InsertExpr =
+  InsertExpr RawSql
+
+insertExpr :: TableName -> [B8.ByteString] -> InsertExpr
+insertExpr target rowValues =
+  InsertExpr $
+    mconcat
+      [ RawSql.fromString "INSERT INTO "
+      , tableNameToSql target
+      , RawSql.fromString " VALUES ("
+      , RawSql.fromBytes (B8.intercalate (B8.pack ",") rowValues)
+      , RawSql.fromString ")"
     ]
 
-data InsertExpr =
-  InsertExpr
-    { target :: B8.ByteString
-    , rowValues :: [B8.ByteString]
-    }
-
-insertExprToSql :: InsertExpr -> B8.ByteString
-insertExprToSql insertExpr =
-  B8.concat
-    [ B8.pack "INSERT INTO "
-    , target insertExpr
-    , B8.pack " VALUES ("
-    , B8.intercalate (B8.pack ",") (rowValues insertExpr)
-    , B8.pack ")"
-    ]
+insertExprToSql :: InsertExpr -> RawSql
+insertExprToSql (InsertExpr sql) = sql

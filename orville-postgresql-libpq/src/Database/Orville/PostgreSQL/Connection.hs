@@ -6,6 +6,7 @@ License   : MIT
 
 module Database.Orville.PostgreSQL.Connection
   ( Connection
+  , Pool
   , createConnectionPool
   , executeRaw
   , executeRawVoid
@@ -21,8 +22,7 @@ import Data.Time (NominalDiffTime)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 {-|
- `createConnectionPool` allocates a pool of connections to a PosgreSQL
- server.
+ 'createConnectionPool' allocates a pool of connections to a PosgreSQL server.
 -}
 createConnectionPool ::
      Int -- ^ Number of stripes in the connection pool
@@ -34,10 +34,11 @@ createConnectionPool stripes linger maxRes connectionString =
   createPool (connect connectionString) close stripes linger maxRes
 
 {-|
- `executeRaw` runs a given SQL statement returning the raw underlying result.
- All handling of stepping through the result set is left to the caller.
- This potentially leaves connections open much longer than one would expect if all of the results
- are not iterated through immediately *and* the data copied.
+ 'executeRaw' runs a given SQL statement returning the raw underlying result.
+
+ All handling of stepping through the result set is left to the caller.  This
+ potentially leaves connections open much longer than one would expect if all
+ of the results are not iterated through immediately *and* the data copied.
  Use with caution.
 -}
 executeRaw :: Pool Connection -> ByteString -> IO (Maybe LibPQ.Result)
@@ -45,7 +46,7 @@ executeRaw pool bs =
   withResource pool (underlyingExecute bs)
 
 {-|
- `executeRaw'` a version of `executeRaw` that completely ignores the result.
+ 'executeRawVoid' a version of 'executeRaw' that completely ignores the result.
  Use with caution.
 -}
 executeRawVoid :: Pool Connection -> ByteString -> IO ()
@@ -57,9 +58,12 @@ executeRawVoid = fmap void . executeRaw
 newtype Connection = Connection (MVar LibPQ.Connection)
 
 {-|
- `connect` is the internal, primitive connection function.
+ 'connect' is the internal, primitive connection function.
+
  This should not be exposed to end users, but instead wrapped in something to create a pool.
- Note that handling the libpq connection with the polling is described at <https://hackage.haskell.org/package/postgresql-libpq-0.9.4.2/docs/Database-PostgreSQL-LibPQ.html>.
+
+ Note that handling the libpq connection with the polling is described at
+ <https://hackage.haskell.org/package/postgresql-libpq-0.9.4.2/docs/Database-PostgreSQL-LibPQ.html>.
 -}
 connect :: ByteString -> IO Connection
 connect connectionString = do
@@ -92,12 +96,19 @@ connect connectionString = do
           pure (Connection connectionHandle)
 
 {-|
-  `close` has many subtleties to it.
-  First note that async exceptions are masked.
-  `mask` though, only works for things that are not interruptible <https://www.stackage.org/haddock/lts-16.15/base-4.13.0.0/Control-Exception.html#g:13>
-  From the previous link, `tryTakeMVar` is not interruptible, where `takeMVar` *is*.
-  So by using `tryTakeMVar` along with `mask`, we should be safe from async exceptions causing us to not finish an underlying connection.
-  Notice that the only place the MVar is ever taken is here so `tryTakeMVar` gives us both the non-blocking semantics to protect from async exceptions with `mask` _and_ should never truly return an empty unless two threads were racing to close the connection, in which case.. one of them will close the connection.
+  'close' has many subtleties to it.
+
+  First note that async exceptions are masked.  'mask' though, only works for
+  things that are not interruptible
+  <https://www.stackage.org/haddock/lts-16.15/base-4.13.0.0/Control-Exception.html#g:13>
+
+  From the previous link, 'tryTakeMVar' is not interruptible, where 'takeMVar'
+  *is*.  So by using 'tryTakeMVar' along with 'mask', we should be safe from
+  async exceptions causing us to not finish an underlying connection.  Notice
+  that the only place the MVar is ever taken is here so 'tryTakeMVar' gives us
+  both the non-blocking semantics to protect from async exceptions with 'mask'
+  _and_ should never truly return an empty unless two threads were racing to
+  close the connection, in which case.. one of them will close the connection.
 
 -}
 close :: Connection -> IO ()
@@ -109,12 +120,15 @@ close (Connection handle') =
     void $ mask underlyingFinish
 
 {-|
- `underlyingExecute` is the internal, primitive execute function.
-  This is not intended to be directly exposed to end users, but instead wrapped in something using a pool.
-  Note there are potential dragons here in that this calls `readMVar` which is a blocking operation if the `MVar` is not full.
-  The intent is to never expose the ability to empty the `MVar` outside of this module, so unless a connection has been closed
-  it *should* never be empty. And a connection should be closed upon removal from a resource pool (in which case it can't be used
-  for this  function in the first place).
+ 'underlyingExecute' is the internal, primitive execute function.
+
+  This is not intended to be directly exposed to end users, but instead wrapped
+  in something using a pool.  Note there are potential dragons here in that
+  this calls `readMVar` which is a blocking operation if the `MVar` is not
+  full.  The intent is to never expose the ability to empty the `MVar` outside
+  of this module, so unless a connection has been closed it *should* never be
+  empty. And a connection should be closed upon removal from a resource pool
+  (in which case it can't be used for this  function in the first place).
 -}
 underlyingExecute :: ByteString -> Connection -> IO (Maybe LibPQ.Result)
 underlyingExecute bs (Connection handle') = do
