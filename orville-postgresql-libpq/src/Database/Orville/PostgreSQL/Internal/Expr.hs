@@ -19,10 +19,9 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , insertExprToSql
   ) where
 
-import qualified Data.ByteString.Char8 as B8
-
 import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
 newtype QueryExpr =
@@ -74,7 +73,7 @@ rawTableName =
 newtype InsertExpr =
   InsertExpr RawSql
 
-insertExpr :: TableName -> [B8.ByteString] -> InsertExpr
+insertExpr :: TableName -> [SqlValue] -> InsertExpr
 insertExpr target rowValues =
   InsertExpr $
     mconcat
