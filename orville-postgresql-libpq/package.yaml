@@ -28,6 +28,7 @@ library:
     - base >=4.8 && <5
     - attoparsec
     - bytestring
+    - dlist >= 0.8 && < 0.9
     - postgresql-libpq >= 0.9.4.2 && <0.10
     - resource-pool
     - text
@@ -39,6 +40,7 @@ tests:
     source-dirs: test
     main: Main.hs
     other-modules:
+      - Test.RawSql
       - Test.SqlType
     dependencies:
       - base

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 897f7b4ed9ebb0c9f7ec728d6ec573c5f1f651f0d9ac04831384c5245dfe597c
+-- hash: 4aee721492e141ea9993278f95c86edfb3b04ab9e0ff1fdcbe72a67b1b62cc55
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -40,6 +40,7 @@ library
       attoparsec
     , base >=4.8 && <5
     , bytestring
+    , dlist >=0.8 && <0.9
     , postgresql-libpq >=0.9.4.2 && <0.10
     , resource-pool
     , text
@@ -50,6 +51,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Test.RawSql
       Test.SqlType
   hs-source-dirs:
       test

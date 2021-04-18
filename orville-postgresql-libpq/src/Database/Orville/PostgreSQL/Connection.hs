@@ -41,16 +41,17 @@ createConnectionPool stripes linger maxRes connectionString =
  of the results are not iterated through immediately *and* the data copied.
  Use with caution.
 -}
-executeRaw :: Pool Connection -> ByteString -> IO (Maybe LibPQ.Result)
-executeRaw pool bs =
-  withResource pool (underlyingExecute bs)
+executeRaw :: Pool Connection -> ByteString -> [ByteString] -> IO (Maybe LibPQ.Result)
+executeRaw pool bs params =
+  withResource pool (underlyingExecute bs params)
 
 {-|
  'executeRawVoid' a version of 'executeRaw' that completely ignores the result.
  Use with caution.
 -}
-executeRawVoid :: Pool Connection -> ByteString -> IO ()
-executeRawVoid = fmap void . executeRaw
+executeRawVoid :: Pool Connection -> ByteString -> [ByteString] -> IO ()
+executeRawVoid pool bs params =
+  void (executeRaw pool bs params)
 
 {-|
  The basic connection interface.
@@ -130,10 +131,23 @@ close (Connection handle') =
   empty. And a connection should be closed upon removal from a resource pool
   (in which case it can't be used for this  function in the first place).
 -}
-underlyingExecute :: ByteString -> Connection -> IO (Maybe LibPQ.Result)
-underlyingExecute bs (Connection handle') = do
+underlyingExecute :: ByteString
+                  -> [ByteString]
+                  -> Connection
+                  -> IO (Maybe LibPQ.Result)
+underlyingExecute bs params (Connection handle') = do
   conn <- readMVar handle'
-  LibPQ.exec conn bs
+  LibPQ.execParams conn bs (map mkInferredTextParam params) LibPQ.Text
+
+{-|
+  Packages a bytestring parameter value (which is assume to be a value encoded
+  as text that the database can use) as a parameter for executing a query.
+  This uses Oid 0 to cause the database to infer the type of the paremeter and
+  explicitly marks the parameter as being in Text format.
+-}
+mkInferredTextParam :: ByteString -> Maybe (LibPQ.Oid, ByteString, LibPQ.Format)
+mkInferredTextParam value =
+  Just (LibPQ.Oid 0, value, LibPQ.Text)
 
 data ConnectionError = ConnectionError { errorMessage :: String
                                        , underlyingError :: Maybe ByteString
