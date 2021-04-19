@@ -48,11 +48,14 @@ test_errors =
           void $ run (O.insertRecord virusTable bpsVirus)
           result <- run $ try (O.selectAll badVirusTable mempty)
           let expectedErr =
-                "Error decoding data from column 'name': Expected int32, got bytestring (id: SqlInteger 1)"
+                "Error decoding data from column 'name': expected int32 but got bytestring (id: 1)"
           case result of
-            Left (O.RowDataError err) ->
-              assertEqual "Error message contains primary key" expectedErr err
-            _ -> assertFailure "Did not raise a RowDataError"
+            Left err ->
+              assertEqual "Error message contains primary key"
+                expectedErr
+                (O.showFromSqlErrorForLogging err)
+
+            _ -> assertFailure "Did not result in error"
       ]
 
 data BadVirus = BadVirus

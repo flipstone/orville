@@ -15,6 +15,7 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State
 import Control.Monad.Writer
+import qualified Data.Char as Char
 import qualified Data.List as List
 import Data.Typeable
 import Database.HDBC
@@ -139,9 +140,103 @@ say msg msgDate commenter =
   TableComments $ writer ((), [TableComment msg msgDate commenter])
 
 data FromSqlError
-  = RowDataError String
-  | QueryError String
-  deriving (Show, Typeable)
+  = RowDataError !RowDataErrorDetails
+    -- ^ Captures a failure in the translation of a SQL value from a particular
+    -- field to it's corresponding Haskell values.
+  | MissingColumn !MissingColumnDetails
+    -- ^ An expected column was not returned by the database
+  | ConversionError !ConversionErrorDetails
+    -- ^ A conversion between haskell representations failed at a point where
+    -- we don't know what column the value came from. This is the case when
+    -- using the 'partialMap' combinator.
+  deriving Typeable
+
+instance Show FromSqlError where
+  show = showFromSqlErrorMinimal
+
+data RowDataErrorDetails =
+  RowDataErrorDetails
+    { rowErrorReason :: !RowDataErrorReason
+    , rowErrorColumnName :: !String
+    -- ^ Column name for the erroneous value
+    , rowErrorPrimaryKeys :: ![(String, SqlValue)]
+    -- ^ Primary keys. Empty if not known
+    } deriving Typeable
+
+data MissingColumnDetails =
+  MissingColumnDetails
+    { missingColumn :: !String
+    , actualColumns :: ![String]
+    }
+
+data ConversionErrorDetails =
+  ConversionErrorDetails
+    { convErrorReason :: !String
+    , convErrorPrimaryKeys :: ![(String, SqlValue)]
+    -- ^ Primary key value(s). Empty if not known
+    }
+
+simpleConversionError :: String -> FromSqlError
+simpleConversionError err =
+  ConversionError ConversionErrorDetails { convErrorReason = err
+                                         , convErrorPrimaryKeys = []
+                                         }
+
+-- | Shows the error in a way that should not contain any potentially sensitive
+-- data. This is used for the 'Show' instance.
+showFromSqlErrorMinimal :: FromSqlError -> String
+showFromSqlErrorMinimal err =
+  case err of
+    RowDataError details ->
+      "Error decoding data from column '" <> rowErrorColumnName details <> "'"
+    MissingColumn details -> showMissingColumnDetails details
+    ConversionError details -> convErrorReason details
+
+-- | Shows the error in a way appropriate for logging within an application.
+-- The resulting string contains information that is useful for debugging but
+-- is potentially undesirable to expose outside of the application (such as
+-- primary key values).
+showFromSqlErrorForLogging :: FromSqlError -> String
+showFromSqlErrorForLogging err =
+  case err of
+    RowDataError details ->
+      concat
+        [ "Error decoding data from column "
+        , "'" <> rowErrorColumnName details <> "': "
+        , showReason (rowErrorReason details)
+        , showPrimaryKey (rowErrorPrimaryKeys details)
+        ]
+    MissingColumn details -> showMissingColumnDetails details
+    ConversionError details ->
+      convErrorReason details
+        <> showPrimaryKey (convErrorPrimaryKeys details)
+  where
+    showReason reason =
+      case reason of
+        TypeMismatch expected actual ->
+          "expected " <> expected <> " but got " <> actual
+        IntegralOutOfBounds lower upper actual ->
+          "expected an integral between " <> show lower
+          <> " and " <> show upper <> " but got " <> show actual
+        DecodingFailure failure -> failure
+
+    showPrimaryKey [] = ""
+    showPrimaryKey keyValues = " (" <> keysStr <> ")"
+      where
+        keysStr = List.intercalate ", " $ map showKeyValue keyValues
+        showKeyValue (key, sqlValue) = key <> ": " <> showSqlValue sqlValue
+        -- removes the data constructor prefix
+        showSqlValue sqlValue = drop 1 . dropWhile (not . Char.isSpace)
+                              $ show sqlValue
+
+showMissingColumnDetails :: MissingColumnDetails -> String
+showMissingColumnDetails details =
+  concat
+    [ "Column "
+    , "'" <> missingColumn details <> "' "
+    , "not found in result set. Actual Columns: "
+    , "'" <> List.intercalate "', '" (actualColumns details) <> "'"
+    ]
 
 instance Exception FromSqlError
 
@@ -167,19 +262,16 @@ getColumn selectForm =
     { fromSqlSelects = [selectForm]
     , runFromSql =
         \values -> do
-          let output = unescapedName $ selectFormOutput selectForm
-          case lookup output values of
+          let colName = unescapedName $ selectFormOutput selectForm
+          case lookup colName values of
             Just sqlValue -> pure sqlValue
             Nothing ->
               throwError $
-              QueryError $
-              concat
-                [ "Column "
-                , output
-                , " not found in result set, "
-                , " actual columns: "
-                , List.intercalate "," $ map fst values
-                ]
+              MissingColumn
+                MissingColumnDetails
+                  { missingColumn = colName
+                  , actualColumns = map fst values
+                  }
     }
 
 joinFromSqlError :: FromSql (Either FromSqlError a) -> FromSql a

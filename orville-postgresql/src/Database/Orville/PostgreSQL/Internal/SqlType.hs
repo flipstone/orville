@@ -1,5 +1,6 @@
 module Database.Orville.PostgreSQL.Internal.SqlType
   ( SqlType(..)
+  , RowDataErrorReason(..)
   , serial
   , bigserial
   , text
@@ -16,6 +17,7 @@ module Database.Orville.PostgreSQL.Internal.SqlType
   , convertSqlType
   , maybeConvertSqlType
   , eitherConvertSqlType
+  , showSqlValueType
   ) where
 
 import Control.Monad ((<=<))
@@ -23,6 +25,7 @@ import qualified Data.Int as Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Time as Time
+import Data.Typeable
 import qualified Database.HDBC as HDBC
 
 {-|
@@ -50,11 +53,12 @@ data SqlType a = SqlType
   , sqlTypeToSql :: a -> HDBC.SqlValue
     -- ^ A function for converting Haskell values of this type into values to
     -- be stored in the database.
-  , sqlTypeFromSql :: HDBC.SqlValue -> Either String a
+  , sqlTypeFromSql :: HDBC.SqlValue -> Either RowDataErrorReason a
     -- ^ A function for converting values of this are stored in the database
-    -- into Haskell values. This function should return 'Left String' to
-    -- indicate an error if the conversion is impossible. Otherwise it should
-    -- return 'Right' the corresponding @a@ value.
+    -- into Haskell values. This function should return 'Left
+    -- RowDataErrorReason' to indicate an error if the conversion is
+    -- impossible. Otherwise it should return 'Right' the corresponding @a@
+    -- value.
   }
 
 {-|
@@ -267,7 +271,8 @@ foreignRefType sqlType =
   -}
 maybeConvertSqlType :: (b -> a) -> (a -> Maybe b) -> SqlType a -> SqlType b
 maybeConvertSqlType bToA aToB =
-  eitherConvertSqlType bToA (maybe (Left "Conversion failed") Right . aToB)
+  eitherConvertSqlType bToA
+    $ maybe (Left $ DecodingFailure "SqlType conversion failed") Right . aToB
 
 {-|
   'eitherConvertSqlType' changes the Haskell type used by a 'SqlType' without
@@ -277,7 +282,7 @@ maybeConvertSqlType bToA aToB =
   an @a@ value from the database, the conversion function should produce
   @Left "reason"@ if the value cannot be successfully converted to a @b@.
 -}
-eitherConvertSqlType :: (b -> a) -> (a -> Either String b) -> SqlType a -> SqlType b
+eitherConvertSqlType :: (b -> a) -> (a -> Either RowDataErrorReason b) -> SqlType a -> SqlType b
 eitherConvertSqlType bToA aToB sqlType =
   sqlType
     { sqlTypeToSql = sqlTypeToSql sqlType . bToA
@@ -294,7 +299,7 @@ convertSqlType bToA aToB = maybeConvertSqlType bToA (Just . aToB)
 int32ToSql :: Int.Int32 -> HDBC.SqlValue
 int32ToSql = HDBC.SqlInt32
 
-int32FromSql :: HDBC.SqlValue -> Either String Int.Int32
+int32FromSql :: HDBC.SqlValue -> Either RowDataErrorReason Int.Int32
 int32FromSql sql =
   case sql of
     HDBC.SqlInt32 n -> Right n
@@ -304,7 +309,7 @@ int32FromSql sql =
 int64ToSql :: Int.Int64 -> HDBC.SqlValue
 int64ToSql = HDBC.SqlInt64
 
-int64FromSql :: HDBC.SqlValue -> Either String Int.Int64
+int64FromSql :: HDBC.SqlValue -> Either RowDataErrorReason Int.Int64
 int64FromSql sql =
   case sql of
     HDBC.SqlInt64 n -> Right n
@@ -314,7 +319,7 @@ int64FromSql sql =
 textToSql :: T.Text -> HDBC.SqlValue
 textToSql = HDBC.SqlByteString . Enc.encodeUtf8
 
-textFromSql :: HDBC.SqlValue -> Either String T.Text
+textFromSql :: HDBC.SqlValue -> Either RowDataErrorReason T.Text
 textFromSql sql =
   case sql of
     HDBC.SqlByteString bytes -> Right $ Enc.decodeUtf8 bytes
@@ -324,7 +329,7 @@ textFromSql sql =
 doubleToSql :: Double -> HDBC.SqlValue
 doubleToSql = HDBC.SqlDouble
 
-doubleFromSql :: HDBC.SqlValue -> Either String Double
+doubleFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Double
 doubleFromSql sql =
   case sql of
     HDBC.SqlDouble d -> Right d
@@ -333,7 +338,7 @@ doubleFromSql sql =
 booleanToSql :: Bool -> HDBC.SqlValue
 booleanToSql = HDBC.SqlBool
 
-booleanFromSql :: HDBC.SqlValue -> Either String Bool
+booleanFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Bool
 booleanFromSql sql =
   case sql of
     HDBC.SqlBool b -> Right b
@@ -342,7 +347,7 @@ booleanFromSql sql =
 dayToSql :: Time.Day -> HDBC.SqlValue
 dayToSql = HDBC.SqlLocalDate
 
-dayFromSql :: HDBC.SqlValue -> Either String Time.Day
+dayFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Time.Day
 dayFromSql sql =
   case sql of
     HDBC.SqlLocalDate d -> Right d
@@ -351,30 +356,30 @@ dayFromSql sql =
 utcTimeToSql :: Time.UTCTime -> HDBC.SqlValue
 utcTimeToSql = HDBC.SqlUTCTime
 
-utcTimeFromSql :: HDBC.SqlValue -> Either String Time.UTCTime
+utcTimeFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Time.UTCTime
 utcTimeFromSql sql =
   case sql of
     HDBC.SqlUTCTime   t -> Right t
     HDBC.SqlZonedTime t -> Right (Time.zonedTimeToUTC t)
     sqlValue -> Left $ mismatchError "UTC time" sqlValue
 
-toBoundedInteger :: (Bounded num, Integral num) => Integer -> Either String num
+toBoundedInteger :: (Bounded num, Integral num) => Integer -> Either RowDataErrorReason num
 toBoundedInteger source =
   let truncated = fromInteger source
       upper = toInteger (maxBound `asTypeOf` truncated)
       lower = toInteger (minBound `asTypeOf` truncated)
    in if lower <= source && source <= upper
         then Right truncated
-        else Left "Integral out of range"
+        else Left $ IntegralOutOfBounds lower upper source
 
 -- | Error text for when the expected type doesn't match the Sql type
-mismatchError :: String -> HDBC.SqlValue -> String
+mismatchError :: String -> HDBC.SqlValue -> RowDataErrorReason
 mismatchError expected actual =
-  "Expected " <> expected <> ", got " <> sqlValueIdentifier actual
+  TypeMismatch expected (showSqlValueType actual)
 
 -- | User friendly identifier labels for 'SqlValues'
-sqlValueIdentifier :: HDBC.SqlValue -> String
-sqlValueIdentifier v =
+showSqlValueType :: HDBC.SqlValue -> String
+showSqlValueType v =
   case v of
     HDBC.SqlString _ -> "string"
     HDBC.SqlByteString _ -> "bytestring"
@@ -398,3 +403,18 @@ sqlValueIdentifier v =
     HDBC.SqlEpochTime _ -> "epoch time"
     HDBC.SqlTimeDiff _ -> "time diff"
     HDBC.SqlNull -> "null"
+
+data RowDataErrorReason
+  = TypeMismatch
+  -- ^ Sql value has a different type than expected
+      !String -- ^ Actual type
+      !String -- ^ Expected type
+  | IntegralOutOfBounds
+  -- ^ An integer value was outside the expected bounds.
+      !Integer -- ^ Lower bound
+      !Integer -- ^ Upper bound
+      !Integer -- ^ Actual value
+  | DecodingFailure !String
+  -- ^ Generic decoding failure
+  deriving Typeable
+

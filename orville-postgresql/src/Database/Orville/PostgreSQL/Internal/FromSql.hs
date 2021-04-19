@@ -26,7 +26,7 @@ import Database.Orville.PostgreSQL.Internal.Types
 
 convertFromSql :: Convertible SqlValue a => SqlValue -> Either FromSqlError a
 convertFromSql =
-  either (Left . RowDataError . prettyConvertError) Right . safeConvert
+  either (Left . simpleConversionError . prettyConvertError) Right . safeConvert
 
 col :: (ColumnSpecifier col, Convertible SqlValue a) => col -> FromSql a
 col spec = joinFromSqlError (convertFromSql <$> getColumn (selectForm spec))
@@ -40,9 +40,12 @@ fieldFromSql field =
         Right a -> Right a
         Left err ->
           Left $
-          RowDataError $
-          concat
-            ["Error decoding data from column '", fieldName field, "': ", err]
+          RowDataError
+            RowDataErrorDetails
+              { rowErrorReason = err
+              , rowErrorColumnName = fieldName field
+              , rowErrorPrimaryKeys = []
+              }
 
 class ColumnSpecifier col where
   selectForm :: col -> SelectForm

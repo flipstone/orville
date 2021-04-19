@@ -157,5 +157,5 @@ fieldToNameForm field = NameForm Nothing (fieldName field)
 fieldToSqlValue :: FieldDefinition nullability a -> a -> SqlValue
 fieldToSqlValue = sqlTypeToSql . fieldType
 
-fieldFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Either String a
+fieldFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Either RowDataErrorReason a
 fieldFromSqlValue = sqlTypeFromSql . fieldType

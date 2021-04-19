@@ -101,6 +101,13 @@ module Database.Orville.PostgreSQL.Core
   , dropConstraint
   , FromSql
   , FromSqlError(..)
+  , RowDataErrorDetails(..)
+  , RowDataErrorReason(..)
+  , MissingColumnDetails(..)
+  , ConversionErrorDetails(..)
+  , showFromSqlErrorMinimal
+  , showFromSqlErrorForLogging
+  , showSqlValueType
   , ColumnSpecifier(..)
   , col
   , ToSql
