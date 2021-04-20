@@ -8,6 +8,7 @@ import Test.Tasty.Hspec (testSpec)
 
 import Database.Orville.PostgreSQL.Connection (createConnectionPool)
 import Test.RawSql (rawSqlSpecs)
+import Test.Expr (exprSpecs)
 import Test.SqlType (sqlTypeSpecs)
 
 main :: IO ()
@@ -17,7 +18,8 @@ main = do
 
   testTree <-
     testSpec "specs" $ do
-      sqlTypeSpecs pool
       rawSqlSpecs
+      exprSpecs pool
+      sqlTypeSpecs pool
 
   defaultMain testTree

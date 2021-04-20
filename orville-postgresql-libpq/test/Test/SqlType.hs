@@ -340,12 +340,14 @@ runDecodingTest pool test = do
 
   RawSql.executeVoid pool $
     Expr.insertExprToSql $
-      Expr.insertExpr tableName [SqlValue.fromRawBytesNullable (rawSqlValue test)]
+      Expr.insertExpr
+        tableName
+        (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
 
   maybeResult <-
     RawSql.execute pool $
       Expr.queryExprToSql $
-        Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName)
+        Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing)
 
   case maybeResult of
     Nothing ->

@@ -41,6 +41,7 @@ tests:
     source-dirs: test
     main: Main.hs
     other-modules:
+      - Test.Expr
       - Test.RawSql
       - Test.SqlType
     dependencies:
