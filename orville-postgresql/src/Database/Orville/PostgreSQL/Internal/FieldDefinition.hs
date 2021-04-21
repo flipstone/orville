@@ -63,7 +63,7 @@ nullableField field =
             \sql ->
               case sql of
                 SqlNull ->
-                  Just Nothing
+                  Right Nothing
 
                 _ ->
                   Just <$> sqlTypeFromSql sqlType sql
@@ -157,5 +157,5 @@ fieldToNameForm field = NameForm Nothing (fieldName field)
 fieldToSqlValue :: FieldDefinition nullability a -> a -> SqlValue
 fieldToSqlValue = sqlTypeToSql . fieldType
 
-fieldFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Maybe a
+fieldFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Either RowDataErrorReason a
 fieldFromSqlValue = sqlTypeFromSql . fieldType

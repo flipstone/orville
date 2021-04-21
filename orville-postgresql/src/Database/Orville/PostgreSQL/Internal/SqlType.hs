@@ -1,5 +1,6 @@
 module Database.Orville.PostgreSQL.Internal.SqlType
   ( SqlType(..)
+  , RowDataErrorReason(..)
   , serial
   , bigserial
   , text
@@ -15,6 +16,8 @@ module Database.Orville.PostgreSQL.Internal.SqlType
   , foreignRefType
   , convertSqlType
   , maybeConvertSqlType
+  , eitherConvertSqlType
+  , showSqlValueType
   ) where
 
 import Control.Monad ((<=<))
@@ -22,6 +25,7 @@ import qualified Data.Int as Int
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Time as Time
+import Data.Typeable
 import qualified Database.HDBC as HDBC
 
 {-|
@@ -49,11 +53,12 @@ data SqlType a = SqlType
   , sqlTypeToSql :: a -> HDBC.SqlValue
     -- ^ A function for converting Haskell values of this type into values to
     -- be stored in the database.
-  , sqlTypeFromSql :: HDBC.SqlValue -> Maybe a
+  , sqlTypeFromSql :: HDBC.SqlValue -> Either RowDataErrorReason a
     -- ^ A function for converting values of this are stored in the database
-    -- into Haskell values. This function should return 'Nothing' to indicate
-    -- an error if the conversion is impossible. Otherwise it should return
-    -- 'Just' the corresponding 'a' value.
+    -- into Haskell values. This function should return 'Left
+    -- RowDataErrorReason' to indicate an error if the conversion is
+    -- impossible. Otherwise it should return 'Right' the corresponding @a@
+    -- value.
   }
 
 {-|
@@ -257,15 +262,28 @@ foreignRefType sqlType =
     Just refDDL -> sqlType {sqlTypeDDL = refDDL, sqlTypeReferenceDDL = Nothing}
 
 {-|
-  'maybeConvertSqlType' changes the Haskell type used by a 'SqlType' which changing
-  the column type that will be used in the database schema. The functions given
-  will be used to convert the now Haskell type to and from the original type when
-  reading and writing values from the database. When reading an 'a' value from
-  the database, the conversion function should produce 'Nothing' if the value
-  cannot be successfully converted to a 'b'
+  'maybeConvertSqlType' changes the Haskell type used by a 'SqlType' without
+  changing the column type that will be used in the database schema. The
+  functions given will be used to convert the now Haskell type to and from the
+  original type when reading and writing values from the database. When reading
+  an @a@ value from the database, the conversion function should produce
+  'Nothing' if the value cannot be successfully converted to a @b@.
   -}
 maybeConvertSqlType :: (b -> a) -> (a -> Maybe b) -> SqlType a -> SqlType b
-maybeConvertSqlType bToA aToB sqlType =
+maybeConvertSqlType bToA aToB =
+  eitherConvertSqlType bToA
+    $ maybe (Left $ DecodingFailure "SqlType conversion failed") Right . aToB
+
+{-|
+  'eitherConvertSqlType' changes the Haskell type used by a 'SqlType' without
+  changing the column type that will be used in the database schema. The
+  functions given will be used to convert the new Haskell type to and from the
+  original type when reading and writing values from the database. When reading
+  an @a@ value from the database, the conversion function should produce
+  @Left "reason"@ if the value cannot be successfully converted to a @b@.
+-}
+eitherConvertSqlType :: (b -> a) -> (a -> Either RowDataErrorReason b) -> SqlType a -> SqlType b
+eitherConvertSqlType bToA aToB sqlType =
   sqlType
     { sqlTypeToSql = sqlTypeToSql sqlType . bToA
     , sqlTypeFromSql = aToB <=< sqlTypeFromSql sqlType
@@ -281,75 +299,122 @@ convertSqlType bToA aToB = maybeConvertSqlType bToA (Just . aToB)
 int32ToSql :: Int.Int32 -> HDBC.SqlValue
 int32ToSql = HDBC.SqlInt32
 
-int32FromSql :: HDBC.SqlValue -> Maybe Int.Int32
+int32FromSql :: HDBC.SqlValue -> Either RowDataErrorReason Int.Int32
 int32FromSql sql =
   case sql of
-    HDBC.SqlInt32 n -> Just n
+    HDBC.SqlInt32 n -> Right n
     HDBC.SqlInteger n -> toBoundedInteger n
-    _ -> Nothing
+    sqlValue -> Left $ mismatchError "int32" sqlValue
 
 int64ToSql :: Int.Int64 -> HDBC.SqlValue
 int64ToSql = HDBC.SqlInt64
 
-int64FromSql :: HDBC.SqlValue -> Maybe Int.Int64
+int64FromSql :: HDBC.SqlValue -> Either RowDataErrorReason Int.Int64
 int64FromSql sql =
   case sql of
-    HDBC.SqlInt64 n -> Just n
+    HDBC.SqlInt64 n -> Right n
     HDBC.SqlInteger n -> toBoundedInteger n
-    _ -> Nothing
+    sqlValue -> Left $ mismatchError "int64" sqlValue
 
 textToSql :: T.Text -> HDBC.SqlValue
 textToSql = HDBC.SqlByteString . Enc.encodeUtf8
 
-textFromSql :: HDBC.SqlValue -> Maybe T.Text
+textFromSql :: HDBC.SqlValue -> Either RowDataErrorReason T.Text
 textFromSql sql =
   case sql of
-    HDBC.SqlByteString bytes -> Just $ Enc.decodeUtf8 bytes
-    HDBC.SqlString string -> Just $ T.pack string
-    _ -> Nothing
+    HDBC.SqlByteString bytes -> Right $ Enc.decodeUtf8 bytes
+    HDBC.SqlString string -> Right $ T.pack string
+    sqlValue -> Left $ mismatchError "text" sqlValue
 
 doubleToSql :: Double -> HDBC.SqlValue
 doubleToSql = HDBC.SqlDouble
 
-doubleFromSql :: HDBC.SqlValue -> Maybe Double
+doubleFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Double
 doubleFromSql sql =
   case sql of
-    HDBC.SqlDouble d -> Just d
-    _ -> Nothing
+    HDBC.SqlDouble d -> Right d
+    sqlValue -> Left $ mismatchError "double" sqlValue
 
 booleanToSql :: Bool -> HDBC.SqlValue
 booleanToSql = HDBC.SqlBool
 
-booleanFromSql :: HDBC.SqlValue -> Maybe Bool
+booleanFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Bool
 booleanFromSql sql =
   case sql of
-    HDBC.SqlBool b -> Just b
-    _ -> Nothing
+    HDBC.SqlBool b -> Right b
+    sqlValue -> Left $ mismatchError "boolean" sqlValue
 
 dayToSql :: Time.Day -> HDBC.SqlValue
 dayToSql = HDBC.SqlLocalDate
 
-dayFromSql :: HDBC.SqlValue -> Maybe Time.Day
+dayFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Time.Day
 dayFromSql sql =
   case sql of
-    HDBC.SqlLocalDate d -> Just d
-    _ -> Nothing
+    HDBC.SqlLocalDate d -> Right d
+    sqlValue -> Left $ mismatchError "day" sqlValue
 
 utcTimeToSql :: Time.UTCTime -> HDBC.SqlValue
 utcTimeToSql = HDBC.SqlUTCTime
 
-utcTimeFromSql :: HDBC.SqlValue -> Maybe Time.UTCTime
+utcTimeFromSql :: HDBC.SqlValue -> Either RowDataErrorReason Time.UTCTime
 utcTimeFromSql sql =
   case sql of
-    HDBC.SqlUTCTime   t -> Just t
-    HDBC.SqlZonedTime t -> Just (Time.zonedTimeToUTC t)
-    _ -> Nothing
+    HDBC.SqlUTCTime   t -> Right t
+    HDBC.SqlZonedTime t -> Right (Time.zonedTimeToUTC t)
+    sqlValue -> Left $ mismatchError "UTC time" sqlValue
 
-toBoundedInteger :: (Bounded num, Integral num) => Integer -> Maybe num
+toBoundedInteger :: (Bounded num, Integral num) => Integer -> Either RowDataErrorReason num
 toBoundedInteger source =
   let truncated = fromInteger source
       upper = toInteger (maxBound `asTypeOf` truncated)
       lower = toInteger (minBound `asTypeOf` truncated)
    in if lower <= source && source <= upper
-        then Just truncated
-        else Nothing
+        then Right truncated
+        else Left $ IntegralOutOfBounds lower upper source
+
+-- | Error text for when the expected type doesn't match the Sql type
+mismatchError :: String -> HDBC.SqlValue -> RowDataErrorReason
+mismatchError expected actual =
+  TypeMismatch expected (showSqlValueType actual)
+
+-- | User friendly identifier labels for 'SqlValues'
+showSqlValueType :: HDBC.SqlValue -> String
+showSqlValueType v =
+  case v of
+    HDBC.SqlString _ -> "string"
+    HDBC.SqlByteString _ -> "bytestring"
+    HDBC.SqlWord32 _ -> "word32"
+    HDBC.SqlWord64 _ -> "word64"
+    HDBC.SqlInt32 _ -> "int32"
+    HDBC.SqlInt64 _ -> "int64"
+    HDBC.SqlInteger _ -> "integer"
+    HDBC.SqlChar _ -> "char"
+    HDBC.SqlBool _ -> "bool"
+    HDBC.SqlDouble _ -> "double"
+    HDBC.SqlRational _ -> "rational"
+    HDBC.SqlLocalDate _ -> "local date"
+    HDBC.SqlLocalTimeOfDay _ -> "time of day"
+    HDBC.SqlZonedLocalTimeOfDay _ _ -> "zoned local time of day"
+    HDBC.SqlLocalTime _ -> "local time"
+    HDBC.SqlZonedTime _ -> "zoned time"
+    HDBC.SqlUTCTime _ -> "utc time"
+    HDBC.SqlDiffTime _ -> "diff time"
+    HDBC.SqlPOSIXTime _ -> "POSIX time"
+    HDBC.SqlEpochTime _ -> "epoch time"
+    HDBC.SqlTimeDiff _ -> "time diff"
+    HDBC.SqlNull -> "null"
+
+data RowDataErrorReason
+  = TypeMismatch
+  -- ^ Sql value has a different type than expected
+      !String -- ^ Actual type
+      !String -- ^ Expected type
+  | IntegralOutOfBounds
+  -- ^ An integer value was outside the expected bounds.
+      !Integer -- ^ Lower bound
+      !Integer -- ^ Upper bound
+      !Integer -- ^ Actual value
+  | DecodingFailure !String
+  -- ^ Generic decoding failure
+  deriving Typeable
+

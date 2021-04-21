@@ -85,7 +85,7 @@ mkTableDefinition ::
 mkTableDefinition (TableParams {..}) =
   TableDefinition
     { tableFields = fields tblMapper
-    , tableFromSql = mkFromSql tblMapper
+    , tableFromSql = mkFromSql tblPrimaryKey tblMapper
     , tableToSql = mkToSql tblMapper
     , tablePrimaryKey = tblPrimaryKey
     , tableName = tblName
@@ -189,17 +189,41 @@ fields (RM_ReadOnly rm) =
   where
     someFieldWithFlag flag (SomeField f) = SomeField (f `withFlag` flag)
 
-mkFromSql :: RelationalMap a b -> FromSql b
-mkFromSql (RM_Field field) = fieldFromSql field
-mkFromSql (RM_Nest _ rm) = mkFromSql rm
-mkFromSql (RM_ReadOnly rm) = mkFromSql rm
-mkFromSql (RM_MaybeTag rm) = mkFromSql rm
-mkFromSql (RM_Pure b) = pure b
-mkFromSql (RM_Apply rmF rmC) = mkFromSql rmF <*> mkFromSql rmC
-mkFromSql (RM_Partial rm) = do
-  joinFromSqlError (wrapError <$> mkFromSql rm)
+mkFromSql :: PrimaryKey key -> RelationalMap a b -> FromSql b
+mkFromSql (PrimaryKey pKeyPart pKeyParts) relMap =
+  fromSql
+    { runFromSql = \columns ->
+        -- lookup the primary key columns
+        let keyNames = map getColName (pKeyPart : pKeyParts)
+            primKeys = filter ((`elem` keyNames) . fst) columns
+
+         in case runFromSql fromSql columns of
+              -- Add the primary key(s) to relevant error messages
+              Left (RowDataError details) ->
+                Left $ RowDataError details
+                         { rowErrorPrimaryKeys = primKeys }
+
+              Left (ConversionError details) ->
+                Left $ ConversionError details
+                         { convErrorPrimaryKeys = primKeys }
+
+              x -> x
+    }
   where
-    wrapError = either (Left . RowDataError) Right
+    fromSql = fromRelMap relMap
+
+    getColName (PrimaryKeyPart _ fieldDef) = fieldName fieldDef
+
+    fromRelMap :: RelationalMap a b -> FromSql b
+    fromRelMap (RM_Field field) = fieldFromSql field
+    fromRelMap (RM_Nest _ rm) = fromRelMap rm
+    fromRelMap (RM_ReadOnly rm) = fromRelMap rm
+    fromRelMap (RM_MaybeTag rm) = fromRelMap rm
+    fromRelMap (RM_Pure b) = pure b
+    fromRelMap (RM_Apply rmF rmC) = fromRelMap rmF <*> fromRelMap rmC
+    fromRelMap (RM_Partial rm) = do
+      joinFromSqlError (wrapError <$> fromRelMap rm)
+    wrapError = either (Left . simpleConversionError) Right
 
 mkToSql :: RelationalMap a b -> ToSql a ()
 mkToSql (RM_Field field) =
