@@ -34,7 +34,7 @@ import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
 sqlTypeSpecs :: Pool Connection -> Spec
-sqlTypeSpecs pool = describe "Tests of SqlType decode" $ do
+sqlTypeSpecs pool = describe "SqlType decoding tests" $ do
   integerSpecs pool
   bigIntegerSpecs pool
   serialSpecs pool
@@ -192,7 +192,7 @@ unboundedTextSpecs pool = do
     runDecodingTest pool $
       DecodingTest
         { sqlTypeDDL = "TEXT"
-        , rawSqlValue = B8.pack "'abcde'"
+        , rawSqlValue = B8.pack "abcde"
         , sqlType = unboundedText
         , expectedValue = T.pack "abcde"
         }
@@ -203,7 +203,7 @@ fixedTextSpecs pool = do
     runDecodingTest pool $
       DecodingTest
         { sqlTypeDDL = "CHAR(5)"
-        , rawSqlValue = B8.pack "'abcde'"
+        , rawSqlValue = B8.pack "abcde"
         , sqlType = fixedText 5
         , expectedValue = T.pack "abcde"
         }
@@ -212,7 +212,7 @@ fixedTextSpecs pool = do
     runDecodingTest pool $
       DecodingTest
         { sqlTypeDDL = "CHAR(5)"
-        , rawSqlValue = B8.pack "'fghi'"
+        , rawSqlValue = B8.pack "fghi"
         , sqlType = fixedText 5
         , expectedValue = T.pack "fghi "
         }
@@ -223,7 +223,7 @@ boundedTextSpecs pool = do
     runDecodingTest pool $
       DecodingTest
         { sqlTypeDDL = "VARCHAR(5)"
-        , rawSqlValue = B8.pack "'abcde'"
+        , rawSqlValue = B8.pack "abcde"
         , sqlType = boundedText 5
         , expectedValue = T.pack "abcde"
         }
@@ -232,7 +232,7 @@ boundedTextSpecs pool = do
     runDecodingTest pool $
       DecodingTest
         { sqlTypeDDL = "VARCHAR(5)"
-        , rawSqlValue = B8.pack "'fghi'"
+        , rawSqlValue = B8.pack "fghi"
         , sqlType = boundedText 5
         , expectedValue = T.pack "fghi"
         }
@@ -323,6 +323,6 @@ runDecodingTest pool test = do
 
 dropAndRecreateTable :: Pool Connection -> String -> String -> IO ()
 dropAndRecreateTable pool tableName sqlTypeDDL' = do
-  executeRawVoid pool . B8.pack $ "DROP TABLE IF EXISTS " <> tableName
-  executeRawVoid pool . B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> sqlTypeDDL' <> ")"
+  executeRawVoid pool (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
+  executeRawVoid pool (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> sqlTypeDDL' <> ")") []
 

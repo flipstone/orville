@@ -81,7 +81,7 @@ insertExpr target rowValues =
       [ RawSql.fromString "INSERT INTO "
       , tableNameToSql target
       , RawSql.fromString " VALUES ("
-      , RawSql.fromBytes (B8.intercalate (B8.pack ",") rowValues)
+      , RawSql.intercalate (RawSql.fromString ",") (map RawSql.parameter rowValues)
       , RawSql.fromString ")"
     ]
 
