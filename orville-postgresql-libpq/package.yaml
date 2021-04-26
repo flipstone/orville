@@ -20,6 +20,7 @@ library:
     - Database.Orville.PostgreSQL.Internal.Expr
     - Database.Orville.PostgreSQL.Internal.RawSql
     - Database.Orville.PostgreSQL.Internal.SqlType
+    - Database.Orville.PostgreSQL.Internal.SqlValue
   ghc-options:
     - -Wall
     - -fwarn-incomplete-uni-patterns

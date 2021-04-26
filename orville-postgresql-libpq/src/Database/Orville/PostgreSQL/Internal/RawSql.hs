@@ -1,6 +1,7 @@
 {-|
+
 Module    : Database.Orville.PostgreSQL.Internal.RawSql
-Copyright : Flipstone Technology Partners 2016-2020
+Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 
 The funtions in this module are named with the intent that it is imported
@@ -28,6 +29,8 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import           Database.Orville.PostgreSQL.Connection (Connection, Pool)
 import qualified Database.Orville.PostgreSQL.Connection as Conn
+import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 {-|
   'RawSql' provides a type for efficiently constructing raw sql statements
@@ -37,7 +40,7 @@ import qualified Database.Orville.PostgreSQL.Connection as Conn
 -}
 data RawSql
   = SqlSection BSB.Builder
-  | Parameter BS.ByteString
+  | Parameter SqlValue
   | Append RawSql RawSql
 
 instance Semigroup RawSql where
@@ -54,7 +57,7 @@ instance Monoid RawSql where
   Constructs the actual sql bytestring and parameter values that will be
   passed to the database to execute a 'RawSql' query.
 -}
-toBytesAndParams :: RawSql -> (BS.ByteString, [BS.ByteString])
+toBytesAndParams :: RawSql -> (BS.ByteString, [Maybe BS.ByteString])
 toBytesAndParams rawSql =
   let
     (byteBuilder, finalProgress) =
@@ -72,7 +75,7 @@ toBytesAndParams rawSql =
 data ParamsProgress =
   ParamsProgress
     { paramCount :: Int
-    , paramValues :: DList BS.ByteString
+    , paramValues :: DList (Maybe BS.ByteString)
     }
 
 {-|
@@ -90,7 +93,7 @@ startingProgress =
   Adds a parameter value to the end of the params list, tracking the count
   of parameters as it does so.
 -}
-snocParam :: ParamsProgress -> BS.ByteString -> ParamsProgress
+snocParam :: ParamsProgress -> Maybe BS.ByteString -> ParamsProgress
 snocParam (ParamsProgress count values) newValue =
   ParamsProgress
     { paramCount = count + 1
@@ -113,7 +116,7 @@ buildSqlWithProgress progress rawSql =
 
     Parameter value ->
       let
-        newProgress = snocParam progress value
+        newProgress = snocParam progress (SqlValue.toRawBytes value)
       in
         ( BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
         , newProgress
@@ -157,7 +160,7 @@ fromBytes =
   representation, which the database will interpret. The database type for the
   value will be inferred by the database based on its usage in the query.
 -}
-parameter :: BS.ByteString -> RawSql
+parameter :: SqlValue -> RawSql
 parameter =
   Parameter
 

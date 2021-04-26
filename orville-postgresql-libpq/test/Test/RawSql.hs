@@ -3,8 +3,10 @@ module Test.RawSql
   ) where
 
 import qualified Data.ByteString.Char8 as B8
+import qualified Data.Text as T
 
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
 rawSqlSpecs :: Spec
@@ -32,7 +34,7 @@ rawSqlSpecs =
           RawSql.fromString "SELECT * "
           <> RawSql.fromString "FROM foo "
           <> RawSql.fromString "WHERE id = "
-          <> RawSql.parameter (B8.pack "1")
+          <> RawSql.parameter (SqlValue.fromInt32 1)
           <> RawSql.fromString " AND "
           <> RawSql.fromString "bar IN ("
           <> RawSql.intercalate (RawSql.fromString ",") bars
@@ -40,17 +42,17 @@ rawSqlSpecs =
 
         bars =
           map RawSql.parameter
-            [ B8.pack "pants"
-            , B8.pack "cheese"
+            [ SqlValue.fromText (T.pack "pants")
+            , SqlValue.fromText (T.pack "cheese")
             ]
 
         expectedBytes =
           B8.pack "SELECT * FROM foo WHERE id = $1 AND bar IN ($2,$3)"
 
         expectedParams =
-          [ B8.pack "1"
-          , B8.pack "pants"
-          , B8.pack "cheese"
+          [ Just (B8.pack "1")
+          , Just (B8.pack "pants")
+          , Just (B8.pack "cheese")
           ]
 
         (actualBytes, actualParams) =
