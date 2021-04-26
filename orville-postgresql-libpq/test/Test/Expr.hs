@@ -6,6 +6,7 @@ module Test.Expr
 import qualified Data.ByteString.Char8 as B8
 import           Data.Int (Int32)
 import           Data.Pool (Pool)
+import qualified Data.Text as T
 
 import           Database.Orville.PostgreSQL.Connection (Connection)
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
@@ -15,6 +16,12 @@ import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import           Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
+data FooBar =
+  FooBar
+    { foo :: Int32
+    , bar :: String
+    }
+
 exprSpecs :: Pool Connection -> Spec
 exprSpecs pool =
   describe "Expr Tests" $ do
@@ -22,94 +29,109 @@ exprSpecs pool =
       it "Returns all rows when where clause is specified" $ do
         runWhereConditionTest pool $
           WhereConditionTest
-            { valuesToInsert = [1,2,3]
-            , expectedQueryResults = [1,2,3]
+            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , expectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
             , whereClause = Nothing
             }
 
       it "equalsOp matches exact value" $ do
         runWhereConditionTest pool $
           WhereConditionTest
-            { valuesToInsert = [1,2,3]
-            , expectedQueryResults = [2]
+            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , expectedQueryResults = [FooBar 2 "bee"]
             , whereClause =
                 Just . Expr.whereClause $
-                  Expr.comparison
-                    (Expr.columnReference fooColumn)
-                    Expr.equalsOp
-                    (Expr.comparisonValue (SqlValue.fromInt32 2))
+                  Expr.columnEquals fooColumn (SqlValue.fromInt32 2)
             }
 
       it "greaterThanOp matches greater values" $ do
         runWhereConditionTest pool $
           WhereConditionTest
-            { valuesToInsert = [1,2,3]
-            , expectedQueryResults = [3]
+            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , expectedQueryResults = [FooBar 3 "chihuahua"]
             , whereClause =
                 Just . Expr.whereClause $
-                  Expr.comparison
-                    (Expr.columnReference fooColumn)
-                    Expr.greaterThanOp
-                    (Expr.comparisonValue (SqlValue.fromInt32 2))
+                  Expr.columnGreaterThan fooColumn (SqlValue.fromInt32 2)
             }
 
       it "greaterThanOrEqualsOp matches greater or equal values" $ do
         runWhereConditionTest pool $
           WhereConditionTest
-            { valuesToInsert = [1,2,3]
-            , expectedQueryResults = [2,3]
+            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , expectedQueryResults = [FooBar 2 "bee", FooBar 3 "chihuahua"]
             , whereClause =
                 Just . Expr.whereClause $
-                  Expr.comparison
-                    (Expr.columnReference fooColumn)
-                    Expr.greaterThanOrEqualsOp
-                    (Expr.comparisonValue (SqlValue.fromInt32 2))
+                  Expr.columnGreaterThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
             }
 
       it "lessThanOp matches lesser values" $ do
         runWhereConditionTest pool $
           WhereConditionTest
-            { valuesToInsert = [1,2,3]
-            , expectedQueryResults = [1]
+            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , expectedQueryResults = [FooBar 1 "ant"]
             , whereClause =
                 Just . Expr.whereClause $
-                  Expr.comparison
-                    (Expr.columnReference fooColumn)
-                    Expr.lessThanOp
-                    (Expr.comparisonValue (SqlValue.fromInt32 2))
+                  Expr.columnLessThan fooColumn (SqlValue.fromInt32 2)
             }
 
       it "lessThanOrEqualsOp matches lesser or equal values" $ do
         runWhereConditionTest pool $
           WhereConditionTest
-            { valuesToInsert = [1,2,3]
-            , expectedQueryResults = [1,2]
+            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , expectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee"]
             , whereClause =
                 Just . Expr.whereClause $
-                  Expr.comparison
-                    (Expr.columnReference fooColumn)
-                    Expr.lessThanOrEqualsOp
-                    (Expr.comparisonValue (SqlValue.fromInt32 2))
+                  Expr.columnLessThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
+            }
+
+      it "andExpr requires both conditions to be true" $ do
+        runWhereConditionTest pool $
+          WhereConditionTest
+            { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , expectedQueryResults = [FooBar 3 "dog"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.andExpr
+                    (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
+                    (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))
+            }
+
+      it "orExpr requires either conditions to be true" $ do
+        runWhereConditionTest pool $
+          WhereConditionTest
+            { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , expectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.orExpr
+                    (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
+                    (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dingo")))
             }
 
 data WhereConditionTest =
   WhereConditionTest
-    { valuesToInsert       :: [Int32]
+    { valuesToInsert       :: [FooBar]
     , whereClause          :: Maybe Expr.WhereClause
-    , expectedQueryResults :: [Int32]
+    , expectedQueryResults :: [FooBar]
     }
 
 mkTestInsertSource :: WhereConditionTest -> Expr.InsertSource
 mkTestInsertSource test =
   let
-    mkRow n = [SqlValue.fromInt32 n]
+    mkRow foobar =
+      [ SqlValue.fromInt32 (foo foobar)
+      , SqlValue.fromText (T.pack $ bar foobar)
+      ]
   in
     Expr.insertSqlValues (map mkRow $ valuesToInsert test)
 
 mkTestExpectedRows :: WhereConditionTest -> [[(Maybe B8.ByteString, SqlValue)]]
 mkTestExpectedRows test =
   let
-    mkRow n = [(Just (B8.pack "foo"), SqlValue.fromInt32 n)]
+    mkRow foobar =
+      [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+      , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+      ]
   in
     map mkRow (expectedQueryResults test)
 
@@ -127,7 +149,7 @@ runWhereConditionTest pool test = do
   result <- RawSql.execute pool $
     Expr.queryExprToSql $
       Expr.queryExpr
-        (Expr.selectColumns [fooColumn])
+        (Expr.selectColumns [fooColumn, barColumn])
         (Expr.tableExpr exprTestTable (whereClause test))
 
   rows <- traverse ExecResult.readRows result
@@ -141,8 +163,12 @@ fooColumn :: Expr.ColumnName
 fooColumn =
   Expr.rawColumnName "foo"
 
+barColumn :: Expr.ColumnName
+barColumn =
+  Expr.rawColumnName "bar"
+
 dropAndRecreateTestTable :: Pool Connection -> IO ()
 dropAndRecreateTestTable pool = do
   RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid pool (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER)")
+  RawSql.executeVoid pool (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
 

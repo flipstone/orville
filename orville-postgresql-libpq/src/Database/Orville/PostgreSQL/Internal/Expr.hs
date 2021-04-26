@@ -25,6 +25,11 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , andExpr
   , parenthesized
   , comparison
+  , columnEquals
+  , columnGreaterThan
+  , columnLessThan
+  , columnGreaterThanOrEqualTo
+  , columnLessThanOrEqualTo
   , RowValuePredicand
   , columnReference
   , comparisonValue
@@ -135,7 +140,7 @@ andExpr :: BooleanExpr -> BooleanExpr -> BooleanExpr
 andExpr left right =
   BooleanExpr $
     booleanExprToSql left
-    <> RawSql.fromString " OR "
+    <> RawSql.fromString " AND "
     <> booleanExprToSql right
 
 parenthesized :: BooleanExpr -> BooleanExpr
@@ -185,6 +190,26 @@ greaterThanOrEqualsOp =
 lessThanOrEqualsOp :: ComparisonOperator
 lessThanOrEqualsOp =
   ComparisonOperator (RawSql.fromString "<=")
+
+columnEquals :: ColumnName -> SqlValue -> BooleanExpr
+columnEquals name value =
+  comparison (columnReference name) equalsOp (comparisonValue value)
+
+columnGreaterThan :: ColumnName -> SqlValue -> BooleanExpr
+columnGreaterThan name value =
+  comparison (columnReference name) greaterThanOp (comparisonValue value)
+
+columnLessThan :: ColumnName -> SqlValue -> BooleanExpr
+columnLessThan name value =
+  comparison (columnReference name) lessThanOp (comparisonValue value)
+
+columnGreaterThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
+columnGreaterThanOrEqualTo name value =
+  comparison (columnReference name) greaterThanOrEqualsOp (comparisonValue value)
+
+columnLessThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
+columnLessThanOrEqualTo name value =
+  comparison (columnReference name) lessThanOrEqualsOp (comparisonValue value)
 
 newtype RowValuePredicand =
   RowValuePredicand RawSql
