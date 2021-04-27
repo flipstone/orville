@@ -114,9 +114,11 @@ connect connectionString = do
 -}
 close :: Connection -> IO ()
 close (Connection handle') =
-  let underlyingFinish restore = do
-        underlyingConnection <- tryTakeMVar handle'
-        restore (traverse LibPQ.finish underlyingConnection)
+  let
+    underlyingFinish :: (IO (Maybe ()) -> IO b) -> IO b
+    underlyingFinish restore = do
+      underlyingConnection <- tryTakeMVar handle'
+      restore (traverse LibPQ.finish underlyingConnection)
   in
     void $ mask underlyingFinish
 

@@ -14,4 +14,4 @@ echo "Starting test loop using $STACK_YAML. Use \`docker-compose run --rm dev ./
 # This used to use ghcid, but I was not able to get ghcid to both run the test
 # suite *and* compile the sample project to detect errors there.  stack test
 # --fast is a bit slower than ghcid, but we need to catch all the errors :(
-stack --stack-yaml "$STACK_YAML" test --ghc-options=-j --fast --file-watch
+stack --stack-yaml "$STACK_YAML" test --ghc-options=-j --fast --file-watch --flag orville-postgresql-libpq:ci

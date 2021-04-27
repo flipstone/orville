@@ -11,6 +11,12 @@ tested-with: GHC == 8.6.5
 extra-source-files:
   - README.md
 
+flags:
+  ci:
+    description: More strict ghc options used for development and ci, not intended for end-use.
+    manual: true
+    default: false
+
 library:
   source-dirs: src
   exposed-modules:
@@ -19,12 +25,34 @@ library:
     - Database.Orville.PostgreSQL.Internal.ExecutionResult
     - Database.Orville.PostgreSQL.Internal.Expr
     - Database.Orville.PostgreSQL.Internal.RawSql
+    - Database.Orville.PostgreSQL.Internal.SqlMarshaller
     - Database.Orville.PostgreSQL.Internal.SqlType
     - Database.Orville.PostgreSQL.Internal.SqlValue
-  ghc-options:
-    - -Wall
-    - -fwarn-incomplete-uni-patterns
-    - -fwarn-incomplete-record-updates
+  when:
+    - condition: flag(ci)
+      then:
+        ghc-options:
+          - -Wall
+          - -Werror
+          - -Wcompat
+          - -Widentities
+          - -Wincomplete-uni-patterns
+          - -Wincomplete-patterns
+          - -Wincomplete-record-updates
+          - -Wmissing-local-signatures
+          - -Wmissing-export-lists
+          - -Wnoncanonical-monad-instances
+          - -Wredundant-constraints
+          - -Wpartial-fields
+          - -Wmissed-specialisations
+          - -Wno-implicit-prelude
+          - -Wno-safe
+          - -Wno-unsafe
+      else:
+        ghc-options:
+          - -Wall
+          - -fwarn-incomplete-uni-patterns
+          - -fwarn-incomplete-record-updates
   dependencies:
     - base >=4.8 && <5
     - attoparsec
@@ -35,21 +63,23 @@ library:
     - text
     - time >=1.5
 
-
 tests:
   spec:
     source-dirs: test
     main: Main.hs
     other-modules:
       - Test.RawSql
+      - Test.SqlMarshaller
       - Test.SqlType
     dependencies:
       - base
       - bytestring
+      - hedgehog
       - mtl
       - orville-postgresql-libpq
       - resource-pool
       - tasty
+      - tasty-hedgehog
       - tasty-hspec
       - text
       - time
