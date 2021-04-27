@@ -11,6 +11,7 @@ module Database.Orville.PostgreSQL.Internal.ExecutionResult
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Database.Orville.PostgreSQL.Internal.SqlType (SqlType(sqlTypeFromSql))
+import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 -- N.B. This only works for the first column of a table currently.
 -- If there are no results in the given `Result` then we return an empty list
@@ -29,11 +30,8 @@ decodeRows res sqlType = do
     -- N.B. the usage of `getvalue'` here is important as this version returns a
     -- _copy_ of the data in the `Result` rather than a _reference_.
     -- This allows the `Result` to be garbage collected instead of being held onto indefinitely.
-    getValue row =
-      LibPQ.getvalue' res row (LibPQ.toColumn (0::Int))
-    applySqlConv maybeBS =
-      case maybeBS of
-        Just bs -> sqlTypeFromSql sqlType bs
-        Nothing -> Nothing
-  maybeBSs <- traverse getValue rowList
-  pure $ fmap applySqlConv maybeBSs
+    decodeValue row =
+      sqlTypeFromSql sqlType . SqlValue.fromRawBytesNullable
+        <$> LibPQ.getvalue' res row (LibPQ.toColumn (0::Int))
+
+  traverse decodeValue rowList

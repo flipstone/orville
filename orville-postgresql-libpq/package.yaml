@@ -27,6 +27,7 @@ library:
     - Database.Orville.PostgreSQL.Internal.RawSql
     - Database.Orville.PostgreSQL.Internal.SqlMarshaller
     - Database.Orville.PostgreSQL.Internal.SqlType
+    - Database.Orville.PostgreSQL.Internal.SqlValue
   when:
     - condition: flag(ci)
       then:
@@ -50,7 +51,6 @@ library:
       else:
         ghc-options:
           - -Wall
-          - -Wcompat
           - -fwarn-incomplete-uni-patterns
           - -fwarn-incomplete-record-updates
   dependencies:

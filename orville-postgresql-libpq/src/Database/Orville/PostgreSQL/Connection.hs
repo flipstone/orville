@@ -41,7 +41,7 @@ createConnectionPool stripes linger maxRes connectionString =
  of the results are not iterated through immediately *and* the data copied.
  Use with caution.
 -}
-executeRaw :: Pool Connection -> ByteString -> [ByteString] -> IO (Maybe LibPQ.Result)
+executeRaw :: Pool Connection -> ByteString -> [Maybe ByteString] -> IO (Maybe LibPQ.Result)
 executeRaw pool bs params =
   withResource pool (underlyingExecute bs params)
 
@@ -49,7 +49,7 @@ executeRaw pool bs params =
  'executeRawVoid' a version of 'executeRaw' that completely ignores the result.
  Use with caution.
 -}
-executeRawVoid :: Pool Connection -> ByteString -> [ByteString] -> IO ()
+executeRawVoid :: Pool Connection -> ByteString -> [Maybe ByteString] -> IO ()
 executeRawVoid pool bs params =
   void (executeRaw pool bs params)
 
@@ -134,7 +134,7 @@ close (Connection handle') =
   (in which case it can't be used for this  function in the first place).
 -}
 underlyingExecute :: ByteString
-                  -> [ByteString]
+                  -> [Maybe ByteString]
                   -> Connection
                   -> IO (Maybe LibPQ.Result)
 underlyingExecute bs params (Connection handle') = do
@@ -147,9 +147,14 @@ underlyingExecute bs params (Connection handle') = do
   This uses Oid 0 to cause the database to infer the type of the paremeter and
   explicitly marks the parameter as being in Text format.
 -}
-mkInferredTextParam :: ByteString -> Maybe (LibPQ.Oid, ByteString, LibPQ.Format)
-mkInferredTextParam value =
-  Just (LibPQ.Oid 0, value, LibPQ.Text)
+mkInferredTextParam :: Maybe ByteString -> Maybe (LibPQ.Oid, ByteString, LibPQ.Format)
+mkInferredTextParam mbValue =
+  case mbValue of
+    Nothing ->
+      Nothing
+
+    Just value ->
+      Just (LibPQ.Oid 0, value, LibPQ.Text)
 
 data ConnectionError = ConnectionError { errorMessage :: String
                                        , underlyingError :: Maybe ByteString
