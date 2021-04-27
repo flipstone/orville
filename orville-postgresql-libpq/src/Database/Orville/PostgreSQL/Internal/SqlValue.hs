@@ -45,6 +45,7 @@ import qualified Data.Time as Time
 data SqlValue
   = SqlValue BS.ByteString
   | SqlNull
+  deriving (Show, Eq)
 
 {-|
   Checks whether the 'SqlValue' represents a sql NULL value in the database.

@@ -7,7 +7,7 @@ import qualified Data.Text as T
 
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
-import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
+import           Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
 rawSqlSpecs :: Spec
 rawSqlSpecs =
