@@ -16,6 +16,8 @@ module Database.Orville.PostgreSQL.Internal.SqlValue
   , toInt32
   , fromInt64
   , toInt64
+  , fromInt
+  , toInt
   , fromDouble
   , toDouble
   , fromBool
@@ -125,7 +127,22 @@ fromInt64 =
   fromBSBuilder BSB.int64Dec
 
 {-|
-  Attempts to decode a 'SqlValue' a Haskell 'Int64' value. If decoding fails
+  Encodes an 'Int32' value for usage with database
+-}
+fromInt :: Int -> SqlValue
+fromInt =
+  fromBSBuilder BSB.intDec
+
+{-|
+  Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
+  'Nothing' is returned.
+-}
+toInt :: SqlValue -> Maybe Int
+toInt =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{-|
+  Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
 -}
 toInt64 :: SqlValue -> Maybe Int64
@@ -217,7 +234,7 @@ toDay sqlValue = do
 -}
 fromUTCTime :: Time.UTCTime -> SqlValue
 fromUTCTime =
-  SqlValue . B8.pack . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat Nothing)
+  SqlValue . B8.pack . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat (Just "%H:%M:%S"))
 
 {-|
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601

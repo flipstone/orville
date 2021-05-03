@@ -16,7 +16,7 @@ import Database.Orville.PostgreSQL.Internal.SqlType (SqlType
                                                     , integer
                                                     , serial
                                                     , bigInteger
-                                                    , bigserial
+                                                    , bigSerial
                                                     , double
 
                                                     -- textual-ish types
@@ -138,7 +138,7 @@ bigSerialSpecs pool = do
       DecodingTest
         { sqlTypeDDL = "BIGSERIAL"
         , rawSqlValue = Just $ B8.pack $ show (0 :: Int64)
-        , sqlType = bigserial
+        , sqlType = bigSerial
         , expectedValue = 0
         }
 
@@ -147,7 +147,7 @@ bigSerialSpecs pool = do
       DecodingTest
         { sqlTypeDDL = "BIGSERIAL"
         , rawSqlValue = Just $ B8.pack $ show (21474836470 :: Int64)
-        , sqlType = bigserial
+        , sqlType = bigSerial
         , expectedValue = 21474836470
         }
 

@@ -7,8 +7,8 @@ License   : MIT
 module Database.Orville.PostgreSQL
   ( createConnectionPool
   , SqlType ( SqlType
-            , sqlTypeDDL
-            , sqlTypeReferenceDDL
+            , sqlTypeExpr
+            , sqlTypeReferenceExpr
             , sqlTypeNullable
             , sqlTypeId
             , sqlTypeSqlSize
@@ -19,7 +19,7 @@ module Database.Orville.PostgreSQL
   , integer
   , serial
   , bigInteger
-  , bigserial
+  , bigSerial
   , double
 
     -- textual-ish types
@@ -43,8 +43,8 @@ module Database.Orville.PostgreSQL
 
 import Database.Orville.PostgreSQL.Connection (createConnectionPool)
 import Database.Orville.PostgreSQL.Internal.SqlType (SqlType ( SqlType
-                                                             , sqlTypeDDL
-                                                             , sqlTypeReferenceDDL
+                                                             , sqlTypeExpr
+                                                             , sqlTypeReferenceExpr
                                                              , sqlTypeNullable
                                                              , sqlTypeId
                                                              , sqlTypeSqlSize
@@ -55,7 +55,7 @@ import Database.Orville.PostgreSQL.Internal.SqlType (SqlType ( SqlType
                                                     , integer
                                                     , serial
                                                     , bigInteger
-                                                    , bigserial
+                                                    , bigSerial
                                                     , double
 
                                                       -- textual-ish types

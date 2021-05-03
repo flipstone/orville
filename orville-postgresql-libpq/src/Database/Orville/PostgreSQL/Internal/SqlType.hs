@@ -6,8 +6,8 @@ License   : MIT
 
 module Database.Orville.PostgreSQL.Internal.SqlType
   (SqlType ( SqlType
-           , sqlTypeDDL
-           , sqlTypeReferenceDDL
+           , sqlTypeExpr
+           , sqlTypeReferenceExpr
            , sqlTypeNullable
            , sqlTypeId
            , sqlTypeSqlSize
@@ -19,7 +19,7 @@ module Database.Orville.PostgreSQL.Internal.SqlType
   , integer
   , serial
   , bigInteger
-  , bigserial
+  , bigSerial
   , double
 
   -- textual-ish types
@@ -45,6 +45,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import           Data.Text (Text)
 import qualified Data.Time as Time
 
+import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -55,13 +56,13 @@ import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
   and migrate columns using the type.
   -}
 data SqlType a = SqlType
-  { sqlTypeDDL :: String
-    -- ^ The raw SQL DDL to use when creating/migrating columns of this type
-    -- (not including any NULL or NOT NULL declarations)
-  , sqlTypeReferenceDDL :: Maybe String
-    -- ^ The raw SQL DDL to use when creating/migrating columns with foreign
-    -- keys to this type. This is used foreignRefType to build a new SqlType
-    -- when making foreign key fields
+  { sqlTypeExpr :: Expr.DataType
+    -- ^ The sql data type expression to use when creating/migrating columns of
+    -- this type
+  , sqlTypeReferenceExpr :: Maybe Expr.DataType
+    -- ^ The sql data type experession to use when creating/migrating columns
+    -- with foreign keys to this type. This is used foreignRefType to build a
+    -- new SqlType when making foreign key fields
   , sqlTypeNullable :: Bool
     -- ^ Indicates whether columns should be marked NULL or NOT NULL in the
     -- database schema. If this is 'True', then 'sqlTypeFromSql' should
@@ -84,8 +85,8 @@ data SqlType a = SqlType
 integer :: SqlType Int32
 integer =
   SqlType
-    { sqlTypeDDL = "INTEGER"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.int
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 23
     , sqlTypeSqlSize = Just 4
@@ -100,8 +101,8 @@ integer =
 serial :: SqlType Int32
 serial =
   SqlType
-    { sqlTypeDDL = "SERIAL"
-    , sqlTypeReferenceDDL = Just "INTEGER"
+    { sqlTypeExpr = Expr.serial
+    , sqlTypeReferenceExpr = Just Expr.int
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 23
     , sqlTypeSqlSize = Just 4
@@ -116,8 +117,8 @@ serial =
 bigInteger :: SqlType Int64
 bigInteger =
   SqlType
-    { sqlTypeDDL = "BIGINT"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.bigInt
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 20
     , sqlTypeSqlSize = Just 8
@@ -126,14 +127,14 @@ bigInteger =
     }
 
 {-|
-  'bigserial' defines a 64-bit auto-incrementing column type. This corresponds to
+  'bigSerial' defines a 64-bit auto-incrementing column type. This corresponds to
   the "BIGSERIAL" type in PostgresSQL.
 -}
-bigserial :: SqlType Int64
-bigserial =
+bigSerial :: SqlType Int64
+bigSerial =
   SqlType
-    { sqlTypeDDL = "BIGSERIAL"
-    , sqlTypeReferenceDDL = Just "BIGINT"
+    { sqlTypeExpr = Expr.bigSerial
+    , sqlTypeReferenceExpr = Just Expr.bigInt
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 20
     , sqlTypeSqlSize = Just 8
@@ -148,8 +149,8 @@ bigserial =
 double :: SqlType Double
 double =
   SqlType
-    { sqlTypeDDL = "DOUBLE PRECISION"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.doublePrecision
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 701
     , sqlTypeSqlSize = Just 8
@@ -164,8 +165,8 @@ double =
 boolean :: SqlType Bool
 boolean =
   SqlType
-    { sqlTypeDDL = "BOOLEAN"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.boolean
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 16
     , sqlTypeSqlSize = Just 1
@@ -180,8 +181,8 @@ boolean =
 unboundedText :: SqlType Text
 unboundedText =
   SqlType
-    { sqlTypeDDL = "TEXT"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.text
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 25
     , sqlTypeSqlSize = Nothing
@@ -196,8 +197,8 @@ unboundedText =
 fixedText :: Int -> SqlType Text
 fixedText len =
   SqlType
-    { sqlTypeDDL = "CHAR(" <> show len <> ")"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.char len
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 1042
     , sqlTypeSqlSize = Just len
@@ -212,8 +213,8 @@ fixedText len =
 boundedText :: Int -> SqlType Text
 boundedText len =
   SqlType
-    { sqlTypeDDL = "VARCHAR(" <> show len <> ")"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.varchar len
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 1043
     , sqlTypeSqlSize = Just len
@@ -228,8 +229,8 @@ boundedText len =
 textSearchVector :: SqlType Text
 textSearchVector =
   SqlType
-    { sqlTypeDDL = "TSVECTOR"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.tsvector
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 3614
     , sqlTypeSqlSize = Nothing
@@ -244,8 +245,8 @@ textSearchVector =
 date :: SqlType Time.Day
 date =
   SqlType
-    { sqlTypeDDL = "DATE"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.date
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 1082
     , sqlTypeSqlSize = Just 4
@@ -265,8 +266,8 @@ date =
 timestamp :: SqlType Time.UTCTime
 timestamp =
   SqlType
-    { sqlTypeDDL = "TIMESTAMP with time zone"
-    , sqlTypeReferenceDDL = Nothing
+    { sqlTypeExpr = Expr.timestampWithZone
+    , sqlTypeReferenceExpr = Nothing
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 1184
     , sqlTypeSqlSize = Just 8
@@ -302,13 +303,13 @@ nullableType sqlType =
   autoincrementing primary keys), the type construted by 'foreignRefType' with
   have regular underlying sql type. Each 'SqlType' definition must specify any
   special handling required when creating foreign reference types by setting
-  the 'sqlTypeReferenceDDL' field to an appropriate value.
+  the 'sqlTypeReferenceExpr' field to an appropriate value.
 -}
 foreignRefType :: SqlType a -> SqlType a
 foreignRefType sqlType =
-  case sqlTypeReferenceDDL sqlType of
+  case sqlTypeReferenceExpr sqlType of
     Nothing -> sqlType
-    Just refDDL -> sqlType {sqlTypeDDL = refDDL, sqlTypeReferenceDDL = Nothing}
+    Just refExpr -> sqlType {sqlTypeExpr = refExpr, sqlTypeReferenceExpr = Nothing}
 
 {-|
   'maybeConvertSqlType' changes the Haskell type used by a 'SqlType' which changing

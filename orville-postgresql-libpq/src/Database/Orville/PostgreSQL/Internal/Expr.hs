@@ -48,6 +48,23 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , insertRowValues
   , RowValues
   , rowValues
+  , DataType
+  , dataTypeToSql
+  , timestampWithZone
+  , date
+  , tsvector
+  , varchar
+  , char
+  , text
+  , boolean
+  , doublePrecision
+  , bigSerial
+  , bigInt
+  , serial
+  , int
+  , FieldDefinition
+  , fieldDefinition
+  , fieldDefinitionToSql
   ) where
 
 import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql)
@@ -281,3 +298,84 @@ rowValues values =
 
 insertExprToSql :: InsertExpr -> RawSql
 insertExprToSql (InsertExpr sql) = sql
+
+newtype DataType =
+  DataType RawSql
+
+dataTypeToSql :: DataType -> RawSql
+dataTypeToSql (DataType sql) = sql
+
+timestampWithZone :: DataType
+timestampWithZone =
+  DataType (RawSql.fromString "TIMESTAMP with time zone")
+
+date :: DataType
+date =
+  DataType (RawSql.fromString "DATE")
+
+tsvector :: DataType
+tsvector =
+  DataType (RawSql.fromString "TSVECTOR")
+
+varchar :: Int -> DataType
+varchar len =
+  -- postgresql won't let us pass the field length as a parameter.
+  -- when we try we get an error like such error:
+  --  ERROR:  syntax error at or near "$1" at character 48
+  --  STATEMENT:  CREATE TABLE field_definition_test(foo VARCHAR($1))
+  DataType $
+    RawSql.fromString "VARCHAR("
+    <> RawSql.fromString (show len)
+    <> RawSql.fromString ")"
+
+char :: Int -> DataType
+char len =
+  -- postgresql won't let us pass the field length as a parameter.
+  -- when we try we get an error like such error:
+  --  ERROR:  syntax error at or near "$1" at character 48
+  --  STATEMENT:  CREATE TABLE field_definition_test(foo CHAR($1))
+  DataType $
+    RawSql.fromString "CHAR("
+    <> RawSql.fromString (show len)
+    <> RawSql.fromString ")"
+
+text :: DataType
+text =
+  DataType (RawSql.fromString "TEXT")
+
+boolean :: DataType
+boolean =
+  DataType (RawSql.fromString "BOOLEAN")
+
+doublePrecision :: DataType
+doublePrecision =
+  DataType (RawSql.fromString "DOUBLE PRECISION")
+
+bigSerial :: DataType
+bigSerial =
+  DataType (RawSql.fromString "BIGSERIAL")
+
+bigInt :: DataType
+bigInt =
+  DataType (RawSql.fromString "BIGINT")
+
+serial :: DataType
+serial =
+  DataType (RawSql.fromString "SERIAL")
+
+int :: DataType
+int =
+  DataType (RawSql.fromString "INT")
+
+newtype FieldDefinition =
+  FieldDefinition RawSql
+
+fieldDefinitionToSql :: FieldDefinition -> RawSql
+fieldDefinitionToSql (FieldDefinition sql) = sql
+
+fieldDefinition :: ColumnName -> DataType -> FieldDefinition
+fieldDefinition columnName dataType =
+  FieldDefinition $
+    columnNameToSql columnName
+    <> RawSql.fromString " "
+    <> dataTypeToSql dataType

@@ -24,6 +24,7 @@ library:
     - Database.Orville.PostgreSQL.Connection
     - Database.Orville.PostgreSQL.Internal.ExecutionResult
     - Database.Orville.PostgreSQL.Internal.Expr
+    - Database.Orville.PostgreSQL.Internal.FieldDefinition
     - Database.Orville.PostgreSQL.Internal.RawSql
     - Database.Orville.PostgreSQL.Internal.SqlMarshaller
     - Database.Orville.PostgreSQL.Internal.SqlType
@@ -69,6 +70,7 @@ tests:
     main: Main.hs
     other-modules:
       - Test.Expr
+      - Test.FieldDefinition
       - Test.RawSql
       - Test.SqlMarshaller
       - Test.SqlType
