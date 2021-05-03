@@ -1,0 +1,32 @@
+version: 2.1
+jobs:
+  postgresql-96-and-ghc8103:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - checkout
+      - run:
+          name: make sure dockerfile is built
+          command: cd orville-postgresql-libpq && docker-compose build
+      - run:
+          name: run tests against ghc8.10.3 (stackage lts-17.0)
+          command: cd orville-postgresql-libpq && docker-compose run --rm dev stack --stack-yaml stack-lts-17.0.yml test --ghc-options=-j --flag orville-postgresql-libpq:ci
+
+  postgresql-96-and-ghc865:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - checkout
+      - run:
+          name: make sure dockerfile is built
+          command: cd orville-postgresql-libpq && docker-compose build
+      - run:
+          name: run tests against ghc8.6.5 (stackage lts-14.0)
+          command: cd orville-postgresql-libpq && docker-compose run --rm dev stack --stack-yaml stack-lts-14.0.yml test --ghc-options=-j --flag orville-postgresql-libpq:ci
+
+workflows:
+  version: 2.0
+  test:
+    jobs:
+      - postgresql-96-and-ghc865
+      - postgresql-96-and-ghc8103

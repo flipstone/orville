@@ -20,7 +20,7 @@ services:
     tty: true
 
   testdb:
-    image: postgres:9.6.20
+    image: postgres:9.6.21
     environment:
       POSTGRES_USER: orville_test
       POSTGRES_PASSWORD: orville
