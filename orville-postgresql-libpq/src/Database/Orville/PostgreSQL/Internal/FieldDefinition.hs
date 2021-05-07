@@ -82,7 +82,7 @@ fieldNullability = _fieldNullability
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
   representation.
 -}
-fieldValueToSqlValue :: FieldDefinition NotNull a -> a -> SqlValue
+fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue
 fieldValueToSqlValue =
   SqlType.sqlTypeToSql . fieldType
 
@@ -90,7 +90,7 @@ fieldValueToSqlValue =
   Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
   This may fail, in which case 'Nothing' is returned.
 -}
-fieldValueFromSqlValue :: FieldDefinition NotNull a -> SqlValue -> Maybe a
+fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Maybe a
 fieldValueFromSqlValue =
   SqlType.sqlTypeFromSql . fieldType
 
