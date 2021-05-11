@@ -49,8 +49,8 @@ import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 -}
 data FieldDefinition nullability a =
   FieldDefinition
-    { _fieldName :: String
-    , _fieldType :: SqlType a
+    { _fieldName        :: String
+    , _fieldType        :: SqlType a
     , _fieldNullability :: Nullability nullability
     }
 

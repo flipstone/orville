@@ -60,6 +60,7 @@ library:
     - bytestring
     - dlist >= 0.8 && < 0.9
     - postgresql-libpq >= 0.9.4.2 && <0.10
+    - containers >= 0.6 && < 0.7
     - resource-pool
     - text
     - time >=1.5
