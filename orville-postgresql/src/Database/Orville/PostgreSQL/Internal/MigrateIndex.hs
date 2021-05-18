@@ -30,7 +30,7 @@ createIndexPlan indexDef schemaState = do
              then "UNIQUE"
              else ""
          , "INDEX"
-         , indexName indexDef
+         , "\"" ++ indexName indexDef ++ "\""
          , "ON"
          , "\"" ++ indexTable indexDef ++ "\""
          , indexBody indexDef
