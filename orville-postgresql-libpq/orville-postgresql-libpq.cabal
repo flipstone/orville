@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4a4b3d9ac6876772074dc3464efcfb643f60d828c2d15ae2eca63a8973f9489e
+-- hash: b2a8a50eb410b173a41fd55d1299d9a5916d17df4a9896c8f43bf2e03f4c99b7
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -47,6 +47,7 @@ library
       attoparsec
     , base >=4.8 && <5
     , bytestring
+    , containers >=0.6 && <0.7
     , dlist >=0.8 && <0.9
     , postgresql-libpq >=0.9.4.2 && <0.10
     , resource-pool
