@@ -102,7 +102,7 @@ storableDoubleGen =
     truncateLongDouble :: Double -> Double
     truncateLongDouble = (/1e12) . (fromIntegral :: Int -> Double) . round . (*1e12)
   in
-    flip Gen.subterm truncateLongDouble $ Gen.double $ Range.linearFracFrom 0 (-1000) 1000
+    flip Gen.subterm truncateLongDouble . Gen.double $ Range.linearFracFrom 0 (-1000) 1000
 
 -- This generator generates alphanumeric values currently because of syntax
 -- issues with random characters being generated. There is a story to built
@@ -188,4 +188,3 @@ dropAndRecreateTestTable fieldDef pool = do
     <> RawSql.fromString "("
     <> Expr.fieldDefinitionToSql (FieldDef.toSqlExpr fieldDef)
     <> RawSql.fromString ")"
-
