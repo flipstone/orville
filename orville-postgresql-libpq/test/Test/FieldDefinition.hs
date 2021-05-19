@@ -37,16 +37,12 @@ fieldDefinitionTree pool =
           , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
           }
 
-    -- PostgreSQL only stores up to 15 digits of precision, but Haskell values
-    -- can have more precision than that. I created a story to address this
-    -- test to avoid the rest of 'FieldDefinition' getting hung up by this.
-    --
-    -- , testProperty "can round trip a doubleField" . HH.property $ do
-    --   runRoundTripTest pool $
-    --     RoundTripTest
-    --       { roundTripFieldDef = FieldDef.doubleField "foo"
-    --       , roundTripGen = storableDoubleGen
-    --       }
+    , testProperty "can round trip a doubleField" . HH.property $ do
+      runRoundTripTest pool $
+        RoundTripTest
+          { roundTripFieldDef = FieldDef.doubleField "foo"
+          , roundTripGen = storableDoubleGen
+          }
 
     , testProperty "can round trip a booleanField" . HH.property $ do
       runRoundTripTest pool $
@@ -98,17 +94,15 @@ fieldDefinitionTree pool =
           }
     ]
 
--- I tried generating doubles limited to 15 digits, but hedgehog simply gave
--- up because this generator never produced anything. I added a story to track
--- this thread and opted to move forward with getting FieldDefinition in.
---
---storableDoubleGen :: HH.Gen Double
---storableDoubleGen =
---  let
---    isStorable :: Double -> Bool
---    isStorable d = floatDigits d <= 15
---  in
---    Gen.filter isStorable $ Gen.double (Range.linearFracFrom 0 (-1000) 1000)
+storableDoubleGen :: HH.Gen Double
+storableDoubleGen =
+  let
+    -- Necessary because PostgreSQL only stores up to 15 digits of precision
+    -- With a 3-digit range, this gives us 12 places after the decimal
+    truncateLongDouble :: Double -> Double
+    truncateLongDouble = (/1e12) . (fromIntegral :: Int -> Double) . round . (*1e12)
+  in
+    flip Gen.subterm truncateLongDouble . Gen.double $ Range.linearFracFrom 0 (-1000) 1000
 
 -- This generator generates alphanumeric values currently because of syntax
 -- issues with random characters being generated. There is a story to built
@@ -194,4 +188,3 @@ dropAndRecreateTestTable fieldDef pool = do
     <> RawSql.fromString "("
     <> Expr.fieldDefinitionToSql (FieldDef.toSqlExpr fieldDef)
     <> RawSql.fromString ")"
-
