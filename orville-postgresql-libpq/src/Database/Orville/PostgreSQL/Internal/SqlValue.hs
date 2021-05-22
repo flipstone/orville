@@ -30,7 +30,7 @@ module Database.Orville.PostgreSQL.Internal.SqlValue
   , toUTCTime
   , fromRawBytes
   , fromRawBytesNullable
-  , toRawBytes
+  , toPGValue
   ) where
 
 import qualified Data.Attoparsec.ByteString as AttoBS
@@ -44,8 +44,11 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
 
+import           Database.Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
+import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
+
 data SqlValue
-  = SqlValue BS.ByteString
+  = SqlValue PGTextFormatValue
   | SqlNull
   deriving (Show, Eq)
 
@@ -72,11 +75,11 @@ sqlNull =
   to values you would write in query. If the value represents a sql NULL
   value, 'Nothing' is returned
 -}
-toRawBytes :: SqlValue -> Maybe BS.ByteString
-toRawBytes sqlValue =
+toPGValue :: SqlValue -> Maybe PGTextFormatValue
+toPGValue sqlValue =
   case sqlValue of
-    SqlValue bytes ->
-      Just bytes
+    SqlValue value ->
+      Just value
 
     SqlNull ->
       Nothing
@@ -93,7 +96,7 @@ toRawBytes sqlValue =
 -}
 fromRawBytes :: BS.ByteString -> SqlValue
 fromRawBytes =
-  SqlValue
+  SqlValue . PGTextFormatValue.fromByteString
 
 {-|
   Creates a 'SqlValue' from a raw byte string. If 'Nothing' is specified as the
@@ -109,7 +112,7 @@ fromRawBytesNullable =
 -}
 fromInt32 :: Int32 -> SqlValue
 fromInt32 =
-  fromBSBuilder BSB.int32Dec
+  fromBSBuilderWithNoNULs BSB.int32Dec
 
 {-|
   Attempts to decode a 'SqlValue' a Haskell 'Int32' value. If decoding fails
@@ -124,14 +127,14 @@ toInt32 =
 -}
 fromInt64 :: Int64 -> SqlValue
 fromInt64 =
-  fromBSBuilder BSB.int64Dec
+  fromBSBuilderWithNoNULs BSB.int64Dec
 
 {-|
   Encodes an 'Int32' value for usage with database
 -}
 fromInt :: Int -> SqlValue
 fromInt =
-  fromBSBuilder BSB.intDec
+  fromBSBuilderWithNoNULs BSB.intDec
 
 {-|
   Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
@@ -154,7 +157,7 @@ toInt64 =
 -}
 fromDouble :: Double -> SqlValue
 fromDouble =
-  fromBSBuilder BSB.doubleDec
+  fromBSBuilderWithNoNULs BSB.doubleDec
 
 {-|
   Attempts to decode a 'SqlValue' a Haskell 'Double' value. If decoding fails
@@ -169,7 +172,7 @@ toDouble =
 -}
 fromBool :: Bool -> SqlValue
 fromBool =
-  fromBSBuilder $ \bool ->
+  fromBSBuilderWithNoNULs $ \bool ->
     case bool of
       True -> BSB.char8 't'
       False -> BSB.char8 'f'
@@ -192,7 +195,7 @@ toBool =
 -}
 fromText :: T.Text -> SqlValue
 fromText =
-  SqlValue . TextEnc.encodeUtf8
+  SqlValue . PGTextFormatValue.fromByteString . TextEnc.encodeUtf8
 
 {-|
   Attempts to decode a 'SqlValue' as UTF-8 text. If the decoding fails,
@@ -214,7 +217,7 @@ toText =
 -}
 fromDay :: Time.Day -> SqlValue
 fromDay =
-  SqlValue . B8.pack . Time.showGregorian
+  SqlValue . PGTextFormatValue.unsafeFromByteString . B8.pack . Time.showGregorian
 
 {-|
   Attempts to decode a 'SqlValue' as into a 'Time.Day' value by parsing it
@@ -234,7 +237,10 @@ toDay sqlValue = do
 -}
 fromUTCTime :: Time.UTCTime -> SqlValue
 fromUTCTime =
-  SqlValue . B8.pack . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat (Just "%H:%M:%S"))
+  SqlValue
+  . PGTextFormatValue.unsafeFromByteString
+  . B8.pack
+  . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat (Just "%H:%M:%S"))
 
 {-|
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
@@ -252,9 +258,13 @@ toUTCTime sqlValue = do
 {-|
   A internal helper function that constructs a 'SqlValue' via a byte string builder
 -}
-fromBSBuilder :: (a -> BSB.Builder) -> a -> SqlValue
-fromBSBuilder builder =
-  SqlValue . LBS.toStrict . BSB.toLazyByteString . builder
+fromBSBuilderWithNoNULs :: (a -> BSB.Builder) -> a -> SqlValue
+fromBSBuilderWithNoNULs builder =
+  SqlValue
+  . PGTextFormatValue.unsafeFromByteString
+  . LBS.toStrict
+  . BSB.toLazyByteString
+  . builder
 
 {-|
   A internal helper function that parses 'SqlValue' via an Attoparsec parser.
@@ -279,4 +289,4 @@ toBytesValue byteParser sqlValue =
       Nothing
 
     SqlValue bytes ->
-      byteParser bytes
+      byteParser (PGTextFormatValue.toByteString bytes)

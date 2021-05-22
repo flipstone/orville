@@ -7,6 +7,7 @@ import Test.Tasty (defaultMain, testGroup)
 import Test.Tasty.Hspec (testSpec)
 
 import Database.Orville.PostgreSQL.Connection (createConnectionPool)
+import Test.Connection (connectionTree)
 import Test.Expr (exprSpecs)
 import Test.FieldDefinition (fieldDefinitionTree)
 import Test.RawSql (rawSqlSpecs)
@@ -26,7 +27,8 @@ main = do
 
   defaultMain $
     testGroup "Tests"
-      [ specTree
+      [ connectionTree pool
+      , specTree
       , sqlMarshallerTree
       , fieldDefinitionTree pool
       ]

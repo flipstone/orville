@@ -29,6 +29,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import           Database.Orville.PostgreSQL.Connection (Connection, Pool)
 import qualified Database.Orville.PostgreSQL.Connection as Conn
+import           Database.Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
 import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -57,7 +58,7 @@ instance Monoid RawSql where
   Constructs the actual sql bytestring and parameter values that will be
   passed to the database to execute a 'RawSql' query.
 -}
-toBytesAndParams :: RawSql -> (BS.ByteString, [Maybe BS.ByteString])
+toBytesAndParams :: RawSql -> (BS.ByteString, [Maybe PGTextFormatValue])
 toBytesAndParams rawSql =
   let
     (byteBuilder, finalProgress) =
@@ -75,7 +76,7 @@ toBytesAndParams rawSql =
 data ParamsProgress =
   ParamsProgress
     { paramCount :: Int
-    , paramValues :: DList (Maybe BS.ByteString)
+    , paramValues :: DList (Maybe PGTextFormatValue)
     }
 
 {-|
@@ -93,7 +94,7 @@ startingProgress =
   Adds a parameter value to the end of the params list, tracking the count
   of parameters as it does so.
 -}
-snocParam :: ParamsProgress -> Maybe BS.ByteString -> ParamsProgress
+snocParam :: ParamsProgress -> Maybe PGTextFormatValue -> ParamsProgress
 snocParam (ParamsProgress count values) newValue =
   ParamsProgress
     { paramCount = count + 1
@@ -116,7 +117,7 @@ buildSqlWithProgress progress rawSql =
 
     Parameter value ->
       let
-        newProgress = snocParam progress (SqlValue.toRawBytes value)
+        newProgress = snocParam progress (SqlValue.toPGValue value)
       in
         ( BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
         , newProgress

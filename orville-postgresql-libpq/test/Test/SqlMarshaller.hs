@@ -19,6 +19,8 @@ import           Database.Orville.PostgreSQL.Internal.FieldDefinition (integerFi
 import           Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallRowFromSql, marshallResultFromSql, marshallField, MarshallError(..))
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
+import qualified Test.PGGen as PGGen
+
 sqlMarshallerTree :: TestTree
 sqlMarshallerTree =
   testGroup "SqlMarshaller properties"
@@ -117,7 +119,7 @@ fooMarshaller =
 generateFoo :: HH.Gen Foo
 generateFoo =
   Foo
-    <$> Gen.text (Range.linear 0 16) Gen.unicode
+    <$> PGGen.pgText (Range.linear 0 16)
     <*> generateInt32
 
 generateNamesOtherThan :: String -> HH.Gen [String]

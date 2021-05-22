@@ -21,6 +21,8 @@ import Data.Pool (Pool, createPool, withResource)
 import Data.Time (NominalDiffTime)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
+import           Database.Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue, toBytesForLibPQ)
+
 {-|
  'createConnectionPool' allocates a pool of connections to a PosgreSQL server.
 -}
@@ -41,15 +43,22 @@ createConnectionPool stripes linger maxRes connectionString =
  of the results are not iterated through immediately *and* the data copied.
  Use with caution.
 -}
-executeRaw :: Pool Connection -> ByteString -> [Maybe ByteString] -> IO (Maybe LibPQ.Result)
+executeRaw :: Pool Connection -> ByteString -> [Maybe PGTextFormatValue] -> IO (Maybe LibPQ.Result)
 executeRaw pool bs params =
-  withResource pool (underlyingExecute bs params)
+  case traverse (traverse toBytesForLibPQ) params of
+    Left _ ->
+      -- TODO This should raise some sort of error when we add error raising
+      -- to for LibPQ sourced errors.
+      pure Nothing
+
+    Right paramBytes ->
+      withResource pool (underlyingExecute bs paramBytes)
 
 {-|
  'executeRawVoid' a version of 'executeRaw' that completely ignores the result.
  Use with caution.
 -}
-executeRawVoid :: Pool Connection -> ByteString -> [Maybe ByteString] -> IO ()
+executeRawVoid :: Pool Connection -> ByteString -> [Maybe PGTextFormatValue] -> IO ()
 executeRawVoid pool bs params =
   void (executeRaw pool bs params)
 
@@ -142,7 +151,7 @@ underlyingExecute bs params (Connection handle') = do
   LibPQ.execParams conn bs (map mkInferredTextParam params) LibPQ.Text
 
 {-|
-  Packages a bytestring parameter value (which is assume to be a value encoded
+  Packages a bytestring parameter value (which is assumed to be a value encoded
   as text that the database can use) as a parameter for executing a query.
   This uses Oid 0 to cause the database to infer the type of the paremeter and
   explicitly marks the parameter as being in Text format.

@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b2a8a50eb410b173a41fd55d1299d9a5916d17df4a9896c8f43bf2e03f4c99b7
+-- hash: f24eb5b2eb38f5137d430c2153d964155e8cc13ba33bd5f602fe0fcecef54c53
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -35,6 +35,7 @@ library
       Database.Orville.PostgreSQL.Internal.ExecutionResult
       Database.Orville.PostgreSQL.Internal.Expr
       Database.Orville.PostgreSQL.Internal.FieldDefinition
+      Database.Orville.PostgreSQL.Internal.PGTextFormatValue
       Database.Orville.PostgreSQL.Internal.RawSql
       Database.Orville.PostgreSQL.Internal.SqlMarshaller
       Database.Orville.PostgreSQL.Internal.SqlType
@@ -63,8 +64,10 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Test.Connection
       Test.Expr
       Test.FieldDefinition
+      Test.PGGen
       Test.RawSql
       Test.SqlMarshaller
       Test.SqlType
@@ -77,6 +80,7 @@ test-suite spec
     , hedgehog
     , mtl
     , orville-postgresql-libpq
+    , postgresql-libpq
     , resource-pool
     , tasty
     , tasty-hedgehog

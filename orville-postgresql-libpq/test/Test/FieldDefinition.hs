@@ -10,8 +10,8 @@ import           Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty (TestTree, testGroup)
+import           Test.Tasty.Hedgehog (testProperty)
 
 import           Database.Orville.PostgreSQL.Connection (Connection)
 import           Database.Orville.PostgreSQL.Internal.ExecutionResult (readRows)
@@ -19,6 +19,8 @@ import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import           Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull)
 import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+
+import qualified Test.PGGen as PGGen
 
 fieldDefinitionTree :: Pool Connection -> TestTree
 fieldDefinitionTree pool =
@@ -41,7 +43,7 @@ fieldDefinitionTree pool =
       runRoundTripTest pool $
         RoundTripTest
           { roundTripFieldDef = FieldDef.doubleField "foo"
-          , roundTripGen = storableDoubleGen
+          , roundTripGen = PGGen.pgDouble
           }
 
     , testProperty "can round trip a booleanField" . HH.property $ do
@@ -55,21 +57,21 @@ fieldDefinitionTree pool =
       runRoundTripTest pool $
         RoundTripTest
           { roundTripFieldDef = FieldDef.unboundedTextField "foo"
-          , roundTripGen = Gen.text (Range.constant 0 1024) Gen.unicode
+          , roundTripGen = PGGen.pgText (Range.constant 0 1024)
           }
 
     , testProperty "can round trip a boundedTextField" . HH.property $ do
       runRoundTripTest pool $
         RoundTripTest
           { roundTripFieldDef = FieldDef.boundedTextField "foo" 4
-          , roundTripGen = Gen.text (Range.constant 0 4) Gen.unicode
+          , roundTripGen = PGGen.pgText (Range.constant 0 4)
           }
 
     , testProperty "can round trip a fixedTextField" . HH.property $ do
       runRoundTripTest pool $
         RoundTripTest
           { roundTripFieldDef = FieldDef.fixedTextField "foo" 4
-          , roundTripGen = Gen.text (Range.constant 4 4) Gen.unicode
+          , roundTripGen = PGGen.pgText (Range.constant 4 4)
           }
 
     , testProperty "can round trip a textSearchVectorField" . HH.property $ do
@@ -93,16 +95,6 @@ fieldDefinitionTree pool =
           , roundTripGen = utcTimeGen
           }
     ]
-
-storableDoubleGen :: HH.Gen Double
-storableDoubleGen =
-  let
-    -- Necessary because PostgreSQL only stores up to 15 digits of precision
-    -- With a 3-digit range, this gives us 12 places after the decimal
-    truncateLongDouble :: Double -> Double
-    truncateLongDouble = (/1e12) . (fromIntegral :: Int -> Double) . round . (*1e12)
-  in
-    flip Gen.subterm truncateLongDouble . Gen.double $ Range.linearFracFrom 0 (-1000) 1000
 
 -- This generator generates alphanumeric values currently because of syntax
 -- issues with random characters being generated. There is a story to built

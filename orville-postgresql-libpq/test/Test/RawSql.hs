@@ -5,6 +5,7 @@ module Test.RawSql
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Text as T
 
+import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import           Test.Tasty.Hspec (Spec, describe, it, shouldBe)
@@ -50,9 +51,9 @@ rawSqlSpecs =
           B8.pack "SELECT * FROM foo WHERE id = $1 AND bar IN ($2,$3)"
 
         expectedParams =
-          [ Just (B8.pack "1")
-          , Just (B8.pack "pants")
-          , Just (B8.pack "cheese")
+          [ Just . PGTextFormatValue.fromByteString . B8.pack $ "1"
+          , Just . PGTextFormatValue.fromByteString . B8.pack $ "pants"
+          , Just . PGTextFormatValue.fromByteString . B8.pack $ "cheese"
           ]
 
         (actualBytes, actualParams) =
