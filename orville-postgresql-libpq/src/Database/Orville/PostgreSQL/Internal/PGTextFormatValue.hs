@@ -23,7 +23,7 @@ import qualified Data.ByteString as BS
   'unsafeFromByteString' is used, the caller is expected to ensure that no
   '\NUL' bytes are present. If a '\NUL' byte is included with
   'unsafeFromByteString', the value passed to the database will be truncated at
-  the '\NUL' byte because it will be interprested as the end of the C String by
+  the '\NUL' byte because it will be interpreted as the end of the C String by
   libpq.
 -}
 data PGTextFormatValue
