@@ -54,6 +54,7 @@ library:
     - Database.Orville.PostgreSQL.MonadUnliftIO
     - Database.Orville.PostgreSQL.Popper
     - Database.Orville.PostgreSQL.Plan
+    - Database.Orville.PostgreSQL.Plan.Explanation
     - Database.Orville.PostgreSQL.Plan.Many
     - Database.Orville.PostgreSQL.Plan.Operation
     - Database.Orville.PostgreSQL.Raw
