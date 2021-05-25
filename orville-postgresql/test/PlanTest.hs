@@ -47,8 +47,9 @@ test_plan =
               (Plan.use param)
               (Plan.findMaybeOne rootTable rootIdField)
 
-      , testRootPlan "focusParam" run $
-          Plan.focusParam rootTreeId (Plan.findMaybeOne treeTable treeIdField)
+      , testRootPlan "focusParam, using" run $
+          Plan.bind treePlan $ \param ->
+          Plan.using param $ Plan.focusParam treeRootId $ Plan.findMaybeOne rootTable rootIdField
 
       , QC.testProperty "many findAll includes all params in map" $ \rootIds ->
         QC.ioProperty $ do
