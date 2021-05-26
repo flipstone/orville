@@ -24,6 +24,7 @@ module Database.Orville.PostgreSQL.Plan
   , chain
   , apply
   , planMany
+  , focusParam
 
   -- * Bridges from other types into Plan
   , Op.AssertionFailed
@@ -312,6 +313,19 @@ planMany :: (forall manyScope. Plan manyScope param result)
          -> Plan scope [param] (Many param result)
 planMany =
   PlanMany
+
+{-|
+  'focusParam' builds a plan from a function and an existing plan taking the
+  result of that function as input. This is especially useful when there is some
+  structure, and a plan that only needs a part of that structure as input. The
+  function argument can access part of the structure for the plan argument to use,
+  so the final returned plan can take the entire structure as input.
+-}
+focusParam :: (a -> b)
+           -> (forall focusedScope. Plan focusedScope b result)
+           -> Plan scope a result
+focusParam focuser plan =
+  chain (focuser <$> askParam) plan
 
 {-|
   'bind' gives access to the results of a plan to use as input values to future
