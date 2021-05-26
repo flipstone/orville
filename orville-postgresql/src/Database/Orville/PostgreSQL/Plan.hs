@@ -335,12 +335,12 @@ focusParam focuser plan =
 
 
 {-|
-  'planEither' lets you construct a plan branches by executing a different
-  plan for the 'Left' and 'Right' sides of an 'Either' value. When used
-  with a single input paramater only one of the two plans will be used, based on the
-  input parameter. When used on multiple input parameters, each plan will
-  executed only once with all the 'Left' and 'Right' values provided as
-  input parameters respectively.
+  'planEither' lets you construct a plan that branches by executing a different
+  plan for the 'Left' and 'Right' sides of an 'Either' value. When used with a
+  single input parameter only one of the two plans will be used, based on the
+  input parameter. When used on multiple input parameters, each of the two
+  plans will be executed only once with all the 'Left' and 'Right' values
+  provided as input parameters respectively.
 -}
 planEither :: (forall leftScope. Plan leftScope leftParam leftResult)
            -> (forall rightScope. Plan rightScope rightParam rightResult)
