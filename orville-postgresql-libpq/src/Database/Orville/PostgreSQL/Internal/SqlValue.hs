@@ -240,7 +240,7 @@ fromUTCTime =
   SqlValue
   . PGTextFormatValue.unsafeFromByteString
   . B8.pack
-  . Time.formatTime Time.defaultTimeLocale (Time.iso8601DateFormat (Just "%H:%M:%S"))
+  . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%dT%H:%M:%S"
 
 {-|
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
