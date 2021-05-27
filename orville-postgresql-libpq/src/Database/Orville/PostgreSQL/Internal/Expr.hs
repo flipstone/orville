@@ -18,6 +18,7 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , rawTableName
   , ColumnName
   , rawColumnName
+  , columnNameToSql
   , WhereClause
   , whereClause
   , BooleanExpr
@@ -65,6 +66,12 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , FieldDefinition
   , fieldDefinition
   , fieldDefinitionToSql
+  , OrderByClause
+  , orderByClauseToSql
+  , orderByClause
+  , addOrderBy
+  , ascendingExpr
+  , descendingExpr
   ) where
 
 import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql)
@@ -112,12 +119,13 @@ newtype TableExpr =
 tableExprToSql :: TableExpr -> RawSql
 tableExprToSql (TableExpr sql) = sql
 
-tableExpr :: TableName -> Maybe WhereClause -> TableExpr
-tableExpr tableName mbWhereClause =
+tableExpr :: TableName -> Maybe WhereClause -> Maybe OrderByClause -> TableExpr
+tableExpr tableName mbWhereClause maybeOrderByClause =
   TableExpr $
     tableNameToSql tableName
     <> RawSql.fromString " "
     <> maybe mempty whereClauseToSql mbWhereClause
+    <> maybe mempty orderByClauseToSql maybeOrderByClause
 
 newtype TableName =
   TableName RawSql
@@ -177,6 +185,29 @@ comparison left op right =
     <> RawSql.fromString " "
     <> rowValuePredicandToSql right
 
+newtype OrderByClause =
+  OrderByClause RawSql
+
+orderByClauseToSql :: OrderByClause -> RawSql
+orderByClauseToSql (OrderByClause sql) = sql
+
+orderByClause :: OrderByExpr -> OrderByClause
+orderByClause orderByExpr = OrderByClause (RawSql.fromString "ORDER BY " <> orderByExprToSql orderByExpr)
+
+newtype OrderByExpr =
+  OrderByExpr RawSql
+
+orderByExprToSql :: OrderByExpr -> RawSql
+orderByExprToSql (OrderByExpr sql) = sql
+
+ascendingExpr :: RawSql -> OrderByExpr
+ascendingExpr sql = OrderByExpr $ sql <> RawSql.fromString " ASC"
+
+descendingExpr :: RawSql -> OrderByExpr
+descendingExpr sql = OrderByExpr $ sql <> RawSql.fromString " DESC"
+
+addOrderBy :: OrderByExpr -> OrderByExpr -> OrderByExpr
+addOrderBy (OrderByExpr a) (OrderByExpr b) = OrderByExpr (a <> RawSql.fromString ", " <> b)
 
 newtype ComparisonOperator =
   ComparisonOperator RawSql

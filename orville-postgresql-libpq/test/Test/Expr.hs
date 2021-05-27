@@ -25,94 +25,184 @@ data FooBar =
 exprSpecs :: Pool Connection -> Spec
 exprSpecs pool =
   describe "Expr Tests" $ do
-    describe "WhereClause" $ do
-      it "Returns all rows when where clause is specified" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , expectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , whereClause = Nothing
-            }
+    whereSpecs pool
+    orderBySpecs pool
 
-      it "equalsOp matches exact value" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , expectedQueryResults = [FooBar 2 "bee"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.columnEquals fooColumn (SqlValue.fromInt32 2)
-            }
+whereSpecs :: Pool Connection -> Spec
+whereSpecs pool =
+  describe "WhereClause" $ do
+    it "Returns all rows when where clause is specified" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereExpectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereClause = Nothing
+          }
 
-      it "greaterThanOp matches greater values" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , expectedQueryResults = [FooBar 3 "chihuahua"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.columnGreaterThan fooColumn (SqlValue.fromInt32 2)
-            }
+    it "equalsOp matches exact value" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereExpectedQueryResults = [FooBar 2 "bee"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.columnEquals fooColumn (SqlValue.fromInt32 2)
+          }
 
-      it "greaterThanOrEqualsOp matches greater or equal values" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , expectedQueryResults = [FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.columnGreaterThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
-            }
+    it "greaterThanOp matches greater values" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereExpectedQueryResults = [FooBar 3 "chihuahua"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.columnGreaterThan fooColumn (SqlValue.fromInt32 2)
+          }
 
-      it "lessThanOp matches lesser values" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , expectedQueryResults = [FooBar 1 "ant"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.columnLessThan fooColumn (SqlValue.fromInt32 2)
-            }
+    it "greaterThanOrEqualsOp matches greater or equal values" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereExpectedQueryResults = [FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.columnGreaterThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
+          }
 
-      it "lessThanOrEqualsOp matches lesser or equal values" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-            , expectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.columnLessThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
-            }
+    it "lessThanOp matches lesser values" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereExpectedQueryResults = [FooBar 1 "ant"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.columnLessThan fooColumn (SqlValue.fromInt32 2)
+          }
 
-      it "andExpr requires both conditions to be true" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-            , expectedQueryResults = [FooBar 3 "dog"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.andExpr
-                    (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
-                    (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))
-            }
+    it "lessThanOrEqualsOp matches lesser or equal values" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+          , whereExpectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.columnLessThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
+          }
 
-      it "orExpr requires either conditions to be true" $ do
-        runWhereConditionTest pool $
-          WhereConditionTest
-            { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-            , expectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog"]
-            , whereClause =
-                Just . Expr.whereClause $
-                  Expr.orExpr
-                    (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
-                    (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dingo")))
-            }
+    it "andExpr requires both conditions to be true" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+          , whereExpectedQueryResults = [FooBar 3 "dog"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.andExpr
+                  (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
+                  (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))
+          }
+
+    it "orExpr requires either conditions to be true" $ do
+      runWhereConditionTest pool $
+        WhereConditionTest
+          { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+          , whereExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog"]
+          , whereClause =
+              Just . Expr.whereClause $
+                Expr.orExpr
+                  (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
+                  (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dingo")))
+          }
+
+orderBySpecs :: Pool Connection -> Spec
+orderBySpecs pool =
+  describe "OrderBy" $ do
+    it "ascendingExpr sorts a text column" $ do
+      runOrderByTest pool $
+        OrderByTest
+          { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+          , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
+          , orderByClause =
+              Just . Expr.orderByClause $
+                Expr.ascendingExpr
+                  (Expr.columnNameToSql barColumn)
+          }
+
+    it "descendingExpr sorts a text column" $ do
+      runOrderByTest pool $
+        OrderByTest
+          { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+          , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
+          , orderByClause =
+              Just . Expr.orderByClause $
+                Expr.descendingExpr
+                  (Expr.columnNameToSql barColumn)
+          }
+
+    it "addOrderBy causes ordering on both columns" $ do
+      runOrderByTest pool $
+        OrderByTest
+          { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+          , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+          , orderByClause =
+              Just . Expr.orderByClause $
+                Expr.addOrderBy
+                  (Expr.ascendingExpr (Expr.columnNameToSql barColumn))
+                  (Expr.descendingExpr (Expr.columnNameToSql fooColumn))
+
+          }
+
+data OrderByTest =
+  OrderByTest
+    { orderByValuesToInsert       :: [FooBar]
+    , orderByClause               :: Maybe Expr.OrderByClause
+    , orderByExpectedQueryResults :: [FooBar]
+    }
+
+mkOrderByTestInsertSource :: OrderByTest -> Expr.InsertSource
+mkOrderByTestInsertSource test =
+  let
+    mkRow foobar =
+      [ SqlValue.fromInt32 (foo foobar)
+      , SqlValue.fromText (T.pack $ bar foobar)
+      ]
+  in
+    Expr.insertSqlValues (map mkRow $ orderByValuesToInsert test)
+
+mkOrderByTestExpectedRows :: OrderByTest -> [[(Maybe B8.ByteString, SqlValue)]]
+mkOrderByTestExpectedRows test =
+  let
+    mkRow foobar =
+      [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+      , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+      ]
+  in
+    fmap mkRow (orderByExpectedQueryResults test)
+
+runOrderByTest :: Pool Connection -> OrderByTest -> IO ()
+runOrderByTest pool test = do
+  dropAndRecreateTestTable pool
+
+  let
+    exprTestTable = Expr.rawTableName "expr_test"
+
+  RawSql.executeVoid pool .
+    Expr.insertExprToSql $
+      Expr.insertExpr exprTestTable (mkOrderByTestInsertSource test)
+
+  result <- RawSql.execute pool .
+    Expr.queryExprToSql $
+      Expr.queryExpr
+        (Expr.selectColumns [fooColumn, barColumn])
+        (Expr.tableExpr exprTestTable Nothing (orderByClause test))
+
+  rows <- traverse ExecResult.readRows result
+  rows `shouldBe` Just (mkOrderByTestExpectedRows test)
 
 data WhereConditionTest =
   WhereConditionTest
-    { valuesToInsert       :: [FooBar]
-    , whereClause          :: Maybe Expr.WhereClause
-    , expectedQueryResults :: [FooBar]
+    { whereValuesToInsert       :: [FooBar]
+    , whereClause               :: Maybe Expr.WhereClause
+    , whereExpectedQueryResults :: [FooBar]
     }
 
 mkTestInsertSource :: WhereConditionTest -> Expr.InsertSource
@@ -123,7 +213,7 @@ mkTestInsertSource test =
       , SqlValue.fromText (T.pack $ bar foobar)
       ]
   in
-    Expr.insertSqlValues (map mkRow $ valuesToInsert test)
+    Expr.insertSqlValues (map mkRow $ whereValuesToInsert test)
 
 mkTestExpectedRows :: WhereConditionTest -> [[(Maybe B8.ByteString, SqlValue)]]
 mkTestExpectedRows test =
@@ -133,7 +223,7 @@ mkTestExpectedRows test =
       , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
       ]
   in
-    map mkRow (expectedQueryResults test)
+    fmap mkRow (whereExpectedQueryResults test)
 
 runWhereConditionTest :: Pool Connection -> WhereConditionTest -> IO ()
 runWhereConditionTest pool test = do
@@ -150,7 +240,7 @@ runWhereConditionTest pool test = do
     Expr.queryExprToSql $
       Expr.queryExpr
         (Expr.selectColumns [fooColumn, barColumn])
-        (Expr.tableExpr exprTestTable (whereClause test))
+        (Expr.tableExpr exprTestTable (whereClause test) Nothing)
 
   rows <- traverse ExecResult.readRows result
   rows `shouldBe` Just (mkTestExpectedRows test)
@@ -171,4 +261,3 @@ dropAndRecreateTestTable :: Pool Connection -> IO ()
 dropAndRecreateTestTable pool = do
   RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
   RawSql.executeVoid pool (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
-

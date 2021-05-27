@@ -148,7 +148,7 @@ runRoundTripTest pool testCase = do
         Expr.queryExprToSql $
           Expr.queryExpr
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Expr.tableExpr testTable Nothing)
+            (Expr.tableExpr testTable Nothing Nothing)
 
     traverse readRows result
 

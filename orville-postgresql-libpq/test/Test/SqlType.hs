@@ -347,7 +347,7 @@ runDecodingTest pool test = do
   maybeResult <-
     RawSql.execute pool $
       Expr.queryExprToSql $
-        Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing)
+        Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
 
   case maybeResult of
     Nothing ->
@@ -361,4 +361,3 @@ dropAndRecreateTable :: Pool Connection -> String -> String -> IO ()
 dropAndRecreateTable pool tableName columnTypeDDL = do
   executeRawVoid pool (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
   executeRawVoid pool (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []
-

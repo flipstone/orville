@@ -7,7 +7,7 @@ test-all-logs
 dist-newstyle
 
 # Ignore TAGS file produced by emacs and vim.
-/TAGS
+TAGS
 session.vim
 
 # Ignore any local developer overrides to the docker-compose file
