@@ -25,6 +25,7 @@ module Database.Orville.PostgreSQL.Plan
   , apply
   , planMany
   , focusParam
+  , planEither
 
   -- * Bridges from other types into Plan
   , Op.AssertionFailed
@@ -33,6 +34,7 @@ module Database.Orville.PostgreSQL.Plan
   , planOperation
   ) where
 
+import           Data.Either (partitionEithers)
 import qualified Control.Monad.Catch as Catch
 
 import qualified Database.Orville.PostgreSQL.Core as Core
@@ -78,6 +80,10 @@ data Plan scope param result where
 
   PlanMany :: (forall manyScope. Plan manyScope param result)
            -> Plan scope [param] (Many param result)
+
+  PlanEither :: (forall leftScope. Plan leftScope leftParam leftResult)
+             -> (forall rightScope. Plan rightScope rightParam rightResult)
+             -> Plan scope (Either leftParam rightParam) (Either leftResult rightResult)
 
   Bind :: Plan scope param a
        -> (Planned scope a -> Plan scope param result)
@@ -327,6 +333,21 @@ focusParam :: (a -> b)
 focusParam focuser plan =
   chain (focuser <$> askParam) plan
 
+
+{-|
+  'planEither' lets you construct a plan that branches by executing a different
+  plan for the 'Left' and 'Right' sides of an 'Either' value. When used with a
+  single input parameter only one of the two plans will be used, based on the
+  input parameter. When used on multiple input parameters, each of the two
+  plans will be executed only once with all the 'Left' and 'Right' values
+  provided as input parameters respectively.
+-}
+planEither :: (forall leftScope. Plan leftScope leftParam leftResult)
+           -> (forall rightScope. Plan rightScope rightParam rightResult)
+           -> Plan scope (Either leftParam rightParam) (Either leftResult rightResult)
+planEither =
+  PlanEither
+
 {-|
   'bind' gives access to the results of a plan to use as input values to future
   plans. The plan result is given the input parameter to the provided function,
@@ -449,6 +470,14 @@ executeOne plan param =
     PlanMany manyPlan ->
       executeMany manyPlan param
 
+    PlanEither leftPlan rightPlan ->
+      case param of
+        Left leftParam ->
+          Left <$> executeOne leftPlan leftParam
+
+        Right rightParam ->
+          Right <$> executeOne rightPlan rightParam
+
     Bind intermPlan continue -> do
       interm <- executeOne intermPlan param
       executeOne
@@ -499,6 +528,24 @@ executeMany plan params =
           Many.fromKeys subParams (\k -> Many.lookup k allResults)
 
       pure $ Many.fromKeys params (Right . restrictResults)
+
+    PlanEither leftPlan rightPlan -> do
+      let
+        (leftParams, rightParams) = partitionEithers params
+
+      leftResults <- executeMany leftPlan leftParams
+      rightResults <- executeMany rightPlan rightParams
+
+      let
+        eitherResult eitherK =
+          case eitherK of
+            Left k ->
+              Left <$> Many.lookup k leftResults
+
+            Right k ->
+              Right <$> Many.lookup k rightResults
+
+      pure $ Many.fromKeys params eitherResult
 
     Bind intermPlan continue -> do
       interms <- executeMany intermPlan params
@@ -562,6 +609,9 @@ explainPlan mult plan =
 
     PlanMany manyPlan -> do
       explainPlan ExplainMany manyPlan
+
+    PlanEither leftPlan rightPlan ->
+      explainPlan mult leftPlan <> explainPlan mult rightPlan
 
     Bind intermPlan continue ->
       let
