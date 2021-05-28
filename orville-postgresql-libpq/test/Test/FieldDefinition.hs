@@ -150,19 +150,16 @@ runRoundTripTest pool testCase = do
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
             (Expr.tableExpr testTable Nothing Nothing)
 
-    traverse readRows result
+    readRows result
 
   let
     roundTripResult =
       case rows of
-        Just [[(_, sqlValue)]] ->
+        [[(_, sqlValue)]] ->
           Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
 
-        Just _ ->
+        _ ->
           Left ("Expected one row with one value in results, but got: " ++ show rows)
-
-        Nothing ->
-          Left "Query failed to run"
 
   roundTripResult === Right (Just value)
 

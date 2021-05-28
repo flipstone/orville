@@ -197,8 +197,8 @@ runOrderByTest pool test = do
         (Expr.selectColumns [fooColumn, barColumn])
         (Expr.tableExpr exprTestTable Nothing (orderByClause test))
 
-  rows <- traverse ExecResult.readRows result
-  rows `shouldBe` Just (mkOrderByTestExpectedRows test)
+  rows <- ExecResult.readRows result
+  rows `shouldBe` mkOrderByTestExpectedRows test
 
 data WhereConditionTest =
   WhereConditionTest
@@ -244,8 +244,8 @@ runWhereConditionTest pool test = do
         (Expr.selectColumns [fooColumn, barColumn])
         (Expr.tableExpr exprTestTable (whereClause test) Nothing)
 
-  rows <- traverse ExecResult.readRows result
-  rows `shouldBe` Just (mkTestExpectedRows test)
+  rows <- ExecResult.readRows result
+  rows `shouldBe` mkTestExpectedRows test
 
 testTable :: Expr.TableName
 testTable =

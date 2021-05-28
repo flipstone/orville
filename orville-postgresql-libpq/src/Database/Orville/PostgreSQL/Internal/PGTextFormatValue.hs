@@ -7,6 +7,7 @@ module Database.Orville.PostgreSQL.Internal.PGTextFormatValue
   , toBytesForLibPQ
   ) where
 
+import           Control.Exception (Exception)
 import qualified Data.ByteString as BS
 
 {-|
@@ -38,6 +39,8 @@ instance Eq PGTextFormatValue where
 data NULByteFoundError =
   NULByteFoundError
   deriving (Show, Eq)
+
+instance Exception NULByteFoundError where
 
 {-|
   Constructs a 'PGTextFormatValue' from the given bytes directly, without checking

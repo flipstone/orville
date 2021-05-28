@@ -178,7 +178,7 @@ intercalate separator parts =
   to read the documentation of 'Conn.executeRaw' for caveats and warnings.
   Use with caution.
 -}
-execute :: Pool Connection -> RawSql -> IO (Maybe LibPQ.Result)
+execute :: Pool Connection -> RawSql -> IO LibPQ.Result
 execute conn rawSql =
   let
     (sqlBytes, params) =

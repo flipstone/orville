@@ -1,7 +1,9 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Test.Connection
   ( connectionTree
   ) where
 
+import           Control.Exception (try)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as B8
 import           Data.Pool (Pool)
@@ -29,9 +31,9 @@ connectionTree pool =
           notNulBytes =
             Enc.encodeUtf8 text
 
-        result <-
+        value <-
           liftIO $ do
-            mbLibPQResult <-
+            result <-
               Connection.executeRaw
                 pool
                 (B8.pack "SELECT $1::text = $2::text")
@@ -39,9 +41,9 @@ connectionTree pool =
                 , Just $ PGTextFormatValue.unsafeFromByteString notNulBytes
                 ]
 
-            traverse (\r -> LibPQ.getvalue' r 0 0) mbLibPQResult
+            LibPQ.getvalue' result 0 0
 
-        result === Just (Just (B8.pack "t"))
+        value === Just (B8.pack "t")
 
     , testProperty "executeRaw returns error if nul byte is given using safe constructor" . HH.property $ do
         textBefore <- HH.forAll $ PGGen.pgText (Range.linear 0 32)
@@ -56,14 +58,20 @@ connectionTree pool =
               ]
 
         result <-
-          liftIO $ do
+          liftIO . try $ do
             Connection.executeRaw
               pool
               (B8.pack "SELECT $1::text")
               [ Just $ PGTextFormatValue.fromByteString bytesWithNul
               ]
 
-        result === Nothing
+        case result of
+          Left PGTextFormatValue.NULByteFoundError ->
+            HH.success
+
+          Right _ -> do
+            HH.footnote "Expected 'executeRow' to return failure, but it did not"
+            HH.failure
 
     , testProperty "executeRaw truncates values at the nul byte given using unsafe constructor" . HH.property $ do
         textBefore <- HH.forAll $ PGGen.pgText (Range.linear 0 32)
@@ -80,16 +88,43 @@ connectionTree pool =
               , Enc.encodeUtf8 textAfter
               ]
 
-        result <-
+        value <-
           liftIO $ do
-            mbLibPQResult <-
+            result <-
               Connection.executeRaw
                 pool
                 (B8.pack "SELECT $1::text")
                 [ Just $ PGTextFormatValue.unsafeFromByteString bytesWithNul
                 ]
 
-            traverse (\r -> LibPQ.getvalue' r 0 0) mbLibPQResult
+            LibPQ.getvalue' result 0 0
 
-        result === Just (Just bytesBefore)
+        value === Just bytesBefore
+
+    , -- Note: we only run this test once to cut down on the number of errors
+      -- printed out by the database server when running tests repeatedly.
+      testProperty "executeRaw returns error if invalid sql is given" . HH.withTests 1 . HH.property $ do
+        -- We generate non-empty queries here becaues libpq returns different
+        -- error details when an empty string is passed
+        randomText <- HH.forAll $ PGGen.pgText (Range.constant 1 16)
+
+        result <-
+          liftIO . try $ do
+            Connection.executeRaw
+              pool
+              (Enc.encodeUtf8 randomText)
+              []
+
+        case result of
+          Left err -> do
+            Connection.sqlExecutionErrorExecStatus err === LibPQ.FatalError
+
+            let
+              syntaxErrorState = B8.pack "42601"
+
+            Connection.sqlExecutionErrorSqlState err === Just syntaxErrorState
+
+          Right _ -> do
+            HH.footnote "Expected 'executeRow' to return failure, but it did not"
+            HH.failure
     ]

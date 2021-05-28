@@ -7,7 +7,7 @@ import qualified Data.ByteString.Char8 as B8
 import Data.Int (Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
-import Test.Tasty.Hspec (Spec, describe, it, shouldBe, expectationFailure)
+import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
 import Database.Orville.PostgreSQL.Connection (Connection, executeRawVoid)
 import Database.Orville.PostgreSQL.Internal.ExecutionResult (decodeRows)
@@ -344,18 +344,13 @@ runDecodingTest pool test = do
         tableName
         (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
 
-  maybeResult <-
+  result <-
     RawSql.execute pool $
       Expr.queryExprToSql $
         Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
 
-  case maybeResult of
-    Nothing ->
-      expectationFailure "select returned nothing"
-
-    Just res -> do
-      (maybeA:_) <- decodeRows res (sqlType test)
-      shouldBe maybeA (Just (expectedValue test))
+  (maybeA:_) <- decodeRows result (sqlType test)
+  shouldBe maybeA (Just (expectedValue test))
 
 dropAndRecreateTable :: Pool Connection -> String -> String -> IO ()
 dropAndRecreateTable pool tableName columnTypeDDL = do
