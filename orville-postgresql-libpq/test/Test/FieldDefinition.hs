@@ -111,7 +111,7 @@ utcTimeGen =
 
 dayGen :: HH.Gen Time.Day
 dayGen = do
-  year <- Gen.integral (Range.linearFrom 2000 1000 3000)
+  year <- Gen.integral (Range.linearFrom 2000 0 3000)
   month <- Gen.integral (Range.constant 1 12)
   day <- Gen.integral (Range.constant 1 (Time.gregorianMonthLength year month))
 
