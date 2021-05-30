@@ -69,9 +69,10 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , OrderByClause
   , orderByClauseToSql
   , orderByClause
-  , addOrderBy
-  , ascendingExpr
-  , descendingExpr
+  , appendOrderBy
+  , ascendingOrder
+  , descendingOrder
+  , orderByExpr
   ) where
 
 import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql)
@@ -192,7 +193,7 @@ orderByClauseToSql :: OrderByClause -> RawSql
 orderByClauseToSql (OrderByClause sql) = sql
 
 orderByClause :: OrderByExpr -> OrderByClause
-orderByClause orderByExpr = OrderByClause (RawSql.fromString "ORDER BY " <> orderByExprToSql orderByExpr)
+orderByClause expr = OrderByClause (RawSql.fromString "ORDER BY " <> orderByExprToSql expr)
 
 newtype OrderByExpr =
   OrderByExpr RawSql
@@ -200,14 +201,21 @@ newtype OrderByExpr =
 orderByExprToSql :: OrderByExpr -> RawSql
 orderByExprToSql (OrderByExpr sql) = sql
 
-ascendingExpr :: RawSql -> OrderByExpr
-ascendingExpr sql = OrderByExpr $ sql <> RawSql.fromString " ASC"
+newtype OrderByDirection =
+  OrderByDirection RawSql
 
-descendingExpr :: RawSql -> OrderByExpr
-descendingExpr sql = OrderByExpr $ sql <> RawSql.fromString " DESC"
+ascendingOrder :: OrderByDirection
+ascendingOrder = OrderByDirection $ RawSql.fromString "ASC"
 
-addOrderBy :: OrderByExpr -> OrderByExpr -> OrderByExpr
-addOrderBy (OrderByExpr a) (OrderByExpr b) = OrderByExpr (a <> RawSql.fromString ", " <> b)
+descendingOrder :: OrderByDirection
+descendingOrder = OrderByDirection $ RawSql.fromString "DESC"
+
+orderByExpr :: RawSql -> OrderByDirection -> OrderByExpr
+orderByExpr sql (OrderByDirection orderSql) =
+  OrderByExpr $ sql <> RawSql.fromString " " <> orderSql
+
+appendOrderBy :: OrderByExpr -> OrderByExpr -> OrderByExpr
+appendOrderBy (OrderByExpr a) (OrderByExpr b) = OrderByExpr (a <> RawSql.fromString ", " <> b)
 
 newtype ComparisonOperator =
   ComparisonOperator RawSql

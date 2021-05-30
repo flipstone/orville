@@ -123,8 +123,9 @@ orderBySpecs pool =
           , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
           , orderByClause =
               Just . Expr.orderByClause $
-                Expr.ascendingExpr
+                Expr.orderByExpr
                   (Expr.columnNameToSql barColumn)
+                  Expr.ascendingOrder
           }
 
     it "descendingExpr sorts a text column" $ do
@@ -134,8 +135,9 @@ orderBySpecs pool =
           , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
           , orderByClause =
               Just . Expr.orderByClause $
-                Expr.descendingExpr
+                Expr.orderByExpr
                   (Expr.columnNameToSql barColumn)
+                  Expr.descendingOrder
           }
 
     it "addOrderBy causes ordering on both columns" $ do
@@ -145,9 +147,9 @@ orderBySpecs pool =
           , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
           , orderByClause =
               Just . Expr.orderByClause $
-                Expr.addOrderBy
-                  (Expr.ascendingExpr (Expr.columnNameToSql barColumn))
-                  (Expr.descendingExpr (Expr.columnNameToSql fooColumn))
+                Expr.appendOrderBy
+                  (Expr.orderByExpr (Expr.columnNameToSql barColumn) Expr.ascendingOrder)
+                  (Expr.orderByExpr (Expr.columnNameToSql fooColumn) Expr.descendingOrder)
 
           }
 
