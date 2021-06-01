@@ -123,6 +123,11 @@ test_plan =
             QC.counterexample ("Expected: " ++ show leftAndRightEntityList) $
             QC.counterexample ("Actual: " ++ show entitiesFound) $
             entitiesFound == leftAndRightEntityList
+
+      , testRootPlan "planMaybe" run $
+          Plan.bind Plan.askParam $ \param ->
+          Plan.using (Just <$> param) $
+          Plan.planMaybe (Plan.findOne rootTable rootIdField)
       ]
 
 -- mkTreeRecords projects a Tree into the Root, Branch and Leaf entities

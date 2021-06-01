@@ -26,6 +26,7 @@ module Database.Orville.PostgreSQL.Plan
   , planMany
   , focusParam
   , planEither
+  , planMaybe
 
   -- * Bridges from other types into Plan
   , Op.AssertionFailed
@@ -347,6 +348,16 @@ planEither :: (forall leftScope. Plan leftScope leftParam leftResult)
            -> Plan scope (Either leftParam rightParam) (Either leftResult rightResult)
 planEither =
   PlanEither
+
+{-|
+  'planMaybe' lifts a plan so both its param and result become 'Maybe's. This is
+  useful when modifying an existing plan to deal with optionality. Writing just
+  one plan can then easily produce both the required and optional versions.
+-}
+planMaybe :: (forall s. Plan s a b) -> Plan scope (Maybe a) (Maybe b)
+planMaybe plan =
+  focusParam (maybe (Left ()) Right) $
+    either id id <$> planEither (pure Nothing) (Just <$> plan)
 
 {-|
   'bind' gives access to the results of a plan to use as input values to future
