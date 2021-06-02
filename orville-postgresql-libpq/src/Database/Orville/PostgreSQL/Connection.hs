@@ -260,7 +260,7 @@ instance Show ConnectionError where
               Left decodingErr ->
                 "Error decoding libPQ messages as utf8: " <> show decodingErr
      in
-      connectionErrorMessage err <> libPQErrorMsg
+      connectionErrorMessage err <> ": " <> libPQErrorMsg
 
 instance Exception ConnectionError
 
