@@ -1,6 +1,6 @@
 {-|
 Module    : Database.Orville.PostgreSQL.SqlType
-Copyright : Flipstone Technology Partners 2016-2020
+Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}

@@ -1,6 +1,6 @@
 {-|
 Module    : Database.Orville.PostgreSQL.SqlType
-Copyright : Flipstone Technology Partners 2016-2020
+Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 
@@ -335,4 +335,3 @@ maybeConvertSqlType bToA aToB sqlType =
 convertSqlType :: (b -> a) -> (a -> b) -> SqlType a -> SqlType b
 convertSqlType bToA aToB =
   maybeConvertSqlType bToA (Just . aToB)
-

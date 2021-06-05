@@ -1,6 +1,6 @@
 {-|
 Module    : Database.Orville.PostgreSQL.Connection
-Copyright : Flipstone Technology Partners 2016-2020
+Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 
@@ -278,4 +278,3 @@ data ConnectionUsedAfterCloseError =
   deriving (Show)
 
 instance Exception ConnectionUsedAfterCloseError
-

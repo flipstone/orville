@@ -1,3 +1,4 @@
+---
 name: orville-postgresql-libpq
 version: '0.9.0.0'
 synopsis: ORM
@@ -43,6 +44,7 @@ library:
           - -Wincomplete-record-updates
           - -Wmissing-local-signatures
           - -Wmissing-export-lists
+          - -Wmissing-import-lists
           - -Wnoncanonical-monad-instances
           - -Wredundant-constraints
           - -Wpartial-fields

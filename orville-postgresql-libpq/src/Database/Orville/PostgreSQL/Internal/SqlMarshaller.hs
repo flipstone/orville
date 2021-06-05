@@ -23,7 +23,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (catMaybes)
 
-import           Database.Orville.PostgreSQL.Internal.ExecutionResult (ExecutionResult, Column(..), Row(..))
+import           Database.Orville.PostgreSQL.Internal.ExecutionResult (ExecutionResult, Column(Column), Row(Row))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
 import           Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldName, fieldValueFromSqlValue)
 
