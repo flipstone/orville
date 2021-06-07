@@ -18,4 +18,4 @@ columnNameToSql :: ColumnName -> RawSql.RawSql
 columnNameToSql (ColumnName sql) = sql
 
 rawColumnName :: String -> ColumnName
-rawColumnName = ColumnName . fromString
+rawColumnName = ColumnName . RawSql.fromString

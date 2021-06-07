@@ -42,7 +42,7 @@ insertRowValues :: [RowValues] -> InsertSource
 insertRowValues rows =
   InsertSource $
     RawSql.fromString "VALUES "
-    <> RawSql.intercalate (fromString ",") (fmap rowValuesToSql rows)
+    <> RawSql.intercalate (RawSql.fromString ",") (fmap rowValuesToSql rows)
 
 insertSqlValues :: [[SqlValue]] -> InsertSource
 insertSqlValues rows =
