@@ -11,18 +11,18 @@ module Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr
   , orderByExpr
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection (OrderByDirection, orderByDirectionToSql)
-import Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql, fromString)
+import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection (OrderByDirection, orderByDirectionToSql)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql                        as RawSql
 
-newtype OrderByExpr = OrderByExpr RawSql
+newtype OrderByExpr = OrderByExpr RawSql.RawSql
 
-orderByExprToSql :: OrderByExpr -> RawSql
+orderByExprToSql :: OrderByExpr -> RawSql.RawSql
 orderByExprToSql (OrderByExpr sql) = sql
 
 appendOrderBy :: OrderByExpr -> OrderByExpr -> OrderByExpr
 appendOrderBy (OrderByExpr a) (OrderByExpr b) =
-  OrderByExpr (a <> fromString ", " <> b)
+  OrderByExpr (a <> RawSql.fromString ", " <> b)
 
-orderByExpr :: RawSql -> OrderByDirection -> OrderByExpr
+orderByExpr :: RawSql.RawSql -> OrderByDirection -> OrderByExpr
 orderByExpr sql orderSql =
-  OrderByExpr $ sql <> fromString " " <> orderByDirectionToSql orderSql
+  OrderByExpr $ sql <> RawSql.fromString " " <> orderByDirectionToSql orderSql

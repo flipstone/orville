@@ -18,35 +18,35 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
   , columnLessThanOrEqualTo
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name                     (ColumnName)
-import Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, comparisonOperatorToSql, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp)
-import Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand  (RowValuePredicand, columnReference, comparisonValue, rowValuePredicandToSql)
-import Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql, fromString)
-import Database.Orville.PostgreSQL.Internal.SqlValue                      (SqlValue)
+import           Database.Orville.PostgreSQL.Internal.Expr.Name                     (ColumnName)
+import           Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, comparisonOperatorToSql, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp)
+import           Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand  (RowValuePredicand, columnReference, comparisonValue, rowValuePredicandToSql)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql                        as RawSql
+import           Database.Orville.PostgreSQL.Internal.SqlValue                      (SqlValue)
 
-newtype BooleanExpr = BooleanExpr RawSql
+newtype BooleanExpr = BooleanExpr RawSql.RawSql
 
-booleanExprToSql :: BooleanExpr -> RawSql
+booleanExprToSql :: BooleanExpr -> RawSql.RawSql
 booleanExprToSql (BooleanExpr sql) = sql
 
 orExpr :: BooleanExpr -> BooleanExpr -> BooleanExpr
 orExpr left right =
   BooleanExpr $
     booleanExprToSql left
-    <> fromString " OR "
+    <> RawSql.fromString " OR "
     <> booleanExprToSql right
 
 andExpr :: BooleanExpr -> BooleanExpr -> BooleanExpr
 andExpr left right =
   BooleanExpr $
     booleanExprToSql left
-    <> fromString " AND "
+    <> RawSql.fromString " AND "
     <> booleanExprToSql right
 
 parenthesized :: BooleanExpr -> BooleanExpr
 parenthesized expr =
   BooleanExpr $
-    fromString "(" <> booleanExprToSql expr <> fromString ")"
+    RawSql.fromString "(" <> booleanExprToSql expr <> RawSql.fromString ")"
 
 comparison :: RowValuePredicand
            -> ComparisonOperator
@@ -55,9 +55,9 @@ comparison :: RowValuePredicand
 comparison left op right =
   BooleanExpr $
     rowValuePredicandToSql left
-    <> fromString " "
+    <> RawSql.fromString " "
     <> comparisonOperatorToSql op
-    <> fromString " "
+    <> RawSql.fromString " "
     <> rowValuePredicandToSql right
 
 columnEquals :: ColumnName -> SqlValue -> BooleanExpr

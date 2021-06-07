@@ -15,34 +15,34 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
   , lessThanOrEqualsOp
   ) where
 
-import Database.Orville.PostgreSQL.Internal.RawSql (RawSql, fromString)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype ComparisonOperator =
-  ComparisonOperator RawSql
+  ComparisonOperator RawSql.RawSql
 
-comparisonOperatorToSql :: ComparisonOperator -> RawSql
+comparisonOperatorToSql :: ComparisonOperator -> RawSql.RawSql
 comparisonOperatorToSql (ComparisonOperator sql) = sql
 
 equalsOp :: ComparisonOperator
 equalsOp =
-  ComparisonOperator (fromString "=")
+  ComparisonOperator (RawSql.fromString "=")
 
 notEqualsOp :: ComparisonOperator
 notEqualsOp =
-  ComparisonOperator (fromString "<>")
+  ComparisonOperator (RawSql.fromString "<>")
 
 greaterThanOp :: ComparisonOperator
 greaterThanOp =
-  ComparisonOperator (fromString ">")
+  ComparisonOperator (RawSql.fromString ">")
 
 lessThanOp :: ComparisonOperator
 lessThanOp =
-  ComparisonOperator (fromString "<")
+  ComparisonOperator (RawSql.fromString "<")
 
 greaterThanOrEqualsOp :: ComparisonOperator
 greaterThanOrEqualsOp =
-  ComparisonOperator (fromString ">=")
+  ComparisonOperator (RawSql.fromString ">=")
 
 lessThanOrEqualsOp :: ComparisonOperator
 lessThanOrEqualsOp =
-  ComparisonOperator (fromString "<=")
+  ComparisonOperator (RawSql.fromString "<=")

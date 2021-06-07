@@ -11,22 +11,22 @@ module Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList
   , selectStar
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
-import Database.Orville.PostgreSQL.Internal.RawSql    (RawSql, fromString, intercalate)
+import           Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql    as RawSql
 
-newtype SelectList = SelectList RawSql
+newtype SelectList = SelectList RawSql.RawSql
 
 selectStar :: SelectList
 selectStar =
-  SelectList (fromString "*")
+  SelectList (RawSql.fromString "*")
 
 selectColumns :: [ColumnName] -> SelectList
 selectColumns columnNames =
   SelectList $
-    intercalate
-      (fromString ",")
+    RawSql.intercalate
+      (RawSql.fromString ",")
       (fmap columnNameToSql columnNames)
 
-selectListToSql :: SelectList -> RawSql
+selectListToSql :: SelectList -> RawSql.RawSql
 selectListToSql (SelectList sql) =
   sql

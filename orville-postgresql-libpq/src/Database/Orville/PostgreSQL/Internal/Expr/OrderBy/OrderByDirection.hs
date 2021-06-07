@@ -11,15 +11,15 @@ module Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection
   , orderByDirectionToSql
   ) where
 
-import Database.Orville.PostgreSQL.Internal.RawSql (RawSql, fromString)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
-newtype OrderByDirection = OrderByDirection RawSql
+newtype OrderByDirection = OrderByDirection RawSql.RawSql
 
 ascendingOrder :: OrderByDirection
-ascendingOrder = OrderByDirection $ fromString "ASC"
+ascendingOrder = OrderByDirection $ RawSql.fromString "ASC"
 
 descendingOrder :: OrderByDirection
-descendingOrder = OrderByDirection $ fromString "DESC"
+descendingOrder = OrderByDirection $ RawSql.fromString "DESC"
 
-orderByDirectionToSql :: OrderByDirection -> RawSql
+orderByDirectionToSql :: OrderByDirection -> RawSql.RawSql
 orderByDirectionToSql (OrderByDirection sql) = sql

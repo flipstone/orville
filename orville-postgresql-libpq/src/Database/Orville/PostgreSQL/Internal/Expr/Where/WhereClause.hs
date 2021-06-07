@@ -10,16 +10,16 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause
   , whereClause
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr (BooleanExpr, booleanExprToSql)
-import Database.Orville.PostgreSQL.Internal.RawSql                 (RawSql, fromString)
+import           Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr (BooleanExpr, booleanExprToSql)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql                 as RawSql
 
 newtype WhereClause =
-  WhereClause RawSql
+  WhereClause RawSql.RawSql
 
-whereClauseToSql :: WhereClause -> RawSql
+whereClauseToSql :: WhereClause -> RawSql.RawSql
 whereClauseToSql (WhereClause sql) = sql
 
 whereClause :: BooleanExpr -> WhereClause
 whereClause booleanExpr =
   WhereClause $
-    fromString "WHERE " <> booleanExprToSql booleanExpr
+    RawSql.fromString "WHERE " <> booleanExprToSql booleanExpr
