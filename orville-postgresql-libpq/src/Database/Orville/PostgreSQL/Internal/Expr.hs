@@ -50,9 +50,9 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , bigInt
   , serial
   , int
-  , FieldDefinition
-  , fieldDefinition
-  , fieldDefinitionToSql
+  , ColumnDefinition
+  , columnDefinition
+  , columnDefinitionToSql
   , OrderByClause
   , orderByClauseToSql
   , orderByClause
@@ -62,7 +62,7 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , orderByExpr
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.FieldDefinition
+import Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition
 import Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
 import Database.Orville.PostgreSQL.Internal.Expr.Name
 import Database.Orville.PostgreSQL.Internal.Expr.OrderBy

@@ -8,5 +8,5 @@ module Database.Orville.PostgreSQL.Internal.Expr.Name
   ( module Export
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name.ColumnName as Export
-import Database.Orville.PostgreSQL.Internal.Expr.Name.TableName  as Export
+import           Database.Orville.PostgreSQL.Internal.Expr.Name.ColumnName as Export
+import           Database.Orville.PostgreSQL.Internal.Expr.Name.TableName  as Export

@@ -15,10 +15,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
   , lessThanOrEqualsOp
   ) where
 
-import Database.Orville.PostgreSQL.Internal.RawSql
-  ( RawSql
-  , fromString
-  )
+import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql,
+                                                              fromString)
 
 newtype ComparisonOperator =
   ComparisonOperator RawSql

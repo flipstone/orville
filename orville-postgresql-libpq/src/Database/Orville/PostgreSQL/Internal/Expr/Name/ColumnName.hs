@@ -10,10 +10,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.Name.ColumnName
   , columnNameToSql
   ) where
 
-import Database.Orville.PostgreSQL.Internal.RawSql
-  ( RawSql
-  , fromString
-  )
+import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql,
+                                                              fromString)
 
 newtype ColumnName = ColumnName RawSql
 

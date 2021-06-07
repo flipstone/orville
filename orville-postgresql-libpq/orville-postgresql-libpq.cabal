@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8ed22e76da1330b92b5dc127f227f33ab231a54d7ad7b7cb28c0c3577ac718b3
+-- hash: 9516985b9156ada301ab82366a5bc72d14ab0e75e8a723a113910790c31c4685
 
 name:           orville-postgresql-libpq
 version:        0.9.0.0
@@ -41,7 +41,7 @@ library
       Database.Orville.PostgreSQL.Internal.SqlType
       Database.Orville.PostgreSQL.Internal.SqlValue
   other-modules:
-      Database.Orville.PostgreSQL.Internal.Expr.FieldDefinition
+      Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition
       Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
       Database.Orville.PostgreSQL.Internal.Expr.Name
       Database.Orville.PostgreSQL.Internal.Expr.Name.ColumnName

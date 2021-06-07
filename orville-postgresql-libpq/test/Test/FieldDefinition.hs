@@ -16,7 +16,6 @@ import           Test.Tasty.Hedgehog (testProperty)
 import           Database.Orville.PostgreSQL.Connection (Connection)
 import           Database.Orville.PostgreSQL.Internal.ExecutionResult (readRows)
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import           Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull)
 import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -123,7 +122,7 @@ timeOfDayGen =
 
 data RoundTripTest a =
   RoundTripTest
-    { roundTripFieldDef :: FieldDefinition NotNull a
+    { roundTripFieldDef :: FieldDef.FieldDefinition FieldDef.NotNull a
     , roundTripGen :: HH.Gen a
     }
 
@@ -167,7 +166,7 @@ testTable :: Expr.TableName
 testTable =
   Expr.rawTableName "field_definition_test"
 
-dropAndRecreateTestTable :: FieldDefinition NotNull a -> Pool Connection -> IO ()
+dropAndRecreateTestTable :: FieldDef.FieldDefinition FieldDef.NotNull a -> Pool Connection -> IO ()
 dropAndRecreateTestTable fieldDef pool = do
   RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
 
@@ -175,5 +174,5 @@ dropAndRecreateTestTable fieldDef pool = do
     RawSql.fromString "CREATE TABLE "
     <> Expr.tableNameToSql testTable
     <> RawSql.fromString "("
-    <> Expr.fieldDefinitionToSql (FieldDef.toSqlExpr fieldDef)
+    <> Expr.columnDefinitionToSql (FieldDef.toSqlExpr fieldDef)
     <> RawSql.fromString ")"

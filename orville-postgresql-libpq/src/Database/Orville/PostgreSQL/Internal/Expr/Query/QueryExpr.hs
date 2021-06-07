@@ -10,18 +10,12 @@ module Database.Orville.PostgreSQL.Internal.Expr.Query.QueryExpr
   , queryExpr
   ) where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList
-  ( SelectList
-  , selectListToSql
-  )
-import Database.Orville.PostgreSQL.Internal.Expr.Query.TableExpr
-  ( TableExpr
-  , tableExprToSql
-  )
-import Database.Orville.PostgreSQL.Internal.RawSql
-  ( RawSql
-  , fromString
-  )
+import           Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList (SelectList,
+                                                                             selectListToSql)
+import           Database.Orville.PostgreSQL.Internal.Expr.Query.TableExpr  (TableExpr,
+                                                                             tableExprToSql)
+import           Database.Orville.PostgreSQL.Internal.RawSql                (RawSql,
+                                                                             fromString)
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
 newtype QueryExpr =

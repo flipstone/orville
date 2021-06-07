@@ -109,9 +109,9 @@ fieldColumnName =
   TODO: this is NotNull at the momentbecause I haven't made it handle adding the
   NULL modifier to the DDL yet
 -}
-toSqlExpr :: FieldDefinition NotNull a -> Expr.FieldDefinition
+toSqlExpr :: FieldDefinition NotNull a -> Expr.ColumnDefinition
 toSqlExpr fieldDef =
-  Expr.fieldDefinition
+  Expr.columnDefinition
     (fieldColumnName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
 
