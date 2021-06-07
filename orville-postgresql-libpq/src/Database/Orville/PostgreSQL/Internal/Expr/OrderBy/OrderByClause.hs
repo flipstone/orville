@@ -10,8 +10,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByClause
   , orderByClause
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr (OrderByExpr, orderByExprToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql                   (RawSql, fromString)
+import Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr (OrderByExpr, orderByExprToSql)
+import Database.Orville.PostgreSQL.Internal.RawSql                   (RawSql, fromString)
 
 newtype OrderByClause =
   OrderByClause RawSql

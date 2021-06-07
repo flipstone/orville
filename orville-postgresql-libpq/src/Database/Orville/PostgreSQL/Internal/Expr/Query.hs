@@ -8,6 +8,6 @@ module Database.Orville.PostgreSQL.Internal.Expr.Query
   ( module Export
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Query.QueryExpr  as Export
-import           Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList as Export
-import           Database.Orville.PostgreSQL.Internal.Expr.Query.TableExpr  as Export
+import Database.Orville.PostgreSQL.Internal.Expr.Query.QueryExpr  as Export
+import Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList as Export
+import Database.Orville.PostgreSQL.Internal.Expr.Query.TableExpr  as Export

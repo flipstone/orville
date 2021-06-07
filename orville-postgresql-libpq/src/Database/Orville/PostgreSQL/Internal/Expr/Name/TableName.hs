@@ -10,7 +10,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.Name.TableName
   , rawTableName
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql, fromString)
+import Database.Orville.PostgreSQL.Internal.RawSql (RawSql, fromString)
 
 newtype TableName =
   TableName RawSql

@@ -8,6 +8,6 @@ module Database.Orville.PostgreSQL.Internal.Expr.OrderBy
   ( module Export
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByClause    as Export
-import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection as Export
-import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr      as Export
+import Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByClause    as Export
+import Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection as Export
+import Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr      as Export

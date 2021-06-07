@@ -8,6 +8,6 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where
   ( module Export
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr        as Export
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator as Export
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause        as Export
+import Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr        as Export
+import Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator as Export
+import Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause        as Export

@@ -18,17 +18,11 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
   , columnLessThanOrEqualTo
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Name                     (ColumnName)
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator,
-                                                                                     comparisonOperatorToSql, equalsOp,
-                                                                                     greaterThanOp,
-                                                                                     greaterThanOrEqualsOp, lessThanOp,
-                                                                                     lessThanOrEqualsOp)
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand  (RowValuePredicand, columnReference,
-                                                                                     comparisonValue,
-                                                                                     rowValuePredicandToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql, fromString)
-import           Database.Orville.PostgreSQL.Internal.SqlValue                      (SqlValue)
+import Database.Orville.PostgreSQL.Internal.Expr.Name                     (ColumnName)
+import Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, comparisonOperatorToSql, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp)
+import Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand  (RowValuePredicand, columnReference, comparisonValue, rowValuePredicandToSql)
+import Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql, fromString)
+import Database.Orville.PostgreSQL.Internal.SqlValue                      (SqlValue)
 
 newtype BooleanExpr = BooleanExpr RawSql
 

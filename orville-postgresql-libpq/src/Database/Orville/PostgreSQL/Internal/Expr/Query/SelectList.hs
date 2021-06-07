@@ -11,8 +11,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList
   , selectStar
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql    (RawSql, fromString, intercalate)
+import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import Database.Orville.PostgreSQL.Internal.RawSql    (RawSql, fromString, intercalate)
 
 newtype SelectList = SelectList RawSql
 
