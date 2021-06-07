@@ -10,10 +10,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause
   , whereClause
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr (BooleanExpr,
-                                                                              booleanExprToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql                 (RawSql,
-                                                                              fromString)
+import           Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr (BooleanExpr, booleanExprToSql)
+import           Database.Orville.PostgreSQL.Internal.RawSql                 (RawSql, fromString)
 
 newtype WhereClause =
   WhereClause RawSql

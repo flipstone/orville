@@ -10,14 +10,10 @@ module Database.Orville.PostgreSQL.Internal.Expr.Query.TableExpr
   , tableExprToSql
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Name              (TableName,
-                                                                              tableNameToSql)
-import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy           (OrderByClause,
-                                                                              orderByClauseToSql)
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause (WhereClause,
-                                                                              whereClauseToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql                 (RawSql,
-                                                                              fromString)
+import           Database.Orville.PostgreSQL.Internal.Expr.Name              (TableName, tableNameToSql)
+import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy           (OrderByClause, orderByClauseToSql)
+import           Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause (WhereClause, whereClauseToSql)
+import           Database.Orville.PostgreSQL.Internal.RawSql                 (RawSql, fromString)
 
 newtype TableExpr =
   TableExpr RawSql

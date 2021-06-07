@@ -23,9 +23,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition
   , int
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName,
-                                                                 columnNameToSql)
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+import           Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import qualified Database.Orville.PostgreSQL.Internal.RawSql    as RawSql
 
 newtype ColumnDefinition =
   ColumnDefinition RawSql.RawSql

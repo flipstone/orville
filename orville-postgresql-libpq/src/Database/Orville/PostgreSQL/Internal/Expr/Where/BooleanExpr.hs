@@ -20,18 +20,14 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
 
 import           Database.Orville.PostgreSQL.Internal.Expr.Name                     (ColumnName)
 import           Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator,
-                                                                                     comparisonOperatorToSql,
-                                                                                     equalsOp,
+                                                                                     comparisonOperatorToSql, equalsOp,
                                                                                      greaterThanOp,
-                                                                                     greaterThanOrEqualsOp,
-                                                                                     lessThanOp,
+                                                                                     greaterThanOrEqualsOp, lessThanOp,
                                                                                      lessThanOrEqualsOp)
-import           Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand  (RowValuePredicand,
-                                                                                     columnReference,
+import           Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand  (RowValuePredicand, columnReference,
                                                                                      comparisonValue,
                                                                                      rowValuePredicandToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql,
-                                                                                     fromString)
+import           Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql, fromString)
 import           Database.Orville.PostgreSQL.Internal.SqlValue                      (SqlValue)
 
 newtype BooleanExpr = BooleanExpr RawSql

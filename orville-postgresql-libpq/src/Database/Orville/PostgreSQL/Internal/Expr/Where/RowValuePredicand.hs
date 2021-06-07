@@ -11,10 +11,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand
   , rowValuePredicandToSql
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName,
-                                                                 columnNameToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql    (RawSql,
-                                                                 parameter)
+import           Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import           Database.Orville.PostgreSQL.Internal.RawSql    (RawSql, parameter)
 import           Database.Orville.PostgreSQL.Internal.SqlValue  (SqlValue)
 
 newtype RowValuePredicand = RowValuePredicand RawSql

@@ -11,8 +11,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection
   , orderByDirectionToSql
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql,
-                                                              fromString)
+import           Database.Orville.PostgreSQL.Internal.RawSql (RawSql, fromString)
 
 newtype OrderByDirection = OrderByDirection RawSql
 

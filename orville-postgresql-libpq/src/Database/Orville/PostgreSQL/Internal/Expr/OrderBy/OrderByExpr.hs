@@ -13,8 +13,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr
 
 import           Database.Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection (OrderByDirection,
                                                                                      orderByDirectionToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql,
-                                                                                     fromString)
+import           Database.Orville.PostgreSQL.Internal.RawSql                        (RawSql, fromString)
 
 newtype OrderByExpr = OrderByExpr RawSql
 

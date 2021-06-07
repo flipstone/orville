@@ -12,12 +12,8 @@ module Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
   , insertSqlValues
   ) where
 
-import           Database.Orville.PostgreSQL.Internal.Expr.Name (TableName,
-                                                                 tableNameToSql)
-import           Database.Orville.PostgreSQL.Internal.RawSql    (RawSql,
-                                                                 fromString,
-                                                                 intercalate,
-                                                                 parameter)
+import           Database.Orville.PostgreSQL.Internal.Expr.Name (TableName, tableNameToSql)
+import           Database.Orville.PostgreSQL.Internal.RawSql    (RawSql, fromString, intercalate, parameter)
 import           Database.Orville.PostgreSQL.Internal.SqlValue  (SqlValue)
 
 newtype InsertExpr =
