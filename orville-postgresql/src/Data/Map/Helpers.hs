@@ -16,7 +16,7 @@ groupBy keyFunc = groupBy' mkEntry
     mkEntry a = (keyFunc a, a)
 
 groupBy' :: Ord k => (a -> (k, v)) -> [a] -> Map.Map k [v]
-groupBy' mkEntry as = Map.fromListWith (++) (map mkListEntry as)
+groupBy' mkEntry as = Map.fromListWith (flip (++)) (map mkListEntry as)
   where
     mkListEntry a =
       let (k, v) = mkEntry a
