@@ -1,9 +1,0 @@
-#!/usr/bin/env sh
-
-docker-compose \
-  -f docker-compose.tools.yml \
-  exec \
-  -T \
-  ide \
-  hindent
-
