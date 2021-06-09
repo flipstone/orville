@@ -192,7 +192,7 @@ planOperation =
   this case. If the plan is executed with multiple inputs the same set of all
   the results will be used as the results for each of the input parameters.
 -}
-planSelect :: Select row -> Plan scope param [row]
+planSelect :: Select row -> Plan scope () [row]
 planSelect select =
   planOperation (Op.findSelect select)
 
