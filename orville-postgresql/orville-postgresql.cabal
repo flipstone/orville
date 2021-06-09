@@ -1,0 +1,220 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: e34e5e3d3845b1bf0af652e134fb3eb41ed6fad63f53d3c103fa5cb71b7eecd6
+
+name:           orville-postgresql
+version:        0.9.0.0
+synopsis:       ORM
+description:    ORM library for PostgreSQL
+category:       Database
+author:         Flipstone Technology Partners
+maintainer:     development@flipstone.com
+license:        MIT
+license-file:   LICENSE
+tested-with:    GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: git@github.com:flipstone/orville.git
+
+library
+  exposed-modules:
+      Database.Orville.PostgreSQL
+      Database.Orville.PostgreSQL.Conduit
+      Database.Orville.PostgreSQL.Connection
+      Database.Orville.PostgreSQL.Core
+      Database.Orville.PostgreSQL.Expr
+      Database.Orville.PostgreSQL.MonadBaseControl
+      Database.Orville.PostgreSQL.MonadUnliftIO
+      Database.Orville.PostgreSQL.Popper
+      Database.Orville.PostgreSQL.Plan
+      Database.Orville.PostgreSQL.Plan.Explanation
+      Database.Orville.PostgreSQL.Plan.Many
+      Database.Orville.PostgreSQL.Plan.Operation
+      Database.Orville.PostgreSQL.Raw
+      Database.Orville.PostgreSQL.ResourceT
+      Database.Orville.PostgreSQL.Select
+      Database.Orville.PostgreSQL.Trigger
+  other-modules:
+      Data.Map.Helpers
+      Database.Orville.PostgreSQL.Internal.ConstraintDefinition
+      Database.Orville.PostgreSQL.Internal.Execute
+      Database.Orville.PostgreSQL.Internal.Expr
+      Database.Orville.PostgreSQL.Internal.Expr.Expr
+      Database.Orville.PostgreSQL.Internal.Expr.NameExpr
+      Database.Orville.PostgreSQL.Internal.Expr.SelectExpr
+      Database.Orville.PostgreSQL.Internal.Expr.WhereExpr
+      Database.Orville.PostgreSQL.Internal.FieldDefinition
+      Database.Orville.PostgreSQL.Internal.FieldUpdate
+      Database.Orville.PostgreSQL.Internal.FromClause
+      Database.Orville.PostgreSQL.Internal.FromSql
+      Database.Orville.PostgreSQL.Internal.GroupBy
+      Database.Orville.PostgreSQL.Internal.IndexDefinition
+      Database.Orville.PostgreSQL.Internal.MappendCompat
+      Database.Orville.PostgreSQL.Internal.MigrateConstraint
+      Database.Orville.PostgreSQL.Internal.MigrateIndex
+      Database.Orville.PostgreSQL.Internal.MigrateSchema
+      Database.Orville.PostgreSQL.Internal.MigrateSequence
+      Database.Orville.PostgreSQL.Internal.MigrateTable
+      Database.Orville.PostgreSQL.Internal.MigrationError
+      Database.Orville.PostgreSQL.Internal.MigrationPlan
+      Database.Orville.PostgreSQL.Internal.Monad
+      Database.Orville.PostgreSQL.Internal.OrderBy
+      Database.Orville.PostgreSQL.Internal.PrimaryKey
+      Database.Orville.PostgreSQL.Internal.QueryCache
+      Database.Orville.PostgreSQL.Internal.QueryKey
+      Database.Orville.PostgreSQL.Internal.RelationalMap
+      Database.Orville.PostgreSQL.Internal.SchemaState
+      Database.Orville.PostgreSQL.Internal.Select
+      Database.Orville.PostgreSQL.Internal.SelectOptions
+      Database.Orville.PostgreSQL.Internal.Sql
+      Database.Orville.PostgreSQL.Internal.SqlType
+      Database.Orville.PostgreSQL.Internal.TableDefinition
+      Database.Orville.PostgreSQL.Internal.Trigger
+      Database.Orville.PostgreSQL.Internal.Types
+      Database.Orville.PostgreSQL.Internal.Where
+      Database.Orville.PostgreSQL.Pagination
+      Paths_orville_postgresql
+  hs-source-dirs:
+      src
+  default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
+  ghc-options: -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  build-depends:
+      HDBC >=2.4
+    , HDBC-postgresql >=2.3
+    , base >=4.8 && <5
+    , bytestring
+    , conduit >=1.2 && <1.4
+    , containers >=0.5
+    , convertible >=1.1
+    , dlist >=0.7
+    , exceptions >=0.8
+    , lifted-base >=0.2
+    , monad-control >=1.0
+    , mtl >=2.2
+    , profunctors >=5.2
+    , resource-pool >=0.2
+    , resourcet >=1.1
+    , safe
+    , text
+    , time >=1.5
+    , transformers >=0.4
+    , transformers-base >=0.4
+    , unliftio-core >=0.1
+  default-language: Haskell2010
+
+executable orville-sample-exe
+  main-is: Main.hs
+  other-modules:
+      Example.Data.Major
+      Example.Data.Student
+      Example.Schema.Student
+      Example.SchemaStudent
+      Paths_orville_postgresql
+  hs-source-dirs:
+      sample-project
+  default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
+  ghc-options: -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      HDBC >=2.4
+    , HDBC-postgresql >=2.3
+    , base >=4.8 && <5
+    , bytestring
+    , conduit >=1.2 && <1.4
+    , containers >=0.5
+    , convertible >=1.1
+    , dlist >=0.7
+    , exceptions >=0.8
+    , lifted-base >=0.2
+    , monad-control >=1.0
+    , mtl >=2.2
+    , orville-postgresql
+    , profunctors >=5.2
+    , resource-pool >=0.2
+    , resourcet >=1.1
+    , safe
+    , text
+    , time >=1.5
+    , transformers >=0.4
+    , transformers-base >=0.4
+    , unliftio-core >=0.1
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Driver.hs
+  other-modules:
+      AppManagedEntity.CrudTest
+      AppManagedEntity.Data.Virus
+      AppManagedEntity.Schema
+      AppManagedEntity.Schema.Virus
+      CompositePrimaryKey.CrudTest
+      CompositePrimaryKey.Data.Virus
+      CompositePrimaryKey.Schema
+      CompositePrimaryKey.Schema.Virus
+      ConduitTest
+      EntityWrapper.CrudTest
+      EntityWrapper.Data.Entity
+      EntityWrapper.Data.Virus
+      EntityWrapper.Schema
+      EntityWrapper.Schema.Virus
+      ErrorsTest
+      Migrations.Entity
+      Migrations.MigrateTest
+      MonadBaseControlTest
+      OptionalMap.CrudTest
+      OptionalMap.Entity
+      OrderByTest
+      ParameterizedEntity.CrudTest
+      ParameterizedEntity.Data.Virus
+      ParameterizedEntity.Schema
+      ParameterizedEntity.Schema.Virus
+      PlanTest
+      PopperTest
+      StrangeFieldNames.CrudTest
+      StrangeFieldNames.Entity
+      TestDB
+      TransactionTest
+      TriggerTest
+      UnliftIOTest
+      WhereConditionTest
+      Paths_orville_postgresql
+  hs-source-dirs:
+      test
+  default-extensions: GeneralizedNewtypeDeriving MultiParamTypeClasses
+  ghc-options: -Wall -fno-warn-orphans -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates
+  build-depends:
+      HDBC >=2.4
+    , HDBC-postgresql >=2.3
+    , base >=4.8 && <5
+    , bytestring
+    , conduit >=1.2 && <1.4
+    , containers >=0.5
+    , convertible >=1.1
+    , dlist >=0.7
+    , exceptions >=0.8
+    , lifted-base >=0.2
+    , monad-control >=1.0
+    , mtl >=2.2
+    , orville-postgresql
+    , profunctors >=5.2
+    , resource-pool
+    , resourcet >=1.1
+    , safe
+    , tasty
+    , tasty-discover
+    , tasty-hunit
+    , tasty-quickcheck
+    , text
+    , time >=1.5
+    , transformers >=0.4
+    , transformers-base >=0.4
+    , unliftio-core >=0.1
+  default-language: Haskell2010

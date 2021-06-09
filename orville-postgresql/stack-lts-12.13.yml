@@ -1,0 +1,6 @@
+resolver: lts-12.13
+packages:
+  - .
+extra-deps:
+  - HDBC-postgresql-2.3.2.5
+

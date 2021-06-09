@@ -1,5 +1,0 @@
-dev:
-  build: .
-  volumes:
-    - .:/orville
-  working_dir: /orville

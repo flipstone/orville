@@ -4,18 +4,11 @@ cabal.sandbox.config
 .DS_Store
 .stack-work/
 test-all-logs
-dist-newstyle
 
 # Ignore TAGS file produced by emacs and vim.
-TAGS
+/TAGS
 session.vim
 
 # Ignore any local developer overrides to the docker-compose file
 docker-compose.override.yml
 docker-compose.tools-override.yml
-
-# Ignore local stuff
-.local/
-
-#
-instantclient*

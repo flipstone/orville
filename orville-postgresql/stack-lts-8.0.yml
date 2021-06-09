@@ -1,0 +1,14 @@
+resolver: lts-8.0
+packages:
+  - .
+extra-deps:
+  - HDBC-postgresql-2.3.2.5
+  - unliftio-core-0.1.2.0
+
+  # lts-8.24 contains tasty-discover-1.1.0 for some reason, which appears to
+  # have an issuee with tests having the same name if different test modules,
+  # so we use a different version of tasty-discover to run tests in this lts.
+  # This doesn't affect the operation of the library itself, which does not
+  # depend on tasty.
+  - tasty-discover-2.0.3
+
