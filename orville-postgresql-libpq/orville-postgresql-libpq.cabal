@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9516985b9156ada301ab82366a5bc72d14ab0e75e8a723a113910790c31c4685
+-- hash: dd505d0ebcd3f0682de30095297baf85c56855258fbaa6e9112593806abfff44
 
 name:           orville-postgresql-libpq
-version:        0.9.0.0
+version:        0.10.0.0
 synopsis:       ORM
 description:    ORM library for PostgreSQL
 category:       Database
