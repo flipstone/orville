@@ -1,0 +1,7 @@
+resolver: lts-7.22
+packages:
+  - .
+extra-deps:
+  - HDBC-postgresql-2.3.2.5
+  - unliftio-core-0.1.2.0
+
