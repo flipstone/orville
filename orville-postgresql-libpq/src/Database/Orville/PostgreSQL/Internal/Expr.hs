@@ -20,6 +20,7 @@ module Database.Orville.PostgreSQL.Internal.Expr
   , ColumnName
   , rawColumnName
   , columnNameToSql
+  , sqlToColumnName
   , WhereClause
   , whereClause
   , BooleanExpr
