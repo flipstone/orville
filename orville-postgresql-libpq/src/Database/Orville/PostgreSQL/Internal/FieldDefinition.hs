@@ -12,6 +12,10 @@ module Database.Orville.PostgreSQL.Internal.FieldDefinition
   , fieldValueToSqlValue
   , fieldValueFromSqlValue
   , fieldColumnName
+  , FieldName
+  , stringToFieldName
+  , fieldNameToColumnName
+  , fieldNameToByteString
   , toSqlExpr
   , NotNull
   , Nullable
@@ -31,14 +35,32 @@ module Database.Orville.PostgreSQL.Internal.FieldDefinition
   , fieldOfType
   ) where
 
+import qualified Data.ByteString.Char8 as B8
 import           Data.Int (Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import           Database.Orville.PostgreSQL.Internal.SqlType (SqlType)
 import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
 import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+
+newtype FieldName =
+  FieldName B8.ByteString
+  deriving (Eq, Show)
+
+fieldNameToColumnName :: FieldName -> Expr.ColumnName
+fieldNameToColumnName (FieldName name) =
+  Expr.sqlToColumnName (RawSql.fromBytes name)
+
+stringToFieldName :: String -> FieldName
+stringToFieldName =
+  FieldName . B8.pack
+
+fieldNameToByteString :: FieldName -> B8.ByteString
+fieldNameToByteString (FieldName name) =
+  name
 
 {-|
   'FieldDefinition' determines the SQL constsruction of a column in the
@@ -49,7 +71,7 @@ import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 -}
 data FieldDefinition nullability a =
   FieldDefinition
-    { _fieldName        :: String
+    { _fieldName        :: FieldName
     , _fieldType        :: SqlType a
     , _fieldNullability :: Nullability nullability
     }
@@ -57,7 +79,7 @@ data FieldDefinition nullability a =
 {-|
   The name used in database queries to reference the field.
 -}
-fieldName :: FieldDefinition nullability a -> String
+fieldName :: FieldDefinition nullability a -> FieldName
 fieldName = _fieldName
 
 {-|
@@ -100,7 +122,7 @@ fieldValueFromSqlValue =
 -}
 fieldColumnName :: FieldDefinition nullability a -> Expr.ColumnName
 fieldColumnName =
-  Expr.rawColumnName . fieldName
+  fieldNameToColumnName . fieldName
 
 {-|
   Constructions the equivalant 'Expr.FieldDefinition' as a SQL expression,
@@ -262,6 +284,6 @@ fieldOfType :: SqlType a -- ^ 'SqlType' that represents the PostgreSQL data type
             -> FieldDefinition NotNull a
 fieldOfType sqlType name =
   FieldDefinition
-    name
+    (stringToFieldName name)
     sqlType
     NotNull

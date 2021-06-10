@@ -8,6 +8,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.Name.ColumnName
   ( ColumnName
   , rawColumnName
   , columnNameToSql
+  , sqlToColumnName
   ) where
 
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -19,3 +20,6 @@ columnNameToSql (ColumnName sql) = sql
 
 rawColumnName :: String -> ColumnName
 rawColumnName = ColumnName . RawSql.fromString
+
+sqlToColumnName :: RawSql.RawSql -> ColumnName
+sqlToColumnName = ColumnName

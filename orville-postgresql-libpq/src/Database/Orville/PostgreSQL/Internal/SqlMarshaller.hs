@@ -8,6 +8,7 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.SqlMarshaller
   ( SqlMarshaller
   , MarshallError(..)
+  , marshallEntityToSql
   , marshallResultFromSql
   , marshallRowFromSql
   , marshallField
@@ -25,7 +26,8 @@ import           Data.Maybe (catMaybes)
 
 import           Database.Orville.PostgreSQL.Internal.ExecutionResult (ExecutionResult, Column(Column), Row(Row))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import           Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldName, fieldValueFromSqlValue)
+import           Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, fieldName, fieldNameToByteString, fieldValueFromSqlValue, fieldValueToSqlValue)
+import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 {-|
   'SqlMarshaller' is how we group the lowest level translation of single fields
@@ -52,6 +54,39 @@ instance Functor (SqlMarshaller a) where
 instance Applicative (SqlMarshaller a) where
   pure = MarshallPure
   (<*>) = MarshallApply
+
+{-|
+  Encodes an Haskell entity to the `FieldName`/`SqlValue` pairs that are
+  described by a `SqlMarshaller`. Each pair is passed to the result-building
+  function to allow to caller to construct the `result` type as desired.
+  The `result` is built in a right-associative manner, much like a `foldr`
+  operation.
+-}
+marshallEntityToSql :: SqlMarshaller writeEntity readEntity
+                    -> result
+                    -> (FieldName -> SqlValue -> result -> result)
+                    -> writeEntity
+                    -> result
+marshallEntityToSql marshaller currentResult addToResult entity =
+  case marshaller of
+    MarshallPure _ ->
+      currentResult
+
+    MarshallApply submarshallerA submarshallerB ->
+      let
+        subresultB =
+          marshallEntityToSql submarshallerB currentResult addToResult entity
+      in
+        marshallEntityToSql submarshallerA subresultB addToResult entity
+
+    MarshallNest nestingFunction submarshaller ->
+      marshallEntityToSql submarshaller currentResult addToResult (nestingFunction entity)
+
+    MarshallField fieldDefinition ->
+      addToResult
+        (fieldName fieldDefinition)
+        (fieldValueToSqlValue fieldDefinition entity)
+        currentResult
 
 {-|
   A 'MarshallError' may be returned from 'marshallFromSql' if the result set
@@ -227,12 +262,16 @@ mkRowSource marshaller result = do
           mkSource someMarshaller
 
         MarshallField fieldDef ->
-          case Map.lookup (B8.pack $ fieldName fieldDef) columnMap of
-            Just columnNumber ->
-              mkColumnRowSource fieldDef result columnNumber
+          let
+            fieldNameBytes =
+              fieldNameToByteString (fieldName fieldDef)
+          in
+            case Map.lookup fieldNameBytes columnMap of
+              Just columnNumber ->
+                mkColumnRowSource fieldDef result columnNumber
 
-            Nothing ->
-              failRowSource FieldNotFoundInResultSet
+              Nothing ->
+                failRowSource FieldNotFoundInResultSet
 
   pure . mkSource $ marshaller
 
