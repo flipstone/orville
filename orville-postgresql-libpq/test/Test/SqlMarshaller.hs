@@ -15,8 +15,8 @@ import           Test.Tasty (TestTree, testGroup)
 
 import           Database.Orville.PostgreSQL.Internal.ExecutionResult (Row(..))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import           Database.Orville.PostgreSQL.Internal.FieldDefinition (integerField, unboundedTextField)
-import           Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallRowFromSql, marshallResultFromSql, marshallField, MarshallError(..))
+import           Database.Orville.PostgreSQL.Internal.FieldDefinition (integerField, unboundedTextField, stringToFieldName)
+import           Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallEntityToSql, marshallRowFromSql, marshallResultFromSql, marshallField, MarshallError(..))
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
@@ -102,6 +102,28 @@ sqlMarshallerTree =
 
         result <- liftIO $ marshallResultFromSql fooMarshaller input
         result === Right foos
+
+    , testProperty "marshallEntityToSql collects all fields as their sql values" . HH.property $ do
+        foo <- HH.forAll generateFoo
+
+        let
+          addField :: a -> b -> [(a, b)] -> [(a, b)]
+          addField name sqlValue fields =
+            (name, sqlValue) : fields
+
+          actualFooRow =
+            marshallEntityToSql
+              fooMarshaller
+              []
+              addField
+              foo
+
+          expectedFooRow =
+            [ (stringToFieldName "name", SqlValue.fromText $ fooName foo)
+            , (stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
+            ]
+
+        actualFooRow === expectedFooRow
     ]
 
 data Foo =
