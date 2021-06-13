@@ -1,21 +1,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Test.Connection
-  ( connectionTree
-  ) where
 
-import           Control.Exception (try)
-import           Control.Monad.IO.Class (liftIO)
+module Test.Connection
+  ( connectionTree,
+  )
+where
+
+import Control.Exception (try)
+import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as B8
-import           Data.Pool (Pool)
+import Data.Pool (Pool)
 import qualified Data.Text.Encoding as Enc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
-import           Hedgehog ((===))
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
-import           Test.Tasty (TestTree, testGroup)
-import           Test.Tasty.Hedgehog (testProperty)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.Hedgehog (testProperty)
 
-import           Database.Orville.PostgreSQL.Connection (Connection)
+import Database.Orville.PostgreSQL.Connection (Connection)
 import qualified Database.Orville.PostgreSQL.Connection as Connection
 import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
 
@@ -23,13 +25,13 @@ import qualified Test.PGGen as PGGen
 
 connectionTree :: Pool Connection -> TestTree
 connectionTree pool =
-  testGroup "Connection"
+  testGroup
+    "Connection"
     [ testProperty "executeRaw can pass non-null bytes equivalents whether checked for NUL or not" . HH.property $ do
         text <- HH.forAll $ PGGen.pgText (Range.linear 0 256)
 
-        let
-          notNulBytes =
-            Enc.encodeUtf8 text
+        let notNulBytes =
+              Enc.encodeUtf8 text
 
         value <-
           liftIO $ do
@@ -44,18 +46,16 @@ connectionTree pool =
             LibPQ.getvalue' result 0 0
 
         value === Just (B8.pack "t")
-
     , testProperty "executeRaw returns error if nul byte is given using safe constructor" . HH.property $ do
         textBefore <- HH.forAll $ PGGen.pgText (Range.linear 0 32)
         textAfter <- HH.forAll $ PGGen.pgText (Range.linear 0 32)
 
-        let
-          bytesWithNul =
-            B8.concat
-              [ Enc.encodeUtf8 textBefore
-              , B8.pack "\NUL"
-              , Enc.encodeUtf8 textAfter
-              ]
+        let bytesWithNul =
+              B8.concat
+                [ Enc.encodeUtf8 textBefore
+                , B8.pack "\NUL"
+                , Enc.encodeUtf8 textAfter
+                ]
 
         result <-
           liftIO . try $ do
@@ -68,25 +68,22 @@ connectionTree pool =
         case result of
           Left PGTextFormatValue.NULByteFoundError ->
             HH.success
-
           Right _ -> do
             HH.footnote "Expected 'executeRow' to return failure, but it did not"
             HH.failure
-
     , testProperty "executeRaw truncates values at the nul byte given using unsafe constructor" . HH.property $ do
         textBefore <- HH.forAll $ PGGen.pgText (Range.linear 0 32)
         textAfter <- HH.forAll $ PGGen.pgText (Range.linear 0 32)
 
-        let
-          bytesBefore =
-            Enc.encodeUtf8 textBefore
+        let bytesBefore =
+              Enc.encodeUtf8 textBefore
 
-          bytesWithNul =
-            B8.concat
-              [ bytesBefore
-              , B8.pack "\NUL"
-              , Enc.encodeUtf8 textAfter
-              ]
+            bytesWithNul =
+              B8.concat
+                [ bytesBefore
+                , B8.pack "\NUL"
+                , Enc.encodeUtf8 textAfter
+                ]
 
         value <-
           liftIO $ do
@@ -100,7 +97,6 @@ connectionTree pool =
             LibPQ.getvalue' result 0 0
 
         value === Just bytesBefore
-
     , -- Note: we only run this test once to cut down on the number of errors
       -- printed out by the database server when running tests repeatedly.
       testProperty "executeRaw returns error if invalid sql is given" . HH.withTests 1 . HH.property $ do
@@ -119,11 +115,9 @@ connectionTree pool =
           Left err -> do
             Connection.sqlExecutionErrorExecStatus err === LibPQ.FatalError
 
-            let
-              syntaxErrorState = B8.pack "42601"
+            let syntaxErrorState = B8.pack "42601"
 
             Connection.sqlExecutionErrorSqlState err === Just syntaxErrorState
-
           Right _ -> do
             HH.footnote "Expected 'executeRow' to return failure, but it did not"
             HH.failure

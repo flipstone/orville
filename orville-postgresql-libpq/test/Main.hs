@@ -1,6 +1,7 @@
 module Main
-  ( main
-  ) where
+  ( main,
+  )
+where
 
 import qualified Data.ByteString.Char8 as B8
 import Test.Tasty (defaultMain, testGroup)
@@ -11,8 +12,8 @@ import Test.Connection (connectionTree)
 import Test.Expr (exprSpecs)
 import Test.FieldDefinition (fieldDefinitionTree)
 import Test.RawSql (rawSqlSpecs)
-import Test.SqlType (sqlTypeSpecs)
 import Test.SqlMarshaller (sqlMarshallerTree)
+import Test.SqlType (sqlTypeSpecs)
 
 main :: IO ()
 main = do
@@ -26,7 +27,8 @@ main = do
       sqlTypeSpecs pool
 
   defaultMain $
-    testGroup "Tests"
+    testGroup
+      "Tests"
       [ connectionTree pool
       , specTree
       , sqlMarshallerTree

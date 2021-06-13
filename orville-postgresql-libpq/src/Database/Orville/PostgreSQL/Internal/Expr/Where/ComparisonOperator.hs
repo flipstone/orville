@@ -1,24 +1,24 @@
-{-|
+{- |
 Module    : Database.Orville.PostgreSQL.Expr.Where.ComparisonOperator
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
 module Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
-  ( ComparisonOperator
-  , comparisonOperatorToSql
-  , equalsOp
-  , notEqualsOp
-  , greaterThanOp
-  , lessThanOp
-  , greaterThanOrEqualsOp
-  , lessThanOrEqualsOp
-  ) where
+  ( ComparisonOperator,
+    comparisonOperatorToSql,
+    equalsOp,
+    notEqualsOp,
+    greaterThanOp,
+    lessThanOp,
+    greaterThanOrEqualsOp,
+    lessThanOrEqualsOp,
+  )
+where
 
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
-newtype ComparisonOperator =
-  ComparisonOperator RawSql.RawSql
+newtype ComparisonOperator
+  = ComparisonOperator RawSql.RawSql
 
 comparisonOperatorToSql :: ComparisonOperator -> RawSql.RawSql
 comparisonOperatorToSql (ComparisonOperator sql) = sql

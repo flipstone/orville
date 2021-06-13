@@ -1,85 +1,82 @@
-{-|
+{- |
 Module    : Database.Orville.PostgreSQL.SqlType
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
 module Database.Orville.PostgreSQL.Internal.SqlType
-  (SqlType ( SqlType
-           , sqlTypeExpr
-           , sqlTypeReferenceExpr
-           , sqlTypeNullable
-           , sqlTypeId
-           , sqlTypeSqlSize
-           , sqlTypeToSql
-           , sqlTypeFromSql
-           )
+  ( SqlType
+      ( SqlType,
+        sqlTypeExpr,
+        sqlTypeReferenceExpr,
+        sqlTypeNullable,
+        sqlTypeId,
+        sqlTypeSqlSize,
+        sqlTypeToSql,
+        sqlTypeFromSql
+      ),
+    -- numeric types
+    integer,
+    serial,
+    bigInteger,
+    bigSerial,
+    double,
+    -- textual-ish types
+    boolean,
+    unboundedText,
+    fixedText,
+    boundedText,
+    textSearchVector,
+    -- date types
+    date,
+    timestamp,
+    -- type conversions
+    nullableType,
+    foreignRefType,
+    convertSqlType,
+    maybeConvertSqlType,
+  )
+where
 
-  -- numeric types
-  , integer
-  , serial
-  , bigInteger
-  , bigSerial
-  , double
-
-  -- textual-ish types
-  , boolean
-  , unboundedText
-  , fixedText
-  , boundedText
-  , textSearchVector
-
-  -- date types
-  , date
-  , timestamp
-
-  -- type conversions
-  , nullableType
-  , foreignRefType
-  , convertSqlType
-  , maybeConvertSqlType
-  ) where
-
-import           Data.Int (Int32, Int64)
-import qualified Database.PostgreSQL.LibPQ as LibPQ
-import           Data.Text (Text)
+import Data.Int (Int32, Int64)
+import Data.Text (Text)
 import qualified Data.Time as Time
+import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-{-|
+{- |
   SqlType defines the mapping of a Haskell type (`a`) to a SQL column type in the
   database. This includes both how to convert the type to and from the raw values
   read from the database as well as the schema information required to create
   and migrate columns using the type.
-  -}
+-}
 data SqlType a = SqlType
-  { sqlTypeExpr :: Expr.DataType
-    -- ^ The sql data type expression to use when creating/migrating columns of
+  { -- | The sql data type expression to use when creating/migrating columns of
     -- this type
-  , sqlTypeReferenceExpr :: Maybe Expr.DataType
-    -- ^ The sql data type experession to use when creating/migrating columns
+    sqlTypeExpr :: Expr.DataType
+  , -- | The sql data type experession to use when creating/migrating columns
     -- with foreign keys to this type. This is used foreignRefType to build a
     -- new SqlType when making foreign key fields
-  , sqlTypeNullable :: Bool
-    -- ^ Indicates whether columns should be marked NULL or NOT NULL in the
+    sqlTypeReferenceExpr :: Maybe Expr.DataType
+  , -- | Indicates whether columns should be marked NULL or NOT NULL in the
     -- database schema. If this is 'True', then 'sqlTypeFromSql' should
     -- provide a handling of 'SqlNull' that returns an 'a', not 'Nothing'.
+    sqlTypeNullable :: Bool
   , sqlTypeId :: LibPQ.Oid
   , sqlTypeSqlSize :: Maybe Int
-  , sqlTypeToSql :: a -> SqlValue
-    -- ^ A function for converting Haskell values of this type into values to
+  , -- | A function for converting Haskell values of this type into values to
     -- be stored in the database.
-  , sqlTypeFromSql :: SqlValue -> Maybe a
-    -- ^ A function for converting values of this are stored in the database
+    sqlTypeToSql :: a -> SqlValue
+  , -- | A function for converting values of this are stored in the database
     -- into Haskell values. This function should return 'Nothing' to indicate
     -- an error if the conversion is impossible. Otherwise it should return
     -- 'Just' the corresponding 'a' value.
+    sqlTypeFromSql :: SqlValue -> Maybe a
   }
 
-{-|
+{- |
   'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
 -}
 integer :: SqlType Int32
@@ -94,7 +91,7 @@ integer =
     , sqlTypeFromSql = SqlValue.toInt32
     }
 
-{-|
+{- |
   'serial' defines a 32-bit auto-incrementing column type. This corresponds to
   the "SERIAL" type in PostgreSQL.
 -}
@@ -110,7 +107,7 @@ serial =
     , sqlTypeFromSql = SqlValue.toInt32
     }
 
-{-|
+{- |
   'bigInteger' defines a 64-bit integer type. This corresponds to the "BIGINT"
   type in SQL.
 -}
@@ -126,7 +123,7 @@ bigInteger =
     , sqlTypeFromSql = SqlValue.toInt64
     }
 
-{-|
+{- |
   'bigSerial' defines a 64-bit auto-incrementing column type. This corresponds to
   the "BIGSERIAL" type in PostgresSQL.
 -}
@@ -142,7 +139,7 @@ bigSerial =
     , sqlTypeFromSql = SqlValue.toInt64
     }
 
-{-|
+{- |
   'double' defines a floating point numeric type. This corresponds to the "DOUBLE
   PRECISION" type in SQL.
 -}
@@ -158,7 +155,7 @@ double =
     , sqlTypeFromSql = SqlValue.toDouble
     }
 
-{-|
+{- |
   'boolean' defines a True/False boolean type. This corresponds to the "BOOLEAN"
   type in SQL.
 -}
@@ -174,7 +171,7 @@ boolean =
     , sqlTypeFromSql = SqlValue.toBool
     }
 
-{-|
+{- |
   'unboundedText' defines a unbounded length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
 -}
@@ -190,7 +187,7 @@ unboundedText =
     , sqlTypeFromSql = SqlValue.toText
     }
 
-{-|
+{- |
   'fixedText' defines a fixed length text field type. This corresponds to a
   "CHAR(len)" type in PostgreSQL.
 -}
@@ -206,7 +203,7 @@ fixedText len =
     , sqlTypeFromSql = SqlValue.toText
     }
 
-{-|
+{- |
   'boundedText' defines a variable length text field type. This corresponds to a
   "VARCHAR(len)" type in PostgreSQL.
 -}
@@ -222,7 +219,7 @@ boundedText len =
     , sqlTypeFromSql = SqlValue.toText
     }
 
-{-|
+{- |
   'textSearchVector' defines a type for indexed text searching. It corresponds to the
   "TSVECTOR" type in PostgreSQL.
 -}
@@ -238,7 +235,7 @@ textSearchVector =
     , sqlTypeFromSql = SqlValue.toText
     }
 
-{-|
+{- |
   'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
 -}
@@ -254,7 +251,7 @@ date =
     , sqlTypeFromSql = SqlValue.toDay
     }
 
-{-|
+{- |
   'timestamp' defines a type representing a particular point in time (without time zone).
   It corresponds to the "TIMESTAMP with time zone" type in SQL.
 
@@ -275,7 +272,7 @@ timestamp =
     , sqlTypeFromSql = SqlValue.toUTCTime
     }
 
-{-|
+{- |
    'nullableType' creates a nullable version of an existing 'SqlType'. The underlying
    sql type will be the same as the original, but column will be created with a 'NULL'
    constraint instead a 'NOT NULL' constraint. The Haskell value 'Nothing' will be used
@@ -287,16 +284,14 @@ nullableType sqlType =
     { sqlTypeNullable = True
     , sqlTypeToSql =
         maybe SqlValue.sqlNull (sqlTypeToSql sqlType)
-
     , sqlTypeFromSql =
         \sql ->
-          if SqlValue.isSqlNull sql then
-            Just Nothing
-          else
-            fmap Just (sqlTypeFromSql sqlType sql)
+          if SqlValue.isSqlNull sql
+            then Just Nothing
+            else fmap Just (sqlTypeFromSql sqlType sql)
     }
 
-{-|
+{- |
   'foreignRefType' creates a 'SqlType' suitable for columns will be foreign
   keys referencing a column of the given 'SqlType'. For most types the
   underlying sql type with be identical, but for special types (such as
@@ -311,7 +306,7 @@ foreignRefType sqlType =
     Nothing -> sqlType
     Just refExpr -> sqlType {sqlTypeExpr = refExpr, sqlTypeReferenceExpr = Nothing}
 
-{-|
+{- |
   'maybeConvertSqlType' changes the Haskell type used by a 'SqlType' which changing
   the column type that will be used in the database schema. The functions given
   will be used to convert the now Haskell type to and from the original type when
@@ -328,7 +323,7 @@ maybeConvertSqlType bToA aToB sqlType =
         aToB a
     }
 
-{-|
+{- |
   'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
   as 'maybeConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
 -}

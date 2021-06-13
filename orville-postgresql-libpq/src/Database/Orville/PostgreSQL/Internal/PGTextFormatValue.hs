@@ -1,16 +1,17 @@
 module Database.Orville.PostgreSQL.Internal.PGTextFormatValue
-  ( PGTextFormatValue
-  , NULByteFoundError(NULByteFoundError)
-  , unsafeFromByteString
-  , fromByteString
-  , toByteString
-  , toBytesForLibPQ
-  ) where
+  ( PGTextFormatValue,
+    NULByteFoundError (NULByteFoundError),
+    unsafeFromByteString,
+    fromByteString,
+    toByteString,
+    toBytesForLibPQ,
+  )
+where
 
-import           Control.Exception (Exception)
+import Control.Exception (Exception)
 import qualified Data.ByteString as BS
 
-{-|
+{- |
   A 'PGTextFormatValue' represents raw bytes that will be passed to postgresql
   via libpq. These bytes must conform to the TEXT format of values that
   postgresql expects. In all cases postgresql will be allowed to infer the type
@@ -36,13 +37,13 @@ instance Eq PGTextFormatValue where
   left == right =
     toBytesForLibPQ left == toBytesForLibPQ right
 
-data NULByteFoundError =
-  NULByteFoundError
+data NULByteFoundError
+  = NULByteFoundError
   deriving (Show, Eq)
 
-instance Exception NULByteFoundError where
+instance Exception NULByteFoundError
 
-{-|
+{- |
   Constructs a 'PGTextFormatValue' from the given bytes directly, without checking
   whether any of the bytes are '\NUL' or not. If a 'BS.ByteString' containing
   a '\NUL' byte is given, the value will be truncated at the '\NUL' when it
@@ -56,7 +57,7 @@ unsafeFromByteString :: BS.ByteString -> PGTextFormatValue
 unsafeFromByteString =
   AssumedToHaveNoNULValues
 
-{-|
+{- |
   Constructs a 'PGTextFormatValue' from the given bytes, which will be checked
   to ensure none of them are '\NUL' before being passed to libpq. If a '\NUL'
   byte is found an error will be raised.
@@ -65,7 +66,7 @@ fromByteString :: BS.ByteString -> PGTextFormatValue
 fromByteString =
   NoAssumptionsMade
 
-{-|
+{- |
   Converts the 'PGTextFormatValue' to bytes intended to be passed to libpq.
   If any '\NUL' bytes are found, 'NULByteErrorFound' will be returned (unless
   'unsafeFromByteString' was used to construct the value).
@@ -75,16 +76,12 @@ toBytesForLibPQ value =
   case value of
     AssumedToHaveNoNULValues noNULBytes ->
       Right noNULBytes
-
     NoAssumptionsMade anyBytes ->
-      if
-        BS.elem 0 anyBytes
-      then
-        Left NULByteFoundError
-      else
-        Right anyBytes
+      if BS.elem 0 anyBytes
+        then Left NULByteFoundError
+        else Right anyBytes
 
-{-|
+{- |
   Convents the 'PGTextFormatValue' back to the bytes that were used to
   construct it, losing the information about whether it would be checked
   for '\NUL' bytes or not.
@@ -94,6 +91,5 @@ toByteString value =
   case value of
     AssumedToHaveNoNULValues bytes ->
       bytes
-
     NoAssumptionsMade bytes ->
       bytes

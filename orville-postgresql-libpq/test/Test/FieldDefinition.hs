@@ -1,20 +1,21 @@
 module Test.FieldDefinition
-  ( fieldDefinitionTree
-  ) where
+  ( fieldDefinitionTree,
+  )
+where
 
-import           Control.Monad.IO.Class (liftIO)
-import           Data.Pool (Pool)
+import Control.Monad.IO.Class (liftIO)
+import Data.Pool (Pool)
 import qualified Data.Text as T
 import qualified Data.Time as Time
-import           Hedgehog ((===))
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import           Test.Tasty (TestTree, testGroup)
-import           Test.Tasty.Hedgehog (testProperty)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.Hedgehog (testProperty)
 
-import           Database.Orville.PostgreSQL.Connection (Connection)
-import           Database.Orville.PostgreSQL.Internal.ExecutionResult (readRows)
+import Database.Orville.PostgreSQL.Connection (Connection)
+import Database.Orville.PostgreSQL.Internal.ExecutionResult (readRows)
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -23,76 +24,68 @@ import qualified Test.PGGen as PGGen
 
 fieldDefinitionTree :: Pool Connection -> TestTree
 fieldDefinitionTree pool =
-  testGroup "FieldDefinition"
+  testGroup
+    "FieldDefinition"
     [ testProperty "can round trip an integer field" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.integerField "foo"
-          , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.integerField "foo"
+            , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
+            }
     , testProperty "can round trip a bigIntegerField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.bigIntegerField "foo"
-          , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.bigIntegerField "foo"
+            , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
+            }
     , testProperty "can round trip a doubleField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.doubleField "foo"
-          , roundTripGen = PGGen.pgDouble
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.doubleField "foo"
+            , roundTripGen = PGGen.pgDouble
+            }
     , testProperty "can round trip a booleanField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.booleanField "foo"
-          , roundTripGen = Gen.bool
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.booleanField "foo"
+            , roundTripGen = Gen.bool
+            }
     , testProperty "can round trip an unboundedTextField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.unboundedTextField "foo"
-          , roundTripGen = PGGen.pgText (Range.constant 0 1024)
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.unboundedTextField "foo"
+            , roundTripGen = PGGen.pgText (Range.constant 0 1024)
+            }
     , testProperty "can round trip a boundedTextField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.boundedTextField "foo" 4
-          , roundTripGen = PGGen.pgText (Range.constant 0 4)
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.boundedTextField "foo" 4
+            , roundTripGen = PGGen.pgText (Range.constant 0 4)
+            }
     , testProperty "can round trip a fixedTextField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.fixedTextField "foo" 4
-          , roundTripGen = PGGen.pgText (Range.constant 4 4)
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.fixedTextField "foo" 4
+            , roundTripGen = PGGen.pgText (Range.constant 4 4)
+            }
     , testProperty "can round trip a textSearchVectorField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.textSearchVectorField "foo"
-          , roundTripGen = tsVectorGen
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.textSearchVectorField "foo"
+            , roundTripGen = tsVectorGen
+            }
     , testProperty "can round trip a dateField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.dateField "foo"
-          , roundTripGen = dayGen
-          }
-
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.dateField "foo"
+            , roundTripGen = dayGen
+            }
     , testProperty "can round trip a timestampField" . HH.property $ do
-      runRoundTripTest pool $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.timestampField "foo"
-          , roundTripGen = utcTimeGen
-          }
+        runRoundTripTest pool $
+          RoundTripTest
+            { roundTripFieldDef = FieldDef.timestampField "foo"
+            , roundTripGen = utcTimeGen
+            }
     ]
 
 -- This generator generates alphanumeric values currently because of syntax
@@ -120,16 +113,14 @@ timeOfDayGen :: HH.Gen Time.DiffTime
 timeOfDayGen =
   Time.secondsToDiffTime <$> Gen.integral (Range.constant 0 85399)
 
-data RoundTripTest a =
-  RoundTripTest
-    { roundTripFieldDef :: FieldDef.FieldDefinition FieldDef.NotNull a
-    , roundTripGen :: HH.Gen a
-    }
+data RoundTripTest a = RoundTripTest
+  { roundTripFieldDef :: FieldDef.FieldDefinition FieldDef.NotNull a
+  , roundTripGen :: HH.Gen a
+  }
 
 runRoundTripTest :: (Show a, Eq a) => Pool Connection -> RoundTripTest a -> HH.PropertyT IO ()
 runRoundTripTest pool testCase = do
-  let
-    fieldDef = roundTripFieldDef testCase
+  let fieldDef = roundTripFieldDef testCase
 
   value <- HH.forAll (roundTripGen testCase)
 
@@ -151,14 +142,12 @@ runRoundTripTest pool testCase = do
 
     readRows result
 
-  let
-    roundTripResult =
-      case rows of
-        [[(_, sqlValue)]] ->
-          Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
-
-        _ ->
-          Left ("Expected one row with one value in results, but got: " ++ show rows)
+  let roundTripResult =
+        case rows of
+          [[(_, sqlValue)]] ->
+            Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
+          _ ->
+            Left ("Expected one row with one value in results, but got: " ++ show rows)
 
   roundTripResult === Right (Just value)
 
@@ -172,7 +161,7 @@ dropAndRecreateTestTable fieldDef pool = do
 
   RawSql.executeVoid pool $
     RawSql.fromString "CREATE TABLE "
-    <> Expr.tableNameToSql testTable
-    <> RawSql.fromString "("
-    <> Expr.columnDefinitionToSql (FieldDef.toSqlExpr fieldDef)
-    <> RawSql.fromString ")"
+      <> Expr.tableNameToSql testTable
+      <> RawSql.fromString "("
+      <> Expr.columnDefinitionToSql (FieldDef.toSqlExpr fieldDef)
+      <> RawSql.fromString ")"

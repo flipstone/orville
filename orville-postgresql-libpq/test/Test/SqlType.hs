@@ -1,40 +1,35 @@
 module Test.SqlType
-  ( sqlTypeSpecs
-  ) where
+  ( sqlTypeSpecs,
+  )
+where
 
-import Data.Pool (Pool)
 import qualified Data.ByteString.Char8 as B8
 import Data.Int (Int64)
+import Data.Pool (Pool)
 import qualified Data.Text as T
 import qualified Data.Time as Time
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
 import Database.Orville.PostgreSQL.Connection (Connection, executeRawVoid)
 import Database.Orville.PostgreSQL.Internal.ExecutionResult (decodeRows)
-import Database.Orville.PostgreSQL.Internal.SqlType (SqlType
-                                                     -- numeric types
-                                                    , integer
-                                                    , serial
-                                                    , bigInteger
-                                                    , bigSerial
-                                                    , double
-
-                                                    -- textual-ish types
-                                                    , boolean
-                                                    , unboundedText
-                                                    , fixedText
-                                                    , boundedText
-                                                    , textSearchVector
-
-                                                    -- date types
-                                                    , date
-                                                    , timestamp
-
-                                                    -- type conversions
-                                                    , nullableType
-                                                    )
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+import Database.Orville.PostgreSQL.Internal.SqlType
+  ( SqlType,
+    bigInteger,
+    bigSerial,
+    boolean,
+    boundedText,
+    date,
+    double,
+    fixedText,
+    integer,
+    nullableType,
+    serial,
+    textSearchVector,
+    timestamp,
+    unboundedText,
+  )
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 sqlTypeSpecs :: Pool Connection -> Spec
@@ -323,20 +318,18 @@ nullableSpecs pool = do
         , expectedValue = Nothing
         }
 
-data DecodingTest a =
-  DecodingTest
-    { sqlTypeDDL :: String
-    , rawSqlValue :: Maybe B8.ByteString
-    , sqlType :: SqlType a
-    , expectedValue :: a
-    }
+data DecodingTest a = DecodingTest
+  { sqlTypeDDL :: String
+  , rawSqlValue :: Maybe B8.ByteString
+  , sqlType :: SqlType a
+  , expectedValue :: a
+  }
 
 runDecodingTest :: (Show a, Eq a) => Pool Connection -> DecodingTest a -> IO ()
 runDecodingTest pool test = do
   dropAndRecreateTable pool "decoding_test" (sqlTypeDDL test)
 
-  let
-    tableName = Expr.rawTableName "decoding_test"
+  let tableName = Expr.rawTableName "decoding_test"
 
   RawSql.executeVoid pool $
     Expr.insertExprToSql $
@@ -349,7 +342,7 @@ runDecodingTest pool test = do
       Expr.queryExprToSql $
         Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
 
-  (maybeA:_) <- decodeRows result (sqlType test)
+  (maybeA : _) <- decodeRows result (sqlType test)
   shouldBe maybeA (Just (expectedValue test))
 
 dropAndRecreateTable :: Pool Connection -> String -> String -> IO ()

@@ -1,26 +1,25 @@
 module Test.Expr
-  ( exprSpecs
-  ) where
-
+  ( exprSpecs,
+  )
+where
 
 import qualified Data.ByteString.Char8 as B8
-import           Data.Int (Int32)
-import           Data.Pool (Pool)
+import Data.Int (Int32)
+import Data.Pool (Pool)
 import qualified Data.Text as T
 
-import           Database.Orville.PostgreSQL.Connection (Connection)
+import Database.Orville.PostgreSQL.Connection (Connection)
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import           Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
-import           Test.Tasty.Hspec (Spec, describe, it, shouldBe)
+import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
 
-data FooBar =
-  FooBar
-    { foo :: Int32
-    , bar :: String
-    }
+data FooBar = FooBar
+  { foo :: Int32
+  , bar :: String
+  }
 
 exprSpecs :: Pool Connection -> Spec
 exprSpecs pool =
@@ -150,99 +149,88 @@ orderBySpecs pool =
                 Expr.appendOrderBy
                   (Expr.orderByExpr (Expr.columnNameToSql barColumn) Expr.ascendingOrder)
                   (Expr.orderByExpr (Expr.columnNameToSql fooColumn) Expr.descendingOrder)
-
           }
 
-data OrderByTest =
-  OrderByTest
-    { orderByValuesToInsert       :: [FooBar]
-    , orderByClause               :: Maybe Expr.OrderByClause
-    , orderByExpectedQueryResults :: [FooBar]
-    }
+data OrderByTest = OrderByTest
+  { orderByValuesToInsert :: [FooBar]
+  , orderByClause :: Maybe Expr.OrderByClause
+  , orderByExpectedQueryResults :: [FooBar]
+  }
 
 mkOrderByTestInsertSource :: OrderByTest -> Expr.InsertSource
 mkOrderByTestInsertSource test =
-  let
-    mkRow foobar =
-      [ SqlValue.fromInt32 (foo foobar)
-      , SqlValue.fromText (T.pack $ bar foobar)
-      ]
-  in
-    Expr.insertSqlValues (map mkRow $ orderByValuesToInsert test)
+  let mkRow foobar =
+        [ SqlValue.fromInt32 (foo foobar)
+        , SqlValue.fromText (T.pack $ bar foobar)
+        ]
+   in Expr.insertSqlValues (map mkRow $ orderByValuesToInsert test)
 
 mkOrderByTestExpectedRows :: OrderByTest -> [[(Maybe B8.ByteString, SqlValue)]]
 mkOrderByTestExpectedRows test =
-  let
-    mkRow foobar =
-      [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
-      , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
-      ]
-  in
-    fmap mkRow (orderByExpectedQueryResults test)
+  let mkRow foobar =
+        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+        ]
+   in fmap mkRow (orderByExpectedQueryResults test)
 
 runOrderByTest :: Pool Connection -> OrderByTest -> IO ()
 runOrderByTest pool test = do
   dropAndRecreateTestTable pool
 
-  let
-    exprTestTable = Expr.rawTableName "expr_test"
+  let exprTestTable = Expr.rawTableName "expr_test"
 
-  RawSql.executeVoid pool .
-    Expr.insertExprToSql $
-      Expr.insertExpr exprTestTable (mkOrderByTestInsertSource test)
+  RawSql.executeVoid pool
+    . Expr.insertExprToSql
+    $ Expr.insertExpr exprTestTable (mkOrderByTestInsertSource test)
 
-  result <- RawSql.execute pool .
-    Expr.queryExprToSql $
-      Expr.queryExpr
+  result <-
+    RawSql.execute pool
+      . Expr.queryExprToSql
+      $ Expr.queryExpr
         (Expr.selectColumns [fooColumn, barColumn])
         (Expr.tableExpr exprTestTable Nothing (orderByClause test))
 
   rows <- ExecResult.readRows result
   rows `shouldBe` mkOrderByTestExpectedRows test
 
-data WhereConditionTest =
-  WhereConditionTest
-    { whereValuesToInsert       :: [FooBar]
-    , whereClause               :: Maybe Expr.WhereClause
-    , whereExpectedQueryResults :: [FooBar]
-    }
+data WhereConditionTest = WhereConditionTest
+  { whereValuesToInsert :: [FooBar]
+  , whereClause :: Maybe Expr.WhereClause
+  , whereExpectedQueryResults :: [FooBar]
+  }
 
 mkTestInsertSource :: WhereConditionTest -> Expr.InsertSource
 mkTestInsertSource test =
-  let
-    mkRow foobar =
-      [ SqlValue.fromInt32 (foo foobar)
-      , SqlValue.fromText (T.pack $ bar foobar)
-      ]
-  in
-    Expr.insertSqlValues (map mkRow $ whereValuesToInsert test)
+  let mkRow foobar =
+        [ SqlValue.fromInt32 (foo foobar)
+        , SqlValue.fromText (T.pack $ bar foobar)
+        ]
+   in Expr.insertSqlValues (map mkRow $ whereValuesToInsert test)
 
 mkTestExpectedRows :: WhereConditionTest -> [[(Maybe B8.ByteString, SqlValue)]]
 mkTestExpectedRows test =
-  let
-    mkRow foobar =
-      [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
-      , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
-      ]
-  in
-    fmap mkRow (whereExpectedQueryResults test)
+  let mkRow foobar =
+        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+        ]
+   in fmap mkRow (whereExpectedQueryResults test)
 
 runWhereConditionTest :: Pool Connection -> WhereConditionTest -> IO ()
 runWhereConditionTest pool test = do
   dropAndRecreateTestTable pool
 
-  let
-    exprTestTable = Expr.rawTableName "expr_test"
+  let exprTestTable = Expr.rawTableName "expr_test"
 
   RawSql.executeVoid pool $
     Expr.insertExprToSql $
       Expr.insertExpr exprTestTable (mkTestInsertSource test)
 
-  result <- RawSql.execute pool $
-    Expr.queryExprToSql $
-      Expr.queryExpr
-        (Expr.selectColumns [fooColumn, barColumn])
-        (Expr.tableExpr exprTestTable (whereClause test) Nothing)
+  result <-
+    RawSql.execute pool $
+      Expr.queryExprToSql $
+        Expr.queryExpr
+          (Expr.selectColumns [fooColumn, barColumn])
+          (Expr.tableExpr exprTestTable (whereClause test) Nothing)
 
   rows <- ExecResult.readRows result
   rows `shouldBe` mkTestExpectedRows test

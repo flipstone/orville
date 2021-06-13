@@ -19,3 +19,7 @@ docker-compose.tools-override.yml
 
 #
 instantclient*
+
+# We use a ci compose file that keeps some extra bits locally to cache
+# They are ignored below to avoid them being included in various operations, locally and in ci
+.stack-root

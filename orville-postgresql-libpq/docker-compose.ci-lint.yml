@@ -1,0 +1,21 @@
+---
+version: "3"
+services:
+  # This entire file to help with ci, it is not recommended for local use
+  # as it keeps certain things on the filesystem to help with caching.
+  lint:
+    build: .
+    volumes:
+      - ..:/orville
+      - stack-work:/orville/orville-postgresql-libpq/.stack-work
+      - .stack-root:/stack-root
+    working_dir: /orville/orville-postgresql-libpq
+    environment:
+      STACK_ROOT: /stack-root
+    command:
+      # For now we are only running the format-repo script by "default".
+      # But the idea here is to be able to expand this with other tooling as we desire
+      - ./scripts/format-repo.sh
+    tty: true
+volumes:
+  stack-work:
