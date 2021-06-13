@@ -235,8 +235,8 @@ class ( Monad m
 
 
 instance MonadOrvilleControl IO where
-  liftWithConnection = id
-  liftFinally = id
+  liftWithConnection ioWithConn = ioWithConn
+  liftFinally ioFinally = ioFinally
 
 {-|
    defaultLiftWithConnection provides a simple definition of
