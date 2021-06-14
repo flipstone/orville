@@ -12,7 +12,9 @@ import Database.Orville.PostgreSQL.Internal.Monad
 
 executingSql :: MonadOrville conn m => QueryType -> String -> IO a -> m a
 executingSql queryType sql action = do
-  runningQuery <- ormEnvRunningQuery <$> getOrvilleEnv
+  runningQuery <-
+    (\queryType -> ormEnvRunningQuery queryType)
+      <$> getOrvilleEnv
   liftIO $ runningQuery queryType sql (catchSqlErr sql action)
 
 catchSqlErr :: String -> IO a -> IO a
