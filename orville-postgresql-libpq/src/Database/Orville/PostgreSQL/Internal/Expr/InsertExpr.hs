@@ -7,12 +7,15 @@ module Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
   ( InsertExpr,
     insertExpr,
     insertExprToSql,
+    InsertColumnList,
+    insertColumnList,
+    insertColumnListToSql,
     InsertSource,
     insertSqlValues,
   )
 where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name (TableName, tableNameToSql)
+import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName, columnNameToSql, tableNameToSql)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -22,15 +25,26 @@ newtype InsertExpr
 insertExprToSql :: InsertExpr -> RawSql.RawSql
 insertExprToSql (InsertExpr sql) = sql
 
-insertExpr :: TableName -> InsertSource -> InsertExpr
-insertExpr target source =
+insertExpr :: TableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
+insertExpr target _ source =
   InsertExpr $
     mconcat
       [ RawSql.fromString "INSERT INTO "
       , tableNameToSql target
-      , RawSql.fromString " "
+      , RawSql.space
       , insertSourceToSql source
       ]
+
+newtype InsertColumnList
+  = InsertColumnList RawSql.RawSql
+
+insertColumnListToSql :: InsertColumnList -> RawSql.RawSql
+insertColumnListToSql (InsertColumnList sql) = sql
+
+insertColumnList :: [ColumnName] -> InsertColumnList
+insertColumnList columnNames =
+  InsertColumnList $
+    RawSql.intercalate (RawSql.comma) (map columnNameToSql columnNames)
 
 newtype InsertSource
   = InsertSource RawSql.RawSql
@@ -42,7 +56,7 @@ insertRowValues :: [RowValues] -> InsertSource
 insertRowValues rows =
   InsertSource $
     RawSql.fromString "VALUES "
-      <> RawSql.intercalate (RawSql.fromString ",") (fmap rowValuesToSql rows)
+      <> RawSql.intercalate RawSql.comma (fmap rowValuesToSql rows)
 
 insertSqlValues :: [[SqlValue]] -> InsertSource
 insertSqlValues rows =
@@ -58,7 +72,7 @@ rowValues :: [SqlValue] -> RowValues
 rowValues values =
   RowValues $
     mconcat
-      [ RawSql.fromString "("
-      , RawSql.intercalate (RawSql.fromString ",") (fmap RawSql.parameter values)
-      , RawSql.fromString ")"
+      [ RawSql.leftParen
+      , RawSql.intercalate RawSql.comma (fmap RawSql.parameter values)
+      , RawSql.rightParen
       ]

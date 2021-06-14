@@ -1,5 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 
 {- |
 Module    : Database.Orville.PostgreSQL.Internal.SqlMarshaller
@@ -9,10 +10,10 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.SqlMarshaller
   ( SqlMarshaller,
     MarshallError (..),
-    marshallEntityToSql,
     marshallResultFromSql,
     marshallRowFromSql,
     marshallField,
+    foldMarshallerFields,
     mkRowSource,
     RowSource,
     mapRowSource,
@@ -28,8 +29,7 @@ import Data.Maybe (catMaybes)
 
 import Database.Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, fieldName, fieldNameToByteString, fieldValueFromSqlValue, fieldValueToSqlValue)
-import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldName, fieldNameToByteString, fieldValueFromSqlValue)
 
 {- |
   'SqlMarshaller' is how we group the lowest level translation of single fields
@@ -56,33 +56,53 @@ instance Applicative (SqlMarshaller a) where
   (<*>) = MarshallApply
 
 {- |
-  Encodes an Haskell entity to the `FieldName`/`SqlValue` pairs that are
-  described by a `SqlMarshaller`. Each pair is passed to the result-building
-  function to allow to caller to construct the `result` type as desired.
-  The `result` is built in a right-associative manner, much like a `foldr`
-  operation.
+  'foldMarshallerFields' allows you to consume the 'FieldDefinition's that
+  are contained within the 'SqlMarshaller' to process them however is
+  required. This can be used to collect the names of all the fields, encode
+  them to 'SqlValue', etc.
 -}
-marshallEntityToSql ::
+foldMarshallerFields ::
   SqlMarshaller writeEntity readEntity ->
   result ->
-  (FieldName -> SqlValue -> result -> result) ->
-  writeEntity ->
+  ( forall a nullability.
+    FieldDefinition nullability a ->
+    (writeEntity -> a) ->
+    result ->
+    result
+  ) ->
   result
-marshallEntityToSql marshaller currentResult addToResult entity =
+foldMarshallerFields marshaller =
+  foldMarshallerFieldsPart marshaller id
+
+{- |
+  The internal helper function that actually implements 'foldMarshallerFields'.
+  It takes with it a function that extracts the current nesting entity from
+  the overall 'writeEntity' that the 'SqlMarshaller' is build on. 'MarshallNest'
+  adds more nesting by composing its accessor with the one given here.
+-}
+foldMarshallerFieldsPart ::
+  SqlMarshaller entityPart readEntity ->
+  (writeEntity -> entityPart) ->
+  result ->
+  ( forall a nullability.
+    FieldDefinition nullability a ->
+    (writeEntity -> a) ->
+    result ->
+    result
+  ) ->
+  result
+foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
   case marshaller of
     MarshallPure _ ->
       currentResult
     MarshallApply submarshallerA submarshallerB ->
       let subresultB =
-            marshallEntityToSql submarshallerB currentResult addToResult entity
-       in marshallEntityToSql submarshallerA subresultB addToResult entity
+            foldMarshallerFieldsPart submarshallerB getPart currentResult addToResult
+       in foldMarshallerFieldsPart submarshallerA getPart subresultB addToResult
     MarshallNest nestingFunction submarshaller ->
-      marshallEntityToSql submarshaller currentResult addToResult (nestingFunction entity)
+      foldMarshallerFieldsPart submarshaller (nestingFunction . getPart) currentResult addToResult
     MarshallField fieldDefinition ->
-      addToResult
-        (fieldName fieldDefinition)
-        (fieldValueToSqlValue fieldDefinition entity)
-        currentResult
+      addToResult fieldDefinition getPart currentResult
 
 {- |
   A 'MarshallError' may be returned from 'marshallFromSql' if the result set

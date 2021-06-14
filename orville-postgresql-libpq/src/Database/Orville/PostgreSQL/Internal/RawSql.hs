@@ -16,6 +16,12 @@ module Database.Orville.PostgreSQL.Internal.RawSql
     intercalate,
     execute,
     executeVoid,
+
+    -- * Fragmants provided for convenience
+    space,
+    comma,
+    leftParen,
+    rightParen,
   )
 where
 
@@ -185,3 +191,19 @@ executeVoid conn rawSql =
   let (sqlBytes, params) =
         toBytesAndParams rawSql
    in Conn.executeRawVoid conn sqlBytes params
+
+-- | Just a plain old space, provided for convenience
+space :: RawSql
+space = fromString " "
+
+-- | Just a plain old comma, provided for convenience
+comma :: RawSql
+comma = fromString ","
+
+-- | Just a plain old left paren, provided for convenience
+leftParen :: RawSql
+leftParen = fromString "("
+
+-- | Just a plain old right paren, provided for convenience
+rightParen :: RawSql
+rightParen = fromString ")"

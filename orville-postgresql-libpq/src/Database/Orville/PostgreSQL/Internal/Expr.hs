@@ -36,6 +36,8 @@ module Database.Orville.PostgreSQL.Internal.Expr
     InsertExpr,
     insertExpr,
     insertExprToSql,
+    InsertColumnList,
+    insertColumnList,
     InsertSource,
     insertSqlValues,
     DataType,
@@ -61,6 +63,12 @@ module Database.Orville.PostgreSQL.Internal.Expr
     ascendingOrder,
     descendingOrder,
     orderByExpr,
+    CreateTableExpr,
+    createTableExpr,
+    createTableExprToSql,
+    PrimaryKeyExpr,
+    primaryKeyExpr,
+    primaryKeyToSql,
   )
 where
 
@@ -69,4 +77,5 @@ import Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
 import Database.Orville.PostgreSQL.Internal.Expr.Name
 import Database.Orville.PostgreSQL.Internal.Expr.OrderBy
 import Database.Orville.PostgreSQL.Internal.Expr.Query
+import Database.Orville.PostgreSQL.Internal.Expr.TableDefinition
 import Database.Orville.PostgreSQL.Internal.Expr.Where

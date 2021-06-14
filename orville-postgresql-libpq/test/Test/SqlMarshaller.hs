@@ -16,8 +16,8 @@ import Test.Tasty.Hedgehog (testProperty)
 
 import Database.Orville.PostgreSQL.Internal.ExecutionResult (Row (..))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import Database.Orville.PostgreSQL.Internal.FieldDefinition (integerField, stringToFieldName, unboundedTextField)
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (MarshallError (..), SqlMarshaller, marshallEntityToSql, marshallField, marshallResultFromSql, marshallRowFromSql)
+import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, fieldName, fieldValueToSqlValue, integerField, stringToFieldName, unboundedTextField)
+import Database.Orville.PostgreSQL.Internal.SqlMarshaller (MarshallError (..), SqlMarshaller, foldMarshallerFields, marshallField, marshallResultFromSql, marshallRowFromSql)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
@@ -94,19 +94,22 @@ sqlMarshallerTree =
 
         result <- liftIO $ marshallResultFromSql fooMarshaller input
         result === Right foos
-    , testProperty "marshallEntityToSql collects all fields as their sql values" . HH.property $ do
+    , testProperty "foldMarhallerFields collects all fields as their sql values" . HH.property $ do
         foo <- HH.forAll generateFoo
 
-        let addField :: a -> b -> [(a, b)] -> [(a, b)]
-            addField name sqlValue fields =
-              (name, sqlValue) : fields
+        let addField ::
+              FieldDefinition nullability a ->
+              (Foo -> a) ->
+              [(FieldName, SqlValue.SqlValue)] ->
+              [(FieldName, SqlValue.SqlValue)]
+            addField fieldDef getValue fields =
+              (fieldName fieldDef, fieldValueToSqlValue fieldDef (getValue foo)) : fields
 
             actualFooRow =
-              marshallEntityToSql
+              foldMarshallerFields
                 fooMarshaller
                 []
                 addField
-                foo
 
             expectedFooRow =
               [ (stringToFieldName "name", SqlValue.fromText $ fooName foo)

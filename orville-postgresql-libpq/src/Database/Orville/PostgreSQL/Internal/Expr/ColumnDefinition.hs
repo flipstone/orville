@@ -36,7 +36,7 @@ columnDefinition :: ColumnName -> DataType -> ColumnDefinition
 columnDefinition columnName dataType =
   ColumnDefinition $
     columnNameToSql columnName
-      <> RawSql.fromString " "
+      <> RawSql.space
       <> dataTypeToSql dataType
 
 newtype DataType

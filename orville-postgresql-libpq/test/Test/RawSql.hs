@@ -37,7 +37,7 @@ rawSqlSpecs =
               <> RawSql.parameter (SqlValue.fromInt32 1)
               <> RawSql.fromString " AND "
               <> RawSql.fromString "bar IN ("
-              <> RawSql.intercalate (RawSql.fromString ",") bars
+              <> RawSql.intercalate RawSql.comma bars
               <> RawSql.fromString ")"
 
           bars =

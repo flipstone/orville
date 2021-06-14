@@ -181,7 +181,7 @@ runOrderByTest pool test = do
 
   RawSql.executeVoid pool
     . Expr.insertExprToSql
-    $ Expr.insertExpr exprTestTable (mkOrderByTestInsertSource test)
+    $ Expr.insertExpr exprTestTable Nothing (mkOrderByTestInsertSource test)
 
   result <-
     RawSql.execute pool
@@ -223,7 +223,7 @@ runWhereConditionTest pool test = do
 
   RawSql.executeVoid pool $
     Expr.insertExprToSql $
-      Expr.insertExpr exprTestTable (mkTestInsertSource test)
+      Expr.insertExpr exprTestTable Nothing (mkTestInsertSource test)
 
   result <-
     RawSql.execute pool $

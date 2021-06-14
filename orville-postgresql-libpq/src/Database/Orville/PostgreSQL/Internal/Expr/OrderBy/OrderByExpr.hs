@@ -21,8 +21,8 @@ orderByExprToSql (OrderByExpr sql) = sql
 
 appendOrderBy :: OrderByExpr -> OrderByExpr -> OrderByExpr
 appendOrderBy (OrderByExpr a) (OrderByExpr b) =
-  OrderByExpr (a <> RawSql.fromString ", " <> b)
+  OrderByExpr (a <> RawSql.comma <> b)
 
 orderByExpr :: RawSql.RawSql -> OrderByDirection -> OrderByExpr
 orderByExpr sql orderSql =
-  OrderByExpr $ sql <> RawSql.fromString " " <> orderByDirectionToSql orderSql
+  OrderByExpr $ sql <> RawSql.space <> orderByDirectionToSql orderSql

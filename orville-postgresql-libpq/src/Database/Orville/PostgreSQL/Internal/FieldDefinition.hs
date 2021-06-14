@@ -13,11 +13,12 @@ module Database.Orville.PostgreSQL.Internal.FieldDefinition
     fieldValueToSqlValue,
     fieldValueFromSqlValue,
     fieldColumnName,
+    fieldColumnDefinition,
     FieldName,
     stringToFieldName,
+    fieldNameToString,
     fieldNameToColumnName,
     fieldNameToByteString,
-    toSqlExpr,
     NotNull,
     Nullable,
     Nullability (..),
@@ -59,6 +60,10 @@ fieldNameToColumnName (FieldName name) =
 stringToFieldName :: String -> FieldName
 stringToFieldName =
   FieldName . B8.pack
+
+fieldNameToString :: FieldName -> String
+fieldNameToString =
+  B8.unpack . fieldNameToByteString
 
 fieldNameToByteString :: FieldName -> B8.ByteString
 fieldNameToByteString (FieldName name) =
@@ -129,11 +134,10 @@ fieldColumnName =
   Constructions the equivalant 'Expr.FieldDefinition' as a SQL expression,
   generally for use in DDL for creating column in a table.
 
-  TODO: this is NotNull at the momentbecause I haven't made it handle adding the
-  NULL modifier to the DDL yet
+  TODO: Handle nullable fields here when we finish porting nullability.
 -}
-toSqlExpr :: FieldDefinition NotNull a -> Expr.ColumnDefinition
-toSqlExpr fieldDef =
+fieldColumnDefinition :: FieldDefinition nullability a -> Expr.ColumnDefinition
+fieldColumnDefinition fieldDef =
   Expr.columnDefinition
     (fieldColumnName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)

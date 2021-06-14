@@ -46,7 +46,7 @@ andExpr left right =
 parenthesized :: BooleanExpr -> BooleanExpr
 parenthesized expr =
   BooleanExpr $
-    RawSql.fromString "(" <> booleanExprToSql expr <> RawSql.fromString ")"
+    RawSql.leftParen <> booleanExprToSql expr <> RawSql.rightParen
 
 comparison ::
   RowValuePredicand ->
@@ -56,9 +56,9 @@ comparison ::
 comparison left op right =
   BooleanExpr $
     rowValuePredicandToSql left
-      <> RawSql.fromString " "
+      <> RawSql.space
       <> comparisonOperatorToSql op
-      <> RawSql.fromString " "
+      <> RawSql.space
       <> rowValuePredicandToSql right
 
 columnEquals :: ColumnName -> SqlValue -> BooleanExpr

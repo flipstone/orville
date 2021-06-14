@@ -69,7 +69,7 @@ connectionTree pool =
           Left PGTextFormatValue.NULByteFoundError ->
             HH.success
           Right _ -> do
-            HH.footnote "Expected 'executeRow' to return failure, but it did not"
+            HH.footnote "Expected 'executeRaw' to return failure, but it did not"
             HH.failure
     , testProperty "executeRaw truncates values at the nul byte given using unsafe constructor" . HH.property $ do
         textBefore <- HH.forAll $ PGGen.pgText (Range.linear 0 32)

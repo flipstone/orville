@@ -25,6 +25,6 @@ tableExpr :: TableName -> Maybe WhereClause -> Maybe OrderByClause -> TableExpr
 tableExpr tableName mbWhereClause maybeOrderByClause =
   TableExpr $
     tableNameToSql tableName
-      <> RawSql.fromString " "
+      <> RawSql.space
       <> maybe mempty whereClauseToSql mbWhereClause
       <> maybe mempty orderByClauseToSql maybeOrderByClause

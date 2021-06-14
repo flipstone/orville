@@ -27,10 +27,12 @@ library:
     - Database.Orville.PostgreSQL.Internal.Expr
     - Database.Orville.PostgreSQL.Internal.FieldDefinition
     - Database.Orville.PostgreSQL.Internal.PGTextFormatValue
+    - Database.Orville.PostgreSQL.Internal.PrimaryKey
     - Database.Orville.PostgreSQL.Internal.RawSql
     - Database.Orville.PostgreSQL.Internal.SqlMarshaller
     - Database.Orville.PostgreSQL.Internal.SqlType
     - Database.Orville.PostgreSQL.Internal.SqlValue
+    - Database.Orville.PostgreSQL.Internal.TableDefinition
   when:
     - condition: flag(ci)
       then:
@@ -80,6 +82,7 @@ tests:
       - Test.RawSql
       - Test.SqlMarshaller
       - Test.SqlType
+      - Test.TableDefinition
     dependencies:
       - base
       - bytestring

@@ -335,6 +335,7 @@ runDecodingTest pool test = do
     Expr.insertExprToSql $
       Expr.insertExpr
         tableName
+        Nothing
         (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
 
   result <-

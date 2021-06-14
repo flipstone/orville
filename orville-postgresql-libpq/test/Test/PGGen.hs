@@ -1,9 +1,11 @@
 module Test.PGGen
   ( pgText,
     pgDouble,
+    pgInt32,
   )
 where
 
+import Data.Int (Int32)
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
@@ -13,6 +15,10 @@ pgText :: HH.Range Int -> HH.Gen T.Text
 pgText range =
   Gen.text range $
     Gen.filter (/= '\NUL') Gen.unicode
+
+pgInt32 :: HH.Gen Int32
+pgInt32 =
+  Gen.integral (Range.linearFrom 0 minBound maxBound)
 
 pgDouble :: HH.Gen Double
 pgDouble =

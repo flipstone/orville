@@ -30,7 +30,7 @@ fieldDefinitionTree pool =
         runRoundTripTest pool $
           RoundTripTest
             { roundTripFieldDef = FieldDef.integerField "foo"
-            , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
+            , roundTripGen = PGGen.pgInt32
             }
     , testProperty "can round trip a bigIntegerField" . HH.property $ do
         runRoundTripTest pool $
@@ -131,6 +131,7 @@ runRoundTripTest pool testCase = do
       Expr.insertExprToSql $
         Expr.insertExpr
           testTable
+          Nothing
           (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
 
     result <-
@@ -160,8 +161,5 @@ dropAndRecreateTestTable fieldDef pool = do
   RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
 
   RawSql.executeVoid pool $
-    RawSql.fromString "CREATE TABLE "
-      <> Expr.tableNameToSql testTable
-      <> RawSql.fromString "("
-      <> Expr.columnDefinitionToSql (FieldDef.toSqlExpr fieldDef)
-      <> RawSql.fromString ")"
+    Expr.createTableExprToSql $
+      Expr.createTableExpr testTable [FieldDef.fieldColumnDefinition fieldDef] Nothing

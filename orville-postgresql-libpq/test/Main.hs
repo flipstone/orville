@@ -14,6 +14,7 @@ import Test.FieldDefinition (fieldDefinitionTree)
 import Test.RawSql (rawSqlSpecs)
 import Test.SqlMarshaller (sqlMarshallerTree)
 import Test.SqlType (sqlTypeSpecs)
+import Test.TableDefinition (tableDefinitionTree)
 
 main :: IO ()
 main = do
@@ -33,4 +34,5 @@ main = do
       , specTree
       , sqlMarshallerTree
       , fieldDefinitionTree pool
+      , tableDefinitionTree pool
       ]
