@@ -1,4 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -14,6 +13,7 @@ module Database.Orville.PostgreSQL.Internal.SqlMarshaller
     marshallRowFromSql,
     marshallField,
     foldMarshallerFields,
+    FieldFold,
     mkRowSource,
     RowSource,
     mapRowSource,
@@ -56,6 +56,24 @@ instance Applicative (SqlMarshaller a) where
   (<*>) = MarshallApply
 
 {- |
+  A synonym that captures the type of folding functions that are used
+  with 'foldMarshallerFields'. Note that this synonym is defined using
+  'RankNTypes' because the folding function must consume all fields,
+  regardless of they type of value they contain or their nullability.
+  Although you do not need to enable 'RankNTypes' simply to use this
+  synonym as the type signature of your own folding functions, you may
+  need to enable it to write an explicit 'forall' if your folding function
+  is built from parameters that include a field's nullability or value type
+  in their signature.
+-}
+type FieldFold writeEntity result =
+  forall a nullability.
+  FieldDefinition nullability a ->
+  (writeEntity -> a) ->
+  result ->
+  result
+
+{- |
   'foldMarshallerFields' allows you to consume the 'FieldDefinition's that
   are contained within the 'SqlMarshaller' to process them however is
   required. This can be used to collect the names of all the fields, encode
@@ -64,12 +82,7 @@ instance Applicative (SqlMarshaller a) where
 foldMarshallerFields ::
   SqlMarshaller writeEntity readEntity ->
   result ->
-  ( forall a nullability.
-    FieldDefinition nullability a ->
-    (writeEntity -> a) ->
-    result ->
-    result
-  ) ->
+  FieldFold writeEntity result ->
   result
 foldMarshallerFields marshaller =
   foldMarshallerFieldsPart marshaller id
@@ -84,12 +97,7 @@ foldMarshallerFieldsPart ::
   SqlMarshaller entityPart readEntity ->
   (writeEntity -> entityPart) ->
   result ->
-  ( forall a nullability.
-    FieldDefinition nullability a ->
-    (writeEntity -> a) ->
-    result ->
-    result
-  ) ->
+  FieldFold writeEntity result ->
   result
 foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
   case marshaller of

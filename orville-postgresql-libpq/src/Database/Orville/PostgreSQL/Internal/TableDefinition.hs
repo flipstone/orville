@@ -15,7 +15,7 @@ import Data.List.NonEmpty (NonEmpty, toList)
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Database.Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr)
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, foldMarshallerFields)
+import Database.Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, SqlMarshaller, foldMarshallerFields)
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 {- |
@@ -109,11 +109,7 @@ mkInsertSource marshaller entities =
   field from a Haskell entity, adding it a list of 'SqlValue's that is being
   built.
 -}
-collectSqlValue ::
-  FieldDefinition nullability a ->
-  (entity -> a) ->
-  (entity -> [SqlValue]) ->
-  (entity -> [SqlValue])
+collectSqlValue :: FieldFold entity (entity -> [SqlValue])
 collectSqlValue fieldDef accessor encodeRest entity =
   fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
 
@@ -148,10 +144,7 @@ marshallerColumnNames marshaller =
   list of values being built.
 -}
 collectFromField ::
-  (FieldDefinition nullability a -> result) ->
-  FieldDefinition nullability a ->
-  (writeEntity -> a) ->
-  [result] ->
-  [result]
+  (forall nullability a. FieldDefinition nullability a -> result) ->
+  FieldFold entity [result]
 collectFromField fromField fieldDef _ results =
   fromField fieldDef : results

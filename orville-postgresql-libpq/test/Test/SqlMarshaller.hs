@@ -16,8 +16,8 @@ import Test.Tasty.Hedgehog (testProperty)
 
 import Database.Orville.PostgreSQL.Internal.ExecutionResult (Row (..))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, fieldName, fieldValueToSqlValue, integerField, stringToFieldName, unboundedTextField)
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (MarshallError (..), SqlMarshaller, foldMarshallerFields, marshallField, marshallResultFromSql, marshallRowFromSql)
+import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldName, fieldName, fieldValueToSqlValue, integerField, stringToFieldName, unboundedTextField)
+import Database.Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, MarshallError (..), SqlMarshaller, foldMarshallerFields, marshallField, marshallResultFromSql, marshallRowFromSql)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
@@ -97,11 +97,7 @@ sqlMarshallerTree =
     , testProperty "foldMarhallerFields collects all fields as their sql values" . HH.property $ do
         foo <- HH.forAll generateFoo
 
-        let addField ::
-              FieldDefinition nullability a ->
-              (Foo -> a) ->
-              [(FieldName, SqlValue.SqlValue)] ->
-              [(FieldName, SqlValue.SqlValue)]
+        let addField :: FieldFold Foo [(FieldName, SqlValue.SqlValue)]
             addField fieldDef getValue fields =
               (fieldName fieldDef, fieldValueToSqlValue fieldDef (getValue foo)) : fields
 
