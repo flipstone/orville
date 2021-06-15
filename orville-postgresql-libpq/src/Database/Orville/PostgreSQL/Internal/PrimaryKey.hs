@@ -6,6 +6,7 @@ module Database.Orville.PostgreSQL.Internal.PrimaryKey
     primaryKeyDescription,
     primaryKeyToSql,
     primaryKey,
+    PrimaryKeyPart,
     compositePrimaryKey,
     primaryKeyPart,
     mapPrimaryKeyParts,
@@ -28,9 +29,9 @@ data PrimaryKey key
   = PrimaryKey (PrimaryKeyPart key) [PrimaryKeyPart key]
 
 {- |
-  An internal helper type representing a single part of a composite primary
-  key. This is not export in part to hide the use of GADTs, and also simply
-  to avoid leaking implementation details.
+  A 'PrimaryKeyPart' describes one field of a composite primary key. Values
+  are built using 'primaryKeyPart' and then used with 'compositePrimaryKey'
+  to build a 'PrimaryKey'
 -}
 data PrimaryKeyPart key
   = forall part. PrimaryKeyPart (key -> part) (FieldDefinition NotNull part)
@@ -90,11 +91,11 @@ compositePrimaryKey =
   PrimaryKey
 
 {- |
-  'primaryKeyPart' builds on section of a composite primary key based on the
-  field definition that corresponds to that column of the primary key. The
-  function given is used to decompose the Haskell value for the composite key
-  into the individual parts so they can be converted to sql for things like
-  building 'WhereCondition'
+  'primaryKeyPart' builds building block for a composite primary key based a
+  'FieldDefinition' and an accessor function to extract the value for that
+  field from the Haskell 'key' type that represents the overall composite key.
+  'PrimaryKeyPart' values built using this function are usually then passed
+  in a list to 'compositePrimaryKey' to build a 'PrimaryKey'.
 -}
 primaryKeyPart ::
   (key -> part) ->
@@ -124,6 +125,10 @@ mapPrimaryKeyParts f (PrimaryKey first rest) =
         f getPart field
    in map doPart (first : rest)
 
+{- |
+  Builds a 'Expr.PrimaryKeyExpr' that is suitable to be used when creating
+  a table to define the primary key on the table.
+-}
 mkPrimaryKeyExpr :: PrimaryKey key -> Expr.PrimaryKeyExpr
 mkPrimaryKeyExpr keyDef =
   let names =
