@@ -91,11 +91,11 @@ compositePrimaryKey =
   PrimaryKey
 
 {- |
-  'primaryKeyPart' builds building block for a composite primary key based a
-  'FieldDefinition' and an accessor function to extract the value for that
-  field from the Haskell 'key' type that represents the overall composite key.
-  'PrimaryKeyPart' values built using this function are usually then passed
-  in a list to 'compositePrimaryKey' to build a 'PrimaryKey'.
+  'primaryKeyPart' constructs a building block for a composite primary key
+  based a 'FieldDefinition' and an accessor function to extract the value for
+  that field from the Haskell 'key' type that represents the overall composite
+  key.  'PrimaryKeyPart' values built using this function are usually then
+  passed in a list to 'compositePrimaryKey' to build a 'PrimaryKey'.
 -}
 primaryKeyPart ::
   (key -> part) ->
