@@ -53,6 +53,23 @@ test_plan =
           Plan.bind treePlan $ \param ->
           Plan.using param $ Plan.focusParam treeRootId $ Plan.findMaybeOne rootTable rootIdField
 
+      , QC.testProperty "planList" $ \rootIds ->
+        QC.ioProperty $ do
+          actual <-
+            run $ do
+              TestDB.reset treeSchema
+              Plan.execute
+                (Plan.planList (Plan.findAll rootTable rootIdField))
+                rootIds
+
+          let expected :: [[Root]]
+              expected = map (const []) rootIds
+
+          pure $
+            QC.counterexample ("Expected: " ++ show expected) $
+            QC.counterexample ("Actual: " ++ show actual) $
+            (expected == actual)
+
       , QC.testProperty "many findAll includes all params in map" $ \rootIds ->
         QC.ioProperty $ do
           actual <-
