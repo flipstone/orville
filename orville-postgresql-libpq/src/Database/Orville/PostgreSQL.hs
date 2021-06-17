@@ -4,68 +4,56 @@ Copyright : Flipstone Technology Partners 2020-2021
 License   : MIT
 -}
 module Database.Orville.PostgreSQL
-  ( createConnectionPool,
-    SqlType
-      ( SqlType,
-        sqlTypeExpr,
-        sqlTypeReferenceExpr,
-        sqlTypeNullable,
-        sqlTypeId,
-        sqlTypeSqlSize,
-        sqlTypeToSql,
-        sqlTypeFromSql
+  ( RecordOperations.insertRecord,
+    Connection.createConnectionPool,
+    TableDefinition.TableDefinition,
+    Orville.Orville,
+    Orville.runOrville,
+    MonadOrville.MonadOrville,
+    MonadOrville.MonadOrvilleControl (liftWithConnection),
+    MonadOrville.HasOrvilleState (askOrvilleState, localOrvilleState),
+    MonadOrville.OrvilleState,
+    SqlType.SqlType
+      ( SqlType.SqlType,
+        SqlType.sqlTypeExpr,
+        SqlType.sqlTypeReferenceExpr,
+        SqlType.sqlTypeNullable,
+        SqlType.sqlTypeId,
+        SqlType.sqlTypeSqlSize,
+        SqlType.sqlTypeToSql,
+        SqlType.sqlTypeFromSql
       ),
-    -- numeric types
-    integer,
-    serial,
-    bigInteger,
-    bigSerial,
-    double,
-    -- textual-ish types
-    boolean,
-    unboundedText,
-    fixedText,
-    boundedText,
-    textSearchVector,
-    -- date types
-    date,
-    timestamp,
+
+    -- * numeric types
+    SqlType.integer,
+    SqlType.serial,
+    SqlType.bigInteger,
+    SqlType.bigSerial,
+    SqlType.double,
+
+    -- * textual-ish types
+    SqlType.boolean,
+    SqlType.unboundedText,
+    SqlType.fixedText,
+    SqlType.boundedText,
+    SqlType.textSearchVector,
+
+    -- * date types
+    SqlType.date,
+    SqlType.timestamp,
     -- type conversions
-    nullableType,
-    foreignRefType,
-    convertSqlType,
-    maybeConvertSqlType,
+    SqlType.nullableType,
+    SqlType.foreignRefType,
+    SqlType.convertSqlType,
+    SqlType.maybeConvertSqlType,
     Expr.QueryExpr,
   )
 where
 
-import Database.Orville.PostgreSQL.Connection (createConnectionPool)
+import qualified Database.Orville.PostgreSQL.Connection as Connection
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import Database.Orville.PostgreSQL.Internal.SqlType
-  ( SqlType
-      ( SqlType,
-        sqlTypeExpr,
-        sqlTypeFromSql,
-        sqlTypeId,
-        sqlTypeNullable,
-        sqlTypeReferenceExpr,
-        sqlTypeSqlSize,
-        sqlTypeToSql
-      ),
-    bigInteger,
-    bigSerial,
-    boolean,
-    boundedText,
-    convertSqlType,
-    date,
-    double,
-    fixedText,
-    foreignRefType,
-    integer,
-    maybeConvertSqlType,
-    nullableType,
-    serial,
-    textSearchVector,
-    timestamp,
-    unboundedText,
-  )
+import qualified Database.Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import qualified Database.Orville.PostgreSQL.Internal.Orville as Orville
+import qualified Database.Orville.PostgreSQL.Internal.RecordOperations as RecordOperations
+import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
+import qualified Database.Orville.PostgreSQL.Internal.TableDefinition as TableDefinition

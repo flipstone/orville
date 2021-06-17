@@ -69,6 +69,7 @@ library:
     - resource-pool
     - text
     - time >=1.5
+    - transformers >= 0.5 && < 0.6
 
 tests:
   spec:
@@ -76,13 +77,16 @@ tests:
     main: Main.hs
     other-modules:
       - Test.Connection
+      - Test.Entities.Foo
       - Test.Expr
       - Test.FieldDefinition
       - Test.PGGen
       - Test.RawSql
+      - Test.RecordOperations
       - Test.SqlMarshaller
       - Test.SqlType
       - Test.TableDefinition
+      - Test.TestTable
     dependencies:
       - base
       - bytestring

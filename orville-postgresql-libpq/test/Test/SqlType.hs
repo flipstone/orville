@@ -5,7 +5,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import Data.Int (Int64)
-import Data.Pool (Pool)
+import Data.Pool (Pool, withResource)
 import qualified Data.Text as T
 import qualified Data.Time as Time
 import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
@@ -249,7 +249,6 @@ textSearchVectorSpecs pool = do
         }
 
   it "Testing the decode of TSVECTOR with value 'fghi'" $ do
-    dropAndRecreateTable pool "mytsvector" "TSVECTOR"
     runDecodingTest pool $
       DecodingTest
         { sqlTypeDDL = "TSVECTOR"
@@ -326,27 +325,28 @@ data DecodingTest a = DecodingTest
   }
 
 runDecodingTest :: (Show a, Eq a) => Pool Connection -> DecodingTest a -> IO ()
-runDecodingTest pool test = do
-  dropAndRecreateTable pool "decoding_test" (sqlTypeDDL test)
+runDecodingTest pool test =
+  withResource pool $ \connection -> do
+    dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
-  let tableName = Expr.rawTableName "decoding_test"
+    let tableName = Expr.rawTableName "decoding_test"
 
-  RawSql.executeVoid pool $
-    Expr.insertExprToSql $
-      Expr.insertExpr
-        tableName
-        Nothing
-        (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
+    RawSql.executeVoid connection $
+      Expr.insertExprToSql $
+        Expr.insertExpr
+          tableName
+          Nothing
+          (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
 
-  result <-
-    RawSql.execute pool $
-      Expr.queryExprToSql $
-        Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
+    result <-
+      RawSql.execute connection $
+        Expr.queryExprToSql $
+          Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
 
-  (maybeA : _) <- decodeRows result (sqlType test)
-  shouldBe maybeA (Just (expectedValue test))
+    (maybeA : _) <- decodeRows result (sqlType test)
+    shouldBe maybeA (Just (expectedValue test))
 
-dropAndRecreateTable :: Pool Connection -> String -> String -> IO ()
-dropAndRecreateTable pool tableName columnTypeDDL = do
-  executeRawVoid pool (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
-  executeRawVoid pool (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []
+dropAndRecreateTable :: Connection -> String -> String -> IO ()
+dropAndRecreateTable connection tableName columnTypeDDL = do
+  executeRawVoid connection (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
+  executeRawVoid connection (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []

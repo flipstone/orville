@@ -22,7 +22,7 @@ import Control.Monad (void)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 import Data.Maybe (fromMaybe)
-import Data.Pool (Pool, createPool, withResource)
+import Data.Pool (Pool, createPool)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import Data.Time (NominalDiffTime)
@@ -55,25 +55,25 @@ createConnectionPool stripes linger maxRes connectionString =
  Use with caution.
 -}
 executeRaw ::
-  Pool Connection ->
+  Connection ->
   BS.ByteString ->
   [Maybe PGTextFormatValue] ->
   IO LibPQ.Result
-executeRaw pool bs params =
+executeRaw connection bs params =
   case traverse (traverse toBytesForLibPQ) params of
     Left NULByteFoundError ->
       throwIO NULByteFoundError
     Right paramBytes ->
-      withResource pool (underlyingExecute bs paramBytes)
+      underlyingExecute bs paramBytes connection
 
 {- |
  'executeRawVoid' a version of 'executeRaw' that completely ignores the result.
  If an error occurs it is raised as an exception.
  Use with caution.
 -}
-executeRawVoid :: Pool Connection -> BS.ByteString -> [Maybe PGTextFormatValue] -> IO ()
-executeRawVoid pool bs params =
-  void $ executeRaw pool bs params
+executeRawVoid :: Connection -> BS.ByteString -> [Maybe PGTextFormatValue] -> IO ()
+executeRawVoid connection bs params =
+  void $ executeRaw connection bs params
 
 {- |
  The basic connection interface.

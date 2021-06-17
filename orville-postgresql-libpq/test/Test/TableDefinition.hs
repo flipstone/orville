@@ -6,57 +6,53 @@ where
 import Control.Exception (try)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as B8
-import Data.Int (Int32)
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Pool (Pool)
-import qualified Data.Text as T
+import Data.Pool (Pool, withResource)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
-import qualified Hedgehog.Range as Range
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testProperty)
 
 import Database.Orville.PostgreSQL.Connection (Connection, SqlExecutionError (sqlExecutionErrorSqlState))
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, integerField, unboundedTextField)
-import Database.Orville.PostgreSQL.Internal.PrimaryKey (primaryKey)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallField, marshallResultFromSql)
-import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition (..), mkCreateTableExpr, mkInsertExpr, mkQueryExpr)
+import Database.Orville.PostgreSQL.Internal.SqlMarshaller (marshallResultFromSql)
+import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition (tableMarshaller), mkInsertExpr, mkQueryExpr)
 
-import qualified Test.PGGen as PGGen
+import qualified Test.Entities.Foo as Foo
+import qualified Test.TestTable as TestTable
 
 tableDefinitionTree :: Pool Connection -> TestTree
 tableDefinitionTree pool =
   testGroup
     "TableDefinition"
     [ testProperty "Creates a table than can round trip an entity through it" . HH.property $ do
-        originalFoo <- HH.forAll generateFoo
+        originalFoo <- HH.forAll Foo.generate
 
         let insertFoo =
-              mkInsertExpr fooTable (originalFoo :| [])
+              mkInsertExpr Foo.table (originalFoo :| [])
 
             selectFoos =
-              mkQueryExpr fooTable Nothing Nothing
+              mkQueryExpr Foo.table Nothing Nothing
 
         foosFromDB <-
-          liftIO $ do
-            dropAndRecreateTestTable pool fooTable
-            RawSql.executeVoid pool (Expr.insertExprToSql insertFoo)
-            result <- RawSql.execute pool (Expr.queryExprToSql selectFoos)
-            marshallResultFromSql (tableMarshaller fooTable) result
+          liftIO . withResource pool $ \connection -> do
+            TestTable.dropAndRecreateTableDef connection Foo.table
+            RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
+            result <- RawSql.execute connection (Expr.queryExprToSql selectFoos)
+            marshallResultFromSql (tableMarshaller Foo.table) result
 
         foosFromDB === Right [originalFoo]
     , testProperty "Creates a primary key that rejects duplicate records" . HH.withTests 1 . HH.property $ do
-        originalFoo <- HH.forAll generateFoo
+        originalFoo <- HH.forAll Foo.generate
 
         let insertFoo =
-              mkInsertExpr fooTable (originalFoo :| [])
+              mkInsertExpr Foo.table (originalFoo :| [])
 
-        result <- liftIO . try $ do
-          dropAndRecreateTestTable pool fooTable
-          RawSql.executeVoid pool (Expr.insertExprToSql insertFoo)
-          RawSql.executeVoid pool (Expr.insertExprToSql insertFoo)
+        result <- liftIO . try . withResource pool $ \connection -> do
+          TestTable.dropAndRecreateTableDef connection Foo.table
+          RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
+          RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
 
         case result of
           Right () -> do
@@ -65,48 +61,3 @@ tableDefinitionTree pool =
           Left err ->
             sqlExecutionErrorSqlState err === Just (B8.pack "23505")
     ]
-
-fooTable :: TableDefinition FooId Foo Foo
-fooTable =
-  TableDefinition
-    { tableName = Expr.rawTableName "foo"
-    , tablePrimaryKey = primaryKey fooIdField
-    , tableMarshaller = fooMarshaller
-    }
-
-fooMarshaller :: SqlMarshaller Foo Foo
-fooMarshaller =
-  Foo
-    <$> marshallField fooId fooIdField
-    <*> marshallField fooName fooNameField
-
-fooIdField :: FieldDefinition NotNull FooId
-fooIdField =
-  integerField "id"
-
-fooNameField :: FieldDefinition NotNull FooName
-fooNameField =
-  unboundedTextField "name"
-
-type FooId = Int32
-type FooName = T.Text
-
-data Foo = Foo
-  { fooId :: FooId
-  , fooName :: FooName
-  }
-  deriving (Eq, Show)
-
-generateFoo :: HH.Gen Foo
-generateFoo =
-  Foo
-    <$> PGGen.pgInt32
-    <*> PGGen.pgText (Range.constant 0 10)
-
-dropAndRecreateTestTable ::
-  Pool Connection ->
-  TableDefinition key writeEntity readEntity ->
-  IO ()
-dropAndRecreateTestTable pool tableDef = do
-  RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql (tableName tableDef))
-  RawSql.executeVoid pool (Expr.createTableExprToSql $ mkCreateTableExpr tableDef)

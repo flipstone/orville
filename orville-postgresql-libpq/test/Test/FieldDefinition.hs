@@ -4,7 +4,7 @@ module Test.FieldDefinition
 where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Pool (Pool)
+import Data.Pool (Pool, withResource)
 import qualified Data.Text as T
 import qualified Data.Time as Time
 import Hedgehog ((===))
@@ -119,47 +119,48 @@ data RoundTripTest a = RoundTripTest
   }
 
 runRoundTripTest :: (Show a, Eq a) => Pool Connection -> RoundTripTest a -> HH.PropertyT IO ()
-runRoundTripTest pool testCase = do
-  let fieldDef = roundTripFieldDef testCase
+runRoundTripTest pool testCase =
+  withResource pool $ \connection -> do
+    let fieldDef = roundTripFieldDef testCase
 
-  value <- HH.forAll (roundTripGen testCase)
+    value <- HH.forAll (roundTripGen testCase)
 
-  rows <- liftIO $ do
-    dropAndRecreateTestTable fieldDef pool
+    rows <- liftIO $ do
+      dropAndRecreateTestTable fieldDef connection
 
-    RawSql.executeVoid pool $
-      Expr.insertExprToSql $
-        Expr.insertExpr
-          testTable
-          Nothing
-          (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+      RawSql.executeVoid connection $
+        Expr.insertExprToSql $
+          Expr.insertExpr
+            testTable
+            Nothing
+            (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
 
-    result <-
-      RawSql.execute pool $
-        Expr.queryExprToSql $
-          Expr.queryExpr
-            (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Expr.tableExpr testTable Nothing Nothing)
+      result <-
+        RawSql.execute connection $
+          Expr.queryExprToSql $
+            Expr.queryExpr
+              (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
+              (Expr.tableExpr testTable Nothing Nothing)
 
-    readRows result
+      readRows result
 
-  let roundTripResult =
-        case rows of
-          [[(_, sqlValue)]] ->
-            Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
-          _ ->
-            Left ("Expected one row with one value in results, but got: " ++ show rows)
+    let roundTripResult =
+          case rows of
+            [[(_, sqlValue)]] ->
+              Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
+            _ ->
+              Left ("Expected one row with one value in results, but got: " ++ show rows)
 
-  roundTripResult === Right (Just value)
+    roundTripResult === Right (Just value)
 
 testTable :: Expr.TableName
 testTable =
   Expr.rawTableName "field_definition_test"
 
-dropAndRecreateTestTable :: FieldDef.FieldDefinition FieldDef.NotNull a -> Pool Connection -> IO ()
-dropAndRecreateTestTable fieldDef pool = do
-  RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
+dropAndRecreateTestTable :: FieldDef.FieldDefinition FieldDef.NotNull a -> Connection -> IO ()
+dropAndRecreateTestTable fieldDef connection = do
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
 
-  RawSql.executeVoid pool $
+  RawSql.executeVoid connection $
     Expr.createTableExprToSql $
       Expr.createTableExpr testTable [FieldDef.fieldColumnDefinition fieldDef] Nothing

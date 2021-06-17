@@ -8,7 +8,7 @@ where
 import Control.Exception (try)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as B8
-import Data.Pool (Pool)
+import Data.Pool (Pool, withResource)
 import qualified Data.Text.Encoding as Enc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
@@ -34,10 +34,10 @@ connectionTree pool =
               Enc.encodeUtf8 text
 
         value <-
-          liftIO $ do
+          liftIO . withResource pool $ \connection -> do
             result <-
               Connection.executeRaw
-                pool
+                connection
                 (B8.pack "SELECT $1::text = $2::text")
                 [ Just $ PGTextFormatValue.fromByteString notNulBytes
                 , Just $ PGTextFormatValue.unsafeFromByteString notNulBytes
@@ -58,9 +58,9 @@ connectionTree pool =
                 ]
 
         result <-
-          liftIO . try $ do
+          liftIO . try . withResource pool $ \connection ->
             Connection.executeRaw
-              pool
+              connection
               (B8.pack "SELECT $1::text")
               [ Just $ PGTextFormatValue.fromByteString bytesWithNul
               ]
@@ -86,10 +86,10 @@ connectionTree pool =
                 ]
 
         value <-
-          liftIO $ do
+          liftIO . withResource pool $ \connection -> do
             result <-
               Connection.executeRaw
-                pool
+                connection
                 (B8.pack "SELECT $1::text")
                 [ Just $ PGTextFormatValue.unsafeFromByteString bytesWithNul
                 ]
@@ -105,9 +105,9 @@ connectionTree pool =
         randomText <- HH.forAll $ PGGen.pgText (Range.constant 1 16)
 
         result <-
-          liftIO . try $ do
+          liftIO . try . withResource pool $ \connection ->
             Connection.executeRaw
-              pool
+              connection
               (Enc.encodeUtf8 randomText)
               []
 

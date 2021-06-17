@@ -5,7 +5,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import Data.Int (Int32)
-import Data.Pool (Pool)
+import Data.Pool (Pool, withResource)
 import qualified Data.Text as T
 
 import Database.Orville.PostgreSQL.Connection (Connection)
@@ -174,24 +174,25 @@ mkOrderByTestExpectedRows test =
    in fmap mkRow (orderByExpectedQueryResults test)
 
 runOrderByTest :: Pool Connection -> OrderByTest -> IO ()
-runOrderByTest pool test = do
-  dropAndRecreateTestTable pool
+runOrderByTest pool test =
+  withResource pool $ \connection -> do
+    dropAndRecreateTestTable connection
 
-  let exprTestTable = Expr.rawTableName "expr_test"
+    let exprTestTable = Expr.rawTableName "expr_test"
 
-  RawSql.executeVoid pool
-    . Expr.insertExprToSql
-    $ Expr.insertExpr exprTestTable Nothing (mkOrderByTestInsertSource test)
+    RawSql.executeVoid connection
+      . Expr.insertExprToSql
+      $ Expr.insertExpr exprTestTable Nothing (mkOrderByTestInsertSource test)
 
-  result <-
-    RawSql.execute pool
-      . Expr.queryExprToSql
-      $ Expr.queryExpr
-        (Expr.selectColumns [fooColumn, barColumn])
-        (Expr.tableExpr exprTestTable Nothing (orderByClause test))
+    result <-
+      RawSql.execute connection
+        . Expr.queryExprToSql
+        $ Expr.queryExpr
+          (Expr.selectColumns [fooColumn, barColumn])
+          (Expr.tableExpr exprTestTable Nothing (orderByClause test))
 
-  rows <- ExecResult.readRows result
-  rows `shouldBe` mkOrderByTestExpectedRows test
+    rows <- ExecResult.readRows result
+    rows `shouldBe` mkOrderByTestExpectedRows test
 
 data WhereConditionTest = WhereConditionTest
   { whereValuesToInsert :: [FooBar]
@@ -216,24 +217,25 @@ mkTestExpectedRows test =
    in fmap mkRow (whereExpectedQueryResults test)
 
 runWhereConditionTest :: Pool Connection -> WhereConditionTest -> IO ()
-runWhereConditionTest pool test = do
-  dropAndRecreateTestTable pool
+runWhereConditionTest pool test =
+  withResource pool $ \connection -> do
+    dropAndRecreateTestTable connection
 
-  let exprTestTable = Expr.rawTableName "expr_test"
+    let exprTestTable = Expr.rawTableName "expr_test"
 
-  RawSql.executeVoid pool $
-    Expr.insertExprToSql $
-      Expr.insertExpr exprTestTable Nothing (mkTestInsertSource test)
+    RawSql.executeVoid connection $
+      Expr.insertExprToSql $
+        Expr.insertExpr exprTestTable Nothing (mkTestInsertSource test)
 
-  result <-
-    RawSql.execute pool $
-      Expr.queryExprToSql $
-        Expr.queryExpr
-          (Expr.selectColumns [fooColumn, barColumn])
-          (Expr.tableExpr exprTestTable (whereClause test) Nothing)
+    result <-
+      RawSql.execute connection $
+        Expr.queryExprToSql $
+          Expr.queryExpr
+            (Expr.selectColumns [fooColumn, barColumn])
+            (Expr.tableExpr exprTestTable (whereClause test) Nothing)
 
-  rows <- ExecResult.readRows result
-  rows `shouldBe` mkTestExpectedRows test
+    rows <- ExecResult.readRows result
+    rows `shouldBe` mkTestExpectedRows test
 
 testTable :: Expr.TableName
 testTable =
@@ -247,7 +249,7 @@ barColumn :: Expr.ColumnName
 barColumn =
   Expr.rawColumnName "bar"
 
-dropAndRecreateTestTable :: Pool Connection -> IO ()
-dropAndRecreateTestTable pool = do
-  RawSql.executeVoid pool (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid pool (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+dropAndRecreateTestTable :: Connection -> IO ()
+dropAndRecreateTestTable connection = do
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
+  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

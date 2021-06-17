@@ -33,7 +33,7 @@ import qualified Data.DList as DList
 import qualified Data.List as List
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
-import Database.Orville.PostgreSQL.Connection (Connection, Pool)
+import Database.Orville.PostgreSQL.Connection (Connection)
 import qualified Database.Orville.PostgreSQL.Connection as Conn
 import Database.Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
@@ -175,22 +175,22 @@ intercalate separator parts =
   to read the documentation of 'Conn.executeRaw' for caveats and warnings.
   Use with caution.
 -}
-execute :: Pool Connection -> RawSql -> IO LibPQ.Result
-execute conn rawSql =
+execute :: Connection -> RawSql -> IO LibPQ.Result
+execute connection rawSql =
   let (sqlBytes, params) =
         toBytesAndParams rawSql
-   in Conn.executeRaw conn sqlBytes params
+   in Conn.executeRaw connection sqlBytes params
 
 {- |
   Executes a 'RawSql' value using the 'Conn.executeRawVoid' function. Make sure
   to read the documentation of 'Conn.executeRawVoid' for caveats and warnings.
   Use with caution.
 -}
-executeVoid :: Pool Connection -> RawSql -> IO ()
-executeVoid conn rawSql =
+executeVoid :: Connection -> RawSql -> IO ()
+executeVoid connection rawSql =
   let (sqlBytes, params) =
         toBytesAndParams rawSql
-   in Conn.executeRawVoid conn sqlBytes params
+   in Conn.executeRawVoid connection sqlBytes params
 
 -- | Just a plain old space, provided for convenience
 space :: RawSql
