@@ -24,6 +24,7 @@ module Database.Orville.PostgreSQL.Plan
   , chain
   , apply
   , planMany
+  , planList
   , focusParam
   , planEither
   , planMaybe
@@ -320,6 +321,16 @@ planMany :: (forall manyScope. Plan manyScope param result)
          -> Plan scope [param] (Many param result)
 planMany =
   PlanMany
+
+{-|
+  'planList' lifts a plan so both its param and result become lists.
+  This saves you from having to fmap in 'Many.elems' when all you want back
+  from a 'Many' is the list of results inside it.
+-}
+planList :: (forall scope. Plan scope param result)
+         -> Plan listScope [param] [result]
+planList plan =
+  Many.elems <$> planMany plan
 
 {-|
   'focusParam' builds a plan from a function and an existing plan taking the
