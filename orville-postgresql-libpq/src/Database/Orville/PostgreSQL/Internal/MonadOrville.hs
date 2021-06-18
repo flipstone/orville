@@ -13,7 +13,7 @@ module Database.Orville.PostgreSQL.Internal.MonadOrville
 where
 
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Reader (ReaderT (ReaderT), runReaderT, ask, local)
+import Control.Monad.Trans.Reader (ReaderT (ReaderT), ask, local, runReaderT)
 import Data.Pool (Pool, withResource)
 
 import Database.Orville.PostgreSQL.Connection (Connection)
@@ -59,7 +59,6 @@ class
     newtype MyApplicationMonad a =
       MyApplicationMonad (ReaderT MyApplicationState IO) a
 
-
     instance HasOrvilleState MyApplicationMonad where
       askOrvilleState =
         MyApplicationMonad (asks appOrvilleState)
@@ -75,14 +74,13 @@ class
   the case that your application has no extra context to track.
 -}
 class HasOrvilleState m where
-  {- |
+  {-
     Fetches the current 'OrvilleState' from the host Monad context. The
     equivalent of 'ask' for 'ReaderT OrvilleState'
   -}
   askOrvilleState :: m OrvilleState
 
-
-  {- |
+  {-
     Applies a modification to the 'OrvilleState' that is local to the given
     monad operation. Calls to 'askOrvilleState' made within the 'm a' provided
     must return the modified state. The modified state must only apply to
@@ -90,11 +88,11 @@ class HasOrvilleState m where
     for 'ReaderT OrvilleState'
   -}
   localOrvilleState ::
-                       (OrvilleState -> OrvilleState)
-                       -- ^ The function to modify the 'OrvilleState'
-                    -> m a
-                       -- ^ The monad operation to execute with the modified state
-                    -> m a
+    -- | The function to modify the 'OrvilleState'
+    (OrvilleState -> OrvilleState) ->
+    -- | The monad operation to execute with the modified state
+    m a ->
+    m a
 
 instance Monad m => HasOrvilleState (ReaderT OrvilleState m) where
   askOrvilleState = ask
@@ -172,7 +170,7 @@ data ConnectionState
   before release, we just haven't gotten quite there yet.
 -}
 class MonadOrvilleControl m where
-  {- |
+  {-
     Orville will use this function to lift the acquisition of connections
     from the resource pool into the application monad.
   -}
