@@ -6,7 +6,7 @@ where
 import Database.Orville.PostgreSQL.Connection (Connection)
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition (tableName), mkCreateTableExpr)
+import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkCreateTableExpr, tableName)
 
 dropAndRecreateTableDef ::
   Connection ->

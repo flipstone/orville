@@ -1,7 +1,11 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Database.Orville.PostgreSQL.Internal.TableDefinition
-  ( TableDefinition (..),
+  ( TableDefinition,
+    mkTableDefiniton,
+    tableName,
+    tablePrimaryKey,
+    tableMarshaller,
     mkInsertExpr,
     mkCreateTableExpr,
     mkInsertColumnList,
@@ -32,10 +36,48 @@ import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
     from the result set when entities are queried from this table.
 -}
 data TableDefinition key writeEntity readEntity = TableDefinition
-  { tableName :: Expr.TableName
-  , tablePrimaryKey :: PrimaryKey key
-  , tableMarshaller :: SqlMarshaller writeEntity readEntity
+  { _tableName :: Expr.TableName
+  , _tablePrimaryKey :: PrimaryKey key
+  , _tableMarshaller :: SqlMarshaller writeEntity readEntity
   }
+
+{- |
+  Constructs a new 'TableDefinition' with the minimal fields required for
+  operation.
+-}
+mkTableDefiniton ::
+  -- | The name of the table
+  String ->
+  -- | Definition of the table's primary key
+  PrimaryKey key ->
+  -- | A 'SqlMarshaller' to marshall table entities to and from the database
+  SqlMarshaller writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+mkTableDefiniton name primaryKey marshaller =
+  TableDefinition
+    { _tableName = Expr.rawTableName name
+    , _tablePrimaryKey = primaryKey
+    , _tableMarshaller = marshaller
+    }
+
+{- |
+  Returns the tables name in as an expression that can be used to build SQL
+  statements.
+-}
+tableName :: TableDefinition key writeEntity readEntity -> Expr.TableName
+tableName = _tableName
+
+{- |
+  Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
+-}
+tablePrimaryKey :: TableDefinition key writeEntity readEntity -> PrimaryKey key
+tablePrimaryKey = _tablePrimaryKey
+
+{- |
+  Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
+-}
+tableMarshaller :: TableDefinition key writeEntity readEntity -> SqlMarshaller writeEntity readEntity
+tableMarshaller = _tableMarshaller
 
 {- |
   Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the

@@ -10,11 +10,10 @@ import qualified Data.Text as T
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
-import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, integerField, unboundedTextField)
 import Database.Orville.PostgreSQL.Internal.PrimaryKey (primaryKey)
 import Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallField)
-import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition (..))
+import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableDefiniton)
 
 import qualified Test.PGGen as PGGen
 
@@ -29,11 +28,7 @@ data Foo = Foo
 
 table :: TableDefinition FooId Foo Foo
 table =
-  TableDefinition
-    { tableName = Expr.rawTableName "foo"
-    , tablePrimaryKey = primaryKey fooIdField
-    , tableMarshaller = fooMarshaller
-    }
+  mkTableDefiniton "foo" (primaryKey fooIdField) fooMarshaller
 
 fooMarshaller :: SqlMarshaller Foo Foo
 fooMarshaller =

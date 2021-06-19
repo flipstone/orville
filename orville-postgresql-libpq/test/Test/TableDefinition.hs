@@ -17,7 +17,7 @@ import Database.Orville.PostgreSQL.Connection (Connection, SqlExecutionError (sq
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import Database.Orville.PostgreSQL.Internal.SqlMarshaller (marshallResultFromSql)
-import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition (tableMarshaller), mkInsertExpr, mkQueryExpr)
+import Database.Orville.PostgreSQL.Internal.TableDefinition (mkInsertExpr, mkQueryExpr, tableMarshaller)
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.TestTable as TestTable
