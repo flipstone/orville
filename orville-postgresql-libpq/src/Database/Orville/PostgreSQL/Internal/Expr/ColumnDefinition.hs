@@ -7,6 +7,10 @@ module Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition
   ( ColumnDefinition,
     columnDefinition,
     columnDefinitionToSql,
+    ColumnConstraint,
+    columnConstraintToSql,
+    notNullConstraint,
+    nullConstraint,
     DataType,
     timestampWithZone,
     date,
@@ -32,12 +36,32 @@ newtype ColumnDefinition
 columnDefinitionToSql :: ColumnDefinition -> RawSql.RawSql
 columnDefinitionToSql (ColumnDefinition sql) = sql
 
-columnDefinition :: ColumnName -> DataType -> ColumnDefinition
-columnDefinition columnName dataType =
+columnDefinition ::
+  ColumnName ->
+  DataType ->
+  Maybe ColumnConstraint ->
+  ColumnDefinition
+columnDefinition columnName dataType columnConstraint =
   ColumnDefinition $
     columnNameToSql columnName
       <> RawSql.space
       <> dataTypeToSql dataType
+      <> RawSql.space
+      <> maybe mempty columnConstraintToSql columnConstraint
+
+newtype ColumnConstraint
+  = ColumnConstraint RawSql.RawSql
+
+columnConstraintToSql :: ColumnConstraint -> RawSql.RawSql
+columnConstraintToSql (ColumnConstraint sql) = sql
+
+notNullConstraint :: ColumnConstraint
+notNullConstraint =
+  ColumnConstraint (RawSql.fromString "NOT NULL")
+
+nullConstraint :: ColumnConstraint
+nullConstraint =
+  ColumnConstraint (RawSql.fromString "NULL")
 
 newtype DataType
   = DataType RawSql.RawSql
