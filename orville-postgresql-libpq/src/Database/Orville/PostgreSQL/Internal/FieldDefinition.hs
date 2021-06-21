@@ -21,7 +21,8 @@ module Database.Orville.PostgreSQL.Internal.FieldDefinition
     fieldNameToByteString,
     NotNull,
     Nullable,
-    Nullability (..),
+    nullableField,
+    asymmetricNullableField,
     integerField,
     serialField,
     bigIntegerField,
@@ -45,9 +46,8 @@ import qualified Data.Time as Time
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.SqlType (SqlType)
 import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
-import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 newtype FieldName
   = FieldName B8.ByteString
@@ -78,8 +78,8 @@ fieldNameToByteString (FieldName name) =
 -}
 data FieldDefinition nullability a = FieldDefinition
   { _fieldName :: FieldName
-  , _fieldType :: SqlType a
-  , _fieldNullability :: Nullability nullability
+  , _fieldType :: SqlType.SqlType a
+  , _fieldNullability :: NullabilityGADT nullability
   }
 
 {- |
@@ -93,24 +93,35 @@ fieldName = _fieldName
   used to define the field as well as how to mashall Haskell values to and
   from the database.
 -}
-fieldType :: FieldDefinition nullability a -> SqlType a
+fieldType :: FieldDefinition nullability a -> SqlType.SqlType a
 fieldType = _fieldType
 
-{- |
-  The 'Nullability' for a field indicates whether the column is marked nullable
-  in the database.
-
-  TODO: This is not yet completely ported. I've included it in the initial
-  port simply for the sake of having the nullability type parameter.
+{- | A 'FieldNullability is returned by the 'fieldNullability' function, which
+ can be used when a function works on both 'Nullable' and 'NotNull' functions
+ but needs to deal with each type of field separately. It adds wrapper
+ constructors around the 'FieldDefinition' that you can pattern match on to
+ then work with a concrete 'Nullable' or 'NotNull' field.
 -}
-fieldNullability :: FieldDefinition nullability a -> Nullability nullability
-fieldNullability = _fieldNullability
+data FieldNullability a
+  = NullableField (FieldDefinition Nullable a)
+  | NotNullField (FieldDefinition NotNull a)
+
+{- | Resolves the 'nullablity' of a field to a concrete type, which is returned
+ via the 'FieldNullability type. You can pattern match on this type to then
+ extract the either 'Nullable' or 'NotNull' not field for cases where you
+ may require different logic based on the nullability of a field.
+-}
+fieldNullability :: FieldDefinition nullability a -> FieldNullability a
+fieldNullability field =
+  case _fieldNullability field of
+    NullableGADT -> NullableField field
+    NotNullGADT -> NotNullField field
 
 {- |
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
   representation.
 -}
-fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue
+fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue.SqlValue
 fieldValueToSqlValue =
   SqlType.sqlTypeToSql . fieldType
 
@@ -118,7 +129,7 @@ fieldValueToSqlValue =
   Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
   This may fail, in which case 'Nothing' is returned.
 -}
-fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Maybe a
+fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Maybe a
 fieldValueFromSqlValue =
   SqlType.sqlTypeFromSql . fieldType
 
@@ -133,25 +144,41 @@ fieldColumnName =
 {- |
   Constructions the equivalant 'Expr.FieldDefinition' as a SQL expression,
   generally for use in DDL for creating column in a table.
-
-  TODO: Handle nullable fields here when we finish porting nullability.
 -}
 fieldColumnDefinition :: FieldDefinition nullability a -> Expr.ColumnDefinition
 fieldColumnDefinition fieldDef =
   Expr.columnDefinition
     (fieldColumnName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
+    (Just $ fieldColumnConstraint fieldDef)
 
 {- |
-  'Nullability' represents whether a field will be marked as 'NULL' or 'NOT
-  NULL' in the database schema. It is a GADT so that the value constructors
-  can be used to record this knowledge in the type system as well. This allows
-  functions that work only on 'Nullable' or 'NotNull' fields to indicate this
-  in their type signatures as appropriate.
+  INTERNAL - Builds the appropriate ColumnConstraint for a field. Currently
+  this only handles nullability, but if we add support for more constraints
+  directly on columns it may end up handling those as well.
 -}
-data Nullability nullability where
-  Nullable :: Nullability Nullable
-  NotNull :: Nullability NotNull
+fieldColumnConstraint :: FieldDefinition nullabily a -> Expr.ColumnConstraint
+fieldColumnConstraint fieldDef =
+  case fieldNullability fieldDef of
+    NotNullField _ ->
+      Expr.notNullConstraint
+    NullableField _ ->
+      Expr.nullConstraint
+
+{- |
+  The type in considered internal because it requires GADTs to make use of
+  it meaningfully. The 'FieldNullability' type is used as the public interface
+  to surface this information to users outside the module.
+
+  The 'NullabilityGADT' represents whether a field will be marked as 'NULL' or
+  'NOT NULL' in the database schema. It is a GADT so that the value
+  constructors can be used to record this knowledge in the type system as well.
+  This allows functions that work only on 'Nullable' or 'NotNull' fields to
+  indicate this in their type signatures as appropriate.
+-}
+data NullabilityGADT nullability where
+  NullableGADT :: NullabilityGADT Nullable
+  NotNullGADT :: NullabilityGADT NotNull
 
 {- |
   'NotNull' is a values-less type used to track that a 'FieldDefinition'
@@ -309,7 +336,7 @@ timestampField = fieldOfType SqlType.timestamp
 -}
 fieldOfType ::
   -- | 'SqlType' that represents the PostgreSQL data type for the field.
-  SqlType a ->
+  SqlType.SqlType a ->
   -- | Name of the field in the database
   String ->
   FieldDefinition NotNull a
@@ -317,4 +344,54 @@ fieldOfType sqlType name =
   FieldDefinition
     (stringToFieldName name)
     sqlType
-    NotNull
+    NotNullGADT
+
+{- |
+  Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field
+  in 'Maybe'. The field will be marked as 'NULL' in the database schema and
+  the value 'Nothing' will be used to represent 'NULL' values when converting
+  to and from sql.
+-}
+nullableField :: FieldDefinition NotNull a -> FieldDefinition Nullable (Maybe a)
+nullableField field =
+  let nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
+      nullableType sqlType =
+        sqlType
+          { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
+          , SqlType.sqlTypeFromSql =
+              \sqlValue ->
+                if SqlValue.isSqlNull sqlValue
+                  then Just Nothing
+                  else Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
+          }
+   in FieldDefinition
+        (fieldName field)
+        (nullableType $ fieldType field)
+        NullableGADT
+
+{- |
+  Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
+  'NotNull', you wanted 'nullableField' instead of this function). Note that
+  fields created using this function have asymetric encoding and decoding of
+  'NULL' values. Because the provided field is 'Nullable', 'NULL' values decode
+  from the database already have a representation in the 'a' type, so 'NULL'
+  will be decoded as 'Just <value of type a for NULL>'. This means if you
+  insert a 'Nothing' value using the field, it will be read back as 'Just'
+  value. This is useful for building high level combinators that might need to
+  make fields 'Nullable' but need the value to be decoded in its underlying
+  type when reading back (e.g. 'maybeMapper' from 'RelationalMap').
+
+  TODO: update this comment once 'maybeMapper' gets ported over from HDBC
+-}
+asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
+asymmetricNullableField field =
+  let nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
+      nullableType sqlType =
+        sqlType
+          { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
+          , SqlType.sqlTypeFromSql = \sqlValue -> Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
+          }
+   in FieldDefinition
+        (fieldName field)
+        (nullableType $ fieldType field)
+        NullableGADT
