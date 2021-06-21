@@ -46,9 +46,7 @@ import qualified Data.Time as Time
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.SqlType (SqlType)
 import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
-import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 newtype FieldName
@@ -80,7 +78,7 @@ fieldNameToByteString (FieldName name) =
 -}
 data FieldDefinition nullability a = FieldDefinition
   { _fieldName :: FieldName
-  , _fieldType :: SqlType a
+  , _fieldType :: SqlType.SqlType a
   , _fieldNullability :: NullabilityGADT nullability
   }
 
@@ -95,7 +93,7 @@ fieldName = _fieldName
   used to define the field as well as how to mashall Haskell values to and
   from the database.
 -}
-fieldType :: FieldDefinition nullability a -> SqlType a
+fieldType :: FieldDefinition nullability a -> SqlType.SqlType a
 fieldType = _fieldType
 
 {- | A 'FieldNullability is returned by the 'fieldNullability' function, which
@@ -123,7 +121,7 @@ fieldNullability field =
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
   representation.
 -}
-fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue
+fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue.SqlValue
 fieldValueToSqlValue =
   SqlType.sqlTypeToSql . fieldType
 
@@ -131,7 +129,7 @@ fieldValueToSqlValue =
   Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
   This may fail, in which case 'Nothing' is returned.
 -}
-fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue -> Maybe a
+fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Maybe a
 fieldValueFromSqlValue =
   SqlType.sqlTypeFromSql . fieldType
 
@@ -338,7 +336,7 @@ timestampField = fieldOfType SqlType.timestamp
 -}
 fieldOfType ::
   -- | 'SqlType' that represents the PostgreSQL data type for the field.
-  SqlType a ->
+  SqlType.SqlType a ->
   -- | Name of the field in the database
   String ->
   FieldDefinition NotNull a
@@ -356,7 +354,7 @@ fieldOfType sqlType name =
 -}
 nullableField :: FieldDefinition NotNull a -> FieldDefinition Nullable (Maybe a)
 nullableField field =
-  let nullableType :: SqlType a -> SqlType (Maybe a)
+  let nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
       nullableType sqlType =
         sqlType
           { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
@@ -387,7 +385,7 @@ nullableField field =
 -}
 asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
 asymmetricNullableField field =
-  let nullableType :: SqlType a -> SqlType (Maybe a)
+  let nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
       nullableType sqlType =
         sqlType
           { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
