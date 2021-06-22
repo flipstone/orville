@@ -10,6 +10,7 @@ module Database.Orville.PostgreSQL
     Orville.Orville,
     Orville.runOrville,
     MonadOrville.MonadOrville,
+    MonadOrville.withConnection,
     MonadOrville.MonadOrvilleControl (liftWithConnection),
     MonadOrville.HasOrvilleState (askOrvilleState, localOrvilleState),
     MonadOrville.OrvilleState,
