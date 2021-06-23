@@ -13,6 +13,7 @@ import Test.Expr (exprSpecs)
 import Test.FieldDefinition (fieldDefinitionTree)
 import Test.RawSql (rawSqlSpecs)
 import Test.RecordOperations (recordOperationsTree)
+import Test.SelectOptions (selectOptionsTree)
 import Test.SqlMarshaller (sqlMarshallerTree)
 import Test.SqlType (sqlTypeSpecs)
 import Test.TableDefinition (tableDefinitionTree)
@@ -36,5 +37,6 @@ main = do
       , sqlMarshallerTree
       , fieldDefinitionTree pool
       , tableDefinitionTree pool
+      , selectOptionsTree
       , recordOperationsTree pool
       ]

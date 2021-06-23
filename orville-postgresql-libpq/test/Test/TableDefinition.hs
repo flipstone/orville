@@ -20,6 +20,7 @@ import Database.Orville.PostgreSQL.Internal.SqlMarshaller (marshallResultFromSql
 import Database.Orville.PostgreSQL.Internal.TableDefinition (mkInsertExpr, mkQueryExpr, tableMarshaller)
 
 import qualified Test.Entities.Foo as Foo
+import Test.PropertyHelpers (testPropertyOnce)
 import qualified Test.TestTable as TestTable
 
 tableDefinitionTree :: Pool Connection -> TestTree
@@ -43,7 +44,7 @@ tableDefinitionTree pool =
             marshallResultFromSql (tableMarshaller Foo.table) result
 
         foosFromDB === Right [originalFoo]
-    , testProperty "Creates a primary key that rejects duplicate records" . HH.withTests 1 . HH.property $ do
+    , testPropertyOnce "Creates a primary key that rejects duplicate records" . HH.property $ do
         originalFoo <- HH.forAll Foo.generate
 
         let insertFoo =

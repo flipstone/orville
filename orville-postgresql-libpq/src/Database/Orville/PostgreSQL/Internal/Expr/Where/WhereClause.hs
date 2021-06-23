@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Database.Orville.PostgreSQL.Expr.Where.WhereClause
 Copyright : Flipstone Technology Partners 2016-2021
@@ -15,6 +17,7 @@ import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype WhereClause
   = WhereClause RawSql.RawSql
+  deriving (RawSql.ToRawSql)
 
 whereClauseToSql :: WhereClause -> RawSql.RawSql
 whereClauseToSql (WhereClause sql) = sql

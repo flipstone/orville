@@ -22,6 +22,7 @@ import qualified Database.Orville.PostgreSQL.Connection as Connection
 import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
 
 import qualified Test.PGGen as PGGen
+import Test.PropertyHelpers (testPropertyOnce)
 
 connectionTree :: Pool Connection -> TestTree
 connectionTree pool =
@@ -99,7 +100,7 @@ connectionTree pool =
         value === Just bytesBefore
     , -- Note: we only run this test once to cut down on the number of errors
       -- printed out by the database server when running tests repeatedly.
-      testProperty "executeRaw returns error if invalid sql is given" . HH.withTests 1 . HH.property $ do
+      testPropertyOnce "executeRaw returns error if invalid sql is given" . HH.property $ do
         -- We generate non-empty queries here becaues libpq returns different
         -- error details when an empty string is passed
         randomText <- HH.forAll $ PGGen.pgText (Range.constant 1 16)

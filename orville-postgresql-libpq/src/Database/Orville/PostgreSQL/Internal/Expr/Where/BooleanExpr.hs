@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Database.Orville.PostgreSQL.Expr.Where.BooleanExpr
 Copyright : Flipstone Technology Partners 2016-2021
@@ -11,6 +13,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     parenthesized,
     comparison,
     columnEquals,
+    columnNotEquals,
     columnGreaterThan,
     columnLessThan,
     columnGreaterThanOrEqualTo,
@@ -19,12 +22,14 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
 where
 
 import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
-import Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, comparisonOperatorToSql, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp)
+import Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, comparisonOperatorToSql, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp, notEqualsOp)
 import Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand (RowValuePredicand, columnReference, comparisonValue, rowValuePredicandToSql)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
-newtype BooleanExpr = BooleanExpr RawSql.RawSql
+newtype BooleanExpr
+  = BooleanExpr RawSql.RawSql
+  deriving (RawSql.ToRawSql)
 
 booleanExprToSql :: BooleanExpr -> RawSql.RawSql
 booleanExprToSql (BooleanExpr sql) = sql
@@ -64,6 +69,10 @@ comparison left op right =
 columnEquals :: ColumnName -> SqlValue -> BooleanExpr
 columnEquals name value =
   comparison (columnReference name) equalsOp (comparisonValue value)
+
+columnNotEquals :: ColumnName -> SqlValue -> BooleanExpr
+columnNotEquals name value =
+  comparison (columnReference name) notEqualsOp (comparisonValue value)
 
 columnGreaterThan :: ColumnName -> SqlValue -> BooleanExpr
 columnGreaterThan name value =
