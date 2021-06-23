@@ -29,6 +29,7 @@ library:
     - Database.Orville.PostgreSQL.Internal.PGTextFormatValue
     - Database.Orville.PostgreSQL.Internal.PrimaryKey
     - Database.Orville.PostgreSQL.Internal.RawSql
+    - Database.Orville.PostgreSQL.Internal.SelectOptions
     - Database.Orville.PostgreSQL.Internal.SqlMarshaller
     - Database.Orville.PostgreSQL.Internal.SqlType
     - Database.Orville.PostgreSQL.Internal.SqlValue
@@ -81,8 +82,10 @@ tests:
       - Test.Expr
       - Test.FieldDefinition
       - Test.PGGen
+      - Test.PropertyHelpers
       - Test.RawSql
       - Test.RecordOperations
+      - Test.SelectOptions
       - Test.SqlMarshaller
       - Test.SqlType
       - Test.TableDefinition

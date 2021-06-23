@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f01c660c8806d3d6a9cae7ec8e93ae903084eb286faa431db51bf20e905071b9
+-- hash: 9add8aabc0da78d0ae39ac3b1feb0880f1f024d2031b911ea1411537137ad1aa
 
 name:           orville-postgresql-libpq
 version:        0.10.0.0
@@ -39,6 +39,7 @@ library
       Database.Orville.PostgreSQL.Internal.PGTextFormatValue
       Database.Orville.PostgreSQL.Internal.PrimaryKey
       Database.Orville.PostgreSQL.Internal.RawSql
+      Database.Orville.PostgreSQL.Internal.SelectOptions
       Database.Orville.PostgreSQL.Internal.SqlMarshaller
       Database.Orville.PostgreSQL.Internal.SqlType
       Database.Orville.PostgreSQL.Internal.SqlValue
@@ -66,6 +67,8 @@ library
       Database.Orville.PostgreSQL.Internal.MonadOrville
       Database.Orville.PostgreSQL.Internal.Orville
       Database.Orville.PostgreSQL.Internal.RecordOperations
+      Database.Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
+      Database.Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       src
@@ -95,8 +98,10 @@ test-suite spec
       Test.Expr
       Test.FieldDefinition
       Test.PGGen
+      Test.PropertyHelpers
       Test.RawSql
       Test.RecordOperations
+      Test.SelectOptions
       Test.SqlMarshaller
       Test.SqlType
       Test.TableDefinition

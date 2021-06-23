@@ -26,6 +26,7 @@ import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
+import Test.PropertyHelpers (testPropertyOnce)
 
 fieldDefinitionTree :: Pool Connection -> TestTree
 fieldDefinitionTree pool =
@@ -91,7 +92,7 @@ testFieldProperties pool fieldDefName roundTripTest =
         runRoundTripTest pool roundTripTest
     , testProperty "can round trip values (nullable)" . HH.property $ do
         runNullableRoundTripTest pool roundTripTest
-    , testProperty "cannot insert null values into a not null field" . HH.withTests 1 . HH.property $ do
+    , testPropertyOnce "cannot insert null values into a not null field" . HH.property $ do
         runNullCounterExampleTest pool roundTripTest
     ]
 
