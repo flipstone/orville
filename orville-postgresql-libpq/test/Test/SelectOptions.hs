@@ -24,43 +24,43 @@ selectOptionsTree =
         assertWhereClauseEquals
           Nothing
           SO.emptySelectOptions
-    , testPropertyOnce "whereEquals generates expected sql" . HH.property $
+    , testPropertyOnce "fieldEquals generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo = $1)")
-          (SO.where_ $ SO.whereEquals fooField 0)
-    , testPropertyOnce "whereNotEquals generates expected sql" . HH.property $
+          (SO.where_ $ SO.fieldEquals fooField 0)
+    , testPropertyOnce "fieldNotEquals generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo <> $1)")
-          (SO.where_ $ SO.whereNotEquals fooField 0)
-    , testPropertyOnce "whereLessThan generates expected sql" . HH.property $
+          (SO.where_ $ SO.fieldNotEquals fooField 0)
+    , testPropertyOnce "fieldLessThan generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo < $1)")
-          (SO.where_ $ SO.whereLessThan fooField 0)
-    , testPropertyOnce "whereGreaterThan generates expected sql" . HH.property $
+          (SO.where_ $ SO.fieldLessThan fooField 0)
+    , testPropertyOnce "fieldGreaterThan generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo > $1)")
-          (SO.where_ $ SO.whereGreaterThan fooField 0)
-    , testPropertyOnce "whereLessThanOrEqualTo generates expected sql" . HH.property $
+          (SO.where_ $ SO.fieldGreaterThan fooField 0)
+    , testPropertyOnce "fieldLessThanOrEqualTo generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo <= $1)")
-          (SO.where_ $ SO.whereLessThanOrEqualTo fooField 0)
-    , testPropertyOnce "whereGreaterThanOrEqualTo generates expected sql" . HH.property $
+          (SO.where_ $ SO.fieldLessThanOrEqualTo fooField 0)
+    , testPropertyOnce "fieldGreaterThanOrEqualTo generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo >= $1)")
-          (SO.where_ $ SO.whereGreaterThanOrEqualTo fooField 0)
+          (SO.where_ $ SO.fieldGreaterThanOrEqualTo fooField 0)
     , testPropertyOnce "whereAnd generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE ((foo = $1) AND (bar = $2))")
-          (SO.where_ $ SO.whereAnd (SO.whereEquals fooField 10 :| [SO.whereEquals barField 20]))
+          (SO.where_ $ SO.whereAnd (SO.fieldEquals fooField 10 :| [SO.fieldEquals barField 20]))
     , testPropertyOnce "whereOr generates expected sql" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE ((foo = $1) OR (bar = $2))")
-          (SO.where_ $ SO.whereOr (SO.whereEquals fooField 10 :| [SO.whereEquals barField 20]))
+          (SO.where_ $ SO.whereOr (SO.fieldEquals fooField 10 :| [SO.fieldEquals barField 20]))
     , testPropertyOnce "combining SelectOptions ANDs the where clauses together" . HH.property $
         assertWhereClauseEquals
           (Just "WHERE (foo = $1) AND (bar = $2)")
-          ( SO.where_ (SO.whereEquals fooField 10)
-              <> SO.where_ (SO.whereEquals barField 20)
+          ( SO.where_ (SO.fieldEquals fooField 10)
+              <> SO.where_ (SO.fieldEquals barField 20)
           )
     ]
 

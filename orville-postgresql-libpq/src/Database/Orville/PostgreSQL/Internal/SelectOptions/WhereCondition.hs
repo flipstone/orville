@@ -2,12 +2,12 @@
 
 module Database.Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
   ( WhereCondition,
-    whereEquals,
-    whereNotEquals,
-    whereGreaterThan,
-    whereLessThan,
-    whereGreaterThanOrEqualTo,
-    whereLessThanOrEqualTo,
+    fieldEquals,
+    fieldNotEquals,
+    fieldGreaterThan,
+    fieldLessThan,
+    fieldGreaterThanOrEqualTo,
+    fieldLessThanOrEqualTo,
     whereAnd,
     whereOr,
     whereBooleanExpr,
@@ -53,43 +53,43 @@ whereConditionToBooleanExpr (WhereCondition expr) =
 {- |
   Checks that the value in a field equals a particular value.
 -}
-whereEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-whereEquals =
+fieldEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldEquals =
   whereColumnComparison Expr.columnEquals
 
 {- |
   Checks that the value in a field does not equal a particular value.
 -}
-whereNotEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-whereNotEquals =
+fieldNotEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldNotEquals =
   whereColumnComparison Expr.columnNotEquals
 
 {- |
   Checks that the value in a field is greater than a particular value.
 -}
-whereGreaterThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-whereGreaterThan =
+fieldGreaterThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldGreaterThan =
   whereColumnComparison Expr.columnGreaterThan
 
 {- |
   Checks that the value in a field is less than a particular value.
 -}
-whereLessThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-whereLessThan =
+fieldLessThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldLessThan =
   whereColumnComparison Expr.columnLessThan
 
 {- |
   Checks that the value in a field is greater than or equal to a particular value.
 -}
-whereGreaterThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-whereGreaterThanOrEqualTo =
+fieldGreaterThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldGreaterThanOrEqualTo =
   whereColumnComparison Expr.columnGreaterThanOrEqualTo
 
 {- |
   Checks that the value in a field is less than or equal to a particular value.
 -}
-whereLessThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-whereLessThanOrEqualTo =
+fieldLessThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldLessThanOrEqualTo =
   whereColumnComparison Expr.columnLessThanOrEqualTo
 
 {- |
