@@ -1,131 +1,150 @@
 module Test.SqlMarshaller
-  ( sqlMarshallerTree,
+  ( sqlMarshallerProperties,
   )
 where
 
-import Control.Monad.IO.Class (liftIO)
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
-import Data.Int (Int32)
+import qualified Data.Int as Int
+import qualified Data.String as String
 import qualified Data.Text as T
-import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Hedgehog (testProperty)
 
-import Database.Orville.PostgreSQL.Internal.ExecutionResult (Row (..))
 import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldName, fieldName, fieldValueToSqlValue, integerField, stringToFieldName, unboundedTextField)
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, MarshallError (..), SqlMarshaller, foldMarshallerFields, marshallField, marshallResultFromSql, marshallRowFromSql)
+import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
+import qualified Database.Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
 
-sqlMarshallerTree :: TestTree
-sqlMarshallerTree =
-  testGroup
-    "SqlMarshaller properties"
-    [ testProperty "Can round read a pure Int via SqlMarshaller" . HH.property $ do
-        someInt <- HH.forAll generateInt
-        result <- liftIO $ marshallRowFromSql (pure someInt) (Row 0) (Result.mkFakeLibPQResult [] [])
-        result === Right someInt
-    , testProperty "Can combine SqlMarshallers with <*>" . HH.property $ do
-        firstInt <- HH.forAll generateInt
-        secondInt <- HH.forAll generateInt
-        result <- liftIO $ marshallRowFromSql ((pure (+ firstInt)) <*> (pure secondInt)) (Row 0) (Result.mkFakeLibPQResult [] [])
-        result === Right (firstInt + secondInt)
-    , testProperty "Read a single field from a result row using marshallField" . HH.property $ do
-        targetName <- HH.forAll generateName
-        targetValue <- HH.forAll generateInt32
+sqlMarshallerProperties :: IO Bool
+sqlMarshallerProperties =
+  HH.checkParallel $
+    HH.Group
+      (String.fromString "SqlMarshaller properties")
+      [
+        ( String.fromString "Can round read a pure Int via SqlMarshaller"
+        , HH.property $ do
+            someInt <- HH.forAll generateInt
+            result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql (pure someInt) (Result.Row 0) (Result.mkFakeLibPQResult [] [])
+            result HH.=== Right someInt
+        )
+      ,
+        ( String.fromString "Can combine SqlMarshallers with <*>"
+        , HH.property $ do
+            firstInt <- HH.forAll generateInt
+            secondInt <- HH.forAll generateInt
+            result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql ((pure (+ firstInt)) <*> (pure secondInt)) (Result.Row 0) (Result.mkFakeLibPQResult [] [])
+            result HH.=== Right (firstInt + secondInt)
+        )
+      ,
+        ( String.fromString "Read a single field from a result row using marshallField"
+        , HH.property $ do
+            targetName <- HH.forAll generateName
+            targetValue <- HH.forAll generateInt32
 
-        namesBefore <- HH.forAll (generateNamesOtherThan targetName)
-        namesAfter <- HH.forAll (generateNamesOtherThan targetName)
+            namesBefore <- HH.forAll (generateNamesOtherThan targetName)
+            namesAfter <- HH.forAll (generateNamesOtherThan targetName)
 
-        valuesBefore <- HH.forAll (generateAssociatedValues namesBefore generateInt32)
-        valuesAfter <- HH.forAll (generateAssociatedValues namesAfter generateInt32)
+            valuesBefore <- HH.forAll (generateAssociatedValues namesBefore generateInt32)
+            valuesAfter <- HH.forAll (generateAssociatedValues namesAfter generateInt32)
 
-        let fieldDef = integerField targetName
-            marshaller = marshallField id fieldDef
-            input =
-              Result.mkFakeLibPQResult
-                (map B8.pack (namesBefore ++ (targetName : namesAfter)))
-                [map SqlValue.fromInt32 (valuesBefore ++ (targetValue : valuesAfter))]
+            let fieldDef = FieldDefinition.integerField targetName
+                marshaller = SqlMarshaller.marshallField id fieldDef
+                input =
+                  Result.mkFakeLibPQResult
+                    (map B8.pack (namesBefore ++ (targetName : namesAfter)))
+                    [map SqlValue.fromInt32 (valuesBefore ++ (targetValue : valuesAfter))]
 
-        result <- liftIO $ marshallRowFromSql marshaller (Row 0) input
-        result === Right targetValue
-    , testProperty "marshallField fails gracefully when decoding a non-existent column" . HH.property $ do
-        targetName <- HH.forAll generateName
-        otherNames <- HH.forAll (generateNamesOtherThan targetName)
-        otherValues <- HH.forAll (generateAssociatedValues otherNames generateInt32)
+            result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql marshaller (Result.Row 0) input
+            result HH.=== Right targetValue
+        )
+      ,
+        ( String.fromString "marshallField fails gracefully when decoding a non-existent column"
+        , HH.property $ do
+            targetName <- HH.forAll generateName
+            otherNames <- HH.forAll (generateNamesOtherThan targetName)
+            otherValues <- HH.forAll (generateAssociatedValues otherNames generateInt32)
 
-        let fieldDef = integerField targetName
-            marshaller = marshallField id fieldDef
-            input =
-              Result.mkFakeLibPQResult
-                (map B8.pack otherNames)
-                [map SqlValue.fromInt32 otherValues]
+            let fieldDef = FieldDefinition.integerField targetName
+                marshaller = SqlMarshaller.marshallField id fieldDef
+                input =
+                  Result.mkFakeLibPQResult
+                    (map B8.pack otherNames)
+                    [map SqlValue.fromInt32 otherValues]
 
-        result <- liftIO $ marshallRowFromSql marshaller (Row 0) input
-        result === Left FieldNotFoundInResultSet
-    , testProperty "marshallField fails gracefully when decoding a bad value" . HH.property $ do
-        targetName <- HH.forAll generateName
-        nonIntegerText <- HH.forAll (Gen.text (Range.linear 0 10) Gen.alpha)
+            result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql marshaller (Result.Row 0) input
+            result HH.=== Left SqlMarshaller.FieldNotFoundInResultSet
+        )
+      ,
+        ( String.fromString "marshallField fails gracefully when decoding a bad value"
+        , HH.property $ do
+            targetName <- HH.forAll generateName
+            nonIntegerText <- HH.forAll (Gen.text (Range.linear 0 10) Gen.alpha)
 
-        let fieldDef = integerField targetName
-            marshaller = marshallField id fieldDef
-            input =
-              Result.mkFakeLibPQResult
-                [B8.pack targetName]
-                [[SqlValue.fromText nonIntegerText]]
+            let fieldDef = FieldDefinition.integerField targetName
+                marshaller = SqlMarshaller.marshallField id fieldDef
+                input =
+                  Result.mkFakeLibPQResult
+                    [B8.pack targetName]
+                    [[SqlValue.fromText nonIntegerText]]
 
-        result <- liftIO $ marshallRowFromSql marshaller (Row 0) input
-        result === Left FailedToDecodeValue
-    , testProperty "marshallResultFromSql decodes all rows in result set" . HH.property $ do
-        foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
+            result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql marshaller (Result.Row 0) input
+            result HH.=== Left SqlMarshaller.FailedToDecodeValue
+        )
+      ,
+        ( String.fromString "marshallResultFromSql decodes all rows in result set"
+        , HH.property $ do
+            foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
 
-        let mkRowValues foo =
-              [SqlValue.fromText (fooName foo), SqlValue.fromInt32 (fooSize foo)]
+            let mkRowValues foo =
+                  [SqlValue.fromText (fooName foo), SqlValue.fromInt32 (fooSize foo)]
 
-            input =
-              Result.mkFakeLibPQResult
-                [B8.pack "name", B8.pack "size"]
-                (map mkRowValues foos)
+                input =
+                  Result.mkFakeLibPQResult
+                    [B8.pack "name", B8.pack "size"]
+                    (map mkRowValues foos)
 
-        result <- liftIO $ marshallResultFromSql fooMarshaller input
-        result === Right foos
-    , testProperty "foldMarhallerFields collects all fields as their sql values" . HH.property $ do
-        foo <- HH.forAll generateFoo
+            result <- MIO.liftIO $ SqlMarshaller.marshallResultFromSql fooMarshaller input
+            result HH.=== Right foos
+        )
+      ,
+        ( String.fromString "foldMarhallerFields collects all fields as their sql values"
+        , HH.property $ do
+            foo <- HH.forAll generateFoo
 
-        let addField :: FieldFold Foo [(FieldName, SqlValue.SqlValue)]
-            addField fieldDef getValue fields =
-              (fieldName fieldDef, fieldValueToSqlValue fieldDef (getValue foo)) : fields
+            let addField :: SqlMarshaller.FieldFold Foo [(FieldDefinition.FieldName, SqlValue.SqlValue)]
+                addField fieldDef getValue fields =
+                  (FieldDefinition.fieldName fieldDef, FieldDefinition.fieldValueToSqlValue fieldDef (getValue foo)) : fields
 
-            actualFooRow =
-              foldMarshallerFields
-                fooMarshaller
-                []
-                addField
+                actualFooRow =
+                  SqlMarshaller.foldMarshallerFields
+                    fooMarshaller
+                    []
+                    addField
 
-            expectedFooRow =
-              [ (stringToFieldName "name", SqlValue.fromText $ fooName foo)
-              , (stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
-              ]
+                expectedFooRow =
+                  [ (FieldDefinition.stringToFieldName "name", SqlValue.fromText $ fooName foo)
+                  , (FieldDefinition.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
+                  ]
 
-        actualFooRow === expectedFooRow
-    ]
+            actualFooRow HH.=== expectedFooRow
+        )
+      ]
 
 data Foo = Foo
   { fooName :: T.Text
-  , fooSize :: Int32
+  , fooSize :: Int.Int32
   }
   deriving (Eq, Show)
 
-fooMarshaller :: SqlMarshaller Foo Foo
+fooMarshaller :: SqlMarshaller.SqlMarshaller Foo Foo
 fooMarshaller =
   Foo
-    <$> marshallField fooName (unboundedTextField "name")
-    <*> marshallField fooSize (integerField "size")
+    <$> SqlMarshaller.marshallField fooName (FieldDefinition.unboundedTextField "name")
+    <*> SqlMarshaller.marshallField fooSize (FieldDefinition.integerField "size")
 
 generateFoo :: HH.Gen Foo
 generateFoo =
@@ -143,7 +162,7 @@ generateAssociatedValues :: [key] -> HH.Gen value -> HH.Gen [value]
 generateAssociatedValues keys genValue =
   traverse (const genValue) keys
 
-generateInt32 :: HH.Gen Int32
+generateInt32 :: HH.Gen Int.Int32
 generateInt32 =
   Gen.int32 (Range.exponentialFrom 0 minBound maxBound)
 

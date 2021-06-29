@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 9add8aabc0da78d0ae39ac3b1feb0880f1f024d2031b911ea1411537137ad1aa
 
 name:           orville-postgresql-libpq
 version:        0.10.0.0
@@ -14,9 +12,9 @@ category:       Database
 author:         Flipstone Technology Partners
 maintainer:     development@flipstone.com
 license:        MIT
-tested-with:
-    GHC == 8.6.5
 build-type:     Simple
+tested-with:
+    GHC == 8.8.4, GHC == 8.10.3, GHC == 8.10.4, GHC == 9.0.1
 extra-source-files:
     README.md
 
@@ -77,7 +75,7 @@ library
     , base >=4.8 && <5
     , bytestring
     , containers ==0.6.*
-    , dlist ==0.8.*
+    , dlist >=0.8 && <1.1
     , postgresql-libpq >=0.9.4.2 && <0.10
     , resource-pool
     , text
@@ -95,10 +93,11 @@ test-suite spec
   other-modules:
       Test.Connection
       Test.Entities.Foo
-      Test.Expr
+      Test.Expr.OrderBy
+      Test.Expr.Where
       Test.FieldDefinition
       Test.PGGen
-      Test.PropertyHelpers
+      Test.Property
       Test.RawSql
       Test.RecordOperations
       Test.SelectOptions
@@ -106,6 +105,7 @@ test-suite spec
       Test.SqlType
       Test.TableDefinition
       Test.TestTable
+      Paths_orville_postgresql_libpq
   hs-source-dirs:
       test
   ghc-options: -j -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wno-implicit-prelude -Wno-safe -Wno-unsafe -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations
@@ -113,13 +113,9 @@ test-suite spec
       base
     , bytestring
     , hedgehog
-    , mtl
     , orville-postgresql-libpq
     , postgresql-libpq
     , resource-pool
-    , tasty
-    , tasty-hedgehog
-    , tasty-hspec
     , text
     , time
   default-language: Haskell2010

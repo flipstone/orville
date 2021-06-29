@@ -3,350 +3,396 @@ module Test.SqlType
   )
 where
 
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
-import Data.Int (Int64)
-import Data.Pool (Pool, withResource)
+import qualified Data.Int as Int
+import qualified Data.Pool as Pool
+import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Time as Time
-import Test.Tasty.Hspec (Spec, describe, it, shouldBe)
+import qualified Hedgehog as HH
 
-import Database.Orville.PostgreSQL.Connection (Connection, executeRawVoid)
-import Database.Orville.PostgreSQL.Internal.ExecutionResult (decodeRows)
+import qualified Database.Orville.PostgreSQL.Connection as Connection
+import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as ExecutionResult
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.SqlType
-  ( SqlType,
-    bigInteger,
-    bigSerial,
-    boolean,
-    boundedText,
-    date,
-    double,
-    fixedText,
-    integer,
-    nullableType,
-    serial,
-    textSearchVector,
-    timestamp,
-    unboundedText,
-  )
+import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-sqlTypeSpecs :: Pool Connection -> Spec
-sqlTypeSpecs pool = describe "SqlType decoding tests" $ do
-  integerSpecs pool
-  bigIntegerSpecs pool
-  serialSpecs pool
-  bigSerialSpecs pool
-  doubleSpecs pool
-  boolSpecs pool
-  unboundedTextSpecs pool
-  fixedTextSpecs pool
-  boundedTextSpecs pool
-  textSearchVectorSpecs pool
-  dateSpecs pool
-  timestampSpecs pool
-  nullableSpecs pool
+import qualified Test.Property as Property
 
-integerSpecs :: Pool Connection -> Spec
-integerSpecs pool = do
-  it "Testing the decode of INTEGER with value 0" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "INTEGER"
-        , rawSqlValue = Just $ B8.pack $ show (0 :: Int)
-        , sqlType = integer
-        , expectedValue = 0
-        }
+sqlTypeSpecs :: Pool.Pool Connection.Connection -> IO Bool
+sqlTypeSpecs pool =
+  HH.checkSequential $
+    HH.Group
+      (String.fromString "SqlType decoding tests")
+      $ integerSpecs pool
+        <> bigIntegerSpecs pool
+        <> serialSpecs pool
+        <> bigSerialSpecs pool
+        <> doubleSpecs pool
+        <> boolSpecs pool
+        <> unboundedTextSpecs pool
+        <> fixedTextSpecs pool
+        <> boundedTextSpecs pool
+        <> textSearchVectorSpecs pool
+        <> dateSpecs pool
+        <> timestampSpecs pool
+        <> nullableSpecs pool
 
-  it "Testing the decode of INTEGER with value 2147483647" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "INTEGER"
-        , rawSqlValue = Just $ B8.pack $ show (2147483647 :: Int)
-        , sqlType = integer
-        , expectedValue = 2147483647
-        }
+integerSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+integerSpecs pool =
+  [
+    ( String.fromString "Testing the decode of INTEGER with value 0"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "INTEGER"
+          , rawSqlValue = Just $ B8.pack $ show (0 :: Int)
+          , sqlType = SqlType.integer
+          , expectedValue = 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of INTEGER with value 2147483647"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "INTEGER"
+          , rawSqlValue = Just $ B8.pack $ show (2147483647 :: Int)
+          , sqlType = SqlType.integer
+          , expectedValue = 2147483647
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of INTEGER with value -2147483648"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "INTEGER"
+          , rawSqlValue = Just $ B8.pack $ show (-2147483648 :: Int)
+          , sqlType = SqlType.integer
+          , expectedValue = -2147483648
+          }
+    )
+  ]
 
-  it "Testing the decode of INTEGER with value -2147483648" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "INTEGER"
-        , rawSqlValue = Just $ B8.pack $ show (-2147483648 :: Int)
-        , sqlType = integer
-        , expectedValue = -2147483648
-        }
+bigIntegerSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigIntegerSpecs pool =
+  [
+    ( String.fromString "Testing the decode of BIGINT with value 0"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "BIGINT"
+          , rawSqlValue = Just $ B8.pack $ show (0 :: Int.Int64)
+          , sqlType = SqlType.bigInteger
+          , expectedValue = 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of BIGINT with value 21474836470"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "BIGINT"
+          , rawSqlValue = Just $ B8.pack $ show (21474836470 :: Int.Int64)
+          , sqlType = SqlType.bigInteger
+          , expectedValue = 21474836470
+          }
+    )
+  ]
 
-bigIntegerSpecs :: Pool Connection -> Spec
-bigIntegerSpecs pool = do
-  it "Testing the decode of BIGINT with value 0" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "BIGINT"
-        , rawSqlValue = Just $ B8.pack $ show (0 :: Int64)
-        , sqlType = bigInteger
-        , expectedValue = 0
-        }
+serialSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+serialSpecs pool =
+  [
+    ( String.fromString "Testing the decode of SERIAL with value 0"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "SERIAL"
+          , rawSqlValue = Just $ B8.pack $ show (0 :: Int)
+          , sqlType = SqlType.serial
+          , expectedValue = 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of SERIAL with value 2147483647"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "SERIAL"
+          , rawSqlValue = Just $ B8.pack $ show (2147483647 :: Int)
+          , sqlType = SqlType.serial
+          , expectedValue = 2147483647
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of SERIAL with value -2147483648"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "SERIAL"
+          , rawSqlValue = Just $ B8.pack $ show (-2147483648 :: Int)
+          , sqlType = SqlType.serial
+          , expectedValue = -2147483648
+          }
+    )
+  ]
 
-  it "Testing the decode of BIGINT with value 21474836470" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "BIGINT"
-        , rawSqlValue = Just $ B8.pack $ show (21474836470 :: Int64)
-        , sqlType = bigInteger
-        , expectedValue = 21474836470
-        }
+bigSerialSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigSerialSpecs pool =
+  [
+    ( String.fromString "Testing the decode of BIGSERIAL with value 0"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "BIGSERIAL"
+          , rawSqlValue = Just $ B8.pack $ show (0 :: Int.Int64)
+          , sqlType = SqlType.bigSerial
+          , expectedValue = 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of BIGSERIAL with value 21474836470"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "BIGSERIAL"
+          , rawSqlValue = Just $ B8.pack $ show (21474836470 :: Int.Int64)
+          , sqlType = SqlType.bigSerial
+          , expectedValue = 21474836470
+          }
+    )
+  ]
 
-serialSpecs :: Pool Connection -> Spec
-serialSpecs pool = do
-  it "Testing the decode of SERIAL with value 0" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "SERIAL"
-        , rawSqlValue = Just $ B8.pack $ show (0 :: Int)
-        , sqlType = serial
-        , expectedValue = 0
-        }
+doubleSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+doubleSpecs pool =
+  [
+    ( String.fromString "Testing the decode of DOUBLE PRECISION with value 0"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DOUBLE PRECISION"
+          , rawSqlValue = Just $ B8.pack $ show (0.0 :: Double)
+          , sqlType = SqlType.double
+          , expectedValue = 0.0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of DOUBLE PRECISION with value 1.5"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DOUBLE PRECISION"
+          , rawSqlValue = Just $ B8.pack $ show (1.5 :: Double)
+          , sqlType = SqlType.double
+          , expectedValue = 1.5
+          }
+    )
+  ]
 
-  it "Testing the decode of SERIAL with value 2147483647" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "SERIAL"
-        , rawSqlValue = Just $ B8.pack $ show (2147483647 :: Int)
-        , sqlType = serial
-        , expectedValue = 2147483647
-        }
+boolSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boolSpecs pool =
+  [
+    ( String.fromString "Testing the decode of BOOL with value False"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "BOOL"
+          , rawSqlValue = Just $ B8.pack $ show False
+          , sqlType = SqlType.boolean
+          , expectedValue = False
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of BOOL with value True"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "BOOL"
+          , rawSqlValue = Just $ B8.pack $ show True
+          , sqlType = SqlType.boolean
+          , expectedValue = True
+          }
+    )
+  ]
 
-  it "Testing the decode of SERIAL with value -2147483648" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "SERIAL"
-        , rawSqlValue = Just $ B8.pack $ show (-2147483648 :: Int)
-        , sqlType = serial
-        , expectedValue = -2147483648
-        }
+unboundedTextSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+unboundedTextSpecs pool =
+  [
+    ( String.fromString "Testing the decode of TEXT with value abcde"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TEXT"
+          , rawSqlValue = Just $ B8.pack "abcde"
+          , sqlType = SqlType.unboundedText
+          , expectedValue = T.pack "abcde"
+          }
+    )
+  ]
 
-bigSerialSpecs :: Pool Connection -> Spec
-bigSerialSpecs pool = do
-  it "Testing the decode of BIGSERIAL with value 0" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "BIGSERIAL"
-        , rawSqlValue = Just $ B8.pack $ show (0 :: Int64)
-        , sqlType = bigSerial
-        , expectedValue = 0
-        }
+fixedTextSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+fixedTextSpecs pool =
+  [
+    ( String.fromString "Testing the decode of CHAR(5) with value 'abcde'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "CHAR(5)"
+          , rawSqlValue = Just $ B8.pack "abcde"
+          , sqlType = SqlType.fixedText 5
+          , expectedValue = T.pack "abcde"
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of CHAR(5) with value 'fghi'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "CHAR(5)"
+          , rawSqlValue = Just $ B8.pack "fghi"
+          , sqlType = SqlType.fixedText 5
+          , expectedValue = T.pack "fghi "
+          }
+    )
+  ]
 
-  it "Testing the decode of BIGSERIAL with value 21474836470" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "BIGSERIAL"
-        , rawSqlValue = Just $ B8.pack $ show (21474836470 :: Int64)
-        , sqlType = bigSerial
-        , expectedValue = 21474836470
-        }
+boundedTextSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boundedTextSpecs pool =
+  [
+    ( String.fromString "Testing the decode of VARCHAR(5) with value 'abcde'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "VARCHAR(5)"
+          , rawSqlValue = Just $ B8.pack "abcde"
+          , sqlType = SqlType.boundedText 5
+          , expectedValue = T.pack "abcde"
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of VARCHAR(5) with value 'fghi'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "VARCHAR(5)"
+          , rawSqlValue = Just $ B8.pack "fghi"
+          , sqlType = SqlType.boundedText 5
+          , expectedValue = T.pack "fghi"
+          }
+    )
+  ]
 
-doubleSpecs :: Pool Connection -> Spec
-doubleSpecs pool = do
-  it "Testing the decode of DOUBLE PRECISION with value 0" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "DOUBLE PRECISION"
-        , rawSqlValue = Just $ B8.pack $ show (0.0 :: Double)
-        , sqlType = double
-        , expectedValue = 0.0
-        }
+textSearchVectorSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+textSearchVectorSpecs pool =
+  [
+    ( String.fromString "Testing the decode of TSVECTOR with value 'abcde'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TSVECTOR"
+          , rawSqlValue = Just $ B8.pack "'abcde'"
+          , sqlType = SqlType.textSearchVector
+          , expectedValue = T.pack "'abcde'"
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TSVECTOR with value 'fghi'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TSVECTOR"
+          , rawSqlValue = Just $ B8.pack "'fghi'"
+          , sqlType = SqlType.textSearchVector
+          , expectedValue = T.pack "'fghi'"
+          }
+    )
+  ]
 
-  it "Testing the decode of DOUBLE PRECISION with value 1.5" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "DOUBLE PRECISION"
-        , rawSqlValue = Just $ B8.pack $ show (1.5 :: Double)
-        , sqlType = double
-        , expectedValue = 1.5
-        }
+dateSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+dateSpecs pool =
+  [
+    ( String.fromString "Testing the decode of DATE with value 2020-12-21"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DATE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21'"
+          , sqlType = SqlType.date
+          , expectedValue = Time.fromGregorian 2020 12 21
+          }
+    )
+  ]
 
-boolSpecs :: Pool Connection -> Spec
-boolSpecs pool = do
-  it "Testing the decode of BOOL with value False" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "BOOL"
-        , rawSqlValue = Just $ B8.pack $ show False
-        , sqlType = boolean
-        , expectedValue = False
-        }
+timestampSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+timestampSpecs pool =
+  [
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32-00'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32-00'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32+00'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32+00'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
+  ]
 
-  it "Testing the decode of BOOL with value True" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "BOOL"
-        , rawSqlValue = Just $ B8.pack $ show True
-        , sqlType = boolean
-        , expectedValue = True
-        }
-
-unboundedTextSpecs :: Pool Connection -> Spec
-unboundedTextSpecs pool = do
-  it "Testing the decode of TEXT with value abcde" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TEXT"
-        , rawSqlValue = Just $ B8.pack "abcde"
-        , sqlType = unboundedText
-        , expectedValue = T.pack "abcde"
-        }
-
-fixedTextSpecs :: Pool Connection -> Spec
-fixedTextSpecs pool = do
-  it "Testing the decode of CHAR(5) with value 'abcde'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "CHAR(5)"
-        , rawSqlValue = Just $ B8.pack "abcde"
-        , sqlType = fixedText 5
-        , expectedValue = T.pack "abcde"
-        }
-
-  it "Testing the decode of CHAR(5) with value 'fghi'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "CHAR(5)"
-        , rawSqlValue = Just $ B8.pack "fghi"
-        , sqlType = fixedText 5
-        , expectedValue = T.pack "fghi "
-        }
-
-boundedTextSpecs :: Pool Connection -> Spec
-boundedTextSpecs pool = do
-  it "Testing the decode of VARCHAR(5) with value 'abcde'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "VARCHAR(5)"
-        , rawSqlValue = Just $ B8.pack "abcde"
-        , sqlType = boundedText 5
-        , expectedValue = T.pack "abcde"
-        }
-
-  it "Testing the decode of VARCHAR(5) with value 'fghi'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "VARCHAR(5)"
-        , rawSqlValue = Just $ B8.pack "fghi"
-        , sqlType = boundedText 5
-        , expectedValue = T.pack "fghi"
-        }
-
-textSearchVectorSpecs :: Pool Connection -> Spec
-textSearchVectorSpecs pool = do
-  it "Testing the decode of TSVECTOR with value 'abcde'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TSVECTOR"
-        , rawSqlValue = Just $ B8.pack "'abcde'"
-        , sqlType = textSearchVector
-        , expectedValue = T.pack "'abcde'"
-        }
-
-  it "Testing the decode of TSVECTOR with value 'fghi'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TSVECTOR"
-        , rawSqlValue = Just $ B8.pack "'fghi'"
-        , sqlType = textSearchVector
-        , expectedValue = T.pack "'fghi'"
-        }
-
-dateSpecs :: Pool Connection -> Spec
-dateSpecs pool = do
-  it "Testing the decode of DATE with value 2020-12-21" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "DATE"
-        , rawSqlValue = Just $ B8.pack "'2020-12-21'"
-        , sqlType = date
-        , expectedValue = Time.fromGregorian 2020 12 21
-        }
-
-timestampSpecs :: Pool Connection -> Spec
-timestampSpecs pool = do
-  it "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32-00'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
-        , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32-00'"
-        , sqlType = timestamp
-        , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
-        }
-
-  it "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32+00'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
-        , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32+00'"
-        , sqlType = timestamp
-        , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
-        }
-
-nullableSpecs :: Pool Connection -> Spec
-nullableSpecs pool = do
-  it "Testing the decode of TEXT NULL with value 'abcde'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TEXT NULL"
-        , rawSqlValue = Just $ B8.pack "abcde"
-        , sqlType = nullableType unboundedText
-        , expectedValue = Just (T.pack "abcde")
-        }
-
-  it "Testing the decode of TEXT NULL with text value 'null'" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TEXT NULL"
-        , rawSqlValue = Just $ B8.pack "null"
-        , sqlType = nullableType unboundedText
-        , expectedValue = Just (T.pack "null")
-        }
-
-  it "Testing the decode of TEXT NULL with value NULL" $ do
-    runDecodingTest pool $
-      DecodingTest
-        { sqlTypeDDL = "TEXT NULL"
-        , rawSqlValue = Nothing
-        , sqlType = nullableType unboundedText
-        , expectedValue = Nothing
-        }
+nullableSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+nullableSpecs pool =
+  [
+    ( String.fromString "Testing the decode of TEXT NULL with value 'abcde'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TEXT NULL"
+          , rawSqlValue = Just $ B8.pack "abcde"
+          , sqlType = SqlType.nullableType SqlType.unboundedText
+          , expectedValue = Just (T.pack "abcde")
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TEXT NULL with text value 'null'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TEXT NULL"
+          , rawSqlValue = Just $ B8.pack "null"
+          , sqlType = SqlType.nullableType SqlType.unboundedText
+          , expectedValue = Just (T.pack "null")
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TEXT NULL with value NULL"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TEXT NULL"
+          , rawSqlValue = Nothing
+          , sqlType = SqlType.nullableType SqlType.unboundedText
+          , expectedValue = Nothing
+          }
+    )
+  ]
 
 data DecodingTest a = DecodingTest
   { sqlTypeDDL :: String
   , rawSqlValue :: Maybe B8.ByteString
-  , sqlType :: SqlType a
+  , sqlType :: SqlType.SqlType a
   , expectedValue :: a
   }
 
-runDecodingTest :: (Show a, Eq a) => Pool Connection -> DecodingTest a -> IO ()
+runDecodingTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> DecodingTest a -> HH.Property
 runDecodingTest pool test =
-  withResource pool $ \connection -> do
-    dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
+  Property.singletonProperty $
+    Pool.withResource pool $ \connection -> do
+      MIO.liftIO $ dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
-    let tableName = Expr.rawTableName "decoding_test"
+      let tableName = Expr.rawTableName "decoding_test"
 
-    RawSql.executeVoid connection $
-      Expr.insertExprToSql $
-        Expr.insertExpr
+      MIO.liftIO . RawSql.executeVoid connection
+        . Expr.insertExprToSql
+        $ Expr.insertExpr
           tableName
           Nothing
           (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
 
-    result <-
-      RawSql.execute connection $
-        Expr.queryExprToSql $
-          Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
+      result <-
+        MIO.liftIO . RawSql.execute connection $
+          Expr.queryExprToSql $
+            Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
 
-    (maybeA : _) <- decodeRows result (sqlType test)
-    shouldBe maybeA (Just (expectedValue test))
+      (maybeA : _) <- MIO.liftIO $ ExecutionResult.decodeRows result (sqlType test)
+      maybeA HH.=== Just (expectedValue test)
 
-dropAndRecreateTable :: Connection -> String -> String -> IO ()
+dropAndRecreateTable :: Connection.Connection -> String -> String -> IO ()
 dropAndRecreateTable connection tableName columnTypeDDL = do
-  executeRawVoid connection (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
-  executeRawVoid connection (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []
+  Connection.executeRawVoid connection (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
+  Connection.executeRawVoid connection (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []

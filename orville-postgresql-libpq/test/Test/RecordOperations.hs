@@ -1,29 +1,32 @@
 module Test.RecordOperations
-  ( recordOperationsTree,
+  ( recordOperationsProperties,
   )
 where
 
-import Control.Monad.IO.Class (liftIO)
-import Data.Pool (Pool, withResource)
+import qualified Control.Monad.IO.Class as MIO
+import qualified Data.Pool as Pool
+import qualified Data.String as String
 import qualified Hedgehog as HH
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Hedgehog (testProperty)
 
-import Database.Orville.PostgreSQL (insertRecord, runOrville)
-import Database.Orville.PostgreSQL.Connection (Connection)
+import qualified Database.Orville.PostgreSQL as Orville
+import qualified Database.Orville.PostgreSQL.Connection as Connection
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.TestTable as TestTable
 
-recordOperationsTree :: Pool Connection -> TestTree
-recordOperationsTree pool =
-  testGroup
-    "RecordOperations"
-    [ testProperty "insertRecord does not raise an error" . HH.property $ do
-        foo <- HH.forAll Foo.generate
+recordOperationsProperties :: Pool.Pool Connection.Connection -> IO Bool
+recordOperationsProperties pool =
+  HH.checkSequential $
+    HH.Group
+      (String.fromString "RecordOperations")
+      [
+        ( String.fromString "insertRecord does not raise an error"
+        , HH.property $ do
+            foo <- HH.forAll Foo.generate
 
-        liftIO $ do
-          withResource pool $ \connection ->
-            TestTable.dropAndRecreateTableDef connection Foo.table
-          runOrville pool $ insertRecord Foo.table foo
-    ]
+            MIO.liftIO $ do
+              Pool.withResource pool $ \connection ->
+                TestTable.dropAndRecreateTableDef connection Foo.table
+              Orville.runOrville pool $ Orville.insertRecord Foo.table foo
+        )
+      ]
