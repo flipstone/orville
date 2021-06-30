@@ -1,5 +1,5 @@
 module Test.RecordOperations
-  ( recordOperationsProperties,
+  ( recordOperationsTests,
   )
 where
 
@@ -14,8 +14,8 @@ import qualified Database.Orville.PostgreSQL.Connection as Connection
 import qualified Test.Entities.Foo as Foo
 import qualified Test.TestTable as TestTable
 
-recordOperationsProperties :: Pool.Pool Connection.Connection -> IO Bool
-recordOperationsProperties pool =
+recordOperationsTests :: Pool.Pool Connection.Connection -> IO Bool
+recordOperationsTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "RecordOperations")

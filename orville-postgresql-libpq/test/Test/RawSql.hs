@@ -1,5 +1,5 @@
 module Test.RawSql
-  ( rawSqlProperties,
+  ( rawSqlTests,
   )
 where
 
@@ -14,8 +14,8 @@ import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-rawSqlProperties :: IO Bool
-rawSqlProperties =
+rawSqlTests :: IO Bool
+rawSqlTests =
   HH.checkParallel $
     HH.Group
       (String.fromString "RawSql Tests")

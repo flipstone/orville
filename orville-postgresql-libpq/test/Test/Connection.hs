@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Connection
-  ( connectionProperties,
+  ( connectionTests,
   )
 where
 
@@ -21,8 +21,8 @@ import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTex
 import qualified Test.PGGen as PGGen
 import qualified Test.Property as Property
 
-connectionProperties :: Pool.Pool Connection.Connection -> IO Bool
-connectionProperties pool =
+connectionTests :: Pool.Pool Connection.Connection -> IO Bool
+connectionTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "Connection")

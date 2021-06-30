@@ -1,5 +1,5 @@
 module Test.SelectOptions
-  ( selectOptionsProperties,
+  ( selectOptionsTests,
   )
 where
 
@@ -14,8 +14,8 @@ import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Database.Orville.PostgreSQL.Internal.SelectOptions as SO
 import qualified Test.Property as Property
 
-selectOptionsProperties :: IO Bool
-selectOptionsProperties =
+selectOptionsTests :: IO Bool
+selectOptionsTests =
   HH.checkParallel $
     HH.Group
       (String.fromString "SelectOptions")

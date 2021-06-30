@@ -1,5 +1,5 @@
 module Test.Expr.Where
-  ( whereSpecs,
+  ( whereTests,
   )
 where
 
@@ -24,8 +24,8 @@ data FooBar = FooBar
   , bar :: String
   }
 
-whereSpecs :: Pool.Pool Connection.Connection -> IO Bool
-whereSpecs pool =
+whereTests :: Pool.Pool Connection.Connection -> IO Bool
+whereTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "Expr - WhereClause")

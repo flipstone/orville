@@ -26,15 +26,15 @@ main = do
 
   results <-
     sequence
-      [ TestConnection.connectionProperties pool
-      , RawSql.rawSqlProperties
-      , TableDefinition.tableDefinitionProperties pool
-      , SqlMarshaller.sqlMarshallerProperties
-      , FieldDefinition.fieldDefinitionProperties pool
-      , RecordOperations.recordOperationsProperties pool
-      , ExprWhere.whereSpecs pool
-      , ExprOrderBy.orderBySpecs pool
-      , SqlType.sqlTypeSpecs pool
-      , SelectOptions.selectOptionsProperties
+      [ TestConnection.connectionTests pool
+      , RawSql.rawSqlTests
+      , TableDefinition.tableDefinitionTests pool
+      , SqlMarshaller.sqlMarshallerTests
+      , FieldDefinition.fieldDefinitionTests pool
+      , RecordOperations.recordOperationsTests pool
+      , ExprWhere.whereTests pool
+      , ExprOrderBy.orderByTests pool
+      , SqlType.sqlTypeTests pool
+      , SelectOptions.selectOptionsTests
       ]
   Monad.unless (and results) SE.exitFailure

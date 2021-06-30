@@ -1,5 +1,5 @@
 module Test.TableDefinition
-  ( tableDefinitionProperties,
+  ( tableDefinitionTests,
   )
 where
 
@@ -21,8 +21,8 @@ import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-tableDefinitionProperties :: Pool.Pool Conn.Connection -> IO Bool
-tableDefinitionProperties pool =
+tableDefinitionTests :: Pool.Pool Conn.Connection -> IO Bool
+tableDefinitionTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "TableDefinition")

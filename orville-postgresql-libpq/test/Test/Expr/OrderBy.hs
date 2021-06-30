@@ -1,5 +1,5 @@
 module Test.Expr.OrderBy
-  ( orderBySpecs,
+  ( orderByTests,
   )
 where
 
@@ -24,8 +24,8 @@ data FooBar = FooBar
   , bar :: String
   }
 
-orderBySpecs :: Pool.Pool Conn.Connection -> IO Bool
-orderBySpecs pool =
+orderByTests :: Pool.Pool Conn.Connection -> IO Bool
+orderByTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "Expr - OrderBy")

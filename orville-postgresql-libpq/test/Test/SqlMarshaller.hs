@@ -1,5 +1,5 @@
 module Test.SqlMarshaller
-  ( sqlMarshallerProperties,
+  ( sqlMarshallerTests,
   )
 where
 
@@ -19,8 +19,8 @@ import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
 
-sqlMarshallerProperties :: IO Bool
-sqlMarshallerProperties =
+sqlMarshallerTests :: IO Bool
+sqlMarshallerTests =
   HH.checkParallel $
     HH.Group
       (String.fromString "SqlMarshaller properties")

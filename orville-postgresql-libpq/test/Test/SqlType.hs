@@ -1,5 +1,5 @@
 module Test.SqlType
-  ( sqlTypeSpecs,
+  ( sqlTypeTests,
   )
 where
 
@@ -21,27 +21,27 @@ import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-sqlTypeSpecs :: Pool.Pool Connection.Connection -> IO Bool
-sqlTypeSpecs pool =
+sqlTypeTests :: Pool.Pool Connection.Connection -> IO Bool
+sqlTypeTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "SqlType decoding tests")
-      $ integerSpecs pool
-        <> bigIntegerSpecs pool
-        <> serialSpecs pool
-        <> bigSerialSpecs pool
-        <> doubleSpecs pool
-        <> boolSpecs pool
-        <> unboundedTextSpecs pool
-        <> fixedTextSpecs pool
-        <> boundedTextSpecs pool
-        <> textSearchVectorSpecs pool
-        <> dateSpecs pool
-        <> timestampSpecs pool
-        <> nullableSpecs pool
+      $ integerTests pool
+        <> bigIntegerTests pool
+        <> serialTests pool
+        <> bigSerialTests pool
+        <> doubleTests pool
+        <> boolTests pool
+        <> unboundedTextTests pool
+        <> fixedTextTests pool
+        <> boundedTextTests pool
+        <> textSearchVectorTests pool
+        <> dateTests pool
+        <> timestampTests pool
+        <> nullableTests pool
 
-integerSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-integerSpecs pool =
+integerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+integerTests pool =
   [
     ( String.fromString "Testing the decode of INTEGER with value 0"
     , runDecodingTest pool $
@@ -74,8 +74,8 @@ integerSpecs pool =
     )
   ]
 
-bigIntegerSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-bigIntegerSpecs pool =
+bigIntegerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigIntegerTests pool =
   [
     ( String.fromString "Testing the decode of BIGINT with value 0"
     , runDecodingTest pool $
@@ -98,8 +98,8 @@ bigIntegerSpecs pool =
     )
   ]
 
-serialSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-serialSpecs pool =
+serialTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+serialTests pool =
   [
     ( String.fromString "Testing the decode of SERIAL with value 0"
     , runDecodingTest pool $
@@ -132,8 +132,8 @@ serialSpecs pool =
     )
   ]
 
-bigSerialSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-bigSerialSpecs pool =
+bigSerialTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigSerialTests pool =
   [
     ( String.fromString "Testing the decode of BIGSERIAL with value 0"
     , runDecodingTest pool $
@@ -156,8 +156,8 @@ bigSerialSpecs pool =
     )
   ]
 
-doubleSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-doubleSpecs pool =
+doubleTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+doubleTests pool =
   [
     ( String.fromString "Testing the decode of DOUBLE PRECISION with value 0"
     , runDecodingTest pool $
@@ -180,8 +180,8 @@ doubleSpecs pool =
     )
   ]
 
-boolSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-boolSpecs pool =
+boolTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boolTests pool =
   [
     ( String.fromString "Testing the decode of BOOL with value False"
     , runDecodingTest pool $
@@ -204,8 +204,8 @@ boolSpecs pool =
     )
   ]
 
-unboundedTextSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-unboundedTextSpecs pool =
+unboundedTextTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+unboundedTextTests pool =
   [
     ( String.fromString "Testing the decode of TEXT with value abcde"
     , runDecodingTest pool $
@@ -218,8 +218,8 @@ unboundedTextSpecs pool =
     )
   ]
 
-fixedTextSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-fixedTextSpecs pool =
+fixedTextTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+fixedTextTests pool =
   [
     ( String.fromString "Testing the decode of CHAR(5) with value 'abcde'"
     , runDecodingTest pool $
@@ -242,8 +242,8 @@ fixedTextSpecs pool =
     )
   ]
 
-boundedTextSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-boundedTextSpecs pool =
+boundedTextTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boundedTextTests pool =
   [
     ( String.fromString "Testing the decode of VARCHAR(5) with value 'abcde'"
     , runDecodingTest pool $
@@ -266,8 +266,8 @@ boundedTextSpecs pool =
     )
   ]
 
-textSearchVectorSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-textSearchVectorSpecs pool =
+textSearchVectorTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+textSearchVectorTests pool =
   [
     ( String.fromString "Testing the decode of TSVECTOR with value 'abcde'"
     , runDecodingTest pool $
@@ -290,8 +290,8 @@ textSearchVectorSpecs pool =
     )
   ]
 
-dateSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-dateSpecs pool =
+dateTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+dateTests pool =
   [
     ( String.fromString "Testing the decode of DATE with value 2020-12-21"
     , runDecodingTest pool $
@@ -304,8 +304,8 @@ dateSpecs pool =
     )
   ]
 
-timestampSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-timestampSpecs pool =
+timestampTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+timestampTests pool =
   [
     ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32-00'"
     , runDecodingTest pool $
@@ -328,8 +328,8 @@ timestampSpecs pool =
     )
   ]
 
-nullableSpecs :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-nullableSpecs pool =
+nullableTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+nullableTests pool =
   [
     ( String.fromString "Testing the decode of TEXT NULL with value 'abcde'"
     , runDecodingTest pool $

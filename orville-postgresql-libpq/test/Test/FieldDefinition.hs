@@ -1,5 +1,5 @@
 module Test.FieldDefinition
-  ( fieldDefinitionProperties,
+  ( fieldDefinitionTests,
   )
 where
 
@@ -25,8 +25,8 @@ import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Test.PGGen as PGGen
 import qualified Test.Property as Property
 
-fieldDefinitionProperties :: Pool.Pool Connection.Connection -> IO Bool
-fieldDefinitionProperties pool =
+fieldDefinitionTests :: Pool.Pool Connection.Connection -> IO Bool
+fieldDefinitionTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "FieldDefinition")
