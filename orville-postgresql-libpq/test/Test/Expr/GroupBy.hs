@@ -26,7 +26,6 @@ data FooBar = FooBar
 
 groupByTests :: Pool.Pool Conn.Connection -> IO Bool
 orderByTests pool =
-
   HH.checkSequential $
     HH.Group
       (String.fromString "Expr - GroupBy")
