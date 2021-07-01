@@ -29,6 +29,7 @@ module Database.Orville.PostgreSQL.Internal.Expr
     parenthesized,
     comparison,
     columnEquals,
+    columnNotEquals,
     columnGreaterThan,
     columnLessThan,
     columnGreaterThanOrEqualTo,

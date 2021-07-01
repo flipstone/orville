@@ -12,7 +12,6 @@ module Database.Orville.PostgreSQL.Internal.RawSql
     parameter,
     fromString,
     fromBytes,
-    toBytesAndParams,
     intercalate,
     execute,
     executeVoid,
@@ -22,6 +21,11 @@ module Database.Orville.PostgreSQL.Internal.RawSql
     comma,
     leftParen,
     rightParen,
+
+    -- * Generic interface for generating sql
+    ToRawSql (toRawSql),
+    toBytesAndParams,
+    toBytes,
   )
 where
 
@@ -59,17 +63,32 @@ instance Semigroup RawSql where
 instance Monoid RawSql where
   mempty = SqlSection mempty
 
+class ToRawSql a where
+  toRawSql :: a -> RawSql
+
+instance ToRawSql RawSql where
+  toRawSql = id
+
 {- |
   Constructs the actual sql bytestring and parameter values that will be
   passed to the database to execute a 'RawSql' query.
 -}
-toBytesAndParams :: RawSql -> (BS.ByteString, [Maybe PGTextFormatValue])
-toBytesAndParams rawSql =
+toBytesAndParams :: ToRawSql sql => sql -> (BS.ByteString, [Maybe PGTextFormatValue])
+toBytesAndParams sql =
   let (byteBuilder, finalProgress) =
-        buildSqlWithProgress startingProgress rawSql
+        buildSqlWithProgress startingProgress (toRawSql sql)
    in ( LBS.toStrict (BSB.toLazyByteString byteBuilder)
       , DList.toList (paramValues finalProgress)
       )
+
+{- |
+  Builds te bytes that represent the raw sql. These bytes may not be executable
+  on their own, because they may contain placeholders that must be filled in,
+  but can be useful for inspecting sql queries.
+-}
+toBytes :: ToRawSql sql => sql -> BS.ByteString
+toBytes =
+  fst . toBytesAndParams
 
 {- |
   This is an internal datatype used during the sql building process to track
@@ -175,10 +194,10 @@ intercalate separator parts =
   to read the documentation of 'Conn.executeRaw' for caveats and warnings.
   Use with caution.
 -}
-execute :: Connection -> RawSql -> IO LibPQ.Result
-execute connection rawSql =
+execute :: ToRawSql sql => Connection -> sql -> IO LibPQ.Result
+execute connection sql =
   let (sqlBytes, params) =
-        toBytesAndParams rawSql
+        toBytesAndParams sql
    in Conn.executeRaw connection sqlBytes params
 
 {- |
@@ -186,10 +205,10 @@ execute connection rawSql =
   to read the documentation of 'Conn.executeRawVoid' for caveats and warnings.
   Use with caution.
 -}
-executeVoid :: Connection -> RawSql -> IO ()
-executeVoid connection rawSql =
+executeVoid :: ToRawSql sql => Connection -> sql -> IO ()
+executeVoid connection sql =
   let (sqlBytes, params) =
-        toBytesAndParams rawSql
+        toBytesAndParams sql
    in Conn.executeRawVoid connection sqlBytes params
 
 -- | Just a plain old space, provided for convenience

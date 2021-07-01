@@ -3,38 +3,38 @@ module Main
   )
 where
 
+import qualified Control.Monad as Monad
 import qualified Data.ByteString.Char8 as B8
-import Test.Tasty (defaultMain, testGroup)
-import Test.Tasty.Hspec (testSpec)
+import qualified System.Exit as SE
 
-import Database.Orville.PostgreSQL.Connection (createConnectionPool)
-import Test.Connection (connectionTree)
-import Test.Expr (exprSpecs)
-import Test.FieldDefinition (fieldDefinitionTree)
-import Test.RawSql (rawSqlSpecs)
-import Test.RecordOperations (recordOperationsTree)
-import Test.SqlMarshaller (sqlMarshallerTree)
-import Test.SqlType (sqlTypeSpecs)
-import Test.TableDefinition (tableDefinitionTree)
+import qualified Database.Orville.PostgreSQL.Connection as Connection
+import qualified Test.Connection as TestConnection
+import qualified Test.Expr.OrderBy as ExprOrderBy
+import qualified Test.Expr.Where as ExprWhere
+import qualified Test.FieldDefinition as FieldDefinition
+import qualified Test.RawSql as RawSql
+import qualified Test.RecordOperations as RecordOperations
+import qualified Test.SelectOptions as SelectOptions
+import qualified Test.SqlMarshaller as SqlMarshaller
+import qualified Test.SqlType as SqlType
+import qualified Test.TableDefinition as TableDefinition
 
 main :: IO ()
 main = do
   let connBStr = B8.pack "host=testdb user=orville_test password=orville"
-  pool <- createConnectionPool 1 10 1 connBStr
+  pool <- Connection.createConnectionPool 1 10 1 connBStr
 
-  specTree <-
-    testSpec "specs" $ do
-      rawSqlSpecs
-      exprSpecs pool
-      sqlTypeSpecs pool
-
-  defaultMain $
-    testGroup
-      "Tests"
-      [ connectionTree pool
-      , specTree
-      , sqlMarshallerTree
-      , fieldDefinitionTree pool
-      , tableDefinitionTree pool
-      , recordOperationsTree pool
+  results <-
+    sequence
+      [ TestConnection.connectionTests pool
+      , RawSql.rawSqlTests
+      , TableDefinition.tableDefinitionTests pool
+      , SqlMarshaller.sqlMarshallerTests
+      , FieldDefinition.fieldDefinitionTests pool
+      , RecordOperations.recordOperationsTests pool
+      , ExprWhere.whereTests pool
+      , ExprOrderBy.orderByTests pool
+      , SqlType.sqlTypeTests pool
+      , SelectOptions.selectOptionsTests
       ]
+  Monad.unless (and results) SE.exitFailure

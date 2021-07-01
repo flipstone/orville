@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+
 {- |
 Module    : Database.Orville.PostgreSQL.Connection
 Copyright : Flipstone Technology Partners 2016-2021
@@ -132,7 +134,7 @@ connect connectionString =
 -}
 close :: Connection -> IO ()
 close (Connection handle') =
-  let underlyingFinish :: (IO (Maybe ()) -> IO b) -> IO b
+  let underlyingFinish :: (forall a. IO a -> IO a) -> IO (Maybe ())
       underlyingFinish restore = do
         underlyingConnection <- tryTakeMVar handle'
         restore (traverse LibPQ.finish underlyingConnection)

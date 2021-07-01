@@ -1,63 +1,69 @@
 module Test.TableDefinition
-  ( tableDefinitionTree,
+  ( tableDefinitionTests,
   )
 where
 
-import Control.Exception (try)
-import Control.Monad.IO.Class (liftIO)
+import qualified Control.Exception as E
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
-import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Pool (Pool, withResource)
-import Hedgehog ((===))
+import qualified Data.List.NonEmpty as NEL
+import qualified Data.Pool as Pool
+import qualified Data.String as String
 import qualified Hedgehog as HH
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Hedgehog (testProperty)
 
-import Database.Orville.PostgreSQL.Connection (Connection, SqlExecutionError (sqlExecutionErrorSqlState))
+import qualified Database.Orville.PostgreSQL.Connection as Conn
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (marshallResultFromSql)
-import Database.Orville.PostgreSQL.Internal.TableDefinition (mkInsertExpr, mkQueryExpr, tableMarshaller)
+import qualified Database.Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
+import qualified Database.Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Foo as Foo
+import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-tableDefinitionTree :: Pool Connection -> TestTree
-tableDefinitionTree pool =
-  testGroup
-    "TableDefinition"
-    [ testProperty "Creates a table than can round trip an entity through it" . HH.property $ do
-        originalFoo <- HH.forAll Foo.generate
+tableDefinitionTests :: Pool.Pool Conn.Connection -> IO Bool
+tableDefinitionTests pool =
+  HH.checkSequential $
+    HH.Group
+      (String.fromString "TableDefinition")
+      [
+        ( String.fromString "Creates a table than can round trip an entity through it"
+        , HH.property $ do
+            originalFoo <- HH.forAll Foo.generate
 
-        let insertFoo =
-              mkInsertExpr Foo.table (originalFoo :| [])
+            let insertFoo =
+                  TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
 
-            selectFoos =
-              mkQueryExpr Foo.table Nothing Nothing Nothing
+                selectFoos =
+                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing
 
-        foosFromDB <-
-          liftIO . withResource pool $ \connection -> do
-            TestTable.dropAndRecreateTableDef connection Foo.table
-            RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
-            result <- RawSql.execute connection (Expr.queryExprToSql selectFoos)
-            marshallResultFromSql (tableMarshaller Foo.table) result
+            foosFromDB <-
+              MIO.liftIO . Pool.withResource pool $ \connection -> do
+                TestTable.dropAndRecreateTableDef connection Foo.table
+                RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
+                result <- RawSql.execute connection (Expr.queryExprToSql selectFoos)
+                SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Foo.table) result
 
-        foosFromDB === Right [originalFoo]
-    , testProperty "Creates a primary key that rejects duplicate records" . HH.withTests 1 . HH.property $ do
-        originalFoo <- HH.forAll Foo.generate
+            foosFromDB HH.=== Right [originalFoo]
+        )
+      ,
+        ( String.fromString "Creates a primary key that rejects duplicate records"
+        , Property.singletonProperty $ do
+            originalFoo <- HH.forAll Foo.generate
 
-        let insertFoo =
-              mkInsertExpr Foo.table (originalFoo :| [])
+            let insertFoo =
+                  TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
 
-        result <- liftIO . try . withResource pool $ \connection -> do
-          TestTable.dropAndRecreateTableDef connection Foo.table
-          RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
-          RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
+            result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
+              TestTable.dropAndRecreateTableDef connection Foo.table
+              RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
+              RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
 
-        case result of
-          Right () -> do
-            HH.footnote "Expected 'executeVoid' to return failure, but it did not"
-            HH.failure
-          Left err ->
-            sqlExecutionErrorSqlState err === Just (B8.pack "23505")
-    ]
+            case result of
+              Right () -> do
+                HH.footnote "Expected 'executeVoid' to return failure, but it did not"
+                HH.failure
+              Left err ->
+                Conn.sqlExecutionErrorSqlState err HH.=== Just (B8.pack "23505")
+        )
+      ]

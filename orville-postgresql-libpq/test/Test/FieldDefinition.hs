@@ -1,99 +1,144 @@
 module Test.FieldDefinition
-  ( fieldDefinitionTree,
+  ( fieldDefinitionTests,
   )
 where
 
-import Control.Exception (try)
-import Control.Monad.IO.Class (liftIO)
+import qualified Control.Exception as E
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Maybe as Maybe
-import Data.Pool (Pool, withResource)
-import Data.String (fromString)
+import qualified Data.Pool as Pool
+import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Time as Time
-import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Hedgehog (testProperty)
 
-import Database.Orville.PostgreSQL.Connection (Connection, sqlExecutionErrorSqlState)
-import Database.Orville.PostgreSQL.Internal.ExecutionResult (readRows)
+import qualified Database.Orville.PostgreSQL.Connection as Connection
+import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
+import qualified Test.Property as Property
 
-fieldDefinitionTree :: Pool Connection -> TestTree
-fieldDefinitionTree pool =
-  testGroup
-    "FieldDefinition"
-    [ testFieldProperties pool "integerField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.integerField "foo"
-          , roundTripGen = PGGen.pgInt32
-          }
-    , testFieldProperties pool "bigIntegerField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.bigIntegerField "foo"
-          , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
-          }
-    , testFieldProperties pool "doubleField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.doubleField "foo"
-          , roundTripGen = PGGen.pgDouble
-          }
-    , testFieldProperties pool "booleanField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.booleanField "foo"
-          , roundTripGen = Gen.bool
-          }
-    , testFieldProperties pool "unboundedTextField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.unboundedTextField "foo"
-          , roundTripGen = PGGen.pgText (Range.constant 0 1024)
-          }
-    , testFieldProperties pool "boundedTextField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.boundedTextField "foo" 4
-          , roundTripGen = PGGen.pgText (Range.constant 0 4)
-          }
-    , testFieldProperties pool "fixedTextField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.fixedTextField "foo" 4
-          , roundTripGen = PGGen.pgText (Range.constant 4 4)
-          }
-    , testFieldProperties pool "textSearchVectorField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.textSearchVectorField "foo"
-          , roundTripGen = tsVectorGen
-          }
-    , testFieldProperties pool "dateField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.dateField "foo"
-          , roundTripGen = dayGen
-          }
-    , testFieldProperties pool "timestampField" $
-        RoundTripTest
-          { roundTripFieldDef = FieldDef.timestampField "foo"
-          , roundTripGen = utcTimeGen
-          }
-    ]
+fieldDefinitionTests :: Pool.Pool Connection.Connection -> IO Bool
+fieldDefinitionTests pool =
+  HH.checkSequential $
+    HH.Group
+      (String.fromString "FieldDefinition")
+      $ integerField pool
+        <> bigIntegerField pool
+        <> doubleField pool
+        <> booleanField pool
+        <> unboundedTextField pool
+        <> boundedTextField pool
+        <> fixedTextField pool
+        <> textSearchVectorField pool
+        <> dateField pool
+        <> timestampField pool
 
-testFieldProperties :: (Show a, Eq a) => Pool Connection -> String -> RoundTripTest a -> TestTree
+integerField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+integerField pool =
+  testFieldProperties pool "integerField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.integerField "foo"
+      , roundTripGen = PGGen.pgInt32
+      }
+
+bigIntegerField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigIntegerField pool =
+  testFieldProperties pool "bigIntegerField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.bigIntegerField "foo"
+      , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
+      }
+
+doubleField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+doubleField pool =
+  testFieldProperties pool "doubleField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.doubleField "foo"
+      , roundTripGen = PGGen.pgDouble
+      }
+
+booleanField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+booleanField pool =
+  testFieldProperties pool "booleanField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.booleanField "foo"
+      , roundTripGen = Gen.bool
+      }
+
+unboundedTextField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+unboundedTextField pool =
+  testFieldProperties pool "unboundedTextField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.unboundedTextField "foo"
+      , roundTripGen = PGGen.pgText (Range.constant 0 1024)
+      }
+
+boundedTextField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boundedTextField pool =
+  testFieldProperties pool "boundedTextField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.boundedTextField "foo" 4
+      , roundTripGen = PGGen.pgText (Range.constant 0 4)
+      }
+
+fixedTextField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+fixedTextField pool =
+  testFieldProperties pool "fixedTextField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.fixedTextField "foo" 4
+      , roundTripGen = PGGen.pgText (Range.constant 4 4)
+      }
+
+textSearchVectorField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+textSearchVectorField pool =
+  testFieldProperties pool "textSearchVectorField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.textSearchVectorField "foo"
+      , roundTripGen = tsVectorGen
+      }
+
+dateField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+dateField pool =
+  testFieldProperties pool "dateField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.dateField "foo"
+      , roundTripGen = dayGen
+      }
+
+timestampField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+timestampField pool =
+  testFieldProperties pool "timestampField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.timestampField "foo"
+      , roundTripGen = utcTimeGen
+      }
+
+testFieldProperties :: (Show a, Eq a) => Pool.Pool Connection.Connection -> String -> RoundTripTest a -> [(HH.PropertyName, HH.Property)]
 testFieldProperties pool fieldDefName roundTripTest =
-  testGroup
-    fieldDefName
-    [ testProperty "can round trip values (not null)" . HH.property $ do
+  [
+    ( String.fromString (fieldDefName <> " - can round trip values (not null)")
+    , HH.property $
         runRoundTripTest pool roundTripTest
-    , testProperty "can round trip values (nullable)" . HH.property $ do
+    )
+  ,
+    ( String.fromString (fieldDefName <> " - can round trip values (nullable)")
+    , HH.property $
         runNullableRoundTripTest pool roundTripTest
-    , testProperty "cannot insert null values into a not null field" . HH.withTests 1 . HH.property $ do
+    )
+  ,
+    ( String.fromString (fieldDefName <> " - cannot insert null values into a not null field")
+    , Property.singletonProperty $
         runNullCounterExampleTest pool roundTripTest
-    ]
+    )
+  ]
 
 -- This generator generates alphanumeric values currently because of syntax
 -- issues with random characters being generated. There is a story to built
@@ -125,14 +170,14 @@ data RoundTripTest a = RoundTripTest
   , roundTripGen :: HH.Gen a
   }
 
-runRoundTripTest :: (Show a, Eq a) => Pool Connection -> RoundTripTest a -> HH.PropertyT IO ()
+runRoundTripTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> RoundTripTest a -> HH.PropertyT IO ()
 runRoundTripTest pool testCase =
-  withResource pool $ \connection -> do
+  Pool.withResource pool $ \connection -> do
     let fieldDef = roundTripFieldDef testCase
 
     value <- HH.forAll (roundTripGen testCase)
 
-    rows <- liftIO $ do
+    rows <- MIO.liftIO $ do
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
@@ -149,7 +194,7 @@ runRoundTripTest pool testCase =
               (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
               (Expr.tableExpr testTable Nothing Nothing Nothing)
 
-      readRows result
+      Result.readRows result
 
     let roundTripResult =
           case rows of
@@ -158,19 +203,19 @@ runRoundTripTest pool testCase =
             _ ->
               Left ("Expected one row with one value in results, but got: " ++ show rows)
 
-    roundTripResult === Right (Just value)
+    roundTripResult HH.=== Right (Just value)
 
-runNullableRoundTripTest :: (Show a, Eq a) => Pool Connection -> RoundTripTest a -> HH.PropertyT IO ()
+runNullableRoundTripTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> RoundTripTest a -> HH.PropertyT IO ()
 runNullableRoundTripTest pool testCase =
-  withResource pool $ \connection -> do
+  Pool.withResource pool $ \connection -> do
     let fieldDef = FieldDef.nullableField (roundTripFieldDef testCase)
 
     value <- HH.forAll (Gen.maybe $ roundTripGen testCase)
 
-    HH.cover 1 (fromString "Nothing") (Maybe.isNothing value)
-    HH.cover 20 (fromString "Just") (Maybe.isJust value)
+    HH.cover 1 (String.fromString "Nothing") (Maybe.isNothing value)
+    HH.cover 20 (String.fromString "Just") (Maybe.isJust value)
 
-    rows <- liftIO $ do
+    rows <- MIO.liftIO $ do
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
@@ -187,7 +232,7 @@ runNullableRoundTripTest pool testCase =
               (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
               (Expr.tableExpr testTable Nothing Nothing Nothing)
 
-      readRows result
+      Result.readRows result
 
     let roundTripResult =
           case rows of
@@ -196,14 +241,14 @@ runNullableRoundTripTest pool testCase =
             _ ->
               Left ("Expected one row with one value in results, but got: " ++ show rows)
 
-    roundTripResult === Right (Just value)
+    roundTripResult HH.=== Right (Just value)
 
-runNullCounterExampleTest :: Pool Connection -> RoundTripTest a -> HH.PropertyT IO ()
+runNullCounterExampleTest :: Pool.Pool Connection.Connection -> RoundTripTest a -> HH.PropertyT IO ()
 runNullCounterExampleTest pool testCase =
-  withResource pool $ \connection -> do
+  Pool.withResource pool $ \connection -> do
     let fieldDef = roundTripFieldDef testCase
 
-    result <- liftIO . try $ do
+    result <- MIO.liftIO . E.try $ do
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
@@ -215,7 +260,7 @@ runNullCounterExampleTest pool testCase =
 
     case result of
       Left err ->
-        sqlExecutionErrorSqlState err === Just (B8.pack "23502")
+        Connection.sqlExecutionErrorSqlState err HH.=== Just (B8.pack "23502")
       Right _ -> do
         HH.footnote "Expected insert query to fail, but it did not"
         HH.failure
@@ -224,7 +269,7 @@ testTable :: Expr.TableName
 testTable =
   Expr.rawTableName "field_definition_test"
 
-dropAndRecreateTestTable :: FieldDef.FieldDefinition nullability a -> Connection -> IO ()
+dropAndRecreateTestTable :: FieldDef.FieldDefinition nullability a -> Connection.Connection -> IO ()
 dropAndRecreateTestTable fieldDef connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
 
