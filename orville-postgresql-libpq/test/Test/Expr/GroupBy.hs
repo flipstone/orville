@@ -20,12 +20,12 @@ import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Test.Property as Property
 
 data FooBar = FooBar
-  { foo :: Int32
+  { foo :: Int.Int32
   , bar :: String
   }
 
 groupByTests :: Pool.Pool Conn.Connection -> IO Bool
-orderByTests pool =
+groupByTests pool =
   HH.checkSequential $
     HH.Group
       (String.fromString "Expr - GroupBy")
@@ -58,7 +58,7 @@ mkGroupByTestInsertSource test =
         ]
    in Expr.insertSqlValues (map mkRow $ groupByValuesToInsert test)
 
-mkGroupByTestExpectedRows :: GroupByTest -> [[(Maybe B8.ByteString, SqlValue)]]
+mkGroupByTestExpectedRows :: GroupByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByTestExpectedRows test =
   let mkRow foobar =
         [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
@@ -67,8 +67,8 @@ mkGroupByTestExpectedRows test =
    in fmap mkRow (groupByExpectedQueryResults test)
 
 runGroupByTest :: Pool.Pool Conn.Connection -> GroupByTest -> HH.Property
-runGroupByTest pool test =
-  withResource pool $ \connection -> do
+runGroupByTest pool test = Property.singletonProperty $
+  Pool.withResource pool $ \connection -> do
     MIO.liftIO $ dropAndRecreateTestTable connection
 
     let exprTestTable = Expr.rawTableName "expr_test"
@@ -100,7 +100,7 @@ barColumn :: Expr.ColumnName
 barColumn =
   Expr.rawColumnName "bar"
 
-dropAndRecreateTestTable :: Connection -> IO ()
+dropAndRecreateTestTable :: Conn.Connection -> IO ()
 dropAndRecreateTestTable connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
   RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

@@ -96,6 +96,7 @@ test-suite spec
   other-modules:
       Test.Connection
       Test.Entities.Foo
+      Test.Expr.GroupBy
       Test.Expr.OrderBy
       Test.Expr.Where
       Test.FieldDefinition
