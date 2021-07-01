@@ -33,6 +33,11 @@ module Database.Orville.PostgreSQL.Internal.Expr
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    GroupByClause,
+    groupByClauseToSql,
+    groupByClause,
+    appendGroupBy,
+    groupByExpr,
     InsertExpr,
     insertExpr,
     insertExprToSql,
@@ -77,6 +82,7 @@ module Database.Orville.PostgreSQL.Internal.Expr
 where
 
 import Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition
+import Database.Orville.PostgreSQL.Internal.Expr.GroupBy
 import Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
 import Database.Orville.PostgreSQL.Internal.Expr.Name
 import Database.Orville.PostgreSQL.Internal.Expr.OrderBy

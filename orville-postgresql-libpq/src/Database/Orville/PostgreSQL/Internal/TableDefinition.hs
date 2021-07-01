@@ -164,13 +164,14 @@ mkQueryExpr ::
   TableDefinition key writeEntity readEntity ->
   Maybe Expr.WhereClause ->
   Maybe Expr.OrderByClause ->
+  Maybe Expr.GroupByClause ->
   Expr.QueryExpr
-mkQueryExpr tableDef whereClause orderByClause =
+mkQueryExpr tableDef whereClause orderByClause groupByClause =
   let columns =
         marshallerColumnNames . tableMarshaller $ tableDef
    in Expr.queryExpr
         (Expr.selectColumns columns)
-        (Expr.tableExpr (tableName tableDef) whereClause orderByClause)
+        (Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause)
 
 {- |
   An internal helper function that collects the column names for all the

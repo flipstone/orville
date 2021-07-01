@@ -33,7 +33,7 @@ tableDefinitionTree pool =
               mkInsertExpr Foo.table (originalFoo :| [])
 
             selectFoos =
-              mkQueryExpr Foo.table Nothing Nothing
+              mkQueryExpr Foo.table Nothing Nothing Nothing
 
         foosFromDB <-
           liftIO . withResource pool $ \connection -> do

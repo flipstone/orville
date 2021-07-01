@@ -147,7 +147,7 @@ runRoundTripTest pool testCase =
           Expr.queryExprToSql $
             Expr.queryExpr
               (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-              (Expr.tableExpr testTable Nothing Nothing)
+              (Expr.tableExpr testTable Nothing Nothing Nothing)
 
       readRows result
 
@@ -185,7 +185,7 @@ runNullableRoundTripTest pool testCase =
           Expr.queryExprToSql $
             Expr.queryExpr
               (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-              (Expr.tableExpr testTable Nothing Nothing)
+              (Expr.tableExpr testTable Nothing Nothing Nothing)
 
       readRows result
 

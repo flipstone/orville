@@ -26,6 +26,7 @@ exprSpecs pool =
   describe "Expr Tests" $ do
     whereSpecs pool
     orderBySpecs pool
+    groupBySpecs pool
 
 whereSpecs :: Pool Connection -> Spec
 whereSpecs pool =
@@ -189,10 +190,68 @@ runOrderByTest pool test =
         . Expr.queryExprToSql
         $ Expr.queryExpr
           (Expr.selectColumns [fooColumn, barColumn])
-          (Expr.tableExpr exprTestTable Nothing (orderByClause test))
+          (Expr.tableExpr exprTestTable Nothing (orderByClause test) Nothing)
 
     rows <- ExecResult.readRows result
     rows `shouldBe` mkOrderByTestExpectedRows test
+
+groupBySpecs :: Pool Connection -> Spec
+groupBySpecs pool =
+  describe "GroupBy" $ do
+    it "appendGroupBy causes grouping on both clauses" $ do
+      runGroupByTest pool $
+        GroupByTest
+          { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "cat", FooBar 1 "dog", FooBar 3 "cat", FooBar 1 "dog", FooBar 2 "cat"]
+          , groupByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "cat", FooBar 2 "cat"]
+          , groupByClause =
+              Just . Expr.groupByClause $
+                Expr.appendGroupBy
+                  (Expr.groupByExpr (Expr.columnNameToSql barColumn))
+                  (Expr.groupByExpr (Expr.columnNameToSql fooColumn))
+          }
+
+data GroupByTest = GroupByTest
+  { groupByValuesToInsert :: [FooBar]
+  , groupByClause :: Maybe Expr.GroupByClause
+  , groupByExpectedQueryResults :: [FooBar]
+  }
+
+mkGroupByTestInsertSource :: GroupByTest -> Expr.InsertSource
+mkGroupByTestInsertSource test =
+  let mkRow foobar =
+        [ SqlValue.fromInt32 (foo foobar)
+        , SqlValue.fromText (T.pack $ bar foobar)
+        ]
+   in Expr.insertSqlValues (map mkRow $ groupByValuesToInsert test)
+
+mkGroupByTestExpectedRows :: GroupByTest -> [[(Maybe B8.ByteString, SqlValue)]]
+mkGroupByTestExpectedRows test =
+  let mkRow foobar =
+        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+        ]
+   in fmap mkRow (groupByExpectedQueryResults test)
+
+runGroupByTest :: Pool Connection -> GroupByTest -> IO ()
+runGroupByTest pool test =
+  withResource pool $ \connection -> do
+    dropAndRecreateTestTable connection
+
+    let exprTestTable = Expr.rawTableName "expr_test"
+
+    RawSql.executeVoid connection
+      . Expr.insertExprToSql
+      $ Expr.insertExpr exprTestTable Nothing (mkGroupByTestInsertSource test)
+
+    result <-
+      RawSql.execute connection
+        . Expr.queryExprToSql
+        $ Expr.queryExpr
+          (Expr.selectColumns [fooColumn, barColumn])
+          (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test))
+
+    rows <- ExecResult.readRows result
+    rows `shouldBe` mkGroupByTestExpectedRows test
 
 data WhereConditionTest = WhereConditionTest
   { whereValuesToInsert :: [FooBar]
@@ -232,7 +291,7 @@ runWhereConditionTest pool test =
         Expr.queryExprToSql $
           Expr.queryExpr
             (Expr.selectColumns [fooColumn, barColumn])
-            (Expr.tableExpr exprTestTable (whereClause test) Nothing)
+            (Expr.tableExpr exprTestTable (whereClause test) Nothing Nothing)
 
     rows <- ExecResult.readRows result
     rows `shouldBe` mkTestExpectedRows test

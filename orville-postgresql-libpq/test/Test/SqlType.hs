@@ -341,7 +341,7 @@ runDecodingTest pool test =
     result <-
       RawSql.execute connection $
         Expr.queryExprToSql $
-          Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
+          Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing Nothing)
 
     (maybeA : _) <- decodeRows result (sqlType test)
     shouldBe maybeA (Just (expectedValue test))
