@@ -4,9 +4,38 @@ Copyright : Flipstone Technology Partners 2020-2021
 License   : MIT
 -}
 module Database.Orville.PostgreSQL
-  ( RecordOperations.insertRecord,
+  ( EntityOperations.insertEntity,
+    EntityOperations.insertEntities,
+    EntityOperations.updateEntity,
+    EntityOperations.findEntitiesBy,
+    EntityOperations.findFirstEntityBy,
+    EntityOperations.findEntity,
     Connection.createConnectionPool,
     TableDefinition.TableDefinition,
+    TableDefinition.mkTableDefiniton,
+    PrimaryKey.PrimaryKey,
+    PrimaryKey.primaryKey,
+    PrimaryKey.compositePrimaryKey,
+    SqlMarshaller.SqlMarshaller,
+    SqlMarshaller.marshallField,
+    FieldDefinition.FieldDefinition,
+    FieldDefinition.NotNull,
+    FieldDefinition.Nullable,
+    FieldDefinition.nullableField,
+    FieldDefinition.asymmetricNullableField,
+    FieldDefinition.integerField,
+    FieldDefinition.serialField,
+    FieldDefinition.bigIntegerField,
+    FieldDefinition.bigSerialField,
+    FieldDefinition.doubleField,
+    FieldDefinition.booleanField,
+    FieldDefinition.unboundedTextField,
+    FieldDefinition.boundedTextField,
+    FieldDefinition.fixedTextField,
+    FieldDefinition.textSearchVectorField,
+    FieldDefinition.dateField,
+    FieldDefinition.timestampField,
+    FieldDefinition.fieldOfType,
     Orville.Orville,
     Orville.runOrville,
     MonadOrville.MonadOrville,
@@ -66,10 +95,13 @@ module Database.Orville.PostgreSQL
 where
 
 import qualified Database.Orville.PostgreSQL.Connection as Connection
+import qualified Database.Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Database.Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Database.Orville.PostgreSQL.Internal.Orville as Orville
-import qualified Database.Orville.PostgreSQL.Internal.RecordOperations as RecordOperations
+import qualified Database.Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Database.Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
+import qualified Database.Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Database.Orville.PostgreSQL.Internal.TableDefinition as TableDefinition

@@ -11,13 +11,17 @@ module Database.Orville.PostgreSQL.Internal.PrimaryKey
     primaryKeyPart,
     mapPrimaryKeyParts,
     mkPrimaryKeyExpr,
+    primaryKeyEquals,
+    primaryKeyEqualsExpr,
   )
 where
 
 import qualified Data.List as List
+import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, fieldColumnName, fieldName, fieldNameToString, fieldValueToSqlValue)
+import Database.Orville.PostgreSQL.Internal.SelectOptions (WhereCondition, fieldEquals, whereAnd, whereConditionToBooleanExpr)
 import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 {- |
@@ -46,14 +50,14 @@ primaryKeyDescription keyDef =
   let partName :: (part -> key) -> FieldDefinition NotNull a -> String
       partName _ field =
         fieldNameToString (fieldName field)
-   in List.intercalate ", " (mapPrimaryKeyParts partName keyDef)
+   in List.intercalate ", " (toList $ mapPrimaryKeyParts partName keyDef)
 
 {- |
   'primaryKeyToSql' converts a Haskell value for a primary key into the
   (possibly multiple) sql values that represent the primary key in the
   database.
 -}
-primaryKeyToSql :: PrimaryKey key -> key -> [SqlValue.SqlValue]
+primaryKeyToSql :: PrimaryKey key -> key -> NonEmpty SqlValue.SqlValue
 primaryKeyToSql keyDef key =
   mapPrimaryKeyParts (partSqlValue key) keyDef
 
@@ -119,11 +123,11 @@ mapPrimaryKeyParts ::
     a
   ) ->
   PrimaryKey key ->
-  [a]
+  NonEmpty a
 mapPrimaryKeyParts f (PrimaryKey first rest) =
   let doPart (PrimaryKeyPart getPart field) =
         f getPart field
-   in map doPart (first : rest)
+   in fmap doPart (first :| rest)
 
 {- |
   Builds a 'Expr.PrimaryKeyExpr' that is suitable to be used when creating
@@ -134,3 +138,28 @@ mkPrimaryKeyExpr keyDef =
   let names =
         mapPrimaryKeyParts (\_ field -> fieldColumnName field) keyDef
    in Expr.primaryKeyExpr names
+
+{- |
+  'primaryKeyEquals' builds a 'WhereCondition' that will match the row where
+  the primary key is equal to the given value. For single-field primary keys
+  this is equivalent to '.==', but 'primaryKeyEquals also handles composite
+  primary keys.
+-}
+primaryKeyEquals :: PrimaryKey key -> key -> WhereCondition
+primaryKeyEquals keyDef key =
+  whereAnd (mapPrimaryKeyParts (partEquals key) keyDef)
+
+{- |
+  Like 'primaryKeyEquals', but returns the condition as a lower-level
+  'Expr.BooleanExpr'
+-}
+primaryKeyEqualsExpr :: PrimaryKey key -> key -> Expr.BooleanExpr
+primaryKeyEqualsExpr keyDef key =
+  whereConditionToBooleanExpr (primaryKeyEquals keyDef key)
+
+{- |
+  INTERNAL: builds the where condition for a single part of the key
+-}
+partEquals :: key -> (key -> a) -> FieldDefinition nullability a -> WhereCondition
+partEquals key getPart partField =
+  fieldEquals partField (getPart key)

@@ -43,8 +43,10 @@ library
       Database.Orville.PostgreSQL.Internal.SqlValue
       Database.Orville.PostgreSQL.Internal.TableDefinition
   other-modules:
+      Database.Orville.PostgreSQL.Internal.EntityOperations
       Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition
       Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
+      Database.Orville.PostgreSQL.Internal.Expr.LimitExpr
       Database.Orville.PostgreSQL.Internal.Expr.Name
       Database.Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Database.Orville.PostgreSQL.Internal.Expr.Name.TableName
@@ -57,6 +59,7 @@ library
       Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList
       Database.Orville.PostgreSQL.Internal.Expr.Query.TableExpr
       Database.Orville.PostgreSQL.Internal.Expr.TableDefinition
+      Database.Orville.PostgreSQL.Internal.Expr.Update
       Database.Orville.PostgreSQL.Internal.Expr.Where
       Database.Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
       Database.Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
@@ -64,7 +67,6 @@ library
       Database.Orville.PostgreSQL.Internal.Expr.Where.WhereClause
       Database.Orville.PostgreSQL.Internal.MonadOrville
       Database.Orville.PostgreSQL.Internal.Orville
-      Database.Orville.PostgreSQL.Internal.RecordOperations
       Database.Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Database.Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
       Paths_orville_postgresql_libpq
@@ -93,13 +95,15 @@ test-suite spec
   other-modules:
       Test.Connection
       Test.Entities.Foo
+      Test.EntityOperations
+      Test.Expr.InsertUpdate
       Test.Expr.OrderBy
+      Test.Expr.TestSchema
       Test.Expr.Where
       Test.FieldDefinition
       Test.PGGen
       Test.Property
       Test.RawSql
-      Test.RecordOperations
       Test.SelectOptions
       Test.SqlMarshaller
       Test.SqlType

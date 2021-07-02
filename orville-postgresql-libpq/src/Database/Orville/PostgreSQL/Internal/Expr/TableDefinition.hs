@@ -8,8 +8,9 @@ module Database.Orville.PostgreSQL.Internal.Expr.TableDefinition
   )
 where
 
+import Data.List.NonEmpty (NonEmpty, toList)
 import Database.Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition, columnDefinitionToSql)
-import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName, columnNameToSql, tableNameToSql)
+import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype CreateTableExpr
@@ -33,7 +34,7 @@ createTableExpr tableName columnDefs mbPrimaryKey =
    in CreateTableExpr $
         mconcat
           [ RawSql.fromString "CREATE TABLE "
-          , tableNameToSql tableName
+          , RawSql.toRawSql tableName
           , RawSql.leftParen
           , RawSql.intercalate RawSql.comma tableElementsSql
           , RawSql.rightParen
@@ -48,12 +49,12 @@ newtype PrimaryKeyExpr
 primaryKeyToSql :: PrimaryKeyExpr -> RawSql.RawSql
 primaryKeyToSql (PrimaryKeyExpr sql) = sql
 
-primaryKeyExpr :: [ColumnName] -> PrimaryKeyExpr
+primaryKeyExpr :: NonEmpty ColumnName -> PrimaryKeyExpr
 primaryKeyExpr columnNames =
   PrimaryKeyExpr $
     mconcat
       [ RawSql.fromString "PRIMARY KEY "
       , RawSql.leftParen
-      , RawSql.intercalate RawSql.comma (map columnNameToSql columnNames)
+      , RawSql.intercalate RawSql.comma (map RawSql.toRawSql (toList columnNames))
       , RawSql.rightParen
       ]

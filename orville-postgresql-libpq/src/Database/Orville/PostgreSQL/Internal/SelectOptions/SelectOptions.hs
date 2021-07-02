@@ -4,10 +4,12 @@ module Database.Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
     appendSelectOptions,
     selectWhereClause,
     where_,
+    limit,
   )
 where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Monoid (First (First))
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import Database.Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereCondition, whereAnd, whereConditionToBooleanExpr)
@@ -20,6 +22,7 @@ import Database.Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereC
 -}
 data SelectOptions = SelectOptions
   { i_whereConditions :: [WhereCondition]
+  , i_limitExpr :: First Expr.LimitExpr
   }
 
 instance Semigroup SelectOptions where
@@ -35,6 +38,7 @@ emptySelectOptions :: SelectOptions
 emptySelectOptions =
   SelectOptions
     { i_whereConditions = []
+    , i_limitExpr = mempty
     }
 
 {- |
@@ -46,6 +50,7 @@ appendSelectOptions :: SelectOptions -> SelectOptions -> SelectOptions
 appendSelectOptions left right =
   SelectOptions
     (i_whereConditions left <> i_whereConditions right)
+    (i_limitExpr left <> i_limitExpr right)
 
 {- |
   Builds the 'Expr.WhereClause' that should be used to include the
@@ -67,4 +72,13 @@ where_ :: WhereCondition -> SelectOptions
 where_ condition =
   emptySelectOptions
     { i_whereConditions = [condition]
+    }
+
+{- |
+  Constructs a 'SelectOptions' that will apply the given limit
+-}
+limit :: Int -> SelectOptions
+limit limitValue =
+  emptySelectOptions
+    { i_limitExpr = First . Just . Expr.limitExpr $ limitValue
     }

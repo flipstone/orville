@@ -11,7 +11,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.Query.SelectList
   )
 where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype SelectList = SelectList RawSql.RawSql
@@ -25,7 +25,7 @@ selectColumns columnNames =
   SelectList $
     RawSql.intercalate
       RawSql.comma
-      (fmap columnNameToSql columnNames)
+      (map RawSql.toRawSql columnNames)
 
 selectListToSql :: SelectList -> RawSql.RawSql
 selectListToSql (SelectList sql) =

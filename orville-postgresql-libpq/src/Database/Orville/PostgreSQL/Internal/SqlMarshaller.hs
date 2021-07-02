@@ -23,6 +23,7 @@ module Database.Orville.PostgreSQL.Internal.SqlMarshaller
   )
 where
 
+import Control.Exception (Exception)
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
@@ -132,6 +133,8 @@ instance Show MarshallError where
     case err of
       FailedToDecodeValue -> "FailedToDecodeValue"
       FieldNotFoundInResultSet -> "FieldNotFoundInResultSet"
+
+instance Exception MarshallError
 
 {- |
   Decodes all the rows found in a execution result at once. The first row that

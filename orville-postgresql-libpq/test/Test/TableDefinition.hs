@@ -12,7 +12,6 @@ import qualified Data.String as String
 import qualified Hedgehog as HH
 
 import qualified Database.Orville.PostgreSQL.Connection as Conn
-import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Database.Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Database.Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
@@ -35,13 +34,13 @@ tableDefinitionTests pool =
                   TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
 
                 selectFoos =
-                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing
+                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing
 
             foosFromDB <-
               MIO.liftIO . Pool.withResource pool $ \connection -> do
                 TestTable.dropAndRecreateTableDef connection Foo.table
-                RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
-                result <- RawSql.execute connection (Expr.queryExprToSql selectFoos)
+                RawSql.executeVoid connection insertFoo
+                result <- RawSql.execute connection selectFoos
                 SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Foo.table) result
 
             foosFromDB HH.=== Right [originalFoo]
@@ -56,8 +55,8 @@ tableDefinitionTests pool =
 
             result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
               TestTable.dropAndRecreateTableDef connection Foo.table
-              RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
-              RawSql.executeVoid connection (Expr.insertExprToSql insertFoo)
+              RawSql.executeVoid connection insertFoo
+              RawSql.executeVoid connection insertFoo
 
             case result of
               Right () -> do

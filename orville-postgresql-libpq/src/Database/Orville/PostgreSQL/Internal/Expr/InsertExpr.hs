@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Database.Orville.PostgreSQL.Expr.InsertExpr
 Copyright : Flipstone Technology Partners 2016-2021
@@ -6,7 +8,6 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
   ( InsertExpr,
     insertExpr,
-    insertExprToSql,
     InsertColumnList,
     insertColumnList,
     insertColumnListToSql,
@@ -15,22 +16,20 @@ module Database.Orville.PostgreSQL.Internal.Expr.InsertExpr
   )
 where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName, columnNameToSql, tableNameToSql)
+import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 newtype InsertExpr
   = InsertExpr RawSql.RawSql
-
-insertExprToSql :: InsertExpr -> RawSql.RawSql
-insertExprToSql (InsertExpr sql) = sql
+  deriving (RawSql.ToRawSql)
 
 insertExpr :: TableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
 insertExpr target _ source =
   InsertExpr $
     mconcat
       [ RawSql.fromString "INSERT INTO "
-      , tableNameToSql target
+      , RawSql.toRawSql target
       , RawSql.space
       , insertSourceToSql source
       ]
@@ -44,7 +43,7 @@ insertColumnListToSql (InsertColumnList sql) = sql
 insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
-    RawSql.intercalate (RawSql.comma) (map columnNameToSql columnNames)
+    RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
 
 newtype InsertSource
   = InsertSource RawSql.RawSql

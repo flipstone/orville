@@ -11,6 +11,7 @@ module Database.Orville.PostgreSQL.Internal.TableDefinition
     mkInsertColumnList,
     mkInsertSource,
     mkQueryExpr,
+    mkUpdateExpr,
   )
 where
 
@@ -18,7 +19,7 @@ import Data.List.NonEmpty (NonEmpty, toList)
 
 import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
 import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
-import Database.Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr)
+import Database.Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
 import Database.Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, SqlMarshaller, foldMarshallerFields)
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -156,6 +157,44 @@ collectSqlValue fieldDef accessor encodeRest entity =
   fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
 
 {- |
+  Builds an 'Expr.UpdateExpr' that will update the entity at the given 'key'
+  with the values from the 'writeEntity' when executed.
+  SQL table when it is executed.
+-}
+mkUpdateExpr ::
+  TableDefinition key writeEntity readEntity ->
+  key ->
+  writeEntity ->
+  Expr.UpdateExpr
+mkUpdateExpr tableDef key writeEntity =
+  let setClauses =
+        foldMarshallerFields
+          (tableMarshaller tableDef)
+          []
+          (collectSetClauses writeEntity)
+
+      isEntityKey =
+        primaryKeyEqualsExpr
+          (tablePrimaryKey tableDef)
+          key
+   in Expr.updateExpr
+        (tableName tableDef)
+        (Expr.setClauseList setClauses)
+        (Just (Expr.whereClause isEntityKey))
+
+{- |
+  An internal helper function that collects the 'Expr.SetClause's to
+  update all the fields contained in a 'SqlMarshaller'
+-}
+collectSetClauses :: entity -> FieldFold entity [Expr.SetClause]
+collectSetClauses entity fieldDef accessor clauses =
+  let newClause =
+        Expr.setColumn
+          (fieldColumnName fieldDef)
+          (fieldValueToSqlValue fieldDef (accessor entity))
+   in newClause : clauses
+
+{- |
   Builds a 'Expr.QueryExpr' that will do a select from the SQL table described
   by the table definiton, selecting all the columns found in the table's
   'SqlMarshaller'.
@@ -164,13 +203,14 @@ mkQueryExpr ::
   TableDefinition key writeEntity readEntity ->
   Maybe Expr.WhereClause ->
   Maybe Expr.OrderByClause ->
+  Maybe Expr.LimitExpr ->
   Expr.QueryExpr
-mkQueryExpr tableDef whereClause orderByClause =
+mkQueryExpr tableDef whereClause orderByClause limitExpr =
   let columns =
         marshallerColumnNames . tableMarshaller $ tableDef
    in Expr.queryExpr
         (Expr.selectColumns columns)
-        (Expr.tableExpr (tableName tableDef) whereClause orderByClause)
+        (Expr.tableExpr (tableName tableDef) whereClause orderByClause limitExpr)
 
 {- |
   An internal helper function that collects the column names for all the

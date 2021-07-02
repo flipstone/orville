@@ -1,0 +1,116 @@
+module Test.Expr.InsertUpdate
+  ( insertUpdateTests,
+  )
+where
+
+import qualified Control.Monad.IO.Class as MIO
+import qualified Data.Pool as Pool
+import qualified Data.String as String
+import qualified Data.Text as T
+import Hedgehog ((===))
+import qualified Hedgehog as HH
+
+import qualified Database.Orville.PostgreSQL.Connection as Conn
+import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
+import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
+
+import Test.Expr.TestSchema (FooBar (..), barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource, orderByFoo)
+import qualified Test.Property as Property
+
+insertUpdateTests :: Pool.Pool Conn.Connection -> IO Bool
+insertUpdateTests pool =
+  HH.checkSequential $
+    HH.Group
+      (String.fromString "Expr - Insert/Update")
+      [
+        ( String.fromString "insertExpr inserts values"
+        , Property.singletonProperty $ do
+            let fooBars = [FooBar 1 "dog", FooBar 2 "cat"]
+
+            rows <-
+              MIO.liftIO $
+                Pool.withResource pool $ \connection -> do
+                  dropAndRecreateTestTable connection
+
+                  RawSql.executeVoid connection $
+                    Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars)
+
+                  result <-
+                    RawSql.execute connection $
+                      Expr.queryExpr
+                        (Expr.selectColumns [fooColumn, barColumn])
+                        (Expr.tableExpr fooBarTable Nothing Nothing Nothing)
+
+                  ExecResult.readRows result
+
+            rows === map encodeFooBar fooBars
+        )
+      ,
+        ( String.fromString "updateExpr updates rows in the db"
+        , Property.singletonProperty $ do
+            let oldFooBars = [FooBar 1 "dog", FooBar 2 "cat"]
+                newFooBars = [FooBar 1 "ferret", FooBar 2 "ferret"]
+
+                setBarToFerret =
+                  Expr.updateExpr
+                    fooBarTable
+                    (Expr.setClauseList [Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))])
+                    Nothing
+
+            rows <-
+              MIO.liftIO $
+                Pool.withResource pool $ \connection -> do
+                  dropAndRecreateTestTable connection
+
+                  RawSql.executeVoid connection $
+                    Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars)
+
+                  RawSql.executeVoid connection $
+                    setBarToFerret
+
+                  result <-
+                    RawSql.execute connection $
+                      Expr.queryExpr
+                        (Expr.selectColumns [fooColumn, barColumn])
+                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing)
+
+                  ExecResult.readRows result
+
+            rows === map encodeFooBar newFooBars
+        )
+      ,
+        ( String.fromString "updateExpr uses a where clause when given"
+        , Property.singletonProperty $ do
+            let oldFooBars = [FooBar 1 "dog", FooBar 2 "cat"]
+                newFooBars = [FooBar 1 "ferret", FooBar 2 "cat"]
+
+                updateDogToForret =
+                  Expr.updateExpr
+                    fooBarTable
+                    (Expr.setClauseList [Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))])
+                    (Just (Expr.whereClause (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))))
+
+            rows <-
+              MIO.liftIO $
+                Pool.withResource pool $ \connection -> do
+                  dropAndRecreateTestTable connection
+
+                  RawSql.executeVoid connection $
+                    Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars)
+
+                  RawSql.executeVoid connection $
+                    updateDogToForret
+
+                  result <-
+                    RawSql.execute connection $
+                      Expr.queryExpr
+                        (Expr.selectColumns [fooColumn, barColumn])
+                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing)
+
+                  ExecResult.readRows result
+
+            rows === map encodeFooBar newFooBars
+        )
+      ]

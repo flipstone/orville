@@ -11,7 +11,7 @@ module Database.Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand
   )
 where
 
-import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import Database.Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
 import Database.Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -21,7 +21,7 @@ rowValuePredicandToSql :: RowValuePredicand -> RawSql.RawSql
 rowValuePredicandToSql (RowValuePredicand sql) = sql
 
 columnReference :: ColumnName -> RowValuePredicand
-columnReference = RowValuePredicand . columnNameToSql
+columnReference = RowValuePredicand . RawSql.toRawSql
 
 comparisonValue :: SqlValue -> RowValuePredicand
 comparisonValue = RowValuePredicand . RawSql.parameter
