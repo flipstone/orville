@@ -3,60 +3,55 @@ Module    : Orville.PostgreSQL.Expr.InsertExpr
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
+
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Orville.PostgreSQL.Internal.Expr.InsertExpr
   ( InsertExpr,
     insertExpr,
-    insertExprToSql,
     InsertColumnList,
     insertColumnList,
-    insertColumnListToSql,
     InsertSource,
     insertSqlValues,
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName, columnNameToSql, tableNameToSql)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 newtype InsertExpr
   = InsertExpr RawSql.RawSql
-
-insertExprToSql :: InsertExpr -> RawSql.RawSql
-insertExprToSql (InsertExpr sql) = sql
+  deriving RawSql.SqlExpression
 
 insertExpr :: TableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
 insertExpr target _ source =
   InsertExpr $
     mconcat
       [ RawSql.fromString "INSERT INTO "
-      , tableNameToSql target
+      , RawSql.toRawSql target
       , RawSql.space
-      , insertSourceToSql source
+      , RawSql.toRawSql source
       ]
 
 newtype InsertColumnList
   = InsertColumnList RawSql.RawSql
-
-insertColumnListToSql :: InsertColumnList -> RawSql.RawSql
-insertColumnListToSql (InsertColumnList sql) = sql
+  deriving RawSql.SqlExpression
 
 insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
-    RawSql.intercalate (RawSql.comma) (map columnNameToSql columnNames)
+    RawSql.intercalate (RawSql.comma) (map RawSql.toRawSql columnNames)
 
 newtype InsertSource
   = InsertSource RawSql.RawSql
-
-insertSourceToSql :: InsertSource -> RawSql.RawSql
-insertSourceToSql (InsertSource sql) = sql
+  deriving RawSql.SqlExpression
 
 insertRowValues :: [RowValues] -> InsertSource
 insertRowValues rows =
   InsertSource $
     RawSql.fromString "VALUES "
-      <> RawSql.intercalate RawSql.comma (fmap rowValuesToSql rows)
+      <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql rows)
 
 insertSqlValues :: [[SqlValue]] -> InsertSource
 insertSqlValues rows =
@@ -64,9 +59,7 @@ insertSqlValues rows =
 
 newtype RowValues
   = RowValues RawSql.RawSql
-
-rowValuesToSql :: RowValues -> RawSql.RawSql
-rowValuesToSql (RowValues sql) = sql
+  deriving RawSql.SqlExpression
 
 rowValues :: [SqlValue] -> RowValues
 rowValues values =

@@ -3,9 +3,11 @@ Module    : Orville.PostgreSQL.Expr.GroupBy.GroupByExpr
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
+
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
   ( GroupByExpr,
-    groupByExprToSql,
     appendGroupBy,
     groupByExpr,
   )
@@ -14,9 +16,7 @@ where
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype GroupByExpr = GroupByExpr RawSql.RawSql
-
-groupByExprToSql :: GroupByExpr -> RawSql.RawSql
-groupByExprToSql (GroupByExpr sql) = sql
+  deriving RawSql.SqlExpression
 
 appendGroupBy :: GroupByExpr -> GroupByExpr -> GroupByExpr
 appendGroupBy (GroupByExpr a) (GroupByExpr b) =

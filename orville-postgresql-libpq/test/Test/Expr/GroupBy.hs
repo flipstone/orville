@@ -38,8 +38,8 @@ groupByTests pool =
               , groupByClause =
                   Just . Expr.groupByClause $
                     Expr.appendGroupBy
-                      (Expr.groupByExpr $ Expr.columnNameToSql barColumn)
-                      (Expr.groupByExpr $ Expr.columnNameToSql fooColumn)
+                      (Expr.groupByExpr $ RawSql.toRawSql barColumn)
+                      (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
               }
         )
       ]
@@ -74,13 +74,13 @@ runGroupByTest pool test = Property.singletonProperty $
     let exprTestTable = Expr.rawTableName "expr_test"
 
     MIO.liftIO . RawSql.executeVoid connection
-      . Expr.insertExprToSql
+      . RawSql.toRawSql
       $ Expr.insertExpr exprTestTable Nothing (mkGroupByTestInsertSource test)
 
     result <-
       MIO.liftIO $
         RawSql.execute connection
-          . Expr.queryExprToSql
+          . RawSql.toRawSql
           $ Expr.queryExpr
             (Expr.selectColumns [fooColumn, barColumn])
             (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test))
@@ -102,5 +102,5 @@ barColumn =
 
 dropAndRecreateTestTable :: Conn.Connection -> IO ()
 dropAndRecreateTestTable connection = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
+  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

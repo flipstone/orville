@@ -181,7 +181,7 @@ runRoundTripTest pool testCase =
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
-        Expr.insertExprToSql $
+        RawSql.toRawSql $
           Expr.insertExpr
             testTable
             Nothing
@@ -189,7 +189,7 @@ runRoundTripTest pool testCase =
 
       result <-
         RawSql.execute connection $
-          Expr.queryExprToSql $
+          RawSql.toRawSql $
             Expr.queryExpr
               (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
               (Expr.tableExpr testTable Nothing Nothing Nothing)
@@ -219,7 +219,7 @@ runNullableRoundTripTest pool testCase =
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
-        Expr.insertExprToSql $
+        RawSql.toRawSql $
           Expr.insertExpr
             testTable
             Nothing
@@ -227,7 +227,7 @@ runNullableRoundTripTest pool testCase =
 
       result <-
         RawSql.execute connection $
-          Expr.queryExprToSql $
+          RawSql.toRawSql $
             Expr.queryExpr
               (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
               (Expr.tableExpr testTable Nothing Nothing Nothing)
@@ -252,7 +252,7 @@ runNullCounterExampleTest pool testCase =
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
-        Expr.insertExprToSql $
+        RawSql.toRawSql $
           Expr.insertExpr
             testTable
             Nothing
@@ -271,8 +271,8 @@ testTable =
 
 dropAndRecreateTestTable :: FieldDef.FieldDefinition nullability a -> Connection.Connection -> IO ()
 dropAndRecreateTestTable fieldDef connection = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
 
   RawSql.executeVoid connection $
-    Expr.createTableExprToSql $
+    RawSql.toRawSql $
       Expr.createTableExpr testTable [FieldDef.fieldColumnDefinition fieldDef] Nothing

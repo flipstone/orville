@@ -378,7 +378,7 @@ runDecodingTest pool test =
       let tableName = Expr.rawTableName "decoding_test"
 
       MIO.liftIO . RawSql.executeVoid connection
-        . Expr.insertExprToSql
+        . RawSql.toRawSql
         $ Expr.insertExpr
           tableName
           Nothing
@@ -386,7 +386,7 @@ runDecodingTest pool test =
 
       result <-
         MIO.liftIO . RawSql.execute connection $
-          Expr.queryExprToSql $
+          RawSql.toRawSql $
             Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing Nothing)
 
       (maybeA : _) <- MIO.liftIO $ ExecutionResult.decodeRows result (sqlType test)

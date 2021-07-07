@@ -6,7 +6,6 @@ where
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExpr)
@@ -26,4 +25,4 @@ insertRecord entityTable entity = do
   let insertEntity = mkInsertExpr entityTable (entity :| [])
   MonadOrville.withConnection $ \connection ->
     liftIO $
-      RawSql.executeVoid connection (Expr.insertExprToSql insertEntity)
+      RawSql.executeVoid connection (RawSql.toRawSql insertEntity)

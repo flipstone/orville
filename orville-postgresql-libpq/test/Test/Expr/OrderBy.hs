@@ -38,7 +38,7 @@ orderByTests pool =
               , orderByClause =
                   Just . Expr.orderByClause $
                     Expr.orderByExpr
-                      (Expr.columnNameToSql barColumn)
+                      (RawSql.toRawSql barColumn)
                       Expr.ascendingOrder
               }
         )
@@ -51,7 +51,7 @@ orderByTests pool =
               , orderByClause =
                   Just . Expr.orderByClause $
                     Expr.orderByExpr
-                      (Expr.columnNameToSql barColumn)
+                      (RawSql.toRawSql barColumn)
                       Expr.descendingOrder
               }
         )
@@ -64,8 +64,8 @@ orderByTests pool =
               , orderByClause =
                   Just . Expr.orderByClause $
                     Expr.appendOrderBy
-                      (Expr.orderByExpr (Expr.columnNameToSql barColumn) Expr.ascendingOrder)
-                      (Expr.orderByExpr (Expr.columnNameToSql fooColumn) Expr.descendingOrder)
+                      (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
+                      (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
               }
         )
       ]
@@ -100,13 +100,13 @@ runOrderByTest pool test = Property.singletonProperty $
     let exprTestTable = Expr.rawTableName "expr_test"
 
     MIO.liftIO . RawSql.executeVoid connection
-      . Expr.insertExprToSql
+      . RawSql.toRawSql
       $ Expr.insertExpr exprTestTable Nothing (mkOrderByTestInsertSource test)
 
     result <-
       MIO.liftIO $
         RawSql.execute connection
-          . Expr.queryExprToSql
+          . RawSql.toRawSql
           $ Expr.queryExpr
             (Expr.selectColumns [fooColumn, barColumn])
             (Expr.tableExpr exprTestTable Nothing (orderByClause test) Nothing)
@@ -128,5 +128,5 @@ barColumn =
 
 dropAndRecreateTestTable :: Conn.Connection -> IO ()
 dropAndRecreateTestTable connection = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
+  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

@@ -23,7 +23,7 @@ module Orville.PostgreSQL.Internal.RawSql
     rightParen,
 
     -- * Generic interface for generating sql
-    ToRawSql (toRawSql),
+    SqlExpression (toRawSql, unsafeFromRawSql),
     toBytesAndParams,
     toBytes,
   )
@@ -63,17 +63,19 @@ instance Semigroup RawSql where
 instance Monoid RawSql where
   mempty = SqlSection mempty
 
-class ToRawSql a where
+class SqlExpression a where
   toRawSql :: a -> RawSql
+  unsafeFromRawSql :: RawSql -> a
 
-instance ToRawSql RawSql where
+instance SqlExpression RawSql where
   toRawSql = id
+  unsafeFromRawSql = id
 
 {- |
   Constructs the actual sql bytestring and parameter values that will be
   passed to the database to execute a 'RawSql' query.
 -}
-toBytesAndParams :: ToRawSql sql => sql -> (BS.ByteString, [Maybe PGTextFormatValue])
+toBytesAndParams :: SqlExpression sql => sql -> (BS.ByteString, [Maybe PGTextFormatValue])
 toBytesAndParams sql =
   let (byteBuilder, finalProgress) =
         buildSqlWithProgress startingProgress (toRawSql sql)
@@ -86,7 +88,7 @@ toBytesAndParams sql =
   on their own, because they may contain placeholders that must be filled in,
   but can be useful for inspecting sql queries.
 -}
-toBytes :: ToRawSql sql => sql -> BS.ByteString
+toBytes :: SqlExpression sql => sql -> BS.ByteString
 toBytes =
   fst . toBytesAndParams
 
@@ -194,7 +196,7 @@ intercalate separator parts =
   to read the documentation of 'Conn.executeRaw' for caveats and warnings.
   Use with caution.
 -}
-execute :: ToRawSql sql => Connection -> sql -> IO LibPQ.Result
+execute :: SqlExpression sql => Connection -> sql -> IO LibPQ.Result
 execute connection sql =
   let (sqlBytes, params) =
         toBytesAndParams sql
@@ -205,7 +207,7 @@ execute connection sql =
   to read the documentation of 'Conn.executeRawVoid' for caveats and warnings.
   Use with caution.
 -}
-executeVoid :: ToRawSql sql => Connection -> sql -> IO ()
+executeVoid :: SqlExpression sql => Connection -> sql -> IO ()
 executeVoid connection sql =
   let (sqlBytes, params) =
         toBytesAndParams sql

@@ -152,13 +152,13 @@ runWhereConditionTest pool test =
       let exprTestTable = Expr.rawTableName "expr_test"
 
       MIO.liftIO . RawSql.executeVoid connection $
-        Expr.insertExprToSql $
+        RawSql.toRawSql $
           Expr.insertExpr exprTestTable Nothing (mkTestInsertSource test)
 
       result <-
         MIO.liftIO
           . RawSql.execute connection
-          $ Expr.queryExprToSql $
+          $ RawSql.toRawSql $
             Expr.queryExpr
               (Expr.selectColumns [fooColumn, barColumn])
               (Expr.tableExpr exprTestTable (whereClause test) Nothing Nothing)
@@ -180,5 +180,5 @@ barColumn =
 
 dropAndRecreateTestTable :: Connection.Connection -> IO ()
 dropAndRecreateTestTable connection = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
+  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

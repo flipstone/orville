@@ -1,19 +1,20 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Orville.PostgreSQL.Internal.Expr.TableDefinition
   ( CreateTableExpr,
     createTableExpr,
-    createTableExprToSql,
     PrimaryKeyExpr,
     primaryKeyExpr,
-    primaryKeyToSql,
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition, columnDefinitionToSql)
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName, columnNameToSql, tableNameToSql)
+import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype CreateTableExpr
   = CreateTableExpr RawSql.RawSql
+  deriving RawSql.SqlExpression
 
 createTableExpr ::
   TableName ->
@@ -22,31 +23,26 @@ createTableExpr ::
   CreateTableExpr
 createTableExpr tableName columnDefs mbPrimaryKey =
   let columnDefsSql =
-        map columnDefinitionToSql columnDefs
+        map RawSql.toRawSql columnDefs
 
       tableElementsSql =
         case mbPrimaryKey of
           Nothing ->
             columnDefsSql
           Just primaryKey ->
-            primaryKeyToSql primaryKey : columnDefsSql
+            RawSql.toRawSql primaryKey : columnDefsSql
    in CreateTableExpr $
         mconcat
           [ RawSql.fromString "CREATE TABLE "
-          , tableNameToSql tableName
+          , RawSql.toRawSql tableName
           , RawSql.leftParen
           , RawSql.intercalate RawSql.comma tableElementsSql
           , RawSql.rightParen
           ]
 
-createTableExprToSql :: CreateTableExpr -> RawSql.RawSql
-createTableExprToSql (CreateTableExpr sql) = sql
-
 newtype PrimaryKeyExpr
   = PrimaryKeyExpr RawSql.RawSql
-
-primaryKeyToSql :: PrimaryKeyExpr -> RawSql.RawSql
-primaryKeyToSql (PrimaryKeyExpr sql) = sql
+  deriving RawSql.SqlExpression
 
 primaryKeyExpr :: [ColumnName] -> PrimaryKeyExpr
 primaryKeyExpr columnNames =
@@ -54,6 +50,6 @@ primaryKeyExpr columnNames =
     mconcat
       [ RawSql.fromString "PRIMARY KEY "
       , RawSql.leftParen
-      , RawSql.intercalate RawSql.comma (map columnNameToSql columnNames)
+      , RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
       , RawSql.rightParen
       ]
