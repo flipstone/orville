@@ -12,12 +12,12 @@ import qualified Data.Text as T
 import qualified Data.Time as Time
 import qualified Hedgehog as HH
 
-import qualified Database.Orville.PostgreSQL.Connection as Connection
-import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as ExecutionResult
-import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Database.Orville.PostgreSQL.Internal.SqlType as SqlType
-import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecutionResult
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
+import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 

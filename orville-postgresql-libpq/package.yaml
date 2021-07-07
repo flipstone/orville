@@ -21,19 +21,19 @@ flags:
 library:
   source-dirs: src
   exposed-modules:
-    - Database.Orville.PostgreSQL
-    - Database.Orville.PostgreSQL.Connection
-    - Database.Orville.PostgreSQL.Internal.ExecutionResult
-    - Database.Orville.PostgreSQL.Internal.Expr
-    - Database.Orville.PostgreSQL.Internal.FieldDefinition
-    - Database.Orville.PostgreSQL.Internal.PGTextFormatValue
-    - Database.Orville.PostgreSQL.Internal.PrimaryKey
-    - Database.Orville.PostgreSQL.Internal.RawSql
-    - Database.Orville.PostgreSQL.Internal.SelectOptions
-    - Database.Orville.PostgreSQL.Internal.SqlMarshaller
-    - Database.Orville.PostgreSQL.Internal.SqlType
-    - Database.Orville.PostgreSQL.Internal.SqlValue
-    - Database.Orville.PostgreSQL.Internal.TableDefinition
+    - Orville.PostgreSQL
+    - Orville.PostgreSQL.Connection
+    - Orville.PostgreSQL.Internal.ExecutionResult
+    - Orville.PostgreSQL.Internal.Expr
+    - Orville.PostgreSQL.Internal.FieldDefinition
+    - Orville.PostgreSQL.Internal.PGTextFormatValue
+    - Orville.PostgreSQL.Internal.PrimaryKey
+    - Orville.PostgreSQL.Internal.RawSql
+    - Orville.PostgreSQL.Internal.SelectOptions
+    - Orville.PostgreSQL.Internal.SqlMarshaller
+    - Orville.PostgreSQL.Internal.SqlType
+    - Orville.PostgreSQL.Internal.SqlValue
+    - Orville.PostgreSQL.Internal.TableDefinition
   when:
     - condition: flag(ci)
       then:

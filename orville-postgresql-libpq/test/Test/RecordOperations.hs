@@ -8,8 +8,8 @@ import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
-import qualified Database.Orville.PostgreSQL as Orville
-import qualified Database.Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Connection as Connection
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.TestTable as TestTable

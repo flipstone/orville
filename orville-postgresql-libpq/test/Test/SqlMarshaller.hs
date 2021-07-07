@@ -12,10 +12,10 @@ import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as Result
-import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
-import qualified Database.Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
-import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
+import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
+import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.PGGen as PGGen
 

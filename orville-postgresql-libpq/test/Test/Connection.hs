@@ -15,8 +15,8 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
-import qualified Database.Orville.PostgreSQL.Connection as Connection
-import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
+import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
 
 import qualified Test.PGGen as PGGen
 import qualified Test.Property as Property

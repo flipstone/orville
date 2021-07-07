@@ -11,11 +11,11 @@ import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 
-import qualified Database.Orville.PostgreSQL.Connection as Connection
-import qualified Database.Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
-import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
