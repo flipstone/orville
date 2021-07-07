@@ -109,7 +109,7 @@ runOrderByTest pool test = Property.singletonProperty $
           . Expr.queryExprToSql
           $ Expr.queryExpr
             (Expr.selectColumns [fooColumn, barColumn])
-            (Expr.tableExpr exprTestTable Nothing (orderByClause test))
+            (Expr.tableExpr exprTestTable Nothing (orderByClause test) Nothing)
 
     rows <- MIO.liftIO $ ExecResult.readRows result
     rows HH.=== mkOrderByTestExpectedRows test

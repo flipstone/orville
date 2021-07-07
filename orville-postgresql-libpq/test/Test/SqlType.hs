@@ -387,7 +387,7 @@ runDecodingTest pool test =
       result <-
         MIO.liftIO . RawSql.execute connection $
           Expr.queryExprToSql $
-            Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing)
+            Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing Nothing)
 
       (maybeA : _) <- MIO.liftIO $ ExecutionResult.decodeRows result (sqlType test)
       maybeA HH.=== Just (expectedValue test)

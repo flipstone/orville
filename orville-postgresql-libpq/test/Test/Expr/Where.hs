@@ -161,7 +161,7 @@ runWhereConditionTest pool test =
           $ Expr.queryExprToSql $
             Expr.queryExpr
               (Expr.selectColumns [fooColumn, barColumn])
-              (Expr.tableExpr exprTestTable (whereClause test) Nothing)
+              (Expr.tableExpr exprTestTable (whereClause test) Nothing Nothing)
 
       rows <- MIO.liftIO $ ExecResult.readRows result
       rows HH.=== mkTestExpectedRows test
