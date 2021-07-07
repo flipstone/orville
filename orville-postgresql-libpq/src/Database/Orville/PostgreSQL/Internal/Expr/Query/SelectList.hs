@@ -25,7 +25,7 @@ selectColumns columnNames =
   SelectList $
     RawSql.intercalate
       RawSql.comma
-      (map RawSql.toRawSql columnNames)
+      (fmap RawSql.toRawSql columnNames)
 
 selectListToSql :: SelectList -> RawSql.RawSql
 selectListToSql (SelectList sql) =
