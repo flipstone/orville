@@ -14,7 +14,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype CreateTableExpr
   = CreateTableExpr RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 createTableExpr ::
   TableName ->
@@ -42,7 +42,7 @@ createTableExpr tableName columnDefs mbPrimaryKey =
 
 newtype PrimaryKeyExpr
   = PrimaryKeyExpr RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 primaryKeyExpr :: [ColumnName] -> PrimaryKeyExpr
 primaryKeyExpr columnNames =

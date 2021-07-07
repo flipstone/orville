@@ -1,11 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.Where.ComparisonOperator
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
   ( ComparisonOperator,
     equalsOp,
@@ -21,7 +20,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype ComparisonOperator
   = ComparisonOperator RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 equalsOp :: ComparisonOperator
 equalsOp =

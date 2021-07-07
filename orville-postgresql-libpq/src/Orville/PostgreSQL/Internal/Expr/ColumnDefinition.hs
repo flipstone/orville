@@ -1,11 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.ColumnDefinition
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
   ( ColumnDefinition,
     columnDefinition,
@@ -33,7 +32,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype ColumnDefinition
   = ColumnDefinition RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 columnDefinition ::
   ColumnName ->
@@ -50,7 +49,7 @@ columnDefinition columnName dataType columnConstraint =
 
 newtype ColumnConstraint
   = ColumnConstraint RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 notNullConstraint :: ColumnConstraint
 notNullConstraint =
@@ -62,7 +61,7 @@ nullConstraint =
 
 newtype DataType
   = DataType RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 timestampWithZone :: DataType
 timestampWithZone =

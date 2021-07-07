@@ -1,11 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.Query.TableExpr
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Orville.PostgreSQL.Internal.Expr.Query.TableExpr
   ( TableExpr,
     tableExpr,
@@ -20,7 +19,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype TableExpr
   = TableExpr RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 tableExpr ::
   TableName ->

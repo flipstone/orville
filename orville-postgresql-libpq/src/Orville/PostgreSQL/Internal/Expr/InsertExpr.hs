@@ -1,11 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.InsertExpr
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Orville.PostgreSQL.Internal.Expr.InsertExpr
   ( InsertExpr,
     insertExpr,
@@ -22,7 +21,7 @@ import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 newtype InsertExpr
   = InsertExpr RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 insertExpr :: TableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
 insertExpr target _ source =
@@ -36,7 +35,7 @@ insertExpr target _ source =
 
 newtype InsertColumnList
   = InsertColumnList RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
@@ -45,7 +44,7 @@ insertColumnList columnNames =
 
 newtype InsertSource
   = InsertSource RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 insertRowValues :: [RowValues] -> InsertSource
 insertRowValues rows =
@@ -59,7 +58,7 @@ insertSqlValues rows =
 
 newtype RowValues
   = RowValues RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 rowValues :: [SqlValue] -> RowValues
 rowValues values =

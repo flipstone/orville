@@ -1,11 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.OrderBy.OrderByExpr
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr
   ( OrderByExpr,
     appendOrderBy,
@@ -17,7 +16,7 @@ import Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByDirection (OrderByDirecti
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype OrderByExpr = OrderByExpr RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 appendOrderBy :: OrderByExpr -> OrderByExpr -> OrderByExpr
 appendOrderBy (OrderByExpr a) (OrderByExpr b) =

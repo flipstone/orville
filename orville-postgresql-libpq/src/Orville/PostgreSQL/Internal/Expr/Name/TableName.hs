@@ -1,11 +1,10 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.Name.TableName
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Orville.PostgreSQL.Internal.Expr.Name.TableName
   ( TableName,
     rawTableName,
@@ -16,7 +15,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype TableName
   = TableName RawSql.RawSql
-  deriving RawSql.SqlExpression
+  deriving (RawSql.SqlExpression)
 
 rawTableName :: String -> TableName
 rawTableName =
