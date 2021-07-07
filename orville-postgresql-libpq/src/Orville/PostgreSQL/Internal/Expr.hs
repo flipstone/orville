@@ -8,18 +8,15 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr
   ( QueryExpr,
     queryExpr,
-    queryExprToSql,
     SelectList,
     selectStar,
     selectColumns,
     TableExpr,
     tableExpr,
     TableName,
-    tableNameToSql,
     rawTableName,
     ColumnName,
     rawColumnName,
-    columnNameToSql,
     sqlToColumnName,
     WhereClause,
     whereClause,
@@ -35,17 +32,23 @@ module Orville.PostgreSQL.Internal.Expr
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
     GroupByClause,
-    groupByClauseToSql,
     groupByClause,
     appendGroupBy,
     groupByExpr,
+    LimitExpr,
+    limitExpr,
     InsertExpr,
     insertExpr,
-    insertExprToSql,
     InsertColumnList,
     insertColumnList,
     InsertSource,
     insertSqlValues,
+    UpdateExpr,
+    updateExpr,
+    SetClauseList,
+    setClauseList,
+    SetClause,
+    setColumn,
     DataType,
     timestampWithZone,
     date,
@@ -67,7 +70,6 @@ module Orville.PostgreSQL.Internal.Expr
     nullConstraint,
     columnConstraintToSql,
     OrderByClause,
-    orderByClauseToSql,
     orderByClause,
     appendOrderBy,
     ascendingOrder,
@@ -85,8 +87,10 @@ where
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition
 import Orville.PostgreSQL.Internal.Expr.GroupBy
 import Orville.PostgreSQL.Internal.Expr.InsertExpr
+import Orville.PostgreSQL.Internal.Expr.LimitExpr
 import Orville.PostgreSQL.Internal.Expr.Name
 import Orville.PostgreSQL.Internal.Expr.OrderBy
 import Orville.PostgreSQL.Internal.Expr.Query
 import Orville.PostgreSQL.Internal.Expr.TableDefinition
+import Orville.PostgreSQL.Internal.Expr.Update
 import Orville.PostgreSQL.Internal.Expr.Where

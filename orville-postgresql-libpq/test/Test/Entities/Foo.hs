@@ -2,20 +2,26 @@ module Test.Entities.Foo
   ( Foo (..),
     table,
     generate,
+    generateList,
+    withTable,
   )
 where
 
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Data.Function (on)
 import Data.Int (Int32)
+import qualified Data.List as List
+import Data.Pool (Pool, withResource)
 import qualified Data.Text as T
 import qualified Hedgehog as HH
+import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, integerField, unboundedTextField)
-import Orville.PostgreSQL.Internal.PrimaryKey (primaryKey)
-import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallField)
-import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableDefiniton)
+import qualified Orville.PostgreSQL as Orville
+import Orville.PostgreSQL.Connection (Connection)
 
 import qualified Test.PGGen as PGGen
+import qualified Test.TestTable as TestTable
 
 type FooId = Int32
 type FooName = T.Text
@@ -26,26 +32,39 @@ data Foo = Foo
   }
   deriving (Eq, Show)
 
-table :: TableDefinition FooId Foo Foo
+table :: Orville.TableDefinition FooId Foo Foo
 table =
-  mkTableDefiniton "foo" (primaryKey fooIdField) fooMarshaller
+  Orville.mkTableDefiniton "foo" (Orville.primaryKey fooIdField) fooMarshaller
 
-fooMarshaller :: SqlMarshaller Foo Foo
+fooMarshaller :: Orville.SqlMarshaller Foo Foo
 fooMarshaller =
   Foo
-    <$> marshallField fooId fooIdField
-    <*> marshallField fooName fooNameField
+    <$> Orville.marshallField fooId fooIdField
+    <*> Orville.marshallField fooName fooNameField
 
-fooIdField :: FieldDefinition NotNull FooId
+fooIdField :: Orville.FieldDefinition Orville.NotNull FooId
 fooIdField =
-  integerField "id"
+  Orville.integerField "id"
 
-fooNameField :: FieldDefinition NotNull FooName
+fooNameField :: Orville.FieldDefinition Orville.NotNull FooName
 fooNameField =
-  unboundedTextField "name"
+  Orville.unboundedTextField "name"
 
 generate :: HH.Gen Foo
 generate =
   Foo
     <$> PGGen.pgInt32
     <*> PGGen.pgText (Range.constant 0 10)
+
+generateList :: HH.Range Int -> HH.Gen [Foo]
+generateList range =
+  fmap
+    (List.nubBy ((==) `on` fooId))
+    (Gen.list range generate)
+
+withTable :: MonadIO m => Pool Connection -> Orville.Orville a -> m a
+withTable pool operation =
+  liftIO $ do
+    withResource pool $ \connection ->
+      TestTable.dropAndRecreateTableDef connection table
+    Orville.runOrville pool operation

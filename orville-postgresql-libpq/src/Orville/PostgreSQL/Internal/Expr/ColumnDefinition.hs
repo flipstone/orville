@@ -27,7 +27,7 @@ module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, columnNameToSql)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype ColumnDefinition
@@ -43,7 +43,7 @@ columnDefinition ::
   ColumnDefinition
 columnDefinition columnName dataType columnConstraint =
   ColumnDefinition $
-    columnNameToSql columnName
+    RawSql.toRawSql columnName
       <> RawSql.space
       <> dataTypeToSql dataType
       <> RawSql.space

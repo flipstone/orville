@@ -4,25 +4,17 @@ module Test.Expr.OrderBy
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.ByteString.Char8 as B8
-import qualified Data.Int as Int
 import qualified Data.Pool as Pool
 import qualified Data.String as String
-import qualified Data.Text as T
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
+import Test.Expr.TestSchema (FooBar (..), barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
 import qualified Test.Property as Property
-
-data FooBar = FooBar
-  { foo :: Int.Int32
-  , bar :: String
-  }
 
 orderByTests :: Pool.Pool Conn.Connection -> IO Bool
 orderByTests pool =
@@ -38,7 +30,7 @@ orderByTests pool =
               , orderByClause =
                   Just . Expr.orderByClause $
                     Expr.orderByExpr
-                      (Expr.columnNameToSql barColumn)
+                      (RawSql.toRawSql barColumn)
                       Expr.ascendingOrder
               }
         )
@@ -51,7 +43,7 @@ orderByTests pool =
               , orderByClause =
                   Just . Expr.orderByClause $
                     Expr.orderByExpr
-                      (Expr.columnNameToSql barColumn)
+                      (RawSql.toRawSql barColumn)
                       Expr.descendingOrder
               }
         )
@@ -64,8 +56,8 @@ orderByTests pool =
               , orderByClause =
                   Just . Expr.orderByClause $
                     Expr.appendOrderBy
-                      (Expr.orderByExpr (Expr.columnNameToSql barColumn) Expr.ascendingOrder)
-                      (Expr.orderByExpr (Expr.columnNameToSql fooColumn) Expr.descendingOrder)
+                      (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
+                      (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
               }
         )
       ]
@@ -76,57 +68,23 @@ data OrderByTest = OrderByTest
   , orderByExpectedQueryResults :: [FooBar]
   }
 
-mkOrderByTestInsertSource :: OrderByTest -> Expr.InsertSource
-mkOrderByTestInsertSource test =
-  let mkRow foobar =
-        [ SqlValue.fromInt32 (foo foobar)
-        , SqlValue.fromText (T.pack $ bar foobar)
-        ]
-   in Expr.insertSqlValues (map mkRow $ orderByValuesToInsert test)
-
-mkOrderByTestExpectedRows :: OrderByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
-mkOrderByTestExpectedRows test =
-  let mkRow foobar =
-        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
-        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
-        ]
-   in fmap mkRow (orderByExpectedQueryResults test)
-
 runOrderByTest :: Pool.Pool Conn.Connection -> OrderByTest -> HH.Property
-runOrderByTest pool test = Property.singletonProperty $
-  Pool.withResource pool $ \connection -> do
-    MIO.liftIO $ dropAndRecreateTestTable connection
+runOrderByTest pool test =
+  Property.singletonProperty $ do
+    rows <-
+      MIO.liftIO $ do
+        Pool.withResource pool $ \connection -> do
+          dropAndRecreateTestTable connection
 
-    let exprTestTable = Expr.rawTableName "expr_test"
+          RawSql.executeVoid connection $
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource $ orderByValuesToInsert test)
 
-    MIO.liftIO . RawSql.executeVoid connection
-      . Expr.insertExprToSql
-      $ Expr.insertExpr exprTestTable Nothing (mkOrderByTestInsertSource test)
+          result <-
+            RawSql.execute connection $
+              Expr.queryExpr
+                (Expr.selectColumns [fooColumn, barColumn])
+                (Expr.tableExpr fooBarTable Nothing (orderByClause test) Nothing Nothing)
 
-    result <-
-      MIO.liftIO $
-        RawSql.execute connection
-          . Expr.queryExprToSql
-          $ Expr.queryExpr
-            (Expr.selectColumns [fooColumn, barColumn])
-            (Expr.tableExpr exprTestTable Nothing (orderByClause test) Nothing)
+          ExecResult.readRows result
 
-    rows <- MIO.liftIO $ ExecResult.readRows result
-    rows HH.=== mkOrderByTestExpectedRows test
-
-testTable :: Expr.TableName
-testTable =
-  Expr.rawTableName "expr_test"
-
-fooColumn :: Expr.ColumnName
-fooColumn =
-  Expr.rawColumnName "foo"
-
-barColumn :: Expr.ColumnName
-barColumn =
-  Expr.rawColumnName "bar"
-
-dropAndRecreateTestTable :: Conn.Connection -> IO ()
-dropAndRecreateTestTable connection = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+    rows HH.=== map encodeFooBar (orderByExpectedQueryResults test)

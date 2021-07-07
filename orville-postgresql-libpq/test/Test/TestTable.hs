@@ -13,5 +13,5 @@ dropAndRecreateTableDef ::
   TableDefinition key writeEntity readEntity ->
   IO ()
 dropAndRecreateTableDef connection tableDef = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql (tableName tableDef))
+  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql (tableName tableDef))
   RawSql.executeVoid connection (Expr.createTableExprToSql $ mkCreateTableExpr tableDef)

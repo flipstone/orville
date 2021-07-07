@@ -4,8 +4,6 @@ module Test.Expr.Where
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.ByteString.Char8 as B8
-import qualified Data.Int as Int
 import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -17,12 +15,8 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
+import Test.Expr.TestSchema (FooBar (..), barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
 import qualified Test.Property as Property
-
-data FooBar = FooBar
-  { foo :: Int.Int32
-  , bar :: String
-  }
 
 whereTests :: Pool.Pool Connection.Connection -> IO Bool
 whereTests pool =
@@ -127,58 +121,23 @@ data WhereConditionTest = WhereConditionTest
   , whereExpectedQueryResults :: [FooBar]
   }
 
-mkTestInsertSource :: WhereConditionTest -> Expr.InsertSource
-mkTestInsertSource test =
-  let mkRow foobar =
-        [ SqlValue.fromInt32 (foo foobar)
-        , SqlValue.fromText (T.pack $ bar foobar)
-        ]
-   in Expr.insertSqlValues (map mkRow $ whereValuesToInsert test)
-
-mkTestExpectedRows :: WhereConditionTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
-mkTestExpectedRows test =
-  let mkRow foobar =
-        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
-        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
-        ]
-   in fmap mkRow (whereExpectedQueryResults test)
-
 runWhereConditionTest :: Pool.Pool Connection.Connection -> WhereConditionTest -> HH.Property
 runWhereConditionTest pool test =
-  Property.singletonProperty $
-    Pool.withResource pool $ \connection -> do
-      MIO.liftIO $ dropAndRecreateTestTable connection
+  Property.singletonProperty $ do
+    rows <-
+      MIO.liftIO $
+        Pool.withResource pool $ \connection -> do
+          dropAndRecreateTestTable connection
 
-      let exprTestTable = Expr.rawTableName "expr_test"
+          RawSql.executeVoid connection $
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource $ whereValuesToInsert test)
 
-      MIO.liftIO . RawSql.executeVoid connection $
-        Expr.insertExprToSql $
-          Expr.insertExpr exprTestTable Nothing (mkTestInsertSource test)
+          result <-
+            RawSql.execute connection $
+              Expr.queryExpr
+                (Expr.selectColumns [fooColumn, barColumn])
+                (Expr.tableExpr fooBarTable (whereClause test) Nothing Nothing Nothing)
 
-      result <-
-        MIO.liftIO
-          . RawSql.execute connection
-          $ Expr.queryExprToSql $
-            Expr.queryExpr
-              (Expr.selectColumns [fooColumn, barColumn])
-              (Expr.tableExpr exprTestTable (whereClause test) Nothing Nothing)
+          ExecResult.readRows result
 
-      rows <- MIO.liftIO $ ExecResult.readRows result
-      rows HH.=== mkTestExpectedRows test
-
-testTable :: Expr.TableName
-testTable =
-  Expr.rawTableName "expr_test"
-
-fooColumn :: Expr.ColumnName
-fooColumn =
-  Expr.rawColumnName "foo"
-
-barColumn :: Expr.ColumnName
-barColumn =
-  Expr.rawColumnName "bar"
-
-dropAndRecreateTestTable :: Connection.Connection -> IO ()
-dropAndRecreateTestTable connection = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> Expr.tableNameToSql testTable)
-  RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> Expr.tableNameToSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+    rows HH.=== map encodeFooBar (whereExpectedQueryResults test)
