@@ -9,9 +9,9 @@ import qualified Data.List.NonEmpty as NEL
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
-import qualified Database.Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Database.Orville.PostgreSQL.Internal.SelectOptions as SO
+import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SelectOptions as SO
 import qualified Test.Property as Property
 
 selectOptionsTests :: IO Bool

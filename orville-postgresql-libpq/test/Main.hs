@@ -7,7 +7,7 @@ import qualified Control.Monad as Monad
 import qualified Data.ByteString.Char8 as B8
 import qualified System.Exit as SE
 
-import qualified Database.Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Test.Connection as TestConnection
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.Where as ExprWhere

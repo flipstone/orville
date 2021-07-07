@@ -11,11 +11,11 @@ import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
-import qualified Database.Orville.PostgreSQL.Connection as Conn
-import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Database.Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
-import qualified Database.Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
+import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
+import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property

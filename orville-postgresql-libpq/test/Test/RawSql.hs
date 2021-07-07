@@ -8,9 +8,9 @@ import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 
-import qualified Database.Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Database.Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 

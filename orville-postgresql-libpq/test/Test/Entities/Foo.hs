@@ -10,10 +10,10 @@ import qualified Data.Text as T
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
-import Database.Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, integerField, unboundedTextField)
-import Database.Orville.PostgreSQL.Internal.PrimaryKey (primaryKey)
-import Database.Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallField)
-import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableDefiniton)
+import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, integerField, unboundedTextField)
+import Orville.PostgreSQL.Internal.PrimaryKey (primaryKey)
+import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallField)
+import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableDefiniton)
 
 import qualified Test.PGGen as PGGen
 

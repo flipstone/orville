@@ -3,10 +3,10 @@ module Test.TestTable
   )
 where
 
-import Database.Orville.PostgreSQL.Connection (Connection)
-import qualified Database.Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Database.Orville.PostgreSQL.Internal.RawSql as RawSql
-import Database.Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkCreateTableExpr, tableName)
+import Orville.PostgreSQL.Connection (Connection)
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkCreateTableExpr, tableName)
 
 dropAndRecreateTableDef ::
   Connection ->
