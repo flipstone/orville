@@ -13,8 +13,8 @@ where
 
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
-newtype ColumnName =
-  ColumnName RawSql.RawSql
+newtype ColumnName
+  = ColumnName RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
 rawColumnName :: String -> ColumnName

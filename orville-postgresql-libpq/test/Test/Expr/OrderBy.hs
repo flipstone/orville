@@ -86,4 +86,5 @@ runOrderByTest pool test =
                 (Expr.tableExpr fooBarTable Nothing (orderByClause test) Nothing Nothing)
 
           ExecResult.readRows result
+
     rows HH.=== map encodeFooBar (orderByExpectedQueryResults test)
