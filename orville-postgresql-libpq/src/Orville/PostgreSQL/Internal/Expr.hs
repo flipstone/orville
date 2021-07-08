@@ -36,6 +36,8 @@ module Orville.PostgreSQL.Internal.Expr
     groupByExpr,
     LimitExpr,
     limitExpr,
+    DeleteExpr,
+    deleteExpr,
     InsertExpr,
     insertExpr,
     InsertColumnList,
@@ -80,6 +82,7 @@ module Orville.PostgreSQL.Internal.Expr
 where
 
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition
+import Orville.PostgreSQL.Internal.Expr.Delete
 import Orville.PostgreSQL.Internal.Expr.GroupBy
 import Orville.PostgreSQL.Internal.Expr.InsertExpr
 import Orville.PostgreSQL.Internal.Expr.LimitExpr

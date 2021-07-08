@@ -12,6 +12,7 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkInsertSource,
     mkQueryExpr,
     mkUpdateExpr,
+    mkDeleteExpr,
   )
 where
 
@@ -180,6 +181,22 @@ mkUpdateExpr tableDef key writeEntity =
    in Expr.updateExpr
         (tableName tableDef)
         (Expr.setClauseList setClauses)
+        (Just (Expr.whereClause isEntityKey))
+
+{- |
+  Builds an 'Expr.DeleteExpr' that will delete the entity with the given 'key'.
+-}
+mkDeleteExpr ::
+  TableDefinition key writeEntity readEntity ->
+  key ->
+  Expr.DeleteExpr
+mkDeleteExpr tableDef key =
+  let isEntityKey =
+        primaryKeyEqualsExpr
+          (tablePrimaryKey tableDef)
+          key
+   in Expr.deleteExpr
+        (tableName tableDef)
         (Just (Expr.whereClause isEntityKey))
 
 {- |

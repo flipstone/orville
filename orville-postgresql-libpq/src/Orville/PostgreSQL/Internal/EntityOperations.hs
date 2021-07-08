@@ -2,6 +2,7 @@ module Orville.PostgreSQL.Internal.EntityOperations
   ( insertEntity,
     insertEntities,
     updateEntity,
+    deleteEntity,
     findEntitiesBy,
     findFirstEntityBy,
     findEntity,
@@ -64,6 +65,21 @@ updateEntity tableDef key writeEntity =
       RawSql.executeVoid
         connection
         (TableDef.mkUpdateExpr tableDef key writeEntity)
+
+{- |
+  Deletes the row with the given key
+-}
+deleteEntity ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition key writeEntity readEntity ->
+  key ->
+  m ()
+deleteEntity tableDef key =
+  MonadOrville.withConnection $ \connection ->
+    liftIO $
+      RawSql.executeVoid
+        connection
+        (TableDef.mkDeleteExpr tableDef key)
 
 {- |
   Finds all the entities in the given table according to the specified
