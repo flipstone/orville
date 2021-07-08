@@ -9,6 +9,7 @@ import qualified Data.Pool as Pool
 import qualified Data.String as String
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
@@ -94,6 +95,38 @@ entityOperationsTests pool =
               Foo.withTable pool $ do
                 Orville.insertEntity Foo.table originalFoo
                 Orville.updateEntity Foo.table mismatchFooId newFoo
+                Orville.findEntitiesBy Foo.table mempty
+
+            retrievedFoos === [originalFoo]
+        )
+      ,
+        ( String.fromString "deleteEntity deletes row at the given key"
+        , HH.property $ do
+            originalFoo <- HH.forAll Foo.generate
+            let withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
+            anotherFoo <- HH.forAll . withDifferentKey $ Foo.generate
+
+            retrievedFoos <-
+              Foo.withTable pool $ do
+                Orville.insertEntity Foo.table originalFoo
+                Orville.insertEntity Foo.table anotherFoo
+                Orville.deleteEntity Foo.table (Foo.fooId originalFoo)
+                Orville.findEntitiesBy Foo.table mempty
+
+            retrievedFoos === [anotherFoo]
+        )
+      ,
+        ( String.fromString "deleteEntity deletes no rows when key doesn't match"
+        , HH.property $ do
+            originalFoo <- HH.forAll Foo.generate
+
+            let mismatchFooId =
+                  1 + Foo.fooId originalFoo
+
+            retrievedFoos <-
+              Foo.withTable pool $ do
+                Orville.insertEntity Foo.table originalFoo
+                Orville.deleteEntity Foo.table mismatchFooId
                 Orville.findEntitiesBy Foo.table mempty
 
             retrievedFoos === [originalFoo]

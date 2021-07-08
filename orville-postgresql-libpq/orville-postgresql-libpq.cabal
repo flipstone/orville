@@ -63,6 +63,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Query.TableExpr
       Orville.PostgreSQL.Internal.Expr.TableDefinition
       Orville.PostgreSQL.Internal.Expr.Update
+      Orville.PostgreSQL.Internal.Expr.Delete
       Orville.PostgreSQL.Internal.Expr.Where
       Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
       Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator

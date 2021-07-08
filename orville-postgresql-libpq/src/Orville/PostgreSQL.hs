@@ -7,6 +7,7 @@ module Orville.PostgreSQL
   ( EntityOperations.insertEntity,
     EntityOperations.insertEntities,
     EntityOperations.updateEntity,
+    EntityOperations.deleteEntity,
     EntityOperations.findEntitiesBy,
     EntityOperations.findFirstEntityBy,
     EntityOperations.findEntity,
