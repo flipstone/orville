@@ -11,21 +11,21 @@ module Orville.PostgreSQL.Internal.Expr.Query.QueryExpr
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Query.SelectList (SelectList, selectListToSql)
-import Orville.PostgreSQL.Internal.Expr.Query.TableExpr (TableExpr, tableExprToSql)
+import Orville.PostgreSQL.Internal.Expr.Query.SelectList (SelectList)
+import Orville.PostgreSQL.Internal.Expr.Query.TableExpr (TableExpr)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
 newtype QueryExpr
   = QueryExpr RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 queryExpr :: SelectList -> TableExpr -> QueryExpr
 queryExpr selectList table =
   QueryExpr $
     mconcat
       [ RawSql.fromString "SELECT "
-      , selectListToSql selectList
+      , RawSql.toRawSql selectList
       , RawSql.fromString " FROM "
-      , tableExprToSql table
+      , RawSql.toRawSql table
       ]

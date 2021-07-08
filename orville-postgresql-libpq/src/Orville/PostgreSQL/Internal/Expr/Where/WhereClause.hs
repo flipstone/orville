@@ -7,22 +7,18 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Internal.Expr.Where.WhereClause
   ( WhereClause,
-    whereClauseToSql,
     whereClause,
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr (BooleanExpr, booleanExprToSql)
+import Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr (BooleanExpr)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype WhereClause
   = WhereClause RawSql.RawSql
-  deriving (RawSql.ToRawSql)
-
-whereClauseToSql :: WhereClause -> RawSql.RawSql
-whereClauseToSql (WhereClause sql) = sql
+  deriving (RawSql.SqlExpression)
 
 whereClause :: BooleanExpr -> WhereClause
 whereClause booleanExpr =
   WhereClause $
-    RawSql.fromString "WHERE " <> booleanExprToSql booleanExpr
+    RawSql.fromString "WHERE " <> RawSql.toRawSql booleanExpr

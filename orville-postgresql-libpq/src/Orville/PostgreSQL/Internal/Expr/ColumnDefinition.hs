@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {- |
 Module    : Orville.PostgreSQL.Expr.ColumnDefinition
 Copyright : Flipstone Technology Partners 2016-2021
@@ -6,9 +8,7 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
   ( ColumnDefinition,
     columnDefinition,
-    columnDefinitionToSql,
     ColumnConstraint,
-    columnConstraintToSql,
     notNullConstraint,
     nullConstraint,
     DataType,
@@ -32,9 +32,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype ColumnDefinition
   = ColumnDefinition RawSql.RawSql
-
-columnDefinitionToSql :: ColumnDefinition -> RawSql.RawSql
-columnDefinitionToSql (ColumnDefinition sql) = sql
+  deriving (RawSql.SqlExpression)
 
 columnDefinition ::
   ColumnName ->
@@ -45,15 +43,13 @@ columnDefinition columnName dataType columnConstraint =
   ColumnDefinition $
     RawSql.toRawSql columnName
       <> RawSql.space
-      <> dataTypeToSql dataType
+      <> RawSql.toRawSql dataType
       <> RawSql.space
-      <> maybe mempty columnConstraintToSql columnConstraint
+      <> maybe mempty RawSql.toRawSql columnConstraint
 
 newtype ColumnConstraint
   = ColumnConstraint RawSql.RawSql
-
-columnConstraintToSql :: ColumnConstraint -> RawSql.RawSql
-columnConstraintToSql (ColumnConstraint sql) = sql
+  deriving (RawSql.SqlExpression)
 
 notNullConstraint :: ColumnConstraint
 notNullConstraint =
@@ -65,9 +61,7 @@ nullConstraint =
 
 newtype DataType
   = DataType RawSql.RawSql
-
-dataTypeToSql :: DataType -> RawSql.RawSql
-dataTypeToSql (DataType sql) = sql
+  deriving (RawSql.SqlExpression)
 
 timestampWithZone :: DataType
 timestampWithZone =

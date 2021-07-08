@@ -17,7 +17,6 @@ module Orville.PostgreSQL.Internal.Expr
     rawTableName,
     ColumnName,
     rawColumnName,
-    sqlToColumnName,
     WhereClause,
     whereClause,
     BooleanExpr,
@@ -64,11 +63,9 @@ module Orville.PostgreSQL.Internal.Expr
     int,
     ColumnDefinition,
     columnDefinition,
-    columnDefinitionToSql,
     ColumnConstraint,
     notNullConstraint,
     nullConstraint,
-    columnConstraintToSql,
     OrderByClause,
     orderByClause,
     appendOrderBy,
@@ -77,10 +74,8 @@ module Orville.PostgreSQL.Internal.Expr
     orderByExpr,
     CreateTableExpr,
     createTableExpr,
-    createTableExprToSql,
     PrimaryKeyExpr,
     primaryKeyExpr,
-    primaryKeyToSql,
   )
 where
 

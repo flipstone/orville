@@ -11,12 +11,12 @@ module Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByClause
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr (GroupByExpr, groupByExprToSql)
+import Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr (GroupByExpr)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype GroupByClause
   = GroupByClause RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 groupByClause :: GroupByExpr -> GroupByClause
-groupByClause expr = GroupByClause (RawSql.fromString "GROUP BY " <> groupByExprToSql expr)
+groupByClause expr = GroupByClause (RawSql.fromString "GROUP BY " <> RawSql.toRawSql expr)

@@ -19,7 +19,7 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 newtype UpdateExpr
   = UpdateExpr RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 updateExpr ::
   TableName ->
@@ -39,7 +39,7 @@ updateExpr tableName setClause maybeWhereClause =
 
 newtype SetClauseList
   = SetClauseList RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 setClauseList :: [SetClause] -> SetClauseList
 setClauseList setClauses =
@@ -50,7 +50,7 @@ setClauseList setClauses =
 
 newtype SetClause
   = SetClause RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 setColumn :: ColumnName -> SqlValue.SqlValue -> SetClause
 setColumn columnName value =

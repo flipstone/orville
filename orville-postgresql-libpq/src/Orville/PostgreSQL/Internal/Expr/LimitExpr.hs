@@ -11,7 +11,7 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 newtype LimitExpr
   = LimitExpr RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 limitExpr :: Int -> LimitExpr
 limitExpr limitValue =

@@ -29,7 +29,7 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 -}
 newtype WhereCondition
   = WhereCondition Expr.BooleanExpr
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 {- |
   Constructs a 'WhereCondition' from a 'Expr.BooleanExpr'. You can use this

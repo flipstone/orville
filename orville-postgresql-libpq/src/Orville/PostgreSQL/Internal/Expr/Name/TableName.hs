@@ -15,7 +15,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype TableName
   = TableName RawSql.RawSql
-  deriving (RawSql.ToRawSql)
+  deriving (RawSql.SqlExpression)
 
 rawTableName :: String -> TableName
 rawTableName =
