@@ -377,17 +377,15 @@ runDecodingTest pool test =
 
       let tableName = Expr.rawTableName "decoding_test"
 
-      MIO.liftIO . RawSql.executeVoid connection
-        . RawSql.toRawSql
-        $ Expr.insertExpr
+      MIO.liftIO . RawSql.executeVoid connection $
+        Expr.insertExpr
           tableName
           Nothing
           (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
 
       result <-
         MIO.liftIO . RawSql.execute connection $
-          RawSql.toRawSql $
-            Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing Nothing)
+          Expr.queryExpr Expr.selectStar (Expr.tableExpr tableName Nothing Nothing Nothing Nothing)
 
       (maybeA : _) <- MIO.liftIO $ ExecutionResult.decodeRows result (sqlType test)
       maybeA HH.=== Just (expectedValue test)

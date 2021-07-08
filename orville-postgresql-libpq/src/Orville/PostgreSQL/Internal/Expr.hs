@@ -17,7 +17,6 @@ module Orville.PostgreSQL.Internal.Expr
     rawTableName,
     ColumnName,
     rawColumnName,
-    sqlToColumnName,
     WhereClause,
     whereClause,
     BooleanExpr,
@@ -35,12 +34,20 @@ module Orville.PostgreSQL.Internal.Expr
     groupByClause,
     appendGroupBy,
     groupByExpr,
+    LimitExpr,
+    limitExpr,
     InsertExpr,
     insertExpr,
     InsertColumnList,
     insertColumnList,
     InsertSource,
     insertSqlValues,
+    UpdateExpr,
+    updateExpr,
+    SetClauseList,
+    setClauseList,
+    SetClause,
+    setColumn,
     DataType,
     timestampWithZone,
     date,
@@ -75,8 +82,10 @@ where
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition
 import Orville.PostgreSQL.Internal.Expr.GroupBy
 import Orville.PostgreSQL.Internal.Expr.InsertExpr
+import Orville.PostgreSQL.Internal.Expr.LimitExpr
 import Orville.PostgreSQL.Internal.Expr.Name
 import Orville.PostgreSQL.Internal.Expr.OrderBy
 import Orville.PostgreSQL.Internal.Expr.Query
 import Orville.PostgreSQL.Internal.Expr.TableDefinition
+import Orville.PostgreSQL.Internal.Expr.Update
 import Orville.PostgreSQL.Internal.Expr.Where

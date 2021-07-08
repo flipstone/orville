@@ -73,17 +73,15 @@ runGroupByTest pool test = Property.singletonProperty $
 
     let exprTestTable = Expr.rawTableName "expr_test"
 
-    MIO.liftIO . RawSql.executeVoid connection
-      . RawSql.toRawSql
-      $ Expr.insertExpr exprTestTable Nothing (mkGroupByTestInsertSource test)
+    MIO.liftIO . RawSql.executeVoid connection $
+      Expr.insertExpr exprTestTable Nothing (mkGroupByTestInsertSource test)
 
     result <-
       MIO.liftIO $
-        RawSql.execute connection
-          . RawSql.toRawSql
-          $ Expr.queryExpr
+        RawSql.execute connection $
+          Expr.queryExpr
             (Expr.selectColumns [fooColumn, barColumn])
-            (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test))
+            (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test) Nothing)
 
     rows <- MIO.liftIO $ ExecResult.readRows result
     rows HH.=== mkGroupByTestExpectedRows test

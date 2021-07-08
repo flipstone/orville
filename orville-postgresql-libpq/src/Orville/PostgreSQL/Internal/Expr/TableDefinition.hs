@@ -8,6 +8,8 @@ module Orville.PostgreSQL.Internal.Expr.TableDefinition
   )
 where
 
+import Data.List.NonEmpty (NonEmpty, toList)
+
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition)
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -44,12 +46,12 @@ newtype PrimaryKeyExpr
   = PrimaryKeyExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-primaryKeyExpr :: [ColumnName] -> PrimaryKeyExpr
+primaryKeyExpr :: NonEmpty ColumnName -> PrimaryKeyExpr
 primaryKeyExpr columnNames =
   PrimaryKeyExpr $
     mconcat
       [ RawSql.fromString "PRIMARY KEY "
       , RawSql.leftParen
-      , RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
+      , RawSql.intercalate RawSql.comma (map RawSql.toRawSql (toList columnNames))
       , RawSql.rightParen
       ]

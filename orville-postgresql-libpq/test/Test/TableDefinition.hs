@@ -34,13 +34,13 @@ tableDefinitionTests pool =
                   TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
 
                 selectFoos =
-                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing
+                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing Nothing
 
             foosFromDB <-
               MIO.liftIO . Pool.withResource pool $ \connection -> do
                 TestTable.dropAndRecreateTableDef connection Foo.table
-                RawSql.executeVoid connection (RawSql.toRawSql insertFoo)
-                result <- RawSql.execute connection (RawSql.toRawSql selectFoos)
+                RawSql.executeVoid connection insertFoo
+                result <- RawSql.execute connection selectFoos
                 SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Foo.table) result
 
             foosFromDB HH.=== Right [originalFoo]
@@ -55,8 +55,8 @@ tableDefinitionTests pool =
 
             result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
               TestTable.dropAndRecreateTableDef connection Foo.table
-              RawSql.executeVoid connection (RawSql.toRawSql insertFoo)
-              RawSql.executeVoid connection (RawSql.toRawSql insertFoo)
+              RawSql.executeVoid connection insertFoo
+              RawSql.executeVoid connection insertFoo
 
             case result of
               Right () -> do

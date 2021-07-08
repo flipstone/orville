@@ -181,18 +181,16 @@ runRoundTripTest pool testCase =
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
-        RawSql.toRawSql $
-          Expr.insertExpr
-            testTable
-            Nothing
-            (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+        Expr.insertExpr
+          testTable
+          Nothing
+          (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
 
       result <-
         RawSql.execute connection $
-          RawSql.toRawSql $
-            Expr.queryExpr
-              (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-              (Expr.tableExpr testTable Nothing Nothing Nothing)
+          Expr.queryExpr
+            (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
+            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing)
 
       Result.readRows result
 
@@ -219,18 +217,16 @@ runNullableRoundTripTest pool testCase =
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
-        RawSql.toRawSql $
-          Expr.insertExpr
-            testTable
-            Nothing
-            (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+        Expr.insertExpr
+          testTable
+          Nothing
+          (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
 
       result <-
         RawSql.execute connection $
-          RawSql.toRawSql $
-            Expr.queryExpr
-              (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-              (Expr.tableExpr testTable Nothing Nothing Nothing)
+          Expr.queryExpr
+            (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
+            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing)
 
       Result.readRows result
 
@@ -252,11 +248,10 @@ runNullCounterExampleTest pool testCase =
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
-        RawSql.toRawSql $
-          Expr.insertExpr
-            testTable
-            Nothing
-            (Expr.insertSqlValues [[SqlValue.sqlNull]])
+        Expr.insertExpr
+          testTable
+          Nothing
+          (Expr.insertSqlValues [[SqlValue.sqlNull]])
 
     case result of
       Left err ->

@@ -40,7 +40,7 @@ newtype InsertColumnList
 insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
-    RawSql.intercalate (RawSql.comma) (map RawSql.toRawSql columnNames)
+    RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
 
 newtype InsertSource
   = InsertSource RawSql.RawSql

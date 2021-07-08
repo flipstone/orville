@@ -55,7 +55,7 @@ newtype FieldName
 
 fieldNameToColumnName :: FieldName -> Expr.ColumnName
 fieldNameToColumnName (FieldName name) =
-  Expr.sqlToColumnName (RawSql.fromBytes name)
+  RawSql.unsafeFromRawSql (RawSql.fromBytes name)
 
 stringToFieldName :: String -> FieldName
 stringToFieldName =
