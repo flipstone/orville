@@ -33,14 +33,14 @@ import Data.Maybe (catMaybes)
 import Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
 import Orville.PostgreSQL.Internal.FieldDefinition
-  ( FieldDefinition
-  , FieldNullability(NullableField, NotNullField)
-  , asymmetricNullableField
-  , fieldName
-  , fieldNameToByteString
-  , fieldNullability
-  , fieldValueFromSqlValue
-  , nullableField
+  ( FieldDefinition,
+    FieldNullability (NotNullField, NullableField),
+    asymmetricNullableField,
+    fieldName,
+    fieldNameToByteString,
+    fieldNullability,
+    fieldValueFromSqlValue,
+    nullableField,
   )
 
 {- |
@@ -409,10 +409,10 @@ marshallField accessor fieldDef =
 -}
 maybeMapper :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
 maybeMapper =
-    -- rewrite the mapper to handle null fields, then tag
-    -- it as having been done so we don't double-map it
-    -- in a future `maybeMapper` call.
-    MarshallMaybeTag . go
+  -- rewrite the mapper to handle null fields, then tag
+  -- it as having been done so we don't double-map it
+  -- in a future `maybeMapper` call.
+  MarshallMaybeTag . go
   where
     go :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
     go (MarshallPure a) = MarshallPure $ pure a

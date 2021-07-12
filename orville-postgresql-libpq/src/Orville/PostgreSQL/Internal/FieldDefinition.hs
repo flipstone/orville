@@ -10,7 +10,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldName,
     fieldType,
     fieldNullability,
-    FieldNullability(..),
+    FieldNullability (..),
     fieldValueToSqlValue,
     fieldValueFromSqlValue,
     fieldColumnName,
