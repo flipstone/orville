@@ -20,17 +20,28 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     applyRowSource,
     constRowSource,
     failRowSource,
+    maybeMapper,
   )
 where
 
 import Control.Exception (Exception)
+import Control.Monad (join)
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldName, fieldNameToByteString, fieldValueFromSqlValue)
+import Orville.PostgreSQL.Internal.FieldDefinition
+  ( FieldDefinition
+  , FieldNullability(NullableField, NotNullField)
+  , asymmetricNullableField
+  , fieldName
+  , fieldNameToByteString
+  , fieldNullability
+  , fieldValueFromSqlValue
+  , nullableField
+  )
 
 {- |
   'SqlMarshaller' is how we group the lowest level translation of single fields
@@ -48,6 +59,8 @@ data SqlMarshaller a b where
   MarshallNest :: (a -> b) -> SqlMarshaller b c -> SqlMarshaller a c
   -- | Mashall a SQL column using the given 'FieldDefinition'
   MarshallField :: FieldDefinition nullability a -> SqlMarshaller a a
+  -- | Tag a maybe-mapped marshaller so we don't map it twice
+  MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)
 
 instance Functor (SqlMarshaller a) where
   fmap f marsh = MarshallApply (MarshallPure f) marsh
@@ -112,6 +125,8 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
       foldMarshallerFieldsPart submarshaller (nestingFunction . getPart) currentResult addToResult
     MarshallField fieldDefinition ->
       addToResult fieldDefinition getPart currentResult
+    MarshallMaybeTag m ->
+      foldMarshallerFieldsPart m getPart currentResult addToResult
 
 {- |
   A 'MarshallError' may be returned from 'marshallFromSql' if the result set
@@ -288,6 +303,8 @@ mkRowSource marshaller result = do
                     mkColumnRowSource fieldDef result columnNumber
                   Nothing ->
                     failRowSource FieldNotFoundInResultSet
+          MarshallMaybeTag m ->
+            mkSource m
 
   pure . mkSource $ marshaller
 
@@ -386,3 +403,23 @@ marshallField ::
   SqlMarshaller writeEntity fieldValue
 marshallField accessor fieldDef =
   MarshallNest accessor (MarshallField fieldDef)
+
+{- Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
+   and applies a tag to avoid double mapping.
+-}
+maybeMapper :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
+maybeMapper =
+    -- rewrite the mapper to handle null fields, then tag
+    -- it as having been done so we don't double-map it
+    -- in a future `maybeMapper` call.
+    MarshallMaybeTag . go
+  where
+    go :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
+    go (MarshallPure a) = MarshallPure $ pure a
+    go (MarshallApply func a) = MarshallApply (fmap (<*>) $ go func) (go a)
+    go (MarshallNest f a) = MarshallNest (fmap f) (go a)
+    go a@(MarshallMaybeTag _) = Just <$> MarshallNest join a
+    go (MarshallField field) =
+      case fieldNullability field of
+        NotNullField f -> MarshallField (nullableField f)
+        NullableField f -> MarshallField (asymmetricNullableField f)
