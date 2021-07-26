@@ -34,7 +34,7 @@ data Foo = Foo
 
 table :: Orville.TableDefinition FooId Foo Foo
 table =
-  Orville.mkTableDefiniton "foo" (Orville.primaryKey fooIdField) fooMarshaller
+  Orville.mkTableDefinition "foo" (Orville.primaryKey fooIdField) fooMarshaller
 
 fooMarshaller :: Orville.SqlMarshaller Foo Foo
 fooMarshaller =
