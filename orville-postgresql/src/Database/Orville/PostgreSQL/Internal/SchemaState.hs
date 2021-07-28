@@ -56,7 +56,12 @@ loadSchemaState conn = do
 
 getTables :: HDBC.IConnection conn => conn -> IO (Map.Map TableName Columns)
 getTables conn = do
-  tables <- HDBC.getTables conn
+  query <-
+    HDBC.prepare
+      conn
+      "SELECT table_name from information_schema.tables where table_schema = current_schema();"
+  void $ HDBC.execute query []
+  tables <- map (convert . head) <$> HDBC.fetchAllRows' query
   fmap Map.fromList $
     forM tables $ \table -> do
       columns <- HDBC.describeTable conn table
