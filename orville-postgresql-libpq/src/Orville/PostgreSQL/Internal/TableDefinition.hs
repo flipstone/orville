@@ -55,7 +55,7 @@ mkTableDefinition ::
   -- | A 'SqlMarshaller' to marshall table entities to and from the database
   SqlMarshaller writeEntity readEntity ->
   TableDefinition key writeEntity readEntity
-mkTableDefiniton name primaryKey marshaller =
+mkTableDefinition name primaryKey marshaller =
   TableDefinition
     { _tableName = Expr.rawTableName name
     , _tablePrimaryKey = primaryKey
