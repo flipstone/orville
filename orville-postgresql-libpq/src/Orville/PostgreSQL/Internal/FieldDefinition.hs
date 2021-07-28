@@ -10,6 +10,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldName,
     fieldType,
     fieldNullability,
+    FieldNullability (..),
     fieldValueToSqlValue,
     fieldValueFromSqlValue,
     fieldColumnName,
@@ -379,9 +380,7 @@ nullableField field =
   insert a 'Nothing' value using the field, it will be read back as 'Just'
   value. This is useful for building high level combinators that might need to
   make fields 'Nullable' but need the value to be decoded in its underlying
-  type when reading back (e.g. 'maybeMapper' from 'RelationalMap').
-
-  TODO: update this comment once 'maybeMapper' gets ported over from HDBC
+  type when reading back (e.g. 'maybeMapper' from 'SqlMarshaller').
 -}
 asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
 asymmetricNullableField field =

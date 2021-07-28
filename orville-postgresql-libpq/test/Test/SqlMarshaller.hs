@@ -95,23 +95,45 @@ sqlMarshallerTests =
             result HH.=== Left SqlMarshaller.FailedToDecodeValue
         )
       ,
-        ( String.fromString "marshallResultFromSql decodes all rows in result set"
+        ( String.fromString "marshallResultFromSql decodes all rows in Foo result set"
         , HH.property $ do
             foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
 
             let mkRowValues foo =
-                  [SqlValue.fromText (fooName foo), SqlValue.fromInt32 (fooSize foo)]
+                  [ SqlValue.fromText (fooName foo)
+                  , SqlValue.fromInt32 (fooSize foo)
+                  , maybe SqlValue.sqlNull SqlValue.fromBool (fooOption foo)
+                  ]
 
                 input =
                   Result.mkFakeLibPQResult
-                    [B8.pack "name", B8.pack "size"]
+                    [B8.pack "name", B8.pack "size", B8.pack "option"]
                     (map mkRowValues foos)
 
             result <- MIO.liftIO $ SqlMarshaller.marshallResultFromSql fooMarshaller input
             result HH.=== Right foos
         )
       ,
-        ( String.fromString "foldMarhallerFields collects all fields as their sql values"
+        ( String.fromString "marshallResultFromSql decodes all rows in Bar result set"
+        , HH.property $ do
+            bars <- HH.forAll $ Gen.list (Range.linear 0 10) generateBar
+
+            let mkRowValues bar =
+                  [ SqlValue.fromDouble (barNumber bar)
+                  , maybe SqlValue.sqlNull SqlValue.fromText (barComment bar)
+                  , maybe SqlValue.sqlNull SqlValue.fromText (barLabel bar)
+                  ]
+
+                input =
+                  Result.mkFakeLibPQResult
+                    [B8.pack "number", B8.pack "comment", B8.pack "label"]
+                    (map mkRowValues bars)
+
+            result <- MIO.liftIO $ SqlMarshaller.marshallResultFromSql barMarshaller input
+            result HH.=== Right bars
+        )
+      ,
+        ( String.fromString "foldMarshallerFields collects all fields as their sql values"
         , HH.property $ do
             foo <- HH.forAll generateFoo
 
@@ -128,15 +150,31 @@ sqlMarshallerTests =
                 expectedFooRow =
                   [ (FieldDefinition.stringToFieldName "name", SqlValue.fromText $ fooName foo)
                   , (FieldDefinition.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
+                  , (FieldDefinition.stringToFieldName "option", maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo)
                   ]
 
             actualFooRow HH.=== expectedFooRow
+        )
+      ,
+        ( String.fromString "can pass a Maybe through SqlMarshaller"
+        , HH.property $ do
+            someMaybeBool <- HH.forAll $ Gen.maybe Gen.bool
+            result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql (pure someMaybeBool) (Result.Row 0) (Result.mkFakeLibPQResult [] [])
+            result HH.=== Right someMaybeBool
         )
       ]
 
 data Foo = Foo
   { fooName :: T.Text
   , fooSize :: Int.Int32
+  , fooOption :: Maybe Bool
+  }
+  deriving (Eq, Show)
+
+data Bar = Bar
+  { barNumber :: Double
+  , barComment :: Maybe T.Text
+  , barLabel :: Maybe T.Text
   }
   deriving (Eq, Show)
 
@@ -145,12 +183,28 @@ fooMarshaller =
   Foo
     <$> SqlMarshaller.marshallField fooName (FieldDefinition.unboundedTextField "name")
     <*> SqlMarshaller.marshallField fooSize (FieldDefinition.integerField "size")
+    <*> SqlMarshaller.marshallField fooOption (FieldDefinition.nullableField $ FieldDefinition.booleanField "option")
 
 generateFoo :: HH.Gen Foo
 generateFoo =
   Foo
     <$> PGGen.pgText (Range.linear 0 16)
     <*> generateInt32
+    <*> Gen.maybe Gen.bool
+
+barMarshaller :: SqlMarshaller.SqlMarshaller Bar Bar
+barMarshaller =
+  Bar
+    <$> SqlMarshaller.marshallField barNumber (FieldDefinition.doubleField "number")
+    <*> SqlMarshaller.marshallField barComment (FieldDefinition.nullableField $ FieldDefinition.unboundedTextField "comment")
+    <*> SqlMarshaller.marshallField barLabel (FieldDefinition.nullableField $ FieldDefinition.boundedTextField "label" 16)
+
+generateBar :: HH.Gen Bar
+generateBar =
+  Bar
+    <$> PGGen.pgDouble
+    <*> Gen.maybe (PGGen.pgText $ Range.linear 0 32)
+    <*> Gen.maybe (PGGen.pgText $ Range.linear 1 16)
 
 generateNamesOtherThan :: String -> HH.Gen [String]
 generateNamesOtherThan specialName =
