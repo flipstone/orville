@@ -13,7 +13,7 @@ module Orville.PostgreSQL
     EntityOperations.findEntity,
     Connection.createConnectionPool,
     TableDefinition.TableDefinition,
-    TableDefinition.mkTableDefiniton,
+    TableDefinition.mkTableDefinition,
     PrimaryKey.PrimaryKey,
     PrimaryKey.primaryKey,
     PrimaryKey.compositePrimaryKey,

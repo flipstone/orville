@@ -2,7 +2,7 @@
 
 module Orville.PostgreSQL.Internal.TableDefinition
   ( TableDefinition,
-    mkTableDefiniton,
+    mkTableDefinition,
     tableName,
     tablePrimaryKey,
     tableMarshaller,
@@ -47,7 +47,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   Constructs a new 'TableDefinition' with the minimal fields required for
   operation.
 -}
-mkTableDefiniton ::
+mkTableDefinition ::
   -- | The name of the table
   String ->
   -- | Definition of the table's primary key
@@ -55,7 +55,7 @@ mkTableDefiniton ::
   -- | A 'SqlMarshaller' to marshall table entities to and from the database
   SqlMarshaller writeEntity readEntity ->
   TableDefinition key writeEntity readEntity
-mkTableDefiniton name primaryKey marshaller =
+mkTableDefinition name primaryKey marshaller =
   TableDefinition
     { _tableName = Expr.rawTableName name
     , _tablePrimaryKey = primaryKey
