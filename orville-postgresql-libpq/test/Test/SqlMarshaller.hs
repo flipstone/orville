@@ -17,7 +17,7 @@ import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-import Test.Expr.TestSchema (sqlValuesToText)
+import Test.Expr.TestSchema (assertEqualSqlRows)
 import qualified Test.PGGen as PGGen
 
 sqlMarshallerTests :: IO Bool
@@ -131,7 +131,7 @@ sqlMarshallerTests =
                   , (FieldDefinition.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
                   ]
 
-            sqlValuesToText [actualFooRow] HH.=== sqlValuesToText [expectedFooRow]
+            [actualFooRow] `assertEqualSqlRows` [expectedFooRow]
         )
       ]
 

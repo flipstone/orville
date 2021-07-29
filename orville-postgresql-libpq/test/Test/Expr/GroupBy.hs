@@ -17,7 +17,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-import Test.Expr.TestSchema (sqlValuesToText)
+import Test.Expr.TestSchema (assertEqualSqlRows)
 import qualified Test.Property as Property
 
 data FooBar = FooBar
@@ -85,7 +85,7 @@ runGroupByTest pool test = Property.singletonProperty $
             (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test) Nothing)
 
     rows <- MIO.liftIO $ ExecResult.readRows result
-    sqlValuesToText rows HH.=== sqlValuesToText (mkGroupByTestExpectedRows test)
+    rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
 
 testTable :: Expr.TableName
 testTable =

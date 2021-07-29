@@ -22,7 +22,7 @@ import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-import Test.Expr.TestSchema (sqlValuesToText)
+import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PGGen as PGGen
 import qualified Test.Property as Property
 
@@ -200,7 +200,7 @@ runRoundTripTest pool testCase =
             [[(_, sqlValue)]] ->
               Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
             _ ->
-              Left ("Expected one row with one value in results, but got: " ++ show (sqlValuesToText rows))
+              Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
     roundTripResult HH.=== Right (Just value)
 
@@ -236,7 +236,7 @@ runNullableRoundTripTest pool testCase =
             [[(_, sqlValue)]] ->
               Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
             _ ->
-              Left ("Expected one row with one value in results, but got: " ++ show (sqlValuesToText rows))
+              Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
     roundTripResult HH.=== Right (Just value)
 
