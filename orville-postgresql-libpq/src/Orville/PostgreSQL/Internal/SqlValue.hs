@@ -50,7 +50,6 @@ import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatVa
 data SqlValue
   = SqlValue PGTextFormatValue
   | SqlNull
-  deriving (Show, Eq)
 
 {- |
   Checks whether the 'SqlValue' represents a sql NULL value in the database.

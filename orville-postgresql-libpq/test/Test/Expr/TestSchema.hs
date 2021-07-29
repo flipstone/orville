@@ -7,6 +7,7 @@ module Test.Expr.TestSchema
     orderByFoo,
     insertFooBarSource,
     dropAndRecreateTestTable,
+    sqlValuesToText,
   )
 where
 
@@ -61,3 +62,7 @@ dropAndRecreateTestTable :: Connection.Connection -> IO ()
 dropAndRecreateTestTable connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql fooBarTable)
   RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+
+-- SqlValue doesn't have Show or Eq, so use this to compare them in tests
+sqlValuesToText :: [[(a, SqlValue.SqlValue)]] -> [[(a, Maybe T.Text)]]
+sqlValuesToText = fmap (fmap (\(a, b) -> (a, SqlValue.toText b)))

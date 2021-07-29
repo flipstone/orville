@@ -13,7 +13,7 @@ import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
-import Test.Expr.TestSchema (FooBar (..), barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
+import Test.Expr.TestSchema (FooBar (..), barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource, sqlValuesToText)
 import qualified Test.Property as Property
 
 orderByTests :: Pool.Pool Conn.Connection -> IO Bool
@@ -87,4 +87,4 @@ runOrderByTest pool test =
 
           ExecResult.readRows result
 
-    rows HH.=== map encodeFooBar (orderByExpectedQueryResults test)
+    sqlValuesToText rows HH.=== sqlValuesToText (map encodeFooBar (orderByExpectedQueryResults test))

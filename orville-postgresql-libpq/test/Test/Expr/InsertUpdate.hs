@@ -45,7 +45,7 @@ insertUpdateTests pool =
 
                   ExecResult.readRows result
 
-            rows === map encodeFooBar fooBars
+            sqlValuesToText rows === sqlValuesToText (map encodeFooBar fooBars)
         )
       ,
         ( String.fromString "updateExpr updates rows in the db"
@@ -78,7 +78,7 @@ insertUpdateTests pool =
 
                   ExecResult.readRows result
 
-            rows === map encodeFooBar newFooBars
+            sqlValuesToText rows === sqlValuesToText (map encodeFooBar newFooBars)
         )
       ,
         ( String.fromString "updateExpr uses a where clause when given"
@@ -111,6 +111,6 @@ insertUpdateTests pool =
 
                   ExecResult.readRows result
 
-            rows === map encodeFooBar newFooBars
+            sqlValuesToText rows === sqlValuesToText (map encodeFooBar newFooBars)
         )
       ]
