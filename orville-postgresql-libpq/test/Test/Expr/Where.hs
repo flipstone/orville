@@ -15,7 +15,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-import Test.Expr.TestSchema (FooBar (..), barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
+import Test.Expr.TestSchema (FooBar (..), assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
 import qualified Test.Property as Property
 
 whereTests :: Pool.Pool Connection.Connection -> IO Bool
@@ -140,4 +140,4 @@ runWhereConditionTest pool test =
 
           ExecResult.readRows result
 
-    rows HH.=== map encodeFooBar (whereExpectedQueryResults test)
+    rows `assertEqualSqlRows` map encodeFooBar (whereExpectedQueryResults test)

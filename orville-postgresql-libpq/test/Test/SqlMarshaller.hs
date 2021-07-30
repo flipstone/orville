@@ -17,6 +17,7 @@ import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
+import Test.Expr.TestSchema (assertEqualSqlRows)
 import qualified Test.PGGen as PGGen
 
 sqlMarshallerTests :: IO Bool
@@ -153,7 +154,7 @@ sqlMarshallerTests =
                   , (FieldDefinition.stringToFieldName "option", maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo)
                   ]
 
-            actualFooRow HH.=== expectedFooRow
+            [actualFooRow] `assertEqualSqlRows` [expectedFooRow]
         )
       ,
         ( String.fromString "can pass a Maybe through SqlMarshaller"
