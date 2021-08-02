@@ -127,7 +127,7 @@ whereOr =
 whereIn :: FieldDef.FieldDefinition nullability a -> NonEmpty SqlValue.SqlValue -> WhereCondition
 whereIn fieldDef values =
   WhereCondition $
-  Expr.columnIn (FieldDef.fieldNameToColumnName $ FieldDef.fieldName fieldDef) values
+    Expr.columnIn (FieldDef.fieldNameToColumnName $ FieldDef.fieldName fieldDef) values
 
 {- |
   Checks that a field does not match a list of values
@@ -135,7 +135,7 @@ whereIn fieldDef values =
 whereNotIn :: FieldDef.FieldDefinition nullability a -> NonEmpty SqlValue.SqlValue -> WhereCondition
 whereNotIn fieldDef values =
   WhereCondition $
-  Expr.columnNotIn (FieldDef.fieldNameToColumnName $ FieldDef.fieldName fieldDef) values
+    Expr.columnNotIn (FieldDef.fieldNameToColumnName $ FieldDef.fieldName fieldDef) values
 
 {- |
   INTERNAL: Combines a (non-empty) list of 'WhereCondition's together using
