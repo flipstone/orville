@@ -30,6 +30,8 @@ module Orville.PostgreSQL.Internal.Expr
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    columnIn,
+    columnNotIn,
     GroupByClause,
     groupByClause,
     appendGroupBy,
