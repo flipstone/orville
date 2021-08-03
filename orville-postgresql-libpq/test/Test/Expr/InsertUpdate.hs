@@ -40,7 +40,7 @@ insertUpdateTests pool =
                     RawSql.execute connection $
                       Expr.queryExpr
                         (Expr.selectColumns [fooColumn, barColumn])
-                        (Expr.tableExpr fooBarTable Nothing Nothing Nothing Nothing)
+                        (Expr.tableExpr fooBarTable Nothing Nothing Nothing Nothing Nothing)
 
                   ExecResult.readRows result
 
@@ -73,7 +73,7 @@ insertUpdateTests pool =
                     RawSql.execute connection $
                       Expr.queryExpr
                         (Expr.selectColumns [fooColumn, barColumn])
-                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing)
+                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 
                   ExecResult.readRows result
 
@@ -106,7 +106,7 @@ insertUpdateTests pool =
                     RawSql.execute connection $
                       Expr.queryExpr
                         (Expr.selectColumns [fooColumn, barColumn])
-                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing)
+                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 
                   ExecResult.readRows result
 

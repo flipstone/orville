@@ -5,6 +5,7 @@ module Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
     selectWhereClause,
     where_,
     limit,
+    offset,
   )
 where
 
@@ -23,6 +24,7 @@ import Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereCondition,
 data SelectOptions = SelectOptions
   { i_whereConditions :: [WhereCondition]
   , i_limitExpr :: First Expr.LimitExpr
+  , i_offsetExpr :: First Expr.OffsetExpr
   }
 
 instance Semigroup SelectOptions where
@@ -39,6 +41,7 @@ emptySelectOptions =
   SelectOptions
     { i_whereConditions = []
     , i_limitExpr = mempty
+    , i_offsetExpr = mempty
     }
 
 {- |
@@ -51,6 +54,7 @@ appendSelectOptions left right =
   SelectOptions
     (i_whereConditions left <> i_whereConditions right)
     (i_limitExpr left <> i_limitExpr right)
+    (i_offsetExpr left <> i_offsetExpr right)
 
 {- |
   Builds the 'Expr.WhereClause' that should be used to include the
@@ -81,4 +85,13 @@ limit :: Int -> SelectOptions
 limit limitValue =
   emptySelectOptions
     { i_limitExpr = First . Just . Expr.limitExpr $ limitValue
+    }
+
+{- |
+  Constructs a 'SelectOptions' that will apply the given offset
+-}
+offset :: Int -> SelectOptions
+offset offsetValue =
+  emptySelectOptions
+    { i_offsetExpr = First . Just . Expr.offsetExpr $ offsetValue
     }

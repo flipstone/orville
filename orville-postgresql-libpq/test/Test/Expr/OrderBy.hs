@@ -83,7 +83,7 @@ runOrderByTest pool test =
             RawSql.execute connection $
               Expr.queryExpr
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Expr.tableExpr fooBarTable Nothing (orderByClause test) Nothing Nothing)
+                (Expr.tableExpr fooBarTable Nothing (orderByClause test) Nothing Nothing Nothing)
 
           ExecResult.readRows result
 

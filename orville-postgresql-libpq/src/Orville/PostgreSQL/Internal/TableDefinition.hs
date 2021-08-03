@@ -222,13 +222,14 @@ mkQueryExpr ::
   Maybe Expr.OrderByClause ->
   Maybe Expr.GroupByClause ->
   Maybe Expr.LimitExpr ->
+  Maybe Expr.OffsetExpr ->
   Expr.QueryExpr
-mkQueryExpr tableDef whereClause orderByClause groupByClause limitExpr =
+mkQueryExpr tableDef whereClause orderByClause groupByClause limitExpr offsetExpr =
   let columns =
         marshallerColumnNames . tableMarshaller $ tableDef
    in Expr.queryExpr
         (Expr.selectColumns columns)
-        (Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause limitExpr)
+        (Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause limitExpr offsetExpr)
 
 {- |
   An internal helper function that collects the column names for all the

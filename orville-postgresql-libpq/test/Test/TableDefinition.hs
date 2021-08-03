@@ -34,7 +34,7 @@ tableDefinitionTests pool =
                   TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
 
                 selectFoos =
-                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing Nothing
+                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing Nothing Nothing
 
             foosFromDB <-
               MIO.liftIO . Pool.withResource pool $ \connection -> do
