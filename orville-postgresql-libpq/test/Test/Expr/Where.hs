@@ -4,6 +4,7 @@ module Test.Expr.Where
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -111,6 +112,32 @@ whereTests pool =
                     Expr.orExpr
                       (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
                       (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dingo")))
+              }
+        )
+      ,
+        ( String.fromString "columnIn requires the column's value to be in the list"
+        , runWhereConditionTest pool $
+            WhereConditionTest
+              { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+              , whereExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog"]
+              , whereClause =
+                  Just . Expr.whereClause $
+                    Expr.columnIn
+                      barColumn
+                      (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
+              }
+        )
+      ,
+        ( String.fromString "columnNotIn requires the column's value to not be in the list"
+        , runWhereConditionTest pool $
+            WhereConditionTest
+              { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+              , whereExpectedQueryResults = [FooBar 2 "dingo"]
+              , whereClause =
+                  Just . Expr.whereClause $
+                    Expr.columnNotIn
+                      barColumn
+                      (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
               }
         )
       ]

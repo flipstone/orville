@@ -135,7 +135,7 @@ whereIn fieldDef values =
 whereNotIn :: FieldDef.FieldDefinition nullability a -> NonEmpty SqlValue.SqlValue -> WhereCondition
 whereNotIn fieldDef values =
   WhereCondition $
-    Expr.columnNotIn (FieldDef.fieldNameToColumnName $ FieldDef.fieldName fieldDef) values
+    Expr.columnNotIn (FieldDef.fieldColumnName fieldDef) values
 
 {- |
   INTERNAL: Combines a (non-empty) list of 'WhereCondition's together using

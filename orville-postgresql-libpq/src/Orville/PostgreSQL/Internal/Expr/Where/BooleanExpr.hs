@@ -47,22 +47,22 @@ andExpr left right =
       <> RawSql.fromString " AND "
       <> RawSql.toRawSql right
 
-inExpr :: ColumnName -> NE.NonEmpty RowValuePredicand -> BooleanExpr
-inExpr columnName values =
+columnIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
+columnIn columnName values =
   BooleanExpr $
     RawSql.toRawSql columnName
       <> RawSql.fromString " IN "
       <> RawSql.leftParen
-      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map RawSql.toRawSql $ NE.toList values)
+      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map (RawSql.toRawSql . RawSql.parameter) $ NE.toList values)
       <> RawSql.rightParen
 
-notInExpr :: ColumnName -> NE.NonEmpty RowValuePredicand -> BooleanExpr
-notInExpr columnName values =
+columnNotIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
+columnNotIn columnName values =
   BooleanExpr $
     RawSql.toRawSql columnName
       <> RawSql.fromString " NOT IN "
       <> RawSql.leftParen
-      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map RawSql.toRawSql $ NE.toList values)
+      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map (RawSql.toRawSql . RawSql.parameter) $ NE.toList values)
       <> RawSql.rightParen
 
 parenthesized :: BooleanExpr -> BooleanExpr
@@ -106,11 +106,3 @@ columnGreaterThanOrEqualTo name value =
 columnLessThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
 columnLessThanOrEqualTo name value =
   comparison (columnReference name) lessThanOrEqualsOp (comparisonValue value)
-
-columnIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
-columnIn name values =
-  inExpr name (NE.map comparisonValue values)
-
-columnNotIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
-columnNotIn name values =
-  notInExpr name (NE.map comparisonValue values)
