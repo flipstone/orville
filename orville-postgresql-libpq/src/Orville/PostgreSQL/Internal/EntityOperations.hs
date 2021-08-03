@@ -99,6 +99,7 @@ findEntitiesBy entityTable selectOptions =
           Nothing
           Nothing
           Nothing
+          Nothing
    in do
         libPqResult <-
           MonadOrville.withConnection $ \connection ->

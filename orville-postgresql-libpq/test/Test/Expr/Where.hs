@@ -136,7 +136,7 @@ runWhereConditionTest pool test =
             RawSql.execute connection $
               Expr.queryExpr
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Expr.tableExpr fooBarTable (whereClause test) Nothing Nothing Nothing)
+                (Expr.tableExpr fooBarTable (whereClause test) Nothing Nothing Nothing Nothing)
 
           ExecResult.readRows result
 

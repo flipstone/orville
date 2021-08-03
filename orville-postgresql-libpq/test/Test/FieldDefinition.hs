@@ -191,7 +191,7 @@ runRoundTripTest pool testCase =
         RawSql.execute connection $
           Expr.queryExpr
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing)
+            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
       Result.readRows result
 
@@ -227,7 +227,7 @@ runNullableRoundTripTest pool testCase =
         RawSql.execute connection $
           Expr.queryExpr
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing)
+            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
       Result.readRows result
 

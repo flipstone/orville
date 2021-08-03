@@ -16,6 +16,7 @@ import Data.Maybe (catMaybes)
 import Orville.PostgreSQL.Internal.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Internal.Expr.LimitExpr (LimitExpr)
 import Orville.PostgreSQL.Internal.Expr.Name (TableName)
+import Orville.PostgreSQL.Internal.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Internal.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Internal.Expr.Where.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -30,14 +31,22 @@ tableExpr ::
   Maybe OrderByClause ->
   Maybe GroupByClause ->
   Maybe LimitExpr ->
+  Maybe OffsetExpr ->
   TableExpr
-tableExpr tableName maybeWhereClause maybeOrderByClause maybeGroupByClause maybeLimitExpr =
-  TableExpr $
-    RawSql.intercalate RawSql.space $
-      (RawSql.toRawSql tableName) :
-      catMaybes
-        [ RawSql.toRawSql <$> maybeWhereClause
-        , RawSql.toRawSql <$> maybeOrderByClause
-        , RawSql.toRawSql <$> maybeGroupByClause
-        , RawSql.toRawSql <$> maybeLimitExpr
-        ]
+tableExpr
+  tableName
+  maybeWhereClause
+  maybeOrderByClause
+  maybeGroupByClause
+  maybeLimitExpr
+  maybeOffsetExpr =
+    TableExpr $
+      RawSql.intercalate RawSql.space $
+        (RawSql.toRawSql tableName) :
+        catMaybes
+          [ RawSql.toRawSql <$> maybeWhereClause
+          , RawSql.toRawSql <$> maybeOrderByClause
+          , RawSql.toRawSql <$> maybeGroupByClause
+          , RawSql.toRawSql <$> maybeLimitExpr
+          , RawSql.toRawSql <$> maybeOffsetExpr
+          ]

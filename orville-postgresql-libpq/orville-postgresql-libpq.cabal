@@ -50,6 +50,7 @@ library
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
       Orville.PostgreSQL.Internal.Expr.InsertExpr
       Orville.PostgreSQL.Internal.Expr.LimitExpr
+      Orville.PostgreSQL.Internal.Expr.OffsetExpr
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Orville.PostgreSQL.Internal.Expr.Name.TableName
