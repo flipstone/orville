@@ -17,9 +17,12 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    columnIn,
+    columnNotIn,
   )
 where
 
+import qualified Data.List.NonEmpty as NE
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp, notEqualsOp)
 import Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand (RowValuePredicand, columnReference, comparisonValue)
@@ -43,6 +46,24 @@ andExpr left right =
     RawSql.toRawSql left
       <> RawSql.fromString " AND "
       <> RawSql.toRawSql right
+
+columnIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
+columnIn columnName values =
+  BooleanExpr $
+    RawSql.toRawSql columnName
+      <> RawSql.fromString " IN "
+      <> RawSql.leftParen
+      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map RawSql.parameter $ NE.toList values)
+      <> RawSql.rightParen
+
+columnNotIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
+columnNotIn columnName values =
+  BooleanExpr $
+    RawSql.toRawSql columnName
+      <> RawSql.fromString " NOT IN "
+      <> RawSql.leftParen
+      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map RawSql.parameter $ NE.toList values)
+      <> RawSql.rightParen
 
 parenthesized :: BooleanExpr -> BooleanExpr
 parenthesized expr =

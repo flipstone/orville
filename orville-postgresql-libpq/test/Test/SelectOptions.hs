@@ -12,6 +12,7 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SO
+import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Test.Property as Property
 
 selectOptionsTests :: IO Bool
@@ -90,6 +91,20 @@ selectOptionsTests =
               ( SO.where_ (SO.fieldEquals fooField 10)
                   <> SO.where_ (SO.fieldEquals barField 20)
               )
+        )
+      ,
+        ( String.fromString "whereIn generates expected sql"
+        , Property.singletonProperty $
+            assertWhereClauseEquals
+              (Just "WHERE (foo IN ($1))")
+              (SO.where_ $ SO.whereIn fooField (SqlValue.fromInt32 10 NEL.:| []))
+        )
+      ,
+        ( String.fromString "whereNotIn generates expected sql"
+        , Property.singletonProperty $
+            assertWhereClauseEquals
+              (Just "WHERE (foo NOT IN ($1, $2))")
+              (SO.where_ $ SO.whereNotIn fooField (SqlValue.fromInt32 10 NEL.:| [SqlValue.fromInt32 20]))
         )
       ]
 
