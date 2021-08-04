@@ -127,7 +127,7 @@ whereOr =
 whereIn :: FieldDef.FieldDefinition nullability a -> NonEmpty SqlValue.SqlValue -> WhereCondition
 whereIn fieldDef values =
   WhereCondition $
-    Expr.columnIn (FieldDef.fieldNameToColumnName $ FieldDef.fieldName fieldDef) values
+    Expr.columnIn (FieldDef.fieldColumnName fieldDef) values
 
 {- |
   Checks that a field does not match a list of values

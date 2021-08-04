@@ -53,7 +53,7 @@ columnIn columnName values =
     RawSql.toRawSql columnName
       <> RawSql.fromString " IN "
       <> RawSql.leftParen
-      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map (RawSql.toRawSql . RawSql.parameter) $ NE.toList values)
+      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map RawSql.parameter $ NE.toList values)
       <> RawSql.rightParen
 
 columnNotIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
@@ -62,7 +62,7 @@ columnNotIn columnName values =
     RawSql.toRawSql columnName
       <> RawSql.fromString " NOT IN "
       <> RawSql.leftParen
-      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map (RawSql.toRawSql . RawSql.parameter) $ NE.toList values)
+      <> RawSql.intercalate (RawSql.comma <> RawSql.space) (map RawSql.parameter $ NE.toList values)
       <> RawSql.rightParen
 
 parenthesized :: BooleanExpr -> BooleanExpr
