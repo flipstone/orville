@@ -9,6 +9,7 @@ import qualified Data.List.NonEmpty as NEL
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SO
@@ -106,11 +107,56 @@ selectOptionsTests =
               (Just "WHERE (foo NOT IN ($1, $2))")
               (SO.where_ $ SO.whereNotIn fooField (SqlValue.fromInt32 10 NEL.:| [SqlValue.fromInt32 20]))
         )
+      ,
+        ( String.fromString "orderBy generates expected sql"
+        , Property.singletonProperty $
+            assertOrderByClauseEquals
+              (Just "ORDER BY foo ASC, bar DESC")
+              ( SO.orderBy . Expr.orderByColumnsExpr $
+                  (FieldDef.fieldColumnName fooField, Expr.ascendingOrder)
+                    NEL.:| [(FieldDef.fieldColumnName barField, Expr.descendingOrder)]
+              )
+        )
+      ,
+        ( String.fromString "orderBy generates expected sql with multiple selectOptions"
+        , Property.singletonProperty $
+            assertOrderByClauseEquals
+              (Just "ORDER BY foo ASC, bar DESC")
+              ( (SO.orderBy $ Expr.orderByExpr (RawSql.fromString "foo") Expr.ascendingOrder)
+                  <> (SO.orderBy $ Expr.orderByExpr (RawSql.toRawSql $ FieldDef.fieldColumnName barField) Expr.descendingOrder)
+              )
+        )
+      ,
+        ( String.fromString "groupBy generates expected sql"
+        , Property.singletonProperty $
+            assertGroupByClauseEquals
+              (Just "GROUP BY foo, bar")
+              ( SO.groupBy . Expr.groupByColumnsExpr $
+                  FieldDef.fieldColumnName fooField NEL.:| [FieldDef.fieldColumnName barField]
+              )
+        )
+      ,
+        ( String.fromString "groupBy generates expected sql with multiple selectOptions"
+        , Property.singletonProperty $
+            assertGroupByClauseEquals
+              (Just "GROUP BY foo, bar")
+              ( (SO.groupBy . Expr.groupByExpr $ RawSql.fromString "foo")
+                  <> (SO.groupBy . Expr.groupByExpr . RawSql.toRawSql $ FieldDef.fieldColumnName barField)
+              )
+        )
       ]
 
 assertWhereClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
 assertWhereClauseEquals mbWhereClause selectOptions =
   fmap RawSql.toBytes (SO.selectWhereClause selectOptions) HH.=== fmap B8.pack mbWhereClause
+
+assertOrderByClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
+assertOrderByClauseEquals mbOrderByClause selectOptions =
+  fmap RawSql.toBytes (SO.selectOrderByClause selectOptions) HH.=== fmap B8.pack mbOrderByClause
+
+assertGroupByClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
+assertGroupByClauseEquals mbGroupByClause selectOptions =
+  fmap RawSql.toBytes (SO.selectGroupByClause selectOptions) HH.=== fmap B8.pack mbGroupByClause
 
 fooField :: FieldDef.FieldDefinition FieldDef.NotNull Int.Int32
 fooField =

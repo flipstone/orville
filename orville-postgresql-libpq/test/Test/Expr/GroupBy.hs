@@ -6,6 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -41,6 +42,18 @@ groupByTests pool =
                     Expr.appendGroupBy
                       (Expr.groupByExpr $ RawSql.toRawSql barColumn)
                       (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
+              }
+        )
+      ,
+        ( String.fromString "groupByColumnsExpr groups by columns"
+        , runGroupByTest pool $
+            GroupByTest
+              { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+              , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+              , groupByClause =
+                  Just . Expr.groupByClause $
+                    Expr.groupByColumnsExpr $
+                      barColumn NE.:| [fooColumn]
               }
         )
       ]
