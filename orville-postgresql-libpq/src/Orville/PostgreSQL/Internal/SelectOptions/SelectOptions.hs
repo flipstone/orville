@@ -4,10 +4,14 @@ module Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
     appendSelectOptions,
     selectDistinct,
     selectWhereClause,
+    selectOrderByClause,
+    selectGroupByClause,
     distinct,
     where_,
+    orderBy,
     limit,
     offset,
+    groupBy,
   )
 where
 
@@ -15,6 +19,8 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Monoid (First (First))
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr as Expr
+import qualified Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr as Expr
 import Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereCondition, whereAnd, whereConditionToBooleanExpr)
 
 {- |
@@ -26,8 +32,10 @@ import Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereCondition,
 data SelectOptions = SelectOptions
   { i_distinct :: First Bool
   , i_whereConditions :: [WhereCondition]
+  , i_orderByExprs :: [Expr.OrderByExpr]
   , i_limitExpr :: First Expr.LimitExpr
   , i_offsetExpr :: First Expr.OffsetExpr
+  , i_groupByExprs :: [Expr.GroupByExpr]
   }
 
 instance Semigroup SelectOptions where
@@ -44,8 +52,10 @@ emptySelectOptions =
   SelectOptions
     { i_distinct = mempty
     , i_whereConditions = []
+    , i_orderByExprs = []
     , i_limitExpr = mempty
     , i_offsetExpr = mempty
+    , i_groupByExprs = []
     }
 
 {- |
@@ -58,8 +68,10 @@ appendSelectOptions left right =
   SelectOptions
     (i_distinct left <> i_distinct right)
     (i_whereConditions left <> i_whereConditions right)
+    (i_orderByExprs left <> i_orderByExprs right)
     (i_limitExpr left <> i_limitExpr right)
     (i_offsetExpr left <> i_offsetExpr right)
+    (i_groupByExprs left <> i_groupByExprs right)
 
 {- |
   Builds the 'Expr.SelectClause' that should be used to include the
@@ -94,12 +106,47 @@ distinct =
     }
 
 {- |
+  Builds the 'Expr.OrderByClause' that should be used to include the
+  'OrderByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
+  where no 'OrderByClause's have been specified.
+-}
+selectOrderByClause :: SelectOptions -> Maybe Expr.OrderByClause
+selectOrderByClause selectOptions =
+  case i_orderByExprs selectOptions of
+    [] ->
+      Nothing
+    (first : rest) ->
+      Just . Expr.orderByClause $ foldl Expr.appendOrderBy first rest
+
+{- |
+  Builds the 'Expr.GroupByClause' that should be used to include the
+  'GroupByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
+  where no 'GroupByClause's have been specified.
+-}
+selectGroupByClause :: SelectOptions -> Maybe Expr.GroupByClause
+selectGroupByClause selectOptions =
+  case i_groupByExprs selectOptions of
+    [] ->
+      Nothing
+    (first : rest) ->
+      Just . Expr.groupByClause $ foldl Expr.appendGroupBy first rest
+
+{- |
   Constructs a 'SelectOptions' with just the given 'WhereCondition'.
 -}
 where_ :: WhereCondition -> SelectOptions
 where_ condition =
   emptySelectOptions
     { i_whereConditions = [condition]
+    }
+
+{- |
+  Constructs a 'SelectOptions' with just the given 'OrderByExpr'.
+-}
+orderBy :: Expr.OrderByExpr -> SelectOptions
+orderBy orderByExpr =
+  emptySelectOptions
+    { i_orderByExprs = [orderByExpr]
     }
 
 {- |
@@ -118,4 +165,13 @@ offset :: Int -> SelectOptions
 offset offsetValue =
   emptySelectOptions
     { i_offsetExpr = First . Just . Expr.offsetExpr $ offsetValue
+    }
+
+{- |
+  Constructs a 'SelectOptions' with just the given 'GroupByClause'.
+-}
+groupBy :: Expr.GroupByExpr -> SelectOptions
+groupBy groupByExpr =
+  emptySelectOptions
+    { i_groupByExprs = [groupByExpr]
     }

@@ -19,6 +19,7 @@ module Orville.PostgreSQL.Internal.RawSql
     -- * Fragmants provided for convenience
     space,
     comma,
+    commaSpace,
     leftParen,
     rightParen,
 
@@ -220,6 +221,10 @@ space = fromString " "
 -- | Just a plain old comma, provided for convenience
 comma :: RawSql
 comma = fromString ","
+
+-- | Comma space separator, provided for convenience
+commaSpace :: RawSql
+commaSpace = fromString ", "
 
 -- | Just a plain old left paren, provided for convenience
 leftParen :: RawSql

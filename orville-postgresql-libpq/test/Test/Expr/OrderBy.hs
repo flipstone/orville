@@ -4,6 +4,7 @@ module Test.Expr.OrderBy
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Hedgehog as HH
@@ -58,6 +59,19 @@ orderByTests pool =
                     Expr.appendOrderBy
                       (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
                       (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
+              }
+        )
+      ,
+        ( String.fromString "orderByColumnsExpr orders by columns"
+        , runOrderByTest pool $
+            OrderByTest
+              { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+              , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+              , orderByClause =
+                  Just . Expr.orderByClause $
+                    Expr.orderByColumnsExpr $
+                      (barColumn, Expr.ascendingOrder)
+                        NE.:| [(fooColumn, Expr.descendingOrder)]
               }
         )
       ]
