@@ -26,8 +26,8 @@ module Orville.PostgreSQL.Internal.SqlValue
     fromDay,
     toDay,
     fromUTCTime,
-    toUTCWithZoneTime,
-    toUTCWithoutZoneTime,
+    toUTCTimeWithZone,
+    toUTCTimeWithoutZone,
     fromRawBytes,
     fromRawBytesNullable,
     toPGValue,
@@ -247,8 +247,8 @@ fromUTCTime =
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
   format without time zone. If the decoding fails, 'Nothing' is returned.
 -}
-toUTCWithoutZoneTime :: SqlValue -> Maybe Time.UTCTime
-toUTCWithoutZoneTime sqlValue = do
+toUTCTimeWithoutZone :: SqlValue -> Maybe Time.UTCTime
+toUTCTimeWithoutZone sqlValue = do
   -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
   -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
@@ -264,8 +264,8 @@ toUTCWithoutZoneTime sqlValue = do
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
   format with time zone. If the decoding fails, 'Nothing' is returned.
 -}
-toUTCWithZoneTime :: SqlValue -> Maybe Time.UTCTime
-toUTCWithZoneTime sqlValue = do
+toUTCTimeWithZone :: SqlValue -> Maybe Time.UTCTime
+toUTCTimeWithZone sqlValue = do
   -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
   -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.

@@ -271,7 +271,7 @@ timestamp =
     , sqlTypeId = LibPQ.Oid 1184
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromUTCTime
-    , sqlTypeFromSql = SqlValue.toUTCWithZoneTime
+    , sqlTypeFromSql = SqlValue.toUTCTimeWithZone
     }
 
 {- |
@@ -289,7 +289,7 @@ timestampWithoutZone =
     , sqlTypeId = LibPQ.Oid 1184
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromUTCTime
-    , sqlTypeFromSql = SqlValue.toUTCWithoutZoneTime
+    , sqlTypeFromSql = SqlValue.toUTCTimeWithoutZone
     }
 
 {- |
