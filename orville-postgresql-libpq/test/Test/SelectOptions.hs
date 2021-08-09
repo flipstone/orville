@@ -106,7 +106,18 @@ selectOptionsTests =
               (Just "WHERE (foo NOT IN ($1, $2))")
               (SO.where_ $ SO.whereNotIn fooField (SqlValue.fromInt32 10 NEL.:| [SqlValue.fromInt32 20]))
         )
+      ,
+        ( String.fromString "distinct generates expected sql"
+        , Property.singletonProperty $
+            assertDistinctEquals
+              (Just "SELECT DISTINCT ")
+              (SO.distinct)
+        )
       ]
+
+assertDistinctEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
+assertDistinctEquals mbDistinct selectOptions =
+  fmap RawSql.toBytes (SO.selectDistinct selectOptions) HH.=== fmap B8.pack mbDistinct
 
 assertWhereClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
 assertWhereClauseEquals mbWhereClause selectOptions =

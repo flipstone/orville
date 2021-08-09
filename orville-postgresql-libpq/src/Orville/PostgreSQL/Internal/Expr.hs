@@ -8,6 +8,10 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr
   ( QueryExpr,
     queryExpr,
+    SelectClause,
+    selectClause,
+    SelectExpr,
+    selectExpr,
     SelectList,
     selectStar,
     selectColumns,

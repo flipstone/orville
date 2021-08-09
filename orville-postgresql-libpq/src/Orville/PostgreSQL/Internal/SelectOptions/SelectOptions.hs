@@ -2,7 +2,9 @@ module Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
   ( SelectOptions,
     emptySelectOptions,
     appendSelectOptions,
+    selectDistinct,
     selectWhereClause,
+    distinct,
     where_,
     limit,
     offset,
@@ -22,7 +24,8 @@ import Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereCondition,
    which may then be combined via '<>' (also exposed as 'appendSelectOptions').
 -}
 data SelectOptions = SelectOptions
-  { i_whereConditions :: [WhereCondition]
+  { i_distinct :: First Bool
+  , i_whereConditions :: [WhereCondition]
   , i_limitExpr :: First Expr.LimitExpr
   , i_offsetExpr :: First Expr.OffsetExpr
   }
@@ -39,7 +42,8 @@ instance Monoid SelectOptions where
 emptySelectOptions :: SelectOptions
 emptySelectOptions =
   SelectOptions
-    { i_whereConditions = []
+    { i_distinct = mempty
+    , i_whereConditions = []
     , i_limitExpr = mempty
     , i_offsetExpr = mempty
     }
@@ -52,9 +56,20 @@ emptySelectOptions =
 appendSelectOptions :: SelectOptions -> SelectOptions -> SelectOptions
 appendSelectOptions left right =
   SelectOptions
+    (i_distinct left <> i_distinct right)
     (i_whereConditions left <> i_whereConditions right)
     (i_limitExpr left <> i_limitExpr right)
     (i_offsetExpr left <> i_offsetExpr right)
+
+{- |
+  Builds the 'Expr.SelectClause' that should be used to include the
+  'distinct's from the 'SelectOptions' on a query.
+-}
+selectDistinct :: SelectOptions -> Maybe Expr.SelectClause
+selectDistinct selectOptions =
+  case i_distinct selectOptions of
+    First (Just True) -> Just . Expr.selectClause $ Expr.selectExpr True
+    _ -> Nothing
 
 {- |
   Builds the 'Expr.WhereClause' that should be used to include the
@@ -68,6 +83,15 @@ selectWhereClause selectOptions =
       Nothing
     (first : rest) ->
       Just . Expr.whereClause . whereConditionToBooleanExpr $ whereAnd (first :| rest)
+
+{- |
+  Constructs a 'SelectOptions' with just 'distinct' set to 'True'.
+-}
+distinct :: SelectOptions
+distinct =
+  emptySelectOptions
+    { i_distinct = First $ Just True
+    }
 
 {- |
   Constructs a 'SelectOptions' with just the given 'WhereCondition'.

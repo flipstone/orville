@@ -81,6 +81,7 @@ runGroupByTest pool test = Property.singletonProperty $
       MIO.liftIO $
         RawSql.execute connection $
           Expr.queryExpr
+            (Expr.selectClause $ Expr.selectExpr False)
             (Expr.selectColumns [fooColumn, barColumn])
             (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test) Nothing Nothing)
 

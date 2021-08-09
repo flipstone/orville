@@ -82,6 +82,7 @@ runOrderByTest pool test =
           result <-
             RawSql.execute connection $
               Expr.queryExpr
+                (Expr.selectClause $ Expr.selectExpr False)
                 (Expr.selectColumns [fooColumn, barColumn])
                 (Expr.tableExpr fooBarTable Nothing (orderByClause test) Nothing Nothing Nothing)
 
