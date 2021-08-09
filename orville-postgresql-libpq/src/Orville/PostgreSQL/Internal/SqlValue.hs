@@ -47,6 +47,8 @@ import qualified Data.Time as Time
 import Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
 import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
 
+import Control.Applicative ((<|>))
+
 data SqlValue
   = SqlValue PGTextFormatValue
   | SqlNull
@@ -251,7 +253,13 @@ toUTCTime sqlValue = do
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
   -- Leading to the ugly hacks below.
   txt <- toText sqlValue
-  Time.parseTimeM False Time.defaultTimeLocale "%F %T%Q%Z" (T.unpack txt <> "00")
+  let parseTime = Time.parseTimeM False Time.defaultTimeLocale
+      unTxt = T.unpack txt
+  -- We allow a couple alternative time representations in the database,
+  -- should probably expand this list or find a better way to do this
+  parseTime       "%F %T%Q%Z" (unTxt <> "00")
+    <|> parseTime "%F %T%Q"    unTxt
+    <|> parseTime "%F %T"      unTxt
 
 {- |
   A internal helper function that constructs a 'SqlValue' via a byte string builder
