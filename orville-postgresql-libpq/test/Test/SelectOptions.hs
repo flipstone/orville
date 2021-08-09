@@ -113,6 +113,7 @@ selectOptionsTests =
             assertDistinctEquals
               (Just "SELECT DISTINCT ")
               (SO.distinct)
+        )
       ,
         ( String.fromString "orderBy generates expected sql"
         , Property.singletonProperty $
