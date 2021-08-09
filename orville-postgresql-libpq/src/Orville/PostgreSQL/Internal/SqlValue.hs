@@ -26,7 +26,8 @@ module Orville.PostgreSQL.Internal.SqlValue
     fromDay,
     toDay,
     fromUTCTime,
-    toUTCTime,
+    toUTCWithZoneTime,
+    toUTCWithoutZoneTime,
     fromRawBytes,
     fromRawBytesNullable,
     toPGValue,
@@ -244,10 +245,10 @@ fromUTCTime =
 
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
-  format. If the decoding fails, 'Nothing' is returned.
+  format without time zone. If the decoding fails, 'Nothing' is returned.
 -}
-toUTCTime :: SqlValue -> Maybe Time.UTCTime
-toUTCTime sqlValue = do
+toUTCWithoutZoneTime :: SqlValue -> Maybe Time.UTCTime
+toUTCWithoutZoneTime sqlValue = do
   -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
   -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
@@ -255,11 +256,26 @@ toUTCTime sqlValue = do
   txt <- toText sqlValue
   let parseTime = Time.parseTimeM False Time.defaultTimeLocale
       unTxt = T.unpack txt
-  -- We allow a couple alternative time representations in the database,
-  -- should probably expand this list or find a better way to do this
-  parseTime       "%F %T%Q%Z" (unTxt <> "00")
-    <|> parseTime "%F %T%Q"    unTxt
-    <|> parseTime "%F %T"      unTxt
+
+  parseTime "%F %T%Q" unTxt
+    <|> parseTime "%F %T" unTxt
+
+{- |
+  Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
+  format with time zone. If the decoding fails, 'Nothing' is returned.
+-}
+toUTCWithZoneTime :: SqlValue -> Maybe Time.UTCTime
+toUTCWithZoneTime sqlValue = do
+  -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
+  -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
+  -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
+  -- Leading to the ugly hacks below.
+  txt <- toText sqlValue
+  let parseTime = Time.parseTimeM False Time.defaultTimeLocale
+      unTxt = T.unpack txt
+
+  parseTime "%F %T%Q%Z" (unTxt <> "00")
+    <|> parseTime "%F %T%Z" (unTxt <> "00")
 
 {- |
   A internal helper function that constructs a 'SqlValue' via a byte string builder

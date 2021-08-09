@@ -36,6 +36,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     textSearchVectorField,
     dateField,
     timestampField,
+    timestampWithoutZoneField,
     fieldOfType,
   )
 where
@@ -319,14 +320,22 @@ dateField = fieldOfType SqlType.date
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime values as the
   PostgreSQL "TIMESTAMP with time zone" type.
-
-  TODO: discuss "TIMESTAMP with zone" to avoid confusion?
 -}
 timestampField ::
   -- | Name of the field in the database
   String ->
   FieldDefinition NotNull Time.UTCTime
 timestampField = fieldOfType SqlType.timestamp
+
+{- |
+  Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime values as the
+  PostgreSQL "TIMESTAMP without time zone" type.
+-}
+timestampWithoutZoneField ::
+  -- | Name of the field in the database
+  String ->
+  FieldDefinition NotNull Time.UTCTime
+timestampWithoutZoneField = fieldOfType SqlType.timestampWithoutZone
 
 {- |
   Builds a 'FieldDefinition' for will use the given 'SqlType' to determine

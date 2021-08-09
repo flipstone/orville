@@ -29,6 +29,7 @@ module Orville.PostgreSQL.Internal.SqlType
     -- date types
     date,
     timestamp,
+    timestampWithoutZone,
     -- type conversions
     nullableType,
     foreignRefType,
@@ -252,7 +253,8 @@ date =
     }
 
 {- |
-  'timestamp' defines a type representing a particular point in time (without time zone).
+  'timestamp' defines a type representing a particular point in time without time zone information,
+  but can be constructed with a time zone offset.
   It corresponds to the "TIMESTAMP with time zone" type in SQL.
 
   Note: This is NOT a typo. The "TIMESTAMP with time zone" type in SQL does not include
@@ -269,7 +271,25 @@ timestamp =
     , sqlTypeId = LibPQ.Oid 1184
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromUTCTime
-    , sqlTypeFromSql = SqlValue.toUTCTime
+    , sqlTypeFromSql = SqlValue.toUTCWithZoneTime
+    }
+
+{- |
+  'timestampWithoutZone' defines a type representing a particular point in time (without time zone).
+  It corresponds to the "TIMESTAMP without time zone" type in SQL.
+
+  http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
+-}
+timestampWithoutZone :: SqlType Time.UTCTime
+timestampWithoutZone =
+  SqlType
+    { sqlTypeExpr = Expr.timestampWithoutZone
+    , sqlTypeReferenceExpr = Nothing
+    , sqlTypeNullable = False
+    , sqlTypeId = LibPQ.Oid 1184
+    , sqlTypeSqlSize = Just 8
+    , sqlTypeToSql = SqlValue.fromUTCTime
+    , sqlTypeFromSql = SqlValue.toUTCWithoutZoneTime
     }
 
 {- |

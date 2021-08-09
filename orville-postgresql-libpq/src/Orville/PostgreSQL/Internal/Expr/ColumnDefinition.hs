@@ -13,6 +13,7 @@ module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
     nullConstraint,
     DataType,
     timestampWithZone,
+    timestampWithoutZone,
     date,
     tsvector,
     varchar,
@@ -66,6 +67,10 @@ newtype DataType
 timestampWithZone :: DataType
 timestampWithZone =
   DataType (RawSql.fromString "TIMESTAMP with time zone")
+
+timestampWithoutZone :: DataType
+timestampWithoutZone =
+  DataType (RawSql.fromString "TIMESTAMP without time zone")
 
 date :: DataType
 date =

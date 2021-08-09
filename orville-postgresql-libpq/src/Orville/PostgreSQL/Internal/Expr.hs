@@ -57,6 +57,7 @@ module Orville.PostgreSQL.Internal.Expr
     setColumn,
     DataType,
     timestampWithZone,
+    timestampWithoutZone,
     date,
     tsvector,
     varchar,
