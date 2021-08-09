@@ -41,6 +41,7 @@ fieldDefinitionTests pool =
         <> textSearchVectorField pool
         <> dateField pool
         <> timestampField pool
+        <> timestampWithoutZoneField pool
 
 integerField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
 integerField pool =
@@ -119,6 +120,14 @@ timestampField pool =
   testFieldProperties pool "timestampField" $
     RoundTripTest
       { roundTripFieldDef = FieldDef.timestampField "foo"
+      , roundTripGen = utcTimeGen
+      }
+
+timestampWithoutZoneField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+timestampWithoutZoneField pool =
+  testFieldProperties pool "timestampWithoutZoneField" $
+    RoundTripTest
+      { roundTripFieldDef = FieldDef.timestampWithoutZoneField "foo"
       , roundTripGen = utcTimeGen
       }
 

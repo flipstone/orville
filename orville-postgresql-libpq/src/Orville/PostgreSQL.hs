@@ -36,6 +36,7 @@ module Orville.PostgreSQL
     FieldDefinition.textSearchVectorField,
     FieldDefinition.dateField,
     FieldDefinition.timestampField,
+    FieldDefinition.timestampWithoutZoneField,
     FieldDefinition.fieldOfType,
     Orville.Orville,
     Orville.runOrville,

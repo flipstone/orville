@@ -26,7 +26,8 @@ module Orville.PostgreSQL.Internal.SqlValue
     fromDay,
     toDay,
     fromUTCTime,
-    toUTCTime,
+    toUTCTimeWithZone,
+    toUTCTimeWithoutZone,
     fromRawBytes,
     fromRawBytesNullable,
     toPGValue,
@@ -46,6 +47,8 @@ import qualified Data.Time as Time
 
 import Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
 import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
+
+import Control.Applicative ((<|>))
 
 data SqlValue
   = SqlValue PGTextFormatValue
@@ -242,16 +245,37 @@ fromUTCTime =
 
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
-  format. If the decoding fails, 'Nothing' is returned.
+  format without time zone. If the decoding fails, 'Nothing' is returned.
 -}
-toUTCTime :: SqlValue -> Maybe Time.UTCTime
-toUTCTime sqlValue = do
+toUTCTimeWithoutZone :: SqlValue -> Maybe Time.UTCTime
+toUTCTimeWithoutZone sqlValue = do
   -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
   -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
   -- Leading to the ugly hacks below.
   txt <- toText sqlValue
-  Time.parseTimeM False Time.defaultTimeLocale "%F %T%Q%Z" (T.unpack txt <> "00")
+  let parseTime = Time.parseTimeM False Time.defaultTimeLocale
+      unTxt = T.unpack txt
+
+  parseTime "%F %T%Q" unTxt
+    <|> parseTime "%F %T" unTxt
+
+{- |
+  Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
+  format with time zone. If the decoding fails, 'Nothing' is returned.
+-}
+toUTCTimeWithZone :: SqlValue -> Maybe Time.UTCTime
+toUTCTimeWithZone sqlValue = do
+  -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
+  -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
+  -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
+  -- Leading to the ugly hacks below.
+  txt <- toText sqlValue
+  let parseTime = Time.parseTimeM False Time.defaultTimeLocale
+      unTxt = T.unpack txt
+
+  parseTime "%F %T%Q%Z" (unTxt <> "00")
+    <|> parseTime "%F %T%Z" (unTxt <> "00")
 
 {- |
   A internal helper function that constructs a 'SqlValue' via a byte string builder

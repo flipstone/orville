@@ -326,6 +326,36 @@ timestampTests pool =
           , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
           }
     )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32.000+00'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32.000+00'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32-00'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32+00'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32.000'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
   ]
 
 nullableTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
