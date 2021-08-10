@@ -162,7 +162,7 @@ runWhereConditionTest pool test =
           result <-
             RawSql.execute connection $
               Expr.queryExpr
-                (Expr.selectClause $ Expr.selectExpr False)
+                (Expr.selectClause $ Expr.selectExpr Nothing)
                 (Expr.selectColumns [fooColumn, barColumn])
                 (Expr.tableExpr fooBarTable (whereClause test) Nothing Nothing Nothing Nothing)
 

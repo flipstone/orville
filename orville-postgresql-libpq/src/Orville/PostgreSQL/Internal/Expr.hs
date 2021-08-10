@@ -88,6 +88,7 @@ module Orville.PostgreSQL.Internal.Expr
     createTableExpr,
     PrimaryKeyExpr,
     primaryKeyExpr,
+    Distinct (Distinct),
   )
 where
 

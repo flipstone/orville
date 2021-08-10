@@ -12,12 +12,13 @@ module Orville.PostgreSQL.Internal.Expr.Query.QueryExpr
     selectClause,
     SelectExpr,
     selectExpr,
+    Distinct (..),
   )
 where
 
 import Orville.PostgreSQL.Internal.Expr.Query.SelectList (SelectList)
 import Orville.PostgreSQL.Internal.Expr.Query.TableExpr (TableExpr)
-import Orville.PostgreSQL.Internal.Expr.Select (SelectClause, SelectExpr, selectClause, selectExpr)
+import Orville.PostgreSQL.Internal.Expr.Select (Distinct (Distinct), SelectClause, SelectExpr, selectClause, selectExpr)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want

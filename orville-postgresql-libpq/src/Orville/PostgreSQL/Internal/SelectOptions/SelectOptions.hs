@@ -80,7 +80,7 @@ appendSelectOptions left right =
 selectDistinct :: SelectOptions -> Maybe Expr.SelectClause
 selectDistinct selectOptions =
   case i_distinct selectOptions of
-    First (Just True) -> Just . Expr.selectClause $ Expr.selectExpr True
+    First (Just True) -> Just . Expr.selectClause . Expr.selectExpr $ Just Expr.Distinct
     _ -> Nothing
 
 {- |

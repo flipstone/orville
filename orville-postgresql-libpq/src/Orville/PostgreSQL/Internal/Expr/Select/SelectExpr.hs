@@ -8,6 +8,7 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Select.SelectExpr
   ( SelectExpr,
     selectExpr,
+    Distinct (..),
   )
 where
 
@@ -16,6 +17,11 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 newtype SelectExpr = SelectExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-selectExpr :: Bool -> SelectExpr
-selectExpr isDistinct =
-  SelectExpr . RawSql.fromString $ if isDistinct then "DISTINCT " else ""
+data Distinct = Distinct
+
+selectExpr :: Maybe Distinct -> SelectExpr
+selectExpr mbDistinct =
+  SelectExpr . RawSql.fromString $
+    case mbDistinct of
+      Just Distinct -> "DISTINCT "
+      Nothing -> ""

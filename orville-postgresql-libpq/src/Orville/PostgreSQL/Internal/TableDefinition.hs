@@ -230,7 +230,7 @@ mkQueryExpr tableDef mbSelectClause whereClause orderByClause groupByClause limi
   let columns =
         marshallerColumnNames . tableMarshaller $ tableDef
       selectClause =
-        fromMaybe (Expr.selectClause $ Expr.selectExpr True) mbSelectClause
+        fromMaybe (Expr.selectClause . Expr.selectExpr $ Just Expr.Distinct) mbSelectClause
    in Expr.queryExpr
         selectClause
         (Expr.selectColumns columns)
