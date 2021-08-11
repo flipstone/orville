@@ -140,3 +140,7 @@ offset n = SelectOptions mempty mempty mempty mempty (First $ Just n) mempty
 groupBy :: ToGroupBy a => a -> SelectOptions
 groupBy groupable =
   SelectOptions mempty mempty mempty mempty mempty [toGroupBy groupable]
+
+selectOptionsToSql :: SelectOptions -> (String, [SqlValue])
+selectOptionsToSql opts =
+  (selectOptClause opts, selectOptValues opts)

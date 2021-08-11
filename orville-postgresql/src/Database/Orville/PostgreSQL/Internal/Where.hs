@@ -29,6 +29,7 @@ module Database.Orville.PostgreSQL.Internal.Where
   , isNotNull
   , whereClause
   , whereValues
+  , whereToSql
   ) where
 
 import qualified Data.List as List
@@ -199,3 +200,6 @@ whereClause conds = "WHERE " ++ whereConditionSql (whereAnd conds)
 
 whereValues :: [WhereCondition] -> [SqlValue]
 whereValues = List.concatMap whereConditionValues
+
+whereToSql :: [WhereCondition] -> (String, [SqlValue])
+whereToSql conds = (whereClause conds, whereValues conds)
