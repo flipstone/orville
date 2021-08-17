@@ -163,6 +163,40 @@ sqlMarshallerTests =
             result <- MIO.liftIO $ SqlMarshaller.marshallRowFromSql (pure someMaybeBool) (Result.Row 0) (Result.mkFakeLibPQResult [] [])
             result HH.=== Right someMaybeBool
         )
+      ,
+        ( String.fromString "can use a partialMap with SqlMarshaller with no error"
+        , HH.property $ do
+            bazs <- HH.forAll $ Gen.list (Range.linear 0 10) generateBaz
+
+            let mkRowValues baz =
+                  [ SqlValue.fromText (bazField baz)
+                  ]
+
+                input =
+                  Result.mkFakeLibPQResult
+                    [B8.pack "field"]
+                    (map mkRowValues bazs)
+
+            result <- MIO.liftIO $ SqlMarshaller.marshallResultFromSql bazMarshallerRight input
+            result HH.=== Right bazs
+        )
+      ,
+        ( String.fromString "can use a partialMap with SqlMarshaller with an error"
+        , HH.property $ do
+            bazs <- HH.forAll $ Gen.list (Range.linear 0 10) generateBaz
+
+            let mkRowValues baz =
+                  [ SqlValue.fromText (bazField baz)
+                  ]
+
+                input =
+                  Result.mkFakeLibPQResult
+                    [B8.pack "field"]
+                    (map mkRowValues bazs)
+
+            result <- MIO.liftIO $ SqlMarshaller.marshallResultFromSql bazMarshallerLeft input
+            result HH.=== if null bazs then Right [] else Left SqlMarshaller.FailedToDecodeValue
+        )
       ]
 
 data Foo = Foo
@@ -176,6 +210,11 @@ data Bar = Bar
   { barNumber :: Double
   , barComment :: Maybe T.Text
   , barLabel :: Maybe T.Text
+  }
+  deriving (Eq, Show)
+
+data Baz = Baz
+  { bazField :: T.Text
   }
   deriving (Eq, Show)
 
@@ -206,6 +245,25 @@ generateBar =
     <$> PGGen.pgDouble
     <*> Gen.maybe (PGGen.pgText $ Range.linear 0 32)
     <*> Gen.maybe (PGGen.pgText $ Range.linear 1 16)
+
+bazMarshallerRight :: SqlMarshaller.SqlMarshaller Baz Baz
+bazMarshallerRight =
+  SqlMarshaller.partialMap $
+    fmap Right $
+      Baz
+        <$> SqlMarshaller.marshallField bazField (FieldDefinition.unboundedTextField "field")
+
+bazMarshallerLeft :: SqlMarshaller.SqlMarshaller Baz Baz
+bazMarshallerLeft =
+  SqlMarshaller.partialMap $
+    fmap (Left . const SqlMarshaller.FailedToDecodeValue) $
+      Baz
+        <$> SqlMarshaller.marshallField bazField (FieldDefinition.unboundedTextField "field")
+
+generateBaz :: HH.Gen Baz
+generateBaz =
+  Baz
+    <$> PGGen.pgText (Range.linear 1 5)
 
 generateNamesOtherThan :: String -> HH.Gen [String]
 generateNamesOtherThan specialName =

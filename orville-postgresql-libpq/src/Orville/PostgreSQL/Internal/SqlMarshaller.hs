@@ -21,6 +21,7 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     constRowSource,
     failRowSource,
     maybeMapper,
+    partialMap,
   )
 where
 
@@ -57,10 +58,12 @@ data SqlMarshaller a b where
   MarshallApply :: SqlMarshaller a (b -> c) -> SqlMarshaller a b -> SqlMarshaller a c
   -- | Nest an arbitrary function, this is used when modeling a SQL table as nested Haskell records
   MarshallNest :: (a -> b) -> SqlMarshaller b c -> SqlMarshaller a c
-  -- | Mashall a SQL column using the given 'FieldDefinition'
+  -- | Marshall a SQL column using the given 'FieldDefinition'
   MarshallField :: FieldDefinition nullability a -> SqlMarshaller a a
   -- | Tag a maybe-mapped marshaller so we don't map it twice
   MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)
+  -- | Marshall a column with a possibility of error
+  MarshallPartial :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
 
 instance Functor (SqlMarshaller a) where
   fmap f marsh = MarshallApply (MarshallPure f) marsh
@@ -126,6 +129,8 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
     MarshallField fieldDefinition ->
       addToResult fieldDefinition getPart currentResult
     MarshallMaybeTag m ->
+      foldMarshallerFieldsPart m getPart currentResult addToResult
+    MarshallPartial m ->
       foldMarshallerFieldsPart m getPart currentResult addToResult
 
 {- |
@@ -305,6 +310,8 @@ mkRowSource marshaller result = do
                     failRowSource FieldNotFoundInResultSet
           MarshallMaybeTag m ->
             mkSource m
+          MarshallPartial m ->
+            (\(RowSource f) -> RowSource $ \row -> join <$> f row) $ mkSource m
 
   pure . mkSource $ marshaller
 
@@ -423,3 +430,12 @@ maybeMapper =
       case fieldNullability field of
         NotNullField f -> MarshallField (nullableField f)
         NullableField f -> MarshallField (asymmetricNullableField f)
+    go (MarshallPartial m) = MarshallPartial (flipError <$> go m)
+      where
+        flipError :: Maybe (Either MarshallError a) -> Either MarshallError (Maybe a)
+        flipError (Just (Right a)) = Right (Just a)
+        flipError (Just (Left err)) = Left err
+        flipError Nothing = Right Nothing
+
+partialMap :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
+partialMap = MarshallPartial
