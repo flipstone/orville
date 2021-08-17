@@ -111,7 +111,7 @@ selectOptionsTests =
         ( String.fromString "distinct generates expected sql"
         , Property.singletonProperty $
             assertDistinctEquals
-              (Just "SELECT DISTINCT ")
+              ("SELECT DISTINCT ")
               (SO.distinct)
         )
       ,
@@ -153,9 +153,9 @@ selectOptionsTests =
         )
       ]
 
-assertDistinctEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
+assertDistinctEquals :: HH.MonadTest m => String -> SO.SelectOptions -> m ()
 assertDistinctEquals mbDistinct selectOptions =
-  fmap RawSql.toBytes (SO.selectDistinct selectOptions) HH.=== fmap B8.pack mbDistinct
+  RawSql.toBytes (SO.selectDistinct selectOptions) HH.=== B8.pack mbDistinct
 
 assertWhereClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
 assertWhereClauseEquals mbWhereClause selectOptions =

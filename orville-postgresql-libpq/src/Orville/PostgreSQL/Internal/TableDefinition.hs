@@ -17,7 +17,6 @@ module Orville.PostgreSQL.Internal.TableDefinition
 where
 
 import Data.List.NonEmpty (NonEmpty, toList)
-import Data.Maybe (fromMaybe)
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
@@ -219,18 +218,16 @@ collectSetClauses entity fieldDef accessor clauses =
 -}
 mkQueryExpr ::
   TableDefinition key writeEntity readEntity ->
-  Maybe Expr.SelectClause ->
+  Expr.SelectClause ->
   Maybe Expr.WhereClause ->
   Maybe Expr.OrderByClause ->
   Maybe Expr.GroupByClause ->
   Maybe Expr.LimitExpr ->
   Maybe Expr.OffsetExpr ->
   Expr.QueryExpr
-mkQueryExpr tableDef mbSelectClause whereClause orderByClause groupByClause limitExpr offsetExpr =
+mkQueryExpr tableDef selectClause whereClause orderByClause groupByClause limitExpr offsetExpr =
   let columns =
         marshallerColumnNames . tableMarshaller $ tableDef
-      selectClause =
-        fromMaybe (Expr.selectClause . Expr.selectExpr $ Just Expr.Distinct) mbSelectClause
    in Expr.queryExpr
         selectClause
         (Expr.selectColumns columns)

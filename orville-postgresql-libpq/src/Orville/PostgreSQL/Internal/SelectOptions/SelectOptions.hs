@@ -77,11 +77,11 @@ appendSelectOptions left right =
   Builds the 'Expr.SelectClause' that should be used to include the
   'distinct's from the 'SelectOptions' on a query.
 -}
-selectDistinct :: SelectOptions -> Maybe Expr.SelectClause
+selectDistinct :: SelectOptions -> Expr.SelectClause
 selectDistinct selectOptions =
   case i_distinct selectOptions of
-    First (Just True) -> Just . Expr.selectClause . Expr.selectExpr $ Just Expr.Distinct
-    _ -> Nothing
+    First (Just True) -> Expr.selectClause . Expr.selectExpr $ Just Expr.Distinct
+    _ -> Expr.selectClause $ Expr.selectExpr Nothing
 
 {- |
   Builds the 'Expr.WhereClause' that should be used to include the
