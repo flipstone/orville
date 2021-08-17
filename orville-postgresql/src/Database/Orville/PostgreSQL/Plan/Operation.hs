@@ -376,8 +376,8 @@ runSelectOne selectOp param =
 
 
 {-|
-  'runSelectMany is an internal helper function that executes a
-  'SelectOperation' on a miltple input parameters.
+  'runSelectMany' is an internal helper function that executes a
+  'SelectOperation' on multiple input parameters.
 -}
 runSelectMany :: (Ord param, Core.MonadOrville conn m)
               => SelectOperation param row result
