@@ -24,7 +24,7 @@ createSequencePlan seqDef schemaState = do
       (intercalate
          " "
          [ "CREATE SEQUENCE"
-         , sequenceName seqDef
+         , "\"" ++ sequenceName seqDef ++ "\""
          , maybe "" ("INCREMENT BY " ++) $ show <$> sequenceIncrement seqDef
          , maybe "" ("MINVALUE " ++) $ show <$> sequenceMinValue seqDef
          , maybe "" ("MAXVALUE " ++) $ show <$> sequenceMaxValue seqDef
@@ -39,4 +39,4 @@ createSequencePlan seqDef schemaState = do
 dropSequencePlan :: String -> SchemaState -> Maybe MigrationPlan
 dropSequencePlan name schemaState = do
   guard (schemaStateSequenceExists name schemaState)
-  pure $ migrationDDLForItem (DropSequence name) ("DROP SEQUENCE " ++ name)
+  pure $ migrationDDLForItem (DropSequence name) ("DROP SEQUENCE " ++ "\"" ++ name ++ "\"" )

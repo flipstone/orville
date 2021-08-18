@@ -41,4 +41,10 @@ dropConstraintPlan tableName constraintName schemaState = do
   pure $
     migrationDDLForItem
       (DropConstraint tableName constraintName)
-      ("ALTER TABLE " ++ tableName ++ " DROP CONSTRAINT " ++ constraintName)
+      (intercalate
+         " "
+         [ "ALTER TABLE"
+         , "\"" ++ tableName ++ "\""
+         , "DROP CONSTRAINT"
+         , "\"" ++ constraintName ++ "\""
+         ])
