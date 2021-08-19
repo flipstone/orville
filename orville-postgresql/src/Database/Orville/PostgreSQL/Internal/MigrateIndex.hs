@@ -41,4 +41,4 @@ dropIndexPlan name schemaState = do
   guard (schemaStateIndexExists name schemaState)
   -- Here we drop the index only if it exists so that during the migration plan
   -- should something else prior cause the index to be dropped we will not cause an error.
-  pure $ migrationDDLForItem (DropIndex name) ("DROP INDEX IF EXISTS " ++ name)
+  pure $ migrationDDLForItem (DropIndex name) ("DROP INDEX IF EXISTS " ++ "\"" ++ name ++ "\"")
