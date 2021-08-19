@@ -218,16 +218,18 @@ collectSetClauses entity fieldDef accessor clauses =
 -}
 mkQueryExpr ::
   TableDefinition key writeEntity readEntity ->
+  Expr.SelectClause ->
   Maybe Expr.WhereClause ->
   Maybe Expr.OrderByClause ->
   Maybe Expr.GroupByClause ->
   Maybe Expr.LimitExpr ->
   Maybe Expr.OffsetExpr ->
   Expr.QueryExpr
-mkQueryExpr tableDef whereClause orderByClause groupByClause limitExpr offsetExpr =
+mkQueryExpr tableDef selectClause whereClause orderByClause groupByClause limitExpr offsetExpr =
   let columns =
         marshallerColumnNames . tableMarshaller $ tableDef
    in Expr.queryExpr
+        selectClause
         (Expr.selectColumns columns)
         (Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause limitExpr offsetExpr)
 

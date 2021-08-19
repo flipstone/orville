@@ -95,6 +95,7 @@ findEntitiesBy entityTable selectOptions =
   let selectExpr =
         TableDef.mkQueryExpr
           entityTable
+          (SelectOptions.selectDistinct selectOptions)
           (SelectOptions.selectWhereClause selectOptions)
           Nothing
           Nothing

@@ -12,6 +12,7 @@ import qualified Data.String as String
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
@@ -34,7 +35,14 @@ tableDefinitionTests pool =
                   TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
 
                 selectFoos =
-                  TableDefinition.mkQueryExpr Foo.table Nothing Nothing Nothing Nothing Nothing
+                  TableDefinition.mkQueryExpr
+                    Foo.table
+                    (Expr.selectClause $ Expr.selectExpr Nothing)
+                    Nothing
+                    Nothing
+                    Nothing
+                    Nothing
+                    Nothing
 
             foosFromDB <-
               MIO.liftIO . Pool.withResource pool $ \connection -> do

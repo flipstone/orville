@@ -39,6 +39,7 @@ insertUpdateTests pool =
                   result <-
                     RawSql.execute connection $
                       Expr.queryExpr
+                        (Expr.selectClause $ Expr.selectExpr Nothing)
                         (Expr.selectColumns [fooColumn, barColumn])
                         (Expr.tableExpr fooBarTable Nothing Nothing Nothing Nothing Nothing)
 
@@ -72,6 +73,7 @@ insertUpdateTests pool =
                   result <-
                     RawSql.execute connection $
                       Expr.queryExpr
+                        (Expr.selectClause $ Expr.selectExpr Nothing)
                         (Expr.selectColumns [fooColumn, barColumn])
                         (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 
@@ -105,6 +107,7 @@ insertUpdateTests pool =
                   result <-
                     RawSql.execute connection $
                       Expr.queryExpr
+                        (Expr.selectClause $ Expr.selectExpr Nothing)
                         (Expr.selectColumns [fooColumn, barColumn])
                         (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 

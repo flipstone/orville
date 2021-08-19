@@ -199,6 +199,7 @@ runRoundTripTest pool testCase =
       result <-
         RawSql.execute connection $
           Expr.queryExpr
+            (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
             (Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
@@ -235,6 +236,7 @@ runNullableRoundTripTest pool testCase =
       result <-
         RawSql.execute connection $
           Expr.queryExpr
+            (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
             (Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
