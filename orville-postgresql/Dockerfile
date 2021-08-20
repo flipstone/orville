@@ -9,8 +9,7 @@ FROM flipstone/stack:v2-1.9.3
 # redirect. Since we expect the `0.9_development` branch to replace master, I've
 # simply removed the offending file from the apt sources below.
 
-RUN rm /etc/apt/sources.list.d/fpco.list &&\
-    apt-get update &&\
+RUN apt-get update &&\
     apt-get install -y --no-install-recommends libpq5 libpq-dev &&\
     apt-get clean
 

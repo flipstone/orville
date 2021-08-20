@@ -3,6 +3,8 @@
 module Database.Orville.PostgreSQL.Plan
   ( Plan
   , Planned
+  , Execute
+  , Explain
   , askParam
 
   -- * Using a Plan after it is constructed
@@ -83,15 +85,15 @@ data Plan scope param result where
   PlanMany :: (forall manyScope. Plan manyScope param result)
            -> Plan scope [param] (Many param result)
 
-  PlanEither :: (forall leftScope. Plan leftScope leftParam leftResult)
-             -> (forall rightScope. Plan rightScope rightParam rightResult)
+  PlanEither :: Plan scope leftParam leftResult
+             -> Plan scope rightParam rightResult
              -> Plan scope (Either leftParam rightParam) (Either leftResult rightResult)
 
   Bind :: Plan scope param a
-       -> (Planned scope a -> Plan scope param result)
+       -> (Planned scope param a -> Plan scope param result)
        -> Plan scope param result
 
-  Use :: Planned scope a -> Plan scope param a
+  Use :: Planned scope param a -> Plan scope param a
 
   Pure :: a -> Plan scope param a
 
@@ -100,7 +102,7 @@ data Plan scope param result where
         -> Plan scope param b
 
   Chain :: Plan scope a b
-        -> (forall chainedScope. Plan chainedScope b c)
+        -> Plan scope b c
         -> Plan scope a c
 
 instance Functor (Plan scope param) where
@@ -111,16 +113,17 @@ instance Applicative (Plan scope param) where
   (<*>) = Apply
 
 {-|
-  'OneScope' is an internal tag type used by as the 'scope' variable for
-  'Plan' values when executing them against a single input.
+  'Execute' is a tag type used by as the 'scope' variable for
+  'Plan' values when executing them via the 'execute' function.
 -}
-data OneScope
+data Execute
 
 {-|
-  'ManyScope is an internal tag type used by as the 'scope' variable for
-  'Plan' values when executing them against multiple inputs.
+  'ExecuteMany' is an internal tag type used by as the 'scope' variable for
+  'Plan' values when executing them against multiple inputs via the
+  'executeMany' internal function.
 -}
-data ManyScope k
+data ExecuteMany
 
 {-|
   A 'Planned' value is a wrapper around the results of previous run queries
@@ -138,12 +141,12 @@ data ManyScope k
   'Applicative', you should call 'use' on each of the values and use the
   'Applicative' instance for 'Plan'.
 -}
-data Planned scope a where
-  PlannedOne      :: a -> Planned OneScope a
-  PlannedMany     :: Many k a -> Planned (ManyScope k) a
-  PlannedExplain  :: Planned Explain a
+data Planned scope param a where
+  PlannedOne      :: a -> Planned Execute param a
+  PlannedMany     :: Many k a -> Planned ExecuteMany k a
+  PlannedExplain  :: Planned Explain param a
 
-instance Functor (Planned scope) where
+instance Functor (Planned scope param) where
   fmap = mapPlanned
 
 {-|
@@ -151,7 +154,7 @@ instance Functor (Planned scope) where
   the plan. This function can also be called as 'fmap' or '<$>' thorugh the
   'Functor' instance for 'Planned'.
 -}
-mapPlanned :: (a -> b) -> Planned scope a -> Planned scope b
+mapPlanned :: (a -> b) -> Planned scope param a -> Planned scope param b
 mapPlanned f planned =
   case planned of
     PlannedOne a ->
@@ -167,14 +170,14 @@ mapPlanned f planned =
   'resolveOne' resolves a 'Planned' value that is known to be in the 'One'
   scope to its single wrapped value.
 -}
-resolveOne :: Planned OneScope a -> a
+resolveOne :: Planned Execute param a -> a
 resolveOne (PlannedOne a) = a
 
 {-|
   'resolveMany resolves a 'Planned' value that is known to be in the 'Many'
   scope to the 'Many' value wrapped inside it.
 -}
-resolveMany :: Planned (ManyScope k) a -> Many k a
+resolveMany :: Planned ExecuteMany k a -> Many k a
 resolveMany (PlannedMany as) = as
 
 {-|
@@ -340,7 +343,7 @@ planList plan =
   so the final returned plan can take the entire structure as input.
 -}
 focusParam :: (a -> b)
-           -> (forall focusedScope. Plan focusedScope b result)
+           -> Plan scope b result
            -> Plan scope a result
 focusParam focuser plan =
   chain (focuser <$> askParam) plan
@@ -354,8 +357,8 @@ focusParam focuser plan =
   plans will be executed only once with all the 'Left' and 'Right' values
   provided as input parameters respectively.
 -}
-planEither :: (forall leftScope. Plan leftScope leftParam leftResult)
-           -> (forall rightScope. Plan rightScope rightParam rightResult)
+planEither :: Plan scope leftParam leftResult
+           -> Plan scope rightParam rightResult
            -> Plan scope (Either leftParam rightParam) (Either leftResult rightResult)
 planEither =
   PlanEither
@@ -365,7 +368,7 @@ planEither =
   useful when modifying an existing plan to deal with optionality. Writing just
   one plan can then easily produce both the required and optional versions.
 -}
-planMaybe :: (forall s. Plan s a b) -> Plan scope (Maybe a) (Maybe b)
+planMaybe :: Plan scope a b -> Plan scope (Maybe a) (Maybe b)
 planMaybe plan =
   focusParam (maybe (Left ()) Right) $
     either id id <$> planEither (pure Nothing) (Just <$> plan)
@@ -389,7 +392,7 @@ planMaybe plan =
   Also see 'use' for how to lift a 'Planned' value back into a 'Plan'.
 -}
 bind :: Plan scope param a
-     -> (Planned scope a -> Plan scope param result)
+     -> (Planned scope param a -> Plan scope param result)
      -> Plan scope param result
 bind =
   Bind
@@ -398,7 +401,7 @@ bind =
   'use' constructs a 'Plan' that always produces the 'Planned' value
   as its result, regardless of the parameter given as input to the plan.
 -}
-use :: Planned scope a -> Plan scope param a
+use :: Planned scope param a -> Plan scope param a
 use =
   Use
 
@@ -407,8 +410,8 @@ use =
   resulting plan will ignore its input and use the 'Planned' value as
   the input to produce its result instead.
 -}
-using :: Planned scope a
-      -> (forall usingScope. Plan usingScope a b)
+using :: Planned scope param a
+      -> Plan scope a b
       -> Plan scope param b
 using planned plan =
   chain (use planned) plan
@@ -429,7 +432,7 @@ apply =
   larger plan that will execute the first followed by the second.
 -}
 chain :: Plan scope a b
-      -> (forall chainedScope. Plan chainedScope b c)
+      -> Plan scope b c
       -> Plan scope a c
 chain =
   Chain
@@ -463,7 +466,7 @@ assert assertion aPlan =
   'execute'.
 -}
 execute :: Core.MonadOrville conn m
-        => (forall scope. Plan scope param result)
+        => Plan Execute param result
         -> param
         -> m result
 execute plan param =
@@ -474,7 +477,7 @@ execute plan param =
   'scope' type to ensure all 'Planned' values are built with 'PlannedOne'.
 -}
 executeOne :: Core.MonadOrville conn m
-           => Plan OneScope param result
+           => Plan Execute param result
            -> param
            -> m result
 executeOne plan param =
@@ -524,7 +527,7 @@ executeOne plan param =
   @scope@ type to ensure all 'Planned' values are built with 'PlannedMany'.
 -}
 executeMany :: Core.MonadOrville conn m
-            => Plan (ManyScope param) param result
+            => Plan ExecuteMany param result
             -> [param]
             -> m (Many.Many param result)
 executeMany plan params =
@@ -593,8 +596,8 @@ executeMany plan params =
       pure $ Many.compose cs bs
 
 {-|
-  'Explain' is an internal type used to track whether an explanation is
-  being generated for a single input or multiple inputs.
+  'Explain' is an tag type used as the 'scope' variable when explaining a
+  'Plan' via the 'explain' function.
 -}
 data Explain
   = ExplainOne
@@ -606,7 +609,7 @@ data Explain
   the explanation of how the plan will run with multiple input parameters,
   you can use 'planMany' to adapt it before calling 'explain'.
 -}
-explain :: (forall scope. Plan scope param result) -> [String]
+explain :: Plan Explain param result -> [String]
 explain plan =
   Exp.explanationSteps $
     explainPlan ExplainOne plan
