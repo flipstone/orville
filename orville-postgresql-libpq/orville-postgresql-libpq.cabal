@@ -31,6 +31,7 @@ library
   exposed-modules:
       Orville.PostgreSQL
       Orville.PostgreSQL.Connection
+      Orville.PostgreSQL.InformationSchema
       Orville.PostgreSQL.Internal.ExecutionResult
       Orville.PostgreSQL.Internal.Expr
       Orville.PostgreSQL.Internal.FieldDefinition
@@ -43,6 +44,7 @@ library
       Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Internal.TableDefinition
   other-modules:
+      Orville.PostgreSQL.InformationSchema.InformationSchemaTable
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
       Orville.PostgreSQL.Internal.Expr.Delete
@@ -53,6 +55,8 @@ library
       Orville.PostgreSQL.Internal.Expr.LimitExpr
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
+      Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName
+      Orville.PostgreSQL.Internal.Expr.Name.SchemaName
       Orville.PostgreSQL.Internal.Expr.Name.TableName
       Orville.PostgreSQL.Internal.Expr.OffsetExpr
       Orville.PostgreSQL.Internal.Expr.OrderBy
@@ -110,6 +114,7 @@ test-suite spec
       Test.Expr.TestSchema
       Test.Expr.Where
       Test.FieldDefinition
+      Test.InformationSchema
       Test.PGGen
       Test.Property
       Test.RawSql

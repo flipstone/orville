@@ -14,6 +14,7 @@ import qualified Test.Expr.InsertUpdate as ExprInsertUpdate
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
+import qualified Test.InformationSchema as InformationSchema
 import qualified Test.RawSql as RawSql
 import qualified Test.SelectOptions as SelectOptions
 import qualified Test.SqlMarshaller as SqlMarshaller
@@ -38,5 +39,6 @@ main = do
       , ExprOrderBy.orderByTests pool
       , SqlType.sqlTypeTests pool
       , SelectOptions.selectOptionsTests
+      , InformationSchema.informationSchemaTests pool
       ]
   Monad.unless (and results) SE.exitFailure

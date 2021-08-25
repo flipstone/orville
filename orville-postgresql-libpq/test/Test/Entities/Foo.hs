@@ -32,7 +32,7 @@ data Foo = Foo
   }
   deriving (Eq, Show)
 
-table :: Orville.TableDefinition FooId Foo Foo
+table :: Orville.TableDefinition (Orville.HasKey FooId) Foo Foo
 table =
   Orville.mkTableDefinition "foo" (Orville.primaryKey fooIdField) fooMarshaller
 

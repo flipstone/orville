@@ -85,10 +85,8 @@ runGroupByTest pool test = Property.singletonProperty $
   Pool.withResource pool $ \connection -> do
     MIO.liftIO $ dropAndRecreateTestTable connection
 
-    let exprTestTable = Expr.rawTableName "expr_test"
-
     MIO.liftIO . RawSql.executeVoid connection $
-      Expr.insertExpr exprTestTable Nothing (mkGroupByTestInsertSource test)
+      Expr.insertExpr testTable Nothing (mkGroupByTestInsertSource test)
 
     result <-
       MIO.liftIO $
@@ -96,14 +94,14 @@ runGroupByTest pool test = Property.singletonProperty $
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [fooColumn, barColumn])
-            (Expr.tableExpr exprTestTable Nothing Nothing (groupByClause test) Nothing Nothing)
+            (Expr.tableExpr testTable Nothing Nothing (groupByClause test) Nothing Nothing)
 
     rows <- MIO.liftIO $ ExecResult.readRows result
     rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
 
-testTable :: Expr.TableName
+testTable :: Expr.QualifiedTableName
 testTable =
-  Expr.rawTableName "expr_test"
+  Expr.qualifiedTableName Nothing (Expr.tableName "expr_test")
 
 fooColumn :: Expr.ColumnName
 fooColumn =

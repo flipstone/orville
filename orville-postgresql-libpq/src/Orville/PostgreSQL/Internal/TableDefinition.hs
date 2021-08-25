@@ -1,9 +1,16 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Internal.TableDefinition
   ( TableDefinition,
+    HasKey,
+    NoKey,
     mkTableDefinition,
+    mkTableDefinitionWithoutKey,
     tableName,
+    unqualifiedTableName,
+    tableSchemaName,
+    setTableSchema,
     tablePrimaryKey,
     tableMarshaller,
     mkInsertExpr,
@@ -39,13 +46,23 @@ import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 -}
 data TableDefinition key writeEntity readEntity = TableDefinition
   { _tableName :: Expr.TableName
-  , _tablePrimaryKey :: PrimaryKey key
+  , _tableSchemaName :: Maybe Expr.SchemaName
+  , _tablePrimaryKey :: TablePrimaryKey key
   , _tableMarshaller :: SqlMarshaller writeEntity readEntity
   }
 
+data HasKey key
+data NoKey
+
+data TablePrimaryKey tag where
+  TableHasKey :: PrimaryKey key -> TablePrimaryKey (HasKey key)
+  TableHasNoKey :: TablePrimaryKey NoKey
+
 {- |
-  Constructs a new 'TableDefinition' with the minimal fields required for
-  operation.
+  Constructs a new 'TableDefinition' with the basic fields required for
+  operation. For convenience, this function accepts a 'PrimaryKey' even though
+  this is not required for all Orville operations to work. If you need to
+  create a table without any primary key, see 'mkTableDefinitionWithoutKey'.
 -}
 mkTableDefinition ::
   -- | The name of the table
@@ -54,26 +71,83 @@ mkTableDefinition ::
   PrimaryKey key ->
   -- | A 'SqlMarshaller' to marshall table entities to and from the database
   SqlMarshaller writeEntity readEntity ->
-  TableDefinition key writeEntity readEntity
+  TableDefinition (HasKey key) writeEntity readEntity
 mkTableDefinition name primaryKey marshaller =
+  (mkTableDefinitionWithoutKey name marshaller)
+    { _tablePrimaryKey = TableHasKey primaryKey
+    }
+
+{- |
+  Constructs a new 'TableDefinition' with the minimal fields required for
+  operation. Note: tables created via this function will not have a primary
+  key. Certain Orville functions required a primary key. Attempting to call
+  functions requiring a primary key will fail to compile when using a table
+  that has no key.
+-}
+mkTableDefinitionWithoutKey ::
+  -- | The name of the table
+  String ->
+  -- | A 'SqlMarshaller' to marshall table entities to and from the database
+  SqlMarshaller writeEntity readEntity ->
+  TableDefinition NoKey writeEntity readEntity
+mkTableDefinitionWithoutKey name marshaller =
   TableDefinition
-    { _tableName = Expr.rawTableName name
-    , _tablePrimaryKey = primaryKey
+    { _tableName = Expr.tableName name
+    , _tableSchemaName = Nothing
+    , _tablePrimaryKey = TableHasNoKey
     , _tableMarshaller = marshaller
     }
 
 {- |
-  Returns the tables name in as an expression that can be used to build SQL
+  Returns the table's name as an expression that can be used to build SQL
+  statements. If the table has a schema name set, the name will be qualified
+  with it.
+-}
+tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedTableName
+tableName tableDef =
+  Expr.qualifiedTableName (_tableSchemaName tableDef) (_tableName tableDef)
+
+{- |
+  Returns the _qualified_ tables name as an expression tat can be used to build
+  SQL. You probably want to use 'tableName' instead to avoid having the qualify
+  the table name yourself.
+-}
+unqualifiedTableName :: TableDefinition key writeEntity readEntity -> Expr.TableName
+unqualifiedTableName =
+  _tableName
+
+{- |
+  Returns the name of the schema associated with the table as an expression to
+  be used for building SQL. If no schema name is associated with the table,
+  no schema qualifier will be included with the table name when executing sql
   statements.
 -}
-tableName :: TableDefinition key writeEntity readEntity -> Expr.TableName
-tableName = _tableName
+tableSchemaName :: TableDefinition key writeEntity readEntity -> Maybe Expr.SchemaName
+tableSchemaName =
+  _tableSchemaName
+
+{- |
+  Set's the table's schema to the name in the given string, which will be
+  treated as a SQL identifier. If a table has a schema name set, it will be
+  included as a qualified on the table name for all queries involving the
+  table.
+-}
+setTableSchema ::
+  String ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+setTableSchema schemaName tableDef =
+  tableDef
+    { _tableSchemaName = Just (Expr.schemaName schemaName)
+    }
 
 {- |
   Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
 -}
-tablePrimaryKey :: TableDefinition key writeEntity readEntity -> PrimaryKey key
-tablePrimaryKey = _tablePrimaryKey
+tablePrimaryKey :: TableDefinition (HasKey key) writeEntity readEntity -> PrimaryKey key
+tablePrimaryKey def =
+  case _tablePrimaryKey def of
+    TableHasKey primaryKey -> primaryKey
 
 {- |
   Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
@@ -94,10 +168,17 @@ mkCreateTableExpr tableDef =
           (tableMarshaller tableDef)
           []
           (collectFromField fieldColumnDefinition)
+
+      maybePrimaryKeyExpr =
+        case _tablePrimaryKey tableDef of
+          TableHasKey primaryKey ->
+            Just $mkPrimaryKeyExpr primaryKey
+          TableHasNoKey ->
+            Nothing
    in Expr.createTableExpr
         (tableName tableDef)
         columnDefinitions
-        (Just . mkPrimaryKeyExpr . tablePrimaryKey $ tableDef)
+        maybePrimaryKeyExpr
 
 {- |
   Builds an 'Expr.InsertExpr' that will insert the given entities into the
@@ -163,7 +244,7 @@ collectSqlValue fieldDef accessor encodeRest entity =
   SQL table when it is executed.
 -}
 mkUpdateExpr ::
-  TableDefinition key writeEntity readEntity ->
+  TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
   Expr.UpdateExpr
@@ -187,7 +268,7 @@ mkUpdateExpr tableDef key writeEntity =
   Builds an 'Expr.DeleteExpr' that will delete the entity with the given 'key'.
 -}
 mkDeleteExpr ::
-  TableDefinition key writeEntity readEntity ->
+  TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   Expr.DeleteExpr
 mkDeleteExpr tableDef key =

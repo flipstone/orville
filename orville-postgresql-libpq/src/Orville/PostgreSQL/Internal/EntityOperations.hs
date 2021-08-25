@@ -55,7 +55,7 @@ insertEntities entityTable entities =
 -}
 updateEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
   m ()
@@ -71,7 +71,7 @@ updateEntity tableDef key writeEntity =
 -}
 deleteEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
   m ()
 deleteEntity tableDef key =
@@ -139,7 +139,7 @@ findFirstEntityBy entityTable selectOptions =
 -}
 findEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
   m (Maybe readEntity)
 findEntity entityTable key =

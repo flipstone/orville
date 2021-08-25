@@ -22,6 +22,7 @@ module Orville.PostgreSQL.Internal.RawSql
     commaSpace,
     leftParen,
     rightParen,
+    dot,
 
     -- * Generic interface for generating sql
     SqlExpression (toRawSql, unsafeFromRawSql),
@@ -233,3 +234,7 @@ leftParen = fromString "("
 -- | Just a plain old right paren, provided for convenience
 rightParen :: RawSql
 rightParen = fromString ")"
+
+-- | Just a plain period, provided for convenience
+dot :: RawSql
+dot = fromString "."

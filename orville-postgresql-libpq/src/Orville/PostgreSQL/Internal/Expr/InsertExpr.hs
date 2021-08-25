@@ -15,7 +15,7 @@ module Orville.PostgreSQL.Internal.Expr.InsertExpr
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, QualifiedTableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -23,7 +23,7 @@ newtype InsertExpr
   = InsertExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-insertExpr :: TableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
+insertExpr :: QualifiedTableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
 insertExpr target _ source =
   InsertExpr $
     mconcat

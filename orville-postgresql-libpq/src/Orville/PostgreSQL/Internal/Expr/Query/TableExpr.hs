@@ -15,7 +15,7 @@ import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Internal.Expr.LimitExpr (LimitExpr)
-import Orville.PostgreSQL.Internal.Expr.Name (TableName)
+import Orville.PostgreSQL.Internal.Expr.Name (QualifiedTableName)
 import Orville.PostgreSQL.Internal.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Internal.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Internal.Expr.Where.WhereClause (WhereClause)
@@ -26,7 +26,7 @@ newtype TableExpr
   deriving (RawSql.SqlExpression)
 
 tableExpr ::
-  TableName ->
+  QualifiedTableName ->
   Maybe WhereClause ->
   Maybe OrderByClause ->
   Maybe GroupByClause ->

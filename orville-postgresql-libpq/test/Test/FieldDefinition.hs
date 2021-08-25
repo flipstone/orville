@@ -272,9 +272,9 @@ runNullCounterExampleTest pool testCase =
         HH.footnote "Expected insert query to fail, but it did not"
         HH.failure
 
-testTable :: Expr.TableName
+testTable :: Expr.QualifiedTableName
 testTable =
-  Expr.rawTableName "field_definition_test"
+  Expr.qualifiedTableName Nothing (Expr.tableName "field_definition_test")
 
 dropAndRecreateTestTable :: FieldDef.FieldDefinition nullability a -> Connection.Connection -> IO ()
 dropAndRecreateTestTable fieldDef connection = do

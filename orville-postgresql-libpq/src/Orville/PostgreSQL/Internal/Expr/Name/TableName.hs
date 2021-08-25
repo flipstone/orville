@@ -7,7 +7,7 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Internal.Expr.Name.TableName
   ( TableName,
-    rawTableName,
+    tableName,
   )
 where
 
@@ -17,6 +17,6 @@ newtype TableName
   = TableName RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-rawTableName :: String -> TableName
-rawTableName =
+tableName :: String -> TableName
+tableName =
   TableName . RawSql.fromString

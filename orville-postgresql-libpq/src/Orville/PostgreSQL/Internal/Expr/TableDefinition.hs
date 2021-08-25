@@ -11,7 +11,7 @@ where
 import Data.List.NonEmpty (NonEmpty, toList)
 
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition)
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, TableName)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, QualifiedTableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype CreateTableExpr
@@ -19,7 +19,7 @@ newtype CreateTableExpr
   deriving (RawSql.SqlExpression)
 
 createTableExpr ::
-  TableName ->
+  QualifiedTableName ->
   [ColumnDefinition] ->
   Maybe PrimaryKeyExpr ->
   CreateTableExpr

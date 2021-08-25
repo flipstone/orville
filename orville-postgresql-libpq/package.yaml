@@ -23,6 +23,7 @@ library:
   exposed-modules:
     - Orville.PostgreSQL
     - Orville.PostgreSQL.Connection
+    - Orville.PostgreSQL.InformationSchema
     - Orville.PostgreSQL.Internal.ExecutionResult
     - Orville.PostgreSQL.Internal.Expr
     - Orville.PostgreSQL.Internal.FieldDefinition

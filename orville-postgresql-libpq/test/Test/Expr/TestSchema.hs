@@ -27,9 +27,9 @@ data FooBar = FooBar
   , bar :: String
   }
 
-fooBarTable :: Expr.TableName
+fooBarTable :: Expr.QualifiedTableName
 fooBarTable =
-  Expr.rawTableName "foobar"
+  Expr.qualifiedTableName Nothing (Expr.tableName "foobar")
 
 fooColumn :: Expr.ColumnName
 fooColumn =
