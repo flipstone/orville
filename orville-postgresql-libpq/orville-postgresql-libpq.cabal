@@ -122,6 +122,7 @@ test-suite spec
   other-modules:
       Test.AutoMigration
       Test.Connection
+      Test.Entities.Bar
       Test.Entities.Foo
       Test.Entities.User
       Test.EntityOperations
@@ -146,7 +147,7 @@ test-suite spec
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       test
-  ghc-options: -j -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wno-implicit-prelude -Wno-safe -Wno-unsafe -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations
+  ghc-options: -j -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wno-implicit-prelude -Wno-safe -Wno-unsafe -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations -Woverflowed-literals
   build-depends:
       base
     , bytestring

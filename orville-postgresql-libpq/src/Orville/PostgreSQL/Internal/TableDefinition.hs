@@ -186,7 +186,7 @@ mkCreateTableExpr tableDef =
         foldMarshallerFields
           (tableMarshaller tableDef)
           []
-          (collectFromField fieldColumnDefinition)
+          (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
 
       maybePrimaryKeyExpr =
         case _tablePrimaryKey tableDef of
@@ -219,7 +219,7 @@ mkReturningClause returningOption tableDef =
     WithReturning ->
       Just
         . Expr.returningExpr
-        . marshallerColumnNames
+        . marshallerColumnNames IncludeReadOnlyColumns
         . tableMarshaller
         $ tableDef
 
@@ -257,7 +257,7 @@ mkInsertColumnList ::
   SqlMarshaller writeEntity readEntity ->
   Expr.InsertColumnList
 mkInsertColumnList =
-  Expr.insertColumnList . marshallerColumnNames
+  Expr.insertColumnList . marshallerColumnNames ExcludeReadOnlyColumns
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their
@@ -284,8 +284,10 @@ mkInsertSource marshaller entities =
   built.
 -}
 collectSqlValue :: FieldFold entity (entity -> [SqlValue])
-collectSqlValue fieldDef accessor encodeRest entity =
-  fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
+collectSqlValue fieldDef maybeAccessor encodeRest entity =
+  case maybeAccessor of
+    Just accessor -> fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
+    Nothing -> (encodeRest entity)
 
 {- |
   Builds an 'Expr.UpdateExpr' that will update the entity at the given 'key'
@@ -338,12 +340,16 @@ mkDeleteExpr returningOption tableDef key =
   update all the fields contained in a 'SqlMarshaller'
 -}
 collectSetClauses :: entity -> FieldFold entity [Expr.SetClause]
-collectSetClauses entity fieldDef accessor clauses =
-  let newClause =
-        Expr.setColumn
-          (fieldColumnName fieldDef)
-          (fieldValueToSqlValue fieldDef (accessor entity))
-   in newClause : clauses
+collectSetClauses entity fieldDef maybeAccessor clauses =
+  case maybeAccessor of
+    Nothing ->
+      clauses
+    Just accessor ->
+      let newClause =
+            Expr.setColumn
+              (fieldColumnName fieldDef)
+              (fieldValueToSqlValue fieldDef (accessor entity))
+       in newClause : clauses
 
 {- |
   Builds a 'Expr.QueryExpr' that will do a select from the SQL table described
@@ -361,7 +367,7 @@ mkQueryExpr ::
   Expr.QueryExpr
 mkQueryExpr tableDef selectClause whereClause orderByClause groupByClause limitExpr offsetExpr =
   let columns =
-        marshallerColumnNames . tableMarshaller $ tableDef
+        marshallerColumnNames IncludeReadOnlyColumns . tableMarshaller $ tableDef
    in Expr.queryExpr
         selectClause
         (Expr.selectColumns columns)
@@ -371,9 +377,9 @@ mkQueryExpr tableDef selectClause whereClause orderByClause groupByClause limitE
   An internal helper function that collects the column names for all the
   'FieldDefinition's that are referenced by the given 'SqlMarshaller'.
 -}
-marshallerColumnNames :: SqlMarshaller writeEntity readEntity -> [Expr.ColumnName]
-marshallerColumnNames marshaller =
-  foldMarshallerFields marshaller [] (collectFromField fieldColumnName)
+marshallerColumnNames :: ReadOnlyColumnOption -> SqlMarshaller writeEntity readEntity -> [Expr.ColumnName]
+marshallerColumnNames includeReadOnlyColumns marshaller =
+  foldMarshallerFields marshaller [] (collectFromField includeReadOnlyColumns fieldColumnName)
 
 {- |
   An internal helper function that collects a value derived from a
@@ -381,7 +387,18 @@ marshallerColumnNames marshaller =
   list of values being built.
 -}
 collectFromField ::
+  ReadOnlyColumnOption ->
   (forall nullability a. FieldDefinition nullability a -> result) ->
   FieldFold entity [result]
-collectFromField fromField fieldDef _ results =
-  fromField fieldDef : results
+collectFromField readOnlyColumnOption fromField fieldDef maybeGetValue results =
+  case maybeGetValue of
+    Just _ ->
+      fromField fieldDef : results
+    Nothing ->
+      case readOnlyColumnOption of
+        IncludeReadOnlyColumns -> fromField fieldDef : results
+        ExcludeReadOnlyColumns -> results
+
+data ReadOnlyColumnOption
+  = IncludeReadOnlyColumns
+  | ExcludeReadOnlyColumns

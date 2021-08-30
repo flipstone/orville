@@ -22,6 +22,8 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     failRowSource,
     maybeMapper,
     partialMap,
+    marshallReadOnly,
+    marshallReadOnlyField,
   )
 where
 
@@ -64,6 +66,8 @@ data SqlMarshaller a b where
   MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)
   -- | Marshall a column with a possibility of error
   MarshallPartial :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
+  -- | Marshall a column that is read only, like auto-incrementing ids
+  MarshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
 
 instance Functor (SqlMarshaller a) where
   fmap f marsh = MarshallApply (MarshallPure f) marsh
@@ -86,7 +90,7 @@ instance Applicative (SqlMarshaller a) where
 type FieldFold writeEntity result =
   forall a nullability.
   FieldDefinition nullability a ->
-  (writeEntity -> a) ->
+  Maybe (writeEntity -> a) ->
   result ->
   result
 
@@ -102,7 +106,7 @@ foldMarshallerFields ::
   FieldFold writeEntity result ->
   result
 foldMarshallerFields marshaller =
-  foldMarshallerFieldsPart marshaller id
+  foldMarshallerFieldsPart marshaller (Just id)
 
 {- |
   The internal helper function that actually implements 'foldMarshallerFields'.
@@ -112,7 +116,7 @@ foldMarshallerFields marshaller =
 -}
 foldMarshallerFieldsPart ::
   SqlMarshaller entityPart readEntity ->
-  (writeEntity -> entityPart) ->
+  Maybe (writeEntity -> entityPart) ->
   result ->
   FieldFold writeEntity result ->
   result
@@ -125,13 +129,15 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
             foldMarshallerFieldsPart submarshallerB getPart currentResult addToResult
        in foldMarshallerFieldsPart submarshallerA getPart subresultB addToResult
     MarshallNest nestingFunction submarshaller ->
-      foldMarshallerFieldsPart submarshaller (nestingFunction . getPart) currentResult addToResult
+      foldMarshallerFieldsPart submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
     MarshallField fieldDefinition ->
       addToResult fieldDefinition getPart currentResult
     MarshallMaybeTag m ->
       foldMarshallerFieldsPart m getPart currentResult addToResult
     MarshallPartial m ->
       foldMarshallerFieldsPart m getPart currentResult addToResult
+    MarshallReadOnly m ->
+      foldMarshallerFieldsPart m Nothing currentResult addToResult
 
 {- |
   A 'MarshallError' may be returned from 'marshallFromSql' if the result set
@@ -311,7 +317,9 @@ mkRowSource marshaller result = do
           MarshallMaybeTag m ->
             mkSource m
           MarshallPartial m ->
-            (\(RowSource f) -> RowSource $ \row -> join <$> f row) $ mkSource m
+            (\(RowSource f) -> RowSource (fmap join . f)) $ mkSource m
+          MarshallReadOnly m ->
+            mkSource m
 
   pure . mkSource $ marshaller
 
@@ -431,12 +439,8 @@ maybeMapper =
       case fieldNullability field of
         NotNullField f -> MarshallField (nullableField f)
         NullableField f -> MarshallField (asymmetricNullableField f)
-    go (MarshallPartial m) = MarshallPartial (flipError <$> go m)
-      where
-        flipError :: Maybe (Either MarshallError a) -> Either MarshallError (Maybe a)
-        flipError (Just (Right a)) = Right (Just a)
-        flipError (Just (Left err)) = Left err
-        flipError Nothing = Right Nothing
+    go (MarshallPartial m) = MarshallPartial (fmap sequence $ go m)
+    go (MarshallReadOnly m) = MarshallReadOnly (go m)
 
 {- |
   Builds a 'SqlMarshaller' that will raise a decoding error when the value
@@ -444,3 +448,11 @@ maybeMapper =
 -}
 partialMap :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
 partialMap = MarshallPartial
+
+marshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
+marshallReadOnly = MarshallReadOnly
+
+marshallReadOnlyField ::
+  FieldDefinition nullability fieldValue ->
+  SqlMarshaller writeEntity fieldValue
+marshallReadOnlyField = MarshallReadOnly . MarshallField

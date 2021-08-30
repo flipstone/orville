@@ -175,7 +175,7 @@ underlyingExecute bs params (Connection handle') = do
           if isRowReadableStatus execStatus
             then pure result
             else do
-              throwLibPQResultError result execStatus
+              throwLibPQResultError result execStatus bs
 
 throwConnectionError :: String -> LibPQ.Connection -> IO a
 throwConnectionError message conn = do
@@ -190,8 +190,9 @@ throwConnectionError message conn = do
 throwLibPQResultError ::
   LibPQ.Result ->
   LibPQ.ExecStatus ->
+  BS.ByteString ->
   IO a
-throwLibPQResultError result execStatus = do
+throwLibPQResultError result execStatus queryBS = do
   mbLibPQError <- LibPQ.resultErrorMessage result
   mbSqlState <- LibPQ.resultErrorField result LibPQ.DiagSqlstate
 
@@ -200,6 +201,7 @@ throwLibPQResultError result execStatus = do
       { sqlExecutionErrorExecStatus = execStatus
       , sqlExecutionErrorMessage = fromMaybe (B8.pack "No error message available from LibPQ") mbLibPQError
       , sqlExecutionErrorSqlState = mbSqlState
+      , sqlExecutionErrorSqlQuery = queryBS
       }
 
 isRowReadableStatus :: LibPQ.ExecStatus -> Bool
@@ -255,6 +257,7 @@ data SqlExecutionError = SqlExecutionError
   { sqlExecutionErrorExecStatus :: LibPQ.ExecStatus
   , sqlExecutionErrorMessage :: BS.ByteString
   , sqlExecutionErrorSqlState :: Maybe BS.ByteString
+  , sqlExecutionErrorSqlQuery :: BS.ByteString
   }
   deriving (Show)
 

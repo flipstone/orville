@@ -139,8 +139,11 @@ sqlMarshallerTests =
           foo <- HH.forAll generateFoo
 
           let addField :: SqlMarshaller.FieldFold Foo [(FieldDefinition.FieldName, SqlValue.SqlValue)]
-              addField fieldDef getValue fields =
-                (FieldDefinition.fieldName fieldDef, FieldDefinition.fieldValueToSqlValue fieldDef (getValue foo)) : fields
+              addField fieldDef mbGetValue fields =
+                case mbGetValue of
+                  Just getValue ->
+                    (FieldDefinition.fieldName fieldDef, FieldDefinition.fieldValueToSqlValue fieldDef (getValue foo)) : fields
+                  Nothing -> fields
 
               actualFooRow =
                 SqlMarshaller.foldMarshallerFields

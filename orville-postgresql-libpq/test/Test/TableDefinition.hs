@@ -17,6 +17,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 
+import qualified Test.Entities.Bar as Bar
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
@@ -25,7 +26,7 @@ tableDefinitionTests :: Pool.Pool Conn.Connection -> Property.Group
 tableDefinitionTests pool =
   Property.group "TableDefinition" $
     [
-      ( String.fromString "Creates a table than can round trip an entity through it"
+      ( String.fromString "Creates a table that can round trip an entity through it"
       , HH.property $ do
           originalFoo <- HH.forAll Foo.generate
 
@@ -53,6 +54,33 @@ tableDefinitionTests pool =
               SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Foo.table) result
 
           foosFromDB HH.=== Right [originalFoo]
+      )
+    ,
+      ( String.fromString "Creates a table that can read from read only fields"
+      , HH.property $ do
+          originalBar <- HH.forAll Bar.generate
+
+          let insertBar =
+                TableDefinition.mkInsertExpr TableDefinition.WithoutReturning Bar.table (originalBar NEL.:| [])
+
+              selectBars =
+                TableDefinition.mkQueryExpr
+                  Bar.table
+                  (Expr.selectClause $ Expr.selectExpr Nothing)
+                  Nothing
+                  Nothing
+                  Nothing
+                  Nothing
+                  Nothing
+
+          barsFromDB <-
+            MIO.liftIO . Pool.withResource pool $ \connection -> do
+              TestTable.dropAndRecreateTableDef connection Bar.table
+              RawSql.executeVoid connection insertBar
+              result <- RawSql.execute connection selectBars
+              SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Bar.table) result
+
+          fmap (fmap Bar.barName) barsFromDB HH.=== Right [Bar.barName originalBar]
       )
     ,
       ( String.fromString "Creates a primary key that rejects duplicate records"

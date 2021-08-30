@@ -106,3 +106,4 @@ tests:
       - -Wredundant-constraints
       - -Wpartial-fields
       - -Wmissed-specialisations
+      - -Woverflowed-literals
