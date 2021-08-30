@@ -31,7 +31,6 @@ module Orville.PostgreSQL.Internal.SqlType
     timestamp,
     timestampWithoutZone,
     -- type conversions
-    nullableType,
     foreignRefType,
     convertSqlType,
     maybeConvertSqlType,
@@ -290,25 +289,6 @@ timestampWithoutZone =
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromUTCTime
     , sqlTypeFromSql = SqlValue.toUTCTimeWithoutZone
-    }
-
-{- |
-   'nullableType' creates a nullable version of an existing 'SqlType'. The underlying
-   sql type will be the same as the original, but column will be created with a 'NULL'
-   constraint instead a 'NOT NULL' constraint. The Haskell value 'Nothing' will be used
-   represent NULL values when converting to and from sql.
--}
-nullableType :: SqlType a -> SqlType (Maybe a)
-nullableType sqlType =
-  sqlType
-    { sqlTypeNullable = True
-    , sqlTypeToSql =
-        maybe SqlValue.sqlNull (sqlTypeToSql sqlType)
-    , sqlTypeFromSql =
-        \sql ->
-          if SqlValue.isSqlNull sql
-            then Just Nothing
-            else fmap Just (sqlTypeFromSql sqlType sql)
     }
 
 {- |

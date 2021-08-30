@@ -411,8 +411,9 @@ marshallField ::
 marshallField accessor fieldDef =
   MarshallNest accessor (MarshallField fieldDef)
 
-{- Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
-   and applies a tag to avoid double mapping.
+{- |
+  Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
+  and applies a tag to avoid double mapping.
 -}
 maybeMapper :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
 maybeMapper =
@@ -437,5 +438,9 @@ maybeMapper =
         flipError (Just (Left err)) = Left err
         flipError Nothing = Right Nothing
 
+{- |
+  Builds a 'SqlMarshaller' that will raise a decoding error when the value
+  produced is a 'MarshallError'.
+-}
 partialMap :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
 partialMap = MarshallPartial

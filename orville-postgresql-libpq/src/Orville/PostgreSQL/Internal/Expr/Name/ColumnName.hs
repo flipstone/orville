@@ -7,7 +7,7 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Internal.Expr.Name.ColumnName
   ( ColumnName,
-    rawColumnName,
+    columnName,
   )
 where
 
@@ -17,5 +17,5 @@ newtype ColumnName
   = ColumnName RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-rawColumnName :: String -> ColumnName
-rawColumnName = ColumnName . RawSql.fromString
+columnName :: String -> ColumnName
+columnName = ColumnName . RawSql.fromString

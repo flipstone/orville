@@ -8,6 +8,9 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Query.SelectList
   ( SelectList,
     selectColumns,
+    deriveColumn,
+    deriveColumnAs,
+    selectDerivedColumns,
     selectStar,
   )
 where
@@ -23,8 +26,27 @@ selectStar =
   SelectList (RawSql.fromString "*")
 
 selectColumns :: [ColumnName] -> SelectList
-selectColumns columnNames =
+selectColumns =
+  selectDerivedColumns . map deriveColumn
+
+newtype DerivedColumn = DerivedColumn RawSql.RawSql
+  deriving (RawSql.SqlExpression)
+
+selectDerivedColumns :: [DerivedColumn] -> SelectList
+selectDerivedColumns derivedColumns =
   SelectList $
     RawSql.intercalate
       RawSql.comma
-      (fmap RawSql.toRawSql columnNames)
+      (fmap RawSql.toRawSql derivedColumns)
+
+deriveColumn :: ColumnName -> DerivedColumn
+deriveColumn =
+  DerivedColumn . RawSql.toRawSql
+
+deriveColumnAs :: ColumnName -> ColumnName -> DerivedColumn
+deriveColumnAs sourceColumn asColumn =
+  DerivedColumn $
+    ( RawSql.toRawSql sourceColumn
+        <> RawSql.fromString " AS "
+        <> RawSql.toRawSql asColumn
+    )

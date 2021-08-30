@@ -5,7 +5,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import qualified Data.List.NonEmpty as NEL
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
@@ -13,7 +13,6 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SO
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Test.Property as Property
 
 selectOptionsTests :: IO Bool
@@ -75,14 +74,14 @@ selectOptionsTests =
         , Property.singletonProperty $
             assertWhereClauseEquals
               (Just "WHERE ((foo = $1) AND (bar = $2))")
-              (SO.where_ $ SO.whereAnd (SO.fieldEquals fooField 10 NEL.:| [SO.fieldEquals barField 20]))
+              (SO.where_ $ SO.whereAnd (SO.fieldEquals fooField 10 :| [SO.fieldEquals barField 20]))
         )
       ,
         ( String.fromString "whereOr generates expected sql"
         , Property.singletonProperty $
             assertWhereClauseEquals
               (Just "WHERE ((foo = $1) OR (bar = $2))")
-              (SO.where_ $ SO.whereOr (SO.fieldEquals fooField 10 NEL.:| [SO.fieldEquals barField 20]))
+              (SO.where_ $ SO.whereOr (SO.fieldEquals fooField 10 :| [SO.fieldEquals barField 20]))
         )
       ,
         ( String.fromString "combining SelectOptions ANDs the where clauses together"
@@ -98,14 +97,14 @@ selectOptionsTests =
         , Property.singletonProperty $
             assertWhereClauseEquals
               (Just "WHERE (foo IN ($1))")
-              (SO.where_ $ SO.whereIn fooField (SqlValue.fromInt32 10 NEL.:| []))
+              (SO.where_ $ SO.whereIn fooField (10 :| []))
         )
       ,
         ( String.fromString "whereNotIn generates expected sql"
         , Property.singletonProperty $
             assertWhereClauseEquals
               (Just "WHERE (foo NOT IN ($1, $2))")
-              (SO.where_ $ SO.whereNotIn fooField (SqlValue.fromInt32 10 NEL.:| [SqlValue.fromInt32 20]))
+              (SO.where_ $ SO.whereNotIn fooField (10 :| [20]))
         )
       ,
         ( String.fromString "distinct generates expected sql"
@@ -121,7 +120,7 @@ selectOptionsTests =
               (Just "ORDER BY foo ASC, bar DESC")
               ( SO.orderBy . Expr.orderByColumnsExpr $
                   (FieldDef.fieldColumnName fooField, Expr.ascendingOrder)
-                    NEL.:| [(FieldDef.fieldColumnName barField, Expr.descendingOrder)]
+                    :| [(FieldDef.fieldColumnName barField, Expr.descendingOrder)]
               )
         )
       ,
@@ -139,7 +138,7 @@ selectOptionsTests =
             assertGroupByClauseEquals
               (Just "GROUP BY foo, bar")
               ( SO.groupBy . Expr.groupByColumnsExpr $
-                  FieldDef.fieldColumnName fooField NEL.:| [FieldDef.fieldColumnName barField]
+                  FieldDef.fieldColumnName fooField :| [FieldDef.fieldColumnName barField]
               )
         )
       ,

@@ -30,6 +30,7 @@ flag ci
 library
   exposed-modules:
       Orville.PostgreSQL
+      Orville.PostgreSQL.AutoMigration
       Orville.PostgreSQL.Connection
       Orville.PostgreSQL.InformationSchema
       Orville.PostgreSQL.Internal.ExecutionResult
@@ -46,6 +47,7 @@ library
   other-modules:
       Orville.PostgreSQL.InformationSchema.InformationSchemaTable
       Orville.PostgreSQL.Internal.EntityOperations
+      Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
       Orville.PostgreSQL.Internal.Expr.Delete
       Orville.PostgreSQL.Internal.Expr.GroupBy
@@ -105,6 +107,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Test.AutoMigration
       Test.Connection
       Test.Entities.Foo
       Test.EntityOperations

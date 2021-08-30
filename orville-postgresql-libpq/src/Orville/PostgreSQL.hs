@@ -16,6 +16,12 @@ module Orville.PostgreSQL
     TableDefinition.mkTableDefinition,
     TableDefinition.mkTableDefinitionWithoutKey,
     TableDefinition.setTableSchema,
+    TableDefinition.tableName,
+    TableDefinition.unqualifiedTableName,
+    TableDefinition.unqualifiedTableNameString,
+    TableDefinition.tableSchemaName,
+    TableDefinition.tableSchemaNameString,
+    TableDefinition.mkCreateTableExpr,
     TableDefinition.HasKey,
     TableDefinition.NoKey,
     PrimaryKey.PrimaryKey,
@@ -28,6 +34,8 @@ module Orville.PostgreSQL
     FieldDefinition.Nullable,
     FieldDefinition.nullableField,
     FieldDefinition.asymmetricNullableField,
+    FieldDefinition.convertField,
+    FieldDefinition.coerceField,
     FieldDefinition.integerField,
     FieldDefinition.serialField,
     FieldDefinition.bigIntegerField,
@@ -42,6 +50,7 @@ module Orville.PostgreSQL
     FieldDefinition.timestampField,
     FieldDefinition.timestampWithoutZoneField,
     FieldDefinition.fieldOfType,
+    FieldDefinition.fieldColumnName,
     Orville.Orville,
     Orville.runOrville,
     MonadOrville.MonadOrville,
@@ -63,6 +72,8 @@ module Orville.PostgreSQL
     SelectOptions.whereBooleanExpr,
     SelectOptions.whereAnd,
     SelectOptions.whereOr,
+    SelectOptions.whereIn,
+    SelectOptions.whereNotIn,
     SqlType.SqlType
       ( SqlType.SqlType,
         SqlType.sqlTypeExpr,
@@ -92,16 +103,18 @@ module Orville.PostgreSQL
     SqlType.date,
     SqlType.timestamp,
     -- type conversions
-    SqlType.nullableType,
     SqlType.foreignRefType,
     SqlType.convertSqlType,
     SqlType.maybeConvertSqlType,
     Expr.QueryExpr,
+    Execute.executeAndDecode,
+    Execute.executeVoid,
   )
 where
 
 import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
+import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville

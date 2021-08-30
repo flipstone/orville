@@ -41,7 +41,7 @@ insertUpdateTests pool =
                       Expr.queryExpr
                         (Expr.selectClause $ Expr.selectExpr Nothing)
                         (Expr.selectColumns [fooColumn, barColumn])
-                        (Expr.tableExpr fooBarTable Nothing Nothing Nothing Nothing Nothing)
+                        (Just $ Expr.tableExpr fooBarTable Nothing Nothing Nothing Nothing Nothing)
 
                   ExecResult.readRows result
 
@@ -75,7 +75,7 @@ insertUpdateTests pool =
                       Expr.queryExpr
                         (Expr.selectClause $ Expr.selectExpr Nothing)
                         (Expr.selectColumns [fooColumn, barColumn])
-                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
+                        (Just $ Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 
                   ExecResult.readRows result
 
@@ -109,7 +109,7 @@ insertUpdateTests pool =
                       Expr.queryExpr
                         (Expr.selectClause $ Expr.selectExpr Nothing)
                         (Expr.selectColumns [fooColumn, barColumn])
-                        (Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
+                        (Just $ Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 
                   ExecResult.readRows result
 

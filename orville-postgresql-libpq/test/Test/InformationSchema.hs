@@ -7,7 +7,6 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Pool as Pool
 import qualified Data.String as String
-import qualified Data.Text as T
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
@@ -29,19 +28,31 @@ informationSchemaTests pool =
                 InformationSchema.informationSchemaTablesTable
                 ( Orville.where_ $
                     Orville.whereAnd
-                      ( Orville.fieldEquals InformationSchema.tableSchemaField (T.pack "information_schema")
-                          :| [ Orville.fieldEquals InformationSchema.tableNameField (T.pack "tables")
+                      ( Orville.fieldEquals InformationSchema.tableSchemaField informationSchemaSchemaName
+                          :| [ Orville.fieldEquals InformationSchema.tableNameField tablesTableName
                              ]
                       )
                 )
 
             let expected =
                   InformationSchema.InformationSchemaTable
-                    { InformationSchema.tableCatalog = T.pack "orville_test"
-                    , InformationSchema.tableSchema = T.pack "information_schema"
-                    , InformationSchema.tableName = T.pack "tables"
+                    { InformationSchema.tableCatalog = orvilleTestCatalogName
+                    , InformationSchema.tableSchema = informationSchemaSchemaName
+                    , InformationSchema.tableName = tablesTableName
                     }
 
             result HH.=== Just expected
         )
       ]
+
+orvilleTestCatalogName :: InformationSchema.CatalogName
+orvilleTestCatalogName =
+  String.fromString "orville_test"
+
+informationSchemaSchemaName :: InformationSchema.SchemaName
+informationSchemaSchemaName =
+  String.fromString "information_schema"
+
+tablesTableName :: InformationSchema.TableName
+tablesTableName =
+  String.fromString "tables"

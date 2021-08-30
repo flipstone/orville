@@ -9,16 +9,15 @@ module Orville.PostgreSQL.Internal.EntityOperations
   )
 where
 
-import Control.Exception (throwIO)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
 
+import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
 
 {- |
@@ -101,23 +100,9 @@ findEntitiesBy entityTable selectOptions =
           Nothing
           Nothing
           Nothing
-   in do
-        libPqResult <-
-          MonadOrville.withConnection $ \connection ->
-            liftIO $
-              RawSql.execute connection selectExpr
-
-        liftIO $ do
-          decodingResult <-
-            SqlMarshaller.marshallResultFromSql
-              (TableDef.tableMarshaller entityTable)
-              libPqResult
-
-          case decodingResult of
-            Left err ->
-              throwIO err
-            Right entities ->
-              pure entities
+   in Execute.executeAndDecode
+        selectExpr
+        (TableDef.tableMarshaller entityTable)
 
 {- |
   Like 'findEntitiesBy, but adds a 'LIMIT 1' to the query and then returns

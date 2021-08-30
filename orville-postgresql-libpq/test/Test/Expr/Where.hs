@@ -164,7 +164,7 @@ runWhereConditionTest pool test =
               Expr.queryExpr
                 (Expr.selectClause $ Expr.selectExpr Nothing)
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Expr.tableExpr fooBarTable (whereClause test) Nothing Nothing Nothing Nothing)
+                (Just $ Expr.tableExpr fooBarTable (whereClause test) Nothing Nothing Nothing Nothing)
 
           ExecResult.readRows result
 

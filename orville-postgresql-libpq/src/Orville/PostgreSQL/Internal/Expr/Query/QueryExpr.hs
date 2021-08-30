@@ -16,6 +16,8 @@ module Orville.PostgreSQL.Internal.Expr.Query.QueryExpr
   )
 where
 
+import qualified Data.Maybe as Maybe
+
 import Orville.PostgreSQL.Internal.Expr.Query.SelectList (SelectList)
 import Orville.PostgreSQL.Internal.Expr.Query.TableExpr (TableExpr)
 import Orville.PostgreSQL.Internal.Expr.Select (Distinct (Distinct), SelectClause, SelectExpr, selectClause, selectExpr)
@@ -26,12 +28,14 @@ newtype QueryExpr
   = QueryExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-queryExpr :: SelectClause -> SelectList -> TableExpr -> QueryExpr
-queryExpr querySelectClause selectList table =
-  QueryExpr $
-    mconcat
-      [ RawSql.toRawSql querySelectClause
-      , RawSql.toRawSql selectList
-      , RawSql.fromString " FROM "
-      , RawSql.toRawSql table
-      ]
+queryExpr :: SelectClause -> SelectList -> Maybe TableExpr -> QueryExpr
+queryExpr querySelectClause selectList maybeTableExpr =
+  let maybeFromClause = do
+        tableExpr <- maybeTableExpr
+        pure (RawSql.fromString " FROM " <> RawSql.toRawSql tableExpr)
+   in QueryExpr $
+        mconcat
+          [ RawSql.toRawSql querySelectClause
+          , RawSql.toRawSql selectList
+          , Maybe.fromMaybe (RawSql.fromString "") maybeFromClause
+          ]

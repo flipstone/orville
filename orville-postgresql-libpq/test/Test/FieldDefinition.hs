@@ -201,7 +201,7 @@ runRoundTripTest pool testCase =
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+            (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
       Result.readRows result
 
@@ -238,7 +238,7 @@ runNullableRoundTripTest pool testCase =
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+            (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
       Result.readRows result
 

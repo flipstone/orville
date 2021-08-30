@@ -22,6 +22,8 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldNameToByteString,
     NotNull,
     Nullable,
+    convertField,
+    coerceField,
     nullableField,
     asymmetricNullableField,
     integerField,
@@ -42,6 +44,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
 where
 
 import qualified Data.ByteString.Char8 as B8
+import qualified Data.Coerce as Coerce
 import Data.Int (Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
@@ -403,3 +406,33 @@ asymmetricNullableField field =
         (fieldName field)
         (nullableType $ fieldType field)
         NullableGADT
+
+{- |
+  Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can
+  use this function the create 'FieldDefinition's for based on the primitive
+  ones provided, but with more specific Haskell types.
+
+  See 'SqlType.convertSqlType' and 'SqlType.maybeConvertSqlType' for functions
+  to create the conversion needed as the firts argument to 'convertField'.
+-}
+convertField ::
+  (SqlType.SqlType a -> SqlType.SqlType b) ->
+  FieldDefinition nullability a ->
+  FieldDefinition nullability b
+convertField conversion fieldDef =
+  fieldDef
+    { _fieldType = conversion (_fieldType fieldDef)
+    }
+
+{- |
+  A specicialization of 'convertField' that can be used with types that
+  implement 'Coere.Coercible'. This is particularly useful for newtype wrappers
+  around primitive types.
+-}
+coerceField ::
+  (Coerce.Coercible a b, Coerce.Coercible b a) =>
+  FieldDefinition nullability a ->
+  FieldDefinition nullability b
+coerceField =
+  convertField
+    (SqlType.convertSqlType Coerce.coerce Coerce.coerce)

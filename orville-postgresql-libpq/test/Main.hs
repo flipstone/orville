@@ -8,7 +8,8 @@ import qualified Data.ByteString.Char8 as B8
 import qualified System.Exit as SE
 
 import qualified Orville.PostgreSQL.Connection as Connection
-import qualified Test.Connection as TestConnection
+import qualified Test.AutoMigration as AutoMigration
+import qualified Test.Connection as Connection
 import qualified Test.EntityOperations as EntityOperations
 import qualified Test.Expr.InsertUpdate as ExprInsertUpdate
 import qualified Test.Expr.OrderBy as ExprOrderBy
@@ -28,7 +29,7 @@ main = do
 
   results <-
     sequence
-      [ TestConnection.connectionTests pool
+      [ Connection.connectionTests pool
       , RawSql.rawSqlTests
       , TableDefinition.tableDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
@@ -40,5 +41,6 @@ main = do
       , SqlType.sqlTypeTests pool
       , SelectOptions.selectOptionsTests
       , InformationSchema.informationSchemaTests pool
+      , AutoMigration.autoMigrationTests pool
       ]
   Monad.unless (and results) SE.exitFailure

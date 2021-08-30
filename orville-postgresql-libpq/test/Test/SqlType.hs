@@ -38,7 +38,6 @@ sqlTypeTests pool =
         <> textSearchVectorTests pool
         <> dateTests pool
         <> timestampTests pool
-        <> nullableTests pool
 
 integerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
 integerTests pool =
@@ -358,40 +357,6 @@ timestampTests pool =
     )
   ]
 
-nullableTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-nullableTests pool =
-  [
-    ( String.fromString "Testing the decode of TEXT NULL with value 'abcde'"
-    , runDecodingTest pool $
-        DecodingTest
-          { sqlTypeDDL = "TEXT NULL"
-          , rawSqlValue = Just $ B8.pack "abcde"
-          , sqlType = SqlType.nullableType SqlType.unboundedText
-          , expectedValue = Just (T.pack "abcde")
-          }
-    )
-  ,
-    ( String.fromString "Testing the decode of TEXT NULL with text value 'null'"
-    , runDecodingTest pool $
-        DecodingTest
-          { sqlTypeDDL = "TEXT NULL"
-          , rawSqlValue = Just $ B8.pack "null"
-          , sqlType = SqlType.nullableType SqlType.unboundedText
-          , expectedValue = Just (T.pack "null")
-          }
-    )
-  ,
-    ( String.fromString "Testing the decode of TEXT NULL with value NULL"
-    , runDecodingTest pool $
-        DecodingTest
-          { sqlTypeDDL = "TEXT NULL"
-          , rawSqlValue = Nothing
-          , sqlType = SqlType.nullableType SqlType.unboundedText
-          , expectedValue = Nothing
-          }
-    )
-  ]
-
 data DecodingTest a = DecodingTest
   { sqlTypeDDL :: String
   , rawSqlValue :: Maybe B8.ByteString
@@ -415,7 +380,10 @@ runDecodingTest pool test =
 
       result <-
         MIO.liftIO . RawSql.execute connection $
-          Expr.queryExpr (Expr.selectClause $ Expr.selectExpr Nothing) Expr.selectStar (Expr.tableExpr tableName Nothing Nothing Nothing Nothing Nothing)
+          Expr.queryExpr
+            (Expr.selectClause $ Expr.selectExpr Nothing)
+            Expr.selectStar
+            (Just $ Expr.tableExpr tableName Nothing Nothing Nothing Nothing Nothing)
 
       (maybeA : _) <- MIO.liftIO $ ExecutionResult.decodeRows result (sqlType test)
       maybeA HH.=== Just (expectedValue test)

@@ -33,11 +33,11 @@ fooBarTable =
 
 fooColumn :: Expr.ColumnName
 fooColumn =
-  Expr.rawColumnName "foo"
+  Expr.columnName "foo"
 
 barColumn :: Expr.ColumnName
 barColumn =
-  Expr.rawColumnName "bar"
+  Expr.columnName "bar"
 
 orderByFoo :: Expr.OrderByClause
 orderByFoo =

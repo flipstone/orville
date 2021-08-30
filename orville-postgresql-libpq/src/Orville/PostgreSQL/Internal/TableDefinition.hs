@@ -9,7 +9,9 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkTableDefinitionWithoutKey,
     tableName,
     unqualifiedTableName,
+    unqualifiedTableNameString,
     tableSchemaName,
+    tableSchemaNameString,
     setTableSchema,
     tablePrimaryKey,
     tableMarshaller,
@@ -45,8 +47,8 @@ import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
     from the result set when entities are queried from this table.
 -}
 data TableDefinition key writeEntity readEntity = TableDefinition
-  { _tableName :: Expr.TableName
-  , _tableSchemaName :: Maybe Expr.SchemaName
+  { _tableNameString :: String
+  , _tableSchemaNameString :: Maybe String
   , _tablePrimaryKey :: TablePrimaryKey key
   , _tableMarshaller :: SqlMarshaller writeEntity readEntity
   }
@@ -92,8 +94,8 @@ mkTableDefinitionWithoutKey ::
   TableDefinition NoKey writeEntity readEntity
 mkTableDefinitionWithoutKey name marshaller =
   TableDefinition
-    { _tableName = Expr.tableName name
-    , _tableSchemaName = Nothing
+    { _tableNameString = name
+    , _tableSchemaNameString = Nothing
     , _tablePrimaryKey = TableHasNoKey
     , _tableMarshaller = marshaller
     }
@@ -105,16 +107,25 @@ mkTableDefinitionWithoutKey name marshaller =
 -}
 tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedTableName
 tableName tableDef =
-  Expr.qualifiedTableName (_tableSchemaName tableDef) (_tableName tableDef)
+  Expr.qualifiedTableName
+    (tableSchemaName tableDef)
+    (unqualifiedTableName tableDef)
 
 {- |
-  Returns the _qualified_ tables name as an expression tat can be used to build
-  SQL. You probably want to use 'tableName' instead to avoid having the qualify
-  the table name yourself.
+  Returns the table's _unqualified_ name as an expression tat can be used to
+  build SQL. You probably want to use 'tableName' instead to avoid having the
+  qualify the table name yourself.
 -}
 unqualifiedTableName :: TableDefinition key writeEntity readEntity -> Expr.TableName
 unqualifiedTableName =
-  _tableName
+  Expr.tableName . _tableNameString
+
+{- |
+  Returns the table's _unqualified_ name as a 'String'
+-}
+unqualifiedTableNameString :: TableDefinition key writeEntity readEntity -> String
+unqualifiedTableNameString =
+  _tableNameString
 
 {- |
   Returns the name of the schema associated with the table as an expression to
@@ -124,7 +135,14 @@ unqualifiedTableName =
 -}
 tableSchemaName :: TableDefinition key writeEntity readEntity -> Maybe Expr.SchemaName
 tableSchemaName =
-  _tableSchemaName
+  fmap Expr.schemaName . _tableSchemaNameString
+
+{- |
+  Returns the name of the schema associated with the table as a 'String', if any.
+-}
+tableSchemaNameString :: TableDefinition key writeEntity readEntity -> Maybe String
+tableSchemaNameString =
+  _tableSchemaNameString
 
 {- |
   Set's the table's schema to the name in the given string, which will be
@@ -138,7 +156,7 @@ setTableSchema ::
   TableDefinition key writeEntity readEntity
 setTableSchema schemaName tableDef =
   tableDef
-    { _tableSchemaName = Just (Expr.schemaName schemaName)
+    { _tableSchemaNameString = Just schemaName
     }
 
 {- |
@@ -312,7 +330,7 @@ mkQueryExpr tableDef selectClause whereClause orderByClause groupByClause limitE
    in Expr.queryExpr
         selectClause
         (Expr.selectColumns columns)
-        (Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause limitExpr offsetExpr)
+        (Just $ Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause limitExpr offsetExpr)
 
 {- |
   An internal helper function that collects the column names for all the
