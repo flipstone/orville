@@ -179,6 +179,7 @@ module Database.Orville.PostgreSQL.Core
   , sequenceSetVal
   , sequenceCurrVal
   , createIndexesConcurrently
+  , dropIndexesConcurrently
   ) where
 
 import Control.Monad.Except

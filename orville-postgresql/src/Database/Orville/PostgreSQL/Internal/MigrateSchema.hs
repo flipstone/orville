@@ -9,6 +9,7 @@ module Database.Orville.PostgreSQL.Internal.MigrateSchema
   ( migrateSchema
   , generateMigrationPlan
   , createIndexesConcurrently
+  , dropIndexesConcurrently
   ) where
 
 import Control.Concurrent (threadDelay)
@@ -194,6 +195,43 @@ createIndexConcurrently conn indexDef =
           , "ON"
           , "\"" ++ indexTable indexDef ++ "\""
           , indexBody indexDef
+          ])
+  in
+    executingSql DDLQuery ddl $ do
+      stmt <- prepare conn ddl
+      executeRaw stmt
+
+
+{-|
+   dropIndexesConcurrently will drop each of the given indexes with the CONCURRENTLY keyword,
+   allowing for other table operations to continue while the index is dropped. However there are
+   several caveats that come with this as noted at
+   https://www.postgresql.org/docs/9.6/sql-dropindex.html . Much like 'createIndexesConcurrently'
+   this cannot be used in a transaction. But further this cannot drop indexes that support UNIQUE or
+   PRIMARY KEY constraints.
+
+   Use this with care.
+-}
+dropIndexesConcurrently :: MonadOrville conn m
+                        => [IndexDefinition]
+                        -> m ()
+dropIndexesConcurrently indexDefs =
+  withConnection $ \conn -> do
+    traverse_ (dropIndexConcurrently conn) indexDefs
+
+dropIndexConcurrently :: MonadOrville conn m
+                      => conn
+                      -> IndexDefinition
+                      -> m ()
+dropIndexConcurrently conn indexDef =
+  let ddl =
+        (intercalate
+          " "
+          [ "DROP"
+          , "INDEX"
+          , "CONCURRENTLY"
+          , "IF EXISTS"
+          , "\"" ++ indexName indexDef ++ "\""
           ])
   in
     executingSql DDLQuery ddl $ do
