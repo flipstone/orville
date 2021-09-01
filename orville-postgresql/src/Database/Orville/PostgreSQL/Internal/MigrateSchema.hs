@@ -213,17 +213,17 @@ createIndexConcurrently conn indexDef =
    Use this with care.
 -}
 dropIndexesConcurrently :: MonadOrville conn m
-                        => [IndexDefinition]
+                        => [String]
                         -> m ()
-dropIndexesConcurrently indexDefs =
+dropIndexesConcurrently idxNames =
   withConnection $ \conn -> do
-    traverse_ (dropIndexConcurrently conn) indexDefs
+    traverse_ (dropIndexConcurrently conn) idxNames
 
 dropIndexConcurrently :: MonadOrville conn m
                       => conn
-                      -> IndexDefinition
+                      -> String
                       -> m ()
-dropIndexConcurrently conn indexDef =
+dropIndexConcurrently conn idxName =
   let ddl =
         (intercalate
           " "
@@ -231,7 +231,7 @@ dropIndexConcurrently conn indexDef =
           , "INDEX"
           , "CONCURRENTLY"
           , "IF EXISTS"
-          , "\"" ++ indexName indexDef ++ "\""
+          , "\"" ++ idxName ++ "\""
           ])
   in
     executingSql DDLQuery ddl $ do
