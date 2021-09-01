@@ -50,7 +50,6 @@ import qualified Data.Text as T
 import qualified Data.Time as Time
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -60,7 +59,7 @@ newtype FieldName
 
 fieldNameToColumnName :: FieldName -> Expr.ColumnName
 fieldNameToColumnName (FieldName name) =
-  RawSql.unsafeFromRawSql (RawSql.fromBytes name)
+  Expr.columnNameFromIdentifier (Expr.identifierFromBytes name)
 
 stringToFieldName :: String -> FieldName
 stringToFieldName =

@@ -8,15 +8,20 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Name.TableName
   ( TableName,
     tableName,
+    tableNameFromIdentifier,
   )
 where
 
+import Orville.PostgreSQL.Internal.Expr.Name.Identifier (Identifier, identifier)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype TableName
-  = TableName RawSql.RawSql
+  = TableName Identifier
   deriving (RawSql.SqlExpression)
 
 tableName :: String -> TableName
 tableName =
-  TableName . RawSql.fromString
+  TableName . identifier
+
+tableNameFromIdentifier :: Identifier -> TableName
+tableNameFromIdentifier = TableName

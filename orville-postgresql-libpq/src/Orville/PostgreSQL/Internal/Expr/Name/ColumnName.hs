@@ -8,14 +8,19 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Name.ColumnName
   ( ColumnName,
     columnName,
+    columnNameFromIdentifier,
   )
 where
 
+import Orville.PostgreSQL.Internal.Expr.Name.Identifier (Identifier, identifier)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype ColumnName
-  = ColumnName RawSql.RawSql
+  = ColumnName Identifier
   deriving (RawSql.SqlExpression)
 
 columnName :: String -> ColumnName
-columnName = ColumnName . RawSql.fromString
+columnName = ColumnName . identifier
+
+columnNameFromIdentifier :: Identifier -> ColumnName
+columnNameFromIdentifier = ColumnName

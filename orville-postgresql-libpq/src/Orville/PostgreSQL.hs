@@ -51,6 +51,8 @@ module Orville.PostgreSQL
     FieldDefinition.timestampWithoutZoneField,
     FieldDefinition.fieldOfType,
     FieldDefinition.fieldColumnName,
+    FieldDefinition.fieldName,
+    FieldDefinition.fieldNameToByteString,
     Orville.Orville,
     Orville.runOrville,
     MonadOrville.MonadOrville,

@@ -17,6 +17,7 @@ import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.InformationSchema as InformationSchema
 import qualified Test.RawSql as RawSql
+import qualified Test.ReservedWords as ReservedWords
 import qualified Test.SelectOptions as SelectOptions
 import qualified Test.SqlMarshaller as SqlMarshaller
 import qualified Test.SqlType as SqlType
@@ -42,5 +43,7 @@ main = do
       , SelectOptions.selectOptionsTests
       , InformationSchema.informationSchemaTests pool
       , AutoMigration.autoMigrationTests pool
+      , ReservedWords.reservedWordsTests pool
       ]
+
   Monad.unless (and results) SE.exitFailure

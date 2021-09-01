@@ -37,6 +37,7 @@ createTableExpr tableName columnDefs mbPrimaryKey =
         mconcat
           [ RawSql.fromString "CREATE TABLE "
           , RawSql.toRawSql tableName
+          , RawSql.space
           , RawSql.leftParen
           , RawSql.intercalate RawSql.comma tableElementsSql
           , RawSql.rightParen

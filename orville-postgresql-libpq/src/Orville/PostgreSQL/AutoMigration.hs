@@ -160,15 +160,28 @@ currentSchemaQuery =
   Expr.queryExpr
     (Expr.selectClause (Expr.selectExpr Nothing))
     ( Expr.selectDerivedColumns
-        [ Expr.deriveColumn (Orville.fieldColumnName currentSchemaField)
+        [ Expr.deriveColumn (unquotedFieldName currentSchemaField)
         , -- Without an an explicit "AS" here, postgresql returns a column name of
           -- "current_database" rather than "current_catalog"
           Expr.deriveColumnAs
-            (Orville.fieldColumnName currentCatalogField)
+            (unquotedFieldName currentCatalogField)
             (Orville.fieldColumnName currentCatalogField)
         ]
     )
     Nothing
+
+{- |
+  current_schema and current_catalog are special words -- if you put them in
+  quotes PostgreSQL treats them as a normal column name. These column don't
+  exist in our query above, so it would fail. We use this function to include
+  them in the SQL unquoted.
+-}
+unquotedFieldName :: Orville.FieldDefinition nullability a -> Expr.ColumnName
+unquotedFieldName =
+  Expr.columnNameFromIdentifier
+    . Expr.unquotedIdentifierFromBytes
+    . Orville.fieldNameToByteString
+    . Orville.fieldName
 
 currentCatalogField :: Orville.FieldDefinition Orville.NotNull IS.CatalogName
 currentCatalogField =

@@ -1,0 +1,34 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+{- |
+Module    : Orville.PostgreSQL.Expr.Name.ColumnName
+Copyright : Flipstone Technology Partners 2016-2021
+License   : MIT
+-}
+module Orville.PostgreSQL.Internal.Expr.Name.Identifier
+  ( Identifier,
+    identifier,
+    identifierFromBytes,
+    unquotedIdentifierFromBytes,
+  )
+where
+
+import qualified Data.ByteString.Char8 as B8
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+
+newtype Identifier
+  = Identifier RawSql.RawSql
+  deriving (RawSql.SqlExpression)
+
+identifier :: String -> Identifier
+identifier =
+  identifierFromBytes . B8.pack
+
+identifierFromBytes :: B8.ByteString -> Identifier
+identifierFromBytes idBytes =
+  Identifier $
+    RawSql.doubleQuote <> RawSql.fromBytes idBytes <> RawSql.doubleQuote
+
+unquotedIdentifierFromBytes :: B8.ByteString -> Identifier
+unquotedIdentifierFromBytes =
+  Identifier . RawSql.fromBytes

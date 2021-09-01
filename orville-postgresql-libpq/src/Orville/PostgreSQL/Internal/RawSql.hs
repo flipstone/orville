@@ -23,6 +23,7 @@ module Orville.PostgreSQL.Internal.RawSql
     leftParen,
     rightParen,
     dot,
+    doubleQuote,
 
     -- * Generic interface for generating sql
     SqlExpression (toRawSql, unsafeFromRawSql),
@@ -238,3 +239,7 @@ rightParen = fromString ")"
 -- | Just a plain period, provided for convenience
 dot :: RawSql
 dot = fromString "."
+
+-- | Just a plain double quoqte, provided for convenience
+doubleQuote :: RawSql
+doubleQuote = fromString "\""
