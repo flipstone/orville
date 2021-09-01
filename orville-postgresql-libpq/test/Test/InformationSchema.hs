@@ -21,7 +21,7 @@ informationSchemaTests pool =
     HH.Group
       (String.fromString "InformationSchema")
       [
-        ( String.fromString "Can query information about a tables"
+        ( String.fromString "Can query information about a table"
         , Property.singletonProperty $ do
             result <- MIO.liftIO . Orville.runOrville pool $ do
               Orville.findFirstEntityBy
@@ -43,6 +43,31 @@ informationSchemaTests pool =
 
             result HH.=== Just expected
         )
+      ,
+        ( String.fromString "Can query information about a column"
+        , Property.singletonProperty $ do
+            result <- MIO.liftIO . Orville.runOrville pool $ do
+              Orville.findFirstEntityBy
+                InformationSchema.informationSchemaColumnsTable
+                ( Orville.where_ $
+                    Orville.whereAnd
+                      ( Orville.fieldEquals InformationSchema.tableSchemaField informationSchemaSchemaName
+                          :| [ Orville.fieldEquals InformationSchema.tableNameField tablesTableName
+                             , Orville.fieldEquals InformationSchema.columnNameField tableNameColumnName
+                             ]
+                      )
+                )
+
+            let expected =
+                  InformationSchema.InformationSchemaColumn
+                    { InformationSchema.columnTableCatalog = orvilleTestCatalogName
+                    , InformationSchema.columnTableSchema = informationSchemaSchemaName
+                    , InformationSchema.columnTableName = tablesTableName
+                    , InformationSchema.columnName = tableNameColumnName
+                    }
+
+            result HH.=== Just expected
+        )
       ]
 
 orvilleTestCatalogName :: InformationSchema.CatalogName
@@ -56,3 +81,7 @@ informationSchemaSchemaName =
 tablesTableName :: InformationSchema.TableName
 tablesTableName =
   String.fromString "tables"
+
+tableNameColumnName :: InformationSchema.ColumnName
+tableNameColumnName =
+  String.fromString "table_name"
