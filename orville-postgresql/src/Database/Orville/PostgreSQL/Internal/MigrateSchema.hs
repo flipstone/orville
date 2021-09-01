@@ -8,6 +8,8 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.MigrateSchema
   ( migrateSchema
   , generateMigrationPlan
+  , createIndexesConcurrently
+  , dropIndexesConcurrently
   ) where
 
 import Control.Concurrent (threadDelay)
@@ -15,7 +17,9 @@ import qualified Control.Exception as Exc
 import Control.Monad
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Data.Foldable
 import Data.Int
+import Data.List
 import Data.String
 import Database.HDBC hiding (withTransaction)
 
@@ -154,3 +158,82 @@ buildMigrationPlan schemaDef schemaState = foldMap mkPlan schemaDef
           createSequencePlan seqDef schemaState
         DropSequence name ->
           dropSequencePlan name schemaState
+
+{-|
+   createIndexesConcurrently will create the given indexes, if they do not exist using the
+    PostgreSQL concurrently feature. However, this does *not* mean the the function happens
+    concurrently. This will wait for PostgreSQL to return, but other operations to the table will be
+    allowed during index creation.
+
+   Note: PostgreSQL does not allow CREATE INDEX CONCURRENTLY to appear inside of a transaction. Use
+   this function with care.
+-}
+createIndexesConcurrently :: MonadOrville conn m
+                          => [IndexDefinition]
+                          -> m ()
+createIndexesConcurrently indexDefs =
+  withConnection $ \conn -> do
+    traverse_ (createIndexConcurrently conn) indexDefs
+
+-- internal helper function that takes a connection and performs a single index creation.
+createIndexConcurrently :: MonadOrville conn m
+                        => conn
+                        -> IndexDefinition
+                        -> m ()
+createIndexConcurrently conn indexDef =
+  let ddl =
+        (intercalate
+          " "
+          [ "CREATE"
+          , if indexUnique indexDef
+            then "UNIQUE"
+            else ""
+          , "INDEX"
+          , "CONCURRENTLY"
+          , "IF NOT EXISTS"
+          , "\"" ++ indexName indexDef ++ "\""
+          , "ON"
+          , "\"" ++ indexTable indexDef ++ "\""
+          , indexBody indexDef
+          ])
+  in
+    executingSql DDLQuery ddl $ do
+      stmt <- prepare conn ddl
+      executeRaw stmt
+
+
+{-|
+   dropIndexesConcurrently will drop each of the given indexes with the CONCURRENTLY keyword,
+   allowing for other table operations to continue while the index is dropped. However there are
+   several caveats that come with this as noted at
+   https://www.postgresql.org/docs/9.6/sql-dropindex.html . Much like 'createIndexesConcurrently'
+   this cannot be used in a transaction. But further this cannot drop indexes that support UNIQUE or
+   PRIMARY KEY constraints.
+
+   Use this with care.
+-}
+dropIndexesConcurrently :: MonadOrville conn m
+                        => [String]
+                        -> m ()
+dropIndexesConcurrently idxNames =
+  withConnection $ \conn -> do
+    traverse_ (dropIndexConcurrently conn) idxNames
+
+dropIndexConcurrently :: MonadOrville conn m
+                      => conn
+                      -> String
+                      -> m ()
+dropIndexConcurrently conn idxName =
+  let ddl =
+        (intercalate
+          " "
+          [ "DROP"
+          , "INDEX"
+          , "CONCURRENTLY"
+          , "IF EXISTS"
+          , "\"" ++ idxName ++ "\""
+          ])
+  in
+    executingSql DDLQuery ddl $ do
+      stmt <- prepare conn ddl
+      executeRaw stmt

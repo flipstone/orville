@@ -131,6 +131,7 @@ module Database.Orville.PostgreSQL.Core
   , whereNotIn
   , whereQualified
   , whereRaw
+  , whereToSql
   , isNull
   , isNotNull
   , (.==)
@@ -148,6 +149,7 @@ module Database.Orville.PostgreSQL.Core
   , limit
   , offset
   , groupBy
+  , selectOptionsToSql
   , (<>)
   , FieldUpdate
   , fieldUpdate
@@ -176,6 +178,8 @@ module Database.Orville.PostgreSQL.Core
   , sequenceNextVal
   , sequenceSetVal
   , sequenceCurrVal
+  , createIndexesConcurrently
+  , dropIndexesConcurrently
   ) where
 
 import Control.Monad.Except
