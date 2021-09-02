@@ -13,6 +13,7 @@ import qualified Test.Connection as Connection
 import qualified Test.EntityOperations as EntityOperations
 import qualified Test.Expr.InsertUpdate as ExprInsertUpdate
 import qualified Test.Expr.OrderBy as ExprOrderBy
+import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.InformationSchema as InformationSchema
@@ -39,6 +40,7 @@ main = do
       , ExprInsertUpdate.insertUpdateTests pool
       , ExprWhere.whereTests pool
       , ExprOrderBy.orderByTests pool
+      , ExprTableDefinition.tableDefinitionTests pool
       , SqlType.sqlTypeTests pool
       , SelectOptions.selectOptionsTests
       , InformationSchema.informationSchemaTests pool

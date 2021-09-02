@@ -14,9 +14,10 @@ where
 import Control.Exception (Exception, throwIO)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
-import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
+import Data.Maybe (maybeToList)
 import qualified Data.Set as Set
 import qualified Data.String as String
 
@@ -69,7 +70,7 @@ instance Exception MigrationDataError
   table name for easy lookup for generation migration steps.
 -}
 type TableIndex =
-  Map.Map (IS.SchemaName, IS.TableName) IS.InformationSchemaTable
+  Map.Map (IS.SchemaName, IS.TableName) (Set.Set IS.ColumnName)
 
 {- |
   This function compares the list of 'SchemaItem's provided against the current
@@ -97,8 +98,11 @@ generateMigrationSteps schemaItems = do
 
   let schemaNames = databaseSchemaNames currentSchema schemaItems
 
-  tableIndex <-
-    indexExistingTables <$> findTablesInSchemas currentCatalog schemaNames
+  tables <- findTablesInSchemas currentCatalog schemaNames
+  tablesWithColumns <- traverse findTableColumns tables
+
+  let tableIndex =
+        indexExistingTables tablesWithColumns
 
   pure $
     concatMap (calculateMigrationSteps currentSchema tableIndex) schemaItems
@@ -126,15 +130,74 @@ calculateMigrationSteps currentSchema tableIndex schemaItem =
             String.fromString $ Orville.unqualifiedTableNameString tableDef
        in case Map.lookup (schemaName, tableName) tableIndex of
             Nothing ->
-              [MigrationStep . RawSql.toRawSql . Orville.mkCreateTableExpr $ tableDef]
-            Just _ ->
-              []
+              [mkCreateTableStep tableDef]
+            Just existingColumns ->
+              maybeToList $ mkAlterTableStep existingColumns tableDef
 
-indexExistingTables :: [IS.InformationSchemaTable] -> TableIndex
+{- |
+  Builds a 'MigrationStep' that will perform table creation. This function
+  assumes the table does not exist. The migration step it produces will fail
+  if the table already exists in its schema.
+-}
+mkCreateTableStep ::
+  Orville.TableDefinition key writeEntity readEntity ->
+  MigrationStep
+mkCreateTableStep =
+  MigrationStep . RawSql.toRawSql . Orville.mkCreateTableExpr
+
+{- |
+  Builds a 'MigrationStep' that will perform a table alternation, or none if no
+  alteration is required. The column names given are expected to reflect that
+  that currently exist in the schema. This function compare thes ecolumns to
+  the given table definition to determine what alterations need to be
+  performed. If there is nothing to do, 'Nothing' will be returned.
+-}
+mkAlterTableStep ::
+  Set.Set IS.ColumnName ->
+  Orville.TableDefinition key writeEntity readEntity ->
+  Maybe MigrationStep
+mkAlterTableStep existingColumns tableDef =
+  let addFieldAction ::
+        Orville.FieldDefinition nullability a ->
+        accessor ->
+        [Expr.AlterTableAction] ->
+        [Expr.AlterTableAction]
+      addFieldAction fieldDef _ actions =
+        case mkAlterTableAction existingColumns fieldDef of
+          Nothing ->
+            actions
+          Just newAction ->
+            newAction : actions
+
+      tableActions =
+        Orville.foldMarshallerFields
+          (Orville.tableMarshaller tableDef)
+          []
+          addFieldAction
+   in fmap
+        (MigrationStep . RawSql.toRawSql . Expr.alterTableExpr (Orville.tableName tableDef))
+        (nonEmpty tableActions)
+
+{- |
+  Builds an 'Expr.AlterTableAction' expression for the given
+  'Orville.FieldDefinition', or none if no change is required.
+-}
+mkAlterTableAction ::
+  Set.Set IS.ColumnName ->
+  Orville.FieldDefinition nullability a ->
+  Maybe Expr.AlterTableAction
+mkAlterTableAction existingColumns fieldDef =
+  let isColumnName =
+        String.fromString (Orville.fieldNameToString $ Orville.fieldName fieldDef)
+   in if Set.member isColumnName existingColumns
+        then Nothing
+        else Just $ Expr.addColumn (Orville.fieldColumnDefinition fieldDef)
+
+indexExistingTables :: [(IS.InformationSchemaTable, [IS.InformationSchemaColumn])] -> TableIndex
 indexExistingTables =
-  let tableEntry table =
+  let tableEntry (table, columns) =
         ( (IS.tableSchema table, IS.tableName table)
-        , table
+        , Set.fromList (map IS.columnName columns)
         )
    in Map.fromList . map tableEntry
 
@@ -231,3 +294,11 @@ findTablesInSchemas currentCatalog schemaNameSet =
                 )
             )
         )
+
+findTableColumns ::
+  Orville.MonadOrville m =>
+  IS.InformationSchemaTable ->
+  m (IS.InformationSchemaTable, [IS.InformationSchemaColumn])
+findTableColumns table = do
+  columns <- IS.describeTableColumns table
+  pure (table, columns)
