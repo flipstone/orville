@@ -103,6 +103,14 @@ module Orville.PostgreSQL.Internal.Expr
     createTableExpr,
     PrimaryKeyExpr,
     primaryKeyExpr,
+    AlterTableExpr,
+    alterTableExpr,
+    AlterTableAction,
+    addColumn,
+    DropTableExpr,
+    dropTableExpr,
+    IfExists,
+    ifExists,
     Distinct (Distinct),
   )
 where

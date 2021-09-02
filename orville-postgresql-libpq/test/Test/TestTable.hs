@@ -1,6 +1,7 @@
 module Test.TestTable
   ( dropAndRecreateTableDef,
     dropTableDef,
+    dropTableDefSql,
   )
 where
 
@@ -13,7 +14,7 @@ dropTableDef ::
   TableDefinition key writeEntity readEntity ->
   IO ()
 dropTableDef connection tableDef = do
-  RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql (tableName tableDef))
+  RawSql.executeVoid connection (dropTableDefSql tableDef)
 
 dropAndRecreateTableDef ::
   Connection ->
@@ -22,3 +23,9 @@ dropAndRecreateTableDef ::
 dropAndRecreateTableDef connection tableDef = do
   dropTableDef connection tableDef
   RawSql.executeVoid connection (mkCreateTableExpr tableDef)
+
+dropTableDefSql ::
+  TableDefinition key writeEntity readEntity ->
+  RawSql.RawSql
+dropTableDefSql tableDef = do
+  RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql (tableName tableDef)

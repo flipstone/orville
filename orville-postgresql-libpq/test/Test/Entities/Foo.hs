@@ -4,6 +4,7 @@ module Test.Entities.Foo
     generate,
     generateList,
     withTable,
+    fooIdField,
   )
 where
 
