@@ -45,7 +45,12 @@ library
       Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Internal.TableDefinition
   other-modules:
+      Orville.PostgreSQL.InformationSchema.ColumnName
+      Orville.PostgreSQL.InformationSchema.InformationSchemaColumn
       Orville.PostgreSQL.InformationSchema.InformationSchemaTable
+      Orville.PostgreSQL.InformationSchema.TableCatalog
+      Orville.PostgreSQL.InformationSchema.TableName
+      Orville.PostgreSQL.InformationSchema.TableSchema
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
