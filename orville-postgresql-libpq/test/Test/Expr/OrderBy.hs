@@ -17,64 +17,62 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Test.Expr.TestSchema (FooBar (..), assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
 import qualified Test.Property as Property
 
-orderByTests :: Pool.Pool Conn.Connection -> IO Bool
+orderByTests :: Pool.Pool Conn.Connection -> Property.Group
 orderByTests pool =
-  HH.checkSequential $
-    HH.Group
-      (String.fromString "Expr - OrderBy")
-      [
-        ( String.fromString "ascendingExpr sorts a text column"
-        , runOrderByTest pool $
-            OrderByTest
-              { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
-              , orderByClause =
-                  Just . Expr.orderByClause $
-                    Expr.orderByExpr
-                      (RawSql.toRawSql barColumn)
-                      Expr.ascendingOrder
-              }
-        )
-      ,
-        ( String.fromString "descendingExpr sorts a text column"
-        , runOrderByTest pool $
-            OrderByTest
-              { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
-              , orderByClause =
-                  Just . Expr.orderByClause $
-                    Expr.orderByExpr
-                      (RawSql.toRawSql barColumn)
-                      Expr.descendingOrder
-              }
-        )
-      ,
-        ( String.fromString "addOrderBy causes ordering on both columns"
-        , runOrderByTest pool $
-            OrderByTest
-              { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
-              , orderByClause =
-                  Just . Expr.orderByClause $
-                    Expr.appendOrderBy
-                      (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
-                      (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
-              }
-        )
-      ,
-        ( String.fromString "orderByColumnsExpr orders by columns"
-        , runOrderByTest pool $
-            OrderByTest
-              { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
-              , orderByClause =
-                  Just . Expr.orderByClause $
-                    Expr.orderByColumnsExpr $
-                      (barColumn, Expr.ascendingOrder)
-                        NE.:| [(fooColumn, Expr.descendingOrder)]
-              }
-        )
-      ]
+  Property.group "Expr - OrderBy" $
+    [
+      ( String.fromString "ascendingExpr sorts a text column"
+      , runOrderByTest pool $
+          OrderByTest
+            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
+            , orderByClause =
+                Just . Expr.orderByClause $
+                  Expr.orderByExpr
+                    (RawSql.toRawSql barColumn)
+                    Expr.ascendingOrder
+            }
+      )
+    ,
+      ( String.fromString "descendingExpr sorts a text column"
+      , runOrderByTest pool $
+          OrderByTest
+            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
+            , orderByClause =
+                Just . Expr.orderByClause $
+                  Expr.orderByExpr
+                    (RawSql.toRawSql barColumn)
+                    Expr.descendingOrder
+            }
+      )
+    ,
+      ( String.fromString "addOrderBy causes ordering on both columns"
+      , runOrderByTest pool $
+          OrderByTest
+            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+            , orderByClause =
+                Just . Expr.orderByClause $
+                  Expr.appendOrderBy
+                    (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
+                    (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
+            }
+      )
+    ,
+      ( String.fromString "orderByColumnsExpr orders by columns"
+      , runOrderByTest pool $
+          OrderByTest
+            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+            , orderByClause =
+                Just . Expr.orderByClause $
+                  Expr.orderByColumnsExpr $
+                    (barColumn, Expr.ascendingOrder)
+                      NE.:| [(fooColumn, Expr.descendingOrder)]
+            }
+      )
+    ]
 
 data OrderByTest = OrderByTest
   { orderByValuesToInsert :: [FooBar]

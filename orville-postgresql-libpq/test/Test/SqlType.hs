@@ -21,23 +21,21 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-sqlTypeTests :: Pool.Pool Connection.Connection -> IO Bool
+sqlTypeTests :: Pool.Pool Connection.Connection -> Property.Group
 sqlTypeTests pool =
-  HH.checkSequential $
-    HH.Group
-      (String.fromString "SqlType decoding tests")
-      $ integerTests pool
-        <> bigIntegerTests pool
-        <> serialTests pool
-        <> bigSerialTests pool
-        <> doubleTests pool
-        <> boolTests pool
-        <> unboundedTextTests pool
-        <> fixedTextTests pool
-        <> boundedTextTests pool
-        <> textSearchVectorTests pool
-        <> dateTests pool
-        <> timestampTests pool
+  Property.group "SqlType" $
+    integerTests pool
+      <> bigIntegerTests pool
+      <> serialTests pool
+      <> bigSerialTests pool
+      <> doubleTests pool
+      <> boolTests pool
+      <> unboundedTextTests pool
+      <> fixedTextTests pool
+      <> boundedTextTests pool
+      <> textSearchVectorTests pool
+      <> dateTests pool
+      <> timestampTests pool
 
 integerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
 integerTests pool =

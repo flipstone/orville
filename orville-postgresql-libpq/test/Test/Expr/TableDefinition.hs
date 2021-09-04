@@ -17,66 +17,65 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 
 import qualified Test.Property as Property
 
-tableDefinitionTests :: Pool.Pool Conn.Connection -> IO Bool
+tableDefinitionTests :: Pool.Pool Conn.Connection -> Property.Group
 tableDefinitionTests pool =
-  HH.checkSequential $
-    HH.Group
-      (String.fromString "Expr - TableDefinition")
-      [
-        ( String.fromString "Create table creates a table with one column"
-        , Property.singletonProperty $ do
-            MIO.liftIO $
-              Orville.runOrville pool $ do
-                Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-                Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition] Nothing
+  Property.group
+    "Expr - TableDefinition"
+    [
+      ( String.fromString "Create table creates a table with one column"
+      , Property.singletonProperty $ do
+          MIO.liftIO $
+            Orville.runOrville pool $ do
+              Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
+              Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition] Nothing
 
-            assertColumnNamesEqual
-              pool
-              informationSchemaTableName
-              [informationSchemaColumn1Name]
-        )
-      ,
-        ( String.fromString "Create table creates a table with multiple columns"
-        , Property.singletonProperty $ do
-            MIO.liftIO $
-              Orville.runOrville pool $ do
-                Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-                Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition, column2Definition] Nothing
+          assertColumnNamesEqual
+            pool
+            informationSchemaTableName
+            [informationSchemaColumn1Name]
+      )
+    ,
+      ( String.fromString "Create table creates a table with multiple columns"
+      , Property.singletonProperty $ do
+          MIO.liftIO $
+            Orville.runOrville pool $ do
+              Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
+              Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition, column2Definition] Nothing
 
-            assertColumnNamesEqual
-              pool
-              informationSchemaTableName
-              [informationSchemaColumn1Name, informationSchemaColumn2Name]
-        )
-      ,
-        ( String.fromString "Alter table adds one column"
-        , Property.singletonProperty $ do
-            MIO.liftIO $
-              Orville.runOrville pool $ do
-                Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-                Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing
-                Orville.executeVoid $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [])
+          assertColumnNamesEqual
+            pool
+            informationSchemaTableName
+            [informationSchemaColumn1Name, informationSchemaColumn2Name]
+      )
+    ,
+      ( String.fromString "Alter table adds one column"
+      , Property.singletonProperty $ do
+          MIO.liftIO $
+            Orville.runOrville pool $ do
+              Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
+              Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing
+              Orville.executeVoid $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [])
 
-            assertColumnNamesEqual
-              pool
-              informationSchemaTableName
-              [informationSchemaColumn1Name]
-        )
-      ,
-        ( String.fromString "Alter table adds multiple columns"
-        , Property.singletonProperty $ do
-            MIO.liftIO $
-              Orville.runOrville pool $ do
-                Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-                Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing
-                Orville.executeVoid $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [Expr.addColumn column2Definition])
+          assertColumnNamesEqual
+            pool
+            informationSchemaTableName
+            [informationSchemaColumn1Name]
+      )
+    ,
+      ( String.fromString "Alter table adds multiple columns"
+      , Property.singletonProperty $ do
+          MIO.liftIO $
+            Orville.runOrville pool $ do
+              Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
+              Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing
+              Orville.executeVoid $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [Expr.addColumn column2Definition])
 
-            assertColumnNamesEqual
-              pool
-              informationSchemaTableName
-              [informationSchemaColumn1Name, informationSchemaColumn2Name]
-        )
-      ]
+          assertColumnNamesEqual
+            pool
+            informationSchemaTableName
+            [informationSchemaColumn1Name, informationSchemaColumn2Name]
+      )
+    ]
 
 exprTableName :: Expr.QualifiedTableName
 exprTableName =

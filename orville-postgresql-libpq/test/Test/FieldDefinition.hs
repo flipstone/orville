@@ -26,22 +26,20 @@ import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PGGen as PGGen
 import qualified Test.Property as Property
 
-fieldDefinitionTests :: Pool.Pool Connection.Connection -> IO Bool
+fieldDefinitionTests :: Pool.Pool Connection.Connection -> Property.Group
 fieldDefinitionTests pool =
-  HH.checkSequential $
-    HH.Group
-      (String.fromString "FieldDefinition")
-      $ integerField pool
-        <> bigIntegerField pool
-        <> doubleField pool
-        <> booleanField pool
-        <> unboundedTextField pool
-        <> boundedTextField pool
-        <> fixedTextField pool
-        <> textSearchVectorField pool
-        <> dateField pool
-        <> timestampField pool
-        <> timestampWithoutZoneField pool
+  Property.group "FieldDefinition" $
+    integerField pool
+      <> bigIntegerField pool
+      <> doubleField pool
+      <> booleanField pool
+      <> unboundedTextField pool
+      <> boundedTextField pool
+      <> fixedTextField pool
+      <> textSearchVectorField pool
+      <> dateField pool
+      <> timestampField pool
+      <> timestampWithoutZoneField pool
 
 integerField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
 integerField pool =

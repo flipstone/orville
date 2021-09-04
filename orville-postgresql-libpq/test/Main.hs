@@ -17,6 +17,7 @@ import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.InformationSchema as InformationSchema
+import qualified Test.Property as Property
 import qualified Test.RawSql as RawSql
 import qualified Test.ReservedWords as ReservedWords
 import qualified Test.SelectOptions as SelectOptions
@@ -29,8 +30,8 @@ main = do
   let connBStr = B8.pack "host=testdb user=orville_test password=orville"
   pool <- Connection.createConnectionPool 1 10 1 connBStr
 
-  results <-
-    sequence
+  summary <-
+    Property.checkGroups
       [ Connection.connectionTests pool
       , RawSql.rawSqlTests
       , TableDefinition.tableDefinitionTests pool
@@ -48,4 +49,4 @@ main = do
       , ReservedWords.reservedWordsTests pool
       ]
 
-  Monad.unless (and results) SE.exitFailure
+  Monad.unless (Property.allPassed summary) SE.exitFailure

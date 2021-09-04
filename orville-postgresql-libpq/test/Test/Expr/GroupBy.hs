@@ -26,37 +26,36 @@ data FooBar = FooBar
   , bar :: String
   }
 
-groupByTests :: Pool.Pool Conn.Connection -> IO Bool
+groupByTests :: Pool.Pool Conn.Connection -> Property.Group
 groupByTests pool =
-  HH.checkSequential $
-    HH.Group
-      (String.fromString "Expr - GroupBy")
-      [
-        ( String.fromString "appendGroupBy causes grouping on both clauses"
-        , runGroupByTest pool $
-            GroupByTest
-              { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo", FooBar 1 "dog", FooBar 2 "dingo"]
-              , groupByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dingo", FooBar 2 "dingo"]
-              , groupByClause =
-                  Just . Expr.groupByClause $
-                    Expr.appendGroupBy
-                      (Expr.groupByExpr $ RawSql.toRawSql barColumn)
-                      (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
-              }
-        )
-      ,
-        ( String.fromString "groupByColumnsExpr groups by columns"
-        , runGroupByTest pool $
-            GroupByTest
-              { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
-              , groupByClause =
-                  Just . Expr.groupByClause $
-                    Expr.groupByColumnsExpr $
-                      barColumn NE.:| [fooColumn]
-              }
-        )
-      ]
+  Property.group
+    "Expr - GroupBy"
+    [
+      ( String.fromString "appendGroupBy causes grouping on both clauses"
+      , runGroupByTest pool $
+          GroupByTest
+            { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo", FooBar 1 "dog", FooBar 2 "dingo"]
+            , groupByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dingo", FooBar 2 "dingo"]
+            , groupByClause =
+                Just . Expr.groupByClause $
+                  Expr.appendGroupBy
+                    (Expr.groupByExpr $ RawSql.toRawSql barColumn)
+                    (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
+            }
+      )
+    ,
+      ( String.fromString "groupByColumnsExpr groups by columns"
+      , runGroupByTest pool $
+          GroupByTest
+            { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+            , groupByClause =
+                Just . Expr.groupByClause $
+                  Expr.groupByColumnsExpr $
+                    barColumn NE.:| [fooColumn]
+            }
+      )
+    ]
 
 data GroupByTest = GroupByTest
   { groupByValuesToInsert :: [FooBar]

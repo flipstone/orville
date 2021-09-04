@@ -19,128 +19,126 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import Test.Expr.TestSchema (FooBar (..), assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
 import qualified Test.Property as Property
 
-whereTests :: Pool.Pool Connection.Connection -> IO Bool
+whereTests :: Pool.Pool Connection.Connection -> Property.Group
 whereTests pool =
-  HH.checkSequential $
-    HH.Group
-      (String.fromString "Expr - WhereClause")
-      [
-        ( String.fromString "Returns all rows when where clause is specified"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereExpectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereClause = Nothing
-              }
-        )
-      ,
-        ( String.fromString "equalsOp matches exact value"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereExpectedQueryResults = [FooBar 2 "bee"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnEquals fooColumn (SqlValue.fromInt32 2)
-              }
-        )
-      ,
-        ( String.fromString "greaterThanOp matches greater values"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereExpectedQueryResults = [FooBar 3 "chihuahua"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnGreaterThan fooColumn (SqlValue.fromInt32 2)
-              }
-        )
-      ,
-        ( String.fromString "greaterThanOrEqualsOp matches greater or equal values"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereExpectedQueryResults = [FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnGreaterThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
-              }
-        )
-      ,
-        ( String.fromString "lessThanOp matches lesser values"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereExpectedQueryResults = [FooBar 1 "ant"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnLessThan fooColumn (SqlValue.fromInt32 2)
-              }
-        )
-      ,
-        ( String.fromString "lessThanOrEqualsOp matches lesser or equal values"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
-              , whereExpectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnLessThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
-              }
-        )
-      ,
-        ( String.fromString "andExpr requires both conditions to be true"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , whereExpectedQueryResults = [FooBar 3 "dog"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.andExpr
-                      (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
-                      (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))
-              }
-        )
-      ,
-        ( String.fromString "orExpr requires either conditions to be true"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , whereExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.orExpr
-                      (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
-                      (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dingo")))
-              }
-        )
-      ,
-        ( String.fromString "columnIn requires the column's value to be in the list"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , whereExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnIn
-                      barColumn
-                      (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
-              }
-        )
-      ,
-        ( String.fromString "columnNotIn requires the column's value to not be in the list"
-        , runWhereConditionTest pool $
-            WhereConditionTest
-              { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-              , whereExpectedQueryResults = [FooBar 2 "dingo"]
-              , whereClause =
-                  Just . Expr.whereClause $
-                    Expr.columnNotIn
-                      barColumn
-                      (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
-              }
-        )
-      ]
+  Property.group "Expr - WhereClause" $
+    [
+      ( String.fromString "Returns all rows when where clause is specified"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereExpectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereClause = Nothing
+            }
+      )
+    ,
+      ( String.fromString "equalsOp matches exact value"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereExpectedQueryResults = [FooBar 2 "bee"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnEquals fooColumn (SqlValue.fromInt32 2)
+            }
+      )
+    ,
+      ( String.fromString "greaterThanOp matches greater values"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereExpectedQueryResults = [FooBar 3 "chihuahua"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnGreaterThan fooColumn (SqlValue.fromInt32 2)
+            }
+      )
+    ,
+      ( String.fromString "greaterThanOrEqualsOp matches greater or equal values"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereExpectedQueryResults = [FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnGreaterThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
+            }
+      )
+    ,
+      ( String.fromString "lessThanOp matches lesser values"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereExpectedQueryResults = [FooBar 1 "ant"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnLessThan fooColumn (SqlValue.fromInt32 2)
+            }
+      )
+    ,
+      ( String.fromString "lessThanOrEqualsOp matches lesser or equal values"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "ant", FooBar 2 "bee", FooBar 3 "chihuahua"]
+            , whereExpectedQueryResults = [FooBar 1 "ant", FooBar 2 "bee"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnLessThanOrEqualTo fooColumn (SqlValue.fromInt32 2)
+            }
+      )
+    ,
+      ( String.fromString "andExpr requires both conditions to be true"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereExpectedQueryResults = [FooBar 3 "dog"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.andExpr
+                    (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
+                    (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))
+            }
+      )
+    ,
+      ( String.fromString "orExpr requires either conditions to be true"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.orExpr
+                    (Expr.columnEquals fooColumn (SqlValue.fromInt32 3))
+                    (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dingo")))
+            }
+      )
+    ,
+      ( String.fromString "columnIn requires the column's value to be in the list"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnIn
+                    barColumn
+                    (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
+            }
+      )
+    ,
+      ( String.fromString "columnNotIn requires the column's value to not be in the list"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereExpectedQueryResults = [FooBar 2 "dingo"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnNotIn
+                    barColumn
+                    (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
+            }
+      )
+    ]
 
 data WhereConditionTest = WhereConditionTest
   { whereValuesToInsert :: [FooBar]
