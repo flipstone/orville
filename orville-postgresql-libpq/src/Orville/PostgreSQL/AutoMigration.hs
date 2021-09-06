@@ -24,6 +24,7 @@ import qualified Data.String as String
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.InformationSchema as IS
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.MigrationLock as MigrationLock
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 {- |
@@ -81,8 +82,9 @@ type TableIndex =
 -}
 autoMigrateSchema :: Orville.MonadOrville m => [SchemaItem] -> m ()
 autoMigrateSchema schemaItems = do
-  steps <- generateMigrationSteps schemaItems
-  executeMigrationSteps steps
+  MigrationLock.withLockedTransaction $ do
+    steps <- generateMigrationStepsWithoutTransaction schemaItems
+    executeMigrationStepsWithoutTransaction steps
 
 {- |
   Compares the list of 'SchemaItem's provided against the current schema
@@ -93,7 +95,11 @@ autoMigrateSchema schemaItems = do
   or use the 'executeMigrationSteps' convenience function.
 -}
 generateMigrationSteps :: Orville.MonadOrville m => [SchemaItem] -> m [MigrationStep]
-generateMigrationSteps schemaItems = do
+generateMigrationSteps =
+  MigrationLock.withLockedTransaction . generateMigrationStepsWithoutTransaction
+
+generateMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [SchemaItem] -> m [MigrationStep]
+generateMigrationStepsWithoutTransaction schemaItems = do
   (currentSchema, currentCatalog) <- findCurrentSchema
 
   let schemaNames = databaseSchemaNames currentSchema schemaItems
@@ -113,6 +119,10 @@ generateMigrationSteps schemaItems = do
 -}
 executeMigrationSteps :: Orville.MonadOrville m => [MigrationStep] -> m ()
 executeMigrationSteps =
+  MigrationLock.withLockedTransaction . executeMigrationStepsWithoutTransaction
+
+executeMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [MigrationStep] -> m ()
+executeMigrationStepsWithoutTransaction =
   traverse_ Orville.executeVoid
 
 calculateMigrationSteps ::
