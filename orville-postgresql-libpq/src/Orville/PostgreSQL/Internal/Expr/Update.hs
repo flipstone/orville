@@ -10,9 +10,10 @@ module Orville.PostgreSQL.Internal.Expr.Update
   )
 where
 
-import Data.Maybe (maybeToList)
+import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Internal.Expr.Where (WhereClause)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
@@ -25,17 +26,19 @@ updateExpr ::
   QualifiedTableName ->
   SetClauseList ->
   Maybe WhereClause ->
+  Maybe ReturningExpr ->
   UpdateExpr
-updateExpr tableName setClause maybeWhereClause =
+updateExpr tableName setClause maybeWhereClause maybeReturningExpr =
   UpdateExpr $
-    RawSql.intercalate
-      RawSql.space
-      ( RawSql.fromString "UPDATE" :
-        RawSql.toRawSql tableName :
-        RawSql.fromString "SET" :
-        RawSql.toRawSql setClause :
-        maybeToList (RawSql.toRawSql <$> maybeWhereClause)
-      )
+    RawSql.intercalate RawSql.space $
+      catMaybes
+        [ Just $ RawSql.fromString "UPDATE"
+        , Just $ RawSql.toRawSql tableName
+        , Just $ RawSql.fromString "SET"
+        , Just $ RawSql.toRawSql setClause
+        , fmap RawSql.toRawSql maybeWhereClause
+        , fmap RawSql.toRawSql maybeReturningExpr
+        ]
 
 newtype SetClauseList
   = SetClauseList RawSql.RawSql

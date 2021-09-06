@@ -193,6 +193,7 @@ runRoundTripTest pool testCase =
           testTable
           Nothing
           (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+          Nothing
 
       result <-
         RawSql.execute connection $
@@ -230,6 +231,7 @@ runNullableRoundTripTest pool testCase =
           testTable
           Nothing
           (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+          Nothing
 
       result <-
         RawSql.execute connection $
@@ -262,6 +264,7 @@ runNullCounterExampleTest pool testCase =
           testTable
           Nothing
           (Expr.insertSqlValues [[SqlValue.sqlNull]])
+          Nothing
 
     case result of
       Left err ->

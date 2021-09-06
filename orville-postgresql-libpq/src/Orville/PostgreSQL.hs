@@ -5,9 +5,13 @@ License   : MIT
 -}
 module Orville.PostgreSQL
   ( EntityOperations.insertEntity,
+    EntityOperations.insertAndReturnEntity,
     EntityOperations.insertEntities,
+    EntityOperations.insertAndReturnEntities,
     EntityOperations.updateEntity,
+    EntityOperations.updateAndReturnEntity,
     EntityOperations.deleteEntity,
+    EntityOperations.deleteAndReturnEntity,
     EntityOperations.findEntitiesBy,
     EntityOperations.findFirstEntityBy,
     EntityOperations.findEntity,

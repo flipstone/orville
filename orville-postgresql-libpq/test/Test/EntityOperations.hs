@@ -23,7 +23,7 @@ entityOperationsTests pool =
   Property.group "EntityOperations" $
     [
       ( String.fromString "insertEntity/findEntitiesBy forms a round trip"
-      , HH.property $ do
+      , Property.singletonProperty $ do
           originalFoo <- HH.forAll Foo.generate
 
           retrievedFoos <-
@@ -57,7 +57,7 @@ entityOperationsTests pool =
       )
     ,
       ( String.fromString "insertEntity/findEntity forms a round trip"
-      , HH.property $ do
+      , Property.singletonProperty $ do
           originalFoo <- HH.forAll Foo.generate
 
           mbRetrievedFoo <-
@@ -68,22 +68,46 @@ entityOperationsTests pool =
           mbRetrievedFoo === Just originalFoo
       )
     ,
+      ( String.fromString "insertAndReturnEntity returns the inserted entity"
+      , Property.singletonProperty $ do
+          originalFoo <- HH.forAll Foo.generate
+
+          retrievedFoo <-
+            Foo.withTable pool $ do
+              Orville.insertAndReturnEntity Foo.table originalFoo
+
+          retrievedFoo === originalFoo
+      )
+    ,
       ( String.fromString "updateEntity updates row at the given key"
-      , HH.property $ do
+      , Property.singletonProperty $ do
           originalFoo <- HH.forAll Foo.generate
           newFoo <- HH.forAll Foo.generate
 
-          retrievedFoos <-
+          returnedFoo <-
             Foo.withTable pool $ do
               Orville.insertEntity Foo.table originalFoo
               Orville.updateEntity Foo.table (Foo.fooId originalFoo) newFoo
               Orville.findEntitiesBy Foo.table mempty
 
-          retrievedFoos === [newFoo]
+          returnedFoo === [newFoo]
+      )
+    ,
+      ( String.fromString "updateAndReturnEntity returns the updated entity"
+      , Property.singletonProperty $ do
+          originalFoo <- HH.forAll Foo.generate
+          newFoo <- HH.forAll Foo.generate
+
+          mbReturnedFoo <-
+            Foo.withTable pool $ do
+              Orville.insertEntity Foo.table originalFoo
+              Orville.updateAndReturnEntity Foo.table (Foo.fooId originalFoo) newFoo
+
+          mbReturnedFoo === Just newFoo
       )
     ,
       ( String.fromString "updateEntity updates no rows when key does not match"
-      , HH.property $ do
+      , Property.singletonProperty $ do
           originalFoo <- HH.forAll Foo.generate
           newFoo <- HH.forAll Foo.generate
 
@@ -99,8 +123,24 @@ entityOperationsTests pool =
           retrievedFoos === [originalFoo]
       )
     ,
+      ( String.fromString "updateAndReturnEntity returns Nothing when key does not match"
+      , Property.singletonProperty $ do
+          originalFoo <- HH.forAll Foo.generate
+          newFoo <- HH.forAll Foo.generate
+
+          let mismatchFooId =
+                1 + Foo.fooId originalFoo
+
+          mbReturnedFoo <-
+            Foo.withTable pool $ do
+              Orville.insertEntity Foo.table originalFoo
+              Orville.updateAndReturnEntity Foo.table mismatchFooId newFoo
+
+          mbReturnedFoo === Nothing
+      )
+    ,
       ( String.fromString "deleteEntity deletes row at the given key"
-      , HH.property $ do
+      , Property.singletonProperty $ do
           originalFoo <- HH.forAll Foo.generate
           let withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
           anotherFoo <- HH.forAll . withDifferentKey $ Foo.generate
@@ -115,8 +155,19 @@ entityOperationsTests pool =
           retrievedFoos === [anotherFoo]
       )
     ,
+      ( String.fromString "deleteAndReturnEntity returns the deleted row"
+      , Property.singletonProperty $ do
+          originalFoo <- HH.forAll Foo.generate
+          mbReturnedFoo <-
+            Foo.withTable pool $ do
+              Orville.insertEntity Foo.table originalFoo
+              Orville.deleteAndReturnEntity Foo.table (Foo.fooId originalFoo)
+
+          mbReturnedFoo === Just originalFoo
+      )
+    ,
       ( String.fromString "deleteEntity deletes no rows when key doesn't match"
-      , HH.property $ do
+      , Property.singletonProperty $ do
           originalFoo <- HH.forAll Foo.generate
 
           let mismatchFooId =
@@ -129,5 +180,20 @@ entityOperationsTests pool =
               Orville.findEntitiesBy Foo.table mempty
 
           retrievedFoos === [originalFoo]
+      )
+    ,
+      ( String.fromString "deleteAndReturnEntity returns Nothing when key doesn't match"
+      , Property.singletonProperty $ do
+          originalFoo <- HH.forAll Foo.generate
+
+          let mismatchFooId =
+                1 + Foo.fooId originalFoo
+
+          mbReturnedFoo <-
+            Foo.withTable pool $ do
+              Orville.insertEntity Foo.table originalFoo
+              Orville.deleteAndReturnEntity Foo.table mismatchFooId
+
+          mbReturnedFoo === Nothing
       )
     ]

@@ -76,6 +76,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Query.QueryExpr
       Orville.PostgreSQL.Internal.Expr.Query.SelectList
       Orville.PostgreSQL.Internal.Expr.Query.TableExpr
+      Orville.PostgreSQL.Internal.Expr.ReturningExpr
       Orville.PostgreSQL.Internal.Expr.Select
       Orville.PostgreSQL.Internal.Expr.Select.SelectClause
       Orville.PostgreSQL.Internal.Expr.Select.SelectExpr
@@ -125,7 +126,7 @@ test-suite spec
       Test.Entities.User
       Test.EntityOperations
       Test.Expr.GroupBy
-      Test.Expr.InsertUpdate
+      Test.Expr.InsertUpdateDelete
       Test.Expr.OrderBy
       Test.Expr.TableDefinition
       Test.Expr.TestSchema

@@ -375,6 +375,7 @@ runDecodingTest pool test =
           tableName
           Nothing
           (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
+          Nothing
 
       result <-
         MIO.liftIO . RawSql.execute connection $

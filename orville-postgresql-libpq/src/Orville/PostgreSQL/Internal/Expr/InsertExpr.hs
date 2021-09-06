@@ -15,7 +15,10 @@ module Orville.PostgreSQL.Internal.Expr.InsertExpr
   )
 where
 
+import Data.Maybe (catMaybes)
+
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -23,15 +26,22 @@ newtype InsertExpr
   = InsertExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-insertExpr :: QualifiedTableName -> Maybe InsertColumnList -> InsertSource -> InsertExpr
-insertExpr target _ source =
+insertExpr ::
+  QualifiedTableName ->
+  Maybe InsertColumnList ->
+  InsertSource ->
+  Maybe ReturningExpr ->
+  InsertExpr
+insertExpr target maybeInsertColumns source maybeReturning =
   InsertExpr $
-    mconcat
-      [ RawSql.fromString "INSERT INTO "
-      , RawSql.toRawSql target
-      , RawSql.space
-      , RawSql.toRawSql source
-      ]
+    RawSql.intercalate RawSql.space $
+      catMaybes
+        [ Just $ RawSql.fromString "INSERT INTO"
+        , Just $ RawSql.toRawSql target
+        , fmap RawSql.toRawSql maybeInsertColumns
+        , Just $ RawSql.toRawSql source
+        , fmap RawSql.toRawSql maybeReturning
+        ]
 
 newtype InsertColumnList
   = InsertColumnList RawSql.RawSql
@@ -40,7 +50,9 @@ newtype InsertColumnList
 insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
-    RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
+    RawSql.leftParen
+      <> RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
+      <> RawSql.rightParen
 
 newtype InsertSource
   = InsertSource RawSql.RawSql

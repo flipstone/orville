@@ -1,14 +1,19 @@
 module Orville.PostgreSQL.Internal.EntityOperations
   ( insertEntity,
+    insertAndReturnEntity,
     insertEntities,
+    insertAndReturnEntities,
     updateEntity,
+    updateAndReturnEntity,
     deleteEntity,
+    deleteAndReturnEntity,
     findEntitiesBy,
     findFirstEntityBy,
     findEntity,
   )
 where
 
+import Control.Exception (Exception, throwIO)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
@@ -16,15 +21,11 @@ import Data.Maybe (listToMaybe)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
 
 {- |
   Inserts a entity into the specified table.
-
-  TODO: This should return the 'readEntity' type using using the psql RETURNING
-  clause and decoding the result set.
 -}
 insertEntity ::
   MonadOrville.MonadOrville m =>
@@ -33,6 +34,28 @@ insertEntity ::
   m ()
 insertEntity entityTable entity =
   insertEntities entityTable (entity :| [])
+
+{- |
+  Inserts a entity into the specified table, returning the data inserted into
+  the database.
+
+  You can use this function to obtain any column values filled in by the
+  database, such as auto-incrementing ids.
+-}
+insertAndReturnEntity ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition key writeEntity readEntity ->
+  writeEntity ->
+  m readEntity
+insertAndReturnEntity entityTable entity = do
+  returnedEntities <- insertAndReturnEntities entityTable (entity :| [])
+
+  case returnedEntities of
+    [returnedEntity] ->
+      pure returnedEntity
+    _ ->
+      liftIO . throwIO . RowCountExpectationError $
+        "Expected exactly one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
 
 {- |
   Inserts a set of entities into the specified table
@@ -44,10 +67,27 @@ insertEntities ::
   m ()
 insertEntities entityTable entities =
   let insertExpr =
-        TableDef.mkInsertExpr entityTable entities
-   in MonadOrville.withConnection $ \connection ->
-        liftIO $
-          RawSql.executeVoid connection insertExpr
+        TableDef.mkInsertExpr TableDef.WithoutReturning entityTable entities
+   in Execute.executeVoid insertExpr
+
+{- |
+  Inserts a list of entities into the specified table, returning the data that
+  was inserted into the database.
+
+  You can use this function to obtain any column values filled in by the
+  database, such as auto-incrementing ids.
+-}
+insertAndReturnEntities ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition key writeEntity readEntity ->
+  NonEmpty writeEntity ->
+  m [readEntity]
+insertAndReturnEntities entityTable entities =
+  let insertExpr =
+        TableDef.mkInsertExpr TableDef.WithReturning entityTable entities
+   in Execute.executeAndDecode
+        insertExpr
+        (TableDef.tableMarshaller entityTable)
 
 {- |
   Updates the row with the given key in with the data given by 'writeEntity'
@@ -59,11 +99,28 @@ updateEntity ::
   writeEntity ->
   m ()
 updateEntity tableDef key writeEntity =
-  MonadOrville.withConnection $ \connection ->
-    liftIO $
-      RawSql.executeVoid
-        connection
-        (TableDef.mkUpdateExpr tableDef key writeEntity)
+  Execute.executeVoid $
+    TableDef.mkUpdateExpr TableDef.WithoutReturning tableDef key writeEntity
+
+{- |
+  Updates the row with the given key in with the data given by 'writeEntity',
+  returning updated row from the database. If no row matches the given key,
+  'Nothing' will be returned.
+
+  You can use this function to obtain any column values computer by the database
+  during update, including columns with triggers attached to them.
+-}
+updateAndReturnEntity ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  key ->
+  writeEntity ->
+  m (Maybe readEntity)
+updateAndReturnEntity tableDef key writeEntity =
+  fmap listToMaybe $
+    Execute.executeAndDecode
+      (TableDef.mkUpdateExpr TableDef.WithReturning tableDef key writeEntity)
+      (TableDef.tableMarshaller tableDef)
 
 {- |
   Deletes the row with the given key
@@ -74,11 +131,23 @@ deleteEntity ::
   key ->
   m ()
 deleteEntity tableDef key =
-  MonadOrville.withConnection $ \connection ->
-    liftIO $
-      RawSql.executeVoid
-        connection
-        (TableDef.mkDeleteExpr tableDef key)
+  Execute.executeVoid $
+    TableDef.mkDeleteExpr TableDef.WithoutReturning tableDef key
+
+{- |
+  Deletes the row with the given key, returning the row that was deleted.
+  If no row matches the given key, 'Nothing' is returned.
+-}
+deleteAndReturnEntity ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  key ->
+  m (Maybe readEntity)
+deleteAndReturnEntity tableDef key =
+  fmap listToMaybe $
+    Execute.executeAndDecode
+      (TableDef.mkDeleteExpr TableDef.WithReturning tableDef key)
+      (TableDef.tableMarshaller tableDef)
 
 {- |
   Finds all the entities in the given table according to the specified
@@ -133,3 +202,14 @@ findEntity entityTable key =
           (TableDef.tablePrimaryKey entityTable)
           key
    in findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
+
+{- |
+  INTERNAL: This should really never get thrown in the real world. It would be
+  thrown if the returning clause from an insert statement for a single record
+  returned 0 records or more than 1 record.
+-}
+newtype RowCountExpectationError
+  = RowCountExpectationError String
+  deriving (Show)
+
+instance Exception RowCountExpectationError

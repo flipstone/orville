@@ -76,6 +76,8 @@ module Orville.PostgreSQL.Internal.Expr
     setClauseList,
     SetClause,
     setColumn,
+    ReturningExpr,
+    returningExpr,
     DataType,
     timestampWithZone,
     timestampWithoutZone,
@@ -143,6 +145,7 @@ import Orville.PostgreSQL.Internal.Expr.Name
 import Orville.PostgreSQL.Internal.Expr.OffsetExpr
 import Orville.PostgreSQL.Internal.Expr.OrderBy
 import Orville.PostgreSQL.Internal.Expr.Query
+import Orville.PostgreSQL.Internal.Expr.ReturningExpr
 import Orville.PostgreSQL.Internal.Expr.TableDefinition
 import Orville.PostgreSQL.Internal.Expr.Transaction
 import Orville.PostgreSQL.Internal.Expr.Update

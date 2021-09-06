@@ -1,5 +1,6 @@
 module Test.Expr.TestSchema
   ( FooBar (..),
+    findAllFooBars,
     fooBarTable,
     fooColumn,
     barColumn,
@@ -45,6 +46,13 @@ orderByFoo =
     Expr.orderByExpr
       (RawSql.toRawSql fooColumn)
       Expr.ascendingOrder
+
+findAllFooBars :: Expr.QueryExpr
+findAllFooBars =
+  Expr.queryExpr
+    (Expr.selectClause $ Expr.selectExpr Nothing)
+    (Expr.selectColumns [fooColumn, barColumn])
+    (Just $ Expr.tableExpr fooBarTable Nothing (Just orderByFoo) Nothing Nothing Nothing)
 
 encodeFooBar :: FooBar -> [(Maybe B8.ByteString, SqlValue.SqlValue)]
 encodeFooBar fooBar =

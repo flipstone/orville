@@ -11,7 +11,7 @@ import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Test.AutoMigration as AutoMigration
 import qualified Test.Connection as Connection
 import qualified Test.EntityOperations as EntityOperations
-import qualified Test.Expr.InsertUpdate as ExprInsertUpdate
+import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Where as ExprWhere
@@ -39,7 +39,7 @@ main = do
       , SqlMarshaller.sqlMarshallerTests
       , FieldDefinition.fieldDefinitionTests pool
       , EntityOperations.entityOperationsTests pool
-      , ExprInsertUpdate.insertUpdateTests pool
+      , ExprInsertUpdateDelete.insertUpdateDeleteTests pool
       , ExprWhere.whereTests pool
       , ExprOrderBy.orderByTests pool
       , ExprTableDefinition.tableDefinitionTests pool

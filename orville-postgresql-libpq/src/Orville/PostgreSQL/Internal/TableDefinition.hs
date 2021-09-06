@@ -22,6 +22,7 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkQueryExpr,
     mkUpdateExpr,
     mkDeleteExpr,
+    ReturningOption (WithoutReturning, WithReturning),
   )
 where
 
@@ -199,20 +200,50 @@ mkCreateTableExpr tableDef =
         maybePrimaryKeyExpr
 
 {- |
-  Builds an 'Expr.InsertExpr' that will insert the given entities into the
-  SQL table when it is executed.
+  Specifies whether or not a @RETURNING@ clause should be included when a
+  query expression is built. This type is found as a parameter on a number
+  of the query building functions related to 'TableDefinition'.
+-}
+data ReturningOption
+  = WithoutReturning
+  | WithReturning
+
+mkReturningClause ::
+  ReturningOption ->
+  TableDefinition key writeEntity readEntty ->
+  Maybe Expr.ReturningExpr
+mkReturningClause returningOption tableDef =
+  case returningOption of
+    WithoutReturning ->
+      Nothing
+    WithReturning ->
+      Just
+        . Expr.returningExpr
+        . marshallerColumnNames
+        . tableMarshaller
+        $ tableDef
+
+{- |
+  Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
+  table when it is executed. A @RETURNING@ clause with either be included to
+  return the insert rows or not, depending on the 'ReturnOption' given.
 -}
 mkInsertExpr ::
+  ReturningOption ->
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   Expr.InsertExpr
-mkInsertExpr tableDef entities =
-  let columnList =
+mkInsertExpr returningOption tableDef entities =
+  let insertColumnList =
         mkInsertColumnList . tableMarshaller $ tableDef
 
       insertSource =
         mkInsertSource (tableMarshaller tableDef) entities
-   in Expr.insertExpr (tableName tableDef) (Just columnList) insertSource
+   in Expr.insertExpr
+        (tableName tableDef)
+        (Just insertColumnList)
+        insertSource
+        (mkReturningClause returningOption tableDef)
 
 {- |
   Builds an 'Expr.InsertColumnList' that specifies the columns for an
@@ -262,11 +293,12 @@ collectSqlValue fieldDef accessor encodeRest entity =
   SQL table when it is executed.
 -}
 mkUpdateExpr ::
+  ReturningOption ->
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
   Expr.UpdateExpr
-mkUpdateExpr tableDef key writeEntity =
+mkUpdateExpr returningOption tableDef key writeEntity =
   let setClauses =
         foldMarshallerFields
           (tableMarshaller tableDef)
@@ -281,15 +313,17 @@ mkUpdateExpr tableDef key writeEntity =
         (tableName tableDef)
         (Expr.setClauseList setClauses)
         (Just (Expr.whereClause isEntityKey))
+        (mkReturningClause returningOption tableDef)
 
 {- |
   Builds an 'Expr.DeleteExpr' that will delete the entity with the given 'key'.
 -}
 mkDeleteExpr ::
+  ReturningOption ->
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   Expr.DeleteExpr
-mkDeleteExpr tableDef key =
+mkDeleteExpr returningOption tableDef key =
   let isEntityKey =
         primaryKeyEqualsExpr
           (tablePrimaryKey tableDef)
@@ -297,6 +331,7 @@ mkDeleteExpr tableDef key =
    in Expr.deleteExpr
         (tableName tableDef)
         (Just (Expr.whereClause isEntityKey))
+        (mkReturningClause returningOption tableDef)
 
 {- |
   An internal helper function that collects the 'Expr.SetClause's to

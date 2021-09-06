@@ -30,7 +30,10 @@ tableDefinitionTests pool =
           originalFoo <- HH.forAll Foo.generate
 
           let insertFoo =
-                TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
+                TableDefinition.mkInsertExpr
+                  TableDefinition.WithoutReturning
+                  Foo.table
+                  (originalFoo NEL.:| [])
 
               selectFoos =
                 TableDefinition.mkQueryExpr
@@ -57,7 +60,10 @@ tableDefinitionTests pool =
           originalFoo <- HH.forAll Foo.generate
 
           let insertFoo =
-                TableDefinition.mkInsertExpr Foo.table (originalFoo NEL.:| [])
+                TableDefinition.mkInsertExpr
+                  TableDefinition.WithoutReturning
+                  Foo.table
+                  (originalFoo NEL.:| [])
 
           result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
             TestTable.dropAndRecreateTableDef connection Foo.table

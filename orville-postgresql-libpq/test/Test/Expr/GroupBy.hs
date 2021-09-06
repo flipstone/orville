@@ -85,7 +85,7 @@ runGroupByTest pool test = Property.singletonProperty $
     MIO.liftIO $ dropAndRecreateTestTable connection
 
     MIO.liftIO . RawSql.executeVoid connection $
-      Expr.insertExpr testTable Nothing (mkGroupByTestInsertSource test)
+      Expr.insertExpr testTable Nothing (mkGroupByTestInsertSource test) Nothing
 
     result <-
       MIO.liftIO $

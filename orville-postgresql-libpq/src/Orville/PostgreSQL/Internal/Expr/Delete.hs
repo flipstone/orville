@@ -6,9 +6,10 @@ module Orville.PostgreSQL.Internal.Expr.Delete
   )
 where
 
-import Data.Maybe (maybeToList)
+import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.Expr.Name (QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Internal.Expr.Where (WhereClause)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -19,12 +20,14 @@ newtype DeleteExpr
 deleteExpr ::
   QualifiedTableName ->
   Maybe WhereClause ->
+  Maybe ReturningExpr ->
   DeleteExpr
-deleteExpr tableName maybeWhereClause =
+deleteExpr tableName maybeWhereClause maybeReturningExpr =
   DeleteExpr $
-    RawSql.intercalate
-      RawSql.space
-      ( RawSql.fromString "DELETE FROM" :
-        RawSql.toRawSql tableName :
-        maybeToList (RawSql.toRawSql <$> maybeWhereClause)
-      )
+    RawSql.intercalate RawSql.space $
+      catMaybes
+        [ Just $ RawSql.fromString "DELETE FROM"
+        , Just $ RawSql.toRawSql tableName
+        , fmap RawSql.toRawSql maybeWhereClause
+        , fmap RawSql.toRawSql maybeReturningExpr
+        ]
