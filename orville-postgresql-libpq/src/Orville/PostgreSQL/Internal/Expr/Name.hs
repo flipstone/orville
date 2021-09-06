@@ -13,5 +13,6 @@ where
 import Orville.PostgreSQL.Internal.Expr.Name.ColumnName as Export
 import Orville.PostgreSQL.Internal.Expr.Name.Identifier as Export
 import Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName as Export
+import Orville.PostgreSQL.Internal.Expr.Name.SavepointName as Export
 import Orville.PostgreSQL.Internal.Expr.Name.SchemaName as Export
 import Orville.PostgreSQL.Internal.Expr.Name.TableName as Export

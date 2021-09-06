@@ -62,9 +62,12 @@ module Orville.PostgreSQL
     Orville.runOrville,
     MonadOrville.MonadOrville,
     MonadOrville.withConnection,
+    Transaction.withTransaction,
     MonadOrville.MonadOrvilleControl (liftWithConnection),
-    MonadOrville.HasOrvilleState (askOrvilleState, localOrvilleState),
-    MonadOrville.OrvilleState,
+    OrvilleState.HasOrvilleState (askOrvilleState, localOrvilleState),
+    OrvilleState.OrvilleState,
+    OrvilleState.newOrvilleState,
+    OrvilleState.resetOrvilleState,
     SelectOptions.SelectOptions,
     SelectOptions.where_,
     SelectOptions.emptySelectOptions,
@@ -126,8 +129,10 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.Orville as Orville
+import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
+import qualified Orville.PostgreSQL.Internal.Transaction as Transaction

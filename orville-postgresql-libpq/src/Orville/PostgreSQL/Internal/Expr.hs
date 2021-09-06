@@ -35,6 +35,9 @@ module Orville.PostgreSQL.Internal.Expr
     ColumnName,
     columnName,
     columnNameFromIdentifier,
+    SavepointName,
+    savepointName,
+    savepointNameFromIdentifier,
     WhereClause,
     whereClause,
     BooleanExpr,
@@ -112,6 +115,22 @@ module Orville.PostgreSQL.Internal.Expr
     IfExists,
     ifExists,
     Distinct (Distinct),
+    BeginTransactionExpr,
+    beginTransaction,
+    IsolationLevel,
+    serializable,
+    repeatableRead,
+    readCommitted,
+    readUncommitted,
+    CommitExpr,
+    commit,
+    RollbackExpr,
+    rollback,
+    rollbackTo,
+    SavepointExpr,
+    savepoint,
+    ReleaseSavepointExpr,
+    releaseSavepoint,
   )
 where
 
@@ -125,5 +144,6 @@ import Orville.PostgreSQL.Internal.Expr.OffsetExpr
 import Orville.PostgreSQL.Internal.Expr.OrderBy
 import Orville.PostgreSQL.Internal.Expr.Query
 import Orville.PostgreSQL.Internal.Expr.TableDefinition
+import Orville.PostgreSQL.Internal.Expr.Transaction
 import Orville.PostgreSQL.Internal.Expr.Update
 import Orville.PostgreSQL.Internal.Expr.Where

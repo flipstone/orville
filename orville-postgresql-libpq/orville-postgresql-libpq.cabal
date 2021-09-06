@@ -64,6 +64,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Orville.PostgreSQL.Internal.Expr.Name.Identifier
       Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName
+      Orville.PostgreSQL.Internal.Expr.Name.SavepointName
       Orville.PostgreSQL.Internal.Expr.Name.SchemaName
       Orville.PostgreSQL.Internal.Expr.Name.TableName
       Orville.PostgreSQL.Internal.Expr.OffsetExpr
@@ -79,6 +80,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Select.SelectClause
       Orville.PostgreSQL.Internal.Expr.Select.SelectExpr
       Orville.PostgreSQL.Internal.Expr.TableDefinition
+      Orville.PostgreSQL.Internal.Expr.Transaction
       Orville.PostgreSQL.Internal.Expr.Update
       Orville.PostgreSQL.Internal.Expr.Where
       Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
@@ -87,8 +89,10 @@ library
       Orville.PostgreSQL.Internal.Expr.Where.WhereClause
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
+      Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
+      Orville.PostgreSQL.Internal.Transaction
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       src
@@ -100,6 +104,7 @@ library
     , dlist >=0.8 && <1.1
     , postgresql-libpq >=0.9.4.2 && <0.10
     , resource-pool
+    , safe-exceptions >=0.1.7
     , text
     , time >=1.5
     , transformers ==0.5.*
@@ -135,6 +140,7 @@ test-suite spec
       Test.SqlType
       Test.TableDefinition
       Test.TestTable
+      Test.Transaction
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       test
@@ -146,6 +152,7 @@ test-suite spec
     , orville-postgresql-libpq
     , postgresql-libpq
     , resource-pool
+    , safe-exceptions
     , text
     , time
   default-language: Haskell2010

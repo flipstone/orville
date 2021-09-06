@@ -11,7 +11,7 @@ module Orville.PostgreSQL.AutoMigration
   )
 where
 
-import Control.Exception (Exception, throwIO)
+import Control.Exception.Safe (Exception, throwIO)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
 import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)

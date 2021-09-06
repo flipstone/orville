@@ -24,6 +24,7 @@ import qualified Test.SelectOptions as SelectOptions
 import qualified Test.SqlMarshaller as SqlMarshaller
 import qualified Test.SqlType as SqlType
 import qualified Test.TableDefinition as TableDefinition
+import qualified Test.Transaction as Transaction
 
 main :: IO ()
 main = do
@@ -44,9 +45,10 @@ main = do
       , ExprTableDefinition.tableDefinitionTests pool
       , SqlType.sqlTypeTests pool
       , SelectOptions.selectOptionsTests
+      , ReservedWords.reservedWordsTests pool
+      , Transaction.transactionTests pool
       , InformationSchema.informationSchemaTests pool
       , AutoMigration.autoMigrationTests pool
-      , ReservedWords.reservedWordsTests pool
       ]
 
   Monad.unless (Property.allPassed summary) SE.exitFailure

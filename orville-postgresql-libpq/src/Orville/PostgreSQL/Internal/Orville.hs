@@ -7,12 +7,14 @@ module Orville.PostgreSQL.Internal.Orville
   )
 where
 
+import qualified Control.Exception.Safe as ExSafe
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 
 {- |
   The 'Orville' Monad provides a easy starter implementation of 'MonadOrville'
@@ -23,7 +25,7 @@ import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
   'MonadOrville' to learn what needs to be done.
 -}
 newtype Orville a = Orville
-  { unwrapOrville :: ReaderT MonadOrville.OrvilleState IO a
+  { unwrapOrville :: ReaderT OrvilleState.OrvilleState IO a
   }
   deriving
     ( Functor
@@ -31,7 +33,9 @@ newtype Orville a = Orville
     , Monad
     , MonadIO
     , MonadOrville.MonadOrvilleControl
-    , MonadOrville.HasOrvilleState
+    , OrvilleState.HasOrvilleState
+    , ExSafe.MonadThrow
+    , ExSafe.MonadCatch
     )
 
 instance MonadOrville.MonadOrville Orville
@@ -42,7 +46,7 @@ instance MonadOrville.MonadOrville Orville
 -}
 runOrville :: Pool Connection -> Orville a -> IO a
 runOrville pool =
-  runOrvilleWithState (MonadOrville.newOrvilleState pool)
+  runOrvilleWithState (OrvilleState.newOrvilleState pool)
 
 {- |
   Runs an 'Orville' operation in the 'IO' monad, starting from the provided
@@ -57,6 +61,6 @@ runOrville pool =
   On the other hand, if you know that you want to pass the existing connection
   state from another monad into the 'Orville' monad, this is how you do it.
 -}
-runOrvilleWithState :: MonadOrville.OrvilleState -> Orville a -> IO a
+runOrvilleWithState :: OrvilleState.OrvilleState -> Orville a -> IO a
 runOrvilleWithState state orville =
   runReaderT (unwrapOrville orville) state
