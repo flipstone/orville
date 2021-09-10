@@ -1,10 +1,20 @@
 module Test.Entities.Foo
   ( Foo (..),
+    FooId,
+    FooName,
     table,
     generate,
+    generateFooWithName,
+    generateFooId,
+    generateFooName,
     generateList,
+    generateListUsing,
     withTable,
     fooIdField,
+    fooNameField,
+    fooAgeField,
+    hasName,
+    averageFooAge,
   )
 where
 
@@ -26,10 +36,12 @@ import qualified Test.TestTable as TestTable
 
 type FooId = Int32
 type FooName = T.Text
+type FooAge = Int32
 
 data Foo = Foo
   { fooId :: FooId
   , fooName :: FooName
+  , fooAge :: FooAge
   }
   deriving (Eq, Show)
 
@@ -42,6 +54,7 @@ fooMarshaller =
   Foo
     <$> Orville.marshallField fooId fooIdField
     <*> Orville.marshallField fooName fooNameField
+    <*> Orville.marshallField fooAge fooAgeField
 
 fooIdField :: Orville.FieldDefinition Orville.NotNull FooId
 fooIdField =
@@ -51,17 +64,59 @@ fooNameField :: Orville.FieldDefinition Orville.NotNull FooName
 fooNameField =
   Orville.unboundedTextField "name"
 
+fooAgeField :: Orville.FieldDefinition Orville.NotNull FooAge
+fooAgeField =
+  Orville.integerField "age"
+
 generate :: HH.Gen Foo
 generate =
   Foo
-    <$> PGGen.pgInt32
-    <*> PGGen.pgText (Range.constant 0 10)
+    <$> generateFooId
+    <*> generateFooName
+    <*> generateFooAge
+
+generateFooWithName :: FooName -> HH.Gen Foo
+generateFooWithName name =
+  Foo
+    <$> generateFooId
+    <*> pure name
+    <*> generateFooAge
+
+generateFooId :: HH.Gen FooId
+generateFooId =
+  PGGen.pgInt32
+
+generateFooName :: HH.Gen FooName
+generateFooName =
+  PGGen.pgText (Range.constant 0 10)
+
+generateFooAge :: HH.Gen FooAge
+generateFooAge =
+  Gen.integral (Range.constant minFooAge maxFooAge)
+
+minFooAge :: FooAge
+minFooAge = 0
+
+maxFooAge :: FooAge
+maxFooAge = 50
+
+averageFooAge :: FooAge
+averageFooAge =
+  div (minFooAge + maxFooAge) 2
+
+hasName :: FooName -> Foo -> Bool
+hasName name foo =
+  fooName foo == name
 
 generateList :: HH.Range Int -> HH.Gen [Foo]
-generateList range =
+generateList =
+  flip generateListUsing generate
+
+generateListUsing :: HH.Range Int -> HH.Gen Foo -> HH.Gen [Foo]
+generateListUsing range generator =
   fmap
     (List.nubBy ((==) `on` fooId))
-    (Gen.list range generate)
+    (Gen.list range generator)
 
 withTable :: MonadIO m => Pool Connection -> Orville.Orville a -> m a
 withTable pool operation =

@@ -45,6 +45,10 @@ library
       Orville.PostgreSQL.Internal.SqlType
       Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Internal.TableDefinition
+      Orville.PostgreSQL.Plan.Explanation
+      Orville.PostgreSQL.Plan.Many
+      Orville.PostgreSQL.Plan.Operation
+      Orville.PostgreSQL.Plan
   other-modules:
       Orville.PostgreSQL.InformationSchema.ColumnName
       Orville.PostgreSQL.InformationSchema.InformationSchemaColumn
@@ -125,6 +129,7 @@ test-suite spec
       Test.Connection
       Test.Entities.Bar
       Test.Entities.Foo
+      Test.Entities.FooChild
       Test.Entities.User
       Test.EntityOperations
       Test.Expr.GroupBy
@@ -136,6 +141,7 @@ test-suite spec
       Test.FieldDefinition
       Test.InformationSchema
       Test.PGGen
+      Test.Plan
       Test.Property
       Test.RawSql
       Test.ReservedWords

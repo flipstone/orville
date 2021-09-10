@@ -37,6 +37,10 @@ library:
     - Orville.PostgreSQL.Internal.SqlType
     - Orville.PostgreSQL.Internal.SqlValue
     - Orville.PostgreSQL.Internal.TableDefinition
+    - Orville.PostgreSQL.Plan.Explanation
+    - Orville.PostgreSQL.Plan.Many
+    - Orville.PostgreSQL.Plan.Operation
+    - Orville.PostgreSQL.Plan
   when:
     - condition: flag(ci)
       then:
