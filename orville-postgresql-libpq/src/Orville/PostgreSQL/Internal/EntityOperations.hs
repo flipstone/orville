@@ -21,6 +21,7 @@ import Data.Maybe (listToMaybe)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
+import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
 
@@ -160,18 +161,8 @@ findEntitiesBy ::
   SelectOptions.SelectOptions ->
   m [readEntity]
 findEntitiesBy entityTable selectOptions =
-  let selectExpr =
-        TableDef.mkQueryExpr
-          entityTable
-          (SelectOptions.selectDistinct selectOptions)
-          (SelectOptions.selectWhereClause selectOptions)
-          Nothing
-          Nothing
-          Nothing
-          Nothing
-   in Execute.executeAndDecode
-        selectExpr
-        (TableDef.tableMarshaller entityTable)
+  Select.executeSelect $
+    Select.selectTable entityTable selectOptions
 
 {- |
   Like 'findEntitiesBy, but adds a 'LIMIT 1' to the query and then returns

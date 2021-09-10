@@ -12,6 +12,14 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     marshallResultFromSql,
     marshallRowFromSql,
     marshallField,
+    marshallReadOnlyField,
+    marshallReadOnly,
+    marshallNested,
+    maybeMapper,
+    partialMap,
+    marshallerColumnNames,
+    ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
+    collectFromField,
     foldMarshallerFields,
     FieldFold,
     mkRowSource,
@@ -20,10 +28,6 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     applyRowSource,
     constRowSource,
     failRowSource,
-    maybeMapper,
-    partialMap,
-    marshallReadOnly,
-    marshallReadOnlyField,
   )
 where
 
@@ -35,10 +39,12 @@ import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition
   ( FieldDefinition,
     FieldNullability (NotNullField, NullableField),
     asymmetricNullableField,
+    fieldColumnName,
     fieldName,
     fieldNameToByteString,
     fieldNullability,
@@ -77,6 +83,21 @@ instance Applicative (SqlMarshaller a) where
   (<*>) = MarshallApply
 
 {- |
+  Returns the list of column names which are reference by the
+  'FieldDefinition's of the 'SqlMarshaller'
+
+  Depending on usage, (e.g. insert vs query), you may or may not want the
+  read-only columns included. The caller must specify a 'ReadyOnlyColumnOption'
+  to indicate which is desired.
+-}
+marshallerColumnNames ::
+  ReadOnlyColumnOption ->
+  SqlMarshaller writeEntity readEntity ->
+  [Expr.ColumnName]
+marshallerColumnNames includeReadOnlyColumns marshaller =
+  foldMarshallerFields marshaller [] (collectFromField includeReadOnlyColumns fieldColumnName)
+
+{- |
   A synonym that captures the type of folding functions that are used
   with 'foldMarshallerFields'. Note that this synonym is defined using
   'RankNTypes' because the folding function must consume all fields,
@@ -93,6 +114,32 @@ type FieldFold writeEntity result =
   Maybe (writeEntity -> a) ->
   result ->
   result
+
+{- |
+  Builds a 'FieldFold' that can be used with 'foldMarshallerFields' to collect
+  a value derived from a 'FieldDefinition' via the given function. The derived
+  value is added to the list of values being built.
+-}
+collectFromField ::
+  ReadOnlyColumnOption ->
+  (forall nullability a. FieldDefinition nullability a -> result) ->
+  FieldFold entity [result]
+collectFromField readOnlyColumnOption fromField fieldDef maybeGetValue results =
+  case maybeGetValue of
+    Just _ ->
+      fromField fieldDef : results
+    Nothing ->
+      case readOnlyColumnOption of
+        IncludeReadOnlyColumns -> fromField fieldDef : results
+        ExcludeReadOnlyColumns -> results
+
+{- |
+  Specifies whether read-only fields should be included when using functions
+  such as 'collectFromField' and 'marshallerColumnNames'.
+-}
+data ReadOnlyColumnOption
+  = IncludeReadOnlyColumns
+  | ExcludeReadOnlyColumns
 
 {- |
   'foldMarshallerFields' allows you to consume the 'FieldDefinition's that
@@ -420,6 +467,46 @@ marshallField accessor fieldDef =
   MarshallNest accessor (MarshallField fieldDef)
 
 {- |
+  Nests a 'SqlMarshaller' inside another, using the given accesser to retrieve
+  value to be marshalled. The resulting marshaller can then be used in the same
+  way as 'marshallField' within the applicative syntax of a larger marshaller.
+
+  For Example:
+
+  @
+  data Person =
+    Person
+      { personId :: PersonId
+      , personName :: Name
+      }
+
+  data Name =
+    Name
+      { firstName :: T.Text
+      , lastName :: T.Text
+      }
+
+  personMarshaller :: SqlMarshaller Person Person
+  personMarshaller =
+    Person
+      <$> marshallField personId personIdField
+      <*> marshallNested personName nameMarshaller
+
+  nameMarshaller :: SqlMarshaller Name Name
+  nameMarshaller =
+    Name
+      <$> marshallField firstName firstNameField
+      <*> marshallField lastName lastNameField
+  @
+-}
+marshallNested ::
+  (parentEntity -> nestedWriteEntity) ->
+  SqlMarshaller nestedWriteEntity nestedReadEntity ->
+  SqlMarshaller parentEntity nestedReadEntity
+marshallNested =
+  MarshallNest
+
+{- |
   Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
   and applies a tag to avoid double mapping.
 -}
@@ -449,9 +536,20 @@ maybeMapper =
 partialMap :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
 partialMap = MarshallPartial
 
+{- |
+  Marks a 'SqlMarshaller' as ready only so that it will not attempt to
+  read any values from the @writeEntity@. You should use this if you have
+  a group of fields which are populated by database rather than the application.
+-}
 marshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
 marshallReadOnly = MarshallReadOnly
 
+{- |
+  A version of 'marshallField' that uses 'marshallReadOnly' to make a single
+  read only field. You will usually use this in conjuction with a
+  'FieldDefinition' like @serialField@ where the valuue is populated by the
+  database.
+-}
 marshallReadOnlyField ::
   FieldDefinition nullability fieldValue ->
   SqlMarshaller writeEntity fieldValue

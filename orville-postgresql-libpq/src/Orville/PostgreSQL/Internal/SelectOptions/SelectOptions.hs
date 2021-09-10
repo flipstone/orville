@@ -6,6 +6,8 @@ module Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
     selectWhereClause,
     selectOrderByClause,
     selectGroupByClause,
+    selectLimitExpr,
+    selectOffsetExpr,
     distinct,
     where_,
     orderBy,
@@ -16,7 +18,7 @@ module Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
 where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Monoid (First (First))
+import Data.Monoid (First (First, getFirst))
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr as Expr
@@ -130,6 +132,22 @@ selectGroupByClause selectOptions =
       Nothing
     (first : rest) ->
       Just . Expr.groupByClause $ foldl Expr.appendGroupBy first rest
+
+{- |
+  Builds a 'Expr.LimitExpr' that will limit the query results to the
+  number specified in the 'SelectOptions' (if any)
+-}
+selectLimitExpr :: SelectOptions -> Maybe Expr.LimitExpr
+selectLimitExpr =
+  getFirst . i_limitExpr
+
+{- |
+  Builds a 'Expr.OffsetExpr' that will limit the query results to the
+  number specified in the 'SelectOptions' (if any)
+-}
+selectOffsetExpr :: SelectOptions -> Maybe Expr.OffsetExpr
+selectOffsetExpr =
+  getFirst . i_offsetExpr
 
 {- |
   Constructs a 'SelectOptions' with just the given 'WhereCondition'.

@@ -86,11 +86,11 @@ module Orville.PostgreSQL
     SelectOptions.fieldLessThan,
     SelectOptions.fieldGreaterThanOrEqualTo,
     SelectOptions.fieldLessThanOrEqualTo,
+    SelectOptions.fieldIn,
+    SelectOptions.fieldNotIn,
     SelectOptions.whereBooleanExpr,
     SelectOptions.whereAnd,
     SelectOptions.whereOr,
-    SelectOptions.whereIn,
-    SelectOptions.whereNotIn,
     SqlType.SqlType
       ( SqlType.SqlType,
         SqlType.sqlTypeExpr,

@@ -92,18 +92,18 @@ selectOptionsTests =
             )
       )
     ,
-      ( String.fromString "whereIn generates expected sql"
+      ( String.fromString "fieldIn generates expected sql"
       , Property.singletonProperty $
           assertWhereClauseEquals
             (Just "WHERE (\"foo\" IN ($1))")
-            (SO.where_ $ SO.whereIn fooField (10 :| []))
+            (SO.where_ $ SO.fieldIn fooField (10 :| []))
       )
     ,
-      ( String.fromString "whereNotIn generates expected sql"
+      ( String.fromString "fieldNotIn generates expected sql"
       , Property.singletonProperty $
           assertWhereClauseEquals
             (Just "WHERE (\"foo\" NOT IN ($1, $2))")
-            (SO.where_ $ SO.whereNotIn fooField (10 :| [20]))
+            (SO.where_ $ SO.fieldNotIn fooField (10 :| [20]))
       )
     ,
       ( String.fromString "distinct generates expected sql"

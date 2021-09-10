@@ -19,7 +19,6 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkCreateTableExpr,
     mkInsertColumnList,
     mkInsertSource,
-    mkQueryExpr,
     mkUpdateExpr,
     mkDeleteExpr,
     ReturningOption (WithoutReturning, WithReturning),
@@ -29,9 +28,9 @@ where
 import Data.List.NonEmpty (NonEmpty, toList)
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
+import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
-import Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, SqlMarshaller, foldMarshallerFields)
+import Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerColumnNames)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 {- |
@@ -350,55 +349,3 @@ collectSetClauses entity fieldDef maybeAccessor clauses =
               (fieldColumnName fieldDef)
               (fieldValueToSqlValue fieldDef (accessor entity))
        in newClause : clauses
-
-{- |
-  Builds a 'Expr.QueryExpr' that will do a select from the SQL table described
-  by the table definiton, selecting all the columns found in the table's
-  'SqlMarshaller'.
--}
-mkQueryExpr ::
-  TableDefinition key writeEntity readEntity ->
-  Expr.SelectClause ->
-  Maybe Expr.WhereClause ->
-  Maybe Expr.OrderByClause ->
-  Maybe Expr.GroupByClause ->
-  Maybe Expr.LimitExpr ->
-  Maybe Expr.OffsetExpr ->
-  Expr.QueryExpr
-mkQueryExpr tableDef selectClause whereClause orderByClause groupByClause limitExpr offsetExpr =
-  let columns =
-        marshallerColumnNames IncludeReadOnlyColumns . tableMarshaller $ tableDef
-   in Expr.queryExpr
-        selectClause
-        (Expr.selectColumns columns)
-        (Just $ Expr.tableExpr (tableName tableDef) whereClause orderByClause groupByClause limitExpr offsetExpr)
-
-{- |
-  An internal helper function that collects the column names for all the
-  'FieldDefinition's that are referenced by the given 'SqlMarshaller'.
--}
-marshallerColumnNames :: ReadOnlyColumnOption -> SqlMarshaller writeEntity readEntity -> [Expr.ColumnName]
-marshallerColumnNames includeReadOnlyColumns marshaller =
-  foldMarshallerFields marshaller [] (collectFromField includeReadOnlyColumns fieldColumnName)
-
-{- |
-  An internal helper function that collects a value derived from a
-  'FieldDefinition' via the given function. The derived value is added to the
-  list of values being built.
--}
-collectFromField ::
-  ReadOnlyColumnOption ->
-  (forall nullability a. FieldDefinition nullability a -> result) ->
-  FieldFold entity [result]
-collectFromField readOnlyColumnOption fromField fieldDef maybeGetValue results =
-  case maybeGetValue of
-    Just _ ->
-      fromField fieldDef : results
-    Nothing ->
-      case readOnlyColumnOption of
-        IncludeReadOnlyColumns -> fromField fieldDef : results
-        ExcludeReadOnlyColumns -> results
-
-data ReadOnlyColumnOption
-  = IncludeReadOnlyColumns
-  | ExcludeReadOnlyColumns

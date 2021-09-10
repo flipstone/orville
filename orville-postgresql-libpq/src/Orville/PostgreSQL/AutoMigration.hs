@@ -300,7 +300,7 @@ findTablesInSchemas currentCatalog schemaNameSet =
         ( Orville.where_
             ( Orville.whereAnd
                 ( Orville.fieldEquals IS.tableCatalogField currentCatalog
-                    :| [Orville.whereIn IS.tableSchemaField nonEmptySchemaNames]
+                    :| [Orville.fieldIn IS.tableSchemaField nonEmptySchemaNames]
                 )
             )
         )

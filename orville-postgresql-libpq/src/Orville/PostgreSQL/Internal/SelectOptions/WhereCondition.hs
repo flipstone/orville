@@ -8,12 +8,12 @@ module Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
     fieldLessThan,
     fieldGreaterThanOrEqualTo,
     fieldLessThanOrEqualTo,
+    fieldIn,
+    fieldNotIn,
     whereAnd,
     whereOr,
     whereBooleanExpr,
     whereConditionToBooleanExpr,
-    whereIn,
-    whereNotIn,
   )
 where
 
@@ -95,6 +95,26 @@ fieldLessThanOrEqualTo =
   whereColumnComparison Expr.columnLessThanOrEqualTo
 
 {- |
+  Checks that a field matches a list of values
+-}
+fieldIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
+fieldIn fieldDef values =
+  WhereCondition $
+    Expr.columnIn
+      (FieldDef.fieldColumnName fieldDef)
+      (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
+
+{- |
+  Checks that a field does not match a list of values
+-}
+fieldNotIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
+fieldNotIn fieldDef values =
+  WhereCondition $
+    Expr.columnNotIn
+      (FieldDef.fieldColumnName fieldDef)
+      (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
+
+{- |
   INTERNAL: Constructs a field-based 'WhereCondition' using a function that
   builds a 'Expr.BooleanExpr'
 -}
@@ -120,26 +140,6 @@ whereAnd =
 whereOr :: NonEmpty WhereCondition -> WhereCondition
 whereOr =
   foldParenthenizedExprs Expr.orExpr
-
-{- |
-  Checks that a field matches a list of values
--}
-whereIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
-whereIn fieldDef values =
-  WhereCondition $
-    Expr.columnIn
-      (FieldDef.fieldColumnName fieldDef)
-      (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
-
-{- |
-  Checks that a field does not match a list of values
--}
-whereNotIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
-whereNotIn fieldDef values =
-  WhereCondition $
-    Expr.columnNotIn
-      (FieldDef.fieldColumnName fieldDef)
-      (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
 
 {- |
   INTERNAL: Combines a (non-empty) list of 'WhereCondition's together using

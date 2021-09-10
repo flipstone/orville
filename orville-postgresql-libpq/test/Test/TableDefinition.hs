@@ -11,10 +11,10 @@ import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
+import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Bar as Bar
@@ -37,23 +37,16 @@ tableDefinitionTests pool =
                   (originalFoo NEL.:| [])
 
               selectFoos =
-                TableDefinition.mkQueryExpr
-                  Foo.table
-                  (Expr.selectClause $ Expr.selectExpr Nothing)
-                  Nothing
-                  Nothing
-                  Nothing
-                  Nothing
-                  Nothing
+                Select.selectTable Foo.table mempty
 
           foosFromDB <-
-            MIO.liftIO . Pool.withResource pool $ \connection -> do
-              TestTable.dropAndRecreateTableDef connection Foo.table
-              RawSql.executeVoid connection insertFoo
-              result <- RawSql.execute connection selectFoos
-              SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Foo.table) result
+            MIO.liftIO . Orville.runOrville pool $ do
+              Orville.withConnection $ \connection -> do
+                MIO.liftIO $ TestTable.dropAndRecreateTableDef connection Foo.table
+              Orville.executeVoid insertFoo
+              Select.executeSelect selectFoos
 
-          foosFromDB HH.=== Right [originalFoo]
+          foosFromDB HH.=== [originalFoo]
       )
     ,
       ( String.fromString "Creates a table that can read from read only fields"
@@ -64,23 +57,16 @@ tableDefinitionTests pool =
                 TableDefinition.mkInsertExpr TableDefinition.WithoutReturning Bar.table (originalBar NEL.:| [])
 
               selectBars =
-                TableDefinition.mkQueryExpr
-                  Bar.table
-                  (Expr.selectClause $ Expr.selectExpr Nothing)
-                  Nothing
-                  Nothing
-                  Nothing
-                  Nothing
-                  Nothing
+                Select.selectTable Bar.table mempty
 
           barsFromDB <-
-            MIO.liftIO . Pool.withResource pool $ \connection -> do
-              TestTable.dropAndRecreateTableDef connection Bar.table
-              RawSql.executeVoid connection insertBar
-              result <- RawSql.execute connection selectBars
-              SqlMarshaller.marshallResultFromSql (TableDefinition.tableMarshaller Bar.table) result
+            MIO.liftIO . Orville.runOrville pool $ do
+              Orville.withConnection $ \connection -> do
+                MIO.liftIO $ TestTable.dropAndRecreateTableDef connection Bar.table
+              Orville.executeVoid insertBar
+              Select.executeSelect selectBars
 
-          fmap (fmap Bar.barName) barsFromDB HH.=== Right [Bar.barName originalBar]
+          (fmap Bar.barName) barsFromDB HH.=== [Bar.barName originalBar]
       )
     ,
       ( String.fromString "Creates a primary key that rejects duplicate records"
