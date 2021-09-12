@@ -37,8 +37,8 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fixedTextField,
     textSearchVectorField,
     dateField,
-    timestampField,
-    timestampWithoutZoneField,
+    utcTimestampField,
+    localTimestampField,
     fieldOfType,
   )
 where
@@ -323,21 +323,21 @@ dateField = fieldOfType SqlType.date
   Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime values as the
   PostgreSQL "TIMESTAMP with time zone" type.
 -}
-timestampField ::
+utcTimestampField ::
   -- | Name of the field in the database
   String ->
   FieldDefinition NotNull Time.UTCTime
-timestampField = fieldOfType SqlType.timestamp
+utcTimestampField = fieldOfType SqlType.timestamp
 
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime values as the
   PostgreSQL "TIMESTAMP without time zone" type.
 -}
-timestampWithoutZoneField ::
+localTimestampField ::
   -- | Name of the field in the database
   String ->
-  FieldDefinition NotNull Time.UTCTime
-timestampWithoutZoneField = fieldOfType SqlType.timestampWithoutZone
+  FieldDefinition NotNull Time.LocalTime
+localTimestampField = fieldOfType SqlType.timestampWithoutZone
 
 {- |
   Builds a 'FieldDefinition' for will use the given 'SqlType' to determine

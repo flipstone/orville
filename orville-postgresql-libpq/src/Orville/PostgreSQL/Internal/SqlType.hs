@@ -270,7 +270,7 @@ timestamp =
     , sqlTypeId = LibPQ.Oid 1184
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromUTCTime
-    , sqlTypeFromSql = SqlValue.toUTCTimeWithZone
+    , sqlTypeFromSql = SqlValue.toUTCTime
     }
 
 {- |
@@ -279,7 +279,7 @@ timestamp =
 
   http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
 -}
-timestampWithoutZone :: SqlType Time.UTCTime
+timestampWithoutZone :: SqlType Time.LocalTime
 timestampWithoutZone =
   SqlType
     { sqlTypeExpr = Expr.timestampWithoutZone
@@ -287,8 +287,8 @@ timestampWithoutZone =
     , sqlTypeNullable = False
     , sqlTypeId = LibPQ.Oid 1114
     , sqlTypeSqlSize = Just 8
-    , sqlTypeToSql = SqlValue.fromUTCTime
-    , sqlTypeFromSql = SqlValue.toUTCTimeWithoutZone
+    , sqlTypeToSql = SqlValue.fromLocalTime
+    , sqlTypeFromSql = SqlValue.toLocalTime
     }
 
 {- |
