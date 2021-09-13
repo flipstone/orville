@@ -10,6 +10,8 @@ module Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
     fieldLessThanOrEqualTo,
     fieldIn,
     fieldNotIn,
+    fieldTupleIn,
+    fieldTupleNotIn,
     whereAnd,
     whereOr,
     whereBooleanExpr,
@@ -113,6 +115,46 @@ fieldNotIn fieldDef values =
     Expr.columnNotIn
       (FieldDef.fieldColumnName fieldDef)
       (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
+
+{- |
+  Checks that a tuple of two fields is in the list of specified tuplies
+-}
+fieldTupleIn ::
+  FieldDef.FieldDefinition nullabilityA a ->
+  FieldDef.FieldDefinition nullabilityB b ->
+  NonEmpty (a, b) ->
+  WhereCondition
+fieldTupleIn fieldDefA fieldDefB values =
+  WhereCondition $
+    Expr.columnTupleIn
+      (FieldDef.fieldColumnName fieldDefA :| [FieldDef.fieldColumnName fieldDefB])
+      (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
+
+{- |
+  Checks that a tuple of two fields is not in the list of specified tuplies
+-}
+fieldTupleNotIn ::
+  FieldDef.FieldDefinition nullabilityA a ->
+  FieldDef.FieldDefinition nullabilityB b ->
+  NonEmpty (a, b) ->
+  WhereCondition
+fieldTupleNotIn fieldDefA fieldDefB values =
+  WhereCondition $
+    Expr.columnTupleNotIn
+      (FieldDef.fieldColumnName fieldDefA :| [FieldDef.fieldColumnName fieldDefB])
+      (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
+
+{- |
+  Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two fields
+-}
+toSqlValueTuple ::
+  FieldDef.FieldDefinition nullabilityA a ->
+  FieldDef.FieldDefinition nullabilityB b ->
+  (a, b) ->
+  NonEmpty SqlValue.SqlValue
+toSqlValueTuple fieldDefA fieldDefB (a, b) =
+  FieldDef.fieldValueToSqlValue fieldDefA a
+    :| [FieldDef.fieldValueToSqlValue fieldDefB b]
 
 {- |
   INTERNAL: Constructs a field-based 'WhereCondition' using a function that

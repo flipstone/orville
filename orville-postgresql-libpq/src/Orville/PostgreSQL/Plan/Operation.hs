@@ -5,6 +5,9 @@ module Orville.PostgreSQL.Plan.Operation
   ( Operation (..),
     AssertionFailed,
     mkAssertionFailed,
+    WherePlanner (..),
+    byField,
+    byFieldTuple,
     findOne,
     findOneWhere,
     findAll,
@@ -46,6 +49,10 @@ import qualified Orville.PostgreSQL.Plan.Many as Many
   operations to include in a 'Database.Orville.PostgreSQL.Plan.Plan' beyond
   those already provided in the 'Database.Orville.PostgreSQL.Plan.Plan'
   api.
+
+  You can build your own custom 'Operation' values either directly, or using
+  the function and types in this module, such as 'WherePlanner' (via 'findAll',
+  etc), or 'SelectOperation' (via 'selectOperation').
 -}
 data Operation param result = Operation
   { -- | 'executeOperationOne' will be called when an plan is
@@ -145,6 +152,104 @@ assertRight =
     }
 
 {- |
+  The functions below ('findOne', 'findAll', etc) accept a 'WherePlanner'
+  to determine how to build the where conditions for executing a 'Select'
+  statement as part of a the plan operation.
+
+  For simple queries you can use the functions such as 'byField' that are
+  provided here to build a 'WherePlanner', but you may also build your own
+  custom 'WherePlanner' for more advanced use cases.
+
+  If you need to execute a custom query that cannot be build by providing
+  custom where clause via 'WherePlanner', you may want to use more
+  direct 'selectOperation' function.
+-}
+data WherePlanner param = WherePlanner
+  { -- | The 'paramMarshaller' function provided here will be used to decode
+    -- the parameter field from the result set so that the row can be properly
+    -- associated with the input parameter that matched it.
+    paramMarshaller :: forall entity. (entity -> param) -> SqlMarshaller.SqlMarshaller entity param
+  , -- | 'executeOneWhereCondition' must build a where condition that will
+    -- match only those rows that match the input paramater.
+    executeOneWhereCondition :: param -> SelectOptions.WhereCondition
+  , -- | 'executeManyWhereCondition' must build a where condition that will
+    -- match only those rows that any (not all!) of the input parameters.
+    executeManyWhereCondition :: NonEmpty param -> SelectOptions.WhereCondition
+  , -- | 'explainOneWhereCondition' must build a where condition that is
+    -- suitable to be returned as an explanation of
+    -- 'executeManyWhereCondition' would return when given a parameter. For
+    -- example, this could fill in either an example or dummy value.
+    explainOneWhereCondition :: SelectOptions.WhereCondition
+  , -- | 'explainManyWhereCondition' must build a where condition that is
+    -- suitable to be returned as an explanation of
+    -- 'executeOneWhereCondition' would when given a list of parameters. For
+    -- example, this could fill in either example or dummy values.
+    explainManyWhereCondition :: SelectOptions.WhereCondition
+  }
+
+{- |
+  Builds a 'WherePlanner' that will match on a single
+  'FieldDefinition.FieldDefinition'.  The resulting 'WherePlanner' can be used
+  with function such as 'findOne' and 'findAll' to construct an 'Operation'.
+-}
+byField ::
+  FieldDefinition.FieldDefinition nullability fieldValue ->
+  WherePlanner fieldValue
+byField fieldDef =
+  let stringyField =
+        stringifyField fieldDef
+   in WherePlanner
+        { paramMarshaller = flip SqlMarshaller.marshallField fieldDef
+        , executeOneWhereCondition = \fieldValue -> SelectOptions.fieldEquals fieldDef fieldValue
+        , executeManyWhereCondition = \fieldValues -> SelectOptions.fieldIn fieldDef fieldValues
+        , explainOneWhereCondition = SelectOptions.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
+        , explainManyWhereCondition = SelectOptions.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
+        }
+
+{- |
+  Builds a 'WherePlanner' that will match on a 2-tuple of
+  'FieldDefinition.FieldDefinition's.  The resulting 'WherePlanner' can be used
+  with function such as 'findOne' and 'findAll' to construct an 'Operation'.
+-}
+byFieldTuple ::
+  forall nullabilityA fieldValueA nullabilityB fieldValueB.
+  FieldDefinition.FieldDefinition nullabilityA fieldValueA ->
+  FieldDefinition.FieldDefinition nullabilityB fieldValueB ->
+  WherePlanner (fieldValueA, fieldValueB)
+byFieldTuple fieldDefA fieldDefB =
+  let stringyFieldA =
+        stringifyField fieldDefA
+
+      stringyFieldB =
+        stringifyField fieldDefB
+
+      marshaller ::
+        (a -> (fieldValueA, fieldValueB)) ->
+        SqlMarshaller.SqlMarshaller a (fieldValueA, fieldValueB)
+      marshaller accessor =
+        (,)
+          <$> SqlMarshaller.marshallField (fst . accessor) fieldDefA
+          <*> SqlMarshaller.marshallField (snd . accessor) fieldDefB
+
+      packAll =
+        fmap (\(a, b) -> (T.pack a, T.pack b))
+   in WherePlanner
+        { paramMarshaller = marshaller
+        , executeOneWhereCondition = \fieldValue -> SelectOptions.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
+        , executeManyWhereCondition = \fieldValues -> SelectOptions.fieldTupleIn fieldDefA fieldDefB fieldValues
+        , explainOneWhereCondition =
+            SelectOptions.fieldTupleIn
+              stringyFieldA
+              stringyFieldB
+              (packAll $ ("EXAMPLE VALUE A", "EXAMPLE VALUE B") :| [])
+        , explainManyWhereCondition =
+            SelectOptions.fieldTupleIn
+              stringyFieldA
+              stringyFieldB
+              (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
+        }
+
+{- |
   'findOne' builds a planning primitive that finds (at most) one row from the
   given table where the column value for the provided 'Core.FieldDefinition' matches
   the plan's input parameter. When executed on multiple parameters it fetches
@@ -152,12 +257,12 @@ assertRight =
   of those rows to use as the result for each input.
 -}
 findOne ::
-  Ord fieldValue =>
+  Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
-  FieldDefinition.FieldDefinition nullability fieldValue ->
-  Operation fieldValue (Maybe readEntity)
-findOne tableDef fieldDef =
-  findOneWithOpts tableDef fieldDef mempty
+  WherePlanner param ->
+  Operation param (Maybe readEntity)
+findOne tableDef wherePlanner =
+  findOneWithOpts tableDef wherePlanner mempty
 
 {- |
   'findOneWhere' is similar to 'findOne' but allows a 'WhereCondition' to be
@@ -165,36 +270,36 @@ findOne tableDef fieldDef =
   returned.
 -}
 findOneWhere ::
-  Ord fieldValue =>
+  Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
-  FieldDefinition.FieldDefinition nullability fieldValue ->
+  WherePlanner param ->
   SelectOptions.WhereCondition ->
-  Operation fieldValue (Maybe readEntity)
-findOneWhere tableDef fieldDef cond =
-  findOneWithOpts tableDef fieldDef (SelectOptions.where_ cond)
+  Operation param (Maybe readEntity)
+findOneWhere tableDef wherePlanner cond =
+  findOneWithOpts tableDef wherePlanner (SelectOptions.where_ cond)
 
 {- |
   'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'
 -}
 findOneWithOpts ::
-  Ord fieldValue =>
+  Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
-  FieldDefinition.FieldDefinition nullability fieldValue ->
+  WherePlanner param ->
   SelectOptions.SelectOptions ->
-  Operation fieldValue (Maybe readEntity)
-findOneWithOpts tableDef fieldDef opts =
+  Operation param (Maybe readEntity)
+findOneWithOpts tableDef wherePlanner opts =
   selectOperation selectOp
   where
     selectOp =
       SelectOperation
-        { selectOne = \fieldValue ->
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldEquals fieldDef fieldValue) <> SelectOptions.limit 1)
-        , selectMany = \fieldValues ->
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldIn fieldDef fieldValues))
+        { selectOne = \param ->
+            select (opts <> SelectOptions.where_ (executeOneWhereCondition wherePlanner param) <> SelectOptions.limit 1)
+        , selectMany = \params ->
+            select (opts <> SelectOptions.where_ (executeManyWhereCondition wherePlanner params))
         , explainSelectOne =
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"))
+            select (opts <> SelectOptions.where_ (explainOneWhereCondition wherePlanner))
         , explainSelectMany =
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])))
+            select (opts <> SelectOptions.where_ (explainManyWhereCondition wherePlanner))
         , categorizeRow = fst
         , produceResult = fmap snd . Maybe.listToMaybe
         }
@@ -204,12 +309,9 @@ findOneWithOpts tableDef fieldDef opts =
         marshaller
         (TableDefinition.tableName tableDef)
 
-    stringyField =
-      stringifyField fieldDef
-
     marshaller =
       (,)
-        <$> SqlMarshaller.marshallField fst fieldDef
+        <$> paramMarshaller wherePlanner fst
         <*> SqlMarshaller.marshallNested snd (TableDefinition.tableMarshaller tableDef)
 
 {- |
@@ -220,12 +322,12 @@ findOneWithOpts tableDef fieldDef opts =
   inputs after being fetched.
 -}
 findAll ::
-  Ord fieldValue =>
+  Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
-  FieldDefinition.FieldDefinition nullability fieldValue ->
-  Operation fieldValue [readEntity]
-findAll tableDef fieldDef =
-  findAllWithOpts tableDef fieldDef mempty
+  WherePlanner param ->
+  Operation param [readEntity]
+findAll tableDef wherePlanner =
+  findAllWithOpts tableDef wherePlanner mempty
 
 {- |
   'findAllWhere' is similar to 'findAll' but allows a 'WhereCondition' to be
@@ -233,36 +335,36 @@ findAll tableDef fieldDef =
   returned.
 -}
 findAllWhere ::
-  Ord fieldValue =>
+  Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
-  FieldDefinition.FieldDefinition nullability fieldValue ->
+  WherePlanner param ->
   SelectOptions.WhereCondition ->
-  Operation fieldValue [readEntity]
-findAllWhere tableDef fieldDef cond =
-  findAllWithOpts tableDef fieldDef (SelectOptions.where_ cond)
+  Operation param [readEntity]
+findAllWhere tableDef wherePlanner cond =
+  findAllWithOpts tableDef wherePlanner (SelectOptions.where_ cond)
 
 {- |
   'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'
 -}
 findAllWithOpts ::
-  Ord fieldValue =>
+  Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
-  FieldDefinition.FieldDefinition nullability fieldValue ->
+  WherePlanner param ->
   SelectOptions.SelectOptions ->
-  Operation fieldValue [readEntity]
-findAllWithOpts tableDef fieldDef opts =
+  Operation param [readEntity]
+findAllWithOpts tableDef wherePlanner opts =
   selectOperation selectOp
   where
     selectOp =
       SelectOperation
-        { selectOne = \fieldValue ->
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldEquals fieldDef fieldValue))
-        , selectMany = \fieldValues ->
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldIn fieldDef fieldValues))
+        { selectOne = \param ->
+            select (opts <> SelectOptions.where_ (executeOneWhereCondition wherePlanner param))
+        , selectMany = \params ->
+            select (opts <> SelectOptions.where_ (executeManyWhereCondition wherePlanner params))
         , explainSelectOne =
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"))
+            select (opts <> SelectOptions.where_ (explainOneWhereCondition wherePlanner))
         , explainSelectMany =
-            select (opts <> SelectOptions.where_ (SelectOptions.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])))
+            select (opts <> SelectOptions.where_ (explainManyWhereCondition wherePlanner))
         , categorizeRow = fst
         , produceResult = map snd
         }
@@ -272,12 +374,9 @@ findAllWithOpts tableDef fieldDef opts =
         marshaller
         (TableDefinition.tableName tableDef)
 
-    stringyField =
-      stringifyField fieldDef
-
     marshaller =
       (,)
-        <$> SqlMarshaller.marshallField fst fieldDef
+        <$> paramMarshaller wherePlanner fst
         <*> SqlMarshaller.marshallNested snd (TableDefinition.tableMarshaller tableDef)
 
 {- |
@@ -299,6 +398,13 @@ stringifyField =
   using the 'selectOperation' function to build an 'Operation' is more
   convenient that building functions to execute the queries thate are required
   by the 'Operation' type.
+
+  Note: If you only need to build a custom where clause based on the
+  'Operation' parameter, you may want to use a custom 'WherePlanner' with one
+  of the existing 'findOne' or 'findAll' functions.
+
+  If you cannot respresent your custom operation using 'SelectOperation' then
+  you need build the 'Operation' value directly yourself.
 -}
 data SelectOperation param row result = SelectOperation
   { -- | 'selectOne' will be called to build the 'Select' query that should

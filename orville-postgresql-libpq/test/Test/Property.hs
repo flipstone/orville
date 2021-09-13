@@ -3,6 +3,7 @@ module Test.Property
     namedProperty,
     NamedDBProperty,
     namedDBProperty,
+    singletonNamedDBProperty,
     singletonProperty,
     Group (..),
     group,
@@ -38,6 +39,13 @@ namedDBProperty ::
   NamedDBProperty
 namedDBProperty nameString dbProperty pool =
   namedProperty nameString (dbProperty pool)
+
+singletonNamedDBProperty ::
+  String ->
+  (Pool.Pool Connection.Connection -> HH.PropertyT IO ()) ->
+  NamedDBProperty
+singletonNamedDBProperty nameString dbProperty pool =
+  HH.withTests 1 <$> namedProperty nameString (dbProperty pool)
 
 singletonProperty :: CallStack.HasCallStack => HH.PropertyT IO () -> HH.Property
 singletonProperty = HH.withTests 1 . HH.property

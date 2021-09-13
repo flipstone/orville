@@ -48,6 +48,7 @@ module Orville.PostgreSQL
     FieldDefinition.coerceField,
     FieldDefinition.integerField,
     FieldDefinition.serialField,
+    FieldDefinition.smallIntegerField,
     FieldDefinition.bigIntegerField,
     FieldDefinition.bigSerialField,
     FieldDefinition.doubleField,

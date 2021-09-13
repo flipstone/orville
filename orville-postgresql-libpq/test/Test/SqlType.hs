@@ -25,6 +25,7 @@ sqlTypeTests :: Pool.Pool Connection.Connection -> Property.Group
 sqlTypeTests pool =
   Property.group "SqlType" $
     integerTests pool
+      <> smallIntegerTests pool
       <> bigIntegerTests pool
       <> serialTests pool
       <> bigSerialTests pool
@@ -67,6 +68,40 @@ integerTests pool =
           , rawSqlValue = Just $ B8.pack $ show (-2147483648 :: Int)
           , sqlType = SqlType.integer
           , expectedValue = -2147483648
+          }
+    )
+  ]
+
+smallIntegerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+smallIntegerTests pool =
+  [
+    ( String.fromString "Testing the decode of SMALLINT with value 0"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "SMALLINT"
+          , rawSqlValue = Just $ B8.pack $ show (0 :: Int)
+          , sqlType = SqlType.smallInteger
+          , expectedValue = 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of SMALLINT with value 2147483647"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "SMALLINT"
+          , rawSqlValue = Just $ B8.pack $ show (32767 :: Int)
+          , sqlType = SqlType.smallInteger
+          , expectedValue = 32767
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of SMALLINT with value -2147483648"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "SMALLINT"
+          , rawSqlValue = Just $ B8.pack $ show (-32768 :: Int)
+          , sqlType = SqlType.smallInteger
+          , expectedValue = -32768
           }
     )
   ]

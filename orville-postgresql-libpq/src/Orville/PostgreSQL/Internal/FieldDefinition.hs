@@ -28,6 +28,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     asymmetricNullableField,
     integerField,
     serialField,
+    smallIntegerField,
     bigIntegerField,
     bigSerialField,
     doubleField,
@@ -45,7 +46,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Coerce as Coerce
-import Data.Int (Int32, Int64)
+import Data.Int (Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
 
@@ -207,6 +208,16 @@ integerField ::
   String ->
   FieldDefinition NotNull Int32
 integerField = fieldOfType SqlType.integer
+
+{- |
+  Builds a 'FieldDefinition' that stores Haskell 'Int16' values as the
+  PostgreSQL "SMALLINT" type.
+-}
+smallIntegerField ::
+  -- | Name of the field in the database
+  String ->
+  FieldDefinition NotNull Int16
+smallIntegerField = fieldOfType SqlType.smallInteger
 
 {- |
   Builds a 'FieldDefinition' that stores an 'Int32' value as the "SERIAL"

@@ -10,22 +10,27 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     orExpr,
     andExpr,
     parenthesized,
-    comparison,
     columnEquals,
     columnNotEquals,
     columnGreaterThan,
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    comparison,
     columnIn,
     columnNotIn,
+    columnTupleIn,
+    columnTupleNotIn,
+    inPredicate,
+    notInPredicate,
+    inValueList,
   )
 where
 
 import qualified Data.List.NonEmpty as NE
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp, notEqualsOp)
-import Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand (RowValuePredicand, columnReference, comparisonValue)
+import Orville.PostgreSQL.Internal.Expr.Where.RowValueExpression (RowValueExpression, columnReference, rowValueConstructor, valueExpression)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -49,20 +54,57 @@ andExpr left right =
 
 columnIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
 columnIn columnName values =
-  BooleanExpr $
-    RawSql.toRawSql columnName
-      <> RawSql.fromString " IN "
-      <> RawSql.leftParen
-      <> RawSql.intercalate RawSql.commaSpace (map RawSql.parameter $ NE.toList values)
-      <> RawSql.rightParen
+  inPredicate (columnReference columnName) (inValueList $ fmap valueExpression values)
 
 columnNotIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
 columnNotIn columnName values =
+  notInPredicate (columnReference columnName) (inValueList $ fmap valueExpression values)
+
+{- |
+  Checks that a the tuple constructed from the given columns in one of the
+  tuples specified in the input list. It is up to the caller to ensure that all
+  the tuples given have the same arity.
+-}
+columnTupleIn :: NE.NonEmpty ColumnName -> NE.NonEmpty (NE.NonEmpty SqlValue) -> BooleanExpr
+columnTupleIn columnNames valueLists =
+  inPredicate
+    (rowValueConstructor $ fmap columnReference columnNames)
+    (inValueList $ fmap (rowValueConstructor . fmap valueExpression) valueLists)
+
+{- |
+  Checks that a the tuple constructed from the given columns in NOT one of the
+  tuples specified in the input list. It is up to the caller to ensure that all
+  the tuples given have the same arity.
+-}
+columnTupleNotIn :: NE.NonEmpty ColumnName -> NE.NonEmpty (NE.NonEmpty SqlValue) -> BooleanExpr
+columnTupleNotIn columnNames valueLists =
+  notInPredicate
+    (rowValueConstructor $ fmap columnReference columnNames)
+    (inValueList $ fmap (rowValueConstructor . fmap valueExpression) valueLists)
+
+inPredicate :: RowValueExpression -> InValuePredicate -> BooleanExpr
+inPredicate predicand predicate =
   BooleanExpr $
-    RawSql.toRawSql columnName
+    RawSql.toRawSql predicand
+      <> RawSql.fromString " IN "
+      <> RawSql.toRawSql predicate
+
+notInPredicate :: RowValueExpression -> InValuePredicate -> BooleanExpr
+notInPredicate predicand predicate =
+  BooleanExpr $
+    RawSql.toRawSql predicand
       <> RawSql.fromString " NOT IN "
-      <> RawSql.leftParen
-      <> RawSql.intercalate RawSql.commaSpace (map RawSql.parameter $ NE.toList values)
+      <> RawSql.toRawSql predicate
+
+newtype InValuePredicate
+  = InValuePredicate RawSql.RawSql
+  deriving (RawSql.SqlExpression)
+
+inValueList :: NE.NonEmpty RowValueExpression -> InValuePredicate
+inValueList values =
+  InValuePredicate $
+    RawSql.leftParen
+      <> RawSql.intercalate RawSql.commaSpace (map RawSql.toRawSql $ NE.toList values)
       <> RawSql.rightParen
 
 parenthesized :: BooleanExpr -> BooleanExpr
@@ -71,9 +113,9 @@ parenthesized expr =
     RawSql.leftParen <> RawSql.toRawSql expr <> RawSql.rightParen
 
 comparison ::
-  RowValuePredicand ->
+  RowValueExpression ->
   ComparisonOperator ->
-  RowValuePredicand ->
+  RowValueExpression ->
   BooleanExpr
 comparison left op right =
   BooleanExpr $
@@ -85,24 +127,24 @@ comparison left op right =
 
 columnEquals :: ColumnName -> SqlValue -> BooleanExpr
 columnEquals name value =
-  comparison (columnReference name) equalsOp (comparisonValue value)
+  comparison (columnReference name) equalsOp (valueExpression value)
 
 columnNotEquals :: ColumnName -> SqlValue -> BooleanExpr
 columnNotEquals name value =
-  comparison (columnReference name) notEqualsOp (comparisonValue value)
+  comparison (columnReference name) notEqualsOp (valueExpression value)
 
 columnGreaterThan :: ColumnName -> SqlValue -> BooleanExpr
 columnGreaterThan name value =
-  comparison (columnReference name) greaterThanOp (comparisonValue value)
+  comparison (columnReference name) greaterThanOp (valueExpression value)
 
 columnLessThan :: ColumnName -> SqlValue -> BooleanExpr
 columnLessThan name value =
-  comparison (columnReference name) lessThanOp (comparisonValue value)
+  comparison (columnReference name) lessThanOp (valueExpression value)
 
 columnGreaterThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
 columnGreaterThanOrEqualTo name value =
-  comparison (columnReference name) greaterThanOrEqualsOp (comparisonValue value)
+  comparison (columnReference name) greaterThanOrEqualsOp (valueExpression value)
 
 columnLessThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
 columnLessThanOrEqualTo name value =
-  comparison (columnReference name) lessThanOrEqualsOp (comparisonValue value)
+  comparison (columnReference name) lessThanOrEqualsOp (valueExpression value)

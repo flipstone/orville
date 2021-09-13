@@ -19,6 +19,7 @@ module Orville.PostgreSQL.Internal.SqlType
     serial,
     bigInteger,
     bigSerial,
+    smallInteger,
     double,
     -- textual-ish types
     boolean,
@@ -30,6 +31,8 @@ module Orville.PostgreSQL.Internal.SqlType
     date,
     timestamp,
     timestampWithoutZone,
+    -- postgresql types
+    oid,
     -- type conversions
     foreignRefType,
     convertSqlType,
@@ -37,10 +40,11 @@ module Orville.PostgreSQL.Internal.SqlType
   )
 where
 
-import Data.Int (Int32, Int64)
+import Data.Int (Int16, Int32, Int64)
 import Data.Text (Text)
 import qualified Data.Time as Time
 import qualified Database.PostgreSQL.LibPQ as LibPQ
+import qualified Foreign.C.Types as CTypes
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
@@ -137,6 +141,21 @@ bigSerial =
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromInt64
     , sqlTypeFromSql = SqlValue.toInt64
+    }
+
+{- |
+  'smallInteger' defines a 16-bit integer type. This corresponds to the "SMALLINT" type in SQL.
+-}
+smallInteger :: SqlType Int16
+smallInteger =
+  SqlType
+    { sqlTypeExpr = Expr.smallint
+    , sqlTypeReferenceExpr = Nothing
+    , sqlTypeNullable = False
+    , sqlTypeId = LibPQ.Oid 21
+    , sqlTypeSqlSize = Just 2
+    , sqlTypeToSql = SqlValue.fromInt16
+    , sqlTypeFromSql = SqlValue.toInt16
     }
 
 {- |
@@ -289,6 +308,22 @@ timestampWithoutZone =
     , sqlTypeSqlSize = Just 8
     , sqlTypeToSql = SqlValue.fromLocalTime
     , sqlTypeFromSql = SqlValue.toLocalTime
+    }
+
+{- |
+  'oid' corresponds to the type used in PostgreSQL for identifying system
+  objects
+-}
+oid :: SqlType LibPQ.Oid
+oid =
+  SqlType
+    { sqlTypeExpr = Expr.oid
+    , sqlTypeReferenceExpr = Nothing
+    , sqlTypeNullable = False
+    , sqlTypeId = LibPQ.Oid 26
+    , sqlTypeSqlSize = Just 4
+    , sqlTypeToSql = \(LibPQ.Oid (CTypes.CUInt word)) -> SqlValue.fromWord32 word
+    , sqlTypeFromSql = fmap (LibPQ.Oid . CTypes.CUInt) . SqlValue.toWord32
     }
 
 {- |

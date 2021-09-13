@@ -223,7 +223,7 @@ findMaybeOne ::
   FieldDefinition.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue (Maybe readEntity)
 findMaybeOne tableDef fieldDef =
-  planOperation (Op.findOne tableDef fieldDef)
+  planOperation (Op.findOne tableDef (Op.byField fieldDef))
 
 {- |
   'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a
@@ -237,7 +237,7 @@ findMaybeOneWhere ::
   SelectOptions.WhereCondition ->
   Plan scope fieldValue (Maybe readEntity)
 findMaybeOneWhere tableDef fieldDef cond =
-  planOperation (Op.findOneWhere tableDef fieldDef cond)
+  planOperation (Op.findOneWhere tableDef (Op.byField fieldDef) cond)
 
 {- |
   'findOne' is similar to 'findMaybeOne, but it expects that there will always
@@ -307,7 +307,7 @@ findAll ::
   FieldDefinition.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue [readEntity]
 findAll tableDef fieldDef =
-  planOperation (Op.findAll tableDef fieldDef)
+  planOperation (Op.findAll tableDef (Op.byField fieldDef))
 
 {- |
   'findAllWhere' is similar to 'findAll', but allows a 'WhereCondition' to be
@@ -320,7 +320,7 @@ findAllWhere ::
   SelectOptions.WhereCondition ->
   Plan scope fieldValue [readEntity]
 findAllWhere tableDef fieldDef cond =
-  planOperation (Op.findAllWhere tableDef fieldDef cond)
+  planOperation (Op.findAllWhere tableDef (Op.byField fieldDef) cond)
 
 {- |
   'planMany' adapts a plan that takes a single input parameter to work on

@@ -4,7 +4,7 @@ module Test.Expr.Where
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -122,7 +122,7 @@ whereTests pool =
                 Just . Expr.whereClause $
                   Expr.columnIn
                     barColumn
-                    (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
+                    (SqlValue.fromText (T.pack "dog") :| [SqlValue.fromText (T.pack "cat")])
             }
       )
     ,
@@ -135,7 +135,37 @@ whereTests pool =
                 Just . Expr.whereClause $
                   Expr.columnNotIn
                     barColumn
-                    (SqlValue.fromText (T.pack "dog") NE.:| [SqlValue.fromText (T.pack "cat")])
+                    (SqlValue.fromText (T.pack "dog") :| [SqlValue.fromText (T.pack "cat")])
+            }
+      )
+    ,
+      ( String.fromString "columnTupleIn requires the column value combination to be in the list"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereExpectedQueryResults = [FooBar 1 "dog", FooBar 2 "dingo"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnTupleIn
+                    (fooColumn :| [barColumn])
+                    ( (SqlValue.fromInt32 1 :| [SqlValue.fromText (T.pack "dog")])
+                        :| [SqlValue.fromInt32 2 :| [SqlValue.fromText (T.pack "dingo")]]
+                    )
+            }
+      )
+    ,
+      ( String.fromString "columnTupleNotIn requires the column value combination to not be in the list"
+      , runWhereConditionTest pool $
+          WhereConditionTest
+            { whereValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+            , whereExpectedQueryResults = [FooBar 3 "dog"]
+            , whereClause =
+                Just . Expr.whereClause $
+                  Expr.columnTupleNotIn
+                    (fooColumn :| [barColumn])
+                    ( (SqlValue.fromInt32 1 :| [SqlValue.fromText (T.pack "dog")])
+                        :| [SqlValue.fromInt32 2 :| [SqlValue.fromText (T.pack "dingo")]]
+                    )
             }
       )
     ]

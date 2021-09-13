@@ -25,6 +25,8 @@ module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
     bigInt,
     serial,
     int,
+    smallint,
+    oid,
   )
 where
 
@@ -129,3 +131,11 @@ serial =
 int :: DataType
 int =
   DataType (RawSql.fromString "INT")
+
+smallint :: DataType
+smallint =
+  DataType (RawSql.fromString "SMALLINT")
+
+oid :: DataType
+oid =
+  DataType (RawSql.fromString "OID")

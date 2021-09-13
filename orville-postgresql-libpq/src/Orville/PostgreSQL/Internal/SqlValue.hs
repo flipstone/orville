@@ -11,12 +11,26 @@ module Orville.PostgreSQL.Internal.SqlValue
   ( SqlValue,
     isSqlNull,
     sqlNull,
+    fromInt8,
+    toInt8,
+    fromInt16,
+    toInt16,
     fromInt32,
     toInt32,
     fromInt64,
     toInt64,
     fromInt,
     toInt,
+    fromWord8,
+    toWord8,
+    fromWord16,
+    toWord16,
+    fromWord32,
+    toWord32,
+    fromWord64,
+    toWord64,
+    fromWord,
+    toWord,
     fromDouble,
     toDouble,
     fromBool,
@@ -41,10 +55,11 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LBS
-import Data.Int (Int32, Int64)
+import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
+import Data.Word (Word16, Word32, Word64, Word8)
 
 import Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
 import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
@@ -110,6 +125,36 @@ fromRawBytesNullable =
   maybe sqlNull fromRawBytes
 
 {- |
+  Encodes an 'Int8' value for usage with database
+-}
+fromInt8 :: Int8 -> SqlValue
+fromInt8 =
+  fromBSBuilderWithNoNULs BSB.int8Dec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Int8' value. If decoding fails
+  'Nothing' is returned.
+-}
+toInt8 :: SqlValue -> Maybe Int8
+toInt8 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
+  Encodes an 'Int16' value for usage with database
+-}
+fromInt16 :: Int16 -> SqlValue
+fromInt16 =
+  fromBSBuilderWithNoNULs BSB.int16Dec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Int16' value. If decoding fails
+  'Nothing' is returned.
+-}
+toInt16 :: SqlValue -> Maybe Int16
+toInt16 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
   Encodes an 'Int32' value for usage with database
 -}
 fromInt32 :: Int32 -> SqlValue
@@ -132,7 +177,15 @@ fromInt64 =
   fromBSBuilderWithNoNULs BSB.int64Dec
 
 {- |
-  Encodes an 'Int32' value for usage with database
+  Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
+  'Nothing' is returned.
+-}
+toInt64 :: SqlValue -> Maybe Int64
+toInt64 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
+  Encodes an 'Int' value for usage with database
 -}
 fromInt :: Int -> SqlValue
 fromInt =
@@ -147,11 +200,78 @@ toInt =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
+  Encodes an 'Word8' value for usage with database
+-}
+fromWord8 :: Word8 -> SqlValue
+fromWord8 =
+  fromBSBuilderWithNoNULs BSB.word8Dec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Word8' value. If decoding fails
   'Nothing' is returned.
 -}
-toInt64 :: SqlValue -> Maybe Int64
-toInt64 =
+toWord8 :: SqlValue -> Maybe Word8
+toWord8 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
+  Encodes an 'Word16' value for usage with database
+-}
+fromWord16 :: Word16 -> SqlValue
+fromWord16 =
+  fromBSBuilderWithNoNULs BSB.word16Dec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Word16' value. If decoding fails
+  'Nothing' is returned.
+-}
+toWord16 :: SqlValue -> Maybe Word16
+toWord16 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
+  Encodes an 'Word32' value for usage with database
+-}
+fromWord32 :: Word32 -> SqlValue
+fromWord32 =
+  fromBSBuilderWithNoNULs BSB.word32Dec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Word32' value. If decoding fails
+  'Nothing' is returned.
+-}
+toWord32 :: SqlValue -> Maybe Word32
+toWord32 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
+  Encodes an 'Word64' value for usage with database
+-}
+fromWord64 :: Word64 -> SqlValue
+fromWord64 =
+  fromBSBuilderWithNoNULs BSB.word64Dec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Word64' value. If decoding fails
+  'Nothing' is returned.
+-}
+toWord64 :: SqlValue -> Maybe Word64
+toWord64 =
+  toParsedValue (AttoB8.signed AttoB8.decimal)
+
+{- |
+  Encodes an 'Word' value for usage with database
+-}
+fromWord :: Word -> SqlValue
+fromWord =
+  fromBSBuilderWithNoNULs BSB.wordDec
+
+{- |
+  Attempts to decode a 'SqlValue' a Haskell 'Word' value. If decoding fails
+  'Nothing' is returned.
+-}
+toWord :: SqlValue -> Maybe Word
+toWord =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |

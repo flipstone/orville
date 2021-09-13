@@ -45,10 +45,11 @@ library
       Orville.PostgreSQL.Internal.SqlType
       Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Internal.TableDefinition
+      Orville.PostgreSQL.Plan
       Orville.PostgreSQL.Plan.Explanation
       Orville.PostgreSQL.Plan.Many
       Orville.PostgreSQL.Plan.Operation
-      Orville.PostgreSQL.Plan
+      Orville.PostgreSQL.PgCatalog
   other-modules:
       Orville.PostgreSQL.InformationSchema.ColumnName
       Orville.PostgreSQL.InformationSchema.InformationSchemaColumn
@@ -91,7 +92,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Where
       Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
       Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
-      Orville.PostgreSQL.Internal.Expr.Where.RowValuePredicand
+      Orville.PostgreSQL.Internal.Expr.Where.RowValueExpression
       Orville.PostgreSQL.Internal.Expr.Where.WhereClause
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.MonadOrville
@@ -100,6 +101,11 @@ library
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
       Orville.PostgreSQL.Internal.Transaction
+      Orville.PostgreSQL.PgCatalog.DatabaseDescription
+      Orville.PostgreSQL.PgCatalog.OidField
+      Orville.PostgreSQL.PgCatalog.PgAttribute
+      Orville.PostgreSQL.PgCatalog.PgClass
+      Orville.PostgreSQL.PgCatalog.PgNamespace
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       src
@@ -140,6 +146,7 @@ test-suite spec
       Test.Expr.Where
       Test.FieldDefinition
       Test.InformationSchema
+      Test.PgCatalog
       Test.PGGen
       Test.Plan
       Test.Property
@@ -158,6 +165,7 @@ test-suite spec
   build-depends:
       base
     , bytestring
+    , containers
     , hedgehog
     , orville-postgresql-libpq
     , postgresql-libpq
