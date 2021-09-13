@@ -26,8 +26,9 @@ module Orville.PostgreSQL.Internal.SqlValue
     fromDay,
     toDay,
     fromUTCTime,
-    toUTCTimeWithZone,
-    toUTCTimeWithoutZone,
+    toUTCTime,
+    fromLocalTime,
+    toLocalTime,
     fromRawBytes,
     fromRawBytesNullable,
     toPGValue,
@@ -244,11 +245,21 @@ fromUTCTime =
     . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%dT%H:%M:%S"
 
 {- |
-  Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
-  format without time zone. If the decoding fails, 'Nothing' is returned.
+  Encodes a 'Time.LocalTime' in ISO 8601 format for usage with the database.
 -}
-toUTCTimeWithoutZone :: SqlValue -> Maybe Time.UTCTime
-toUTCTimeWithoutZone sqlValue = do
+fromLocalTime :: Time.LocalTime -> SqlValue
+fromLocalTime =
+  SqlValue
+    . PGTextFormatValue.unsafeFromByteString
+    . B8.pack
+    . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%dT%H:%M:%S"
+
+{- |
+  Attempts to decode a 'SqlValue' as a 'Time.LocalTime' formatted in iso8601
+  format in the default Local. If the decoding fails, 'Nothing' is returned.
+-}
+toLocalTime :: SqlValue -> Maybe Time.LocalTime
+toLocalTime sqlValue = do
   -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
   -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
@@ -264,8 +275,8 @@ toUTCTimeWithoutZone sqlValue = do
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
   format with time zone. If the decoding fails, 'Nothing' is returned.
 -}
-toUTCTimeWithZone :: SqlValue -> Maybe Time.UTCTime
-toUTCTimeWithZone sqlValue = do
+toUTCTime :: SqlValue -> Maybe Time.UTCTime
+toUTCTime sqlValue = do
   -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
   -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
   -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.

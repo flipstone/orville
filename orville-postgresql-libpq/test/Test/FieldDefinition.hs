@@ -38,8 +38,8 @@ fieldDefinitionTests pool =
       <> fixedTextField pool
       <> textSearchVectorField pool
       <> dateField pool
-      <> timestampField pool
-      <> timestampWithoutZoneField pool
+      <> utcTimestampField pool
+      <> localTimestampField pool
 
 integerField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
 integerField pool =
@@ -113,20 +113,20 @@ dateField pool =
       , roundTripGen = dayGen
       }
 
-timestampField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-timestampField pool =
-  testFieldProperties pool "timestampField" $
+utcTimestampField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+utcTimestampField pool =
+  testFieldProperties pool "utcTimestampField" $
     RoundTripTest
-      { roundTripFieldDef = FieldDef.timestampField "foo"
+      { roundTripFieldDef = FieldDef.utcTimestampField "foo"
       , roundTripGen = utcTimeGen
       }
 
-timestampWithoutZoneField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
-timestampWithoutZoneField pool =
-  testFieldProperties pool "timestampWithoutZoneField" $
+localTimestampField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+localTimestampField pool =
+  testFieldProperties pool "localTimestampField" $
     RoundTripTest
-      { roundTripFieldDef = FieldDef.timestampWithoutZoneField "foo"
-      , roundTripGen = utcTimeGen
+      { roundTripFieldDef = FieldDef.localTimestampField "foo"
+      , roundTripGen = localTimeGen
       }
 
 testFieldProperties :: (Show a, Eq a) => Pool.Pool Connection.Connection -> String -> RoundTripTest a -> [(HH.PropertyName, HH.Property)]
@@ -159,7 +159,11 @@ tsVectorGen = do
 
 utcTimeGen :: HH.Gen Time.UTCTime
 utcTimeGen =
-  Time.UTCTime <$> dayGen <*> timeOfDayGen
+  Time.UTCTime <$> dayGen <*> diffTimeGen
+
+localTimeGen :: HH.Gen Time.LocalTime
+localTimeGen =
+  Time.LocalTime <$> dayGen <*> timeOfDayGen
 
 dayGen :: HH.Gen Time.Day
 dayGen = do
@@ -169,8 +173,11 @@ dayGen = do
 
   pure (Time.fromGregorian year month day)
 
-timeOfDayGen :: HH.Gen Time.DiffTime
-timeOfDayGen =
+timeOfDayGen :: HH.Gen Time.TimeOfDay
+timeOfDayGen = fmap Time.timeToTimeOfDay diffTimeGen
+
+diffTimeGen :: HH.Gen Time.DiffTime
+diffTimeGen =
   Time.secondsToDiffTime <$> Gen.integral (Range.constant 0 85399)
 
 data RoundTripTest a = RoundTripTest

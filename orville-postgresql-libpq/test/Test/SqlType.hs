@@ -340,7 +340,7 @@ timestampTests pool =
           { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
           , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32'"
           , sqlType = SqlType.timestampWithoutZone
-          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          , expectedValue = Time.LocalTime (Time.fromGregorian 2020 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
           }
     )
   ,
@@ -350,7 +350,7 @@ timestampTests pool =
           { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
           , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32.000'"
           , sqlType = SqlType.timestampWithoutZone
-          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          , expectedValue = Time.LocalTime (Time.fromGregorian 2020 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
           }
     )
   ]
