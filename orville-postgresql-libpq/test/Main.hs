@@ -16,7 +16,6 @@ import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
-import qualified Test.InformationSchema as InformationSchema
 import qualified Test.PgCatalog as PgCatalog
 import qualified Test.Plan as Plan
 import qualified Test.Property as Property
@@ -50,7 +49,6 @@ main = do
       , ReservedWords.reservedWordsTests pool
       , Transaction.transactionTests pool
       , Plan.planTests pool
-      , InformationSchema.informationSchemaTests pool
       , PgCatalog.pgCatalogTests pool
       , AutoMigration.autoMigrationTests pool
       ]

@@ -4,16 +4,19 @@ module Test.Expr.TableDefinition
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import Data.List (sort)
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.String as String
+import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.InformationSchema as IS
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 import qualified Test.Property as Property
 
@@ -31,8 +34,8 @@ tableDefinitionTests pool =
 
           assertColumnNamesEqual
             pool
-            informationSchemaTableName
-            [informationSchemaColumn1Name]
+            tableNameString
+            [column1NameString]
       )
     ,
       ( String.fromString "Create table creates a table with multiple columns"
@@ -44,8 +47,8 @@ tableDefinitionTests pool =
 
           assertColumnNamesEqual
             pool
-            informationSchemaTableName
-            [informationSchemaColumn1Name, informationSchemaColumn2Name]
+            tableNameString
+            [column1NameString, column2NameString]
       )
     ,
       ( String.fromString "Alter table adds one column"
@@ -58,8 +61,8 @@ tableDefinitionTests pool =
 
           assertColumnNamesEqual
             pool
-            informationSchemaTableName
-            [informationSchemaColumn1Name]
+            tableNameString
+            [column1NameString]
       )
     ,
       ( String.fromString "Alter table adds multiple columns"
@@ -72,53 +75,60 @@ tableDefinitionTests pool =
 
           assertColumnNamesEqual
             pool
-            informationSchemaTableName
-            [informationSchemaColumn1Name, informationSchemaColumn2Name]
+            tableNameString
+            [column1NameString, column2NameString]
       )
     ]
 
 exprTableName :: Expr.QualifiedTableName
 exprTableName =
-  Expr.qualifiedTableName Nothing (Expr.tableName "table_definition_test")
+  Expr.qualifiedTableName Nothing (Expr.tableName tableNameString)
 
-informationSchemaTableName :: IS.TableName
-informationSchemaTableName =
-  String.fromString "table_definition_test"
+tableNameString :: String
+tableNameString =
+  "table_definition_test"
 
 column1Definition :: Expr.ColumnDefinition
 column1Definition =
   Expr.columnDefinition
-    (Expr.columnName "column1")
+    (Expr.columnName column1NameString)
     Expr.text
     Nothing
 
-informationSchemaColumn1Name :: IS.ColumnName
-informationSchemaColumn1Name =
-  String.fromString "column1"
+column1NameString :: String
+column1NameString =
+  "column1"
 
 column2Definition :: Expr.ColumnDefinition
 column2Definition =
   Expr.columnDefinition
-    (Expr.columnName "column2")
+    (Expr.columnName column2NameString)
     Expr.text
     Nothing
 
-informationSchemaColumn2Name :: IS.ColumnName
-informationSchemaColumn2Name =
-  String.fromString "column2"
+column2NameString :: String
+column2NameString =
+  "column2"
 
 assertColumnNamesEqual ::
-  (HH.MonadTest m, MIO.MonadIO m) =>
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
   Pool.Pool Conn.Connection ->
-  IS.TableName ->
-  [IS.ColumnName] ->
+  String ->
+  [String] ->
   m ()
 assertColumnNamesEqual pool tableName expectedColumns = do
-  columns <-
+  dbDesc <-
     MIO.liftIO $
       Orville.runOrville pool $ do
-        Orville.findEntitiesBy
-          IS.informationSchemaColumnsTable
-          (Orville.where_ (Orville.fieldEquals IS.tableNameField tableName))
+        PgCatalog.describeDatabaseRelations
+          [(String.fromString "public", String.fromString tableName)]
 
-  map IS.columnName columns === expectedColumns
+  let attributeNames =
+        fmap PgCatalog.pgAttributeName
+          . filter PgCatalog.isOrdinaryColumn
+          . concatMap (Map.elems . PgCatalog.relationAttributes)
+          . Map.elems
+          $ PgCatalog.databaseRelations dbDesc
+
+  withFrozenCallStack $
+    sort attributeNames === sort (map String.fromString expectedColumns)

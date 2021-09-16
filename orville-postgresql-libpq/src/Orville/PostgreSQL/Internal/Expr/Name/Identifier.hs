@@ -9,6 +9,7 @@ module Orville.PostgreSQL.Internal.Expr.Name.Identifier
   ( Identifier,
     identifier,
     identifierFromBytes,
+    unquotedIdentifier,
     unquotedIdentifierFromBytes,
   )
 where
@@ -28,6 +29,10 @@ identifierFromBytes :: B8.ByteString -> Identifier
 identifierFromBytes idBytes =
   Identifier $
     RawSql.doubleQuote <> RawSql.fromBytes idBytes <> RawSql.doubleQuote
+
+unquotedIdentifier :: String -> Identifier
+unquotedIdentifier =
+  unquotedIdentifierFromBytes . B8.pack
 
 unquotedIdentifierFromBytes :: B8.ByteString -> Identifier
 unquotedIdentifierFromBytes =

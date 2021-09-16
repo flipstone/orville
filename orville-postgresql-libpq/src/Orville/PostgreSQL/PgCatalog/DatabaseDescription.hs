@@ -1,6 +1,8 @@
 module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   ( DatabaseDescription (..),
     RelationDescription (..),
+    lookupRelation,
+    lookupAttribute,
     describeDatabaseRelations,
   )
 where
@@ -25,6 +27,13 @@ data DatabaseDescription = DatabaseDescription
   { databaseRelations :: Map.Map (NamespaceName, RelationName) RelationDescription
   }
 
+lookupRelation ::
+  (NamespaceName, RelationName) ->
+  DatabaseDescription ->
+  Maybe RelationDescription
+lookupRelation key =
+  Map.lookup key . databaseRelations
+
 {- |
   A description of a particular relation in the PostgreSQL database, including
   the attributes of the relation.
@@ -33,6 +42,13 @@ data RelationDescription = RelationDescription
   { relationRecord :: PgClass
   , relationAttributes :: Map.Map AttributeName PgAttribute
   }
+
+lookupAttribute ::
+  AttributeName ->
+  RelationDescription ->
+  Maybe PgAttribute
+lookupAttribute key =
+  Map.lookup key . relationAttributes
 
 {- |
   Describes the requested relations in the current database. If any of the

@@ -14,18 +14,15 @@ where
 import Control.Exception.Safe (Exception, throwIO)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
-import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
-import qualified Data.List.NonEmpty as NEL
-import qualified Data.Map.Strict as Map
+import Data.List.NonEmpty (nonEmpty)
 import Data.Maybe (maybeToList)
-import qualified Data.Set as Set
 import qualified Data.String as String
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.InformationSchema as IS
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MigrationLock as MigrationLock
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 {- |
   A 'SchemaItem' represents a single item in a database schema such as a table,
@@ -67,13 +64,6 @@ data MigrationDataError
 instance Exception MigrationDataError
 
 {- |
-  An Map of tables discovered to exist in the database, keyed by schema and
-  table name for easy lookup for generation migration steps.
--}
-type TableIndex =
-  Map.Map (IS.SchemaName, IS.TableName) (Set.Set IS.ColumnName)
-
-{- |
   This function compares the list of 'SchemaItem's provided against the current
   schema found in the database to determine whether any migration are
   necessary.  If any changes need to be made, this function executes. You can
@@ -100,18 +90,14 @@ generateMigrationSteps =
 
 generateMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [SchemaItem] -> m [MigrationStep]
 generateMigrationStepsWithoutTransaction schemaItems = do
-  (currentSchema, currentCatalog) <- findCurrentSchema
+  currentNamespace <- findCurrentNamespace
 
-  let schemaNames = databaseSchemaNames currentSchema schemaItems
+  let pgCatalogRelations = fmap (schemaItemPgCatalogRelation currentNamespace) schemaItems
 
-  tables <- findTablesInSchemas currentCatalog schemaNames
-  tablesWithColumns <- traverse findTableColumns tables
-
-  let tableIndex =
-        indexExistingTables tablesWithColumns
+  dbDesc <- PgCatalog.describeDatabaseRelations pgCatalogRelations
 
   pure $
-    concatMap (calculateMigrationSteps currentSchema tableIndex) schemaItems
+    concatMap (calculateMigrationSteps currentNamespace dbDesc) schemaItems
 
 {- |
   A convenience function for executing a list of 'MigrationStep's that has
@@ -126,23 +112,23 @@ executeMigrationStepsWithoutTransaction =
   traverse_ Orville.executeVoid
 
 calculateMigrationSteps ::
-  IS.SchemaName ->
-  TableIndex ->
+  PgCatalog.NamespaceName ->
+  PgCatalog.DatabaseDescription ->
   SchemaItem ->
   [MigrationStep]
-calculateMigrationSteps currentSchema tableIndex schemaItem =
+calculateMigrationSteps currentNamespace dbDesc schemaItem =
   case schemaItem of
     SchemaTable tableDef ->
       let schemaName =
-            tableDefinitionActualSchemaName currentSchema tableDef
+            tableDefinitionActualNamespaceName currentNamespace tableDef
 
           tableName =
             String.fromString $ Orville.unqualifiedTableNameString tableDef
-       in case Map.lookup (schemaName, tableName) tableIndex of
+       in case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
             Nothing ->
               [mkCreateTableStep tableDef]
-            Just existingColumns ->
-              maybeToList $ mkAlterTableStep existingColumns tableDef
+            Just relationDesc ->
+              maybeToList $ mkAlterTableStep relationDesc tableDef
 
 {- |
   Builds a 'MigrationStep' that will perform table creation. This function
@@ -163,17 +149,17 @@ mkCreateTableStep =
   performed. If there is nothing to do, 'Nothing' will be returned.
 -}
 mkAlterTableStep ::
-  Set.Set IS.ColumnName ->
+  PgCatalog.RelationDescription ->
   Orville.TableDefinition key writeEntity readEntity ->
   Maybe MigrationStep
-mkAlterTableStep existingColumns tableDef =
+mkAlterTableStep relationDesc tableDef =
   let addFieldAction ::
         Orville.FieldDefinition nullability a ->
         accessor ->
         [Expr.AlterTableAction] ->
         [Expr.AlterTableAction]
       addFieldAction fieldDef _ actions =
-        case mkAlterTableAction existingColumns fieldDef of
+        case mkAlterTableAction relationDesc fieldDef of
           Nothing ->
             actions
           Just newAction ->
@@ -193,88 +179,67 @@ mkAlterTableStep existingColumns tableDef =
   'Orville.FieldDefinition', or none if no change is required.
 -}
 mkAlterTableAction ::
-  Set.Set IS.ColumnName ->
+  PgCatalog.RelationDescription ->
   Orville.FieldDefinition nullability a ->
   Maybe Expr.AlterTableAction
-mkAlterTableAction existingColumns fieldDef =
-  let isColumnName =
+mkAlterTableAction relationDesc fieldDef =
+  let pgAttributeName =
         String.fromString (Orville.fieldNameToString $ Orville.fieldName fieldDef)
-   in if Set.member isColumnName existingColumns
-        then Nothing
-        else Just $ Expr.addColumn (Orville.fieldColumnDefinition fieldDef)
+   in case PgCatalog.lookupAttribute pgAttributeName relationDesc of
+        Just attr
+          | PgCatalog.isOrdinaryColumn attr ->
+            -- Add support for migrating existing columns here
+            Nothing
+        _ ->
+          -- Either the column doesn't exist in the table _OR_ it's a system
+          -- column. If it's a system column, attempting to add it will result
+          -- in an error that will be reported to the user. We could explicitly
+          -- return an error from this function, but that would make the error
+          -- reporting inconsistent with the handling in create table, where we
+          -- must rely on the database to raise the error because the table
+          -- does not yet exist for us to discover a conflict with system
+          -- attributes.
+          Just $ Expr.addColumn (Orville.fieldColumnDefinition fieldDef)
 
-indexExistingTables :: [(IS.InformationSchemaTable, [IS.InformationSchemaColumn])] -> TableIndex
-indexExistingTables =
-  let tableEntry (table, columns) =
-        ( (IS.tableSchema table, IS.tableName table)
-        , Set.fromList (map IS.columnName columns)
-        )
-   in Map.fromList . map tableEntry
-
-databaseSchemaNames :: IS.SchemaName -> [SchemaItem] -> Set.Set IS.SchemaName
-databaseSchemaNames currentSchema =
-  Set.fromList . map (schemaItemSchemaName currentSchema)
-
-schemaItemSchemaName :: IS.SchemaName -> SchemaItem -> IS.SchemaName
-schemaItemSchemaName currentSchema item =
+schemaItemPgCatalogRelation ::
+  PgCatalog.NamespaceName ->
+  SchemaItem ->
+  (PgCatalog.NamespaceName, PgCatalog.RelationName)
+schemaItemPgCatalogRelation currentNamespace item =
   case item of
     SchemaTable tableDef ->
-      tableDefinitionActualSchemaName currentSchema tableDef
+      ( tableDefinitionActualNamespaceName currentNamespace tableDef
+      , String.fromString (Orville.unqualifiedTableNameString tableDef)
+      )
 
-tableDefinitionActualSchemaName ::
-  IS.SchemaName ->
+tableDefinitionActualNamespaceName ::
+  PgCatalog.NamespaceName ->
   Orville.TableDefinition key writeEntity readEntity ->
-  IS.SchemaName
-tableDefinitionActualSchemaName currentSchema tableDef =
-  maybe currentSchema String.fromString (Orville.tableSchemaNameString tableDef)
+  PgCatalog.NamespaceName
+tableDefinitionActualNamespaceName currentNamespace tableDef =
+  maybe currentNamespace String.fromString (Orville.tableSchemaNameString tableDef)
 
-currentSchemaQuery :: Expr.QueryExpr
-currentSchemaQuery =
+currentNamespaceQuery :: Expr.QueryExpr
+currentNamespaceQuery =
   Expr.queryExpr
     (Expr.selectClause (Expr.selectExpr Nothing))
     ( Expr.selectDerivedColumns
-        [ Expr.deriveColumn (unquotedFieldName currentSchemaField)
-        , -- Without an an explicit "AS" here, postgresql returns a column name of
-          -- "current_database" rather than "current_catalog"
-          Expr.deriveColumnAs
-            (unquotedFieldName currentCatalogField)
-            (Orville.fieldColumnName currentCatalogField)
+        [ Expr.deriveColumnAs
+            -- current_schema is a special reserved word in postgresql. If you
+            -- put it in quotes it tries to treat it as a regular column name,
+            -- which then can't be found as a column in the query.
+            (Expr.columnNameFromIdentifier (Expr.unquotedIdentifier "current_schema"))
+            (Orville.fieldColumnName PgCatalog.namespaceNameField)
         ]
     )
     Nothing
 
-{- |
-  current_schema and current_catalog are special words -- if you put them in
-  quotes PostgreSQL treats them as a normal column name. These column don't
-  exist in our query above, so it would fail. We use this function to include
-  them in the SQL unquoted.
--}
-unquotedFieldName :: Orville.FieldDefinition nullability a -> Expr.ColumnName
-unquotedFieldName =
-  Expr.columnNameFromIdentifier
-    . Expr.unquotedIdentifierFromBytes
-    . Orville.fieldNameToByteString
-    . Orville.fieldName
-
-currentCatalogField :: Orville.FieldDefinition Orville.NotNull IS.CatalogName
-currentCatalogField =
-  Orville.coerceField
-    (Orville.unboundedTextField "current_catalog")
-
-currentSchemaField :: Orville.FieldDefinition Orville.NotNull IS.SchemaName
-currentSchemaField =
-  Orville.coerceField
-    (Orville.unboundedTextField "current_schema")
-
-findCurrentSchema :: Orville.MonadOrville m => m (IS.SchemaName, IS.CatalogName)
-findCurrentSchema = do
+findCurrentNamespace :: Orville.MonadOrville m => m PgCatalog.NamespaceName
+findCurrentNamespace = do
   results <-
     Orville.executeAndDecode
-      currentSchemaQuery
-      ( (,)
-          <$> Orville.marshallField fst currentSchemaField
-          <*> Orville.marshallField snd currentCatalogField
-      )
+      currentNamespaceQuery
+      (Orville.marshallField id PgCatalog.namespaceNameField)
 
   liftIO $
     case results of
@@ -284,31 +249,3 @@ findCurrentSchema = do
         throwIO $ UnableToDiscoverCurrentSchema "No results returned by current_schema query"
       _ ->
         throwIO $ UnableToDiscoverCurrentSchema "Multiple results returned by current_schema query"
-
-findTablesInSchemas ::
-  Orville.MonadOrville m =>
-  IS.CatalogName ->
-  Set.Set IS.SchemaName ->
-  m [IS.InformationSchemaTable]
-findTablesInSchemas currentCatalog schemaNameSet =
-  case NEL.nonEmpty (Set.toList schemaNameSet) of
-    Nothing ->
-      pure []
-    Just nonEmptySchemaNames ->
-      Orville.findEntitiesBy
-        IS.informationSchemaTablesTable
-        ( Orville.where_
-            ( Orville.whereAnd
-                ( Orville.fieldEquals IS.tableCatalogField currentCatalog
-                    :| [Orville.fieldIn IS.tableSchemaField nonEmptySchemaNames]
-                )
-            )
-        )
-
-findTableColumns ::
-  Orville.MonadOrville m =>
-  IS.InformationSchemaTable ->
-  m (IS.InformationSchemaTable, [IS.InformationSchemaColumn])
-findTableColumns table = do
-  columns <- IS.describeTableColumns table
-  pure (table, columns)

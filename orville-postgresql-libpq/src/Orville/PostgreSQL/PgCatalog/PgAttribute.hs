@@ -3,6 +3,7 @@
 module Orville.PostgreSQL.PgCatalog.PgAttribute
   ( PgAttribute (..),
     AttributeName,
+    isOrdinaryColumn,
     pgAttributeTable,
     relationOidField,
     attributeNameField,
@@ -32,6 +33,8 @@ data PgAttribute = PgAttribute
     pgAttributeRelationOid :: LibPQ.Oid
   , -- | The name of attribute
     pgAttributeName :: AttributeName
+  , -- | The PostgreSQL number of attribute
+    pgAttributeNumber :: AttributeNumber
   , -- | The PostgreSQL @oid@ for the type of this attribute. References
     -- @pg_type.oid@
     pgAttributeTypeOid :: LibPQ.Oid
@@ -40,11 +43,27 @@ data PgAttribute = PgAttribute
   }
 
 {- |
+  Determines whether the attribute represents a system column by inspecting
+  the attribute\'s 'AttributeNumber'. Ordinary columns have attribute numbers
+  starting at 1.
+-}
+isOrdinaryColumn :: PgAttribute -> Bool
+isOrdinaryColumn attr =
+  pgAttributeNumber attr > AttributeNumber 0
+
+{- |
   A Haskell type for the name of the attribute represented by a 'PgAttribute'
 -}
 newtype AttributeName
   = AttributeName T.Text
   deriving (Show, Eq, Ord, String.IsString)
+
+{- |
+  A Haskell type for the number of the attribute represented by a 'PgAttribute'
+-}
+newtype AttributeNumber
+  = AttributeNumber Int16
+  deriving (Eq, Ord)
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
@@ -62,6 +81,7 @@ pgAttributeMarshaller =
   PgAttribute
     <$> Orville.marshallField pgAttributeRelationOid relationOidField
     <*> Orville.marshallField pgAttributeName attributeNameField
+    <*> Orville.marshallField pgAttributeNumber attributeNumberField
     <*> Orville.marshallField pgAttributeTypeOid attributeTypeOidField
     <*> Orville.marshallField pgAttributeLength attributeLengthField
 
@@ -79,6 +99,14 @@ attributeNameField :: Orville.FieldDefinition Orville.NotNull AttributeName
 attributeNameField =
   Orville.coerceField $
     Orville.unboundedTextField "attname"
+
+{- |
+  The @attnum@ column of the @pg_catalog.pg_attribute@ table
+-}
+attributeNumberField :: Orville.FieldDefinition Orville.NotNull AttributeNumber
+attributeNumberField =
+  Orville.coerceField $
+    Orville.smallIntegerField "attnum"
 
 {- |
   The @atttypid@ column of the @pg_catalog.pg_attribute@ table

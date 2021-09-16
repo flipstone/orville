@@ -23,6 +23,7 @@ module Orville.PostgreSQL.Internal.Expr
     Identifier,
     identifier,
     identifierFromBytes,
+    unquotedIdentifier,
     unquotedIdentifierFromBytes,
     TableName,
     tableName,

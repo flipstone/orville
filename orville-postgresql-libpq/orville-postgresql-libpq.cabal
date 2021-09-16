@@ -32,7 +32,6 @@ library
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
       Orville.PostgreSQL.Connection
-      Orville.PostgreSQL.InformationSchema
       Orville.PostgreSQL.Internal.ExecutionResult
       Orville.PostgreSQL.Internal.Expr
       Orville.PostgreSQL.Internal.FieldDefinition
@@ -51,12 +50,6 @@ library
       Orville.PostgreSQL.Plan.Operation
       Orville.PostgreSQL.PgCatalog
   other-modules:
-      Orville.PostgreSQL.InformationSchema.ColumnName
-      Orville.PostgreSQL.InformationSchema.InformationSchemaColumn
-      Orville.PostgreSQL.InformationSchema.InformationSchemaTable
-      Orville.PostgreSQL.InformationSchema.TableCatalog
-      Orville.PostgreSQL.InformationSchema.TableName
-      Orville.PostgreSQL.InformationSchema.TableSchema
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
@@ -145,7 +138,6 @@ test-suite spec
       Test.Expr.TestSchema
       Test.Expr.Where
       Test.FieldDefinition
-      Test.InformationSchema
       Test.PgCatalog
       Test.PGGen
       Test.Plan
