@@ -85,7 +85,7 @@ smallIntegerTests pool =
           }
     )
   ,
-    ( String.fromString "Testing the decode of SMALLINT with value 2147483647"
+    ( String.fromString "Testing the decode of SMALLINT with value 32767"
     , runDecodingTest pool $
         DecodingTest
           { sqlTypeDDL = "SMALLINT"
@@ -95,7 +95,7 @@ smallIntegerTests pool =
           }
     )
   ,
-    ( String.fromString "Testing the decode of SMALLINT with value -2147483648"
+    ( String.fromString "Testing the decode of SMALLINT with value -32768"
     , runDecodingTest pool $
         DecodingTest
           { sqlTypeDDL = "SMALLINT"

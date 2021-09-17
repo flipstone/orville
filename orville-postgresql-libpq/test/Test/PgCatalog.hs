@@ -40,7 +40,7 @@ prop_queryPgClass =
 
 prop_queryPgAttribute :: Property.NamedDBProperty
 prop_queryPgAttribute =
-  Property.singletonNamedDBProperty "Can query the pg_attlibute table to find out about a column" $ \pool -> do
+  Property.singletonNamedDBProperty "Can query the pg_attribute table to find out about a column" $ \pool -> do
     maybePgClassRecord <- MIO.liftIO . Orville.runOrville pool $ do
       Orville.findFirstEntityBy
         PgCatalog.pgClassTable

@@ -132,7 +132,7 @@ fromInt8 =
   fromBSBuilderWithNoNULs BSB.int8Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Int8' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int8' value. If decoding fails
   'Nothing' is returned.
 -}
 toInt8 :: SqlValue -> Maybe Int8
@@ -147,7 +147,7 @@ fromInt16 =
   fromBSBuilderWithNoNULs BSB.int16Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Int16' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int16' value. If decoding fails
   'Nothing' is returned.
 -}
 toInt16 :: SqlValue -> Maybe Int16
@@ -162,7 +162,7 @@ fromInt32 =
   fromBSBuilderWithNoNULs BSB.int32Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Int32' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int32' value. If decoding fails
   'Nothing' is returned.
 -}
 toInt32 :: SqlValue -> Maybe Int32
@@ -177,7 +177,7 @@ fromInt64 =
   fromBSBuilderWithNoNULs BSB.int64Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
 -}
 toInt64 :: SqlValue -> Maybe Int64
@@ -192,7 +192,7 @@ fromInt =
   fromBSBuilderWithNoNULs BSB.intDec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Int' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
 -}
 toInt :: SqlValue -> Maybe Int
@@ -207,7 +207,7 @@ fromWord8 =
   fromBSBuilderWithNoNULs BSB.word8Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Word8' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Word8' value. If decoding fails
   'Nothing' is returned.
 -}
 toWord8 :: SqlValue -> Maybe Word8
@@ -222,7 +222,7 @@ fromWord16 =
   fromBSBuilderWithNoNULs BSB.word16Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Word16' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Word16' value. If decoding fails
   'Nothing' is returned.
 -}
 toWord16 :: SqlValue -> Maybe Word16
@@ -237,7 +237,7 @@ fromWord32 =
   fromBSBuilderWithNoNULs BSB.word32Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Word32' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Word32' value. If decoding fails
   'Nothing' is returned.
 -}
 toWord32 :: SqlValue -> Maybe Word32
@@ -252,7 +252,7 @@ fromWord64 =
   fromBSBuilderWithNoNULs BSB.word64Dec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Word64' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Word64' value. If decoding fails
   'Nothing' is returned.
 -}
 toWord64 :: SqlValue -> Maybe Word64
@@ -267,7 +267,7 @@ fromWord =
   fromBSBuilderWithNoNULs BSB.wordDec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Word' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Word' value. If decoding fails
   'Nothing' is returned.
 -}
 toWord :: SqlValue -> Maybe Word
@@ -282,7 +282,7 @@ fromDouble =
   fromBSBuilderWithNoNULs BSB.doubleDec
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Double' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Double' value. If decoding fails
   'Nothing' is returned.
 -}
 toDouble :: SqlValue -> Maybe Double
@@ -300,7 +300,7 @@ fromBool =
       False -> BSB.char8 'f'
 
 {- |
-  Attempts to decode a 'SqlValue' a Haskell 'Bool' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Bool' value. If decoding fails
   'Nothing' is returned.
 -}
 toBool :: SqlValue -> Maybe Bool

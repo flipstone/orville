@@ -173,24 +173,26 @@ data WherePlanner param = WherePlanner
     -- match only those rows that match the input paramater.
     executeOneWhereCondition :: param -> SelectOptions.WhereCondition
   , -- | 'executeManyWhereCondition' must build a where condition that will
-    -- match only those rows that any (not all!) of the input parameters.
+    -- match only those rows that match any (not all!) of the input parameters.
     executeManyWhereCondition :: NonEmpty param -> SelectOptions.WhereCondition
   , -- | 'explainOneWhereCondition' must build a where condition that is
-    -- suitable to be returned as an explanation of
-    -- 'executeManyWhereCondition' would return when given a parameter. For
-    -- example, this could fill in either an example or dummy value.
+    -- suitable to be used as an example of 'executeManyWhereCondition' would
+    -- return when given a parameter.  This where condition will be used for
+    -- when producing explanations of plans. For example, this could fill in
+    -- either an example or dummy value.
     explainOneWhereCondition :: SelectOptions.WhereCondition
   , -- | 'explainManyWhereCondition' must build a where condition that is
-    -- suitable to be returned as an explanation of
-    -- 'executeOneWhereCondition' would when given a list of parameters. For
-    -- example, this could fill in either example or dummy values.
+    -- suitable to be used as an example of 'executeOneWhereCondition' would
+    -- return when given a list of parameters.  This where condition will be
+    -- used for when producing explanations of plans. For example, this could
+    -- fill in either an example or dummy value.
     explainManyWhereCondition :: SelectOptions.WhereCondition
   }
 
 {- |
   Builds a 'WherePlanner' that will match on a single
   'FieldDefinition.FieldDefinition'.  The resulting 'WherePlanner' can be used
-  with function such as 'findOne' and 'findAll' to construct an 'Operation'.
+  with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 -}
 byField ::
   FieldDefinition.FieldDefinition nullability fieldValue ->
@@ -209,7 +211,7 @@ byField fieldDef =
 {- |
   Builds a 'WherePlanner' that will match on a 2-tuple of
   'FieldDefinition.FieldDefinition's.  The resulting 'WherePlanner' can be used
-  with function such as 'findOne' and 'findAll' to construct an 'Operation'.
+  with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 -}
 byFieldTuple ::
   forall nullabilityA fieldValueA nullabilityB fieldValueB.

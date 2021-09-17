@@ -61,9 +61,9 @@ columnNotIn columnName values =
   notInPredicate (columnReference columnName) (inValueList $ fmap valueExpression values)
 
 {- |
-  Checks that a the tuple constructed from the given columns in one of the
-  tuples specified in the input list. It is up to the caller to ensure that all
-  the tuples given have the same arity.
+  Checks that the tuple constructed from the given columns in one of the tuples
+  specified in the input list. It is up to the caller to ensure that all the
+  tuples given have the same arity.
 -}
 columnTupleIn :: NE.NonEmpty ColumnName -> NE.NonEmpty (NE.NonEmpty SqlValue) -> BooleanExpr
 columnTupleIn columnNames valueLists =
@@ -72,7 +72,7 @@ columnTupleIn columnNames valueLists =
     (inValueList $ fmap (rowValueConstructor . fmap valueExpression) valueLists)
 
 {- |
-  Checks that a the tuple constructed from the given columns in NOT one of the
+  Checks that the tuple constructed from the given columns is NOT one of the
   tuples specified in the input list. It is up to the caller to ensure that all
   the tuples given have the same arity.
 -}

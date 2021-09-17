@@ -43,7 +43,8 @@ newtype RelationName
   deriving (Show, Eq, Ord, String.IsString)
 
 {- |
-  The kind of relation represented by a 'PgClass'
+  The kind of relation represented by a 'PgClass', as described at
+  https://www.postgresql.org/docs/13/catalog-pg-class.html.
 -}
 data RelationKind
   = OrdinaryTable
