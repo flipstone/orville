@@ -24,6 +24,7 @@ module Orville.PostgreSQL.Internal.RawSql
     rightParen,
     dot,
     doubleQuote,
+    doubleColon,
 
     -- * Generic interface for generating sql
     SqlExpression (toRawSql, unsafeFromRawSql),
@@ -240,6 +241,10 @@ rightParen = fromString ")"
 dot :: RawSql
 dot = fromString "."
 
--- | Just a plain double quoqte, provided for convenience
+-- | Just a plain double quote, provided for convenience
 doubleQuote :: RawSql
 doubleQuote = fromString "\""
+
+-- | Just two colons, provided for convenience
+doubleColon :: RawSql
+doubleColon = fromString "::"

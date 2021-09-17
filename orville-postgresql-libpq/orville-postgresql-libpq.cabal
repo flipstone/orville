@@ -138,6 +138,7 @@ test-suite spec
       Test.Expr.TestSchema
       Test.Expr.Where
       Test.FieldDefinition
+      Test.PgAssert
       Test.PgCatalog
       Test.PGGen
       Test.Plan

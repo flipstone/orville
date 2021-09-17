@@ -11,7 +11,7 @@ import qualified Data.Map.Strict as Map
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
-import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, PgAttribute (pgAttributeName), pgAttributeTable, relationOidField)
+import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, PgAttribute (pgAttributeName), attributeIsDroppedField, pgAttributeTable, relationOidField)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassOid), RelationName, namespaceOidField, pgClassTable, relationNameField)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
 import qualified Orville.PostgreSQL.Plan as Plan
@@ -112,7 +112,10 @@ findClassAttributes :: Plan.Plan scope PgClass (Map.Map AttributeName PgAttribut
 findClassAttributes =
   fmap (indexBy pgAttributeName) $
     Plan.focusParam pgClassOid $
-      Plan.findAll pgAttributeTable relationOidField
+      Plan.findAllWhere
+        pgAttributeTable
+        relationOidField
+        (Orville.fieldEquals attributeIsDroppedField False)
 
 indexBy :: Ord key => (row -> key) -> [row] -> Map.Map key row
 indexBy rowKey =

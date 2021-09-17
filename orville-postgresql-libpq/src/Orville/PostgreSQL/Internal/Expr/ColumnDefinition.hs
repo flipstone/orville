@@ -30,6 +30,8 @@ module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
   )
 where
 
+import Data.Int (Int32)
+
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -82,7 +84,7 @@ tsvector :: DataType
 tsvector =
   DataType (RawSql.fromString "TSVECTOR")
 
-varchar :: Int -> DataType
+varchar :: Int32 -> DataType
 varchar len =
   -- postgresql won't let us pass the field length as a parameter.
   -- when we try we get an error like such error:
@@ -93,7 +95,7 @@ varchar len =
       <> RawSql.fromString (show len)
       <> RawSql.fromString ")"
 
-char :: Int -> DataType
+char :: Int32 -> DataType
 char len =
   -- postgresql won't let us pass the field length as a parameter.
   -- when we try we get an error like such error:

@@ -9,6 +9,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
   ( FieldDefinition,
     fieldName,
     fieldType,
+    fieldIsNotNull,
     fieldNullability,
     FieldNullability (..),
     fieldValueToSqlValue,
@@ -112,7 +113,7 @@ data FieldNullability a
   | NotNullField (FieldDefinition NotNull a)
 
 {- | Resolves the 'nullablity' of a field to a concrete type, which is returned
- via the 'FieldNullability type. You can pattern match on this type to then
+ via the 'FieldNullability' type. You can pattern match on this type to then
  extract the either 'Nullable' or 'NotNull' not field for cases where you
  may require different logic based on the nullability of a field.
 -}
@@ -121,6 +122,15 @@ fieldNullability field =
   case _fieldNullability field of
     NullableGADT -> NullableField field
     NotNullGADT -> NotNullField field
+
+{- |
+  Indicates whether a field is nullable.
+-}
+fieldIsNotNull :: FieldDefinition nullability a -> Bool
+fieldIsNotNull field =
+  case _fieldNullability field of
+    NullableGADT -> False
+    NotNullGADT -> True
 
 {- |
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
@@ -293,7 +303,7 @@ boundedTextField ::
   -- | Name of the field in the database
   String ->
   -- | Maximum length of text in the field
-  Int ->
+  Int32 ->
   FieldDefinition NotNull T.Text
 boundedTextField name len = fieldOfType (SqlType.boundedText len) name
 
@@ -309,7 +319,7 @@ fixedTextField ::
   -- | Name of the field in the database
   String ->
   -- | Maximum length of text in the field
-  Int ->
+  Int32 ->
   FieldDefinition NotNull T.Text
 fixedTextField name len = fieldOfType (SqlType.fixedText len) name
 

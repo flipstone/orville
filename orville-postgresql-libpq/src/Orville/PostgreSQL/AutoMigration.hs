@@ -7,11 +7,13 @@ module Orville.PostgreSQL.AutoMigration
     executeMigrationSteps,
     SchemaItem,
     schemaTable,
+    MigrationStep,
     MigrationDataError,
   )
 where
 
 import Control.Exception.Safe (Exception, throwIO)
+import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
 import Data.List.NonEmpty (nonEmpty)
@@ -159,11 +161,7 @@ mkAlterTableStep relationDesc tableDef =
         [Expr.AlterTableAction] ->
         [Expr.AlterTableAction]
       addFieldAction fieldDef _ actions =
-        case mkAlterTableAction relationDesc fieldDef of
-          Nothing ->
-            actions
-          Just newAction ->
-            newAction : actions
+        mkAlterTableActions relationDesc fieldDef <> actions
 
       tableActions =
         Orville.foldMarshallerFields
@@ -178,18 +176,45 @@ mkAlterTableStep relationDesc tableDef =
   Builds an 'Expr.AlterTableAction' expression for the given
   'Orville.FieldDefinition', or none if no change is required.
 -}
-mkAlterTableAction ::
+mkAlterTableActions ::
   PgCatalog.RelationDescription ->
   Orville.FieldDefinition nullability a ->
-  Maybe Expr.AlterTableAction
-mkAlterTableAction relationDesc fieldDef =
+  [Expr.AlterTableAction]
+mkAlterTableActions relationDesc fieldDef =
   let pgAttributeName =
         String.fromString (Orville.fieldNameToString $ Orville.fieldName fieldDef)
    in case PgCatalog.lookupAttribute pgAttributeName relationDesc of
         Just attr
           | PgCatalog.isOrdinaryColumn attr ->
-            -- Add support for migrating existing columns here
-            Nothing
+            let sqlType =
+                  Orville.fieldType fieldDef
+
+                typeIsChanged =
+                  (Orville.sqlTypeOid sqlType /= PgCatalog.pgAttributeTypeOid attr)
+                    || (Orville.sqlTypeMaximumLength sqlType /= PgCatalog.pgAttributeMaxLength attr)
+
+                columnName =
+                  Orville.fieldColumnName fieldDef
+
+                dataType =
+                  Orville.sqlTypeExpr sqlType
+
+                alterType = do
+                  guard typeIsChanged
+                  [Expr.alterColumnType columnName dataType (Just $ Expr.usingCast columnName dataType)]
+
+                nullabilityIsChanged =
+                  Orville.fieldIsNotNull fieldDef /= PgCatalog.pgAttributeIsNotNull attr
+
+                nullabilityAction =
+                  if Orville.fieldIsNotNull fieldDef
+                    then Expr.setNotNull
+                    else Expr.dropNotNull
+
+                alterNullability = do
+                  guard nullabilityIsChanged
+                  [Expr.alterColumnNullability (Orville.fieldColumnName fieldDef) nullabilityAction]
+             in alterType <> alterNullability
         _ ->
           -- Either the column doesn't exist in the table _OR_ it's a system
           -- column. If it's a system column, attempting to add it will result
@@ -199,7 +224,7 @@ mkAlterTableAction relationDesc fieldDef =
           -- must rely on the database to raise the error because the table
           -- does not yet exist for us to discover a conflict with system
           -- attributes.
-          Just $ Expr.addColumn (Orville.fieldColumnDefinition fieldDef)
+          [Expr.addColumn (Orville.fieldColumnDefinition fieldDef)]
 
 schemaItemPgCatalogRelation ::
   PgCatalog.NamespaceName ->

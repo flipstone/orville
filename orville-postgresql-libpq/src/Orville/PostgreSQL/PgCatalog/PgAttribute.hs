@@ -2,6 +2,7 @@
 
 module Orville.PostgreSQL.PgCatalog.PgAttribute
   ( PgAttribute (..),
+    pgAttributeMaxLength,
     AttributeName,
     isOrdinaryColumn,
     pgAttributeTable,
@@ -9,10 +10,11 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
     attributeNameField,
     attributeTypeOidField,
     attributeLengthField,
+    attributeIsDroppedField,
   )
 where
 
-import Data.Int (Int16)
+import Data.Int (Int16, Int32)
 import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Database.PostgreSQL.LibPQ as LibPQ
@@ -38,9 +40,48 @@ data PgAttribute = PgAttribute
   , -- | The PostgreSQL @oid@ for the type of this attribute. References
     -- @pg_type.oid@
     pgAttributeTypeOid :: LibPQ.Oid
-  , -- | The length of this attributes type (a copy of @pg_type.typlen@)
+  , -- | The length of this attributes type (a copy of @pg_type.typlen@). Note
+    -- that this is _NOT_ the maximum length of a @varchar@ column!
     pgAttributeLength :: Int16
+  , -- | Type-specific data supplied at creation time, such as the maximum length of a @varchar@ column
+    pgAttributeTypeModifier :: Int32
+  , -- | Indicates whether the column has been dropped and is not longer valid
+    pgAttributeIsDropped :: Bool
+  , -- | Indicates whether the column has a not-null constraint
+    pgAttributeIsNotNull :: Bool
   }
+
+{- |
+  Returns the maximum length for an attribute with a variable length type,
+  or 'Nothing' if the length if the type is not variable.
+-}
+pgAttributeMaxLength :: PgAttribute -> Maybe Int32
+pgAttributeMaxLength attr =
+  -- This function is a port of the follow function from _pg_char_max_length function postgresql:
+  --
+  -- Note that it does not handle DOMAIN (user created) types correctly at
+  -- the moment. Doing so requires loading the pg_type record and checking
+  -- whether to use the attributes typid and typmod or domain types base type
+  -- and typemod when it is a domain type.
+  --
+  let charTypes =
+        [LibPQ.Oid 1042, LibPQ.Oid 1043] -- char, varchar
+      bitTypes =
+        [LibPQ.Oid 1560, LibPQ.Oid 1562] -- bit, varbit
+      typeOid =
+        pgAttributeTypeOid attr
+
+      typeMod =
+        pgAttributeTypeModifier attr
+   in if typeMod == -1
+        then Nothing
+        else
+          if typeOid `elem` charTypes
+            then Just (typeMod - 4)
+            else
+              if typeOid `elem` bitTypes
+                then Just typeMod
+                else Nothing
 
 {- |
   Determines whether the attribute represents a system column by inspecting
@@ -84,6 +125,9 @@ pgAttributeMarshaller =
     <*> Orville.marshallField pgAttributeNumber attributeNumberField
     <*> Orville.marshallField pgAttributeTypeOid attributeTypeOidField
     <*> Orville.marshallField pgAttributeLength attributeLengthField
+    <*> Orville.marshallField pgAttributeTypeModifier attributeTypeModifierField
+    <*> Orville.marshallField pgAttributeIsDropped attributeIsDroppedField
+    <*> Orville.marshallField pgAttributeIsNotNull attributeIsNotNullField
 
 {- |
   The @attrelid@ column of the @pg_catalog.pg_attribute@ table
@@ -121,3 +165,24 @@ attributeTypeOidField =
 attributeLengthField :: Orville.FieldDefinition Orville.NotNull Int16
 attributeLengthField =
   Orville.smallIntegerField "attlen"
+
+{- |
+  The @atttypmod@ column of the @pg_catalog.pg_attribute@ table
+-}
+attributeTypeModifierField :: Orville.FieldDefinition Orville.NotNull Int32
+attributeTypeModifierField =
+  Orville.integerField "atttypmod"
+
+{- |
+  The @attisdropped@ column of the @pg_catalog.pg_attribute@ table
+-}
+attributeIsDroppedField :: Orville.FieldDefinition Orville.NotNull Bool
+attributeIsDroppedField =
+  Orville.booleanField "attisdropped"
+
+{- |
+  The @attnotnull@ column of the @pg_catalog.pg_attribute@ table
+-}
+attributeIsNotNullField :: Orville.FieldDefinition Orville.NotNull Bool
+attributeIsNotNullField =
+  Orville.booleanField "attnotnull"
