@@ -18,6 +18,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
 import Data.List.NonEmpty (nonEmpty)
 import Data.Maybe (maybeToList)
+import qualified Data.Set as Set
 import qualified Data.String as String
 
 import qualified Orville.PostgreSQL as Orville
@@ -155,32 +156,38 @@ mkAlterTableStep ::
   Orville.TableDefinition key writeEntity readEntity ->
   Maybe MigrationStep
 mkAlterTableStep relationDesc tableDef =
-  let addFieldAction ::
+  let addFieldActions ::
         Orville.FieldDefinition nullability a ->
         accessor ->
         [Expr.AlterTableAction] ->
         [Expr.AlterTableAction]
-      addFieldAction fieldDef _ actions =
-        mkAlterTableActions relationDesc fieldDef <> actions
+      addFieldActions fieldDef _ actions =
+        mkFieldActions relationDesc fieldDef <> actions
 
-      tableActions =
+      fieldActions =
         Orville.foldMarshallerFields
           (Orville.tableMarshaller tableDef)
           []
-          addFieldAction
+          addFieldActions
+
+      attributeActions =
+        concatMap
+          (mkAttributeActions tableDef)
+          (PgCatalog.relationAttributes relationDesc)
    in fmap
         (MigrationStep . RawSql.toRawSql . Expr.alterTableExpr (Orville.tableName tableDef))
-        (nonEmpty tableActions)
+        (nonEmpty $ fieldActions <> attributeActions)
 
 {- |
-  Builds an 'Expr.AlterTableAction' expression for the given
-  'Orville.FieldDefinition', or none if no change is required.
+  Builds 'Expr.AlterTableAction' expressions to bring the database schema in
+  line with the given 'Orville.FieldDefinition', or none if no change is
+  required.
 -}
-mkAlterTableActions ::
+mkFieldActions ::
   PgCatalog.RelationDescription ->
   Orville.FieldDefinition nullability a ->
   [Expr.AlterTableAction]
-mkAlterTableActions relationDesc fieldDef =
+mkFieldActions relationDesc fieldDef =
   let pgAttributeName =
         String.fromString (Orville.fieldNameToString $ Orville.fieldName fieldDef)
    in case PgCatalog.lookupAttribute pgAttributeName relationDesc of
@@ -225,6 +232,25 @@ mkAlterTableActions relationDesc fieldDef =
           -- does not yet exist for us to discover a conflict with system
           -- attributes.
           [Expr.addColumn (Orville.fieldColumnDefinition fieldDef)]
+
+{- |
+  Builds 'Expr.AlterTableAction' expressions for the given attribute to make
+  the database schema match the given 'Orville.TableDefinition'. This function
+  is only responsible for handling cases where the attribute does not have a
+  correspending 'Orville.FieldDefinition'. See 'mkFieldActions' for those
+  cases.
+-}
+mkAttributeActions ::
+  Orville.TableDefinition key readEntity writeEntity ->
+  PgCatalog.PgAttribute ->
+  [Expr.AlterTableAction]
+mkAttributeActions tableDef attr = do
+  let attrName =
+        PgCatalog.attributeNameToString $ PgCatalog.pgAttributeName attr
+
+  guard $ Set.member attrName (Orville.columnsToDrop tableDef)
+
+  [Expr.dropColumn $ Expr.columnName attrName]
 
 schemaItemPgCatalogRelation ::
   PgCatalog.NamespaceName ->

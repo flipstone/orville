@@ -117,6 +117,7 @@ module Orville.PostgreSQL.Internal.Expr
     alterTableExpr,
     AlterTableAction,
     addColumn,
+    dropColumn,
     alterColumnType,
     UsingClause,
     usingCast,

@@ -4,6 +4,7 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
   ( PgAttribute (..),
     pgAttributeMaxLength,
     AttributeName,
+    attributeNameToString,
     isOrdinaryColumn,
     pgAttributeTable,
     relationOidField,
@@ -98,6 +99,13 @@ isOrdinaryColumn attr =
 newtype AttributeName
   = AttributeName T.Text
   deriving (Show, Eq, Ord, String.IsString)
+
+{- |
+  Converts an 'Attribute' name to a plain old string
+-}
+attributeNameToString :: AttributeName -> String
+attributeNameToString (AttributeName txt) =
+  T.unpack txt
 
 {- |
   A Haskell type for the number of the attribute represented by a 'PgAttribute'

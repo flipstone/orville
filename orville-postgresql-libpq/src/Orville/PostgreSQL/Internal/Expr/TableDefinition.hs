@@ -9,6 +9,7 @@ module Orville.PostgreSQL.Internal.Expr.TableDefinition
     alterTableExpr,
     AlterTableAction,
     addColumn,
+    dropColumn,
     alterColumnType,
     UsingClause,
     usingCast,
@@ -93,6 +94,11 @@ addColumn :: ColumnDefinition -> AlterTableAction
 addColumn columnDef =
   AlterTableAction $
     RawSql.fromString "ADD COLUMN " <> RawSql.toRawSql columnDef
+
+dropColumn :: ColumnName -> AlterTableAction
+dropColumn columnName =
+  AlterTableAction $
+    RawSql.fromString "DROP COLUMN " <> RawSql.toRawSql columnName
 
 alterColumnType ::
   ColumnName ->

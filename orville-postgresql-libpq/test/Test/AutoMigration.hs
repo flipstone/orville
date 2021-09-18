@@ -8,6 +8,7 @@ where
 import qualified Control.Exception.Safe as ExSafe
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
+import Data.List ((\\))
 import qualified Data.Pool as Pool
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -17,7 +18,6 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
@@ -32,7 +32,7 @@ autoMigrationTests pool =
   Property.group
     "AutoMigration"
     [ prop_createsMissingTables pool
-    , prop_addsMissingColumns pool
+    , prop_addsAndRemovesColumns pool
     , prop_columnsWithSystemNameConflictsRaiseError pool
     , prop_altersColumnDataType pool
     ]
@@ -55,36 +55,49 @@ prop_createsMissingTables =
     length (firstTimeSteps) === 1
     map RawSql.toBytes secondTimeSteps === []
 
-prop_addsMissingColumns :: Property.NamedDBProperty
-prop_addsMissingColumns =
-  Property.singletonNamedDBProperty "Adds missing columns" $ \pool -> do
+prop_addsAndRemovesColumns :: Property.NamedDBProperty
+prop_addsAndRemovesColumns =
+  Property.namedDBProperty "Adds and removes columns columns" $ \pool -> do
+    let possibleColumns =
+          ["foo", "bar", "baz", "bat", "bax"]
+
+        columnListMarshaller columns =
+          let field (idx, column) =
+                Orville.marshallField (!! idx) $ Orville.integerField column
+           in traverse field (zip [1 ..] columns)
+
+    originalColumns <- HH.forAll $ Gen.subsequence possibleColumns
+    newColumns <- HH.forAll $ Gen.subsequence possibleColumns
+
+    let columnsToDrop =
+          originalColumns \\ newColumns
+
+        originalTableDef =
+          Orville.mkTableDefinitionWithoutKey
+            "migration_test"
+            (columnListMarshaller originalColumns)
+
+        newTableDef =
+          Orville.dropColumns columnsToDrop $
+            Orville.mkTableDefinitionWithoutKey
+              "migration_test"
+              (columnListMarshaller newColumns)
+
     firstTimeSteps <-
       MIO.liftIO $
         Orville.runOrville pool $ do
-          Orville.executeVoid $ TestTable.dropTableDefSql Foo.table
-          Orville.executeVoid $
-            Expr.createTableExpr
-              (Orville.tableName Foo.table)
-              [Orville.fieldColumnDefinition Foo.fooIdField]
-              (Just $ PrimaryKey.mkPrimaryKeyExpr $ Orville.tablePrimaryKey Foo.table)
-
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
+          Orville.executeVoid $ TestTable.dropTableDefSql originalTableDef
+          Orville.executeVoid $ TableDefinition.mkCreateTableExpr originalTableDef
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
     secondTimeSteps <-
       MIO.liftIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    length (firstTimeSteps) === 1
     map RawSql.toBytes secondTimeSteps === []
-    PgAssert.assertColumnNamesEqual
-      pool
-      (Orville.unqualifiedTableNameString Foo.table)
-      [ Orville.fieldNameToString $ Orville.fieldName Foo.fooIdField
-      , Orville.fieldNameToString $ Orville.fieldName Foo.fooNameField
-      , Orville.fieldNameToString $ Orville.fieldName Foo.fooAgeField
-      ]
+    PgAssert.assertColumnNamesEqual pool "migration_test" newColumns
 
 prop_columnsWithSystemNameConflictsRaiseError :: Property.NamedDBProperty
 prop_columnsWithSystemNameConflictsRaiseError =

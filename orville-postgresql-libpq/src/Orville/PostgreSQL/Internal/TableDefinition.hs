@@ -7,6 +7,8 @@ module Orville.PostgreSQL.Internal.TableDefinition
     NoKey,
     mkTableDefinition,
     mkTableDefinitionWithoutKey,
+    dropColumns,
+    columnsToDrop,
     tableName,
     unqualifiedTableName,
     unqualifiedTableNameString,
@@ -26,6 +28,7 @@ module Orville.PostgreSQL.Internal.TableDefinition
 where
 
 import Data.List.NonEmpty (NonEmpty, toList)
+import qualified Data.Set as Set
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
@@ -51,6 +54,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , _tableSchemaNameString :: Maybe String
   , _tablePrimaryKey :: TablePrimaryKey key
   , _tableMarshaller :: SqlMarshaller writeEntity readEntity
+  , _tableColumnsToDrop :: Set.Set String
   }
 
 data HasKey key
@@ -98,7 +102,37 @@ mkTableDefinitionWithoutKey name marshaller =
     , _tableSchemaNameString = Nothing
     , _tablePrimaryKey = TableHasNoKey
     , _tableMarshaller = marshaller
+    , _tableColumnsToDrop = Set.empty
     }
+
+{- |
+  Annotates a 'TableDefinition' with a direction to drop columns if they are
+  found in the database. Orville does not drop columns during auto migration
+  unless they are explicitly requested to be dropped via 'dropColumns'.
+
+  If you remove a reference to a column from a the table's 'SqlMarshaller' with
+  adding the column's name to 'dropColumns', Orville will operate as if the
+  column does not exist without actually dropping the column. This is often
+  useful if you're not sure you want to lost the data in the column, or if you
+  have zero down-time deployments, which requires the column not be referenced
+  by deployed code before it can be dropped.
+-}
+dropColumns ::
+  -- | Columns that should be dropped from the table
+  [String] ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+dropColumns columns tableDef =
+  tableDef
+    { _tableColumnsToDrop = _tableColumnsToDrop tableDef <> Set.fromList columns
+    }
+
+{- |
+  Returns the set aff columns that have be marked be dropped by 'dropColumns'
+-}
+columnsToDrop :: TableDefinition key writeEntity readEntity -> Set.Set String
+columnsToDrop =
+  _tableColumnsToDrop
 
 {- |
   Returns the table's name as an expression that can be used to build SQL

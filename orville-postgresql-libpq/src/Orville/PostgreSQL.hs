@@ -20,6 +20,8 @@ module Orville.PostgreSQL
     TableDefinition.mkTableDefinition,
     TableDefinition.mkTableDefinitionWithoutKey,
     TableDefinition.setTableSchema,
+    TableDefinition.dropColumns,
+    TableDefinition.columnsToDrop,
     TableDefinition.tableName,
     TableDefinition.unqualifiedTableName,
     TableDefinition.unqualifiedTableNameString,
