@@ -65,11 +65,11 @@ mkIndexDefinition :: Bool
 mkIndexDefinition unique name tableDef fields whereStrs =
   let
     whereStr [] = ""
-    whereStr strs = "WHERE " <> (intercalate " AND " strs)
+    whereStr strs = "WHERE " <> intercalate " AND " (fmap (\a -> "(" <> a <> ")") strs)
   in
     IndexDefinition
       { indexName = name
       , indexUnique = unique
       , indexTable = tableName tableDef
-      , indexBody = indexFieldsBody fields <> (whereStr whereStrs)
+      , indexBody = indexFieldsBody fields <> whereStr whereStrs
       }
