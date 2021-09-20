@@ -95,6 +95,8 @@ module Database.Orville.PostgreSQL.Core
   , IndexDefinition(..)
   , uniqueIndex
   , simpleIndex
+  , simplePartialIndex
+  , uniquePartialIndex
   , ConstraintDefinition(..)
   , SequenceDefinition(..)
   , uniqueConstraint
