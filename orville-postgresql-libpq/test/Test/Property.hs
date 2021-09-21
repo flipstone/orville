@@ -1,6 +1,7 @@
 module Test.Property
   ( NamedProperty,
     namedProperty,
+    singletonNamedProperty,
     NamedDBProperty,
     namedDBProperty,
     singletonNamedDBProperty,
@@ -32,6 +33,13 @@ type NamedDBProperty = Pool.Pool Connection.Connection -> NamedProperty
 namedProperty :: String -> HH.PropertyT IO () -> NamedProperty
 namedProperty nameString propertyT =
   (String.fromString nameString, HH.property propertyT)
+
+singletonNamedProperty ::
+  String ->
+  HH.PropertyT IO () ->
+  NamedProperty
+singletonNamedProperty nameString property =
+  HH.withTests 1 <$> namedProperty nameString property
 
 namedDBProperty ::
   String ->
