@@ -59,10 +59,10 @@ pgAttributeMaxLength :: PgAttribute -> Maybe Int32
 pgAttributeMaxLength attr =
   -- This function is a port of the follow function from _pg_char_max_length function postgresql:
   --
-  -- Note that it does not handle DOMAIN (user created) types correctly at
-  -- the moment. Doing so requires loading the pg_type record and checking
-  -- whether to use the attributes typid and typmod or domain types base type
-  -- and typemod when it is a domain type.
+  -- Note that it does not handle DOMAIN (user created) types correctly at the
+  -- moment. Handling domain types would require loading the pg_type record and
+  -- checking whether to use the typid and typmod from the attribute or the
+  -- base type and typemod from the domain type.
   --
   let charTypes =
         [LibPQ.Oid 1042, LibPQ.Oid 1043] -- char, varchar

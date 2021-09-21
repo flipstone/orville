@@ -124,11 +124,11 @@ prop_altersColumnDataType =
   Property.namedDBProperty "Alters data type on existing column" $ \pool -> do
     let baseFieldDefs =
           -- Serial columns are omitted from this list currently because
-          -- the are pseoud-types in postgresql, rather than real column types.
+          -- the are pseudo-types in postgresql, rather than real column types.
           -- We don't handle migrating "away" from them to regular integer type.
           --
           -- time-like and boolean columns are omitted because postgresql raises
-          -- an unable-to-cast error when attempting to migrate between them an
+          -- an unable-to-cast error when attempting to migrate between them and
           -- numeric columns.
           [ SomeField $ Orville.unboundedTextField "column"
           , SomeField $ Orville.boundedTextField "column" 1
