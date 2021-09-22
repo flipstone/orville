@@ -36,10 +36,9 @@ newtype WhereCondition
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'WhereCondition' from a 'Expr.BooleanExpr'. You can use this
-  to together with the 'RawSql.RawSql' related functions in the 'Expr' module
-  to use SQL expressions Orville does not have direct support for in your
-  queries.
+  Constructs a 'WhereCondition' from a 'Expr.BooleanExpr'. You can use this to
+  together with the 'RawSql.RawSql' related functions in the 'Expr' module to
+  use SQL expressions that Orville does not directly support in your queries.
 -}
 whereBooleanExpr :: Expr.BooleanExpr -> WhereCondition
 whereBooleanExpr =

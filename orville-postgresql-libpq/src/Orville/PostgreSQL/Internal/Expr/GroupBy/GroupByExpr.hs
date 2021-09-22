@@ -7,7 +7,7 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
   ( GroupByExpr,
-    appendGroupBy,
+    appendGroupByExpr,
     groupByExpr,
     groupByColumnsExpr,
   )
@@ -22,8 +22,8 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 newtype GroupByExpr = GroupByExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-appendGroupBy :: GroupByExpr -> GroupByExpr -> GroupByExpr
-appendGroupBy (GroupByExpr a) (GroupByExpr b) =
+appendGroupByExpr :: GroupByExpr -> GroupByExpr -> GroupByExpr
+appendGroupByExpr (GroupByExpr a) (GroupByExpr b) =
   GroupByExpr (a <> RawSql.commaSpace <> b)
 
 groupByExpr :: RawSql.RawSql -> GroupByExpr

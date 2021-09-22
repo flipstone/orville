@@ -47,14 +47,14 @@ orderByTests pool =
             }
       )
     ,
-      ( String.fromString "addOrderBy causes ordering on both columns"
+      ( String.fromString "appendOrderByExpr causes ordering on both columns"
       , runOrderByTest pool $
           OrderByTest
             { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
             , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
             , orderByClause =
                 Just . Expr.orderByClause $
-                  Expr.appendOrderBy
+                  Expr.appendOrderByExpr
                     (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
                     (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
             }

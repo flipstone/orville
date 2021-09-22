@@ -135,18 +135,19 @@ prop_orderBy =
   Property.singletonNamedProperty "orderBy generates expected sql" $
     assertOrderByClauseEquals
       (Just "ORDER BY \"foo\" ASC, \"bar\" DESC")
-      ( SO.orderBy . Expr.orderByColumnsExpr $
-          (FieldDef.fieldColumnName fooField, Expr.ascendingOrder)
-            :| [(FieldDef.fieldColumnName barField, Expr.descendingOrder)]
+      ( SO.orderBy
+          ( SO.orderByField fooField Expr.ascendingOrder
+              <> SO.orderByField barField Expr.descendingOrder
+          )
       )
 
 prop_orderByCombined :: Property.NamedProperty
 prop_orderByCombined =
   Property.singletonNamedProperty "orderBy generates expected sql with multiple selectOptions" $
     assertOrderByClauseEquals
-      (Just "ORDER BY foo ASC, \"bar\" DESC")
-      ( (SO.orderBy $ Expr.orderByExpr (RawSql.fromString "foo") Expr.ascendingOrder)
-          <> (SO.orderBy $ Expr.orderByExpr (RawSql.toRawSql $ FieldDef.fieldColumnName barField) Expr.descendingOrder)
+      (Just "ORDER BY \"foo\" ASC, \"bar\" DESC")
+      ( (SO.orderBy $ SO.orderByColumnName (Expr.columnName "foo") SO.ascendingOrder)
+          <> (SO.orderBy $ SO.orderByField barField SO.descendingOrder)
       )
 
 prop_groupBy :: Property.NamedProperty

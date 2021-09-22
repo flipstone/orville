@@ -38,7 +38,7 @@ groupByTests pool =
             , groupByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dingo", FooBar 2 "dingo"]
             , groupByClause =
                 Just . Expr.groupByClause $
-                  Expr.appendGroupBy
+                  Expr.appendGroupByExpr
                     (Expr.groupByExpr $ RawSql.toRawSql barColumn)
                     (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
             }

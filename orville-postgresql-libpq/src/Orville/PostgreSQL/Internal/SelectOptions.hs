@@ -5,5 +5,6 @@ module Orville.PostgreSQL.Internal.SelectOptions
   )
 where
 
+import Orville.PostgreSQL.Internal.SelectOptions.OrderBy as Export
 import Orville.PostgreSQL.Internal.SelectOptions.SelectOptions as Export
 import Orville.PostgreSQL.Internal.SelectOptions.WhereCondition as Export
