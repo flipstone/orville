@@ -110,10 +110,10 @@ mkTableDefinitionWithoutKey name marshaller =
   found in the database. Orville does not drop columns during auto migration
   unless they are explicitly requested to be dropped via 'dropColumns'.
 
-  If you remove a reference to a column from a the table's 'SqlMarshaller' with
-  adding the column's name to 'dropColumns', Orville will operate as if the
-  column does not exist without actually dropping the column. This is often
-  useful if you're not sure you want to lost the data in the column, or if you
+  If you remove a reference to a column from the table's 'SqlMarshaller'
+  without adding the column's name to 'dropColumns', Orville will operate as if
+  the column does not exist without actually dropping the column. This is often
+  useful if you're not sure you want to lose the data in the column, or if you
   have zero down-time deployments, which requires the column not be referenced
   by deployed code before it can be dropped.
 -}
@@ -128,7 +128,7 @@ dropColumns columns tableDef =
     }
 
 {- |
-  Returns the set aff columns that have be marked be dropped by 'dropColumns'
+  Returns the set of columns that have be marked be dropped by 'dropColumns'
 -}
 columnsToDrop :: TableDefinition key writeEntity readEntity -> Set.Set String
 columnsToDrop =
