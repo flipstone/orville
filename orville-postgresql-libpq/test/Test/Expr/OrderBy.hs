@@ -6,8 +6,6 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
-import qualified Data.String as String
-import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
@@ -20,59 +18,63 @@ import qualified Test.Property as Property
 orderByTests :: Pool.Pool Conn.Connection -> Property.Group
 orderByTests pool =
   Property.group "Expr - OrderBy" $
-    [
-      ( String.fromString "ascendingExpr sorts a text column"
-      , runOrderByTest pool $
-          OrderByTest
-            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-            , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
-            , orderByClause =
-                Just . Expr.orderByClause $
-                  Expr.orderByExpr
-                    (RawSql.toRawSql barColumn)
-                    Expr.ascendingOrder
-            }
-      )
-    ,
-      ( String.fromString "descendingExpr sorts a text column"
-      , runOrderByTest pool $
-          OrderByTest
-            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-            , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
-            , orderByClause =
-                Just . Expr.orderByClause $
-                  Expr.orderByExpr
-                    (RawSql.toRawSql barColumn)
-                    Expr.descendingOrder
-            }
-      )
-    ,
-      ( String.fromString "appendOrderByExpr causes ordering on both columns"
-      , runOrderByTest pool $
-          OrderByTest
-            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-            , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
-            , orderByClause =
-                Just . Expr.orderByClause $
-                  Expr.appendOrderByExpr
-                    (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
-                    (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
-            }
-      )
-    ,
-      ( String.fromString "orderByColumnsExpr orders by columns"
-      , runOrderByTest pool $
-          OrderByTest
-            { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-            , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
-            , orderByClause =
-                Just . Expr.orderByClause $
-                  Expr.orderByColumnsExpr $
-                    (barColumn, Expr.ascendingOrder)
-                      NE.:| [(fooColumn, Expr.descendingOrder)]
-            }
-      )
+    [ prop_ascendingExpr pool
+    , prop_descendingExpr pool
+    , prop_appendOrderByExpr pool
+    , prop_orderByColumnsExpr pool
     ]
+
+prop_ascendingExpr :: Property.NamedDBProperty
+prop_ascendingExpr =
+  orderByTest "ascendingExpr sorts a text column" $
+    OrderByTest
+      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.orderByExpr
+              (RawSql.toRawSql barColumn)
+              Expr.ascendingOrder
+      }
+
+prop_descendingExpr :: Property.NamedDBProperty
+prop_descendingExpr =
+  orderByTest "descendingExpr sorts a text column" $
+    OrderByTest
+      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.orderByExpr
+              (RawSql.toRawSql barColumn)
+              Expr.descendingOrder
+      }
+
+prop_appendOrderByExpr :: Property.NamedDBProperty
+prop_appendOrderByExpr =
+  orderByTest "appendOrderByExpr causes ordering on both columns" $
+    OrderByTest
+      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.appendOrderByExpr
+              (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
+              (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
+      }
+
+prop_orderByColumnsExpr :: Property.NamedDBProperty
+prop_orderByColumnsExpr =
+  orderByTest "orderByColumnsExpr orders by columns" $
+    OrderByTest
+      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.orderByColumnsExpr $
+              (barColumn, Expr.ascendingOrder)
+                NE.:| [(fooColumn, Expr.descendingOrder)]
+      }
 
 data OrderByTest = OrderByTest
   { orderByValuesToInsert :: [FooBar]
@@ -80,9 +82,9 @@ data OrderByTest = OrderByTest
   , orderByExpectedQueryResults :: [FooBar]
   }
 
-runOrderByTest :: Pool.Pool Conn.Connection -> OrderByTest -> HH.Property
-runOrderByTest pool test =
-  Property.singletonProperty $ do
+orderByTest :: String -> OrderByTest -> Property.NamedDBProperty
+orderByTest testName test =
+  Property.singletonNamedDBProperty testName $ \pool -> do
     rows <-
       MIO.liftIO $ do
         Pool.withResource pool $ \connection -> do
