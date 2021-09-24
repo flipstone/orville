@@ -56,8 +56,8 @@ orderByToClause =
   given 'OrderBy'
 
   Note: 'Expr.OrderByClause' represents a query fragment without the @ORDER BY@
-  included in it. You can use 'orderByToClause instead if you need the
-  order expression witht the @ORDER BY@ clause included.
+  included in it. You can use 'orderByToClause' instead if you need the
+  order expression with the @ORDER BY@ clause included.
 --}
 orderByToExpr :: OrderBy -> Expr.OrderByExpr
 orderByToExpr (OrderBy expr) =
