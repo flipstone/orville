@@ -349,23 +349,43 @@ insertRecord tableDef newRecord = do
     [] -> error "Didn't get a record back from the database!"
     _ -> error "Got more than one record back from the database!"
 
+-- | Insert multiple entries into the given table. It tries to batch as many
+-- inserts as possible into a single statement. This will result in multiple
+-- queries if the max number of statement parameters would be exceeded by a
+-- single statement.
 insertRecordMany ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
   -> [writeEntity]
   -> m ()
 insertRecordMany tableDef newRecords = do
-  let insertSql =
-        mkInsertManyClause
-          (tableName tableDef)
-          (tableAssignableColumnNames tableDef)
-          (length newRecords)
-  let builder = tableToSql tableDef
-  when (not $ null newRecords) $
-    withConnection $ \conn -> do
+  let assignableColumnNames = tableAssignableColumnNames tableDef
+      numParamsPerRow = length assignableColumnNames
+      -- Postgres has a hard limit of 65,536 parameters per statement since it
+      -- uses 16 bit unsigned integers to identify parameters internally.
+      chunkSize = 65536 `div` numParamsPerRow
+      chunksOf 0 _ = []
+      chunksOf _ [] = []
+      chunksOf n xs =
+        let (chunk, rest) = splitAt n xs
+         in chunk : chunksOf n rest
+      recordChunks = chunksOf chunkSize newRecords
+      withTransactionIfMultiple =
+        case recordChunks of
+          _:_:_ -> withTransaction
+          _     -> id
+
+  withTransactionIfMultiple . withConnection $ \conn ->
+    forM_ recordChunks $ \recordChunk -> do
+      let insertSql =
+            mkInsertManyClause
+              (tableName tableDef)
+              assignableColumnNames
+              (length recordChunk)
+          builder = tableToSql tableDef
       executingSql InsertQuery insertSql $ do
         insert <- prepare conn insertSql
-        void $ execute insert (concatMap (runToSql builder) newRecords)
+        void $ execute insert (concatMap (runToSql builder) recordChunk)
 
 deleteRecord ::
      MonadOrville conn m

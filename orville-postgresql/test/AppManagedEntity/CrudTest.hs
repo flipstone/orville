@@ -55,6 +55,15 @@ test_crud =
             (Map.fromList [(bpsId, bpsVirus), (brnId, brnVirus)])
             foundViruses
 
+      , testCase "insertRecordMany doesn't overflow parameter limit" $ do
+          let viruses = do
+                vId <- VirusId <$> [1..65536]
+                pure $ Virus vId bpsVirusName bpsDiscoveredAt
+
+          run $ do
+            TestDB.reset schema
+            O.insertRecordMany virusTable viruses
+
       , testCase "Update" $ do
           let testId = VirusId 1234
               bpsVirus = Virus testId bpsVirusName bpsDiscoveredAt
