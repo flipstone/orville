@@ -361,21 +361,17 @@ insertRecordMany ::
 insertRecordMany tableDef newRecords = do
   let assignableColumnNames = tableAssignableColumnNames tableDef
       numParamsPerRow = length assignableColumnNames
-      -- Postgres has a hard limit of 65,536 parameters per statement since it
+      -- Postgres has a hard limit of 65,535 parameters per statement since it
       -- uses 16 bit unsigned integers to identify parameters internally.
-      chunkSize = 65536 `div` numParamsPerRow
+      chunkSize = 65535 `div` numParamsPerRow
       chunksOf 0 _ = []
       chunksOf _ [] = []
       chunksOf n xs =
         let (chunk, rest) = splitAt n xs
          in chunk : chunksOf n rest
       recordChunks = chunksOf chunkSize newRecords
-      withTransactionIfMultiple =
-        case recordChunks of
-          _:_:_ -> withTransaction
-          _     -> id
 
-  withTransactionIfMultiple . withConnection $ \conn ->
+  withTransaction . withConnection $ \conn ->
     forM_ recordChunks $ \recordChunk -> do
       let insertSql =
             mkInsertManyClause
