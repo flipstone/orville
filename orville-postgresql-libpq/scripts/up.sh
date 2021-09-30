@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export STACK_YAML_FILE=$1
+
 # dev is specified here so that docker-compose up will only attached to the dev
 # container and not the db container. A number of the tests produce errors logs
 # in the database container which are expected for negative testing (e.g.

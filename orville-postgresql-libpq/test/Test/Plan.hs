@@ -1,3 +1,10 @@
+{-# LANGUAGE CPP #-}
+
+#if defined(MIN_VERSION_GLASGOW_HASKELL)
+#if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
+{-# LANGUAGE QualifiedDo #-}
+#endif
+#endif
 module Test.Plan
   ( planTests,
   )
@@ -21,10 +28,18 @@ import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
 
+#if defined(MIN_VERSION_GLASGOW_HASKELL)
+#if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
+import qualified Orville.PostgreSQL.Plan.Syntax as PlanSyntax
+#endif
+#endif
+
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Entities.FooChild as FooChild
 import qualified Test.Property as Property
 
+{- ORMOLU_DISABLE -}
+{- disable formatting so fourmolu doesn't go haywire with te cpp within the list -}
 planTests :: Pool.Pool Connection.Connection -> Property.Group
 planTests pool =
   Property.group "Plan" $
@@ -41,9 +56,16 @@ planTests pool =
     , prop_planMany_planEither pool
     , prop_bindAndUse pool
     , prop_planMany_bindAndUse pool
+#if defined(MIN_VERSION_GLASGOW_HASKELL)
+#if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
+    , prop_bindAndUse_qualifiedDo pool
+    , prop_planMany_bindAndUse_qualifiedDo pool
+#endif
+#endif
     , prop_assert pool
     , prop_explain
     ]
+{- ORMOLU_ENABLE -}
 
 prop_askParam :: Property.NamedDBProperty
 prop_askParam =
@@ -329,6 +351,71 @@ prop_planMany_bindAndUse =
     assertEachManyResult allFooNames results $ \fooName (foo, children) -> do
       Foo.fooName foo === fooName
       assertAllMatchesFound FooChild.fooChildId children (FooChild.isChildOf foo) allChildren
+
+#if defined(MIN_VERSION_GLASGOW_HASKELL)
+#if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
+prop_bindAndUse_qualifiedDo :: Property.NamedDBProperty
+prop_bindAndUse_qualifiedDo =
+  Property.namedDBProperty "bind/use allows caller to use plan output as input for another plan (QualifiedDo version)" $ \pool -> do
+    let plan :: Plan.Plan scope Foo.FooName (Foo.Foo, [FooChild.FooChild])
+        plan = PlanSyntax.do
+          foo <- Plan.findOne Foo.table Foo.fooNameField
+
+          let fooId = Foo.fooId <$> foo
+
+          children <-
+            Plan.using fooId $
+              Plan.findAll FooChild.table FooChild.fooChildFooIdField
+
+          (,)
+            <$> Plan.use foo
+            <*> Plan.use children
+
+    foo <- HH.forAll Foo.generate
+    fooChild <- HH.forAll $ FooChild.generate [foo]
+
+    result <-
+      FooChild.withTables pool $ do
+        Orville.insertEntity Foo.table foo
+        Orville.insertEntity FooChild.table fooChild
+        Plan.execute plan (Foo.fooName foo)
+
+    result === (foo, [fooChild])
+
+prop_planMany_bindAndUse_qualifiedDo :: Property.NamedDBProperty
+prop_planMany_bindAndUse_qualifiedDo =
+  Property.namedDBProperty "(planMany bind/use) allows caller to use plan output as input for another plan (QualifiedDo version)" $ \pool -> do
+    let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Foo.Foo, [FooChild.FooChild]))
+        plan =
+          Plan.planMany $ PlanSyntax.do
+            foo <- Plan.findOne Foo.table Foo.fooNameField
+
+            let fooId = Foo.fooId <$> foo
+
+            children <-
+              Plan.using fooId $
+                Plan.findAll FooChild.table FooChild.fooChildFooIdField
+
+            (,)
+              <$> Plan.use foo
+              <*> Plan.use children
+
+    allFoos <- HH.forAll $ Foo.generateList (Range.linear 1 5)
+    allChildren <- HH.forAll $ FooChild.generateList (Range.linear 0 20) allFoos
+
+    let allFooNames = Foo.fooName <$> allFoos
+
+    results <-
+      FooChild.withTables pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty allFoos)
+        traverse_ (Orville.insertEntities FooChild.table) (NEL.nonEmpty allChildren)
+        Plan.execute plan allFooNames
+
+    assertEachManyResult allFooNames results $ \fooName (foo, children) -> do
+      Foo.fooName foo === fooName
+      assertAllMatchesFound FooChild.fooChildId children (FooChild.isChildOf foo) allChildren
+#endif
+#endif
 
 prop_assert :: Property.NamedDBProperty
 prop_assert =

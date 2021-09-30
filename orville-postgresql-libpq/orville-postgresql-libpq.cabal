@@ -48,6 +48,7 @@ library
       Orville.PostgreSQL.Plan.Explanation
       Orville.PostgreSQL.Plan.Many
       Orville.PostgreSQL.Plan.Operation
+      Orville.PostgreSQL.Plan.Syntax
       Orville.PostgreSQL.PgCatalog
   other-modules:
       Orville.PostgreSQL.Internal.EntityOperations

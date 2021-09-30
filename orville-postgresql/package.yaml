@@ -57,6 +57,7 @@ library:
     - Database.Orville.PostgreSQL.Plan.Explanation
     - Database.Orville.PostgreSQL.Plan.Many
     - Database.Orville.PostgreSQL.Plan.Operation
+    - Database.Orville.PostgreSQL.Plan.Syntax
     - Database.Orville.PostgreSQL.Raw
     - Database.Orville.PostgreSQL.ResourceT
     - Database.Orville.PostgreSQL.Select

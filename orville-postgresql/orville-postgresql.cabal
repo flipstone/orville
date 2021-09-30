@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e34e5e3d3845b1bf0af652e134fb3eb41ed6fad63f53d3c103fa5cb71b7eecd6
+-- hash: f0032f4f862488c5d30ecca0be6bfcb9efb01e3f61f4fa0e0ea91ed55ba0ff59
 
 name:           orville-postgresql
 version:        0.9.0.0
@@ -38,6 +38,7 @@ library
       Database.Orville.PostgreSQL.Plan.Explanation
       Database.Orville.PostgreSQL.Plan.Many
       Database.Orville.PostgreSQL.Plan.Operation
+      Database.Orville.PostgreSQL.Plan.Syntax
       Database.Orville.PostgreSQL.Raw
       Database.Orville.PostgreSQL.ResourceT
       Database.Orville.PostgreSQL.Select
