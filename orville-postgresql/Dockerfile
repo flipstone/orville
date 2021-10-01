@@ -1,4 +1,4 @@
-FROM flipstone/stack:v2-1.9.3
+FROM flipstone/stack:v4-2.7.1
 
 # The fpco.list apt source was causing an error build:
 #   E: The method driver /usr/lib/apt/methods/https could not be found.
