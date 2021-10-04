@@ -40,7 +40,7 @@ module Orville.PostgreSQL
     SqlMarshaller.marshallReadOnly,
     SqlMarshaller.marshallReadOnlyField,
     SqlMarshaller.foldMarshallerFields,
-    SqlMarshaller.partialMap,
+    SqlMarshaller.marshallPartial,
     FieldDefinition.FieldDefinition,
     FieldDefinition.NotNull,
     FieldDefinition.Nullable,

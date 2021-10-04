@@ -15,8 +15,8 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     marshallReadOnlyField,
     marshallReadOnly,
     marshallNested,
-    maybeMapper,
-    partialMap,
+    marshallMaybe,
+    marshallPartial,
     marshallerColumnNames,
     ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
     collectFromField,
@@ -510,8 +510,8 @@ marshallNested =
   Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
   and applies a tag to avoid double mapping.
 -}
-maybeMapper :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
-maybeMapper =
+marshallMaybe :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
+marshallMaybe =
   -- rewrite the mapper to handle null fields, then tag
   -- it as having been done so we don't double-map it
   -- in a future `maybeMapper` call.
@@ -533,8 +533,8 @@ maybeMapper =
   Builds a 'SqlMarshaller' that will raise a decoding error when the value
   produced is a 'MarshallError'.
 -}
-partialMap :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
-partialMap = MarshallPartial
+marshallPartial :: SqlMarshaller a (Either MarshallError a) -> SqlMarshaller a a
+marshallPartial = MarshallPartial
 
 {- |
   Marks a 'SqlMarshaller' as ready only so that it will not attempt to

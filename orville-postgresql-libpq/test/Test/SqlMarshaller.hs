@@ -251,14 +251,14 @@ generateBar =
 
 bazMarshallerRight :: SqlMarshaller.SqlMarshaller Baz Baz
 bazMarshallerRight =
-  SqlMarshaller.partialMap $
+  SqlMarshaller.marshallPartial $
     fmap Right $
       Baz
         <$> SqlMarshaller.marshallField bazField (FieldDefinition.unboundedTextField "field")
 
 bazMarshallerLeft :: SqlMarshaller.SqlMarshaller Baz Baz
 bazMarshallerLeft =
-  SqlMarshaller.partialMap $
+  SqlMarshaller.marshallPartial $
     fmap (Left . const SqlMarshaller.FailedToDecodeValue) $
       Baz
         <$> SqlMarshaller.marshallField bazField (FieldDefinition.unboundedTextField "field")
