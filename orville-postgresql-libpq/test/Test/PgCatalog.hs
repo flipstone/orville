@@ -16,6 +16,7 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
+import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
 pgCatalogTests :: Pool.Pool Conn.Connection -> Property.Group
@@ -24,6 +25,7 @@ pgCatalogTests pool =
     "PgCatalog"
     [ prop_queryPgClass pool
     , prop_queryPgAttribute pool
+    , prop_queryPgConstraint pool
     , prop_describeDatabaseRelations pool
     ]
 
@@ -59,13 +61,37 @@ prop_queryPgAttribute =
         PgCatalog.pgAttributeTable
         ( Orville.where_ $
             Orville.whereAnd
-              ( Orville.fieldEquals PgCatalog.relationOidField pgClassOid
+              ( Orville.fieldEquals PgCatalog.attributeRelationOidField pgClassOid
                   :| [Orville.fieldEquals PgCatalog.attributeNameField relname]
               )
         )
 
     fmap PgCatalog.pgAttributeName maybePgAttr === Just relname
     fmap PgCatalog.pgAttributeLength maybePgAttr === Just 64
+
+prop_queryPgConstraint :: Property.NamedDBProperty
+prop_queryPgConstraint =
+  Property.singletonNamedDBProperty "Can query the pg_constraint table to find out about a constraint" $ \pool -> do
+    maybePgClassRecord <- MIO.liftIO . Orville.runOrville pool $ do
+      Orville.findFirstEntityBy
+        PgCatalog.pgClassTable
+        (Orville.where_ $ Orville.fieldEquals PgCatalog.relationNameField fooRelation)
+
+    pgClassOid <-
+      case maybePgClassRecord of
+        Nothing -> do
+          HH.annotate "Expected to find pg_class table, but did not"
+          HH.failure
+        Just pgClassRecord ->
+          pure $ PgCatalog.pgClassOid pgClassRecord
+
+    constraints <- MIO.liftIO . Orville.runOrville pool $ do
+      Orville.findEntitiesBy
+        PgCatalog.pgConstraintTable
+        (Orville.where_ $ Orville.fieldEquals PgCatalog.constraintRelationOidField pgClassOid)
+
+    map PgCatalog.pgConstraintType constraints === [PgCatalog.PrimaryKeyConstraint]
+    map PgCatalog.pgConstraintKey constraints === [Just [1]]
 
 prop_describeDatabaseRelations :: Property.NamedDBProperty
 prop_describeDatabaseRelations =
@@ -126,3 +152,7 @@ tables =
 relname :: PgCatalog.AttributeName
 relname =
   String.fromString "relname"
+
+fooRelation :: PgCatalog.RelationName
+fooRelation =
+  String.fromString (Orville.unqualifiedTableNameString Foo.table)

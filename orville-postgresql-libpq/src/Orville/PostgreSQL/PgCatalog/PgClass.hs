@@ -107,7 +107,7 @@ relationKindField =
   Converts a 'RelationKind' to the corresponding single character text
   representation used by PostgreSQL.
 
-  See also 'pgTextToRelationKind
+  See also 'pgTextToRelationKind'
 -}
 relationKindToPgText :: RelationKind -> T.Text
 relationKindToPgText kind =

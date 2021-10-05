@@ -11,8 +11,9 @@ import qualified Data.Map.Strict as Map
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
-import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, PgAttribute (pgAttributeName), attributeIsDroppedField, pgAttributeTable, relationOidField)
+import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, PgAttribute (pgAttributeName), attributeIsDroppedField, attributeRelationOidField, pgAttributeTable)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassOid), RelationName, namespaceOidField, pgClassTable, relationNameField)
+import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint, constraintRelationOidField, pgConstraintTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
@@ -41,6 +42,7 @@ lookupRelation key =
 data RelationDescription = RelationDescription
   { relationRecord :: PgClass
   , relationAttributes :: Map.Map AttributeName PgAttribute
+  , relationConstraints :: [PgConstraint]
   }
 
 lookupAttribute ::
@@ -93,6 +95,7 @@ describeRelationByClass =
   RelationDescription
     <$> Plan.askParam
     <*> findClassAttributes
+    <*> findClassConstraints
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
@@ -114,8 +117,13 @@ findClassAttributes =
     Plan.focusParam pgClassOid $
       Plan.findAllWhere
         pgAttributeTable
-        relationOidField
+        attributeRelationOidField
         (Orville.fieldEquals attributeIsDroppedField False)
+
+findClassConstraints :: Plan.Plan scope PgClass [PgConstraint]
+findClassConstraints =
+  Plan.focusParam pgClassOid $
+    Plan.findAll pgConstraintTable constraintRelationOidField
 
 indexBy :: Ord key => (row -> key) -> [row] -> Map.Map key row
 indexBy rowKey =

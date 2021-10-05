@@ -5,9 +5,11 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
     pgAttributeMaxLength,
     AttributeName,
     attributeNameToString,
+    AttributeNumber,
+    attributeNumberToInt16,
     isOrdinaryColumn,
     pgAttributeTable,
-    relationOidField,
+    attributeRelationOidField,
     attributeNameField,
     attributeTypeOidField,
     attributeLengthField,
@@ -101,7 +103,7 @@ newtype AttributeName
   deriving (Show, Eq, Ord, String.IsString)
 
 {- |
-  Converts an 'Attribute' name to a plain old string
+  Converts an 'AttributeName' to a plain old string
 -}
 attributeNameToString :: AttributeName -> String
 attributeNameToString (AttributeName txt) =
@@ -112,7 +114,13 @@ attributeNameToString (AttributeName txt) =
 -}
 newtype AttributeNumber
   = AttributeNumber Int16
-  deriving (Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Num, Integral, Real)
+
+{- |
+  Converts an 'AttributeNumber' to an integer
+-}
+attributeNumberToInt16 :: AttributeNumber -> Int16
+attributeNumberToInt16 (AttributeNumber int) = int
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
@@ -128,7 +136,7 @@ pgAttributeTable =
 pgAttributeMarshaller :: Orville.SqlMarshaller PgAttribute PgAttribute
 pgAttributeMarshaller =
   PgAttribute
-    <$> Orville.marshallField pgAttributeRelationOid relationOidField
+    <$> Orville.marshallField pgAttributeRelationOid attributeRelationOidField
     <*> Orville.marshallField pgAttributeName attributeNameField
     <*> Orville.marshallField pgAttributeNumber attributeNumberField
     <*> Orville.marshallField pgAttributeTypeOid attributeTypeOidField
@@ -140,8 +148,8 @@ pgAttributeMarshaller =
 {- |
   The @attrelid@ column of the @pg_catalog.pg_attribute@ table
 -}
-relationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
-relationOidField =
+attributeRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+attributeRelationOidField =
   oidTypeField "attrelid"
 
 {- |
