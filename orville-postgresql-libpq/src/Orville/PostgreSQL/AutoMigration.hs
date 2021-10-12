@@ -12,12 +12,14 @@ module Orville.PostgreSQL.AutoMigration
   )
 where
 
+import Control.Arrow ((&&&))
 import Control.Exception.Safe (Exception, throwIO)
 import Control.Monad (guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
 import Data.List.NonEmpty (nonEmpty)
-import Data.Maybe (maybeToList)
+import qualified Data.Map.Strict as Map
+import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.String as String
 
@@ -131,7 +133,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
             Nothing ->
               [mkCreateTableStep tableDef]
             Just relationDesc ->
-              maybeToList $ mkAlterTableStep relationDesc tableDef
+              Maybe.maybeToList $ mkAlterTableStep relationDesc tableDef
 
 {- |
   Builds a 'MigrationStep' that will perform table creation. This function
@@ -174,9 +176,30 @@ mkAlterTableStep relationDesc tableDef =
         concatMap
           (mkAttributeActions tableDef)
           (PgCatalog.relationAttributes relationDesc)
+
+      existingConstraints =
+        Set.fromList
+          . Maybe.mapMaybe (pgConstraintMigrationKey relationDesc)
+          . PgCatalog.relationConstraints
+          $ relationDesc
+
+      constraintsToKeep =
+        Map.keysSet
+          . Orville.tableConstraints
+          $ tableDef
+
+      addConstraintActions =
+        concatMap
+          (mkAddConstraintActions existingConstraints)
+          (Orville.tableConstraints tableDef)
+
+      dropConstraintActions =
+        concatMap
+          (mkDropConstraintActions constraintsToKeep relationDesc)
+          (PgCatalog.relationConstraints relationDesc)
    in fmap
         (MigrationStep . RawSql.toRawSql . Expr.alterTableExpr (Orville.tableName tableDef))
-        (nonEmpty $ fieldActions <> attributeActions)
+        (nonEmpty $ dropConstraintActions <> fieldActions <> attributeActions <> addConstraintActions)
 
 {- |
   Builds 'Expr.AlterTableAction' expressions to bring the database schema in
@@ -251,6 +274,63 @@ mkAttributeActions tableDef attr = do
   guard $ Set.member attrName (Orville.columnsToDrop tableDef)
 
   [Expr.dropColumn $ Expr.columnName attrName]
+
+{- |
+  Builds 'Expr.AlterTableAction' expressions to create the given table
+  constraint if it does not exist.
+-}
+mkAddConstraintActions ::
+  Set.Set Orville.ConstraintMigrationKey ->
+  Orville.ConstraintDefinition ->
+  [Expr.AlterTableAction]
+mkAddConstraintActions existingConstraints constraintDef =
+  if Set.member (Orville.constraintMigrationKey constraintDef) existingConstraints
+    then []
+    else [Expr.addConstraint $ Orville.constraintSqlExpr constraintDef]
+
+{- |
+  Builds 'Expr.AlterTableAction' expressions to drop the given table
+  constraint if it should not exist.
+-}
+mkDropConstraintActions ::
+  Set.Set Orville.ConstraintMigrationKey ->
+  PgCatalog.RelationDescription ->
+  PgCatalog.PgConstraint ->
+  [Expr.AlterTableAction]
+mkDropConstraintActions constraintsToKeep relationDesc constraint =
+  case pgConstraintMigrationKey relationDesc constraint of
+    Nothing ->
+      []
+    Just metadata ->
+      if Set.member metadata constraintsToKeep
+        then []
+        else [Expr.dropConstraint $ Expr.constraintName $ PgCatalog.constraintNameToString $ PgCatalog.pgConstraintName constraint]
+
+pgConstraintMigrationKey ::
+  PgCatalog.RelationDescription ->
+  PgCatalog.PgConstraint ->
+  Maybe Orville.ConstraintMigrationKey
+pgConstraintMigrationKey relDesc =
+  let attributeNamesByNumber =
+        Map.fromList
+          . map (PgCatalog.pgAttributeNumber &&& PgCatalog.pgAttributeName)
+          . Map.elems
+          . PgCatalog.relationAttributes
+          $ relDesc
+
+      findName attNum =
+        Map.lookup attNum attributeNamesByNumber
+   in \constraint -> do
+        guard (PgCatalog.pgConstraintType constraint == PgCatalog.UniqueConstraint)
+        attributeNumbers <- PgCatalog.pgConstraintKey constraint
+        attributeNames <- traverse findName attributeNumbers
+        pure $
+          Orville.ConstraintMigrationKey
+            { Orville.constrainedColumns =
+                map
+                  (Orville.stringToFieldName . PgCatalog.attributeNameToString)
+                  attributeNames
+            }
 
 schemaItemPgCatalogRelation ::
   PgCatalog.NamespaceName ->

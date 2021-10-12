@@ -14,7 +14,6 @@ module Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
 where
 
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -31,5 +30,5 @@ groupByExpr sql =
   GroupByExpr $ sql
 
 groupByColumnsExpr :: NonEmpty ColumnName -> GroupByExpr
-groupByColumnsExpr columns =
-  GroupByExpr . RawSql.intercalate RawSql.commaSpace . map RawSql.toRawSql $ NE.toList columns
+groupByColumnsExpr =
+  GroupByExpr . RawSql.intercalate RawSql.commaSpace

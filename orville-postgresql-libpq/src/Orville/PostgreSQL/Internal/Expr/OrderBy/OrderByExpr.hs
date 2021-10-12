@@ -33,8 +33,7 @@ orderByExpr sql orderSql =
 
 orderByColumnsExpr :: NonEmpty (ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr columns =
-  OrderByExpr . RawSql.intercalate RawSql.commaSpace $
-    NE.toList $ NE.map columnOrdering columns
+  OrderByExpr . RawSql.intercalate RawSql.commaSpace . NE.map columnOrdering $ columns
   where
     columnOrdering :: (ColumnName, OrderByDirection) -> RawSql.RawSql
     columnOrdering (columnName, orderByDirection) =

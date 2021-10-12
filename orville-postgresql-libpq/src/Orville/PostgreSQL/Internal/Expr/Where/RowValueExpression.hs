@@ -32,5 +32,5 @@ rowValueConstructor :: NE.NonEmpty RowValueExpression -> RowValueExpression
 rowValueConstructor elements =
   RowValueExpression $
     RawSql.leftParen
-      <> RawSql.intercalate RawSql.comma (map RawSql.toRawSql $ NE.toList elements)
+      <> RawSql.intercalate RawSql.comma elements
       <> RawSql.rightParen

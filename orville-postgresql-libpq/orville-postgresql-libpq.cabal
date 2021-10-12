@@ -51,6 +51,7 @@ library
       Orville.PostgreSQL.Plan.Syntax
       Orville.PostgreSQL.PgCatalog
   other-modules:
+      Orville.PostgreSQL.Internal.ConstraintDefinition
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
@@ -62,6 +63,7 @@ library
       Orville.PostgreSQL.Internal.Expr.LimitExpr
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
+      Orville.PostgreSQL.Internal.Expr.Name.ConstraintName
       Orville.PostgreSQL.Internal.Expr.Name.Identifier
       Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName
       Orville.PostgreSQL.Internal.Expr.Name.SavepointName
@@ -80,6 +82,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Select
       Orville.PostgreSQL.Internal.Expr.Select.SelectClause
       Orville.PostgreSQL.Internal.Expr.Select.SelectExpr
+      Orville.PostgreSQL.Internal.Expr.TableConstraint
       Orville.PostgreSQL.Internal.Expr.TableDefinition
       Orville.PostgreSQL.Internal.Expr.Transaction
       Orville.PostgreSQL.Internal.Expr.Update

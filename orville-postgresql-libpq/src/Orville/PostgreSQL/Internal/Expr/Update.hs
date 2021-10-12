@@ -45,11 +45,8 @@ newtype SetClauseList
   deriving (RawSql.SqlExpression)
 
 setClauseList :: [SetClause] -> SetClauseList
-setClauseList setClauses =
-  SetClauseList $
-    RawSql.intercalate
-      RawSql.comma
-      (map RawSql.toRawSql setClauses)
+setClauseList =
+  SetClauseList . RawSql.intercalate RawSql.comma
 
 newtype SetClause
   = SetClause RawSql.RawSql

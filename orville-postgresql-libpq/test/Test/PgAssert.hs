@@ -1,11 +1,14 @@
 module Test.PgAssert
-  ( assertColumnNamesEqual,
+  ( assertTableExists,
+    assertColumnNamesEqual,
     assertColumnExists,
+    assertUniqueConstraintExists,
   )
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import Data.List (sort)
+import qualified Data.List as List
+import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.String as String
@@ -17,51 +20,48 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
-assertColumnNamesEqual ::
+assertTableExists ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
   Pool.Pool Conn.Connection ->
   String ->
-  [String] ->
-  m ()
-assertColumnNamesEqual pool tableName expectedColumns = do
+  m PgCatalog.RelationDescription
+assertTableExists pool tableName = do
   dbDesc <-
     MIO.liftIO $
       Orville.runOrville pool $ do
         PgCatalog.describeDatabaseRelations
           [(String.fromString "public", String.fromString tableName)]
 
+  case PgCatalog.lookupRelation (String.fromString "public", String.fromString tableName) dbDesc of
+    Nothing -> do
+      withFrozenCallStack $ do
+        HH.annotate $ tableName <> " table not found"
+        HH.failure
+    Just rel ->
+      pure rel
+
+assertColumnNamesEqual ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  [String] ->
+  m ()
+assertColumnNamesEqual relationDesc expectedColumns = do
   let attributeNames =
         fmap PgCatalog.pgAttributeName
           . filter PgCatalog.isOrdinaryColumn
-          . concatMap (Map.elems . PgCatalog.relationAttributes)
           . Map.elems
-          $ PgCatalog.databaseRelations dbDesc
+          . PgCatalog.relationAttributes
+          $ relationDesc
 
   withFrozenCallStack $
-    sort attributeNames === sort (map String.fromString expectedColumns)
+    List.sort attributeNames === List.sort (map String.fromString expectedColumns)
 
 assertColumnExists ::
-  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
-  String ->
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
   String ->
   m PgCatalog.PgAttribute
-assertColumnExists pool tableName columnName = do
-  dbDesc <-
-    MIO.liftIO $
-      Orville.runOrville pool $ do
-        PgCatalog.describeDatabaseRelations
-          [(String.fromString "public", String.fromString tableName)]
-
-  relationDesc <-
-    case PgCatalog.lookupRelation (String.fromString "public", String.fromString tableName) dbDesc of
-      Nothing -> do
-        withFrozenCallStack $ do
-          HH.annotate $ tableName <> " table not found"
-          HH.failure
-      Just rel ->
-        pure rel
-
+assertColumnExists relationDesc columnName = do
   case PgCatalog.lookupAttribute (String.fromString columnName) relationDesc of
     Nothing -> do
       withFrozenCallStack $ do
@@ -69,3 +69,24 @@ assertColumnExists pool tableName columnName = do
         HH.failure
     Just attr ->
       pure attr
+
+assertUniqueConstraintExists ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  NEL.NonEmpty String ->
+  m ()
+assertUniqueConstraintExists relationDesc columnNames = do
+  attributes <- traverse (assertColumnExists relationDesc) columnNames
+
+  let attNums = map PgCatalog.pgAttributeNumber . NEL.toList $ attributes
+      constraintMatches constraint =
+        PgCatalog.pgConstraintType constraint == PgCatalog.UniqueConstraint
+          && PgCatalog.pgConstraintKey constraint == Just attNums
+
+  case List.find constraintMatches (PgCatalog.relationConstraints relationDesc) of
+    Nothing ->
+      withFrozenCallStack $ do
+        HH.annotate $ "Unique constraint " <> show (NEL.toList columnNames) <> " not found"
+        HH.failure
+    Just _ ->
+      pure ()

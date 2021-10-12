@@ -33,11 +33,8 @@ newtype DerivedColumn = DerivedColumn RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
 selectDerivedColumns :: [DerivedColumn] -> SelectList
-selectDerivedColumns derivedColumns =
-  SelectList $
-    RawSql.intercalate
-      RawSql.comma
-      (fmap RawSql.toRawSql derivedColumns)
+selectDerivedColumns =
+  SelectList . RawSql.intercalate RawSql.comma
 
 deriveColumn :: ColumnName -> DerivedColumn
 deriveColumn =

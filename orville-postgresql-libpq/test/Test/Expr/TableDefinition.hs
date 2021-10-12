@@ -30,12 +30,10 @@ prop_createWithOneColumn =
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-        Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition] Nothing
+        Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition] Nothing []
 
-    PgAssert.assertColumnNamesEqual
-      pool
-      tableNameString
-      [column1NameString]
+    tableDesc <- PgAssert.assertTableExists pool tableNameString
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString]
 
 prop_createWithMultipleColumns :: Property.NamedDBProperty
 prop_createWithMultipleColumns =
@@ -43,12 +41,10 @@ prop_createWithMultipleColumns =
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-        Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition, column2Definition] Nothing
+        Orville.executeVoid $ Expr.createTableExpr exprTableName [column1Definition, column2Definition] Nothing []
 
-    PgAssert.assertColumnNamesEqual
-      pool
-      tableNameString
-      [column1NameString, column2NameString]
+    tableDesc <- PgAssert.assertTableExists pool tableNameString
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
 
 prop_addOneColumn :: Property.NamedDBProperty
 prop_addOneColumn =
@@ -56,13 +52,11 @@ prop_addOneColumn =
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-        Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing
+        Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing []
         Orville.executeVoid $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [])
 
-    PgAssert.assertColumnNamesEqual
-      pool
-      tableNameString
-      [column1NameString]
+    tableDesc <- PgAssert.assertTableExists pool tableNameString
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString]
 
 prop_addMultipleColumns :: Property.NamedDBProperty
 prop_addMultipleColumns =
@@ -70,13 +64,11 @@ prop_addMultipleColumns =
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-        Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing
+        Orville.executeVoid $ Expr.createTableExpr exprTableName [] Nothing []
         Orville.executeVoid $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [Expr.addColumn column2Definition])
 
-    PgAssert.assertColumnNamesEqual
-      pool
-      tableNameString
-      [column1NameString, column2NameString]
+    tableDesc <- PgAssert.assertTableExists pool tableNameString
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
 
 exprTableName :: Expr.QualifiedTableName
 exprTableName =

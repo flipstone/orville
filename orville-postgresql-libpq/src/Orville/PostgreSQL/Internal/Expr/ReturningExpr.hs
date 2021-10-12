@@ -17,4 +17,4 @@ returningExpr :: [ColumnName] -> ReturningExpr
 returningExpr columns =
   ReturningExpr $
     RawSql.fromString "RETURNING "
-      <> RawSql.intercalate RawSql.comma (map RawSql.toRawSql columns)
+      <> RawSql.intercalate RawSql.comma columns

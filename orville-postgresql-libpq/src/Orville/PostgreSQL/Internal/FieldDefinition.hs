@@ -57,7 +57,7 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 newtype FieldName
   = FieldName B8.ByteString
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 fieldNameToColumnName :: FieldName -> Expr.ColumnName
 fieldNameToColumnName (FieldName name) =

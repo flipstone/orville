@@ -51,7 +51,7 @@ insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
     RawSql.leftParen
-      <> RawSql.intercalate RawSql.comma (map RawSql.toRawSql columnNames)
+      <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
 
 newtype InsertSource
@@ -62,7 +62,7 @@ insertRowValues :: [RowValues] -> InsertSource
 insertRowValues rows =
   InsertSource $
     RawSql.fromString "VALUES "
-      <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql rows)
+      <> RawSql.intercalate RawSql.comma rows
 
 insertSqlValues :: [[SqlValue]] -> InsertSource
 insertSqlValues rows =

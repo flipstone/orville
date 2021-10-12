@@ -104,7 +104,7 @@ inValueList :: NE.NonEmpty RowValueExpression -> InValuePredicate
 inValueList values =
   InValuePredicate $
     RawSql.leftParen
-      <> RawSql.intercalate RawSql.commaSpace (map RawSql.toRawSql $ NE.toList values)
+      <> RawSql.intercalate RawSql.commaSpace values
       <> RawSql.rightParen
 
 parenthesized :: BooleanExpr -> BooleanExpr

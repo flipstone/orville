@@ -20,6 +20,8 @@ module Orville.PostgreSQL
     TableDefinition.mkTableDefinition,
     TableDefinition.mkTableDefinitionWithoutKey,
     TableDefinition.setTableSchema,
+    TableDefinition.tableConstraints,
+    TableDefinition.addTableConstraints,
     TableDefinition.dropColumns,
     TableDefinition.columnsToDrop,
     TableDefinition.tableName,
@@ -32,6 +34,11 @@ module Orville.PostgreSQL
     TableDefinition.tableMarshaller,
     TableDefinition.HasKey,
     TableDefinition.NoKey,
+    ConstraintDefinition.ConstraintDefinition,
+    ConstraintDefinition.ConstraintMigrationKey (ConstraintMigrationKey, constrainedColumns),
+    ConstraintDefinition.uniqueConstraint,
+    ConstraintDefinition.constraintMigrationKey,
+    ConstraintDefinition.constraintSqlExpr,
     PrimaryKey.PrimaryKey,
     PrimaryKey.primaryKey,
     PrimaryKey.compositePrimaryKey,
@@ -65,7 +72,10 @@ module Orville.PostgreSQL
     FieldDefinition.fieldOfType,
     FieldDefinition.fieldColumnName,
     FieldDefinition.fieldName,
+    FieldDefinition.FieldName,
+    FieldDefinition.stringToFieldName,
     FieldDefinition.fieldNameToString,
+    FieldDefinition.fieldNameToColumnName,
     FieldDefinition.fieldNameToByteString,
     FieldDefinition.fieldType,
     FieldDefinition.fieldColumnDefinition,
@@ -146,6 +156,7 @@ module Orville.PostgreSQL
 where
 
 import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Internal.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr

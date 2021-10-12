@@ -36,6 +36,9 @@ module Orville.PostgreSQL.Internal.Expr
     ColumnName,
     columnName,
     columnNameFromIdentifier,
+    ConstraintName,
+    constraintName,
+    constraintNameFromIdentifier,
     SavepointName,
     savepointName,
     savepointNameFromIdentifier,
@@ -118,9 +121,13 @@ module Orville.PostgreSQL.Internal.Expr
     primaryKeyExpr,
     AlterTableExpr,
     alterTableExpr,
+    TableConstraint,
+    uniqueConstraint,
     AlterTableAction,
     addColumn,
     dropColumn,
+    addConstraint,
+    dropConstraint,
     alterColumnType,
     UsingClause,
     usingCast,
@@ -162,6 +169,7 @@ import Orville.PostgreSQL.Internal.Expr.OffsetExpr
 import Orville.PostgreSQL.Internal.Expr.OrderBy
 import Orville.PostgreSQL.Internal.Expr.Query
 import Orville.PostgreSQL.Internal.Expr.ReturningExpr
+import Orville.PostgreSQL.Internal.Expr.TableConstraint
 import Orville.PostgreSQL.Internal.Expr.TableDefinition
 import Orville.PostgreSQL.Internal.Expr.Transaction
 import Orville.PostgreSQL.Internal.Expr.Update

@@ -10,6 +10,8 @@ module Orville.PostgreSQL.Internal.Expr.TableDefinition
     AlterTableAction,
     addColumn,
     dropColumn,
+    addConstraint,
+    dropConstraint,
     alterColumnType,
     UsingClause,
     usingCast,
@@ -24,11 +26,12 @@ module Orville.PostgreSQL.Internal.Expr.TableDefinition
   )
 where
 
-import Data.List.NonEmpty (NonEmpty, toList)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes, maybeToList)
 
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition, DataType)
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, ConstraintName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.TableConstraint (TableConstraint)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype CreateTableExpr
@@ -39,17 +42,21 @@ createTableExpr ::
   QualifiedTableName ->
   [ColumnDefinition] ->
   Maybe PrimaryKeyExpr ->
+  [TableConstraint] ->
   CreateTableExpr
-createTableExpr tableName columnDefs mbPrimaryKey =
+createTableExpr tableName columnDefs mbPrimaryKey constraints =
   let columnDefsSql =
         map RawSql.toRawSql columnDefs
+
+      constraintsSql =
+        map RawSql.toRawSql constraints
 
       tableElementsSql =
         case mbPrimaryKey of
           Nothing ->
-            columnDefsSql
+            columnDefsSql <> constraintsSql
           Just primaryKey ->
-            RawSql.toRawSql primaryKey : columnDefsSql
+            RawSql.toRawSql primaryKey : (columnDefsSql <> constraintsSql)
    in CreateTableExpr $
         mconcat
           [ RawSql.fromString "CREATE TABLE "
@@ -70,7 +77,7 @@ primaryKeyExpr columnNames =
     mconcat
       [ RawSql.fromString "PRIMARY KEY "
       , RawSql.leftParen
-      , RawSql.intercalate RawSql.comma (map RawSql.toRawSql (toList columnNames))
+      , RawSql.intercalate RawSql.comma columnNames
       , RawSql.rightParen
       ]
 
@@ -84,7 +91,7 @@ alterTableExpr tableName actions =
     RawSql.fromString "ALTER TABLE "
       <> RawSql.toRawSql tableName
       <> RawSql.space
-      <> RawSql.intercalate RawSql.commaSpace (map RawSql.toRawSql (toList actions))
+      <> RawSql.intercalate RawSql.commaSpace actions
 
 newtype AlterTableAction
   = AlterTableAction RawSql.RawSql
@@ -99,6 +106,16 @@ dropColumn :: ColumnName -> AlterTableAction
 dropColumn columnName =
   AlterTableAction $
     RawSql.fromString "DROP COLUMN " <> RawSql.toRawSql columnName
+
+addConstraint :: TableConstraint -> AlterTableAction
+addConstraint constraint =
+  AlterTableAction $
+    RawSql.fromString "ADD " <> RawSql.toRawSql constraint
+
+dropConstraint :: ConstraintName -> AlterTableAction
+dropConstraint constraintName =
+  AlterTableAction $
+    RawSql.fromString "DROP CONSTRAINT " <> RawSql.toRawSql constraintName
 
 alterColumnType ::
   ColumnName ->

@@ -4,6 +4,7 @@ module Orville.PostgreSQL.PgCatalog.PgConstraint
   ( PgConstraint (..),
     ConstraintType (..),
     ConstraintName,
+    constraintNameToString,
     pgConstraintTable,
     constraintRelationOidField,
   )
@@ -56,6 +57,13 @@ data PgConstraint = PgConstraint
 newtype ConstraintName
   = ConstraintName T.Text
   deriving (Show, Eq, Ord, String.IsString)
+
+{- |
+  Converts an 'ConstraintName' to a plain old string
+-}
+constraintNameToString :: ConstraintName -> String
+constraintNameToString (ConstraintName txt) =
+  T.unpack txt
 
 {- |
   The type of constraint that a 'PgConstraint' represents, as described at

@@ -15,6 +15,8 @@ module Orville.PostgreSQL.Internal.TableDefinition
     tableSchemaName,
     tableSchemaNameString,
     setTableSchema,
+    tableConstraints,
+    addTableConstraints,
     tablePrimaryKey,
     tableMarshaller,
     mkInsertExpr,
@@ -28,8 +30,10 @@ module Orville.PostgreSQL.Internal.TableDefinition
 where
 
 import Data.List.NonEmpty (NonEmpty, toList)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
+import Orville.PostgreSQL.Internal.ConstraintDefinition (ConstraintDefinition, ConstraintMigrationKey, constraintMigrationKey, constraintSqlExpr)
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
@@ -55,6 +59,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , _tablePrimaryKey :: TablePrimaryKey key
   , _tableMarshaller :: SqlMarshaller writeEntity readEntity
   , _tableColumnsToDrop :: Set.Set String
+  , _tableConstraints :: Map.Map ConstraintMigrationKey ConstraintDefinition
   }
 
 data HasKey key
@@ -103,6 +108,7 @@ mkTableDefinitionWithoutKey name marshaller =
     , _tablePrimaryKey = TableHasNoKey
     , _tableMarshaller = marshaller
     , _tableColumnsToDrop = Set.empty
+    , _tableConstraints = Map.empty
     }
 
 {- |
@@ -194,6 +200,35 @@ setTableSchema schemaName tableDef =
     }
 
 {- |
+  Retrieves all the table constraints that have been added to the table via
+  'addTableConstraints'.
+-}
+tableConstraints ::
+  TableDefinition key writeEntity readEntity ->
+  Map.Map ConstraintMigrationKey ConstraintDefinition
+tableConstraints =
+  _tableConstraints
+
+{- |
+  Adds the given table constraints to the table definition.
+
+  Note: If multiple constraints are added with the same
+  'ConstraintMigrationKey', only the last one that is added will be part of the
+  'TableDefinition'. Any previously added constraint with the same key is
+  replaced by the new one.
+-}
+addTableConstraints ::
+  [ConstraintDefinition] ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+addTableConstraints constraintDefs tableDef =
+  let addConstraint constraint constraintMap =
+        Map.insert (constraintMigrationKey constraint) constraint constraintMap
+   in tableDef
+        { _tableConstraints = foldr addConstraint (_tableConstraints tableDef) constraintDefs
+        }
+
+{- |
   Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
 -}
 tablePrimaryKey :: TableDefinition (HasKey key) writeEntity readEntity -> PrimaryKey key
@@ -231,6 +266,7 @@ mkCreateTableExpr tableDef =
         (tableName tableDef)
         columnDefinitions
         maybePrimaryKeyExpr
+        (map constraintSqlExpr . Map.elems . _tableConstraints $ tableDef)
 
 {- |
   Specifies whether or not a @RETURNING@ clause should be included when a
