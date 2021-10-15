@@ -1,10 +1,12 @@
 module Main
   ( main,
+    recheckDBProperty,
   )
 where
 
 import qualified Control.Monad as Monad
 import qualified Data.ByteString.Char8 as B8
+import qualified Hedgehog as HH
 import qualified System.Exit as SE
 
 import qualified Orville.PostgreSQL.Connection as Connection
@@ -29,8 +31,7 @@ import qualified Test.Transaction as Transaction
 
 main :: IO ()
 main = do
-  let connBStr = B8.pack "host=testdb user=orville_test password=orville"
-  pool <- Connection.createConnectionPool 1 10 1 connBStr
+  pool <- createTestConnectionPool
 
   summary <-
     Property.checkGroups
@@ -54,3 +55,13 @@ main = do
       ]
 
   Monad.unless (Property.allPassed summary) SE.exitFailure
+
+createTestConnectionPool :: IO (Connection.Pool Connection.Connection)
+createTestConnectionPool =
+  Connection.createConnectionPool 1 10 1 $
+    B8.pack "host=testdb user=orville_test password=orville"
+
+recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
+recheckDBProperty size seed namedProperty = do
+  pool <- createTestConnectionPool
+  HH.recheck size seed (snd $ namedProperty pool)

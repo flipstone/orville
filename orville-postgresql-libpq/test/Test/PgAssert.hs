@@ -3,9 +3,11 @@ module Test.PgAssert
     assertColumnNamesEqual,
     assertColumnExists,
     assertUniqueConstraintExists,
+    assertForeignKeyConstraintExists,
   )
 where
 
+import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
@@ -76,17 +78,43 @@ assertUniqueConstraintExists ::
   NEL.NonEmpty String ->
   m ()
 assertUniqueConstraintExists relationDesc columnNames = do
-  attributes <- traverse (assertColumnExists relationDesc) columnNames
+  let attNames = map String.fromString (NEL.toList columnNames)
+      constraintMatches constraintDesc =
+        and
+          [ PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraintDesc) == PgCatalog.UniqueConstraint
+          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
+          ]
 
-  let attNums = map PgCatalog.pgAttributeNumber . NEL.toList $ attributes
-      constraintMatches constraint =
-        PgCatalog.pgConstraintType constraint == PgCatalog.UniqueConstraint
-          && PgCatalog.pgConstraintKey constraint == Just attNums
+  Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
+    withFrozenCallStack $ do
+      HH.annotate $ "Unique constraint " <> show (NEL.toList columnNames) <> " not found"
+      HH.failure
 
-  case List.find constraintMatches (PgCatalog.relationConstraints relationDesc) of
-    Nothing ->
-      withFrozenCallStack $ do
-        HH.annotate $ "Unique constraint " <> show (NEL.toList columnNames) <> " not found"
-        HH.failure
-    Just _ ->
-      pure ()
+assertForeignKeyConstraintExists ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  NEL.NonEmpty (String, String) ->
+  m ()
+assertForeignKeyConstraintExists relationDesc foreignReferences = do
+  let attNames = map (String.fromString . fst) (NEL.toList foreignReferences)
+      foreignNames = map (String.fromString . snd) (NEL.toList foreignReferences)
+      constraintMatches constraintDesc =
+        and
+          [ PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraintDesc) == PgCatalog.ForeignKeyConstraint
+          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
+          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintForeignKey constraintDesc) == Just foreignNames
+          ]
+
+  Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
+    withFrozenCallStack $ do
+      HH.annotate $ "Foreign key constraint " <> show (NEL.toList foreignReferences) <> " not found"
+      HH.failure
+
+isMatchingConstraintPresent ::
+  (PgCatalog.ConstraintDescription -> Bool) ->
+  PgCatalog.RelationDescription ->
+  Bool
+isMatchingConstraintPresent predicate relationDesc =
+  List.any
+    predicate
+    (PgCatalog.relationConstraints relationDesc)

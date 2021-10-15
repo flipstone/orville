@@ -9,11 +9,8 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkTableDefinitionWithoutKey,
     dropColumns,
     columnsToDrop,
+    tableIdentifier,
     tableName,
-    unqualifiedTableName,
-    unqualifiedTableNameString,
-    tableSchemaName,
-    tableSchemaNameString,
     setTableSchema,
     tableConstraints,
     addTableConstraints,
@@ -21,6 +18,8 @@ module Orville.PostgreSQL.Internal.TableDefinition
     tableMarshaller,
     mkInsertExpr,
     mkCreateTableExpr,
+    mkTableColumnDefinitions,
+    mkTablePrimaryKeyExpr,
     mkInsertColumnList,
     mkInsertSource,
     mkUpdateExpr,
@@ -39,6 +38,7 @@ import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, field
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
 import Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerColumnNames)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 
 {- |
   Contains the definition of a SQL table for Orville to use for generating
@@ -54,8 +54,7 @@ import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
     from the result set when entities are queried from this table.
 -}
 data TableDefinition key writeEntity readEntity = TableDefinition
-  { _tableNameString :: String
-  , _tableSchemaNameString :: Maybe String
+  { _tableIdentifier :: TableIdentifier
   , _tablePrimaryKey :: TablePrimaryKey key
   , _tableMarshaller :: SqlMarshaller writeEntity readEntity
   , _tableColumnsToDrop :: Set.Set String
@@ -103,8 +102,7 @@ mkTableDefinitionWithoutKey ::
   TableDefinition NoKey writeEntity readEntity
 mkTableDefinitionWithoutKey name marshaller =
   TableDefinition
-    { _tableNameString = name
-    , _tableSchemaNameString = Nothing
+    { _tableIdentifier = unqualifiedNameToTableId name
     , _tablePrimaryKey = TableHasNoKey
     , _tableMarshaller = marshaller
     , _tableColumnsToDrop = Set.empty
@@ -141,48 +139,20 @@ columnsToDrop =
   _tableColumnsToDrop
 
 {- |
+  Returns the table's 'TableIdentifier'
+-}
+tableIdentifier :: TableDefinition key writeEntity readEntity -> TableIdentifier
+tableIdentifier =
+  _tableIdentifier
+
+{- |
   Returns the table's name as an expression that can be used to build SQL
   statements. If the table has a schema name set, the name will be qualified
   with it.
 -}
 tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedTableName
-tableName tableDef =
-  Expr.qualifiedTableName
-    (tableSchemaName tableDef)
-    (unqualifiedTableName tableDef)
-
-{- |
-  Returns the table's _unqualified_ name as an expression tat can be used to
-  build SQL. You probably want to use 'tableName' instead to avoid having the
-  qualify the table name yourself.
--}
-unqualifiedTableName :: TableDefinition key writeEntity readEntity -> Expr.TableName
-unqualifiedTableName =
-  Expr.tableName . _tableNameString
-
-{- |
-  Returns the table's _unqualified_ name as a 'String'
--}
-unqualifiedTableNameString :: TableDefinition key writeEntity readEntity -> String
-unqualifiedTableNameString =
-  _tableNameString
-
-{- |
-  Returns the name of the schema associated with the table as an expression to
-  be used for building SQL. If no schema name is associated with the table,
-  no schema qualifier will be included with the table name when executing sql
-  statements.
--}
-tableSchemaName :: TableDefinition key writeEntity readEntity -> Maybe Expr.SchemaName
-tableSchemaName =
-  fmap Expr.schemaName . _tableSchemaNameString
-
-{- |
-  Returns the name of the schema associated with the table as a 'String', if any.
--}
-tableSchemaNameString :: TableDefinition key writeEntity readEntity -> Maybe String
-tableSchemaNameString =
-  _tableSchemaNameString
+tableName =
+  tableIdQualifiedName . _tableIdentifier
 
 {- |
   Set's the table's schema to the name in the given string, which will be
@@ -196,7 +166,7 @@ setTableSchema ::
   TableDefinition key writeEntity readEntity
 setTableSchema schemaName tableDef =
   tableDef
-    { _tableSchemaNameString = Just schemaName
+    { _tableIdentifier = setTableIdSchema schemaName (_tableIdentifier tableDef)
     }
 
 {- |
@@ -250,23 +220,38 @@ mkCreateTableExpr ::
   TableDefinition key writeEntity readEntity ->
   Expr.CreateTableExpr
 mkCreateTableExpr tableDef =
-  let columnDefinitions =
-        foldMarshallerFields
-          (tableMarshaller tableDef)
-          []
-          (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
+  Expr.createTableExpr
+    (tableName tableDef)
+    (mkTableColumnDefinitions tableDef)
+    (mkTablePrimaryKeyExpr tableDef)
+    (map constraintSqlExpr . Map.elems . _tableConstraints $ tableDef)
 
-      maybePrimaryKeyExpr =
-        case _tablePrimaryKey tableDef of
-          TableHasKey primaryKey ->
-            Just $mkPrimaryKeyExpr primaryKey
-          TableHasNoKey ->
-            Nothing
-   in Expr.createTableExpr
-        (tableName tableDef)
-        columnDefinitions
-        maybePrimaryKeyExpr
-        (map constraintSqlExpr . Map.elems . _tableConstraints $ tableDef)
+{- |
+  Builds the 'Expr.ColumnDefinitions' for all the fields described by the
+  table definition's 'SqlMarshaller'.
+-}
+mkTableColumnDefinitions ::
+  TableDefinition key writeEntity readEntity ->
+  [Expr.ColumnDefinition]
+mkTableColumnDefinitions tableDef =
+  foldMarshallerFields
+    (tableMarshaller tableDef)
+    []
+    (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
+
+{- |
+  Builds the 'Expr.PrimaryKeyExpr' for this table, or none of this table has no
+  primary key.
+-}
+mkTablePrimaryKeyExpr ::
+  TableDefinition key writeEntity readEntity ->
+  Maybe Expr.PrimaryKeyExpr
+mkTablePrimaryKeyExpr tableDef =
+  case _tablePrimaryKey tableDef of
+    TableHasKey primaryKey ->
+      Just $ mkPrimaryKeyExpr primaryKey
+    TableHasNoKey ->
+      Nothing
 
 {- |
   Specifies whether or not a @RETURNING@ clause should be included when a

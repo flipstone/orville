@@ -3,6 +3,7 @@
 module Orville.PostgreSQL.PgCatalog.PgNamespace
   ( PgNamespace (..),
     NamespaceName,
+    namespaceNameToString,
     pgNamespaceTable,
     namespaceNameField,
   )
@@ -34,6 +35,13 @@ data PgNamespace = PgNamespace
 newtype NamespaceName
   = NamespaceName T.Text
   deriving (Show, Eq, Ord, String.IsString)
+
+{- |
+  Convert a 'NamespaceName to a plain 'String'
+-}
+namespaceNameToString :: NamespaceName -> String
+namespaceNameToString (NamespaceName text) =
+  T.unpack text
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the

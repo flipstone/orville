@@ -123,6 +123,7 @@ module Orville.PostgreSQL.Internal.Expr
     alterTableExpr,
     TableConstraint,
     uniqueConstraint,
+    foreignKeyConstraint,
     AlterTableAction,
     addColumn,
     dropColumn,

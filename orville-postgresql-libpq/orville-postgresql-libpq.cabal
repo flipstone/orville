@@ -98,6 +98,7 @@ library
       Orville.PostgreSQL.Internal.SelectOptions.OrderBy
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
+      Orville.PostgreSQL.Internal.TableIdentifier
       Orville.PostgreSQL.Internal.Transaction
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField

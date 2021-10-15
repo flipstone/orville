@@ -6,7 +6,6 @@ module Test.AutoMigration
 where
 
 import qualified Control.Exception.Safe as ExSafe
-import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Foldable as Fold
 import Data.Int (Int32)
@@ -43,19 +42,20 @@ autoMigrationTests pool =
     , prop_columnsWithSystemNameConflictsRaiseError pool
     , prop_altersColumnDataType pool
     , prop_addAndRemovesUniqueConstraints pool
+    , prop_addAndRemovesForeignKeyConstraints pool
     ]
 
 prop_createsMissingTables :: Property.NamedDBProperty
 prop_createsMissingTables =
   Property.singletonNamedDBProperty "Creates missing tables" $ \pool -> do
     firstTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid $ TestTable.dropTableDefSql Foo.table
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
 
     secondTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
@@ -66,35 +66,31 @@ prop_createsMissingTables =
 prop_addsAndRemovesColumns :: Property.NamedDBProperty
 prop_addsAndRemovesColumns =
   Property.namedDBProperty "Adds and removes columns columns" $ \pool -> do
-    let possibleColumns =
-          ["foo", "bar", "baz", "bat", "bax"]
+    let genColumnList =
+          Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
 
-    originalColumns <- HH.forAll $ Gen.subsequence possibleColumns
-    newColumns <- HH.forAll $ Gen.subsequence possibleColumns
+    originalColumns <- HH.forAll genColumnList
+    newColumns <- HH.forAll genColumnList
 
     let columnsToDrop =
           originalColumns \\ newColumns
 
         originalTableDef =
-          Orville.mkTableDefinitionWithoutKey
-            "migration_test"
-            (intColumnsMarshaller originalColumns)
+          mkIntListTable "migration_test" originalColumns
 
         newTableDef =
           Orville.dropColumns columnsToDrop $
-            Orville.mkTableDefinitionWithoutKey
-              "migration_test"
-              (intColumnsMarshaller newColumns)
+            mkIntListTable "migration_test" newColumns
 
     firstTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid $ TableDefinition.mkCreateTableExpr originalTableDef
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
     secondTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
@@ -112,7 +108,7 @@ prop_columnsWithSystemNameConflictsRaiseError =
             (Orville.marshallField id (Orville.unboundedTextField "tableoid"))
 
     result <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid $ TestTable.dropTableDefSql tableWithSystemAttributeNames
 
@@ -189,14 +185,14 @@ prop_altersColumnDataType =
           Orville.fieldType newField
 
     firstTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid $ TableDefinition.mkCreateTableExpr originalTableDef
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
     secondTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
@@ -211,26 +207,20 @@ prop_altersColumnDataType =
 prop_addAndRemovesUniqueConstraints :: Property.NamedDBProperty
 prop_addAndRemovesUniqueConstraints =
   Property.namedDBProperty "Adds and removes unique constraints" $ \pool -> do
-    let possibleColumns =
-          ["foo", "bar", "baz", "bat", "bax"]
+    let genColumnList =
+          Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
 
-        mkUniqueConstraint columnList =
-          Orville.uniqueConstraint (fmap Orville.stringToFieldName columnList)
+        genConstraintColumns :: [String] -> HH.Gen [NEL.NonEmpty String]
+        genConstraintColumns columns =
+          fmap Maybe.catMaybes $
+            Gen.list (Range.linear 0 10) $ do
+              subcolumns <- Gen.subsequence columns
+              NEL.nonEmpty <$> Gen.shuffle subcolumns
 
-        genConstraintColumns :: [String] -> HH.Gen (Maybe (NEL.NonEmpty String))
-        genConstraintColumns columns = do
-          subcolumns <- Gen.subsequence columns
-          NEL.nonEmpty <$> Gen.shuffle subcolumns
-
-    originalColumns <- HH.forAll $ Gen.subsequence possibleColumns
-    originalConstraintColumns <-
-      fmap Maybe.catMaybes . HH.forAll $
-        Gen.list (Range.linear 0 10) (genConstraintColumns originalColumns)
-
-    newColumns <- HH.forAll $ Gen.subsequence possibleColumns
-    newConstraintColumns <-
-      fmap Maybe.catMaybes . HH.forAll $
-        Gen.list (Range.linear 0 10) (genConstraintColumns newColumns)
+    originalColumns <- HH.forAll genColumnList
+    originalConstraintColumns <- HH.forAll $ genConstraintColumns originalColumns
+    newColumns <- HH.forAll genColumnList
+    newConstraintColumns <- HH.forAll $ genConstraintColumns newColumns
 
     let columnsToDrop =
           originalColumns \\ newColumns
@@ -243,22 +233,18 @@ prop_addAndRemovesUniqueConstraints =
 
         originalTableDef =
           Orville.addTableConstraints originalConstraints $
-            Orville.mkTableDefinitionWithoutKey
-              "migration_test"
-              (intColumnsMarshaller originalColumns)
+            mkIntListTable "migration_test" originalColumns
 
         newTableDef =
           Orville.addTableConstraints newConstraints $
             Orville.dropColumns columnsToDrop $
-              Orville.mkTableDefinitionWithoutKey
-                "migration_test"
-                (intColumnsMarshaller newColumns)
+              mkIntListTable "migration_test" newColumns
 
     HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newConstraintColumns \\ originalConstraintColumns))
     HH.cover 5 (String.fromString "Dropping Constraints") (not $ null (originalConstraintColumns \\ newConstraintColumns))
 
     firstTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid $ TestTable.dropTableDefSql originalTableDef
           AutoMigration.autoMigrateSchema [AutoMigration.schemaTable originalTableDef]
@@ -267,7 +253,7 @@ prop_addAndRemovesUniqueConstraints =
     HH.annotate ("First time migration steps: " <> show (map RawSql.toBytes firstTimeSteps))
 
     secondTimeSteps <-
-      MIO.liftIO $
+      HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
@@ -278,8 +264,123 @@ prop_addAndRemovesUniqueConstraints =
     Fold.traverse_ (PgAssert.assertUniqueConstraintExists tableDesc) newConstraintColumns
     length (PgCatalog.relationConstraints tableDesc) === length (List.nub newConstraintColumns)
 
+prop_addAndRemovesForeignKeyConstraints :: Property.NamedDBProperty
+prop_addAndRemovesForeignKeyConstraints =
+  Property.namedDBProperty "Adds and removes foreign key constraints" $ \pool -> do
+    let genColumnList =
+          Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
+
+    localColumns <- HH.forAll genColumnList
+    foreignColumns <- HH.forAll genColumnList
+
+    let genConstraintColumns :: HH.Gen [(NEL.NonEmpty (String, String))]
+        genConstraintColumns =
+          fmap Maybe.catMaybes $
+            Gen.list (Range.linear 0 10) $ do
+              shuffledLocal <- Gen.shuffle localColumns
+              shuffledForeign <- Gen.shuffle foreignColumns
+
+              NEL.nonEmpty <$> Gen.subsequence (zip shuffledLocal shuffledForeign)
+
+    originalConstraintColumns <- HH.forAll genConstraintColumns
+    newConstraintColumns <- HH.forAll genConstraintColumns
+
+    -- We sort the columns in the unique constraints here to avoid edge cases
+    -- with equivalent unique constraints in a different order. In these
+    -- situations PostgreSQL can end up creating foreign keys that depending on
+    -- indexes with a different ordering than the foreign key, which this test
+    -- would then assume can be dropped even though it cannot. Standardizing
+    -- the order of the columns in the unique constraints ensures this test
+    -- will not try to drop a constraint that is used in both the original and
+    -- new schemas while a foreign key is dropped and a new one added.
+    let originalUniqueConstraints =
+          fmap (mkUniqueConstraint . NEL.sort . fmap snd) originalConstraintColumns
+
+        newUniqueConstraints =
+          fmap (mkUniqueConstraint . NEL.sort . fmap snd) newConstraintColumns
+
+        originalForeignKeyConstraints =
+          fmap (mkForeignKeyConstraint "migration_test_foreign") originalConstraintColumns
+
+        newForeignKeyConstraints =
+          fmap (mkForeignKeyConstraint "migration_test_foreign") newConstraintColumns
+
+        originalLocalTableDef =
+          Orville.addTableConstraints originalForeignKeyConstraints $
+            mkIntListTable "migration_test" localColumns
+
+        newLocalTableDef =
+          Orville.addTableConstraints newForeignKeyConstraints $
+            mkIntListTable "migration_test" localColumns
+
+        originalForeignTableDef =
+          Orville.addTableConstraints originalUniqueConstraints $
+            mkIntListTable "migration_test_foreign" foreignColumns
+
+        newForeignTableDef =
+          Orville.addTableConstraints newUniqueConstraints $
+            mkIntListTable "migration_test_foreign" foreignColumns
+
+    originalSchema <-
+      HH.forAllWith (show . map AutoMigration.schemaItemSummary) $
+        Gen.shuffle
+          [ AutoMigration.schemaTable originalForeignTableDef
+          , AutoMigration.schemaTable originalLocalTableDef
+          ]
+
+    newSchema <-
+      HH.forAllWith (show . map AutoMigration.schemaItemSummary) $
+        Gen.shuffle
+          [ AutoMigration.schemaTable newForeignTableDef
+          , AutoMigration.schemaTable newLocalTableDef
+          ]
+
+    HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newConstraintColumns \\ originalConstraintColumns))
+    HH.cover 5 (String.fromString "Dropping Constraints") (not $ null (originalConstraintColumns \\ newConstraintColumns))
+
+    firstTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid $ TestTable.dropTableDefSql originalLocalTableDef
+          Orville.executeVoid $ TestTable.dropTableDefSql originalForeignTableDef
+          AutoMigration.autoMigrateSchema originalSchema
+          AutoMigration.generateMigrationSteps newSchema
+
+    HH.annotate ("First time migration steps: " <> show (map RawSql.toBytes firstTimeSteps))
+
+    secondTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps firstTimeSteps
+          AutoMigration.generateMigrationSteps newSchema
+
+    HH.annotate ("Second time migration steps: " <> show (map RawSql.toBytes secondTimeSteps))
+
+    map RawSql.toBytes secondTimeSteps === []
+    tableDesc <- PgAssert.assertTableExists pool "migration_test"
+    Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newConstraintColumns
+    length (PgCatalog.relationConstraints tableDesc) === length (List.nub newConstraintColumns)
+
+mkIntListTable :: String -> [String] -> Orville.TableDefinition Orville.NoKey [Int32] [Int32]
+mkIntListTable tableName columns =
+  Orville.mkTableDefinitionWithoutKey tableName (intColumnsMarshaller columns)
+
 intColumnsMarshaller :: [String] -> Orville.SqlMarshaller [Int32] [Int32]
 intColumnsMarshaller columns =
   let field (idx, column) =
         Orville.marshallField (!! idx) $ Orville.integerField column
    in traverse field (zip [1 ..] columns)
+
+mkUniqueConstraint :: NEL.NonEmpty String -> Orville.ConstraintDefinition
+mkUniqueConstraint columnList =
+  Orville.uniqueConstraint (fmap Orville.stringToFieldName columnList)
+
+mkForeignKeyConstraint :: String -> NEL.NonEmpty (String, String) -> Orville.ConstraintDefinition
+mkForeignKeyConstraint foreignTableName referenceList =
+  let mkForeignReference (localColumn, foreignColumn) =
+        Orville.foreignReference
+          (Orville.stringToFieldName localColumn)
+          (Orville.stringToFieldName foreignColumn)
+   in Orville.foreignKeyConstraint
+        (Orville.unqualifiedNameToTableId foreignTableName)
+        (fmap mkForeignReference referenceList)

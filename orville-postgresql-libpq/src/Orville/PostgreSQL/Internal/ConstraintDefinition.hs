@@ -1,7 +1,11 @@
 module Orville.PostgreSQL.Internal.ConstraintDefinition
   ( ConstraintDefinition,
     uniqueConstraint,
-    ConstraintMigrationKey (ConstraintMigrationKey, constrainedColumns),
+    foreignKeyConstraint,
+    ForeignReference (localFieldName, foreignFieldName),
+    foreignReference,
+    ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns),
+    ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint),
     constraintMigrationKey,
     constraintSqlExpr,
   )
@@ -11,7 +15,8 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NEL
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
+import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 
 {- |
   Defines a constraint that can be added to a
@@ -33,8 +38,19 @@ data ConstraintDefinition = ConstraintDefinition
   for you.
 -}
 data ConstraintMigrationKey = ConstraintMigrationKey
-  { constrainedColumns :: [FieldDef.FieldName]
+  { constraintKeyType :: ConstraintKeyType
+  , constraintKeyColumns :: Maybe [FieldDefinition.FieldName]
+  , constraintKeyForeignTable :: Maybe TableIdentifier.TableIdentifier
+  , constraintKeyForeignColumns :: Maybe [FieldDefinition.FieldName]
   }
+  deriving (Eq, Ord, Show)
+
+{- |
+  The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g. unique, foreign key).
+-}
+data ConstraintKeyType
+  = UniqueConstraint
+  | ForeignKeyConstraint
   deriving (Eq, Ord, Show)
 
 {- |
@@ -53,16 +69,78 @@ constraintSqlExpr = _constraintSqlExpr
   Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
   columns.
 -}
-uniqueConstraint :: NonEmpty FieldDef.FieldName -> ConstraintDefinition
-uniqueConstraint columnNames =
+uniqueConstraint :: NonEmpty FieldDefinition.FieldName -> ConstraintDefinition
+uniqueConstraint fieldNames =
   let expr =
-        Expr.uniqueConstraint . fmap FieldDef.fieldNameToColumnName $ columnNames
+        Expr.uniqueConstraint . fmap FieldDefinition.fieldNameToColumnName $ fieldNames
 
-      metadata =
+      migrationKey =
         ConstraintMigrationKey
-          { constrainedColumns = NEL.toList columnNames
+          { constraintKeyType = UniqueConstraint
+          , constraintKeyColumns = Just (NEL.toList fieldNames)
+          , constraintKeyForeignTable = Nothing
+          , constraintKeyForeignColumns = Nothing
           }
    in ConstraintDefinition
         { _constraintSqlExpr = expr
-        , _constraintMigrationKey = metadata
+        , _constraintMigrationKey = migrationKey
+        }
+
+{- |
+  A 'ForeignReference' represents one part of a foreign key. The entire foreign
+  key may comprise multiple columns. The 'ForeignReference' defines a single
+  column in the key and which column it references in the foreign table.
+-}
+data ForeignReference = ForeignReference
+  { localFieldName :: FieldDefinition.FieldName
+  , foreignFieldName :: FieldDefinition.FieldName
+  }
+
+{- |
+  Constructs a 'ForeignReference'
+-}
+foreignReference ::
+  -- | The name of the field in the table with the constraint
+  FieldDefinition.FieldName ->
+  -- | The name of the field in the foreign table that the local field references
+  FieldDefinition.FieldName ->
+  ForeignReference
+foreignReference localName foreignName =
+  ForeignReference
+    { localFieldName = localName
+    , foreignFieldName = foreignName
+    }
+
+{- |
+  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint.
+-}
+foreignKeyConstraint ::
+  -- | Identifier of the table referenced by the foreign key
+  TableIdentifier.TableIdentifier ->
+  -- | The columns constrained by the foreign key and those that they reference in the foreign table
+  NonEmpty ForeignReference ->
+  ConstraintDefinition
+foreignKeyConstraint foreignTableId foreignReferences =
+  let localFieldNames =
+        localFieldName <$> foreignReferences
+
+      foreignFieldNames =
+        foreignFieldName <$> foreignReferences
+
+      expr =
+        Expr.foreignKeyConstraint
+          (fmap FieldDefinition.fieldNameToColumnName localFieldNames)
+          (TableIdentifier.tableIdQualifiedName foreignTableId)
+          (fmap FieldDefinition.fieldNameToColumnName foreignFieldNames)
+
+      migrationKey =
+        ConstraintMigrationKey
+          { constraintKeyType = ForeignKeyConstraint
+          , constraintKeyColumns = Just (NEL.toList localFieldNames)
+          , constraintKeyForeignTable = Just foreignTableId
+          , constraintKeyForeignColumns = Just (NEL.toList foreignFieldNames)
+          }
+   in ConstraintDefinition
+        { _constraintSqlExpr = expr
+        , _constraintMigrationKey = migrationKey
         }

@@ -3,6 +3,7 @@
 module Orville.PostgreSQL.PgCatalog.PgClass
   ( PgClass (..),
     RelationName,
+    relationNameToString,
     RelationKind (..),
     pgClassTable,
     relationNameField,
@@ -41,6 +42,13 @@ data PgClass = PgClass
 newtype RelationName
   = RelationName T.Text
   deriving (Show, Eq, Ord, String.IsString)
+
+{- |
+  Convert a 'RelationName' to a plain 'String'
+-}
+relationNameToString :: RelationName -> String
+relationNameToString (RelationName text) =
+  T.unpack text
 
 {- |
   The kind of relation represented by a 'PgClass', as described at
