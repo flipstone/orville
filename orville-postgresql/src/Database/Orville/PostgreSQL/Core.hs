@@ -68,6 +68,7 @@ module Database.Orville.PostgreSQL.Core
   , Nullable
   , NotNull
   , Nullability(..)
+  , isFieldNullable
   , fieldOfType
   , textField
   , fixedTextField
