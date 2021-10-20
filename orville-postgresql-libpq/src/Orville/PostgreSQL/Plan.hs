@@ -51,6 +51,7 @@ import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.Select (Select)
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
+import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
 import Orville.PostgreSQL.Plan.Many (Many)
 import qualified Orville.PostgreSQL.Plan.Many as Many
@@ -289,9 +290,9 @@ assertFound tableDef fieldDef param maybeRecord =
     Nothing ->
       Left $
         unwords
-          [ "Failed to find record in table"
-          , TableDefinition.unqualifiedTableNameString tableDef
-          , "where"
+          [ "Failed to find record in table "
+          , TableIdentifier.tableIdToString $ TableDefinition.tableIdentifier tableDef
+          , " where "
           , FieldDefinition.fieldNameToString $ FieldDefinition.fieldName fieldDef
           , " = "
           , show param

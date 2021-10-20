@@ -155,4 +155,7 @@ relname =
 
 fooRelation :: PgCatalog.RelationName
 fooRelation =
-  String.fromString (Orville.unqualifiedTableNameString Foo.table)
+  String.fromString
+    . Orville.tableIdUnqualifiedNameString
+    . Orville.tableIdentifier
+    $ Foo.table
