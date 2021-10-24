@@ -163,7 +163,7 @@ where
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition
 import Orville.PostgreSQL.Internal.Expr.Delete
 import Orville.PostgreSQL.Internal.Expr.GroupBy
-import Orville.PostgreSQL.Internal.Expr.InsertExpr
+import Orville.PostgreSQL.Internal.Expr.Insert
 import Orville.PostgreSQL.Internal.Expr.LimitExpr
 import Orville.PostgreSQL.Internal.Expr.Name
 import Orville.PostgreSQL.Internal.Expr.OffsetExpr

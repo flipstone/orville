@@ -19,6 +19,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
 
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
+import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.Select as Select
@@ -59,20 +60,18 @@ insertAndReturnEntity entityTable entity = do
         "Expected exactly one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
 
 {- |
-  Inserts a set of entities into the specified table
+  Inserts a non-empty list of entities into the specified table
 -}
 insertEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m ()
-insertEntities entityTable entities =
-  let insertExpr =
-        TableDef.mkInsertExpr TableDef.WithoutReturning entityTable entities
-   in Execute.executeVoid insertExpr
+insertEntities tableDef =
+  Insert.executeInsert . Insert.insertToTable tableDef
 
 {- |
-  Inserts a list of entities into the specified table, returning the data that
+  Inserts a non-empty list of entities into the specified table, returning the data that
   was inserted into the database.
 
   You can use this function to obtain any column values filled in by the
@@ -83,12 +82,8 @@ insertAndReturnEntities ::
   TableDef.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m [readEntity]
-insertAndReturnEntities entityTable entities =
-  let insertExpr =
-        TableDef.mkInsertExpr TableDef.WithReturning entityTable entities
-   in Execute.executeAndDecode
-        insertExpr
-        (TableDef.tableMarshaller entityTable)
+insertAndReturnEntities tableDef =
+  Insert.executeInsertReturnEntities . Insert.insertToTableReturning tableDef
 
 {- |
   Updates the row with the given key in with the data given by 'writeEntity'

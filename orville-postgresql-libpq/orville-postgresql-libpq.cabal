@@ -59,7 +59,11 @@ library
       Orville.PostgreSQL.Internal.Expr.GroupBy
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByClause
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
-      Orville.PostgreSQL.Internal.Expr.InsertExpr
+      Orville.PostgreSQL.Internal.Expr.Insert
+      Orville.PostgreSQL.Internal.Expr.Insert.InsertColumnList
+      Orville.PostgreSQL.Internal.Expr.Insert.InsertExpr
+      Orville.PostgreSQL.Internal.Expr.Insert.InsertSource
+      Orville.PostgreSQL.Internal.Expr.Insert.RowValues
       Orville.PostgreSQL.Internal.Expr.LimitExpr
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
@@ -91,6 +95,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
       Orville.PostgreSQL.Internal.Expr.Where.RowValueExpression
       Orville.PostgreSQL.Internal.Expr.Where.WhereClause
+      Orville.PostgreSQL.Internal.Insert
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
