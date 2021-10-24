@@ -10,8 +10,32 @@ jobs:
           name: make sure dockerfile is built
           command: cd orville-postgresql-libpq && docker-compose build -q
       - run:
-          name: run tests against ghc9.0.1 (stackage nightly-2021-06-29)
-          command: cd orville-postgresql-libpq && docker-compose run --rm dev stack --stack-yaml stack-nightly-2021-06-29.yml test --ghc-options=-j --flag orville-postgresql-libpq:ci
+          name: run tests against ghc9.0.1 (stackage nightly-2021-10-24)
+          command: cd orville-postgresql-libpq && docker-compose run --rm dev stack --stack-yaml stack-nightly-2021-10-24.yml test --ghc-options=-j --flag orville-postgresql-libpq:ci
+
+  postgresql-96-and-ghc8107:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - checkout
+      - run:
+          name: make sure dockerfile is built
+          command: cd orville-postgresql-libpq && docker-compose build -q
+      - run:
+          name: run tests against ghc8.10.7 (stackage lts-18.9)
+          command: cd orville-postgresql-libpq && docker-compose run --rm dev stack --stack-yaml stack-lts-18.9.yml test --ghc-options=-j --flag orville-postgresql-libpq:ci
+
+  postgresql-96-and-ghc8106:
+    machine:
+      image: ubuntu-2004:202101-01
+    steps:
+      - checkout
+      - run:
+          name: make sure dockerfile is built
+          command: cd orville-postgresql-libpq && docker-compose build -q
+      - run:
+          name: run tests against ghc8.10.6 (stackage lts-18.7)
+          command: cd orville-postgresql-libpq && docker-compose run --rm dev stack --stack-yaml stack-lts-18.7.yml test --ghc-options=-j --flag orville-postgresql-libpq:ci
 
   postgresql-96-and-ghc8104:
     machine:
