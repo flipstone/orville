@@ -8,21 +8,16 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Name.SchemaName
   ( SchemaName,
     schemaName,
-    schemaNameFromIdentifier,
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Name.Identifier (Identifier, identifier)
+import Orville.PostgreSQL.Internal.Expr.Name.Identifier (Identifier, IdentifierExpression, identifier)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype SchemaName
   = SchemaName Identifier
-  deriving (RawSql.SqlExpression)
+  deriving (RawSql.SqlExpression, IdentifierExpression)
 
 schemaName :: String -> SchemaName
 schemaName =
   SchemaName . identifier
-
-schemaNameFromIdentifier :: Identifier -> SchemaName
-schemaNameFromIdentifier =
-  SchemaName

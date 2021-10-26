@@ -22,6 +22,8 @@ module Orville.PostgreSQL
     TableDefinition.setTableSchema,
     TableDefinition.tableConstraints,
     TableDefinition.addTableConstraints,
+    TableDefinition.tableIndexes,
+    TableDefinition.addTableIndexes,
     TableDefinition.dropColumns,
     TableDefinition.columnsToDrop,
     TableDefinition.tableIdentifier,
@@ -48,9 +50,18 @@ module Orville.PostgreSQL
     ConstraintDefinition.ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint),
     ConstraintDefinition.constraintMigrationKey,
     ConstraintDefinition.constraintSqlExpr,
+    IndexDefinition.IndexDefinition,
+    IndexDefinition.uniqueIndex,
+    IndexDefinition.nonUniqueIndex,
+    IndexDefinition.mkIndexDefinition,
+    IndexDefinition.IndexUniqueness (UniqueIndex, NonUniqueIndex),
+    IndexDefinition.IndexMigrationKey (IndexMigrationKey, indexKeyUniqueness, indexKeyColumns),
+    IndexDefinition.indexMigrationKey,
+    IndexDefinition.indexCreateExpr,
     PrimaryKey.PrimaryKey,
     PrimaryKey.primaryKey,
     PrimaryKey.compositePrimaryKey,
+    PrimaryKey.primaryKeyPart,
     SqlMarshaller.SqlMarshaller,
     SqlMarshaller.marshallField,
     SqlMarshaller.marshallReadOnly,
@@ -173,6 +184,7 @@ import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperation
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.Orville as Orville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState

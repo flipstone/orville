@@ -18,7 +18,7 @@ import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualSqlRows)
-import qualified Test.PGGen as PGGen
+import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
 sqlMarshallerTests :: Property.Group
@@ -231,7 +231,7 @@ fooMarshaller =
 generateFoo :: HH.Gen Foo
 generateFoo =
   Foo
-    <$> PGGen.pgText (Range.linear 0 16)
+    <$> PgGen.pgText (Range.linear 0 16)
     <*> generateInt32
     <*> Gen.maybe Gen.bool
 
@@ -245,9 +245,9 @@ barMarshaller =
 generateBar :: HH.Gen Bar
 generateBar =
   Bar
-    <$> PGGen.pgDouble
-    <*> Gen.maybe (PGGen.pgText $ Range.linear 0 32)
-    <*> Gen.maybe (PGGen.pgText $ Range.linear 1 16)
+    <$> PgGen.pgDouble
+    <*> Gen.maybe (PgGen.pgText $ Range.linear 0 32)
+    <*> Gen.maybe (PgGen.pgText $ Range.linear 1 16)
 
 bazMarshallerRight :: SqlMarshaller.SqlMarshaller Baz Baz
 bazMarshallerRight =
@@ -266,7 +266,7 @@ bazMarshallerLeft =
 generateBaz :: HH.Gen Baz
 generateBaz =
   Baz
-    <$> PGGen.pgText (Range.linear 1 5)
+    <$> PgGen.pgText (Range.linear 1 5)
 
 generateNamesOtherThan :: String -> HH.Gen [String]
 generateNamesOtherThan specialName =

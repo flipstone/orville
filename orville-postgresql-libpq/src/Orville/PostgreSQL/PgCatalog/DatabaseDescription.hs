@@ -3,6 +3,8 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
     RelationDescription (..),
     ConstraintDescription (..),
     ForeignRelationDescription (..),
+    IndexDescription (..),
+    IndexMember (..),
     lookupRelation,
     lookupAttribute,
     describeDatabaseRelations,
@@ -18,6 +20,7 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, AttributeNumber, PgAttribute (pgAttributeName, pgAttributeNumber), attributeIsDroppedField, attributeNumberToInt16, attributeRelationOidField, pgAttributeTable)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationName, namespaceOidField, pgClassTable, relationNameField, relationNameToString)
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
+import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
@@ -47,6 +50,7 @@ data RelationDescription = RelationDescription
   { relationRecord :: PgClass
   , relationAttributes :: Map.Map AttributeName PgAttribute
   , relationConstraints :: [ConstraintDescription]
+  , relationIndexes :: [IndexDescription]
   }
 
 lookupAttribute ::
@@ -75,6 +79,26 @@ data ForeignRelationDescription = ForeignRelationDescription
   { foreignRelationClass :: PgClass
   , foreignRelationNamespace :: PgNamespace
   }
+
+{- |
+  A description of an index in the PostgreSQL database, including the names of
+  the attributes included in the index and the 'PgClass' record of the index
+  itself (NOT the 'PgClass' of the table that the index is for).
+-}
+data IndexDescription = IndexDescription
+  { indexRecord :: PgIndex
+  , indexPgClass :: PgClass
+  , indexMembers :: [IndexMember]
+  }
+
+{- |
+  A description of an index member in the PostgreSQL database. If they member
+  is a simple attribute, the 'PgAttribute' for that is provided. If it is an
+  index over an expression, no further description is currently provided.
+-}
+data IndexMember
+  = IndexAttribute PgAttribute
+  | IndexExpression
 
 {- |
   Describes the requested relations in the current database. If any of the
@@ -119,13 +143,14 @@ describeRelationByClass =
   Plan.bind Plan.askParam $ \pgClass ->
     Plan.bind findClassAttributes $ \attributes ->
       let classAndAttributes =
-            (,)
+            mkPgClassAndAttributes
               <$> Plan.use pgClass
               <*> Plan.use attributes
        in RelationDescription
             <$> Plan.use pgClass
             <*> Plan.use (fmap (indexBy pgAttributeName) attributes)
             <*> Plan.chain classAndAttributes findClassConstraints
+            <*> Plan.chain classAndAttributes findClassIndexes
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
@@ -149,24 +174,23 @@ findClassAttributes =
       attributeRelationOidField
       (Orville.fieldEquals attributeIsDroppedField False)
 
-findClassConstraints :: Plan.Plan scope (PgClass, [PgAttribute]) [ConstraintDescription]
+findClassConstraints :: Plan.Plan scope PgClassAndAttributes [ConstraintDescription]
 findClassConstraints =
-  let relationOid :: (PgClass, [PgAttribute]) -> LibPQ.Oid
-      relationOid (pgClass, _) =
-        pgClassOid pgClass
+  let relationOid =
+        pgClassOid . pgClassRecord
    in Plan.bind (Plan.focusParam relationOid $ Plan.findAll pgConstraintTable constraintRelationOidField) $ \constraints ->
-        Plan.bind (uncurry mkAttributeSource <$> Plan.askParam) $ \attrSource ->
+        Plan.bind Plan.askParam $ \pgClassAndAttrs ->
           Plan.chain
-            (zip <$> Plan.use (fmap repeat attrSource) <*> Plan.use constraints)
+            (zip <$> Plan.use (fmap repeat pgClassAndAttrs) <*> Plan.use constraints)
             (Plan.planList describeConstraint)
 
-describeConstraint :: Plan.Plan scope (AttributeSource, PgConstraint) ConstraintDescription
+describeConstraint :: Plan.Plan scope (PgClassAndAttributes, PgConstraint) ConstraintDescription
 describeConstraint =
-  let prepareAttributeLookups :: (AttributeSource, PgConstraint) -> Maybe [(AttributeSource, AttributeNumber)]
-      prepareAttributeLookups (attrSource, pgConstraint) =
+  let prepareAttributeLookups :: (PgClassAndAttributes, PgConstraint) -> Maybe [(PgClassAndAttributes, AttributeNumber)]
+      prepareAttributeLookups (pgClassAndAttrs, pgConstraint) =
         case pgConstraintKey pgConstraint of
           Nothing -> Nothing
-          Just key -> Just (fmap (\attNum -> (attrSource, attNum)) key)
+          Just key -> Just (fmap (\attNum -> (pgClassAndAttrs, attNum)) key)
    in Plan.bind (snd <$> Plan.askParam) $ \constraint ->
         Plan.bind (Plan.using constraint findConstraintForeignRelationClass) $ \maybeForeignPgClass ->
           let maybeForeignClassAndAttrNums =
@@ -192,45 +216,12 @@ findForeignKeyAttributes =
     Plan.bind (snd <$> Plan.askParam) $ \attrNums ->
       Plan.bind (Plan.focusParam fst findClassAttributes) $ \attributes ->
         let attrSource =
-              mkAttributeSource
+              mkPgClassAndAttributes
                 <$> Plan.use pgClass
                 <*> Plan.use attributes
          in Plan.chain
               (zip <$> fmap repeat attrSource <*> Plan.use attrNums)
               (Plan.planList findAttributeByNumber)
-
-data AttributeSource = AttributeSource
-  { attrSourceName :: RelationName
-  , attrSourceMap :: Map.Map AttributeNumber PgAttribute
-  }
-
-mkAttributeSource :: PgClass -> [PgAttribute] -> AttributeSource
-mkAttributeSource pgClass attributes =
-  AttributeSource
-    { attrSourceName = pgClassRelationName pgClass
-    , attrSourceMap = indexBy pgAttributeNumber attributes
-    }
-
-findAttributeByNumber :: Plan.Plan scope (AttributeSource, AttributeNumber) PgAttribute
-findAttributeByNumber =
-  let lookupAttr (attrSource, attrNum) =
-        Map.lookup attrNum (attrSourceMap attrSource)
-
-      assertFound ::
-        (AttributeSource, AttributeNumber) ->
-        Maybe PgAttribute ->
-        Either String PgAttribute
-      assertFound (attrSource, attrNum) maybeAttr =
-        case maybeAttr of
-          Nothing ->
-            Left $
-              "Unable to find attribute number "
-                <> show (attributeNumberToInt16 attrNum)
-                <> " of relation "
-                <> relationNameToString (attrSourceName attrSource)
-          Just attr ->
-            Right attr
-   in Plan.assert assertFound $ fmap lookupAttr Plan.askParam
 
 findConstraintForeignRelationClass :: Plan.Plan scope PgConstraint (Maybe PgClass)
 findConstraintForeignRelationClass =
@@ -241,6 +232,94 @@ findConstraintForeignRelationClass =
    in Plan.focusParam relationId $
         Plan.planMaybe $
           Plan.findOne pgClassTable oidField
+
+findClassIndexes :: Plan.Plan scope PgClassAndAttributes [IndexDescription]
+findClassIndexes =
+  let findIndexes :: Plan.Plan scope PgClassAndAttributes [PgIndex]
+      findIndexes =
+        Plan.focusParam (pgClassOid . pgClassRecord) $
+          Plan.findAllWhere
+            pgIndexTable
+            indexRelationOidField
+            (Orville.fieldEquals indexIsLiveField True)
+
+      indexesWithClassAndAttrs :: Plan.Plan scope PgClassAndAttributes [(PgClassAndAttributes, PgIndex)]
+      indexesWithClassAndAttrs =
+        zip
+          <$> fmap repeat Plan.askParam
+          <*> findIndexes
+   in Plan.chain indexesWithClassAndAttrs (Plan.planList describeIndex)
+
+describeIndex :: Plan.Plan scope (PgClassAndAttributes, PgIndex) IndexDescription
+describeIndex =
+  let expressionsOrAttributeLookups ::
+        PgClassAndAttributes ->
+        [AttributeNumber] ->
+        [Either IndexMember (PgClassAndAttributes, AttributeNumber)]
+      expressionsOrAttributeLookups pgClassAndAttrs attNumList = do
+        attNum <- attNumList
+        pure $
+          if attNum == 0
+            then Left IndexExpression
+            else Right (pgClassAndAttrs, attNum)
+
+      indexMemberLookups ::
+        Plan.Plan
+          scope
+          (PgClassAndAttributes, PgIndex)
+          [Either IndexMember (PgClassAndAttributes, AttributeNumber)]
+      indexMemberLookups =
+        Plan.bind (fst <$> Plan.askParam) $ \pgClassAndAttrs ->
+          Plan.bind (pgIndexAttributeNumbers . snd <$> Plan.askParam) $ \attNums ->
+            expressionsOrAttributeLookups
+              <$> Plan.use pgClassAndAttrs
+              <*> Plan.use attNums
+
+      resolveIndexMemberLookup ::
+        Plan.Plan
+          scope
+          (Either IndexMember (PgClassAndAttributes, AttributeNumber))
+          IndexMember
+      resolveIndexMemberLookup =
+        either id IndexAttribute
+          <$> Plan.planEither Plan.askParam findAttributeByNumber
+   in IndexDescription
+        <$> fmap snd Plan.askParam
+        <*> Plan.focusParam (pgIndexPgClassOid . snd) (Plan.findOne pgClassTable oidField)
+        <*> Plan.chain indexMemberLookups (Plan.planList resolveIndexMemberLookup)
+
+data PgClassAndAttributes = PgClassAndAttributes
+  { pgClassRecord :: PgClass
+  , pgClassAttributes :: Map.Map AttributeNumber PgAttribute
+  }
+
+mkPgClassAndAttributes :: PgClass -> [PgAttribute] -> PgClassAndAttributes
+mkPgClassAndAttributes pgClass attributes =
+  PgClassAndAttributes
+    { pgClassRecord = pgClass
+    , pgClassAttributes = indexBy pgAttributeNumber attributes
+    }
+
+findAttributeByNumber :: Plan.Plan scope (PgClassAndAttributes, AttributeNumber) PgAttribute
+findAttributeByNumber =
+  let lookupAttr (pgClassAndAttrs, attrNum) =
+        Map.lookup attrNum (pgClassAttributes pgClassAndAttrs)
+
+      assertFound ::
+        (PgClassAndAttributes, AttributeNumber) ->
+        Maybe PgAttribute ->
+        Either String PgAttribute
+      assertFound (pgClassAndAttrs, attrNum) maybeAttr =
+        case maybeAttr of
+          Nothing ->
+            Left $
+              "Unable to find attribute number "
+                <> show (attributeNumberToInt16 attrNum)
+                <> " of relation "
+                <> (relationNameToString . pgClassRelationName . pgClassRecord $ pgClassAndAttrs)
+          Just attr ->
+            Right attr
+   in Plan.assert assertFound $ fmap lookupAttr Plan.askParam
 
 indexBy :: Ord key => (row -> key) -> [row] -> Map.Map key row
 indexBy rowKey =

@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Connection
     ConnectionUsedAfterCloseError,
     ConnectionError,
     SqlExecutionError (..),
+    NoticeReporting (EnableNoticeReporting, DisableNoticeReporting),
     createConnectionPool,
     executeRaw,
     executeRawVoid,
@@ -33,9 +34,19 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Orville.PostgreSQL.Internal.PGTextFormatValue (NULByteFoundError (NULByteFoundError), PGTextFormatValue, toBytesForLibPQ)
 
 {- |
+  An option for 'createConnectionPool' than indicates whether the LibPQ should
+  print notice reports for warnings to the console
+-}
+data NoticeReporting
+  = EnableNoticeReporting
+  | DisableNoticeReporting
+
+{- |
  'createConnectionPool' allocates a pool of connections to a PosgreSQL server.
 -}
 createConnectionPool ::
+  -- | Whether or not notice reporting from LibPQ should be enabled
+  NoticeReporting ->
   -- | Number of stripes in the connection pool
   Int ->
   -- | Linger time before closing an idle connection
@@ -45,8 +56,8 @@ createConnectionPool ::
   -- | A PostgreSQL connection string
   BS.ByteString ->
   IO (Pool Connection)
-createConnectionPool stripes linger maxRes connectionString =
-  createPool (connect connectionString) close stripes linger maxRes
+createConnectionPool noticeReporting stripes linger maxRes connectionString =
+  createPool (connect noticeReporting connectionString) close stripes linger maxRes
 
 {- |
  'executeRaw' runs a given SQL statement returning the raw underlying result.
@@ -90,8 +101,8 @@ newtype Connection = Connection (MVar LibPQ.Connection)
  Note that handling the libpq connection with the polling is described at
  <https://hackage.haskell.org/package/postgresql-libpq-0.9.4.2/docs/Database-PostgreSQL-LibPQ.html>.
 -}
-connect :: BS.ByteString -> IO Connection
-connect connectionString =
+connect :: NoticeReporting -> BS.ByteString -> IO Connection
+connect noticeReporting connectionString =
   let checkSocketAndThreadWait conn threadWaitFn = do
         fd <- LibPQ.socket conn
         case fd of
@@ -115,6 +126,9 @@ connect connectionString =
             pure (Connection connectionHandle)
    in do
         connection <- LibPQ.connectStart connectionString
+        case noticeReporting of
+          DisableNoticeReporting -> LibPQ.disableNoticeReporting connection
+          EnableNoticeReporting -> LibPQ.enableNoticeReporting connection
         poll connection
 
 {- |

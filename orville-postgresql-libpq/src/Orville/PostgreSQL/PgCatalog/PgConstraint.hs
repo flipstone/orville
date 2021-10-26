@@ -16,12 +16,11 @@ import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LTB
-import qualified Data.Text.Lazy.Builder.Int as LTBI
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
-import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberToInt16)
+import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberParser, attributeNumberTextBuilder)
 
 {- |
   The Haskell representation of data read from the @pg_catalog.pg_constraint@
@@ -40,6 +39,9 @@ data PgConstraint = PgConstraint
   , -- | The PostgreSQL @oid@ of the table that the constraint is on
     -- (or @0@ if not a table constraint)
     pgConstraintRelationOid :: LibPQ.Oid
+  , -- | The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
+    -- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
+    pgConstraintIndexOid :: LibPQ.Oid
   , -- | For table constraints, the attribute numbers of the constrained columns. These
     -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
     pgConstraintKey :: Maybe [AttributeNumber]
@@ -132,6 +134,7 @@ pgConstraintMarshaller =
     <*> Orville.marshallField pgConstraintNamespaceOid constraintNamespaceOidField
     <*> Orville.marshallField pgConstraintType constraintTypeField
     <*> Orville.marshallField pgConstraintRelationOid constraintRelationOidField
+    <*> Orville.marshallField pgConstraintIndexOid constraintIndexOidField
     <*> Orville.marshallField pgConstraintKey constraintKeyField
     <*> Orville.marshallField pgConstraintForeignRelationOid constraintForeignRelationOidField
     <*> Orville.marshallField pgConstraintForeignKey constraintForeignKeyField
@@ -168,13 +171,20 @@ constraintRelationOidField =
   oidTypeField "conrelid"
 
 {- |
+  The @conindid@ column of the @pg_constraint@ table
+-}
+constraintIndexOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+constraintIndexOidField =
+  oidTypeField "conindid"
+
+{- |
   The @conkey@ column of the @pg_constraint@ table
 -}
 constraintKeyField :: Orville.FieldDefinition Orville.Nullable (Maybe [AttributeNumber])
 constraintKeyField =
   Orville.nullableField $
     Orville.convertField
-      (Orville.maybeConvertSqlType attributeNumberListToPgText pgTextToAttributeNumberList)
+      (Orville.maybeConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
       (Orville.unboundedTextField "conkey")
 
 {- |
@@ -191,14 +201,14 @@ constraintForeignKeyField :: Orville.FieldDefinition Orville.Nullable (Maybe [At
 constraintForeignKeyField =
   Orville.nullableField $
     Orville.convertField
-      (Orville.maybeConvertSqlType attributeNumberListToPgText pgTextToAttributeNumberList)
+      (Orville.maybeConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
       (Orville.unboundedTextField "confkey")
 
-pgTextToAttributeNumberList :: T.Text -> Maybe [AttributeNumber]
-pgTextToAttributeNumberList text =
+pgArrayTextToAttributeNumberList :: T.Text -> Maybe [AttributeNumber]
+pgArrayTextToAttributeNumberList text =
   let parser = do
         _ <- AttoText.char '{'
-        attNums <- AttoText.sepBy (AttoText.signed AttoText.decimal) (AttoText.char ',')
+        attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ',')
         _ <- AttoText.char '}'
         AttoText.endOfInput
         pure attNums
@@ -206,13 +216,10 @@ pgTextToAttributeNumberList text =
         Left _ -> Nothing
         Right nums -> Just nums
 
-attributeNumberListToPgText :: [AttributeNumber] -> T.Text
-attributeNumberListToPgText attNums =
-  let buildAttNum =
-        LTBI.decimal . attributeNumberToInt16
-
-      commaDelimitedAttributeNumbers =
+attributeNumberListToPgArrayText :: [AttributeNumber] -> T.Text
+attributeNumberListToPgArrayText attNums =
+  let commaDelimitedAttributeNumbers =
         mconcat $
-          List.intersperse (LTB.singleton ',') (map buildAttNum attNums)
+          List.intersperse (LTB.singleton ',') (map attributeNumberTextBuilder attNums)
    in LT.toStrict . LTB.toLazyText $
         LTB.singleton '{' <> commaDelimitedAttributeNumbers <> LTB.singleton '}'

@@ -59,12 +59,14 @@ library
       Orville.PostgreSQL.Internal.Expr.GroupBy
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByClause
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
+      Orville.PostgreSQL.Internal.Expr.Index
       Orville.PostgreSQL.Internal.Expr.InsertExpr
       Orville.PostgreSQL.Internal.Expr.LimitExpr
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Orville.PostgreSQL.Internal.Expr.Name.ConstraintName
       Orville.PostgreSQL.Internal.Expr.Name.Identifier
+      Orville.PostgreSQL.Internal.Expr.Name.IndexName
       Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName
       Orville.PostgreSQL.Internal.Expr.Name.SavepointName
       Orville.PostgreSQL.Internal.Expr.Name.SchemaName
@@ -91,6 +93,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
       Orville.PostgreSQL.Internal.Expr.Where.RowValueExpression
       Orville.PostgreSQL.Internal.Expr.Where.WhereClause
+      Orville.PostgreSQL.Internal.IndexDefinition
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
@@ -105,6 +108,7 @@ library
       Orville.PostgreSQL.PgCatalog.PgAttribute
       Orville.PostgreSQL.PgCatalog.PgClass
       Orville.PostgreSQL.PgCatalog.PgConstraint
+      Orville.PostgreSQL.PgCatalog.PgIndex
       Orville.PostgreSQL.PgCatalog.PgNamespace
       Paths_orville_postgresql_libpq
   hs-source-dirs:
@@ -147,7 +151,7 @@ test-suite spec
       Test.FieldDefinition
       Test.PgAssert
       Test.PgCatalog
-      Test.PGGen
+      Test.PgGen
       Test.Plan
       Test.Property
       Test.RawSql

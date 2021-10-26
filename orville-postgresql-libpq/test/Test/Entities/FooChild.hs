@@ -22,7 +22,7 @@ import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.Connection (Connection)
 
 import qualified Test.Entities.Foo as Foo
-import qualified Test.PGGen as PGGen
+import qualified Test.PgGen as PgGen
 import qualified Test.TestTable as TestTable
 
 type FooChildId = Int32
@@ -58,7 +58,7 @@ fooChildFooIdField =
 generate :: [Foo.Foo] -> HH.Gen FooChild
 generate foos =
   FooChild
-    <$> PGGen.pgInt32
+    <$> PgGen.pgInt32
     <*> Gen.element (Foo.fooId <$> foos)
 
 generateList :: HH.Range Int -> [Foo.Foo] -> HH.Gen [FooChild]

@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Internal.Expr.Name.Identifier
     identifierFromBytes,
     unquotedIdentifier,
     unquotedIdentifierFromBytes,
+    IdentifierExpression (toIdentifier, fromIdentifier),
   )
 where
 
@@ -37,3 +38,11 @@ unquotedIdentifier =
 unquotedIdentifierFromBytes :: B8.ByteString -> Identifier
 unquotedIdentifierFromBytes =
   Identifier . RawSql.fromBytes
+
+class IdentifierExpression name where
+  toIdentifier :: name -> Identifier
+  fromIdentifier :: Identifier -> name
+
+instance IdentifierExpression Identifier where
+  toIdentifier = id
+  fromIdentifier = id

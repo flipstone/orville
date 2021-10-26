@@ -23,7 +23,7 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (sqlRowsToText)
-import qualified Test.PGGen as PGGen
+import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
 fieldDefinitionTests :: Pool.Pool Connection.Connection -> Property.Group
@@ -46,7 +46,7 @@ integerField pool =
   testFieldProperties pool "integerField" $
     RoundTripTest
       { roundTripFieldDef = FieldDef.integerField "foo"
-      , roundTripGen = PGGen.pgInt32
+      , roundTripGen = PgGen.pgInt32
       }
 
 bigIntegerField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
@@ -62,7 +62,7 @@ doubleField pool =
   testFieldProperties pool "doubleField" $
     RoundTripTest
       { roundTripFieldDef = FieldDef.doubleField "foo"
-      , roundTripGen = PGGen.pgDouble
+      , roundTripGen = PgGen.pgDouble
       }
 
 booleanField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
@@ -78,7 +78,7 @@ unboundedTextField pool =
   testFieldProperties pool "unboundedTextField" $
     RoundTripTest
       { roundTripFieldDef = FieldDef.unboundedTextField "foo"
-      , roundTripGen = PGGen.pgText (Range.constant 0 1024)
+      , roundTripGen = PgGen.pgText (Range.constant 0 1024)
       }
 
 boundedTextField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
@@ -86,7 +86,7 @@ boundedTextField pool =
   testFieldProperties pool "boundedTextField" $
     RoundTripTest
       { roundTripFieldDef = FieldDef.boundedTextField "foo" 4
-      , roundTripGen = PGGen.pgText (Range.constant 0 4)
+      , roundTripGen = PgGen.pgText (Range.constant 0 4)
       }
 
 fixedTextField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
@@ -94,7 +94,7 @@ fixedTextField pool =
   testFieldProperties pool "fixedTextField" $
     RoundTripTest
       { roundTripFieldDef = FieldDef.fixedTextField "foo" 4
-      , roundTripGen = PGGen.pgText (Range.constant 4 4)
+      , roundTripGen = PgGen.pgText (Range.constant 4 4)
       }
 
 textSearchVectorField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]

@@ -7,6 +7,8 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
     attributeNameToString,
     AttributeNumber,
     attributeNumberToInt16,
+    attributeNumberTextBuilder,
+    attributeNumberParser,
     isOrdinaryColumn,
     pgAttributeTable,
     attributeRelationOidField,
@@ -17,9 +19,12 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
   )
 where
 
+import qualified Data.Attoparsec.Text as AttoText
 import Data.Int (Int16, Int32)
 import qualified Data.String as String
 import qualified Data.Text as T
+import qualified Data.Text.Lazy.Builder as LTB
+import qualified Data.Text.Lazy.Builder.Int as LTBI
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
@@ -121,6 +126,20 @@ newtype AttributeNumber
 -}
 attributeNumberToInt16 :: AttributeNumber -> Int16
 attributeNumberToInt16 (AttributeNumber int) = int
+
+{- |
+  Attoparsec parser for 'AttributeNumber'
+-}
+attributeNumberParser :: AttoText.Parser AttributeNumber
+attributeNumberParser =
+  AttoText.signed AttoText.decimal
+
+{- |
+  Encodes an 'AttributeNumber' to lazy text as a builder
+-}
+attributeNumberTextBuilder :: AttributeNumber -> LTB.Builder
+attributeNumberTextBuilder =
+  LTBI.decimal . attributeNumberToInt16
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
