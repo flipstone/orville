@@ -7,7 +7,7 @@ module Orville.PostgreSQL.Internal.Select
     selectTable,
     selectMarshalledColumns,
     selectSelectList,
-    selectQueryExpr,
+    rawSelectQueryExpr,
   )
 where
 
@@ -95,7 +95,7 @@ selectSelectList ::
   SelectOptions.SelectOptions ->
   Select readEntity
 selectSelectList selectList marshaller qualifiedTableName selectOptions =
-  selectQueryExpr marshaller $
+  rawSelectQueryExpr marshaller $
     Expr.queryExpr
       (SelectOptions.selectDistinct selectOptions)
       selectList
@@ -119,8 +119,8 @@ selectSelectList selectList marshaller qualifiedTableName selectOptions =
   can build any query that Orville supports using the expression building
   functions, or use @RawSql.fromRawSql@ to build a raw 'Expr.QueryExpr'.
 -}
-selectQueryExpr ::
+rawSelectQueryExpr ::
   SqlMarshaller writeEntity readEntity ->
   Expr.QueryExpr ->
   Select readEntity
-selectQueryExpr = Select
+rawSelectQueryExpr = Select
