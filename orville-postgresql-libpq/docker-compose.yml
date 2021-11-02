@@ -13,7 +13,7 @@ services:
       TEST_CONN_STRING: "host=testdb user=orville_test"
     command:
       - ./scripts/test-loop
-      - ${STACK_YAML_FILE:-stack-lts-17.3.yml}
+      - ${STACK_YAML_FILE:-stack.yml}
     # A TTY is required for the test-loop script to use
     # stack test. stdin_open would be sufficient, but
     # allocating a tty provides colorful test output :)

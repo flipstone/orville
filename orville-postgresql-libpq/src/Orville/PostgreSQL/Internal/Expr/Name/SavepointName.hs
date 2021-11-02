@@ -8,19 +8,15 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Name.SavepointName
   ( SavepointName,
     savepointName,
-    savepointNameFromIdentifier,
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Name.Identifier (Identifier, identifier)
+import Orville.PostgreSQL.Internal.Expr.Name.Identifier (Identifier, IdentifierExpression, identifier)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype SavepointName
   = SavepointName Identifier
-  deriving (RawSql.SqlExpression)
+  deriving (RawSql.SqlExpression, IdentifierExpression)
 
 savepointName :: String -> SavepointName
 savepointName = SavepointName . identifier
-
-savepointNameFromIdentifier :: Identifier -> SavepointName
-savepointNameFromIdentifier = SavepointName

@@ -2,10 +2,12 @@ module Test.TestTable
   ( dropAndRecreateTableDef,
     dropTableDef,
     dropTableDefSql,
+    dropTableNameSql,
   )
 where
 
 import Orville.PostgreSQL.Connection (Connection)
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkCreateTableExpr, tableName)
 
@@ -27,5 +29,17 @@ dropAndRecreateTableDef connection tableDef = do
 dropTableDefSql ::
   TableDefinition key writeEntity readEntity ->
   RawSql.RawSql
-dropTableDefSql tableDef = do
-  RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql (tableName tableDef)
+dropTableDefSql =
+  dropTableNameExprSql . tableName
+
+dropTableNameSql ::
+  String ->
+  RawSql.RawSql
+dropTableNameSql =
+  dropTableNameExprSql . Expr.qualifiedTableName Nothing . Expr.tableName
+
+dropTableNameExprSql ::
+  Expr.QualifiedTableName ->
+  RawSql.RawSql
+dropTableNameExprSql name =
+  RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql name

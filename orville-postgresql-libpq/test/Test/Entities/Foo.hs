@@ -31,7 +31,7 @@ import qualified Hedgehog.Range as Range
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.Connection (Connection)
 
-import qualified Test.PGGen as PGGen
+import qualified Test.PgGen as PgGen
 import qualified Test.TestTable as TestTable
 
 type FooId = Int32
@@ -84,11 +84,11 @@ generateFooWithName name =
 
 generateFooId :: HH.Gen FooId
 generateFooId =
-  PGGen.pgInt32
+  PgGen.pgInt32
 
 generateFooName :: HH.Gen FooName
 generateFooName =
-  PGGen.pgText (Range.constant 0 10)
+  PgGen.pgText (Range.constant 0 10)
 
 generateFooAge :: HH.Gen FooAge
 generateFooAge =

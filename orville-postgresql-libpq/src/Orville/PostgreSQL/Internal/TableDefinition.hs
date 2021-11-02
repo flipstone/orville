@@ -14,6 +14,8 @@ module Orville.PostgreSQL.Internal.TableDefinition
     setTableSchema,
     tableConstraints,
     addTableConstraints,
+    tableIndexes,
+    addTableIndexes,
     tablePrimaryKey,
     tableMarshaller,
     mkInsertExpr,
@@ -35,6 +37,7 @@ import qualified Data.Set as Set
 import Orville.PostgreSQL.Internal.ConstraintDefinition (ConstraintDefinition, ConstraintMigrationKey, constraintMigrationKey, constraintSqlExpr)
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
+import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
 import Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerColumnNames)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
@@ -59,6 +62,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , _tableMarshaller :: SqlMarshaller writeEntity readEntity
   , _tableColumnsToDrop :: Set.Set String
   , _tableConstraints :: Map.Map ConstraintMigrationKey ConstraintDefinition
+  , _tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
   }
 
 data HasKey key
@@ -107,6 +111,7 @@ mkTableDefinitionWithoutKey name marshaller =
     , _tableMarshaller = marshaller
     , _tableColumnsToDrop = Set.empty
     , _tableConstraints = Map.empty
+    , _tableIndexes = Map.empty
     }
 
 {- |
@@ -196,6 +201,34 @@ addTableConstraints constraintDefs tableDef =
         Map.insert (constraintMigrationKey constraint) constraint constraintMap
    in tableDef
         { _tableConstraints = foldr addConstraint (_tableConstraints tableDef) constraintDefs
+        }
+
+{- |
+  Retrieves all the table indexes that have been added to the table via
+  'addTableIndexes'.
+-}
+tableIndexes ::
+  TableDefinition key writeEntity readEntity ->
+  Map.Map IndexMigrationKey IndexDefinition
+tableIndexes =
+  _tableIndexes
+
+{- |
+  Adds the given table indexes to the table definition.
+
+  Note: If multiple indexes are added with the same 'IndexMigrationKey', only
+  the last one that is added will be part of the 'TableDefinition'. Any
+  previously added index with the same key is replaced by the new one.
+-}
+addTableIndexes ::
+  [IndexDefinition] ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+addTableIndexes indexDefs tableDef =
+  let addIndex index indexMap =
+        Map.insert (indexMigrationKey index) index indexMap
+   in tableDef
+        { _tableIndexes = foldr addIndex (_tableIndexes tableDef) indexDefs
         }
 
 {- |

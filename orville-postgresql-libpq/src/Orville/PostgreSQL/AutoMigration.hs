@@ -23,6 +23,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.String as String
+import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
@@ -101,7 +102,9 @@ mkMigrationStepWithType stepType sql =
 data StepType
   = DropForeignKeys
   | DropUniqueConstraints
+  | DropIndexes
   | AddRemoveTablesAndColumns
+  | AddIndexes
   | AddUniqueConstraints
   | AddForeignKeys
   deriving (Eq, Ord)
@@ -218,8 +221,14 @@ mkCreateTableSteps currentNamespace tableDef =
         concatMap
           (mkAddConstraintActions currentNamespace Set.empty)
           (Orville.tableConstraints tableDef)
+
+      addIndexSteps =
+        concatMap
+          (mkAddIndexSteps Set.empty tableName)
+          (Orville.tableIndexes tableDef)
    in mkMigrationStepWithType AddRemoveTablesAndColumns createTableExpr :
       mkConstraintSteps tableName addConstraintActions
+        <> addIndexSteps
 
 {- |
   Builds migration steps that are required to create or alter the table's
@@ -269,10 +278,45 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
           (mkDropConstraintActions constraintsToKeep)
           (PgCatalog.relationConstraints relationDesc)
 
+      systemIndexOids =
+        Set.fromList
+          . Maybe.mapMaybe (pgConstraintImpliedIndexOid . PgCatalog.constraintRecord)
+          . PgCatalog.relationConstraints
+          $ relationDesc
+
+      isSystemIndex indexDesc =
+        Set.member
+          (PgCatalog.pgIndexPgClassOid $ PgCatalog.indexRecord indexDesc)
+          systemIndexOids
+
+      existingIndexes =
+        Set.fromList
+          . Maybe.mapMaybe pgIndexMigrationKey
+          . filter (not . isSystemIndex)
+          . PgCatalog.relationIndexes
+          $ relationDesc
+
+      indexesToKeep =
+        Map.keysSet
+          . Orville.tableIndexes
+          $ tableDef
+
+      addIndexSteps =
+        concatMap
+          (mkAddIndexSteps existingIndexes tableName)
+          (Orville.tableIndexes tableDef)
+
+      dropIndexSteps =
+        concatMap
+          (mkDropIndexSteps indexesToKeep systemIndexOids)
+          (PgCatalog.relationIndexes relationDesc)
+
       tableName =
         Orville.tableName tableDef
    in mkAlterColumnSteps tableName (addAlterColumnActions <> dropColumnActions)
         <> mkConstraintSteps tableName (addConstraintActions <> dropConstraintActions)
+        <> addIndexSteps
+        <> dropIndexSteps
 
 {- |
   Consolidates alter table actions (which should all be related to adding and
@@ -473,7 +517,7 @@ mkDropConstraintActions constraintsToKeep constraint =
   important to set the schema names for the constraints found in the table
   definition before comparing them. See 'setDefaultSchemaNameOnConstraintKey'.
 
-  If the descriptionis for a kind of constraint that Orville does not support,
+  If the description is for a kind of constraint that Orville does not support,
   'Nothing' is returned.
 -}
 pgConstraintMigrationKey ::
@@ -524,6 +568,106 @@ pgConstraintMigrationKey constraintDesc =
                   (PgCatalog.constraintForeignKey constraintDesc)
             }
 
+{- |
+  Builds migration steps to create an index if it does not exist.
+-}
+mkAddIndexSteps ::
+  Set.Set Orville.IndexMigrationKey ->
+  Expr.QualifiedTableName ->
+  Orville.IndexDefinition ->
+  [MigrationStepWithType]
+mkAddIndexSteps existingIndexes tableName indexDef =
+  let indexKey =
+        Orville.indexMigrationKey indexDef
+   in if Set.member indexKey existingIndexes
+        then []
+        else [mkMigrationStepWithType AddIndexes (Orville.indexCreateExpr indexDef tableName)]
+
+{- |
+  Builds migration steps to create an index if it does not exist.
+-}
+mkDropIndexSteps ::
+  Set.Set Orville.IndexMigrationKey ->
+  Set.Set LibPQ.Oid ->
+  PgCatalog.IndexDescription ->
+  [MigrationStepWithType]
+mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
+  case pgIndexMigrationKey indexDesc of
+    Nothing ->
+      []
+    Just indexKey ->
+      let pgClass =
+            PgCatalog.indexPgClass indexDesc
+
+          indexName =
+            Expr.indexName
+              . PgCatalog.relationNameToString
+              . PgCatalog.pgClassRelationName
+              $ pgClass
+
+          indexOid =
+            PgCatalog.pgClassOid pgClass
+       in if Set.member indexKey indexesToKeep
+            || Set.member indexOid systemIndexOids
+            then []
+            else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr indexName)]
+
+{- |
+  Primary Key, Unique, and Exclusion constraints automatically create indexes
+  that we don't want orville to consider for the purposes of migrations. This
+  function checks the constraint type and returns the OID of the supporting
+  index if the constraint is one of these types.
+
+  Foreign key constraints also have a supporting index OID in @pg_catalog@, but
+  this index is not automatically created due to the constraint, so we don't
+  return the index's OID for that case.
+-}
+pgConstraintImpliedIndexOid :: PgCatalog.PgConstraint -> Maybe LibPQ.Oid
+pgConstraintImpliedIndexOid pgConstraint =
+  case PgCatalog.pgConstraintType pgConstraint of
+    PgCatalog.PrimaryKeyConstraint ->
+      Just $ PgCatalog.pgConstraintIndexOid pgConstraint
+    PgCatalog.UniqueConstraint ->
+      Just $ PgCatalog.pgConstraintIndexOid pgConstraint
+    PgCatalog.ExclusionConstraint ->
+      Just $ PgCatalog.pgConstraintIndexOid pgConstraint
+    PgCatalog.CheckConstraint ->
+      Nothing
+    PgCatalog.ForeignKeyConstraint ->
+      Nothing
+    PgCatalog.ConstraintTrigger ->
+      Nothing
+
+{- |
+  Builds the orville migration key for a description of an existing index
+  so that it can be compared with indexs found in a table definition.
+
+  If the description includes expressions as members of the index rather than
+  simple attributes, 'Nothing' is returned.
+-}
+pgIndexMigrationKey ::
+  PgCatalog.IndexDescription ->
+  Maybe Orville.IndexMigrationKey
+pgIndexMigrationKey indexDesc = do
+  let indexMemberToFieldName member =
+        case member of
+          PgCatalog.IndexAttribute attr ->
+            Just (Orville.stringToFieldName . PgCatalog.attributeNameToString . PgCatalog.pgAttributeName $ attr)
+          PgCatalog.IndexExpression ->
+            Nothing
+
+      uniqueness =
+        if PgCatalog.pgIndexIsUnique (PgCatalog.indexRecord indexDesc)
+          then Orville.UniqueIndex
+          else Orville.NonUniqueIndex
+
+  fieldNames <- traverse indexMemberToFieldName (PgCatalog.indexMembers indexDesc)
+  pure $
+    Orville.IndexMigrationKey
+      { Orville.indexKeyUniqueness = uniqueness
+      , Orville.indexKeyColumns = fieldNames
+      }
+
 schemaItemPgCatalogRelation ::
   PgCatalog.NamespaceName ->
   SchemaItem ->
@@ -553,7 +697,7 @@ currentNamespaceQuery =
             -- current_schema is a special reserved word in postgresql. If you
             -- put it in quotes it tries to treat it as a regular column name,
             -- which then can't be found as a column in the query.
-            (Expr.columnNameFromIdentifier (Expr.unquotedIdentifier "current_schema"))
+            (Expr.fromIdentifier (Expr.unquotedIdentifier "current_schema"))
             (Orville.fieldColumnName PgCatalog.namespaceNameField)
         ]
     )

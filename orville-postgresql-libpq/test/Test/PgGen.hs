@@ -1,7 +1,8 @@
-module Test.PGGen
+module Test.PgGen
   ( pgText,
     pgDouble,
     pgInt32,
+    pgIdentifier,
   )
 where
 
@@ -27,3 +28,19 @@ pgDouble =
       truncateLongDouble :: Double -> Double
       truncateLongDouble = (/ 1e12) . (fromIntegral :: Int -> Double) . round . (* 1e12)
    in flip Gen.subterm truncateLongDouble . Gen.double $ Range.linearFracFrom 0 (-1000) 1000
+
+pgIdentifier :: HH.Gen String
+pgIdentifier =
+  Gen.string (Range.linear 1 63) $ Gen.element pgIdentifierChars
+
+{- |
+  A list of characters to include in identifiers when testing. Not all of these
+  are valid in unquoted identifiers -- this helps ensure that Orville is
+  properly quoting ids.
+-}
+pgIdentifierChars :: [Char]
+pgIdentifierChars =
+  ['a' .. 'z']
+    <> ['A' .. 'Z']
+    <> ['0' .. '9']
+    <> "{}[]()<>!?:;_~^'%&"

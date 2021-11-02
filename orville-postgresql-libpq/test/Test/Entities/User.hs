@@ -11,7 +11,7 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 
-import qualified Test.PGGen as PGGen
+import qualified Test.PgGen as PgGen
 
 data User = User
   { user :: T.Text
@@ -34,4 +34,4 @@ userField =
 generate :: HH.Gen User
 generate =
   User
-    <$> PGGen.pgText (Range.constant 0 10)
+    <$> PgGen.pgText (Range.constant 0 10)

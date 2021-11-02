@@ -9,6 +9,7 @@ dist-newstyle
 # Ignore TAGS file produced by emacs and vim.
 TAGS
 session.vim
+.dir-locals.el
 
 # Ignore any local developer overrides to the docker-compose file
 docker-compose.override.yml

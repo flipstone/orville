@@ -25,23 +25,21 @@ module Orville.PostgreSQL.Internal.Expr
     identifierFromBytes,
     unquotedIdentifier,
     unquotedIdentifierFromBytes,
+    IdentifierExpression (toIdentifier, fromIdentifier),
     TableName,
     tableName,
-    tableNameFromIdentifier,
     QualifiedTableName,
     qualifiedTableName,
     SchemaName,
     schemaName,
-    schemaNameFromIdentifier,
     ColumnName,
     columnName,
-    columnNameFromIdentifier,
     ConstraintName,
     constraintName,
-    constraintNameFromIdentifier,
+    IndexName,
+    indexName,
     SavepointName,
     savepointName,
-    savepointNameFromIdentifier,
     WhereClause,
     whereClause,
     BooleanExpr,
@@ -138,6 +136,11 @@ module Orville.PostgreSQL.Internal.Expr
     dropNotNull,
     DropTableExpr,
     dropTableExpr,
+    CreateIndexExpr,
+    createIndexExpr,
+    IndexUniqueness (UniqueIndex, NonUniqueIndex),
+    DropIndexExpr,
+    dropIndexExpr,
     IfExists,
     ifExists,
     Distinct (Distinct),
@@ -163,6 +166,7 @@ where
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition
 import Orville.PostgreSQL.Internal.Expr.Delete
 import Orville.PostgreSQL.Internal.Expr.GroupBy
+import Orville.PostgreSQL.Internal.Expr.Index
 import Orville.PostgreSQL.Internal.Expr.Insert
 import Orville.PostgreSQL.Internal.Expr.LimitExpr
 import Orville.PostgreSQL.Internal.Expr.Name

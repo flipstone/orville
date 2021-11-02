@@ -58,7 +58,7 @@ main = do
 
 createTestConnectionPool :: IO (Connection.Pool Connection.Connection)
 createTestConnectionPool =
-  Connection.createConnectionPool 1 10 1 $
+  Connection.createConnectionPool Connection.DisableNoticeReporting 1 10 1 $
     B8.pack "host=testdb user=orville_test password=orville"
 
 recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()

@@ -10,4 +10,5 @@ import Orville.PostgreSQL.PgCatalog.OidField as Export
 import Orville.PostgreSQL.PgCatalog.PgAttribute as Export
 import Orville.PostgreSQL.PgCatalog.PgClass as Export
 import Orville.PostgreSQL.PgCatalog.PgConstraint as Export
+import Orville.PostgreSQL.PgCatalog.PgIndex as Export
 import Orville.PostgreSQL.PgCatalog.PgNamespace as Export

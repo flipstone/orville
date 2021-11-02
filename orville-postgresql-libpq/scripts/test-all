@@ -16,7 +16,7 @@
 rm -rf test-all-logs
 mkdir test-all-logs
 
-for stack_file in stack-*.yml; do
+for stack_file in stack*.yml; do
   log_file="./test-all-logs/$stack_file.log"
 
   echo "Testing with $stack_file... "

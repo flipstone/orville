@@ -1,9 +1,11 @@
 module Test.PgAssert
   ( assertTableExists,
+    assertTableExistsInSchema,
     assertColumnNamesEqual,
     assertColumnExists,
     assertUniqueConstraintExists,
     assertForeignKeyConstraintExists,
+    assertIndexExists,
   )
 where
 
@@ -27,14 +29,23 @@ assertTableExists ::
   Pool.Pool Conn.Connection ->
   String ->
   m PgCatalog.RelationDescription
-assertTableExists pool tableName = do
+assertTableExists pool =
+  assertTableExistsInSchema pool "public"
+
+assertTableExistsInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  String ->
+  m PgCatalog.RelationDescription
+assertTableExistsInSchema pool schemaName tableName = do
   dbDesc <-
     MIO.liftIO $
       Orville.runOrville pool $ do
         PgCatalog.describeDatabaseRelations
-          [(String.fromString "public", String.fromString tableName)]
+          [(String.fromString schemaName, String.fromString tableName)]
 
-  case PgCatalog.lookupRelation (String.fromString "public", String.fromString tableName) dbDesc of
+  case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString tableName) dbDesc of
     Nothing -> do
       withFrozenCallStack $ do
         HH.annotate $ tableName <> " table not found"
@@ -118,3 +129,59 @@ isMatchingConstraintPresent predicate relationDesc =
   List.any
     predicate
     (PgCatalog.relationConstraints relationDesc)
+
+assertIndexExists ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  Orville.IndexUniqueness ->
+  NEL.NonEmpty String ->
+  m ()
+assertIndexExists relationDesc uniqueness columnNames = do
+  let expectedMemberNames =
+        map (Just . String.fromString) (NEL.toList columnNames)
+
+      memberAttributeName member =
+        case member of
+          PgCatalog.IndexAttribute attr -> Just $ PgCatalog.pgAttributeName attr
+          PgCatalog.IndexExpression -> Nothing
+
+      isUnique =
+        case uniqueness of
+          Orville.UniqueIndex -> True
+          Orville.NonUniqueIndex -> False
+
+      shouldIgnoreConstraintIndex constraint =
+        elem
+          (PgCatalog.pgConstraintType constraint)
+          [ PgCatalog.PrimaryKeyConstraint
+          , PgCatalog.UniqueConstraint
+          , PgCatalog.ExclusionConstraint
+          ]
+
+      constraintIndexesToIgnore =
+        map PgCatalog.pgConstraintIndexOid
+          . filter shouldIgnoreConstraintIndex
+          . map PgCatalog.constraintRecord
+          . PgCatalog.relationConstraints
+          $ relationDesc
+
+      indexMatches indexDesc =
+        and
+          [ PgCatalog.pgIndexIsUnique (PgCatalog.indexRecord indexDesc) == isUnique
+          , fmap memberAttributeName (PgCatalog.indexMembers indexDesc) == expectedMemberNames
+          , not $ (elem (PgCatalog.pgIndexPgClassOid $ PgCatalog.indexRecord indexDesc) constraintIndexesToIgnore)
+          ]
+
+  Monad.when (not $ isMatchingIndexPresent indexMatches relationDesc) $
+    withFrozenCallStack $ do
+      HH.annotate $ show uniqueness <> " " <> show (NEL.toList columnNames) <> " not found"
+      HH.failure
+
+isMatchingIndexPresent ::
+  (PgCatalog.IndexDescription -> Bool) ->
+  PgCatalog.RelationDescription ->
+  Bool
+isMatchingIndexPresent predicate relationDesc =
+  List.any
+    predicate
+    (PgCatalog.relationIndexes relationDesc)

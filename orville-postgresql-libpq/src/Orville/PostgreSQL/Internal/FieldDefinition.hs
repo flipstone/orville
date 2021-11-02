@@ -61,7 +61,7 @@ newtype FieldName
 
 fieldNameToColumnName :: FieldName -> Expr.ColumnName
 fieldNameToColumnName (FieldName name) =
-  Expr.columnNameFromIdentifier (Expr.identifierFromBytes name)
+  Expr.fromIdentifier (Expr.identifierFromBytes name)
 
 stringToFieldName :: String -> FieldName
 stringToFieldName =
