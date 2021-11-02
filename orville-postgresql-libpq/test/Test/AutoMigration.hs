@@ -2,7 +2,6 @@
 
 module Test.AutoMigration
   ( autoMigrationTests,
-    prop_arbitrarySchemaInitialMigration,
   )
 where
 
@@ -436,7 +435,7 @@ prop_arbitrarySchemaInitialMigration =
     HH.cover 75 (String.fromString "With Columns") (not . null $ concatMap testTableColumns testTables)
     HH.cover 50 (String.fromString "With Indexes") (not . null $ concatMap testTableIndexes testTables)
     HH.cover 50 (String.fromString "With Unique Constraints") (not . null $ concatMap testTableUniqueConstraints testTables)
-    HH.cover 35 (String.fromString "With Foreign Keys") (not . null $ concatMap testTableForeignKeys testTables)
+    HH.cover 30 (String.fromString "With Foreign Keys") (not . null $ concatMap testTableForeignKeys testTables)
 
     let testSchema =
           map testTableSchemaItem testTables

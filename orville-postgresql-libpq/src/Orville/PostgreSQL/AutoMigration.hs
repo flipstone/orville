@@ -642,8 +642,8 @@ pgConstraintImpliedIndexOid pgConstraint =
   Builds the orville migration key for a description of an existing index
   so that it can be compared with indexs found in a table definition.
 
-  If the description is for includes expressions as members of the index
-  rather than simple attributes, 'Nothing' is returned.
+  If the description includes expressions as members of the index rather than
+  simple attributes, 'Nothing' is returned.
 -}
 pgIndexMigrationKey ::
   PgCatalog.IndexDescription ->
