@@ -346,10 +346,10 @@ mkAddAlterColumnActions relationDesc fieldDef =
                   [Expr.alterColumnType columnName dataType (Just $ Expr.usingCast columnName dataType)]
 
                 nullabilityIsChanged =
-                  Orville.fieldIsNotNull fieldDef /= PgCatalog.pgAttributeIsNotNull attr
+                  Orville.fieldIsNotNullable fieldDef /= PgCatalog.pgAttributeIsNotNull attr
 
                 nullabilityAction =
-                  if Orville.fieldIsNotNull fieldDef
+                  if Orville.fieldIsNotNullable fieldDef
                     then Expr.setNotNull
                     else Expr.dropNotNull
 

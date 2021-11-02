@@ -16,6 +16,8 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    columnIsNull,
+    columnIsNotNull,
     comparison,
     columnIn,
     columnNotIn,
@@ -148,3 +150,17 @@ columnGreaterThanOrEqualTo name value =
 columnLessThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
 columnLessThanOrEqualTo name value =
   comparison (columnReference name) lessThanOrEqualsOp (valueExpression value)
+
+columnIsNull :: ColumnName -> BooleanExpr
+columnIsNull name =
+  BooleanExpr $
+    RawSql.toRawSql (columnReference name)
+      <> RawSql.space
+      <> RawSql.fromString "IS NULL"
+
+columnIsNotNull :: ColumnName -> BooleanExpr
+columnIsNotNull name =
+  BooleanExpr $
+    RawSql.toRawSql (columnReference name)
+      <> RawSql.space
+      <> RawSql.fromString "IS NOT NULL"
