@@ -38,9 +38,8 @@ executeInsert :: MonadOrville.MonadOrville m => Insert readEntity -> m ()
 executeInsert (Insert _ expr) =
   Execute.executeVoid expr
 
-{- |
-  Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to
-  decode the result set.
+{- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
+  were just inserted) as returned via a RETURNING clause.
 -}
 executeInsertReturnEntities :: MonadOrville.MonadOrville m => Insert readEntity -> m [readEntity]
 executeInsertReturnEntities (Insert marshaller expr) =
@@ -80,13 +79,13 @@ insertTable returningOption tableDef entities =
 
 {- |
   Builds an 'Insert' that will execute the specified query and use the given 'SqlMarshaller' to
-  decode it. It is up to the caller to ensure that the given 'Expr.QueryExpr' makes sense and
+  decode it. It is up to the caller to ensure that the given 'Expr.InsertExpr' makes sense and
   produces a value that can be stored, as well as returning a result that the 'SqlMarshaller' can
   decode.
 
   This is the lowest level of escape hatch available for 'Select'. The caller can build any query
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
-  a raw 'Expr.QueryExpr'.
+  a raw 'Expr.InsertExpr'.
 -}
 rawInsertExpr :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
 rawInsertExpr = Insert
