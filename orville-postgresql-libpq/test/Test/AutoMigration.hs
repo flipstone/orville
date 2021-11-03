@@ -207,7 +207,7 @@ prop_altersColumnDataType =
     attr <- PgAssert.assertColumnExists tableDesc "column"
     PgCatalog.pgAttributeTypeOid attr === Orville.sqlTypeOid newSqlType
     PgCatalog.pgAttributeMaxLength attr === Orville.sqlTypeMaximumLength newSqlType
-    PgCatalog.pgAttributeIsNotNull attr === Orville.fieldIsNotNull newField
+    PgCatalog.pgAttributeIsNotNull attr === Orville.fieldIsNotNullable newField
 
 prop_addAndRemovesUniqueConstraints :: Property.NamedDBProperty
 prop_addAndRemovesUniqueConstraints =

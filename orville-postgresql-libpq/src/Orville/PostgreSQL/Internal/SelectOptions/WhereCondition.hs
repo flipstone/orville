@@ -8,6 +8,8 @@ module Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
     fieldLessThan,
     fieldGreaterThanOrEqualTo,
     fieldLessThanOrEqualTo,
+    fieldIsNull,
+    fieldIsNotNull,
     fieldIn,
     fieldNotIn,
     fieldTupleIn,
@@ -94,6 +96,20 @@ fieldGreaterThanOrEqualTo =
 fieldLessThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldLessThanOrEqualTo =
   whereColumnComparison Expr.columnLessThanOrEqualTo
+
+{- |
+  Checks that the value in a field is null.
+-}
+fieldIsNull :: FieldDef.FieldDefinition FieldDef.Nullable a -> WhereCondition
+fieldIsNull =
+  WhereCondition . Expr.columnIsNull . FieldDef.fieldColumnName
+
+{- |
+  Checks that the value in a field is not null.
+-}
+fieldIsNotNull :: FieldDef.FieldDefinition FieldDef.Nullable a -> WhereCondition
+fieldIsNotNull =
+  WhereCondition . Expr.columnIsNotNull . FieldDef.fieldColumnName
 
 {- |
   Checks that a field matches a list of values

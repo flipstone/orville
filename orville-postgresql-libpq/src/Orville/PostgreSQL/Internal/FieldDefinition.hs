@@ -9,7 +9,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
   ( FieldDefinition,
     fieldName,
     fieldType,
-    fieldIsNotNull,
+    fieldIsNotNullable,
     fieldNullability,
     FieldNullability (..),
     fieldValueToSqlValue,
@@ -126,8 +126,8 @@ fieldNullability field =
 {- |
   Indicates whether a field is nullable.
 -}
-fieldIsNotNull :: FieldDefinition nullability a -> Bool
-fieldIsNotNull field =
+fieldIsNotNullable :: FieldDefinition nullability a -> Bool
+fieldIsNotNullable field =
   case _fieldNullability field of
     NullableGADT -> False
     NotNullGADT -> True

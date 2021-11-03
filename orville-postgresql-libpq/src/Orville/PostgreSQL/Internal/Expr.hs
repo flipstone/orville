@@ -53,6 +53,8 @@ module Orville.PostgreSQL.Internal.Expr
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    columnIsNull,
+    columnIsNotNull,
     columnIn,
     columnNotIn,
     columnTupleIn,

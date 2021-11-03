@@ -25,6 +25,8 @@ selectOptionsTests =
     , prop_fieldGreaterThan
     , prop_fieldLessThanOrEqualTo
     , prop_fieldGreaterThanOrEqualTo
+    , prop_fieldIsNull
+    , prop_fieldIsNotNull
     , prop_whereAnd
     , prop_whereOr
     , prop_whereCombined
@@ -85,6 +87,20 @@ prop_fieldGreaterThanOrEqualTo =
     assertWhereClauseEquals
       (Just "WHERE (\"foo\" >= $1)")
       (SO.where_ $ SO.fieldGreaterThanOrEqualTo fooField 0)
+
+prop_fieldIsNull :: Property.NamedProperty
+prop_fieldIsNull =
+  Property.singletonNamedProperty "fieldIsNull generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"baz\" IS NULL)")
+      (SO.where_ $ SO.fieldIsNull bazField)
+
+prop_fieldIsNotNull :: Property.NamedProperty
+prop_fieldIsNotNull =
+  Property.singletonNamedProperty "fieldIsNotNull generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"baz\" IS NOT NULL)")
+      (SO.where_ $ SO.fieldIsNotNull bazField)
 
 prop_whereAnd :: Property.NamedProperty
 prop_whereAnd =
@@ -191,3 +207,7 @@ fooField =
 barField :: FieldDef.FieldDefinition FieldDef.NotNull Int.Int32
 barField =
   FieldDef.integerField "bar"
+
+bazField :: FieldDef.FieldDefinition FieldDef.Nullable (Maybe Int.Int32)
+bazField =
+  FieldDef.nullableField $ FieldDef.integerField "baz"
