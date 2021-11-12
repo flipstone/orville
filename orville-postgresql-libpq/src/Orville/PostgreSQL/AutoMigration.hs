@@ -7,6 +7,7 @@ module Orville.PostgreSQL.AutoMigration
     executeMigrationSteps,
     SchemaItem,
     schemaTable,
+    schemaDropTable,
     schemaItemSummary,
     MigrationStep,
     MigrationDataError,
@@ -42,6 +43,9 @@ data SchemaItem where
   SchemaTable ::
     Orville.TableDefinition key writeEntity readEntity ->
     SchemaItem
+  SchemaDropTable ::
+    Orville.TableIdentifier ->
+    SchemaItem
 
 {- |
   Retuns a one-line string describe the 'SchemaItem', suitable for a human to
@@ -55,6 +59,8 @@ schemaItemSummary item =
   case item of
     SchemaTable tableDef ->
       "Table " <> Orville.tableIdToString (Orville.tableIdentifier tableDef)
+    SchemaDropTable tableId ->
+      "Drop table " <> Orville.tableIdToString tableId
 
 {- |
   Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
@@ -64,6 +70,16 @@ schemaTable ::
   SchemaItem
 schemaTable =
   SchemaTable
+
+{- |
+  Constructs a 'SchemaItem' that will drop the specified table if it is
+  found in the database.
+-}
+schemaDropTable ::
+  Orville.TableIdentifier ->
+  SchemaItem
+schemaDropTable =
+  SchemaDropTable
 
 {- |
   A single SQL statement that will be executed in order to migrate the database
@@ -179,19 +195,27 @@ calculateMigrationSteps ::
 calculateMigrationSteps currentNamespace dbDesc schemaItem =
   case schemaItem of
     SchemaTable tableDef ->
-      let schemaName =
-            tableDefinitionActualNamespaceName currentNamespace tableDef
-
-          tableName =
-            String.fromString
-              . Orville.tableIdUnqualifiedNameString
-              . Orville.tableIdentifier
-              $ tableDef
+      let (schemaName, tableName) =
+            tableIdToPgCatalogNames
+              currentNamespace
+              (Orville.tableIdentifier tableDef)
        in case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
             Nothing ->
               mkCreateTableSteps currentNamespace tableDef
             Just relationDesc ->
               mkAlterTableSteps currentNamespace relationDesc tableDef
+    SchemaDropTable tableId ->
+      let (schemaName, tableName) =
+            tableIdToPgCatalogNames currentNamespace tableId
+       in case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
+            Nothing ->
+              []
+            Just _ ->
+              let dropTableExpr =
+                    Expr.dropTableExpr
+                      Nothing
+                      (Orville.tableIdQualifiedName tableId)
+               in [mkMigrationStepWithType AddRemoveTablesAndColumns dropTableExpr]
 
 {- |
   Builds 'MigrationStep's that will perform table creation. This function
@@ -713,18 +737,25 @@ schemaItemPgCatalogRelation ::
 schemaItemPgCatalogRelation currentNamespace item =
   case item of
     SchemaTable tableDef ->
-      ( tableDefinitionActualNamespaceName currentNamespace tableDef
-      , String.fromString . Orville.tableIdUnqualifiedNameString . Orville.tableIdentifier $ tableDef
-      )
+      tableIdToPgCatalogNames currentNamespace (Orville.tableIdentifier tableDef)
+    SchemaDropTable tableId ->
+      tableIdToPgCatalogNames currentNamespace tableId
 
-tableDefinitionActualNamespaceName ::
+tableIdToPgCatalogNames ::
   PgCatalog.NamespaceName ->
-  Orville.TableDefinition key writeEntity readEntity ->
-  PgCatalog.NamespaceName
-tableDefinitionActualNamespaceName currentNamespace =
-  maybe currentNamespace String.fromString
-    . Orville.tableIdSchemaNameString
-    . Orville.tableIdentifier
+  Orville.TableIdentifier ->
+  (PgCatalog.NamespaceName, PgCatalog.RelationName)
+tableIdToPgCatalogNames currentNamespace tableId =
+  let actualNamespace =
+        maybe currentNamespace String.fromString
+          . Orville.tableIdSchemaNameString
+          $ tableId
+
+      relationName =
+        String.fromString
+          . Orville.tableIdUnqualifiedNameString
+          $ tableId
+   in (actualNamespace, relationName)
 
 currentNamespaceQuery :: Expr.QueryExpr
 currentNamespaceQuery =

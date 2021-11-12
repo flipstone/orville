@@ -1,5 +1,6 @@
 module Test.PgAssert
   ( assertTableExists,
+    assertTableDoesNotExist,
     assertTableExistsInSchema,
     assertColumnNamesEqual,
     assertColumnExists,
@@ -36,6 +37,14 @@ assertTableExists ::
 assertTableExists pool =
   assertTableExistsInSchema pool "public"
 
+assertTableDoesNotExist ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  m ()
+assertTableDoesNotExist pool =
+  assertTableDoesNotExistInSchema pool "public"
+
 assertTableExistsInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
   Pool.Pool Conn.Connection ->
@@ -56,6 +65,27 @@ assertTableExistsInSchema pool schemaName tableName = do
         HH.failure
     Just rel ->
       pure rel
+
+assertTableDoesNotExistInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  String ->
+  m ()
+assertTableDoesNotExistInSchema pool schemaName tableName = do
+  dbDesc <-
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        PgCatalog.describeDatabaseRelations
+          [(String.fromString schemaName, String.fromString tableName)]
+
+  case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString tableName) dbDesc of
+    Nothing ->
+      pure ()
+    Just _ ->
+      withFrozenCallStack $ do
+        HH.annotate $ tableName <> " table expected to not be present, but was found"
+        HH.failure
 
 assertColumnNamesEqual ::
   (HH.MonadTest m, HasCallStack) =>

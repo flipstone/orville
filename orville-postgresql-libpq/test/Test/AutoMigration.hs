@@ -41,6 +41,7 @@ autoMigrationTests pool =
   Property.group
     "AutoMigration"
     [ prop_createsMissingTables pool
+    , prop_dropsRequestedTables pool
     , prop_addsAndRemovesColumns pool
     , prop_columnsWithSystemNameConflictsRaiseError pool
     , prop_altersColumnDataType pool
@@ -57,6 +58,9 @@ autoMigrationTests pool =
 prop_createsMissingTables :: Property.NamedDBProperty
 prop_createsMissingTables =
   Property.singletonNamedDBProperty "Creates missing tables" $ \pool -> do
+    let fooTableId =
+          Orville.tableIdentifier Foo.table
+
     firstTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
@@ -70,6 +74,30 @@ prop_createsMissingTables =
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
 
     length (firstTimeSteps) === 1
+    _ <- PgAssert.assertTableExists pool (Orville.tableIdUnqualifiedNameString fooTableId)
+    map RawSql.toExampleBytes secondTimeSteps === []
+
+prop_dropsRequestedTables :: Property.NamedDBProperty
+prop_dropsRequestedTables =
+  Property.singletonNamedDBProperty "Drops requested tables" $ \pool -> do
+    let fooTableId =
+          Orville.tableIdentifier Foo.table
+
+    firstTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid $ TestTable.dropTableDefSql Foo.table
+          Orville.executeVoid $ Orville.mkCreateTableExpr Foo.table
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropTable fooTableId]
+
+    secondTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps firstTimeSteps
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropTable fooTableId]
+
+    length (firstTimeSteps) === 1
+    PgAssert.assertTableDoesNotExist pool (Orville.tableIdUnqualifiedNameString fooTableId)
     map RawSql.toExampleBytes secondTimeSteps === []
 
 prop_addsAndRemovesColumns :: Property.NamedDBProperty

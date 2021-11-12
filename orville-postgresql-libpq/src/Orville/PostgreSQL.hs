@@ -38,6 +38,7 @@ module Orville.PostgreSQL
     TableIdentifier.TableIdentifier,
     TableIdentifier.unqualifiedNameToTableId,
     TableIdentifier.tableIdUnqualifiedNameString,
+    TableIdentifier.tableIdQualifiedName,
     TableIdentifier.setTableIdSchema,
     TableIdentifier.tableIdSchemaNameString,
     TableIdentifier.tableIdToString,
