@@ -3,6 +3,7 @@ module Test.PgAssert
     assertTableExistsInSchema,
     assertColumnNamesEqual,
     assertColumnExists,
+    assertColumnDefaultMatches,
     assertUniqueConstraintExists,
     assertForeignKeyConstraintExists,
     assertIndexExists,
@@ -16,12 +17,14 @@ import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.String as String
+import qualified Data.Text.Encoding as Enc
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 assertTableExists ::
@@ -82,6 +85,39 @@ assertColumnExists relationDesc columnName = do
         HH.failure
     Just attr ->
       pure attr
+
+assertColumnDefaultMatches ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  String ->
+  Maybe (Orville.DefaultValue a) ->
+  m ()
+assertColumnDefaultMatches relationDesc columnName expectedDefault = do
+  attr <- assertColumnExists relationDesc columnName
+
+  let actualDefault = PgCatalog.lookupAttributeDefault attr relationDesc
+
+  withFrozenCallStack $
+    case (expectedDefault, actualDefault) of
+      (Nothing, Nothing) ->
+        pure ()
+      (Nothing, Just _) -> do
+        HH.annotate $ columnName <> " was not expected to have a default, but it did"
+        HH.failure
+      (Just _, Nothing) -> do
+        HH.annotate $ columnName <> " expected to have a default, but it did not"
+        HH.failure
+      (Just defaultValue, Just pgDefault) ->
+        let expectedBytes =
+              RawSql.toExampleBytes
+                . Orville.defaultValueExpression
+                $ defaultValue
+
+            actualBytes =
+              Enc.encodeUtf8
+                . PgCatalog.pgAttributeDefaultExpression
+                $ pgDefault
+         in expectedBytes === actualBytes
 
 assertUniqueConstraintExists ::
   (HH.MonadTest m, HasCallStack) =>

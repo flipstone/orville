@@ -44,6 +44,9 @@ autoMigrationTests pool =
     , prop_addsAndRemovesColumns pool
     , prop_columnsWithSystemNameConflictsRaiseError pool
     , prop_altersColumnDataType pool
+    , prop_altersColumnDefaultValue_TextNumeric pool
+    , prop_altersColumnDefaultValue_Bool pool
+    , prop_altersColumnDefaultValue_Timelike pool
     , prop_addAndRemovesUniqueConstraints pool
     , prop_addAndRemovesForeignKeyConstraints pool
     , prop_addAndRemovesIndexes pool
@@ -66,7 +69,7 @@ prop_createsMissingTables =
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
 
     length (firstTimeSteps) === 1
-    map RawSql.toBytes secondTimeSteps === []
+    map RawSql.toExampleBytes secondTimeSteps === []
 
 prop_addsAndRemovesColumns :: Property.NamedDBProperty
 prop_addsAndRemovesColumns =
@@ -100,7 +103,7 @@ prop_addsAndRemovesColumns =
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    map RawSql.toBytes secondTimeSteps === []
+    map RawSql.toExampleBytes secondTimeSteps === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnNamesEqual tableDesc newColumns
 
@@ -138,6 +141,10 @@ prop_columnsWithSystemNameConflictsRaiseError =
 data SomeField where
   SomeField :: Orville.FieldDefinition nullability a -> SomeField
 
+describeField :: SomeField -> String
+describeField (SomeField field) =
+  B8.unpack (RawSql.toExampleBytes $ Orville.fieldColumnDefinition field)
+
 prop_altersColumnDataType :: Property.NamedDBProperty
 prop_altersColumnDataType =
   Property.namedDBProperty "Alters data type on existing column" $ \pool -> do
@@ -170,9 +177,6 @@ prop_altersColumnDataType =
         generateFieldDefinition =
           Gen.element (baseFieldDefs ++ fmap mkNullable baseFieldDefs)
 
-        describeField (SomeField field) =
-          B8.unpack (RawSql.toBytes $ Orville.fieldColumnDefinition field)
-
     SomeField originalField <- HH.forAllWith describeField generateFieldDefinition
     SomeField newField <- HH.forAllWith describeField generateFieldDefinition
 
@@ -202,12 +206,111 @@ prop_altersColumnDataType =
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    map RawSql.toBytes secondTimeSteps === []
-    tableDesc <- PgAssert.assertTableExists pool "migration_test"
-    attr <- PgAssert.assertColumnExists tableDesc "column"
+    map RawSql.toExampleBytes secondTimeSteps === []
+    newTableDesc <- PgAssert.assertTableExists pool "migration_test"
+    attr <- PgAssert.assertColumnExists newTableDesc "column"
     PgCatalog.pgAttributeTypeOid attr === Orville.sqlTypeOid newSqlType
     PgCatalog.pgAttributeMaxLength attr === Orville.sqlTypeMaximumLength newSqlType
     PgCatalog.pgAttributeIsNotNull attr === Orville.fieldIsNotNullable newField
+
+genFieldWithMaybeDefault ::
+  HH.Gen a ->
+  (a -> Orville.DefaultValue a) ->
+  Orville.FieldDefinition nullability a ->
+  HH.Gen (Orville.FieldDefinition nullability a)
+genFieldWithMaybeDefault defaultGen mkDefaultValue fieldDef = do
+  maybeDefault <- Gen.maybe defaultGen
+  pure $
+    case maybeDefault of
+      Nothing ->
+        fieldDef
+      Just def ->
+        Orville.setDefaultValue (mkDefaultValue def) fieldDef
+
+prop_altersColumnDefaultValue_TextNumeric :: Property.NamedDBProperty
+prop_altersColumnDefaultValue_TextNumeric =
+  Property.namedDBProperty "Alters default value on existing column (text/numeric)" $ \pool -> do
+    let genDefaultText =
+          PgGen.pgText (Range.linear 0 10)
+
+        genDefaultIntegral :: Integral n => HH.Gen n
+        genDefaultIntegral =
+          Gen.integral (Range.linear (-10) 10)
+
+        genDefaultDouble =
+          PgGen.pgDouble
+
+    assertDefaultValuesMigrateProperly pool $
+      Gen.choice
+        [ SomeField <$> genFieldWithMaybeDefault genDefaultText Orville.textDefault (Orville.unboundedTextField "column")
+        , SomeField <$> genFieldWithMaybeDefault genDefaultText Orville.textDefault (Orville.boundedTextField "column" 10)
+        , SomeField <$> genFieldWithMaybeDefault genDefaultText Orville.textDefault (Orville.fixedTextField "column" 10)
+        , SomeField <$> genFieldWithMaybeDefault genDefaultIntegral Orville.integerDefault (Orville.integerField "column")
+        , SomeField <$> genFieldWithMaybeDefault genDefaultIntegral Orville.smallIntegerDefault (Orville.smallIntegerField "column")
+        , SomeField <$> genFieldWithMaybeDefault genDefaultIntegral Orville.bigIntegerDefault (Orville.bigIntegerField "column")
+        , SomeField <$> genFieldWithMaybeDefault genDefaultDouble Orville.doubleDefault (Orville.doubleField "column")
+        ]
+
+prop_altersColumnDefaultValue_Bool :: Property.NamedDBProperty
+prop_altersColumnDefaultValue_Bool =
+  Property.namedDBProperty "Alters default value on existing column (boolean)" $ \pool -> do
+    assertDefaultValuesMigrateProperly pool $
+      Gen.choice
+        [ SomeField <$> genFieldWithMaybeDefault Gen.bool Orville.booleanDefault (Orville.booleanField "column")
+        ]
+
+prop_altersColumnDefaultValue_Timelike :: Property.NamedDBProperty
+prop_altersColumnDefaultValue_Timelike =
+  Property.namedDBProperty "Alters default value on existing column (timelike)" $ \pool -> do
+    assertDefaultValuesMigrateProperly pool $
+      Gen.choice
+        [ -- Fields without default, or with specific times for the default
+          SomeField <$> genFieldWithMaybeDefault PgGen.pgUTCTime Orville.utcTimestampDefault (Orville.utcTimestampField "column")
+        , SomeField <$> genFieldWithMaybeDefault PgGen.pgLocalTime Orville.localTimestampDefault (Orville.localTimestampField "column")
+        , SomeField <$> genFieldWithMaybeDefault PgGen.pgDay Orville.dateDefault (Orville.dateField "column")
+        , -- Fields with "now" for the default
+          pure . SomeField $ Orville.setDefaultValue Orville.currentUTCTimestampDefault (Orville.utcTimestampField "column")
+        , pure . SomeField $ Orville.setDefaultValue Orville.currentLocalTimestampDefault (Orville.localTimestampField "column")
+        , pure . SomeField $ Orville.setDefaultValue Orville.currentDateDefault (Orville.dateField "column")
+        ]
+
+assertDefaultValuesMigrateProperly ::
+  Pool.Pool Conn.Connection ->
+  HH.Gen SomeField ->
+  HH.PropertyT IO ()
+assertDefaultValuesMigrateProperly pool genSomeField = do
+  SomeField originalField <- HH.forAllWith describeField genSomeField
+  SomeField newField <- HH.forAllWith describeField genSomeField
+
+  let originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "migration_test"
+          (Orville.marshallField id originalField)
+
+      newTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "migration_test"
+          (Orville.marshallField id newField)
+
+  firstTimeSteps <-
+    HH.evalIO $
+      Orville.runOrville pool $ do
+        Orville.executeVoid $ TestTable.dropTableDefSql originalTableDef
+        Orville.executeVoid $ TableDefinition.mkCreateTableExpr originalTableDef
+        AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+
+  originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
+  PgAssert.assertColumnDefaultMatches originalTableDesc "column" (Orville.fieldDefaultValue originalField)
+
+  secondTimeSteps <-
+    HH.evalIO $
+      Orville.runOrville pool $ do
+        AutoMigration.executeMigrationSteps firstTimeSteps
+        AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+
+  newTableDesc <- PgAssert.assertTableExists pool "migration_test"
+  PgAssert.assertColumnDefaultMatches newTableDesc "column" (Orville.fieldDefaultValue newField)
+  map RawSql.toExampleBytes secondTimeSteps === []
 
 prop_addAndRemovesUniqueConstraints :: Property.NamedDBProperty
 prop_addAndRemovesUniqueConstraints =
@@ -255,7 +358,7 @@ prop_addAndRemovesUniqueConstraints =
           AutoMigration.autoMigrateSchema [AutoMigration.schemaTable originalTableDef]
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    HH.annotate ("First time migration steps: " <> show (map RawSql.toBytes firstTimeSteps))
+    HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
 
     secondTimeSteps <-
       HH.evalIO $
@@ -263,7 +366,7 @@ prop_addAndRemovesUniqueConstraints =
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    map RawSql.toBytes secondTimeSteps === []
+    map RawSql.toExampleBytes secondTimeSteps === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
 
     Fold.traverse_ (PgAssert.assertUniqueConstraintExists tableDesc) newConstraintColumns
@@ -351,7 +454,7 @@ prop_addAndRemovesForeignKeyConstraints =
           AutoMigration.autoMigrateSchema originalSchema
           AutoMigration.generateMigrationSteps newSchema
 
-    HH.annotate ("First time migration steps: " <> show (map RawSql.toBytes firstTimeSteps))
+    HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
 
     secondTimeSteps <-
       HH.evalIO $
@@ -359,9 +462,9 @@ prop_addAndRemovesForeignKeyConstraints =
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps newSchema
 
-    HH.annotate ("Second time migration steps: " <> show (map RawSql.toBytes secondTimeSteps))
+    HH.annotate ("Second time migration steps: " <> show (map RawSql.toExampleBytes secondTimeSteps))
 
-    map RawSql.toBytes secondTimeSteps === []
+    map RawSql.toExampleBytes secondTimeSteps === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newConstraintColumns
     length (PgCatalog.relationConstraints tableDesc) === length (List.nub newConstraintColumns)
@@ -405,7 +508,7 @@ prop_addAndRemovesIndexes =
           AutoMigration.autoMigrateSchema [AutoMigration.schemaTable originalTableDef]
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    HH.annotate ("First time migration steps: " <> show (map RawSql.toBytes firstTimeSteps))
+    HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
 
     originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
     Fold.traverse_
@@ -418,7 +521,7 @@ prop_addAndRemovesIndexes =
           AutoMigration.executeMigrationSteps firstTimeSteps
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
 
-    map RawSql.toBytes secondTimeSteps === []
+    map RawSql.toExampleBytes secondTimeSteps === []
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
 
     Fold.traverse_
@@ -447,7 +550,7 @@ prop_arbitrarySchemaInitialMigration =
           Orville.executeVoid $ RawSql.fromString "CREATE SCHEMA orville_migration_test"
           AutoMigration.generateMigrationSteps testSchema
 
-    HH.annotate ("Initial migration steps: " <> show (map RawSql.toBytes initialMigrationSteps))
+    HH.annotate ("Initial migration steps: " <> show (map RawSql.toExampleBytes initialMigrationSteps))
 
     migrationStepsAfterMigration <-
       HH.evalIO $
@@ -455,7 +558,7 @@ prop_arbitrarySchemaInitialMigration =
           AutoMigration.executeMigrationSteps initialMigrationSteps
           AutoMigration.generateMigrationSteps testSchema
 
-    map RawSql.toBytes migrationStepsAfterMigration === []
+    map RawSql.toExampleBytes migrationStepsAfterMigration === []
     Fold.traverse_ (assertTableStructure pool) testTables
 
 assertTableStructure ::

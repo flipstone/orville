@@ -15,6 +15,7 @@ module Orville.PostgreSQL.Internal.RawSql
     intercalate,
     execute,
     executeVoid,
+    connectionEscaping,
 
     -- * Fragmants provided for convenience
     space,
@@ -25,26 +26,31 @@ module Orville.PostgreSQL.Internal.RawSql
     dot,
     doubleQuote,
     doubleColon,
+    stringLiteral,
 
     -- * Generic interface for generating sql
     SqlExpression (toRawSql, unsafeFromRawSql),
     toBytesAndParams,
-    toBytes,
+    toExampleBytes,
+    Escaping (Escaping, escapeStringLiteral),
+    exampleEscaping,
   )
 where
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
+import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LBS
 import Data.DList (DList)
 import qualified Data.DList as DList
 import qualified Data.Foldable as Fold
+import Data.Functor.Identity (Identity (Identity, runIdentity))
 import qualified Data.List as List
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Orville.PostgreSQL.Connection (Connection)
 import qualified Orville.PostgreSQL.Connection as Conn
-import Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
+import Orville.PostgreSQL.Internal.PgTextFormatValue (PgTextFormatValue)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -57,6 +63,7 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 data RawSql
   = SqlSection BSB.Builder
   | Parameter SqlValue
+  | StringLiteral BS.ByteString
   | Append RawSql RawSql
 
 instance Semigroup RawSql where
@@ -77,25 +84,93 @@ instance SqlExpression RawSql where
   unsafeFromRawSql = id
 
 {- |
-  Constructs the actual sql bytestring and parameter values that will be
-  passed to the database to execute a 'RawSql' query.
+  Provides procedures for escaping parts of a raw SQL query so that they
+  can be safely executed. Escaping may be done in some 'Monad' m, allowing
+  for the use of escaping operations provided by 'Connection', which operate
+  in the 'IO' monad.
+
+  See 'connectionEscaping' and 'exampleEscaping'.
 -}
-toBytesAndParams :: SqlExpression sql => sql -> (BS.ByteString, [Maybe PGTextFormatValue])
-toBytesAndParams sql =
-  let (byteBuilder, finalProgress) =
-        buildSqlWithProgress startingProgress (toRawSql sql)
-   in ( LBS.toStrict (BSB.toLazyByteString byteBuilder)
-      , DList.toList (paramValues finalProgress)
-      )
+data Escaping m = Escaping
+  { escapeStringLiteral :: BS.ByteString -> m BS.ByteString
+  }
 
 {- |
-  Builds te bytes that represent the raw sql. These bytes may not be executable
+  Escaping done in pure Haskell that is suitable for showing SQL examples,
+  but is not guaranteed to be sufficient for all database connections. For
+  escaping that is based on the actual connection to the database, see
+  'connectionEscaping'.
+-}
+exampleEscaping :: Escaping Identity
+exampleEscaping =
+  Escaping
+    { escapeStringLiteral = Identity . exampleEscapeStringLiteral
+    }
+
+exampleEscapeStringLiteral :: BS.ByteString -> BS.ByteString
+exampleEscapeStringLiteral =
+  B8.unfoldr escape . Right
+  where
+    escape (Right bs) =
+      case B8.uncons bs of
+        Nothing ->
+          Nothing
+        Just (char, rest) ->
+          Just $
+            if isEscapedChar char
+              then ('\\', Left (char, rest))
+              else (char, Right rest)
+    escape (Left (char, rest)) =
+      Just (char, Right rest)
+
+isEscapedChar :: Char -> Bool
+isEscapedChar c =
+  case c of
+    '\'' -> True
+    '\\' -> True
+    _ -> False
+
+{- |
+  Escaping done in IO based using the escaping functions provided by the
+  connection, which can apply escaping based on the specific connection
+  properties.
+
+  If you don't have a connection available and are only planning on using
+  the SQL for explanatory or example purposes, see 'exampleEscaping'.
+-}
+connectionEscaping :: Connection -> Escaping IO
+connectionEscaping connection =
+  Escaping
+    { escapeStringLiteral = Conn.escapeStringLiteral connection
+    }
+
+{- |
+  Constructs the actual SQL bytestring and parameter values that will be
+  passed to the database to execute a 'RawSql' query. Any string
+  literals thar are included in the SQL expression will be escaping
+  using the given escaping directive.
+-}
+toBytesAndParams ::
+  (SqlExpression sql, Monad m) =>
+  Escaping m ->
+  sql ->
+  m (BS.ByteString, [Maybe PgTextFormatValue])
+toBytesAndParams escaping sql = do
+  (byteBuilder, finalProgress) <-
+    buildSqlWithProgress escaping startingProgress (toRawSql sql)
+  pure
+    ( LBS.toStrict (BSB.toLazyByteString byteBuilder)
+    , DList.toList (paramValues finalProgress)
+    )
+
+{- |
+  Builds the bytes that represent the raw sql. These bytes may not be executable
   on their own, because they may contain placeholders that must be filled in,
   but can be useful for inspecting sql queries.
 -}
-toBytes :: SqlExpression sql => sql -> BS.ByteString
-toBytes =
-  fst . toBytesAndParams
+toExampleBytes :: SqlExpression sql => sql -> BS.ByteString
+toExampleBytes =
+  fst . runIdentity . toBytesAndParams exampleEscaping
 
 {- |
   This is an internal datatype used during the sql building process to track
@@ -104,7 +179,7 @@ toBytes =
 -}
 data ParamsProgress = ParamsProgress
   { paramCount :: Int
-  , paramValues :: DList (Maybe PGTextFormatValue)
+  , paramValues :: DList (Maybe PgTextFormatValue)
   }
 
 {- |
@@ -122,7 +197,7 @@ startingProgress =
   Adds a parameter value to the end of the params list, tracking the count
   of parameters as it does so.
 -}
-snocParam :: ParamsProgress -> Maybe PGTextFormatValue -> ParamsProgress
+snocParam :: ParamsProgress -> Maybe PgTextFormatValue -> ParamsProgress
 snocParam (ParamsProgress count values) newValue =
   ParamsProgress
     { paramCount = count + 1
@@ -136,22 +211,32 @@ snocParam (ParamsProgress count values) newValue =
   can be tracked across multiple sections of raw sql.
 -}
 buildSqlWithProgress ::
+  Monad m =>
+  Escaping m ->
   ParamsProgress ->
   RawSql ->
-  (BSB.Builder, ParamsProgress)
-buildSqlWithProgress progress rawSql =
+  m (BSB.Builder, ParamsProgress)
+buildSqlWithProgress escaping progress rawSql =
   case rawSql of
     SqlSection builder ->
-      (builder, progress)
+      pure (builder, progress)
+    StringLiteral unescapedString -> do
+      escapedString <- escapeStringLiteral escaping unescapedString
+
+      let builder =
+            BSB.char8 '\''
+              <> BSB.byteString escapedString
+              <> BSB.char8 '\''
+
+      pure (builder, progress)
     Parameter value ->
       let newProgress = snocParam progress (SqlValue.toPGValue value)
-       in ( BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
-          , newProgress
-          )
-    Append first second ->
-      let (firstBuilder, nextProgress) = buildSqlWithProgress progress first
-          (secondBuilder, finalProgress) = buildSqlWithProgress nextProgress second
-       in (firstBuilder <> secondBuilder, finalProgress)
+          placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
+       in pure (placeholder, newProgress)
+    Append first second -> do
+      (firstBuilder, nextProgress) <- buildSqlWithProgress escaping progress first
+      (secondBuilder, finalProgress) <- buildSqlWithProgress escaping nextProgress second
+      pure (firstBuilder <> secondBuilder, finalProgress)
 
 {- |
   Constructs a 'RawSql' from a 'String' value using utf8 encoding.
@@ -189,6 +274,20 @@ parameter =
   Parameter
 
 {- |
+  Includes a bytestring value as string literal in the SQL statement. The
+  string literal will be escaped and quoted for you, the value provided does
+  not need to include surrounding quotes or escape special characters.
+
+  Note: It's better to use the 'parameter' function where possible to pass
+  values to be used as input to a SQL statement. There are some situations
+  where PostgreSQL does not allow this, however (for instance, in some DDL
+  statements). This function is provided for those situations.
+-}
+stringLiteral :: BS.ByteString -> RawSql
+stringLiteral =
+  StringLiteral
+
+{- |
   Concatenates a list of 'RawSql' values using another 'RawSql' value as
   the a separator between the items.
 -}
@@ -205,10 +304,9 @@ intercalate separator =
   Use with caution.
 -}
 execute :: SqlExpression sql => Connection -> sql -> IO LibPQ.Result
-execute connection sql =
-  let (sqlBytes, params) =
-        toBytesAndParams sql
-   in Conn.executeRaw connection sqlBytes params
+execute connection sql = do
+  (sqlBytes, params) <- toBytesAndParams (connectionEscaping connection) sql
+  Conn.executeRaw connection sqlBytes params
 
 {- |
   Executes a 'RawSql' value using the 'Conn.executeRawVoid' function. Make sure
@@ -216,10 +314,9 @@ execute connection sql =
   Use with caution.
 -}
 executeVoid :: SqlExpression sql => Connection -> sql -> IO ()
-executeVoid connection sql =
-  let (sqlBytes, params) =
-        toBytesAndParams sql
-   in Conn.executeRawVoid connection sqlBytes params
+executeVoid connection sql = do
+  (sqlBytes, params) <- toBytesAndParams (connectionEscaping connection) sql
+  Conn.executeRawVoid connection sqlBytes params
 
 -- | Just a plain old space, provided for convenience
 space :: RawSql

@@ -464,7 +464,7 @@ selectOperation selectOp =
 
 explainSelect :: Select row -> Exp.Explanation
 explainSelect =
-  Exp.explainStep . BS8.unpack . RawSql.toBytes . Select.selectToQueryExpr
+  Exp.explainStep . BS8.unpack . RawSql.toExampleBytes . Select.selectToQueryExpr
 
 {- |
   'runSelectOne' is an internal helper function that executes a

@@ -84,6 +84,7 @@ column1Definition =
     (Expr.columnName column1NameString)
     Expr.text
     Nothing
+    Nothing
 
 column1NameString :: String
 column1NameString =
@@ -94,6 +95,7 @@ column2Definition =
   Expr.columnDefinition
     (Expr.columnName column2NameString)
     Expr.text
+    Nothing
     Nothing
 
 column2NameString :: String

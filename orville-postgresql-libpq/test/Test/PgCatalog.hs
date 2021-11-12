@@ -9,6 +9,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.Set as Set
 import qualified Data.String as String
+import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
@@ -18,6 +19,7 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
+import qualified Test.TestTable as TestTable
 
 pgCatalogTests :: Pool.Pool Conn.Connection -> Property.Group
 pgCatalogTests pool =
@@ -25,6 +27,7 @@ pgCatalogTests pool =
     "PgCatalog"
     [ prop_queryPgClass pool
     , prop_queryPgAttribute pool
+    , prop_queryPgAttributeDefault pool
     , prop_queryPgConstraint pool
     , prop_describeDatabaseRelations pool
     ]
@@ -32,7 +35,7 @@ pgCatalogTests pool =
 prop_queryPgClass :: Property.NamedDBProperty
 prop_queryPgClass =
   Property.singletonNamedDBProperty "Can query the pg_class table to find out about a table" $ \pool -> do
-    result <- MIO.liftIO . Orville.runOrville pool $ do
+    result <- HH.evalIO . Orville.runOrville pool $ do
       Orville.findFirstEntityBy
         PgCatalog.pgClassTable
         (Orville.where_ $ Orville.fieldEquals PgCatalog.relationNameField pgClass)
@@ -43,7 +46,7 @@ prop_queryPgClass =
 prop_queryPgAttribute :: Property.NamedDBProperty
 prop_queryPgAttribute =
   Property.singletonNamedDBProperty "Can query the pg_attribute table to find out about a column" $ \pool -> do
-    maybePgClassRecord <- MIO.liftIO . Orville.runOrville pool $ do
+    maybePgClassRecord <- HH.evalIO . Orville.runOrville pool $ do
       Orville.findFirstEntityBy
         PgCatalog.pgClassTable
         (Orville.where_ $ Orville.fieldEquals PgCatalog.relationNameField pgClass)
@@ -56,7 +59,7 @@ prop_queryPgAttribute =
         Just pgClassRecord ->
           pure $ PgCatalog.pgClassOid pgClassRecord
 
-    maybePgAttr <- MIO.liftIO . Orville.runOrville pool $ do
+    maybePgAttr <- HH.evalIO . Orville.runOrville pool $ do
       Orville.findFirstEntityBy
         PgCatalog.pgAttributeTable
         ( Orville.where_ $
@@ -69,10 +72,45 @@ prop_queryPgAttribute =
     fmap PgCatalog.pgAttributeName maybePgAttr === Just relname
     fmap PgCatalog.pgAttributeLength maybePgAttr === Just 64
 
+prop_queryPgAttributeDefault :: Property.NamedDBProperty
+prop_queryPgAttributeDefault =
+  Property.singletonNamedDBProperty "Can query the pg_attrdef table to find out about a default value" $ \pool -> do
+    let fieldDefWithDefault =
+          Orville.setDefaultValue (Orville.integerDefault 0) (Orville.integerField "foo")
+
+        tableDef =
+          Orville.mkTableDefinitionWithoutKey
+            "test_pg_attrdef_query"
+            (Orville.marshallField id fieldDefWithDefault)
+
+    maybePgClassRecord <- HH.evalIO . Orville.runOrville pool $ do
+      Orville.withConnection $ \connection ->
+        MIO.liftIO $ TestTable.dropAndRecreateTableDef connection tableDef
+
+      Orville.findFirstEntityBy
+        PgCatalog.pgClassTable
+        (Orville.where_ $ Orville.fieldEquals PgCatalog.relationNameField (String.fromString "test_pg_attrdef_query"))
+
+    pgClassOid <-
+      case maybePgClassRecord of
+        Nothing -> do
+          HH.annotate "Expected to find pg_class table, but did not"
+          HH.failure
+        Just pgClassRecord ->
+          pure $ PgCatalog.pgClassOid pgClassRecord
+
+    defaults <- HH.evalIO . Orville.runOrville pool $ do
+      Orville.findEntitiesBy
+        PgCatalog.pgAttributeDefaultTable
+        (Orville.where_ $ Orville.fieldEquals PgCatalog.attributeDefaultRelationOidField pgClassOid)
+
+    map PgCatalog.pgAttributeDefaultAttributeNumber defaults === [PgCatalog.attributeNumberFromInt16 1]
+    map PgCatalog.pgAttributeDefaultExpression defaults === [T.pack "0"]
+
 prop_queryPgConstraint :: Property.NamedDBProperty
 prop_queryPgConstraint =
   Property.singletonNamedDBProperty "Can query the pg_constraint table to find out about a constraint" $ \pool -> do
-    maybePgClassRecord <- MIO.liftIO . Orville.runOrville pool $ do
+    maybePgClassRecord <- HH.evalIO . Foo.withTable pool $ do
       Orville.findFirstEntityBy
         PgCatalog.pgClassTable
         (Orville.where_ $ Orville.fieldEquals PgCatalog.relationNameField fooRelation)
@@ -85,7 +123,7 @@ prop_queryPgConstraint =
         Just pgClassRecord ->
           pure $ PgCatalog.pgClassOid pgClassRecord
 
-    constraints <- MIO.liftIO . Orville.runOrville pool $ do
+    constraints <- HH.evalIO . Orville.runOrville pool $ do
       Orville.findEntitiesBy
         PgCatalog.pgConstraintTable
         (Orville.where_ $ Orville.fieldEquals PgCatalog.constraintRelationOidField pgClassOid)
@@ -102,7 +140,7 @@ prop_describeDatabaseRelations =
           , (informationSchema, tables)
           ]
 
-    desc <- MIO.liftIO . Orville.runOrville pool $ do
+    desc <- HH.evalIO . Orville.runOrville pool $ do
       PgCatalog.describeDatabaseRelations relationsToDescribe
 
     Map.keysSet (PgCatalog.databaseRelations desc) === Set.fromList relationsToDescribe

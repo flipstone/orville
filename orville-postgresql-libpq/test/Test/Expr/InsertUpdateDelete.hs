@@ -65,7 +65,7 @@ prop_insertExprWithReturning =
                 fooBarTable
                 Nothing
                 (insertFooBarSource fooBars)
-                (Just $ Expr.returningExpr [fooColumn, barColumn])
+                (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
           ExecResult.readRows result
 
@@ -140,7 +140,7 @@ prop_updateExprWithReturning =
             fooBarTable
             (Expr.setClauseList [Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))])
             Nothing
-            (Just $ Expr.returningExpr [fooColumn, barColumn])
+            (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
     rows <-
       MIO.liftIO $
@@ -220,7 +220,7 @@ prop_deleteExprWithReturning =
           Expr.deleteExpr
             fooBarTable
             Nothing
-            (Just $ Expr.returningExpr [fooColumn, barColumn])
+            (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
     rows <-
       MIO.liftIO $

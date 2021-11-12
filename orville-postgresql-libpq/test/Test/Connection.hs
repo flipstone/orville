@@ -16,7 +16,7 @@ import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.Connection as Connection
-import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
+import qualified Orville.PostgreSQL.Internal.PgTextFormatValue as PgTextFormatValue
 
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
@@ -38,8 +38,8 @@ connectionTests pool =
                 Connection.executeRaw
                   connection
                   (B8.pack "SELECT $1::text = $2::text")
-                  [ Just $ PGTextFormatValue.fromByteString notNulBytes
-                  , Just $ PGTextFormatValue.unsafeFromByteString notNulBytes
+                  [ Just $ PgTextFormatValue.fromByteString notNulBytes
+                  , Just $ PgTextFormatValue.unsafeFromByteString notNulBytes
                   ]
 
               LibPQ.getvalue' result 0 0
@@ -64,11 +64,11 @@ connectionTests pool =
               Connection.executeRaw
                 connection
                 (B8.pack "SELECT $1::text")
-                [ Just $ PGTextFormatValue.fromByteString bytesWithNul
+                [ Just $ PgTextFormatValue.fromByteString bytesWithNul
                 ]
 
           case result of
-            Left PGTextFormatValue.NULByteFoundError ->
+            Left PgTextFormatValue.NULByteFoundError ->
               HH.success
             Right _ -> do
               HH.footnote "Expected 'executeRaw' to return failure, but it did not"
@@ -96,7 +96,7 @@ connectionTests pool =
                 Connection.executeRaw
                   connection
                   (B8.pack "SELECT $1::text")
-                  [ Just $ PGTextFormatValue.unsafeFromByteString bytesWithNul
+                  [ Just $ PgTextFormatValue.unsafeFromByteString bytesWithNul
                   ]
 
               LibPQ.getvalue' result 0 0

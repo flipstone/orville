@@ -13,6 +13,8 @@ module Orville.PostgreSQL.Internal.Expr.TableDefinition
     addConstraint,
     dropConstraint,
     alterColumnType,
+    alterColumnSetDefault,
+    alterColumnDropDefault,
     UsingClause,
     usingCast,
     alterColumnNullability,
@@ -166,6 +168,31 @@ setNotNull =
 dropNotNull :: AlterNotNull
 dropNotNull =
   AlterNotNull $ RawSql.fromString "DROP NOT NULL"
+
+alterColumnDropDefault :: ColumnName -> AlterTableAction
+alterColumnDropDefault columnName =
+  AlterTableAction $
+    RawSql.intercalate
+      RawSql.space
+      [ RawSql.fromString "ALTER COLUMN"
+      , RawSql.toRawSql columnName
+      , RawSql.fromString "DROP DEFAULT"
+      ]
+
+alterColumnSetDefault ::
+  RawSql.SqlExpression valueExpression =>
+  ColumnName ->
+  valueExpression ->
+  AlterTableAction
+alterColumnSetDefault columnName defaultValue =
+  AlterTableAction $
+    RawSql.intercalate
+      RawSql.space
+      [ RawSql.fromString "ALTER COLUMN"
+      , RawSql.toRawSql columnName
+      , RawSql.fromString "SET DEFAULT"
+      , RawSql.toRawSql defaultValue
+      ]
 
 newtype DropTableExpr
   = DropTableExpr RawSql.RawSql

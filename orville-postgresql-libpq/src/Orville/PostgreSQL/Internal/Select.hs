@@ -15,7 +15,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import Orville.PostgreSQL.Internal.SqlMarshaller (ReadOnlyColumnOption (IncludeReadOnlyColumns), SqlMarshaller, marshallerColumnNames)
+import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallerDerivedColumns)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, tableMarshaller, tableName)
 
 {- |
@@ -71,7 +71,7 @@ selectMarshalledColumns ::
   Select readEntity
 selectMarshalledColumns marshaller =
   selectSelectList
-    (Expr.selectColumns (marshallerColumnNames IncludeReadOnlyColumns marshaller))
+    (Expr.selectDerivedColumns (marshallerDerivedColumns marshaller))
     marshaller
 
 {- |

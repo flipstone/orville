@@ -64,6 +64,7 @@ module Orville.PostgreSQL
     PrimaryKey.primaryKeyPart,
     SqlMarshaller.SqlMarshaller,
     SqlMarshaller.marshallField,
+    SqlMarshaller.marshallSyntheticField,
     SqlMarshaller.marshallReadOnly,
     SqlMarshaller.marshallReadOnlyField,
     SqlMarshaller.marshallPartial,
@@ -71,6 +72,12 @@ module Orville.PostgreSQL
     SqlMarshaller.foldMarshallerFields,
     SqlMarshaller.collectFromField,
     SqlMarshaller.ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
+    SyntheticField.SyntheticField,
+    SyntheticField.syntheticFieldExpression,
+    SyntheticField.syntheticFieldAlias,
+    SyntheticField.syntheticFieldValueFromSqlValue,
+    SyntheticField.syntheticField,
+    SyntheticField.nullableSyntheticField,
     FieldDefinition.FieldDefinition,
     FieldDefinition.NotNull,
     FieldDefinition.Nullable,
@@ -78,6 +85,8 @@ module Orville.PostgreSQL
     FieldDefinition.asymmetricNullableField,
     FieldDefinition.convertField,
     FieldDefinition.coerceField,
+    FieldDefinition.setDefaultValue,
+    FieldDefinition.removeDefaultValue,
     FieldDefinition.integerField,
     FieldDefinition.serialField,
     FieldDefinition.smallIntegerField,
@@ -101,10 +110,28 @@ module Orville.PostgreSQL
     FieldDefinition.fieldNameToColumnName,
     FieldDefinition.fieldNameToByteString,
     FieldDefinition.fieldType,
+    FieldDefinition.fieldDefaultValue,
     FieldDefinition.fieldColumnDefinition,
     FieldDefinition.fieldIsNotNullable,
     FieldDefinition.fieldNullability,
     FieldDefinition.FieldNullability (NotNullField, NullableField),
+    DefaultValue.DefaultValue,
+    DefaultValue.integerDefault,
+    DefaultValue.smallIntegerDefault,
+    DefaultValue.bigIntegerDefault,
+    DefaultValue.integralDefault,
+    DefaultValue.doubleDefault,
+    DefaultValue.booleanDefault,
+    DefaultValue.textDefault,
+    DefaultValue.dateDefault,
+    DefaultValue.currentDateDefault,
+    DefaultValue.utcTimestampDefault,
+    DefaultValue.currentUTCTimestampDefault,
+    DefaultValue.localTimestampDefault,
+    DefaultValue.currentLocalTimestampDefault,
+    DefaultValue.coerceDefaultValue,
+    DefaultValue.defaultValueExpression,
+    DefaultValue.rawSqlDefault,
     Orville.Orville,
     Orville.runOrville,
     MonadOrville.MonadOrville,
@@ -182,6 +209,7 @@ where
 
 import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Internal.ConstraintDefinition as ConstraintDefinition
+import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
@@ -194,6 +222,7 @@ import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
+import qualified Orville.PostgreSQL.Internal.SyntheticField as SyntheticField
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Internal.Transaction as Transaction

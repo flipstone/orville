@@ -186,19 +186,19 @@ prop_groupByCombined =
 
 assertDistinctEquals :: HH.MonadTest m => String -> SO.SelectOptions -> m ()
 assertDistinctEquals mbDistinct selectOptions =
-  RawSql.toBytes (SO.selectDistinct selectOptions) HH.=== B8.pack mbDistinct
+  RawSql.toExampleBytes (SO.selectDistinct selectOptions) HH.=== B8.pack mbDistinct
 
 assertWhereClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
 assertWhereClauseEquals mbWhereClause selectOptions =
-  fmap RawSql.toBytes (SO.selectWhereClause selectOptions) HH.=== fmap B8.pack mbWhereClause
+  fmap RawSql.toExampleBytes (SO.selectWhereClause selectOptions) HH.=== fmap B8.pack mbWhereClause
 
 assertOrderByClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
 assertOrderByClauseEquals mbOrderByClause selectOptions =
-  fmap RawSql.toBytes (SO.selectOrderByClause selectOptions) HH.=== fmap B8.pack mbOrderByClause
+  fmap RawSql.toExampleBytes (SO.selectOrderByClause selectOptions) HH.=== fmap B8.pack mbOrderByClause
 
 assertGroupByClauseEquals :: HH.MonadTest m => Maybe String -> SO.SelectOptions -> m ()
 assertGroupByClauseEquals mbGroupByClause selectOptions =
-  fmap RawSql.toBytes (SO.selectGroupByClause selectOptions) HH.=== fmap B8.pack mbGroupByClause
+  fmap RawSql.toExampleBytes (SO.selectGroupByClause selectOptions) HH.=== fmap B8.pack mbGroupByClause
 
 fooField :: FieldDef.FieldDefinition FieldDef.NotNull Int.Int32
 fooField =

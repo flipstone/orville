@@ -24,10 +24,11 @@ library:
     - Orville.PostgreSQL
     - Orville.PostgreSQL.AutoMigration
     - Orville.PostgreSQL.Connection
+    - Orville.PostgreSQL.Internal.DefaultValue
     - Orville.PostgreSQL.Internal.ExecutionResult
     - Orville.PostgreSQL.Internal.Expr
     - Orville.PostgreSQL.Internal.FieldDefinition
-    - Orville.PostgreSQL.Internal.PGTextFormatValue
+    - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PrimaryKey
     - Orville.PostgreSQL.Internal.RawSql
     - Orville.PostgreSQL.Internal.Select

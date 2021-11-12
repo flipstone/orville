@@ -8,6 +8,7 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.Query.SelectList
   ( SelectList,
     selectColumns,
+    DerivedColumn,
     deriveColumn,
     deriveColumnAs,
     selectDerivedColumns,
@@ -16,6 +17,7 @@ module Orville.PostgreSQL.Internal.Expr.Query.SelectList
 where
 
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Internal.Expr.ValueExpression (ValueExpression, columnReference)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype SelectList = SelectList RawSql.RawSql
@@ -27,7 +29,7 @@ selectStar =
 
 selectColumns :: [ColumnName] -> SelectList
 selectColumns =
-  selectDerivedColumns . map deriveColumn
+  selectDerivedColumns . map (deriveColumn . columnReference)
 
 newtype DerivedColumn = DerivedColumn RawSql.RawSql
   deriving (RawSql.SqlExpression)
@@ -36,14 +38,14 @@ selectDerivedColumns :: [DerivedColumn] -> SelectList
 selectDerivedColumns =
   SelectList . RawSql.intercalate RawSql.comma
 
-deriveColumn :: ColumnName -> DerivedColumn
+deriveColumn :: ValueExpression -> DerivedColumn
 deriveColumn =
   DerivedColumn . RawSql.toRawSql
 
-deriveColumnAs :: ColumnName -> ColumnName -> DerivedColumn
-deriveColumnAs sourceColumn asColumn =
+deriveColumnAs :: ValueExpression -> ColumnName -> DerivedColumn
+deriveColumnAs valueExpr asColumn =
   DerivedColumn $
-    ( RawSql.toRawSql sourceColumn
+    ( RawSql.toRawSql valueExpr
         <> RawSql.fromString " AS "
         <> RawSql.toRawSql asColumn
     )

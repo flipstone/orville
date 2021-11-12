@@ -7,6 +7,7 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
     attributeNameToString,
     AttributeNumber,
     attributeNumberToInt16,
+    attributeNumberFromInt16,
     attributeNumberTextBuilder,
     attributeNumberParser,
     isOrdinaryColumn,
@@ -16,6 +17,7 @@ module Orville.PostgreSQL.PgCatalog.PgAttribute
     attributeTypeOidField,
     attributeLengthField,
     attributeIsDroppedField,
+    attributeNumberTypeField,
   )
 where
 
@@ -128,6 +130,12 @@ attributeNumberToInt16 :: AttributeNumber -> Int16
 attributeNumberToInt16 (AttributeNumber int) = int
 
 {- |
+  Converts an integer to an 'AttributeNumber'
+-}
+attributeNumberFromInt16 :: Int16 -> AttributeNumber
+attributeNumberFromInt16 = AttributeNumber
+
+{- |
   Attoparsec parser for 'AttributeNumber'
 -}
 attributeNumberParser :: AttoText.Parser AttributeNumber
@@ -184,8 +192,14 @@ attributeNameField =
 -}
 attributeNumberField :: Orville.FieldDefinition Orville.NotNull AttributeNumber
 attributeNumberField =
-  Orville.coerceField $
-    Orville.smallIntegerField "attnum"
+  attributeNumberTypeField "attnum"
+
+{- |
+  Builds a 'Orville.FieldDefinition' for a field with type 'AttributeNumber'
+-}
+attributeNumberTypeField :: String -> Orville.FieldDefinition Orville.NotNull AttributeNumber
+attributeNumberTypeField =
+  Orville.coerceField . Orville.smallIntegerField
 
 {- |
   The @atttypid@ column of the @pg_catalog.pg_attribute@ table

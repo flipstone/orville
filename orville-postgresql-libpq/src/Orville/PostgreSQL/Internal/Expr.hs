@@ -16,6 +16,7 @@ module Orville.PostgreSQL.Internal.Expr
     selectStar,
     selectColumns,
     selectDerivedColumns,
+    DerivedColumn,
     deriveColumn,
     deriveColumnAs,
     TableExpr,
@@ -106,6 +107,8 @@ module Orville.PostgreSQL.Internal.Expr
     ColumnConstraint,
     notNullConstraint,
     nullConstraint,
+    ColumnDefault,
+    columnDefault,
     OrderByClause,
     orderByClause,
     appendOrderByExpr,
@@ -130,6 +133,8 @@ module Orville.PostgreSQL.Internal.Expr
     addConstraint,
     dropConstraint,
     alterColumnType,
+    alterColumnSetDefault,
+    alterColumnDropDefault,
     UsingClause,
     usingCast,
     alterColumnNullability,
@@ -162,6 +167,10 @@ module Orville.PostgreSQL.Internal.Expr
     savepoint,
     ReleaseSavepointExpr,
     releaseSavepoint,
+    ValueExpression,
+    columnReference,
+    valueExpression,
+    rowValueConstructor,
   )
 where
 
@@ -180,4 +189,5 @@ import Orville.PostgreSQL.Internal.Expr.TableConstraint
 import Orville.PostgreSQL.Internal.Expr.TableDefinition
 import Orville.PostgreSQL.Internal.Expr.Transaction
 import Orville.PostgreSQL.Internal.Expr.Update
+import Orville.PostgreSQL.Internal.Expr.ValueExpression
 import Orville.PostgreSQL.Internal.Expr.Where

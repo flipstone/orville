@@ -8,20 +8,21 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Internal.SqlMarshaller
   ( SqlMarshaller,
+    MarshallerField (Natural, Synthetic),
     MarshallError (..),
     marshallResultFromSql,
     marshallRowFromSql,
     marshallField,
+    marshallSyntheticField,
     marshallReadOnlyField,
     marshallReadOnly,
     marshallNested,
     marshallMaybe,
     marshallPartial,
-    marshallerColumnNames,
     ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
     collectFromField,
     foldMarshallerFields,
-    FieldFold,
+    marshallerDerivedColumns,
     mkRowSource,
     RowSource,
     mapRowSource,
@@ -40,17 +41,9 @@ import Data.Maybe (catMaybes)
 import Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldDefinition
-  ( FieldDefinition,
-    FieldNullability (NotNullField, NullableField),
-    asymmetricNullableField,
-    fieldColumnName,
-    fieldName,
-    fieldNameToByteString,
-    fieldNullability,
-    fieldValueFromSqlValue,
-    nullableField,
-  )
+import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldValueFromSqlValue, nullableField)
+import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import Orville.PostgreSQL.Internal.SyntheticField (SyntheticField, nullableSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
 
 {- |
   'SqlMarshaller' is how we group the lowest level translation of single fields
@@ -68,6 +61,10 @@ data SqlMarshaller a b where
   MarshallNest :: (a -> b) -> SqlMarshaller b c -> SqlMarshaller a c
   -- | Marshall a SQL column using the given 'FieldDefinition'
   MarshallField :: FieldDefinition nullability a -> SqlMarshaller a a
+  -- | Marshall a SQL expression on selecting using the given 'SyntheticField'
+  -- to generate selects. SyntheticFields are implicitly read-only, as they
+  -- do not represent a column that can be inserted in to.
+  MarshallSyntheticField :: SyntheticField a -> SqlMarshaller b a
   -- | Tag a maybe-mapped marshaller so we don't map it twice
   MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)
   -- | Marshall a column with a possibility of error
@@ -83,55 +80,64 @@ instance Applicative (SqlMarshaller a) where
   (<*>) = MarshallApply
 
 {- |
-  Returns the list of column names which are reference by the
-  'FieldDefinition's of the 'SqlMarshaller'
-
-  Depending on usage, (e.g. insert vs query), you may or may not want the
-  read-only columns included. The caller must specify a 'ReadyOnlyColumnOption'
-  to indicate which is desired.
+  Returns a list of 'Expr.DerivedColumn' expressions that can be used in a
+  select statement to select values from the database for the 'SqlMarshaller'
+  decode.
 -}
-marshallerColumnNames ::
-  ReadOnlyColumnOption ->
+marshallerDerivedColumns ::
   SqlMarshaller writeEntity readEntity ->
-  [Expr.ColumnName]
-marshallerColumnNames includeReadOnlyColumns marshaller =
-  foldMarshallerFields marshaller [] (collectFromField includeReadOnlyColumns fieldColumnName)
+  [Expr.DerivedColumn]
+marshallerDerivedColumns marshaller =
+  let collectDerivedColumn ::
+        MarshallerField writeEntity ->
+        [Expr.DerivedColumn] ->
+        [Expr.DerivedColumn]
+      collectDerivedColumn entry columns =
+        case entry of
+          Natural fieldDef _ ->
+            (Expr.deriveColumn . Expr.columnReference . fieldColumnName $ fieldDef) :
+            columns
+          Synthetic synthField ->
+            Expr.deriveColumnAs
+              (syntheticFieldExpression synthField)
+              (fieldNameToColumnName $ syntheticFieldAlias synthField) :
+            columns
+   in foldMarshallerFields marshaller [] collectDerivedColumn
 
 {- |
-  A synonym that captures the type of folding functions that are used
-  with 'foldMarshallerFields'. Note that this synonym is defined using
-  'RankNTypes' because the folding function must consume all fields,
-  regardless of they type of value they contain or their nullability.
-  Although you do not need to enable 'RankNTypes' simply to use this
-  synonym as the type signature of your own folding functions, you may
-  need to enable it to write an explicit 'forall' if your folding function
-  is built from parameters that include a field's nullability or value type
-  in their signature.
+  Represents a primitive entry in a 'SqlMarshaller'. This type is used with
+  'foldMarshallerFields' to provided the entry from the mashaller to the
+  folding function to be incorporate in the result of the fold.
 -}
-type FieldFold writeEntity result =
-  forall a nullability.
-  FieldDefinition nullability a ->
-  Maybe (writeEntity -> a) ->
-  result ->
-  result
+data MarshallerField writeEntity where
+  Natural :: FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
+  Synthetic :: SyntheticField a -> MarshallerField writeEntity
 
 {- |
-  Builds a 'FieldFold' that can be used with 'foldMarshallerFields' to collect
-  a value derived from a 'FieldDefinition' via the given function. The derived
+  A fold function that can be used with 'foldMarshallerFields' to collect
+  a value calculated from a 'FieldDefinition' via the given function. The calculated
   value is added to the list of values being built.
+
+  Note: Folds executed with 'collectFromField' ignore 'Synthetic' entries in
+  the marshaller. You should only use 'collectFromField' in situations where
+  you only care about the actual columns referenced by the marshaller.
 -}
 collectFromField ::
   ReadOnlyColumnOption ->
   (forall nullability a. FieldDefinition nullability a -> result) ->
-  FieldFold entity [result]
-collectFromField readOnlyColumnOption fromField fieldDef maybeGetValue results =
-  case maybeGetValue of
-    Just _ ->
+  MarshallerField entity ->
+  [result] ->
+  [result]
+collectFromField readOnlyColumnOption fromField entry results =
+  case entry of
+    Natural fieldDef (Just _) ->
       fromField fieldDef : results
-    Nothing ->
+    Natural fieldDef Nothing ->
       case readOnlyColumnOption of
         IncludeReadOnlyColumns -> fromField fieldDef : results
         ExcludeReadOnlyColumns -> results
+    Synthetic _ ->
+      results
 
 {- |
   Specifies whether read-only fields should be included when using functions
@@ -150,7 +156,7 @@ data ReadOnlyColumnOption
 foldMarshallerFields ::
   SqlMarshaller writeEntity readEntity ->
   result ->
-  FieldFold writeEntity result ->
+  (MarshallerField writeEntity -> result -> result) ->
   result
 foldMarshallerFields marshaller =
   foldMarshallerFieldsPart marshaller (Just id)
@@ -165,7 +171,7 @@ foldMarshallerFieldsPart ::
   SqlMarshaller entityPart readEntity ->
   Maybe (writeEntity -> entityPart) ->
   result ->
-  FieldFold writeEntity result ->
+  (MarshallerField writeEntity -> result -> result) ->
   result
 foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
   case marshaller of
@@ -178,7 +184,9 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
     MarshallNest nestingFunction submarshaller ->
       foldMarshallerFieldsPart submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
     MarshallField fieldDefinition ->
-      addToResult fieldDefinition getPart currentResult
+      addToResult (Natural fieldDefinition getPart) currentResult
+    MarshallSyntheticField syntheticField ->
+      addToResult (Synthetic syntheticField) currentResult
     MarshallMaybeTag m ->
       foldMarshallerFieldsPart m getPart currentResult addToResult
     MarshallPartial m ->
@@ -358,7 +366,15 @@ mkRowSource marshaller result = do
                   fieldNameToByteString (fieldName fieldDef)
              in case Map.lookup fieldNameBytes columnMap of
                   Just columnNumber ->
-                    mkColumnRowSource fieldDef result columnNumber
+                    mkColumnRowSource (fieldValueFromSqlValue fieldDef) result columnNumber
+                  Nothing ->
+                    failRowSource FieldNotFoundInResultSet
+          MarshallSyntheticField syntheticField ->
+            let fieldNameBytes =
+                  fieldNameToByteString (syntheticFieldAlias syntheticField)
+             in case Map.lookup fieldNameBytes columnMap of
+                  Just columnNumber ->
+                    mkColumnRowSource (syntheticFieldValueFromSqlValue syntheticField) result columnNumber
                   Nothing ->
                     failRowSource FieldNotFoundInResultSet
           MarshallMaybeTag m ->
@@ -425,15 +441,15 @@ prepareColumnMap result = do
 -}
 mkColumnRowSource ::
   ExecutionResult result =>
-  FieldDefinition nullability a ->
+  (SqlValue.SqlValue -> Maybe a) ->
   result ->
   Column ->
   RowSource a
-mkColumnRowSource fieldDef result column =
+mkColumnRowSource fromSqlValue result column =
   RowSource $ \row -> do
     sqlValue <- Result.getValue result row column
 
-    case fieldValueFromSqlValue fieldDef sqlValue of
+    case fromSqlValue sqlValue of
       Just value ->
         pure (Right value)
       Nothing ->
@@ -465,6 +481,38 @@ marshallField ::
   SqlMarshaller writeEntity fieldValue
 marshallField accessor fieldDef =
   MarshallNest accessor (MarshallField fieldDef)
+
+{- |
+  Builds a 'SqlMarshaller' that will include a SQL expression in select
+  statements to calculate a value the columns of the table being selected
+  from. The columns being used in the calculation do not themselves need
+  to be selected, though they must be present in the table so they can
+  be referenced.
+
+  @
+  data AgeCheck
+    { atLeast21 :: Bool
+    }
+
+  fooMarshaller :: SqlMarshaller Void AgeCheck
+  fooMarshaller =
+    AgeCheck
+      <*> Orville.marshallSyntheticField atLeast21Field
+
+  atLeast21Field :: SyntheticField Bool
+  atLeast21Field =
+    SyntheticField
+      { syntheticFieldExpression = RawSql.unsafeFromRawSql $ RawSql.fromString "age >= 21"
+      , syntheticFieldAlias = Orville.stringToFieldName "over21"
+      , syntheticFieldValueFromSqlValue = SqlValue.toBool
+      }
+  @
+-}
+marshallSyntheticField ::
+  SyntheticField fieldValue ->
+  SqlMarshaller writeEntity fieldValue
+marshallSyntheticField =
+  MarshallSyntheticField
 
 {- |
   Nests a 'SqlMarshaller' inside another, using the given accesser to retrieve
@@ -518,16 +566,26 @@ marshallMaybe =
   MarshallMaybeTag . go
   where
     go :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
-    go (MarshallPure a) = MarshallPure $ pure a
-    go (MarshallApply func a) = MarshallApply (fmap (<*>) $ go func) (go a)
-    go (MarshallNest f a) = MarshallNest (fmap f) (go a)
-    go a@(MarshallMaybeTag _) = Just <$> MarshallNest join a
-    go (MarshallField field) =
-      case fieldNullability field of
-        NotNullField f -> MarshallField (nullableField f)
-        NullableField f -> MarshallField (asymmetricNullableField f)
-    go (MarshallPartial m) = MarshallPartial (fmap sequence $ go m)
-    go (MarshallReadOnly m) = MarshallReadOnly (go m)
+    go marshaller =
+      case marshaller of
+        MarshallPure a ->
+          MarshallPure $ pure a
+        MarshallApply func a ->
+          MarshallApply (fmap (<*>) $ go func) (go a)
+        MarshallNest f a ->
+          MarshallNest (fmap f) (go a)
+        (MarshallMaybeTag _) ->
+          Just <$> MarshallNest join marshaller
+        MarshallField field ->
+          case fieldNullability field of
+            NotNullField f -> MarshallField (nullableField f)
+            NullableField f -> MarshallField (asymmetricNullableField f)
+        MarshallSyntheticField synthField ->
+          MarshallSyntheticField (nullableSyntheticField synthField)
+        MarshallPartial m ->
+          MarshallPartial (fmap sequence $ go m)
+        MarshallReadOnly m ->
+          MarshallReadOnly (go m)
 
 {- |
   Builds a 'SqlMarshaller' that will raise a decoding error when the value

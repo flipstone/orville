@@ -32,10 +32,11 @@ library
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
       Orville.PostgreSQL.Connection
+      Orville.PostgreSQL.Internal.DefaultValue
       Orville.PostgreSQL.Internal.ExecutionResult
       Orville.PostgreSQL.Internal.Expr
       Orville.PostgreSQL.Internal.FieldDefinition
-      Orville.PostgreSQL.Internal.PGTextFormatValue
+      Orville.PostgreSQL.Internal.PgTextFormatValue
       Orville.PostgreSQL.Internal.PrimaryKey
       Orville.PostgreSQL.Internal.RawSql
       Orville.PostgreSQL.Internal.Select
@@ -92,10 +93,10 @@ library
       Orville.PostgreSQL.Internal.Expr.TableDefinition
       Orville.PostgreSQL.Internal.Expr.Transaction
       Orville.PostgreSQL.Internal.Expr.Update
+      Orville.PostgreSQL.Internal.Expr.ValueExpression
       Orville.PostgreSQL.Internal.Expr.Where
       Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
       Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
-      Orville.PostgreSQL.Internal.Expr.Where.RowValueExpression
       Orville.PostgreSQL.Internal.Expr.Where.WhereClause
       Orville.PostgreSQL.Internal.IndexDefinition
       Orville.PostgreSQL.Internal.Insert
@@ -103,14 +104,17 @@ library
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
       Orville.PostgreSQL.Internal.OrvilleState
+      Orville.PostgreSQL.Internal.PgTime
       Orville.PostgreSQL.Internal.SelectOptions.OrderBy
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
+      Orville.PostgreSQL.Internal.SyntheticField
       Orville.PostgreSQL.Internal.TableIdentifier
       Orville.PostgreSQL.Internal.Transaction
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField
       Orville.PostgreSQL.PgCatalog.PgAttribute
+      Orville.PostgreSQL.PgCatalog.PgAttributeDefault
       Orville.PostgreSQL.PgCatalog.PgClass
       Orville.PostgreSQL.PgCatalog.PgConstraint
       Orville.PostgreSQL.PgCatalog.PgIndex

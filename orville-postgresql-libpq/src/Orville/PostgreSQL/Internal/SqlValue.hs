@@ -53,7 +53,6 @@ import qualified Data.Attoparsec.ByteString as AttoBS
 import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
-import qualified Data.ByteString.Char8 as B8
 import qualified Data.ByteString.Lazy as LBS
 import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
@@ -61,13 +60,12 @@ import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
 import Data.Word (Word16, Word32, Word64, Word8)
 
-import Orville.PostgreSQL.Internal.PGTextFormatValue (PGTextFormatValue)
-import qualified Orville.PostgreSQL.Internal.PGTextFormatValue as PGTextFormatValue
-
-import Control.Applicative ((<|>))
+import Orville.PostgreSQL.Internal.PgTextFormatValue (PgTextFormatValue)
+import qualified Orville.PostgreSQL.Internal.PgTextFormatValue as PgTextFormatValue
+import qualified Orville.PostgreSQL.Internal.PgTime as PgTime
 
 data SqlValue
-  = SqlValue PGTextFormatValue
+  = SqlValue PgTextFormatValue
   | SqlNull
 
 {- |
@@ -93,7 +91,7 @@ sqlNull =
   to values you would write in query. If the value represents a sql NULL
   value, 'Nothing' is returned
 -}
-toPGValue :: SqlValue -> Maybe PGTextFormatValue
+toPGValue :: SqlValue -> Maybe PgTextFormatValue
 toPGValue sqlValue =
   case sqlValue of
     SqlValue value ->
@@ -107,13 +105,13 @@ toPGValue sqlValue =
   but the using decode functions on them might fail depending on whether the
   bytes can be parsed as the requested type.
 
-  Note: A value to present a sql NULL cannot be constructed using this
+  Note: A value to represent a sql NULL cannot be constructed using this
   function. See 'fromRawBytesNullable' for how to represent a nullable
   raw value.
 -}
 fromRawBytes :: BS.ByteString -> SqlValue
 fromRawBytes =
-  SqlValue . PGTextFormatValue.fromByteString
+  SqlValue . PgTextFormatValue.fromByteString
 
 {- |
   Creates a 'SqlValue' from a raw byte string. If 'Nothing' is specified as the
@@ -317,7 +315,7 @@ toBool =
 -}
 fromText :: T.Text -> SqlValue
 fromText =
-  SqlValue . PGTextFormatValue.fromByteString . TextEnc.encodeUtf8
+  SqlValue . PgTextFormatValue.fromByteString . TextEnc.encodeUtf8
 
 {- |
   Attempts to decode a 'SqlValue' as UTF-8 text. If the decoding fails,
@@ -339,20 +337,15 @@ toText =
 -}
 fromDay :: Time.Day -> SqlValue
 fromDay =
-  SqlValue . PGTextFormatValue.unsafeFromByteString . B8.pack . Time.showGregorian
+  SqlValue . PgTextFormatValue.unsafeFromByteString . PgTime.dayToPostgreSQL
 
 {- |
   Attempts to decode a 'SqlValue' as into a 'Time.Day' value by parsing it
   from YYYY-MM-DD format. If the decoding fails 'Nothing' is returned.
 -}
 toDay :: SqlValue -> Maybe Time.Day
-toDay sqlValue = do
-  txt <- toText sqlValue
-  Time.parseTimeM
-    False
-    Time.defaultTimeLocale
-    (Time.iso8601DateFormat Nothing)
-    (T.unpack txt)
+toDay =
+  toBytesValue PgTime.dayFromPostgreSQL
 
 {- |
   Encodes a 'Time.UTCTime' in ISO 8601 format for usage with the database.
@@ -360,9 +353,8 @@ toDay sqlValue = do
 fromUTCTime :: Time.UTCTime -> SqlValue
 fromUTCTime =
   SqlValue
-    . PGTextFormatValue.unsafeFromByteString
-    . B8.pack
-    . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%dT%H:%M:%S"
+    . PgTextFormatValue.unsafeFromByteString
+    . PgTime.utcTimeToPostgreSQL
 
 {- |
   Encodes a 'Time.LocalTime' in ISO 8601 format for usage with the database.
@@ -370,43 +362,24 @@ fromUTCTime =
 fromLocalTime :: Time.LocalTime -> SqlValue
 fromLocalTime =
   SqlValue
-    . PGTextFormatValue.unsafeFromByteString
-    . B8.pack
-    . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%dT%H:%M:%S"
+    . PgTextFormatValue.unsafeFromByteString
+    . PgTime.localTimeToPostgreSQL
 
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.LocalTime' formatted in iso8601
   format in the default Local. If the decoding fails, 'Nothing' is returned.
 -}
 toLocalTime :: SqlValue -> Maybe Time.LocalTime
-toLocalTime sqlValue = do
-  -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
-  -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
-  -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
-  -- Leading to the ugly hacks below.
-  txt <- toText sqlValue
-  let parseTime = Time.parseTimeM False Time.defaultTimeLocale
-      unTxt = T.unpack txt
-
-  parseTime "%F %T%Q" unTxt
-    <|> parseTime "%F %T" unTxt
+toLocalTime =
+  toBytesValue PgTime.localTimeFromPostgreSQL
 
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
   format with time zone. If the decoding fails, 'Nothing' is returned.
 -}
 toUTCTime :: SqlValue -> Maybe Time.UTCTime
-toUTCTime sqlValue = do
-  -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
-  -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
-  -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
-  -- Leading to the ugly hacks below.
-  txt <- toText sqlValue
-  let parseTime = Time.parseTimeM False Time.defaultTimeLocale
-      unTxt = T.unpack txt
-
-  parseTime "%F %T%Q%Z" (unTxt <> "00")
-    <|> parseTime "%F %T%Z" (unTxt <> "00")
+toUTCTime =
+  toBytesValue PgTime.utcTimeFromPostgreSQL
 
 {- |
   A internal helper function that constructs a 'SqlValue' via a byte string builder
@@ -414,7 +387,7 @@ toUTCTime sqlValue = do
 fromBSBuilderWithNoNULs :: (a -> BSB.Builder) -> a -> SqlValue
 fromBSBuilderWithNoNULs builder =
   SqlValue
-    . PGTextFormatValue.unsafeFromByteString
+    . PgTextFormatValue.unsafeFromByteString
     . LBS.toStrict
     . BSB.toLazyByteString
     . builder
@@ -441,4 +414,4 @@ toBytesValue byteParser sqlValue =
     SqlNull ->
       Nothing
     SqlValue bytes ->
-      byteParser (PGTextFormatValue.toByteString bytes)
+      byteParser (PgTextFormatValue.toByteString bytes)

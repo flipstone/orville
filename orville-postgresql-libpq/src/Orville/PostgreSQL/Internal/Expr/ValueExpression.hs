@@ -1,12 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Where.RowValueExpression
+Module    : Orville.PostgreSQL.Expr.Where.ValueExpression
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.Expr.Where.RowValueExpression
-  ( RowValueExpression,
+module Orville.PostgreSQL.Internal.Expr.ValueExpression
+  ( ValueExpression,
     columnReference,
     valueExpression,
     rowValueConstructor,
@@ -19,18 +19,18 @@ import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
-newtype RowValueExpression = RowValueExpression RawSql.RawSql
+newtype ValueExpression = ValueExpression RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-columnReference :: ColumnName -> RowValueExpression
-columnReference = RowValueExpression . RawSql.toRawSql
+columnReference :: ColumnName -> ValueExpression
+columnReference = ValueExpression . RawSql.toRawSql
 
-valueExpression :: SqlValue -> RowValueExpression
-valueExpression = RowValueExpression . RawSql.parameter
+valueExpression :: SqlValue -> ValueExpression
+valueExpression = ValueExpression . RawSql.parameter
 
-rowValueConstructor :: NE.NonEmpty RowValueExpression -> RowValueExpression
+rowValueConstructor :: NE.NonEmpty ValueExpression -> ValueExpression
 rowValueConstructor elements =
-  RowValueExpression $
+  ValueExpression $
     RawSql.leftParen
       <> RawSql.intercalate RawSql.comma elements
       <> RawSql.rightParen

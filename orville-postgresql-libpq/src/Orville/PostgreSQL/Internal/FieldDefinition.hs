@@ -10,6 +10,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldName,
     fieldType,
     fieldIsNotNullable,
+    fieldDefaultValue,
     fieldNullability,
     FieldNullability (..),
     fieldValueToSqlValue,
@@ -27,6 +28,8 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     coerceField,
     nullableField,
     asymmetricNullableField,
+    setDefaultValue,
+    removeDefaultValue,
     integerField,
     serialField,
     smallIntegerField,
@@ -51,6 +54,7 @@ import Data.Int (Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
 
+import Orville.PostgreSQL.Internal.DefaultValue (DefaultValue, coerceDefaultValue, defaultValueExpression)
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
@@ -86,6 +90,7 @@ data FieldDefinition nullability a = FieldDefinition
   { _fieldName :: FieldName
   , _fieldType :: SqlType.SqlType a
   , _fieldNullability :: NullabilityGADT nullability
+  , _fieldDefaultValue :: Maybe (DefaultValue a)
   }
 
 {- |
@@ -101,6 +106,12 @@ fieldName = _fieldName
 -}
 fieldType :: FieldDefinition nullability a -> SqlType.SqlType a
 fieldType = _fieldType
+
+{- |
+  Returns the default value definition for the field, if any has been set.
+-}
+fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue a)
+fieldDefaultValue = _fieldDefaultValue
 
 {- | A 'FieldNullability is returned by the 'fieldNullability' function, which
  can be used when a function works on both 'Nullable' and 'NotNull' functions
@@ -166,6 +177,7 @@ fieldColumnDefinition fieldDef =
     (fieldColumnName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
     (Just $ fieldColumnConstraint fieldDef)
+    (fmap (Expr.columnDefault . defaultValueExpression) $ _fieldDefaultValue fieldDef)
 
 {- |
   INTERNAL - Builds the appropriate ColumnConstraint for a field. Currently
@@ -378,6 +390,7 @@ fieldOfType sqlType name =
     (stringToFieldName name)
     sqlType
     NotNullGADT
+    Nothing
 
 {- |
   Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field
@@ -401,6 +414,7 @@ nullableField field =
         (fieldName field)
         (nullableType $ fieldType field)
         NullableGADT
+        (fmap coerceDefaultValue $ _fieldDefaultValue field)
 
 {- |
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
@@ -426,6 +440,7 @@ asymmetricNullableField field =
         (fieldName field)
         (nullableType $ fieldType field)
         NullableGADT
+        (fmap coerceDefaultValue $ _fieldDefaultValue field)
 
 {- |
   Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can
@@ -442,12 +457,13 @@ convertField ::
 convertField conversion fieldDef =
   fieldDef
     { _fieldType = conversion (_fieldType fieldDef)
+    , _fieldDefaultValue = fmap coerceDefaultValue (_fieldDefaultValue fieldDef)
     }
 
 {- |
-  A specicialization of 'convertField' that can be used with types that
-  implement 'Coere.Coercible'. This is particularly useful for newtype wrappers
-  around primitive types.
+  A specialization of 'convertField' that can be used with types that implement
+  'Coere.Coercible'. This is particularly useful for newtype wrappers around
+  primitive types.
 -}
 coerceField ::
   (Coerce.Coercible a b, Coerce.Coercible b a) =>
@@ -456,3 +472,31 @@ coerceField ::
 coerceField =
   convertField
     (SqlType.convertSqlType Coerce.coerce Coerce.coerce)
+
+{- |
+  Sets a default value for the field. The default value will be added as part
+  of the column definition in the database. Because the default value is
+  ultimately provided by the database this can be used to add a not-null column
+  to safely to an existing table as long as a reasonable default value is
+  available to use.
+-}
+setDefaultValue ::
+  DefaultValue a ->
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+setDefaultValue defaultValue fieldDef =
+  fieldDef
+    { _fieldDefaultValue = Just defaultValue
+    }
+
+{- |
+  Removes any default value that may have been set on a field via
+  @setDefaultValue@.
+-}
+removeDefaultValue ::
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+removeDefaultValue fieldDef =
+  fieldDef
+    { _fieldDefaultValue = Nothing
+    }

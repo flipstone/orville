@@ -7,6 +7,7 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
     IndexMember (..),
     lookupRelation,
     lookupAttribute,
+    lookupAttributeDefault,
     describeDatabaseRelations,
   )
 where
@@ -18,6 +19,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, AttributeNumber, PgAttribute (pgAttributeName, pgAttributeNumber), attributeIsDroppedField, attributeNumberToInt16, attributeRelationOidField, pgAttributeTable)
+import Orville.PostgreSQL.PgCatalog.PgAttributeDefault (PgAttributeDefault (pgAttributeDefaultAttributeNumber), attributeDefaultRelationOidField, pgAttributeDefaultTable)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationName, namespaceOidField, pgClassTable, relationNameField, relationNameToString)
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
 import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
@@ -49,16 +51,30 @@ lookupRelation key =
 data RelationDescription = RelationDescription
   { relationRecord :: PgClass
   , relationAttributes :: Map.Map AttributeName PgAttribute
+  , relationAttributeDefaults :: Map.Map AttributeNumber PgAttributeDefault
   , relationConstraints :: [ConstraintDescription]
   , relationIndexes :: [IndexDescription]
   }
 
+{- |
+  Find an attribute by name from the 'RelationDescription'
+-}
 lookupAttribute ::
   AttributeName ->
   RelationDescription ->
   Maybe PgAttribute
 lookupAttribute key =
   Map.lookup key . relationAttributes
+
+{- |
+  Find an attribute default from the 'RelationDescription'
+-}
+lookupAttributeDefault ::
+  PgAttribute ->
+  RelationDescription ->
+  Maybe PgAttributeDefault
+lookupAttributeDefault attr =
+  Map.lookup (pgAttributeNumber attr) . relationAttributeDefaults
 
 {- |
   A description of a particular constraint in the PostgreSQL database, including
@@ -149,6 +165,7 @@ describeRelationByClass =
        in RelationDescription
             <$> Plan.use pgClass
             <*> Plan.use (fmap (indexBy pgAttributeName) attributes)
+            <*> fmap (indexBy pgAttributeDefaultAttributeNumber) findClassAttributeDefaults
             <*> Plan.chain classAndAttributes findClassConstraints
             <*> Plan.chain classAndAttributes findClassIndexes
 
@@ -173,6 +190,13 @@ findClassAttributes =
       pgAttributeTable
       attributeRelationOidField
       (Orville.fieldEquals attributeIsDroppedField False)
+
+findClassAttributeDefaults :: Plan.Plan scope PgClass [PgAttributeDefault]
+findClassAttributeDefaults =
+  Plan.focusParam pgClassOid $
+    Plan.findAll
+      pgAttributeDefaultTable
+      attributeDefaultRelationOidField
 
 findClassConstraints :: Plan.Plan scope PgClassAndAttributes [ConstraintDescription]
 findClassConstraints =

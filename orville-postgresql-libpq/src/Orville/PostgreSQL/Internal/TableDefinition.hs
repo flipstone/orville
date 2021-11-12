@@ -39,7 +39,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
-import Orville.PostgreSQL.Internal.SqlMarshaller (FieldFold, ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerColumnNames)
+import Orville.PostgreSQL.Internal.SqlMarshaller (MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerDerivedColumns)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 
@@ -306,7 +306,8 @@ mkReturningClause returningOption tableDef =
     WithReturning ->
       Just
         . Expr.returningExpr
-        . marshallerColumnNames IncludeReadOnlyColumns
+        . Expr.selectDerivedColumns
+        . marshallerDerivedColumns
         . tableMarshaller
         $ tableDef
 
@@ -343,8 +344,9 @@ mkInsertExpr returningOption tableDef entities =
 mkInsertColumnList ::
   SqlMarshaller writeEntity readEntity ->
   Expr.InsertColumnList
-mkInsertColumnList =
-  Expr.insertColumnList . marshallerColumnNames ExcludeReadOnlyColumns
+mkInsertColumnList marshaller =
+  Expr.insertColumnList $
+    foldMarshallerFields marshaller [] (collectFromField ExcludeReadOnlyColumns fieldColumnName)
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their
@@ -370,11 +372,19 @@ mkInsertSource marshaller entities =
   field from a Haskell entity, adding it a list of 'SqlValue's that is being
   built.
 -}
-collectSqlValue :: FieldFold entity (entity -> [SqlValue])
-collectSqlValue fieldDef maybeAccessor encodeRest entity =
-  case maybeAccessor of
-    Just accessor -> fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
-    Nothing -> (encodeRest entity)
+collectSqlValue ::
+  MarshallerField entity ->
+  (entity -> [SqlValue]) ->
+  entity ->
+  [SqlValue]
+collectSqlValue entry encodeRest entity =
+  case entry of
+    Natural fieldDef (Just accessor) ->
+      fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
+    Natural _ Nothing ->
+      encodeRest entity
+    Synthetic _ ->
+      encodeRest entity
 
 {- |
   Builds an 'Expr.UpdateExpr' that will update the entity at the given 'key'
@@ -426,14 +436,20 @@ mkDeleteExpr returningOption tableDef key =
   An internal helper function that collects the 'Expr.SetClause's to
   update all the fields contained in a 'SqlMarshaller'
 -}
-collectSetClauses :: entity -> FieldFold entity [Expr.SetClause]
-collectSetClauses entity fieldDef maybeAccessor clauses =
-  case maybeAccessor of
-    Nothing ->
-      clauses
-    Just accessor ->
+collectSetClauses ::
+  entity ->
+  MarshallerField entity ->
+  [Expr.SetClause] ->
+  [Expr.SetClause]
+collectSetClauses entity entry clauses =
+  case entry of
+    Natural fieldDef (Just accessor) ->
       let newClause =
             Expr.setColumn
               (fieldColumnName fieldDef)
               (fieldValueToSqlValue fieldDef (accessor entity))
        in newClause : clauses
+    Natural _ Nothing ->
+      clauses
+    Synthetic _ ->
+      clauses

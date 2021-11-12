@@ -23,6 +23,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.String as String
+import qualified Data.Text.Encoding as Enc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
@@ -400,7 +401,41 @@ mkAddAlterColumnActions relationDesc fieldDef =
                 alterNullability = do
                   guard nullabilityIsChanged
                   [Expr.alterColumnNullability (Orville.fieldColumnName fieldDef) nullabilityAction]
-             in alterType <> alterNullability
+
+                maybeExistingDefault =
+                  PgCatalog.lookupAttributeDefault attr relationDesc
+
+                maybeDefaultExpr =
+                  Orville.defaultValueExpression
+                    <$> Orville.fieldDefaultValue fieldDef
+
+                (dropDefault, setDefault) =
+                  case (maybeExistingDefault, maybeDefaultExpr) of
+                    (Nothing, Nothing) ->
+                      (Nothing, Nothing)
+                    (Just _, Nothing) ->
+                      ( Just (Expr.alterColumnDropDefault columnName)
+                      , Nothing
+                      )
+                    (Nothing, Just newDefault) ->
+                      ( Nothing
+                      , Just (Expr.alterColumnSetDefault columnName newDefault)
+                      )
+                    (Just oldDefault, Just newDefault) ->
+                      let oldDefaultExprBytes =
+                            Enc.encodeUtf8
+                              . PgCatalog.pgAttributeDefaultExpression
+                              $ oldDefault
+
+                          newDefaultExprBytes =
+                            RawSql.toExampleBytes newDefault
+                       in if oldDefaultExprBytes == newDefaultExprBytes
+                            then (Nothing, Nothing)
+                            else
+                              ( Just (Expr.alterColumnDropDefault columnName)
+                              , Just (Expr.alterColumnSetDefault columnName newDefault)
+                              )
+             in Maybe.maybeToList dropDefault <> alterType <> Maybe.maybeToList setDefault <> alterNullability
         _ ->
           -- Either the column doesn't exist in the table _OR_ it's a system
           -- column. If it's a system column, attempting to add it will result
@@ -697,7 +732,7 @@ currentNamespaceQuery =
             -- current_schema is a special reserved word in postgresql. If you
             -- put it in quotes it tries to treat it as a regular column name,
             -- which then can't be found as a column in the query.
-            (Expr.fromIdentifier (Expr.unquotedIdentifier "current_schema"))
+            (RawSql.unsafeFromRawSql $ RawSql.fromString "current_schema")
             (Orville.fieldColumnName PgCatalog.namespaceNameField)
         ]
     )
