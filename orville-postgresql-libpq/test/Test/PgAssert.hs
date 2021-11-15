@@ -3,6 +3,7 @@ module Test.PgAssert
     assertTableExistsInSchema,
     assertColumnNamesEqual,
     assertColumnExists,
+    assertColumnDefaultExists,
     assertColumnDefaultMatches,
     assertUniqueConstraintExists,
     assertForeignKeyConstraintExists,
@@ -85,6 +86,24 @@ assertColumnExists relationDesc columnName = do
         HH.failure
     Just attr ->
       pure attr
+
+assertColumnDefaultExists ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  String ->
+  m ()
+assertColumnDefaultExists relationDesc columnName = do
+  attr <- assertColumnExists relationDesc columnName
+
+  let actualDefault = PgCatalog.lookupAttributeDefault attr relationDesc
+
+  withFrozenCallStack $
+    case actualDefault of
+      Nothing -> do
+        HH.annotate $ columnName <> " expected to have a default, but it did not"
+        HH.failure
+      Just _ ->
+        pure ()
 
 assertColumnDefaultMatches ::
   (HH.MonadTest m, HasCallStack) =>

@@ -11,7 +11,8 @@ module Orville.PostgreSQL.Internal.SqlType
         sqlTypeOid,
         sqlTypeMaximumLength,
         sqlTypeToSql,
-        sqlTypeFromSql
+        sqlTypeFromSql,
+        sqlTypeDontDropImplicitDefaultDuringMigrate
       ),
     -- numeric types
     integer,
@@ -78,6 +79,11 @@ data SqlType a = SqlType
     -- an error if the conversion is impossible. Otherwise it should return
     -- 'Just' the corresponding 'a' value.
     sqlTypeFromSql :: SqlValue -> Maybe a
+  , -- | The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
+    -- create an implicit default value. This flag tells Orville's auto
+    -- migration logic to ignore the default value rather than drop it as it
+    -- normally would.
+    sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
   }
 
 {- |
@@ -92,6 +98,7 @@ integer =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromInt32
     , sqlTypeFromSql = SqlValue.toInt32
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -107,6 +114,7 @@ serial =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromInt32
     , sqlTypeFromSql = SqlValue.toInt32
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = True
     }
 
 {- |
@@ -122,6 +130,7 @@ bigInteger =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromInt64
     , sqlTypeFromSql = SqlValue.toInt64
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -137,6 +146,7 @@ bigSerial =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromInt64
     , sqlTypeFromSql = SqlValue.toInt64
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = True
     }
 
 {- |
@@ -151,6 +161,7 @@ smallInteger =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromInt16
     , sqlTypeFromSql = SqlValue.toInt16
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -166,6 +177,7 @@ double =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromDouble
     , sqlTypeFromSql = SqlValue.toDouble
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -181,6 +193,7 @@ boolean =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromBool
     , sqlTypeFromSql = SqlValue.toBool
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -196,6 +209,7 @@ unboundedText =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromText
     , sqlTypeFromSql = SqlValue.toText
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -211,6 +225,7 @@ fixedText len =
     , sqlTypeMaximumLength = Just len
     , sqlTypeToSql = SqlValue.fromText
     , sqlTypeFromSql = SqlValue.toText
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -226,6 +241,7 @@ boundedText len =
     , sqlTypeMaximumLength = Just len
     , sqlTypeToSql = SqlValue.fromText
     , sqlTypeFromSql = SqlValue.toText
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -241,6 +257,7 @@ textSearchVector =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromText
     , sqlTypeFromSql = SqlValue.toText
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -256,6 +273,7 @@ date =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromDay
     , sqlTypeFromSql = SqlValue.toDay
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -277,6 +295,7 @@ timestamp =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromUTCTime
     , sqlTypeFromSql = SqlValue.toUTCTime
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -294,6 +313,7 @@ timestampWithoutZone =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromLocalTime
     , sqlTypeFromSql = SqlValue.toLocalTime
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |
@@ -309,6 +329,7 @@ oid =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = \(LibPQ.Oid (CTypes.CUInt word)) -> SqlValue.fromWord32 word
     , sqlTypeFromSql = fmap (LibPQ.Oid . CTypes.CUInt) . SqlValue.toWord32
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
 {- |

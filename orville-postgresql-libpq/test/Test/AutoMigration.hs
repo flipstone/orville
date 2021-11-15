@@ -47,6 +47,7 @@ autoMigrationTests pool =
     , prop_altersColumnDefaultValue_TextNumeric pool
     , prop_altersColumnDefaultValue_Bool pool
     , prop_altersColumnDefaultValue_Timelike pool
+    , prop_respectsImplicitDefaultOnSerialFields pool
     , prop_addAndRemovesUniqueConstraints pool
     , prop_addAndRemovesForeignKeyConstraints pool
     , prop_addAndRemovesIndexes pool
@@ -273,6 +274,41 @@ prop_altersColumnDefaultValue_Timelike =
         , pure . SomeField $ Orville.setDefaultValue Orville.currentLocalTimestampDefault (Orville.localTimestampField "column")
         , pure . SomeField $ Orville.setDefaultValue Orville.currentDateDefault (Orville.dateField "column")
         ]
+
+prop_respectsImplicitDefaultOnSerialFields :: Property.NamedDBProperty
+prop_respectsImplicitDefaultOnSerialFields =
+  Property.namedDBProperty "Respects implicit default on serial fields" $ \pool -> do
+    SomeField fieldDef <-
+      HH.forAllWith describeField $
+        Gen.element
+          [ SomeField $ Orville.serialField "column"
+          , SomeField $ Orville.bigSerialField "column"
+          ]
+
+    let tableDef =
+          Orville.mkTableDefinitionWithoutKey
+            "migration_test"
+            (Orville.marshallField id fieldDef)
+
+    firstTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid $ TestTable.dropTableDefSql tableDef
+          Orville.executeVoid $ TableDefinition.mkCreateTableExpr tableDef
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable tableDef]
+
+    originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
+    PgAssert.assertColumnDefaultExists originalTableDesc "column"
+
+    secondTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps firstTimeSteps
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable tableDef]
+
+    newTableDesc <- PgAssert.assertTableExists pool "migration_test"
+    PgAssert.assertColumnDefaultExists newTableDesc "column"
+    map RawSql.toExampleBytes secondTimeSteps === []
 
 assertDefaultValuesMigrateProperly ::
   Pool.Pool Conn.Connection ->

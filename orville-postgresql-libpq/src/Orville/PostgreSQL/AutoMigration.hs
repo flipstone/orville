@@ -414,9 +414,12 @@ mkAddAlterColumnActions relationDesc fieldDef =
                     (Nothing, Nothing) ->
                       (Nothing, Nothing)
                     (Just _, Nothing) ->
-                      ( Just (Expr.alterColumnDropDefault columnName)
-                      , Nothing
-                      )
+                      if Orville.sqlTypeDontDropImplicitDefaultDuringMigrate sqlType
+                        then (Nothing, Nothing)
+                        else
+                          ( Just (Expr.alterColumnDropDefault columnName)
+                          , Nothing
+                          )
                     (Nothing, Just newDefault) ->
                       ( Nothing
                       , Just (Expr.alterColumnSetDefault columnName newDefault)

@@ -177,7 +177,8 @@ module Orville.PostgreSQL
         SqlType.sqlTypeOid,
         SqlType.sqlTypeMaximumLength,
         SqlType.sqlTypeToSql,
-        SqlType.sqlTypeFromSql
+        SqlType.sqlTypeFromSql,
+        SqlType.sqlTypeDontDropImplicitDefaultDuringMigrate
       ),
 
     -- * numeric types
