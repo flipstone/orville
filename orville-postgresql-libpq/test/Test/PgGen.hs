@@ -25,13 +25,52 @@ pgInt32 :: HH.Gen Int32
 pgInt32 =
   Gen.integral (Range.linearFrom 0 minBound maxBound)
 
+{- |
+  Produces a double value that can be reliably round tripped through
+  PostgreSQL, which only allows 15 digits of decimal precision.
+
+  Generating doubles naively using 'Gen.double' produces large numbers with
+  more than 15 digits of precisio, so we use 'encodeFloat' to directly ensure
+  the precision of large numbers is within PostgreSQL's limit. Precision of
+  small numbers is enforced by rounding excess digits off.
+-}
 pgDouble :: HH.Gen Double
-pgDouble =
-  let -- Necessary because PostgreSQL only stores up to 15 digits of precision
-      -- With a 3-digit range, this gives us 12 places after the decimal
-      truncateLongDouble :: Double -> Double
-      truncateLongDouble = (/ 1e12) . (fromIntegral :: Int -> Double) . round . (* 1e12)
-   in flip Gen.subterm truncateLongDouble . Gen.double $ Range.linearFracFrom 0 (-1000) 1000
+pgDouble = do
+  let -- We use 14 instead of 15 here to allow for the addinitional power
+      -- of 10 that may end up coming from the mantissa, based on the
+      -- value of 'maxMantissa' below
+      maxExpn =
+        truncate (logBase 2 (10 ^ (14 :: Int)) :: Double)
+
+      maxMantissa =
+        10
+
+  mantissa <- Gen.integral (Range.linearFrom 0 (- maxMantissa) maxMantissa)
+  expn <- Gen.integral (Range.linearFrom 0 (- maxExpn) maxExpn)
+  pure . roundExcessPrecisionAfterDecimal 15 $ encodeFloat mantissa expn
+
+roundExcessPrecisionAfterDecimal :: Integer -> Double -> Double
+roundExcessPrecisionAfterDecimal maxTotalPrecision double =
+  let digitsBeforeDecimal =
+        decimalDigits (truncate double)
+
+      digitsAfterDecimal =
+        maxTotalPrecision - digitsBeforeDecimal
+
+      roundingFactor =
+        10.0 ^^ digitsAfterDecimal
+
+      roundDouble =
+        fromInteger . round
+   in if digitsAfterDecimal > 0
+        then roundDouble (double * roundingFactor) / roundingFactor
+        else double
+
+decimalDigits :: Integer -> Integer
+decimalDigits n =
+  if abs n < 10
+    then 1
+    else 1 + decimalDigits (quot n 10)
 
 pgIdentifier :: HH.Gen String
 pgIdentifier =
