@@ -246,7 +246,12 @@ runNullableRoundTripTest pool testCase =
   Pool.withResource pool $ \connection -> do
     let fieldDef = FieldDef.nullableField (roundTripFieldDef testCase)
 
-    value <- HH.forAll (Gen.maybe $ roundTripGen testCase)
+    value <-
+      HH.forAll $
+        Gen.frequency
+          [ (1, pure Nothing)
+          , (3, Just <$> roundTripGen testCase)
+          ]
 
     HH.cover 1 (String.fromString "Nothing") (Maybe.isNothing value)
     HH.cover 20 (String.fromString "Just") (Maybe.isJust value)
