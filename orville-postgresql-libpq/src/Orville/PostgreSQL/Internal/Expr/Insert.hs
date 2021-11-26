@@ -1,5 +1,5 @@
 {- |
-Module    : Orville.PostgreSQL.Expr.Insert
+Module    : Orville.PostgreSQL.Internal.Expr.Insert
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}

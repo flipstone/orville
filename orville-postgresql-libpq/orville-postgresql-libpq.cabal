@@ -93,6 +93,9 @@ library
       Orville.PostgreSQL.Internal.Expr.TableDefinition
       Orville.PostgreSQL.Internal.Expr.Transaction
       Orville.PostgreSQL.Internal.Expr.Update
+      Orville.PostgreSQL.Internal.Expr.Update.SetClause
+      Orville.PostgreSQL.Internal.Expr.Update.SetClauseList
+      Orville.PostgreSQL.Internal.Expr.Update.UpdateExpr
       Orville.PostgreSQL.Internal.Expr.ValueExpression
       Orville.PostgreSQL.Internal.Expr.Where
       Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
@@ -111,6 +114,7 @@ library
       Orville.PostgreSQL.Internal.SyntheticField
       Orville.PostgreSQL.Internal.TableIdentifier
       Orville.PostgreSQL.Internal.Transaction
+      Orville.PostgreSQL.Internal.Update
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField
       Orville.PostgreSQL.PgCatalog.PgAttribute

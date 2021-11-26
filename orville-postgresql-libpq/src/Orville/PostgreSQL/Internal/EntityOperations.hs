@@ -1,3 +1,8 @@
+{- |
+Module    : Orville.PostgreSQL.Internal.EntityOperations
+Copyright : Flipstone Technology Partners 2021
+License   : MIT
+-}
 module Orville.PostgreSQL.Internal.EntityOperations
   ( insertEntity,
     insertAndReturnEntity,
@@ -25,6 +30,7 @@ import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
+import qualified Orville.PostgreSQL.Internal.Update as Update
 
 {- |
   Inserts a entity into the specified table.
@@ -94,9 +100,8 @@ updateEntity ::
   key ->
   writeEntity ->
   m ()
-updateEntity tableDef key writeEntity =
-  Execute.executeVoid $
-    TableDef.mkUpdateExpr TableDef.WithoutReturning tableDef key writeEntity
+updateEntity tableDef key =
+  Update.executeUpdate . Update.updateToTable tableDef key
 
 {- |
   Updates the row with the given key in with the data given by 'writeEntity',
@@ -112,11 +117,8 @@ updateAndReturnEntity ::
   key ->
   writeEntity ->
   m (Maybe readEntity)
-updateAndReturnEntity tableDef key writeEntity =
-  fmap listToMaybe $
-    Execute.executeAndDecode
-      (TableDef.mkUpdateExpr TableDef.WithReturning tableDef key writeEntity)
-      (TableDef.tableMarshaller tableDef)
+updateAndReturnEntity tableDef key =
+  Update.executeUpdateReturnEntities . Update.updateToTableReturning tableDef key
 
 {- |
   Deletes the row with the given key

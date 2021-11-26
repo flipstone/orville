@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Insert.RowValues
+Module    : Orville.PostgreSQL.Internal.Expr.Insert.RowValues
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Insert.InsertColumnList
+Module    : Orville.PostgreSQL.Internal.Expr.Insert.InsertColumnList
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
