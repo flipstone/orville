@@ -4,7 +4,7 @@ module Orville.PostgreSQL.Internal.Update
   ( Update,
     updateToUpdateExpr,
     executeUpdate,
-    executeUpdateReturnEntities,
+    executeUpdateReturnEntity,
     updateToTableReturning,
     updateToTable,
   )
@@ -34,21 +34,21 @@ updateToUpdateExpr :: Update readEntity -> Expr.UpdateExpr
 updateToUpdateExpr (Update _ expr) = expr
 
 {- |
-  Excutes the database query for the 'Update' and returns '()'.
+  Executes the database query for the 'Update' and returns '()'.
 -}
 executeUpdate :: MonadOrville.MonadOrville m => Update readEntity -> m ()
 executeUpdate (Update _ expr) =
   Execute.executeVoid expr
 
-{- | Excutes the database query for the 'Update' and uses its 'SqlMarshaller' to decode the rows (that
-  were just updateed) as returned via a RETURNING clause.
+{- | Executes the database query for the 'Update' and uses its 'SqlMarshaller' to decode the row (that
+  was just updated) as returned via a RETURNING clause.
 -}
-executeUpdateReturnEntities :: MonadOrville.MonadOrville m => Update readEntity -> m (Maybe readEntity)
-executeUpdateReturnEntities (Update marshaller expr) =
+executeUpdateReturnEntity :: MonadOrville.MonadOrville m => Update readEntity -> m (Maybe readEntity)
+executeUpdateReturnEntity (Update marshaller expr) =
   fmap listToMaybe $ Execute.executeAndDecode expr marshaller
 
 {- |
-  Builds an 'Update' that will update all of the writeable columns described in the
+  Builds an 'Update' that will update all of the writable columns described in the
   'TableDefinition' without returning the data as seen by the database.
 -}
 updateToTable ::
@@ -60,7 +60,7 @@ updateToTable =
   updateTable WithoutReturning
 
 {- |
-  Builds an 'Update' that will update all of the writeable columns described in the
+  Builds an 'Update' that will update all of the writable columns described in the
   'TableDefinition' and returning the data as seen by the database. This is useful for getting
   database managed columns such as auto-incrementing identifiers and sequences.
 -}

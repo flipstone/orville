@@ -118,7 +118,7 @@ updateAndReturnEntity ::
   writeEntity ->
   m (Maybe readEntity)
 updateAndReturnEntity tableDef key =
-  Update.executeUpdateReturnEntities . Update.updateToTableReturning tableDef key
+  Update.executeUpdateReturnEntity . Update.updateToTableReturning tableDef key
 
 {- |
   Deletes the row with the given key
