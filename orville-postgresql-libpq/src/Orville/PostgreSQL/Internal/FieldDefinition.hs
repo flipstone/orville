@@ -44,6 +44,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     dateField,
     utcTimestampField,
     localTimestampField,
+    uuidField,
     fieldOfType,
   )
 where
@@ -53,6 +54,7 @@ import qualified Data.Coerce as Coerce
 import Data.Int (Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
+import qualified Data.UUID as UUID
 
 import Orville.PostgreSQL.Internal.DefaultValue (DefaultValue, coerceDefaultValue, defaultValueExpression)
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
@@ -371,6 +373,16 @@ localTimestampField ::
   String ->
   FieldDefinition NotNull Time.LocalTime
 localTimestampField = fieldOfType SqlType.timestampWithoutZone
+
+{- |
+  Builds a 'FieldDefinition' that stores Haskell 'UUID.UUID' values as the
+  PostgreSQL "UUID" type.
+-}
+uuidField ::
+  -- | Name of the field in the database
+  String ->
+  FieldDefinition NotNull UUID.UUID
+uuidField = fieldOfType SqlType.uuid
 
 {- |
   Builds a 'FieldDefinition' for will use the given 'SqlType' to determine

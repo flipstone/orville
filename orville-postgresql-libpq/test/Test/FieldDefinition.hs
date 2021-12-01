@@ -9,6 +9,7 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
+import qualified Data.UUID as UUID
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
@@ -36,6 +37,7 @@ fieldDefinitionTests pool =
       <> boundedTextField pool
       <> fixedTextField pool
       <> textSearchVectorField pool
+      <> uuidField pool
       <> dateField pool
       <> utcTimestampField pool
       <> localTimestampField pool
@@ -110,6 +112,15 @@ textSearchVectorField pool =
       { roundTripFieldDef = FieldDef.textSearchVectorField "foo"
       , roundTripDefaultValueTests = []
       , roundTripGen = tsVectorGen
+      }
+
+uuidField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+uuidField pool =
+  testFieldProperties pool "uuidField" $
+    FieldDefinitionTest
+      { roundTripFieldDef = FieldDef.uuidField "foo"
+      , roundTripDefaultValueTests = []
+      , roundTripGen = uuidGen
       }
 
 dateField :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
@@ -195,6 +206,14 @@ tsVectorGen :: HH.Gen T.Text
 tsVectorGen = do
   text <- Gen.text (Range.linear 1 1024) Gen.alphaNum
   pure $ T.concat [T.pack "'", text, T.pack "'"]
+
+uuidGen :: HH.Gen UUID.UUID
+uuidGen =
+  UUID.fromWords
+    <$> Gen.word32 Range.linearBounded
+    <*> Gen.word32 Range.linearBounded
+    <*> Gen.word32 Range.linearBounded
+    <*> Gen.word32 Range.linearBounded
 
 data FieldDefinitionTest a = FieldDefinitionTest
   { roundTripFieldDef :: FieldDef.FieldDefinition FieldDef.NotNull a

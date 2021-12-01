@@ -134,6 +134,7 @@ library
     , text
     , time >=1.5
     , transformers ==0.5.*
+    , uuid
   if flag(ci)
     ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wmissing-import-lists -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations -Wno-implicit-prelude -Wno-safe -Wno-unsafe
   else
@@ -186,4 +187,5 @@ test-suite spec
     , safe-exceptions
     , text
     , time
+    , uuid
   default-language: Haskell2010
