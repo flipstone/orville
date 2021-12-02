@@ -65,6 +65,7 @@ module Orville.PostgreSQL
     PrimaryKey.primaryKeyPart,
     SqlMarshaller.SqlMarshaller,
     SqlMarshaller.marshallField,
+    SqlMarshaller.marshallNested,
     SqlMarshaller.marshallSyntheticField,
     SqlMarshaller.marshallReadOnly,
     SqlMarshaller.marshallReadOnlyField,
