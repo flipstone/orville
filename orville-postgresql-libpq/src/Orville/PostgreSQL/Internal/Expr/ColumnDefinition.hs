@@ -21,6 +21,7 @@ module Orville.PostgreSQL.Internal.Expr.ColumnDefinition
     varchar,
     char,
     text,
+    uuid,
     boolean,
     doublePrecision,
     bigSerial,
@@ -126,6 +127,10 @@ char len =
 text :: DataType
 text =
   DataType (RawSql.fromString "TEXT")
+
+uuid :: DataType
+uuid =
+  DataType (RawSql.fromString "UUID")
 
 boolean :: DataType
 boolean =

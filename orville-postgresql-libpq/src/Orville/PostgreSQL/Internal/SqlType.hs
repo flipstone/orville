@@ -27,6 +27,7 @@ module Orville.PostgreSQL.Internal.SqlType
     fixedText,
     boundedText,
     textSearchVector,
+    uuid,
     -- date types
     date,
     timestamp,
@@ -43,6 +44,7 @@ where
 import Data.Int (Int16, Int32, Int64)
 import Data.Text (Text)
 import qualified Data.Time as Time
+import qualified Data.UUID as UUID
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Foreign.C.Types as CTypes
 
@@ -257,6 +259,21 @@ textSearchVector =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromText
     , sqlTypeFromSql = SqlValue.toText
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
+    }
+
+{- |
+  'uuid' defines a UUID type. It corresponds to the "UUID" type in PostgreSQL.
+-}
+uuid :: SqlType UUID.UUID
+uuid =
+  SqlType
+    { sqlTypeExpr = Expr.uuid
+    , sqlTypeReferenceExpr = Nothing
+    , sqlTypeOid = LibPQ.Oid 2950
+    , sqlTypeMaximumLength = Nothing
+    , sqlTypeToSql = SqlValue.fromText . UUID.toText
+    , sqlTypeFromSql = \a -> UUID.fromText =<< SqlValue.toText a
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
