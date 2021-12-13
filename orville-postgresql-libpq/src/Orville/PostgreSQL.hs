@@ -92,6 +92,7 @@ module Orville.PostgreSQL
     FieldDefinition.integerField,
     FieldDefinition.serialField,
     FieldDefinition.smallIntegerField,
+    FieldDefinition.uuidField,
     FieldDefinition.bigIntegerField,
     FieldDefinition.bigSerialField,
     FieldDefinition.doubleField,
@@ -196,6 +197,7 @@ module Orville.PostgreSQL
     SqlType.fixedText,
     SqlType.boundedText,
     SqlType.textSearchVector,
+    SqlType.uuid,
 
     -- * date types
     SqlType.date,
