@@ -6,6 +6,8 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.IndexDefinition
   ( uniqueIndex
   , simpleIndex
+  , simplePartialIndex
+  , uniquePartialIndex
   ) where
 
 import Data.List (intercalate)
@@ -19,12 +21,7 @@ uniqueIndex ::
   -> [SomeField]
   -> IndexDefinition
 uniqueIndex name tableDef fields =
-  IndexDefinition
-    { indexName = name
-    , indexUnique = True
-    , indexTable = tableName tableDef
-    , indexBody = indexFieldsBody fields
-    }
+  mkIndexDefinition True name tableDef fields []
 
 simpleIndex ::
      String
@@ -32,14 +29,47 @@ simpleIndex ::
   -> [SomeField]
   -> IndexDefinition
 simpleIndex name tableDef fields =
-  IndexDefinition
-    { indexName = name
-    , indexUnique = False
-    , indexTable = tableName tableDef
-    , indexBody = indexFieldsBody fields
-    }
+  mkIndexDefinition False name tableDef fields []
 
 indexFieldsBody :: [SomeField] -> String
 indexFieldsBody fields = "(" ++ intercalate "," (map name fields) ++ ")"
   where
     name (SomeField field) = escapedFieldName field
+
+-- | Works much the same as `uniqueIndex` but takes a list of strings that are the conditions of a
+-- where clause on index creation for partial indexes
+uniquePartialIndex :: String
+                   -> TableDefinition readEntity writeEntity key
+                   -> [SomeField]
+                   -> [String]
+                   -> IndexDefinition
+uniquePartialIndex =
+  mkIndexDefinition True
+
+-- | Works much the same as `simpleIndex` but takes a list of strings that are the conditions of a
+-- where clause on index creation for partial indexes
+simplePartialIndex :: String
+                   -> TableDefinition readEntity writeEntity key
+                   -> [SomeField]
+                   -> [String]
+                   -> IndexDefinition
+simplePartialIndex =
+  mkIndexDefinition False
+
+mkIndexDefinition :: Bool
+                  -> String
+                  -> TableDefinition readEntity writeEntity key
+                  -> [SomeField]
+                  -> [String]
+                  -> IndexDefinition
+mkIndexDefinition unique name tableDef fields whereStrs =
+  let
+    whereStr [] = ""
+    whereStr strs = "WHERE " <> intercalate " AND " (fmap (\a -> "(" <> a <> ")") strs)
+  in
+    IndexDefinition
+      { indexName = name
+      , indexUnique = unique
+      , indexTable = tableName tableDef
+      , indexBody = indexFieldsBody fields <> whereStr whereStrs
+      }

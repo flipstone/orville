@@ -96,6 +96,8 @@ module Database.Orville.PostgreSQL.Core
   , IndexDefinition(..)
   , uniqueIndex
   , simpleIndex
+  , simplePartialIndex
+  , uniquePartialIndex
   , ConstraintDefinition(..)
   , SequenceDefinition(..)
   , uniqueConstraint
@@ -174,6 +176,7 @@ module Database.Orville.PostgreSQL.Core
   , findRecordsBy
   , insertRecord
   , insertRecordMany
+  , insertRecordManyReturning
   , updateFields
   , updateRecord
   , sequenceNextVal
@@ -328,27 +331,37 @@ insertRecord ::
   -> writeEntity
   -> m readEntity
 insertRecord tableDef newRecord = do
+  results <- insertRecordManyReturning tableDef [newRecord]
+  case results of
+    [entity] -> pure entity
+    [] -> error "Didn't get a record back from the database!"
+    _ -> error "Got more than one record back from the database!"
+
+insertRecordManyReturning ::
+     MonadOrville conn m
+  => TableDefinition readEntity writeEntity key
+  -> [writeEntity]
+  -> m [readEntity]
+insertRecordManyReturning _ [] = pure []
+insertRecordManyReturning tableDef newRecords = do
   let builder = tableFromSql tableDef
       returnSelects = expr <$> fromSqlSelects builder
       returnColumns =
         List.intercalate ", " $ map (rawExprToSql . generateSql) returnSelects
       insertSql =
-        mkInsertClause
+        mkInsertManyClause
           (tableName tableDef)
-          (tableAssignableColumnNames tableDef) ++
+          (tableAssignableColumnNames tableDef)
+          (length newRecords) ++
         " RETURNING " ++ returnColumns
-      vals = runToSql (tableToSql tableDef) newRecord
+      vals = concatMap (runToSql $ tableToSql tableDef) newRecords
   rows <-
     withConnection $ \conn -> do
       executingSql InsertQuery insertSql $ do
         insert <- prepare conn insertSql
         void $ execute insert vals
         fetchAllRowsAL' insert
-  results <- decodeSqlRows builder rows
-  case results of
-    [entity] -> pure entity
-    [] -> error "Didn't get a record back from the database!"
-    _ -> error "Got more than one record back from the database!"
+  decodeSqlRows builder rows
 
 insertRecordMany ::
      MonadOrville conn m
