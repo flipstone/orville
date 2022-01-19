@@ -55,6 +55,28 @@ test_crud =
             (Map.fromList [(bpsId, bpsVirus), (brnId, brnVirus)])
             foundViruses
 
+      , testCase "Insert many returning" $ do
+          let bpsId = VirusId 1234
+              brnId = VirusId 5678
+
+              bpsVirus = Virus bpsId bpsVirusName bpsDiscoveredAt
+              brnVirus = Virus brnId brnVirusName brnDiscoveredAt
+              viruses = [bpsVirus, brnVirus]
+
+          run (TestDB.reset schema)
+          insertedViruses <- run (O.insertRecordManyReturning virusTable viruses)
+
+          assertEqual
+            "Viruses returned from insertRecordManyReturning didn't match input viruses"
+            viruses
+            insertedViruses
+
+          foundViruses <- run $ O.findRecords virusTable $ virusId <$> viruses
+          assertEqual
+            "Viruses found in database didn't match the originally inserted values"
+            (Map.fromList $ zip (virusId <$> viruses) viruses)
+            foundViruses
+
       , testCase "Update" $ do
           let testId = VirusId 1234
               bpsVirus = Virus testId bpsVirusName bpsDiscoveredAt
