@@ -115,7 +115,8 @@ fieldType = _fieldType
 fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue a)
 fieldDefaultValue = _fieldDefaultValue
 
-{- | A 'FieldNullability is returned by the 'fieldNullability' function, which
+{- |
+ A 'FieldNullability is returned by the 'fieldNullability' function, which
  can be used when a function works on both 'Nullable' and 'NotNull' functions
  but needs to deal with each type of field separately. It adds wrapper
  constructors around the 'FieldDefinition' that you can pattern match on to
@@ -125,7 +126,8 @@ data FieldNullability a
   = NullableField (FieldDefinition Nullable a)
   | NotNullField (FieldDefinition NotNull a)
 
-{- | Resolves the 'nullablity' of a field to a concrete type, which is returned
+{- |
+ Resolves the 'nullablity' of a field to a concrete type, which is returned
  via the 'FieldNullability' type. You can pattern match on this type to then
  extract the either 'Nullable' or 'NotNull' not field for cases where you
  may require different logic based on the nullability of a field.
@@ -155,9 +157,9 @@ fieldValueToSqlValue =
 
 {- |
   Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
-  This may fail, in which case 'Nothing' is returned.
+  This may fail, in which case a 'Left' is returned with an error message.
 -}
-fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Maybe a
+fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Either String a
 fieldValueFromSqlValue =
   SqlType.sqlTypeFromSql . fieldType
 
@@ -419,7 +421,7 @@ nullableField field =
           , SqlType.sqlTypeFromSql =
               \sqlValue ->
                 if SqlValue.isSqlNull sqlValue
-                  then Just Nothing
+                  then Right Nothing
                   else Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
           }
    in FieldDefinition

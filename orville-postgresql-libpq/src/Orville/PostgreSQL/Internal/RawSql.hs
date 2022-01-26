@@ -230,7 +230,7 @@ buildSqlWithProgress escaping progress rawSql =
 
       pure (builder, progress)
     Parameter value ->
-      let newProgress = snocParam progress (SqlValue.toPGValue value)
+      let newProgress = snocParam progress (SqlValue.toPgValue value)
           placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
        in pure (placeholder, newProgress)
     Append first second -> do

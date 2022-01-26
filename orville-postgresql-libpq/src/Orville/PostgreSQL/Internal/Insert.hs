@@ -13,7 +13,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller)
+import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (ReturningOption (WithReturning, WithoutReturning), TableDefinition, mkInsertExpr, tableMarshaller)
 
 {- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
@@ -21,7 +21,7 @@ import Orville.PostgreSQL.Internal.TableDefinition (ReturningOption (WithReturni
   decode the database result set when it is executed.
 -}
 data Insert readEntity where
-  Insert :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
+  Insert :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
 
 {- |
   Extracts the query that will be run when the insert is executed. Normally you
@@ -75,7 +75,9 @@ insertTable ::
   NonEmpty writeEntity ->
   Insert readEntity
 insertTable returningOption tableDef entities =
-  rawInsertExpr (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef entities)
+  rawInsertExpr
+    (tableMarshaller tableDef)
+    (mkInsertExpr returningOption tableDef entities)
 
 {- |
   Builds an 'Insert' that will execute the specified query and use the given 'SqlMarshaller' to
@@ -87,5 +89,5 @@ insertTable returningOption tableDef entities =
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.InsertExpr'.
 -}
-rawInsertExpr :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
+rawInsertExpr :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
 rawInsertExpr = Insert

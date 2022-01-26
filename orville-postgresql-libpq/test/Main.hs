@@ -18,6 +18,7 @@ import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
+import qualified Test.MarshallError as MarshallError
 import qualified Test.PgCatalog as PgCatalog
 import qualified Test.Plan as Plan
 import qualified Test.Property as Property
@@ -37,15 +38,16 @@ main = do
     Property.checkGroups
       [ Connection.connectionTests pool
       , RawSql.rawSqlTests
-      , TableDefinition.tableDefinitionTests pool
-      , SqlMarshaller.sqlMarshallerTests
-      , FieldDefinition.fieldDefinitionTests pool
-      , EntityOperations.entityOperationsTests pool
+      , SqlType.sqlTypeTests pool
       , ExprInsertUpdateDelete.insertUpdateDeleteTests pool
       , ExprWhere.whereTests pool
       , ExprOrderBy.orderByTests pool
       , ExprTableDefinition.tableDefinitionTests pool
-      , SqlType.sqlTypeTests pool
+      , FieldDefinition.fieldDefinitionTests pool
+      , SqlMarshaller.sqlMarshallerTests
+      , MarshallError.marshallErrorTests pool
+      , TableDefinition.tableDefinitionTests pool
+      , EntityOperations.entityOperationsTests pool
       , SelectOptions.selectOptionsTests
       , ReservedWords.reservedWordsTests pool
       , Transaction.transactionTests pool

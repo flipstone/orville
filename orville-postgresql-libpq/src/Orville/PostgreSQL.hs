@@ -64,6 +64,11 @@ module Orville.PostgreSQL
     PrimaryKey.compositePrimaryKey,
     PrimaryKey.primaryKeyPart,
     SqlMarshaller.SqlMarshaller,
+    SqlMarshaller.AnnotatedSqlMarshaller,
+    SqlMarshaller.annotateSqlMarshaller,
+    SqlMarshaller.annotateSqlMarshallerEmptyAnnotation,
+    SqlMarshaller.unannotatedSqlMarshaller,
+    SqlMarshaller.mapSqlMarshaller,
     SqlMarshaller.marshallField,
     SqlMarshaller.marshallNested,
     SqlMarshaller.marshallSyntheticField,
@@ -137,6 +142,7 @@ module Orville.PostgreSQL
     DefaultValue.rawSqlDefault,
     Orville.Orville,
     Orville.runOrville,
+    Orville.runOrvilleWithState,
     MonadOrville.MonadOrville,
     MonadOrville.withConnection,
     Transaction.withTransaction,
@@ -145,6 +151,10 @@ module Orville.PostgreSQL
     OrvilleState.OrvilleState,
     OrvilleState.newOrvilleState,
     OrvilleState.resetOrvilleState,
+    ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
+    ErrorDetailLevel.defaultErrorDetailLevel,
+    ErrorDetailLevel.minimalErrorDetailLevel,
+    ErrorDetailLevel.maximalErrorDetailLevel,
     SelectOptions.SelectOptions,
     SelectOptions.where_,
     SelectOptions.emptySelectOptions,
@@ -205,7 +215,7 @@ module Orville.PostgreSQL
     -- type conversions
     SqlType.foreignRefType,
     SqlType.convertSqlType,
-    SqlType.maybeConvertSqlType,
+    SqlType.tryConvertSqlType,
     Expr.QueryExpr,
     Execute.executeAndDecode,
     Execute.executeVoid,
@@ -216,6 +226,7 @@ import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Internal.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
+import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition

@@ -10,6 +10,7 @@ import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Time as Time
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL.Connection as Connection
@@ -419,10 +420,21 @@ runDecodingTest pool test =
             Expr.selectStar
             (Just $ Expr.tableExpr tableName Nothing Nothing Nothing Nothing Nothing)
 
-      (maybeA : _) <- MIO.liftIO $ ExecutionResult.decodeRows result (sqlType test)
-      maybeA HH.=== Just (expectedValue test)
+      rows <- MIO.liftIO $ ExecutionResult.readRows result
+
+      let actual = map (decodeSingleValue (sqlType test)) rows
+
+      actual === [Right $ expectedValue test]
 
 dropAndRecreateTable :: Connection.Connection -> String -> String -> IO ()
 dropAndRecreateTable connection tableName columnTypeDDL = do
   Connection.executeRawVoid connection (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
   Connection.executeRawVoid connection (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []
+
+decodeSingleValue :: SqlType.SqlType a -> [(key, SqlValue.SqlValue)] -> Either String a
+decodeSingleValue valueType row =
+  case row of
+    [] ->
+      Left "Unable to decode single value from empty row"
+    (_, sqlValue) : _ ->
+      SqlType.sqlTypeFromSql valueType sqlValue

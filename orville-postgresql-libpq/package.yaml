@@ -25,9 +25,11 @@ library:
     - Orville.PostgreSQL.AutoMigration
     - Orville.PostgreSQL.Connection
     - Orville.PostgreSQL.Internal.DefaultValue
+    - Orville.PostgreSQL.Internal.ErrorDetailLevel
     - Orville.PostgreSQL.Internal.ExecutionResult
     - Orville.PostgreSQL.Internal.Expr
     - Orville.PostgreSQL.Internal.FieldDefinition
+    - Orville.PostgreSQL.Internal.MarshallError
     - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PrimaryKey
     - Orville.PostgreSQL.Internal.RawSql

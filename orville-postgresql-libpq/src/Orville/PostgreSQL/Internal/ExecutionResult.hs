@@ -11,17 +11,15 @@ module Orville.PostgreSQL.Internal.ExecutionResult
     Row (..),
     FakeLibPQResult,
     mkFakeLibPQResult,
-    decodeRows,
     readRows,
   )
 where
 
 import qualified Data.ByteString as BS
-import Data.Foldable (foldl')
 import qualified Data.Map.Strict as Map
+import qualified Data.Maybe as Maybe
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
-import Orville.PostgreSQL.Internal.SqlType (SqlType (sqlTypeFromSql))
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -83,9 +81,7 @@ instance ExecutionResult LibPQ.Result where
 -}
 data FakeLibPQResult = FakeLibPQResult
   { fakeLibPQColumns :: Map.Map Column BS.ByteString
-  , fakeLibPQMaxColumn :: Maybe Column
-  , fakeLibPQMaxRow :: Maybe Row
-  , fakeLibPQValues :: Map.Map (Row, Column) SqlValue
+  , fakeLibPQRows :: Map.Map Row (Map.Map Column SqlValue)
   }
 
 {- |
@@ -101,29 +97,34 @@ mkFakeLibPQResult ::
   [[SqlValue]] ->
   FakeLibPQResult
 mkFakeLibPQResult columnList valuesList =
-  let indexedValues = do
+  let indexedRows = do
         (rowNumber, row) <- zip [Row 0 ..] valuesList
-        (columnNumber, value) <- zip [Column 0 ..] row
-        pure ((rowNumber, columnNumber), value)
 
-      maxIndex :: (Row, Column) -> (Row, Column) -> (Row, Column)
-      maxIndex (rowA, columnA) (rowB, columnB) =
-        (max rowA rowB, max columnA columnB)
+        let indexedColumns = zip [Column 0 ..] row
 
-      (maxRow, maxColumn) =
-        case map fst indexedValues of
-          [] ->
-            (Nothing, Nothing)
-          firstIndex : rest ->
-            let (row, column) =
-                  foldl' maxIndex firstIndex rest
-             in (Just row, Just column)
+        pure (rowNumber, Map.fromList indexedColumns)
    in FakeLibPQResult
         { fakeLibPQColumns = Map.fromList (zip [Column 0 ..] columnList)
-        , fakeLibPQValues = Map.fromList indexedValues
-        , fakeLibPQMaxRow = maxRow
-        , fakeLibPQMaxColumn = maxColumn
+        , fakeLibPQRows = Map.fromList indexedRows
         }
+
+fakeLibPQMaxRow :: FakeLibPQResult -> Maybe Row
+fakeLibPQMaxRow =
+  fmap fst . Map.lookupMax . fakeLibPQRows
+
+fakeLibPQMaxColumn :: FakeLibPQResult -> Maybe Column
+fakeLibPQMaxColumn result =
+  let maxColumnsByRow =
+        map fst
+          . Maybe.mapMaybe Map.lookupMax
+          . Map.elems
+          . fakeLibPQRows
+          $ result
+   in case maxColumnsByRow of
+        [] ->
+          Nothing
+        _ ->
+          Just (maximum maxColumnsByRow)
 
 instance ExecutionResult FakeLibPQResult where
   maxRowNumber = pure . fakeLibPQMaxRow
@@ -137,10 +138,9 @@ fakeLibPQColumnName result column =
 
 fakeLibPQGetValue :: FakeLibPQResult -> Row -> Column -> SqlValue
 fakeLibPQGetValue result rowNumber columnNumber =
-  Map.findWithDefault
-    SqlValue.sqlNull
-    (rowNumber, columnNumber)
-    (fakeLibPQValues result)
+  Maybe.fromMaybe SqlValue.sqlNull $ do
+    row <- Map.lookup rowNumber (fakeLibPQRows result)
+    Map.lookup columnNumber row
 
 readRows :: LibPQ.Result -> IO [[(Maybe BS.ByteString, SqlValue)]]
 readRows res = do
@@ -174,19 +174,3 @@ listOfIndicesByCount n =
   if n > 0
     then [0 .. (n - 1)]
     else []
-
--- N.B. This only works for the first column of a table currently.
--- If there are no results in the given `Result` then we return an empty list
--- Otherwise we attempt to decode each result with the given `SqlType`.
-decodeRows :: LibPQ.Result -> SqlType a -> IO [Maybe a]
-decodeRows res sqlType = do
-  rows <- readRows res
-  pure $ map (decodeSingleValue sqlType) rows
-
-decodeSingleValue :: SqlType a -> [(key, SqlValue)] -> Maybe a
-decodeSingleValue sqlType row =
-  case row of
-    [] ->
-      Nothing
-    (_, sqlValue) : _ ->
-      sqlTypeFromSql sqlType sqlValue

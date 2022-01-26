@@ -10,6 +10,7 @@ import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
@@ -254,11 +255,11 @@ runRoundTripTest pool testCase =
     let roundTripResult =
           case rows of
             [[(_, sqlValue)]] ->
-              Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
+              FieldDef.fieldValueFromSqlValue fieldDef sqlValue
             _ ->
               Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
-    roundTripResult HH.=== Right (Just value)
+    roundTripResult === Right value
 
 runNullableRoundTripTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runNullableRoundTripTest pool testCase =
@@ -297,11 +298,11 @@ runNullableRoundTripTest pool testCase =
     let roundTripResult =
           case rows of
             [[(_, sqlValue)]] ->
-              Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
+              FieldDef.fieldValueFromSqlValue fieldDef sqlValue
             _ ->
               Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
-    roundTripResult HH.=== Right (Just value)
+    roundTripResult === Right value
 
 runNullCounterExampleTest :: Pool.Pool Connection.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runNullCounterExampleTest pool testCase =
@@ -320,7 +321,7 @@ runNullCounterExampleTest pool testCase =
 
     case result of
       Left err ->
-        Connection.sqlExecutionErrorSqlState err HH.=== Just (B8.pack "23502")
+        Connection.sqlExecutionErrorSqlState err === Just (B8.pack "23502")
       Right _ -> do
         HH.footnote "Expected insert query to fail, but it did not"
         HH.failure
@@ -363,11 +364,11 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue =
     let roundTripResult =
           case rows of
             [[(_, sqlValue)]] ->
-              Right (FieldDef.fieldValueFromSqlValue fieldDef sqlValue)
+              FieldDef.fieldValueFromSqlValue fieldDef sqlValue
             _ ->
               Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
-    roundTripResult HH.=== Right (Just value)
+    roundTripResult === Right value
 
 runDefaultValueInsertOnlyTest ::
   Pool.Pool Connection.Connection ->

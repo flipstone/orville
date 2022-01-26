@@ -38,8 +38,8 @@ import Orville.PostgreSQL.Internal.ConstraintDefinition (ConstraintDefinition, C
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
-import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
-import Orville.PostgreSQL.Internal.SqlMarshaller (MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerDerivedColumns)
+import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr, primaryKeyFieldNames)
+import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 
@@ -59,7 +59,7 @@ import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdS
 data TableDefinition key writeEntity readEntity = TableDefinition
   { _tableIdentifier :: TableIdentifier
   , _tablePrimaryKey :: TablePrimaryKey key
-  , _tableMarshaller :: SqlMarshaller writeEntity readEntity
+  , _tableMarshaller :: AnnotatedSqlMarshaller writeEntity readEntity
   , _tableColumnsToDrop :: Set.Set String
   , _tableConstraints :: Map.Map ConstraintMigrationKey ConstraintDefinition
   , _tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
@@ -87,8 +87,13 @@ mkTableDefinition ::
   SqlMarshaller writeEntity readEntity ->
   TableDefinition (HasKey key) writeEntity readEntity
 mkTableDefinition name primaryKey marshaller =
-  (mkTableDefinitionWithoutKey name marshaller)
-    { _tablePrimaryKey = TableHasKey primaryKey
+  TableDefinition
+    { _tableIdentifier = unqualifiedNameToTableId name
+    , _tablePrimaryKey = TableHasKey primaryKey
+    , _tableMarshaller = annotateSqlMarshaller (toList $ primaryKeyFieldNames primaryKey) marshaller
+    , _tableColumnsToDrop = Set.empty
+    , _tableConstraints = Map.empty
+    , _tableIndexes = Map.empty
     }
 
 {- |
@@ -108,7 +113,7 @@ mkTableDefinitionWithoutKey name marshaller =
   TableDefinition
     { _tableIdentifier = unqualifiedNameToTableId name
     , _tablePrimaryKey = TableHasNoKey
-    , _tableMarshaller = marshaller
+    , _tableMarshaller = annotateSqlMarshallerEmptyAnnotation marshaller
     , _tableColumnsToDrop = Set.empty
     , _tableConstraints = Map.empty
     , _tableIndexes = Map.empty
@@ -242,7 +247,7 @@ tablePrimaryKey def =
 {- |
   Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
 -}
-tableMarshaller :: TableDefinition key writeEntity readEntity -> SqlMarshaller writeEntity readEntity
+tableMarshaller :: TableDefinition key writeEntity readEntity -> AnnotatedSqlMarshaller writeEntity readEntity
 tableMarshaller = _tableMarshaller
 
 {- |
@@ -268,7 +273,7 @@ mkTableColumnDefinitions ::
   [Expr.ColumnDefinition]
 mkTableColumnDefinitions tableDef =
   foldMarshallerFields
-    (tableMarshaller tableDef)
+    (unannotatedSqlMarshaller $ tableMarshaller tableDef)
     []
     (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
 
@@ -308,6 +313,7 @@ mkReturningClause returningOption tableDef =
         . Expr.returningExpr
         . Expr.selectDerivedColumns
         . marshallerDerivedColumns
+        . unannotatedSqlMarshaller
         . tableMarshaller
         $ tableDef
 
@@ -322,11 +328,14 @@ mkInsertExpr ::
   NonEmpty writeEntity ->
   Expr.InsertExpr
 mkInsertExpr returningOption tableDef entities =
-  let insertColumnList =
-        mkInsertColumnList . tableMarshaller $ tableDef
+  let marshaller =
+        unannotatedSqlMarshaller $ tableMarshaller tableDef
+
+      insertColumnList =
+        mkInsertColumnList marshaller
 
       insertSource =
-        mkInsertSource (tableMarshaller tableDef) entities
+        mkInsertSource marshaller entities
    in Expr.insertExpr
         (tableName tableDef)
         (Just insertColumnList)
@@ -400,7 +409,7 @@ mkUpdateExpr ::
 mkUpdateExpr returningOption tableDef key writeEntity =
   let setClauses =
         foldMarshallerFields
-          (tableMarshaller tableDef)
+          (unannotatedSqlMarshaller $ tableMarshaller tableDef)
           []
           (collectSetClauses writeEntity)
 

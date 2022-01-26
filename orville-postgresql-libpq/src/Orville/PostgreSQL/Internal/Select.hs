@@ -15,7 +15,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller, marshallerDerivedColumns)
+import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, tableMarshaller, tableName)
 
 {- |
@@ -24,7 +24,7 @@ import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, tableMarsha
   database result set when it is executed.
 -}
 data Select readEntity where
-  Select :: SqlMarshaller writeEntity readEntity -> Expr.QueryExpr -> Select readEntity
+  Select :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.QueryExpr -> Select readEntity
 
 {- |
   Extracts the query that will be run when the select is executed. Normally you
@@ -65,13 +65,13 @@ selectTable tableDef =
   marshaller.
 -}
 selectMarshalledColumns ::
-  SqlMarshaller writeEntity readEntity ->
+  AnnotatedSqlMarshaller writeEntity readEntity ->
   Expr.QualifiedTableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
 selectMarshalledColumns marshaller =
   selectSelectList
-    (Expr.selectDerivedColumns (marshallerDerivedColumns marshaller))
+    (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
     marshaller
 
 {- |
@@ -90,7 +90,7 @@ selectMarshalledColumns marshaller =
 -}
 selectSelectList ::
   Expr.SelectList ->
-  SqlMarshaller writeEntity readEntity ->
+  AnnotatedSqlMarshaller writeEntity readEntity ->
   Expr.QualifiedTableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
@@ -120,7 +120,7 @@ selectSelectList selectList marshaller qualifiedTableName selectOptions =
   functions, or use @RawSql.fromRawSql@ to build a raw 'Expr.QueryExpr'.
 -}
 rawSelectQueryExpr ::
-  SqlMarshaller writeEntity readEntity ->
+  AnnotatedSqlMarshaller writeEntity readEntity ->
   Expr.QueryExpr ->
   Select readEntity
 rawSelectQueryExpr = Select

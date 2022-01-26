@@ -272,7 +272,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
   let addAlterColumnActions =
         concat $
           Orville.foldMarshallerFields
-            (Orville.tableMarshaller tableDef)
+            (Orville.unannotatedSqlMarshaller $ Orville.tableMarshaller tableDef)
             []
             (Orville.collectFromField Orville.IncludeReadOnlyColumns (mkAddAlterColumnActions relationDesc))
 
@@ -777,7 +777,7 @@ findCurrentNamespace = do
   results <-
     Orville.executeAndDecode
       currentNamespaceQuery
-      (Orville.marshallField id PgCatalog.namespaceNameField)
+      (Orville.annotateSqlMarshallerEmptyAnnotation $ Orville.marshallField id PgCatalog.namespaceNameField)
 
   liftIO $
     case results of
