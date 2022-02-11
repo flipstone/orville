@@ -15,6 +15,7 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 
@@ -25,7 +26,8 @@ import qualified Test.TestTable as TestTable
 
 tableDefinitionTests :: Pool.Pool Conn.Connection -> Property.Group
 tableDefinitionTests pool =
-  Property.group "TableDefinition" $
+  Property.group
+    "TableDefinition"
     [ prop_roundTrip pool
     , prop_readOnlyFields pool
     , prop_primaryKey pool
@@ -39,7 +41,7 @@ prop_roundTrip =
 
     let insertFoo =
           TableDefinition.mkInsertExpr
-            TableDefinition.WithoutReturning
+            ReturningOption.WithoutReturning
             Foo.table
             (originalFoo :| [])
 
@@ -61,7 +63,7 @@ prop_readOnlyFields =
     originalBar <- HH.forAll Bar.generate
 
     let insertBar =
-          TableDefinition.mkInsertExpr TableDefinition.WithoutReturning Bar.table (originalBar :| [])
+          TableDefinition.mkInsertExpr ReturningOption.WithoutReturning Bar.table (originalBar :| [])
 
         selectBars =
           Select.selectTable Bar.table mempty
@@ -73,7 +75,7 @@ prop_readOnlyFields =
         Orville.executeVoid insertBar
         Select.executeSelect selectBars
 
-    (fmap Bar.barName) barsFromDB === [Bar.barName originalBar]
+    fmap Bar.barName barsFromDB === [Bar.barName originalBar]
 
 prop_primaryKey :: Property.NamedDBProperty
 prop_primaryKey =
@@ -85,7 +87,7 @@ prop_primaryKey =
 
         insertFoos =
           TableDefinition.mkInsertExpr
-            TableDefinition.WithoutReturning
+            ReturningOption.WithoutReturning
             Foo.table
             (originalFoo :| [conflictingFoo])
 
@@ -115,7 +117,7 @@ prop_uniqueConstraint =
 
         insertFoos =
           TableDefinition.mkInsertExpr
-            TableDefinition.WithoutReturning
+            ReturningOption.WithoutReturning
             Foo.table
             (originalFoo :| [conflictingFoo])
 

@@ -15,36 +15,39 @@ import Data.Maybe (listToMaybe)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller)
-import Orville.PostgreSQL.Internal.TableDefinition (HasKey, ReturningOption (WithReturning, WithoutReturning), TableDefinition, mkUpdateExpr, tableMarshaller)
+import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkUpdateExpr, tableMarshaller)
 
 {- | Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a
   'SqlMarshaller' bound to it that, when the update returns data from the database, will be used to
   decode the database result set when it is executed.
 -}
-data Update readEntity where
-  Update :: SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity
+data Update readEntity returningClause where
+  UpdateNoReturning :: SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity NoReturningClause
+  UpdateReturning :: SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity ReturningClause
 
 {- |
   Extracts the query that will be run when the update is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
 -}
-updateToUpdateExpr :: Update readEntity -> Expr.UpdateExpr
-updateToUpdateExpr (Update _ expr) = expr
+updateToUpdateExpr :: Update readEntity returningClause -> Expr.UpdateExpr
+updateToUpdateExpr (UpdateNoReturning _ expr) = expr
+updateToUpdateExpr (UpdateReturning _ expr) = expr
 
 {- |
   Executes the database query for the 'Update' and returns '()'.
 -}
-executeUpdate :: MonadOrville.MonadOrville m => Update readEntity -> m ()
-executeUpdate (Update _ expr) =
-  Execute.executeVoid expr
+executeUpdate :: MonadOrville.MonadOrville m => Update readEntity returningClause -> m ()
+executeUpdate =
+  Execute.executeVoid . updateToUpdateExpr
 
 {- | Executes the database query for the 'Update' and uses its 'SqlMarshaller' to decode the row (that
   was just updated) as returned via a RETURNING clause.
 -}
-executeUpdateReturnEntity :: MonadOrville.MonadOrville m => Update readEntity -> m (Maybe readEntity)
-executeUpdateReturnEntity (Update marshaller expr) =
+executeUpdateReturnEntity :: MonadOrville.MonadOrville m => Update readEntity ReturningClause -> m (Maybe readEntity)
+executeUpdateReturnEntity (UpdateReturning marshaller expr) =
   fmap listToMaybe $ Execute.executeAndDecode expr marshaller
 
 {- |
@@ -55,7 +58,7 @@ updateToTable ::
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  Update readEntity
+  Update readEntity NoReturningClause
 updateToTable =
   updateTable WithoutReturning
 
@@ -68,19 +71,19 @@ updateToTableReturning ::
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  Update readEntity
+  Update readEntity ReturningClause
 updateToTableReturning =
   updateTable WithReturning
 
 -- an internal helper function for creating an update with a given `ReturningOption`
 updateTable ::
-  ReturningOption ->
+  ReturningOption returningClause ->
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  Update readEntity
+  Update readEntity returningClause
 updateTable returningOption tableDef key writeEntity =
-  rawUpdateExpr (tableMarshaller tableDef) (mkUpdateExpr returningOption tableDef key writeEntity)
+  rawUpdateExpr returningOption (tableMarshaller tableDef) (mkUpdateExpr returningOption tableDef key writeEntity)
 
 {- |
   Builds an 'Update' that will execute the specified query and use the given 'SqlMarshaller' to
@@ -92,5 +95,6 @@ updateTable returningOption tableDef key writeEntity =
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.UpdateExpr'.
 -}
-rawUpdateExpr :: SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity
-rawUpdateExpr = Update
+rawUpdateExpr :: ReturningOption returningClause -> SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity returningClause
+rawUpdateExpr WithReturning = UpdateReturning
+rawUpdateExpr WithoutReturning = UpdateNoReturning

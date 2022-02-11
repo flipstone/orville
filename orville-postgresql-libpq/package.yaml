@@ -31,6 +31,7 @@ library:
     - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PrimaryKey
     - Orville.PostgreSQL.Internal.RawSql
+    - Orville.PostgreSQL.Internal.ReturningOption
     - Orville.PostgreSQL.Internal.Select
     - Orville.PostgreSQL.Internal.SelectOptions
     - Orville.PostgreSQL.Internal.SqlMarshaller

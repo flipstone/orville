@@ -27,6 +27,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
+import qualified Orville.PostgreSQL.Internal.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
@@ -130,7 +131,7 @@ deleteEntity ::
   m ()
 deleteEntity tableDef key =
   Execute.executeVoid $
-    TableDef.mkDeleteExpr TableDef.WithoutReturning tableDef key
+    TableDef.mkDeleteExpr ReturningOption.WithoutReturning tableDef key
 
 {- |
   Deletes the row with the given key, returning the row that was deleted.
@@ -144,7 +145,7 @@ deleteAndReturnEntity ::
 deleteAndReturnEntity tableDef key =
   fmap listToMaybe $
     Execute.executeAndDecode
-      (TableDef.mkDeleteExpr TableDef.WithReturning tableDef key)
+      (TableDef.mkDeleteExpr ReturningOption.WithReturning tableDef key)
       (TableDef.tableMarshaller tableDef)
 
 {- |

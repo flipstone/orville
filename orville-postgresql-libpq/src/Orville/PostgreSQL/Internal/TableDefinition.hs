@@ -26,7 +26,6 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkInsertSource,
     mkUpdateExpr,
     mkDeleteExpr,
-    ReturningOption (WithoutReturning, WithReturning),
   )
 where
 
@@ -39,6 +38,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr)
+import Orville.PostgreSQL.Internal.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Internal.SqlMarshaller (MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, collectFromField, foldMarshallerFields, marshallerDerivedColumns)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
@@ -286,17 +286,8 @@ mkTablePrimaryKeyExpr tableDef =
     TableHasNoKey ->
       Nothing
 
-{- |
-  Specifies whether or not a @RETURNING@ clause should be included when a
-  query expression is built. This type is found as a parameter on a number
-  of the query building functions related to 'TableDefinition'.
--}
-data ReturningOption
-  = WithoutReturning
-  | WithReturning
-
 mkReturningClause ::
-  ReturningOption ->
+  ReturningOption returningClause ->
   TableDefinition key writeEntity readEntty ->
   Maybe Expr.ReturningExpr
 mkReturningClause returningOption tableDef =
@@ -317,7 +308,7 @@ mkReturningClause returningOption tableDef =
   return the insert rows or not, depending on the 'ReturnOption' given.
 -}
 mkInsertExpr ::
-  ReturningOption ->
+  ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   Expr.InsertExpr
@@ -392,7 +383,7 @@ collectSqlValue entry encodeRest entity =
   SQL table when it is executed.
 -}
 mkUpdateExpr ::
-  ReturningOption ->
+  ReturningOption returningClause ->
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
@@ -418,7 +409,7 @@ mkUpdateExpr returningOption tableDef key writeEntity =
   Builds an 'Expr.DeleteExpr' that will delete the entity with the given 'key'.
 -}
 mkDeleteExpr ::
-  ReturningOption ->
+  ReturningOption returningClause ->
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   Expr.DeleteExpr

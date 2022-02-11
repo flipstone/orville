@@ -13,36 +13,39 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller)
-import Orville.PostgreSQL.Internal.TableDefinition (ReturningOption (WithReturning, WithoutReturning), TableDefinition, mkInsertExpr, tableMarshaller)
+import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExpr, tableMarshaller)
 
 {- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
   'SqlMarshaller' bound to it that, when the insert returns data from the database, will be used to
   decode the database result set when it is executed.
 -}
-data Insert readEntity where
-  Insert :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
+data Insert readEntity returningClause where
+  Insert :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity NoReturningClause
+  InsertReturning :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity ReturningClause
 
 {- |
   Extracts the query that will be run when the insert is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
 -}
-insertToInsertExpr :: Insert readEntity -> Expr.InsertExpr
+insertToInsertExpr :: Insert readEntity returningClause -> Expr.InsertExpr
 insertToInsertExpr (Insert _ expr) = expr
+insertToInsertExpr (InsertReturning _ expr) = expr
 
 {- |
   Excutes the database query for the 'Insert' and returns '()'.
 -}
-executeInsert :: MonadOrville.MonadOrville m => Insert readEntity -> m ()
+executeInsert :: MonadOrville.MonadOrville m => Insert readEntity NoReturningClause -> m ()
 executeInsert (Insert _ expr) =
   Execute.executeVoid expr
 
 {- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
   were just inserted) as returned via a RETURNING clause.
 -}
-executeInsertReturnEntities :: MonadOrville.MonadOrville m => Insert readEntity -> m [readEntity]
-executeInsertReturnEntities (Insert marshaller expr) =
+executeInsertReturnEntities :: MonadOrville.MonadOrville m => Insert readEntity ReturningClause -> m [readEntity]
+executeInsertReturnEntities (InsertReturning marshaller expr) =
   Execute.executeAndDecode expr marshaller
 
 {- |
@@ -52,7 +55,7 @@ executeInsertReturnEntities (Insert marshaller expr) =
 insertToTable ::
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  Insert readEntity
+  Insert readEntity NoReturningClause
 insertToTable =
   insertTable WithoutReturning
 
@@ -64,18 +67,18 @@ insertToTable =
 insertToTableReturning ::
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  Insert readEntity
+  Insert readEntity ReturningClause
 insertToTableReturning =
   insertTable WithReturning
 
 -- an internal helper function for creating an insert with a given `ReturningOption`
 insertTable ::
-  ReturningOption ->
+  ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  Insert readEntity
+  Insert readEntity returningClause
 insertTable returningOption tableDef entities =
-  rawInsertExpr (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef entities)
+  rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef entities)
 
 {- |
   Builds an 'Insert' that will execute the specified query and use the given 'SqlMarshaller' to
@@ -87,5 +90,6 @@ insertTable returningOption tableDef entities =
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.InsertExpr'.
 -}
-rawInsertExpr :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity
-rawInsertExpr = Insert
+rawInsertExpr :: ReturningOption returningClause -> SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity returningClause
+rawInsertExpr WithReturning = InsertReturning
+rawInsertExpr WithoutReturning = Insert
