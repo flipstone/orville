@@ -16,7 +16,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller)
+import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkUpdateExpr, tableMarshaller)
 
 {- | Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a
@@ -24,8 +24,8 @@ import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkU
   decode the database result set when it is executed.
 -}
 data Update readEntity returningClause where
-  UpdateNoReturning :: SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity NoReturningClause
-  UpdateReturning :: SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity ReturningClause
+  UpdateNoReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity NoReturningClause
+  UpdateReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity ReturningClause
 
 {- |
   Extracts the query that will be run when the update is executed. Normally you
@@ -43,7 +43,7 @@ executeUpdate :: MonadOrville.MonadOrville m => Update readEntity returningClaus
 executeUpdate =
   Execute.executeVoid . updateToUpdateExpr
 
-{- | Executes the database query for the 'Update' and uses its 'SqlMarshaller' to decode the row (that
+{- | Executes the database query for the 'Update' and uses its 'AnnotatedSqlMarshaller' to decode the row (that
   was just updated) as returned via a RETURNING clause.
 -}
 executeUpdateReturnEntity :: MonadOrville.MonadOrville m => Update readEntity ReturningClause -> m (Maybe readEntity)
@@ -86,15 +86,15 @@ updateTable returningOption tableDef key writeEntity =
   rawUpdateExpr returningOption (tableMarshaller tableDef) (mkUpdateExpr returningOption tableDef key writeEntity)
 
 {- |
-  Builds an 'Update' that will execute the specified query and use the given 'SqlMarshaller' to
+  Builds an 'Update' that will execute the specified query and use the given 'AnnotatedSqlMarshaller' to
   decode it. It is up to the caller to ensure that the given 'Expr.UpdateExpr' makes sense and
-  produces a value that can be stored, as well as returning a result that the 'SqlMarshaller' can
+  produces a value that can be stored, as well as returning a result that the 'AnnotatedSqlMarshaller' can
   decode.
 
   This is the lowest level of escape hatch available for 'Select'. The caller can build any query
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.UpdateExpr'.
 -}
-rawUpdateExpr :: ReturningOption returningClause -> SqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity returningClause
+rawUpdateExpr :: ReturningOption returningClause -> AnnotatedSqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity returningClause
 rawUpdateExpr WithReturning = UpdateReturning
 rawUpdateExpr WithoutReturning = UpdateNoReturning

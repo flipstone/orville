@@ -20,7 +20,7 @@ import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 data SyntheticField a = SyntheticField
   { _syntheticFieldExpression :: Expr.ValueExpression
   , _syntheticFieldAlias :: FieldName
-  , _syntheticFieldValueFromSqlValue :: SqlValue.SqlValue -> Maybe a
+  , _syntheticFieldValueFromSqlValue :: SqlValue.SqlValue -> Either String a
   }
 
 {- |
@@ -41,9 +41,9 @@ syntheticFieldAlias =
 
 {- |
   Decodes a calculated value selected from the database to its expected
-  Haskell type. Returns 'Nothing' if the decoding fails.
+  Haskell type. Returns a 'Left' with an error message if the decoding fails.
 -}
-syntheticFieldValueFromSqlValue :: SyntheticField a -> SqlValue.SqlValue -> Maybe a
+syntheticFieldValueFromSqlValue :: SyntheticField a -> SqlValue.SqlValue -> Either String a
 syntheticFieldValueFromSqlValue =
   _syntheticFieldValueFromSqlValue
 
@@ -57,7 +57,7 @@ syntheticField ::
   -- | The alias to be used to name the calculation in SQL experios
   String ->
   -- | A function to decode the expression result from a 'SqlValue.SqlValue'
-  (SqlValue.SqlValue -> Maybe a) ->
+  (SqlValue.SqlValue -> Either String a) ->
   SyntheticField a
 syntheticField expression alias fromSqlValue =
   SyntheticField
@@ -74,6 +74,6 @@ nullableSyntheticField synthField =
   synthField
     { _syntheticFieldValueFromSqlValue = \sqlValue ->
         if SqlValue.isSqlNull sqlValue
-          then Just Nothing
+          then Right Nothing
           else Just <$> syntheticFieldValueFromSqlValue synthField sqlValue
     }

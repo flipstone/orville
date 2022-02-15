@@ -44,6 +44,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     dateField,
     utcTimestampField,
     localTimestampField,
+    uuidField,
     fieldOfType,
   )
 where
@@ -53,6 +54,7 @@ import qualified Data.Coerce as Coerce
 import Data.Int (Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Time as Time
+import qualified Data.UUID as UUID
 
 import Orville.PostgreSQL.Internal.DefaultValue (DefaultValue, coerceDefaultValue, defaultValueExpression)
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
@@ -113,7 +115,8 @@ fieldType = _fieldType
 fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue a)
 fieldDefaultValue = _fieldDefaultValue
 
-{- | A 'FieldNullability is returned by the 'fieldNullability' function, which
+{- |
+ A 'FieldNullability is returned by the 'fieldNullability' function, which
  can be used when a function works on both 'Nullable' and 'NotNull' functions
  but needs to deal with each type of field separately. It adds wrapper
  constructors around the 'FieldDefinition' that you can pattern match on to
@@ -123,7 +126,8 @@ data FieldNullability a
   = NullableField (FieldDefinition Nullable a)
   | NotNullField (FieldDefinition NotNull a)
 
-{- | Resolves the 'nullablity' of a field to a concrete type, which is returned
+{- |
+ Resolves the 'nullablity' of a field to a concrete type, which is returned
  via the 'FieldNullability' type. You can pattern match on this type to then
  extract the either 'Nullable' or 'NotNull' not field for cases where you
  may require different logic based on the nullability of a field.
@@ -153,9 +157,9 @@ fieldValueToSqlValue =
 
 {- |
   Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
-  This may fail, in which case 'Nothing' is returned.
+  This may fail, in which case a 'Left' is returned with an error message.
 -}
-fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Maybe a
+fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Either String a
 fieldValueFromSqlValue =
   SqlType.sqlTypeFromSql . fieldType
 
@@ -373,6 +377,16 @@ localTimestampField ::
 localTimestampField = fieldOfType SqlType.timestampWithoutZone
 
 {- |
+  Builds a 'FieldDefinition' that stores Haskell 'UUID.UUID' values as the
+  PostgreSQL "UUID" type.
+-}
+uuidField ::
+  -- | Name of the field in the database
+  String ->
+  FieldDefinition NotNull UUID.UUID
+uuidField = fieldOfType SqlType.uuid
+
+{- |
   Builds a 'FieldDefinition' for will use the given 'SqlType' to determine
   the database representation of the field. If you have created a custom
   'SqlType', you can use this function to construct a helper like the
@@ -407,7 +421,7 @@ nullableField field =
           , SqlType.sqlTypeFromSql =
               \sqlValue ->
                 if SqlValue.isSqlNull sqlValue
-                  then Just Nothing
+                  then Right Nothing
                   else Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
           }
    in FieldDefinition

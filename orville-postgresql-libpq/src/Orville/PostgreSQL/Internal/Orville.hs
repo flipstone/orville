@@ -13,6 +13,7 @@ import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
+import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 
@@ -43,10 +44,16 @@ instance MonadOrville.MonadOrville Orville
 {- |
   Runs an 'Orville' operation in the 'IO' monad using the given connection
   pool.
+
+  This will run the 'Orville' operation with the 'ErrorDetailLevel' set to the
+  default. If want to run with a different detail level, you can use
+  'OrvilleState.newOrvilleState' to create a state with the desired detail
+  level and then use 'runOrvilleWithState'.
 -}
 runOrville :: Pool Connection -> Orville a -> IO a
-runOrville pool =
-  runOrvilleWithState (OrvilleState.newOrvilleState pool)
+runOrville =
+  runOrvilleWithState
+    . OrvilleState.newOrvilleState ErrorDetailLevel.defaultErrorDetailLevel
 
 {- |
   Runs an 'Orville' operation in the 'IO' monad, starting from the provided

@@ -108,7 +108,7 @@ relationNameField =
 relationKindField :: Orville.FieldDefinition Orville.NotNull RelationKind
 relationKindField =
   Orville.convertField
-    (Orville.maybeConvertSqlType relationKindToPgText pgTextToRelationKind)
+    (Orville.tryConvertSqlType relationKindToPgText pgTextToRelationKind)
     (Orville.unboundedTextField "relkind")
 
 {- |
@@ -138,17 +138,17 @@ relationKindToPgText kind =
 
   See also 'relationKindToPgText'
 -}
-pgTextToRelationKind :: T.Text -> Maybe RelationKind
+pgTextToRelationKind :: T.Text -> Either String RelationKind
 pgTextToRelationKind text =
   case T.unpack text of
-    "r" -> Just OrdinaryTable
-    "i" -> Just Index
-    "S" -> Just Sequence
-    "t" -> Just ToastTable
-    "v" -> Just View
-    "m" -> Just MaterializedView
-    "c" -> Just CompositeType
-    "f" -> Just ForeignTable
-    "p" -> Just PartitionedTable
-    "I" -> Just PartitionedIndex
-    _ -> Nothing
+    "r" -> Right OrdinaryTable
+    "i" -> Right Index
+    "S" -> Right Sequence
+    "t" -> Right ToastTable
+    "v" -> Right View
+    "m" -> Right MaterializedView
+    "c" -> Right CompositeType
+    "f" -> Right ForeignTable
+    "p" -> Right PartitionedTable
+    "I" -> Right PartitionedIndex
+    kind -> Left ("Unrecognized PostgreSQL relation kind: " <> kind)

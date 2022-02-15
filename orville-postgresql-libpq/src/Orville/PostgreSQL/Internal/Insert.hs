@@ -14,7 +14,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.SqlMarshaller (SqlMarshaller)
+import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExpr, tableMarshaller)
 
 {- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
@@ -22,8 +22,8 @@ import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExp
   decode the database result set when it is executed.
 -}
 data Insert readEntity returningClause where
-  Insert :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity NoReturningClause
-  InsertReturning :: SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity ReturningClause
+  Insert :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity NoReturningClause
+  InsertReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity ReturningClause
 
 {- |
   Extracts the query that will be run when the insert is executed. Normally you
@@ -90,6 +90,6 @@ insertTable returningOption tableDef entities =
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.InsertExpr'.
 -}
-rawInsertExpr :: ReturningOption returningClause -> SqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity returningClause
+rawInsertExpr :: ReturningOption returningClause -> AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity returningClause
 rawInsertExpr WithReturning = InsertReturning
 rawInsertExpr WithoutReturning = Insert

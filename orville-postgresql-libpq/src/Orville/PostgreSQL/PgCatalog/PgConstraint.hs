@@ -103,16 +103,16 @@ constraintTypeToPgText conType =
 
   See also 'constraintTypeToPgText'
 -}
-pgTextToConstraintType :: T.Text -> Maybe ConstraintType
+pgTextToConstraintType :: T.Text -> Either String ConstraintType
 pgTextToConstraintType text =
   case T.unpack text of
-    "c" -> Just CheckConstraint
-    "f" -> Just ForeignKeyConstraint
-    "p" -> Just PrimaryKeyConstraint
-    "u" -> Just UniqueConstraint
-    "t" -> Just ConstraintTrigger
-    "x" -> Just ExclusionConstraint
-    _ -> Nothing
+    "c" -> Right CheckConstraint
+    "f" -> Right ForeignKeyConstraint
+    "p" -> Right PrimaryKeyConstraint
+    "u" -> Right UniqueConstraint
+    "t" -> Right ConstraintTrigger
+    "x" -> Right ExclusionConstraint
+    typ -> Left ("Unrecognized PostgreSQL constraint type: " <> typ)
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
@@ -160,7 +160,7 @@ constraintNamespaceOidField =
 constraintTypeField :: Orville.FieldDefinition Orville.NotNull ConstraintType
 constraintTypeField =
   Orville.convertField
-    (Orville.maybeConvertSqlType constraintTypeToPgText pgTextToConstraintType)
+    (Orville.tryConvertSqlType constraintTypeToPgText pgTextToConstraintType)
     (Orville.unboundedTextField "contype")
 
 {- |
@@ -184,7 +184,7 @@ constraintKeyField :: Orville.FieldDefinition Orville.Nullable (Maybe [Attribute
 constraintKeyField =
   Orville.nullableField $
     Orville.convertField
-      (Orville.maybeConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
+      (Orville.tryConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
       (Orville.unboundedTextField "conkey")
 
 {- |
@@ -201,10 +201,10 @@ constraintForeignKeyField :: Orville.FieldDefinition Orville.Nullable (Maybe [At
 constraintForeignKeyField =
   Orville.nullableField $
     Orville.convertField
-      (Orville.maybeConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
+      (Orville.tryConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
       (Orville.unboundedTextField "confkey")
 
-pgArrayTextToAttributeNumberList :: T.Text -> Maybe [AttributeNumber]
+pgArrayTextToAttributeNumberList :: T.Text -> Either String [AttributeNumber]
 pgArrayTextToAttributeNumberList text =
   let parser = do
         _ <- AttoText.char '{'
@@ -213,8 +213,8 @@ pgArrayTextToAttributeNumberList text =
         AttoText.endOfInput
         pure attNums
    in case AttoText.parseOnly parser text of
-        Left _ -> Nothing
-        Right nums -> Just nums
+        Left err -> Left ("Unable to decode PostgreSQL Array as AttributeNumber list: " <> err)
+        Right nums -> Right nums
 
 attributeNumberListToPgArrayText :: [AttributeNumber] -> T.Text
 attributeNumberListToPgArrayText attNums =

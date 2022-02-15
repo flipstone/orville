@@ -45,10 +45,11 @@ module Orville.PostgreSQL.Internal.SqlValue
     toLocalTime,
     fromRawBytes,
     fromRawBytesNullable,
-    toPGValue,
+    toPgValue,
   )
 where
 
+import qualified Control.Exception as Exc
 import qualified Data.Attoparsec.ByteString as AttoBS
 import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.ByteString as BS
@@ -58,6 +59,7 @@ import Data.Int (Int16, Int32, Int64, Int8)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
+import qualified Data.Typeable as Typeable
 import Data.Word (Word16, Word32, Word64, Word8)
 
 import Orville.PostgreSQL.Internal.PgTextFormatValue (PgTextFormatValue)
@@ -67,6 +69,7 @@ import qualified Orville.PostgreSQL.Internal.PgTime as PgTime
 data SqlValue
   = SqlValue PgTextFormatValue
   | SqlNull
+  deriving (Eq)
 
 {- |
   Checks whether the 'SqlValue' represents a sql NULL value in the database.
@@ -91,8 +94,8 @@ sqlNull =
   to values you would write in query. If the value represents a sql NULL
   value, 'Nothing' is returned
 -}
-toPGValue :: SqlValue -> Maybe PgTextFormatValue
-toPGValue sqlValue =
+toPgValue :: SqlValue -> Maybe PgTextFormatValue
+toPgValue sqlValue =
   case sqlValue of
     SqlValue value ->
       Just value
@@ -133,7 +136,7 @@ fromInt8 =
   Attempts to decode a 'SqlValue' as a Haskell 'Int8' value. If decoding fails
   'Nothing' is returned.
 -}
-toInt8 :: SqlValue -> Maybe Int8
+toInt8 :: SqlValue -> Either String Int8
 toInt8 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -148,7 +151,7 @@ fromInt16 =
   Attempts to decode a 'SqlValue' as a Haskell 'Int16' value. If decoding fails
   'Nothing' is returned.
 -}
-toInt16 :: SqlValue -> Maybe Int16
+toInt16 :: SqlValue -> Either String Int16
 toInt16 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -163,7 +166,7 @@ fromInt32 =
   Attempts to decode a 'SqlValue' as a Haskell 'Int32' value. If decoding fails
   'Nothing' is returned.
 -}
-toInt32 :: SqlValue -> Maybe Int32
+toInt32 :: SqlValue -> Either String Int32
 toInt32 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -178,7 +181,7 @@ fromInt64 =
   Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
 -}
-toInt64 :: SqlValue -> Maybe Int64
+toInt64 :: SqlValue -> Either String Int64
 toInt64 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -193,7 +196,7 @@ fromInt =
   Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
 -}
-toInt :: SqlValue -> Maybe Int
+toInt :: SqlValue -> Either String Int
 toInt =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -208,7 +211,7 @@ fromWord8 =
   Attempts to decode a 'SqlValue' as a Haskell 'Word8' value. If decoding fails
   'Nothing' is returned.
 -}
-toWord8 :: SqlValue -> Maybe Word8
+toWord8 :: SqlValue -> Either String Word8
 toWord8 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -223,7 +226,7 @@ fromWord16 =
   Attempts to decode a 'SqlValue' as a Haskell 'Word16' value. If decoding fails
   'Nothing' is returned.
 -}
-toWord16 :: SqlValue -> Maybe Word16
+toWord16 :: SqlValue -> Either String Word16
 toWord16 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -238,7 +241,7 @@ fromWord32 =
   Attempts to decode a 'SqlValue' as a Haskell 'Word32' value. If decoding fails
   'Nothing' is returned.
 -}
-toWord32 :: SqlValue -> Maybe Word32
+toWord32 :: SqlValue -> Either String Word32
 toWord32 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -253,7 +256,7 @@ fromWord64 =
   Attempts to decode a 'SqlValue' as a Haskell 'Word64' value. If decoding fails
   'Nothing' is returned.
 -}
-toWord64 :: SqlValue -> Maybe Word64
+toWord64 :: SqlValue -> Either String Word64
 toWord64 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -268,7 +271,7 @@ fromWord =
   Attempts to decode a 'SqlValue' as a Haskell 'Word' value. If decoding fails
   'Nothing' is returned.
 -}
-toWord :: SqlValue -> Maybe Word
+toWord :: SqlValue -> Either String Word
 toWord =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
@@ -283,7 +286,7 @@ fromDouble =
   Attempts to decode a 'SqlValue' as a Haskell 'Double' value. If decoding fails
   'Nothing' is returned.
 -}
-toDouble :: SqlValue -> Maybe Double
+toDouble :: SqlValue -> Either String Double
 toDouble =
   toParsedValue (AttoB8.signed AttoB8.double)
 
@@ -301,7 +304,7 @@ fromBool =
   Attempts to decode a 'SqlValue' as a Haskell 'Bool' value. If decoding fails
   'Nothing' is returned.
 -}
-toBool :: SqlValue -> Maybe Bool
+toBool :: SqlValue -> Either String Bool
 toBool =
   toParsedValue $ do
     char <- AttoB8.anyChar
@@ -324,12 +327,12 @@ fromText =
   Note: This decoding _only_ fails if the bytes returned from the database
   are not a value UTF-8 sequence of bytes. Otherwise it always succeeds.
 -}
-toText :: SqlValue -> Maybe T.Text
+toText :: SqlValue -> Either String T.Text
 toText =
   toBytesValue $ \bytes ->
     case TextEnc.decodeUtf8' bytes of
-      Right t -> Just t
-      Left _ -> Nothing
+      Right t -> Right t
+      Left err -> Left $ Exc.displayException err
 
 {- |
   Encodes a 'Time.Day' value as text in YYYY-MM-DD format so that it can be
@@ -343,7 +346,7 @@ fromDay =
   Attempts to decode a 'SqlValue' as into a 'Time.Day' value by parsing it
   from YYYY-MM-DD format. If the decoding fails 'Nothing' is returned.
 -}
-toDay :: SqlValue -> Maybe Time.Day
+toDay :: SqlValue -> Either String Time.Day
 toDay =
   toBytesValue PgTime.dayFromPostgreSQL
 
@@ -369,7 +372,7 @@ fromLocalTime =
   Attempts to decode a 'SqlValue' as a 'Time.LocalTime' formatted in iso8601
   format in the default Local. If the decoding fails, 'Nothing' is returned.
 -}
-toLocalTime :: SqlValue -> Maybe Time.LocalTime
+toLocalTime :: SqlValue -> Either String Time.LocalTime
 toLocalTime =
   toBytesValue PgTime.localTimeFromPostgreSQL
 
@@ -377,7 +380,7 @@ toLocalTime =
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
   format with time zone. If the decoding fails, 'Nothing' is returned.
 -}
-toUTCTime :: SqlValue -> Maybe Time.UTCTime
+toUTCTime :: SqlValue -> Either String Time.UTCTime
 toUTCTime =
   toBytesValue PgTime.utcTimeFromPostgreSQL
 
@@ -395,23 +398,38 @@ fromBSBuilderWithNoNULs builder =
 {- |
   A internal helper function that parses 'SqlValue' via an Attoparsec parser.
 -}
-toParsedValue :: AttoB8.Parser a -> SqlValue -> Maybe a
+toParsedValue ::
+  Typeable.Typeable a =>
+  AttoB8.Parser a ->
+  SqlValue ->
+  Either String a
 toParsedValue parser =
-  toBytesValue $ \bytes ->
-    case AttoBS.parseOnly parser bytes of
-      Left _ -> Nothing
-      Right i -> Just i
+  toBytesValue (AttoBS.parseOnly parser)
 
 {- |
-  An internal helper function that parses the bytes from a 'SqlValue'
-  with the given parsing function. If the 'SqlValue' is NULL, 'Nothing'
-  is returned. If the parsing function fails (by returning 'Nothing'), then
-  'Nothing' is returned from this function as well.
+  An internal helper function that parses the bytes from a 'SqlValue' with the
+  given parsing function. If the 'SqlValue' is NULL, this function returns an
+  error an a 'Left' value. If the parsing function fails (by returning 'Left'),
+  the error it returns in returned by this function.
 -}
-toBytesValue :: (BS.ByteString -> Maybe a) -> SqlValue -> Maybe a
+toBytesValue ::
+  Typeable.Typeable a =>
+  (BS.ByteString -> Either String a) ->
+  SqlValue ->
+  Either String a
 toBytesValue byteParser sqlValue =
-  case sqlValue of
-    SqlNull ->
-      Nothing
-    SqlValue bytes ->
-      byteParser (PgTextFormatValue.toByteString bytes)
+  let result =
+        case sqlValue of
+          SqlNull ->
+            Left "Unexpected SQL NULL value"
+          SqlValue bytes ->
+            byteParser (PgTextFormatValue.toByteString bytes)
+
+      typeRepOfA =
+        -- result is the 'proxy a' for typeRep
+        Typeable.typeRep result
+   in case result of
+        Right _ ->
+          result
+        Left err ->
+          Left $ "Failed to decode PostgreSQL value as " <> Typeable.showsTypeRep typeRepOfA (": " <> err)

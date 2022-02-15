@@ -33,9 +33,11 @@ library
       Orville.PostgreSQL.AutoMigration
       Orville.PostgreSQL.Connection
       Orville.PostgreSQL.Internal.DefaultValue
+      Orville.PostgreSQL.Internal.ErrorDetailLevel
       Orville.PostgreSQL.Internal.ExecutionResult
       Orville.PostgreSQL.Internal.Expr
       Orville.PostgreSQL.Internal.FieldDefinition
+      Orville.PostgreSQL.Internal.MarshallError
       Orville.PostgreSQL.Internal.PgTextFormatValue
       Orville.PostgreSQL.Internal.PrimaryKey
       Orville.PostgreSQL.Internal.RawSql
@@ -139,6 +141,7 @@ library
     , text
     , time >=1.5
     , transformers ==0.5.*
+    , uuid
   if flag(ci)
     ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wmissing-import-lists -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations -Wno-implicit-prelude -Wno-safe -Wno-unsafe
   else
@@ -163,6 +166,7 @@ test-suite spec
       Test.Expr.TestSchema
       Test.Expr.Where
       Test.FieldDefinition
+      Test.MarshallError
       Test.PgAssert
       Test.PgCatalog
       Test.PgGen
@@ -191,4 +195,5 @@ test-suite spec
     , safe-exceptions
     , text
     , time
+    , uuid
   default-language: Haskell2010

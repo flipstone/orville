@@ -94,6 +94,7 @@ module Orville.PostgreSQL.Internal.Expr
     varchar,
     char,
     text,
+    uuid,
     boolean,
     doublePrecision,
     bigSerial,

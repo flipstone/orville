@@ -81,5 +81,5 @@ assertEqualSqlRows ::
   m ()
 assertEqualSqlRows l r = sqlRowsToText l HH.=== sqlRowsToText r
 
-sqlRowsToText :: [[(a, SqlValue.SqlValue)]] -> [[(a, Maybe T.Text)]]
+sqlRowsToText :: [[(a, SqlValue.SqlValue)]] -> [[(a, Either String T.Text)]]
 sqlRowsToText = fmap (fmap (\(a, b) -> (a, SqlValue.toText b)))

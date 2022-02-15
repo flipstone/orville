@@ -6,6 +6,7 @@ module Orville.PostgreSQL.Internal.OrvilleState
     resetOrvilleState,
     orvilleConnectionPool,
     orvilleConnectionState,
+    orvilleErrorDetailLevel,
     HasOrvilleState (askOrvilleState, localOrvilleState),
     ConnectionState (NotConnected, Connected),
     ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
@@ -21,16 +22,30 @@ import Control.Monad.Trans.Reader (ReaderT, ask, local)
 import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
+import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
 
 {- |
   'OrvilleState' is used to manange opening connections to the database,
-  transactions, etc. 'newOrvilleState should be used to create an appopriate
+  transactions, etc. 'newOrvilleState' should be used to create an appopriate
   initial state for your monad's context.
 -}
 data OrvilleState = OrvilleState
-  { orvilleConnectionPool :: Pool Connection
-  , orvilleConnectionState :: ConnectionState
+  { _orvilleConnectionPool :: Pool Connection
+  , _orvilleConnectionState :: ConnectionState
+  , _orvilleErrorDetailLevel :: ErrorDetailLevel
   }
+
+orvilleConnectionPool :: OrvilleState -> Pool Connection
+orvilleConnectionPool =
+  _orvilleConnectionPool
+
+orvilleConnectionState :: OrvilleState -> ConnectionState
+orvilleConnectionState =
+  _orvilleConnectionState
+
+orvilleErrorDetailLevel :: OrvilleState -> ErrorDetailLevel
+orvilleErrorDetailLevel =
+  _orvilleErrorDetailLevel
 
 {- |
   'HasOrvilleState' is the typeclass that Orville uses to access and manange
@@ -93,11 +108,12 @@ instance Monad m => HasOrvilleState (ReaderT OrvilleState m) where
   Creates a appropriate initial 'OrvilleState' that will use the connection
   pool given to initiate connections to the database.
 -}
-newOrvilleState :: Pool Connection -> OrvilleState
-newOrvilleState pool =
+newOrvilleState :: ErrorDetailLevel -> Pool Connection -> OrvilleState
+newOrvilleState errorDetailLevel pool =
   OrvilleState
-    { orvilleConnectionPool = pool
-    , orvilleConnectionState = NotConnected
+    { _orvilleConnectionPool = pool
+    , _orvilleConnectionState = NotConnected
+    , _orvilleErrorDetailLevel = errorDetailLevel
     }
 
 {- |
@@ -108,7 +124,9 @@ newOrvilleState pool =
 -}
 resetOrvilleState :: OrvilleState -> OrvilleState
 resetOrvilleState =
-  newOrvilleState . orvilleConnectionPool
+  newOrvilleState
+    <$> _orvilleErrorDetailLevel
+    <*> _orvilleConnectionPool
 
 {- |
   INTERNAL: Transitions the 'OrvilleState' into "connected" status, storing
@@ -119,7 +137,7 @@ resetOrvilleState =
 connectState :: ConnectedState -> OrvilleState -> OrvilleState
 connectState connectedState state =
   state
-    { orvilleConnectionState = Connected connectedState
+    { _orvilleConnectionState = Connected connectedState
     }
 
 {- |

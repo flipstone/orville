@@ -312,9 +312,13 @@ findOneWithOpts tableDef wherePlanner opts =
         (TableDefinition.tableName tableDef)
 
     marshaller =
-      (,)
-        <$> paramMarshaller wherePlanner fst
-        <*> SqlMarshaller.marshallNested snd (TableDefinition.tableMarshaller tableDef)
+      SqlMarshaller.mapSqlMarshaller
+        ( \m ->
+            (,)
+              <$> paramMarshaller wherePlanner fst
+              <*> SqlMarshaller.marshallNested snd m
+        )
+        (TableDefinition.tableMarshaller tableDef)
 
 {- |
   'findAll' builds a planning primitive that finds all the rows from the
@@ -377,9 +381,13 @@ findAllWithOpts tableDef wherePlanner opts =
         (TableDefinition.tableName tableDef)
 
     marshaller =
-      (,)
-        <$> paramMarshaller wherePlanner fst
-        <*> SqlMarshaller.marshallNested snd (TableDefinition.tableMarshaller tableDef)
+      SqlMarshaller.mapSqlMarshaller
+        ( \m ->
+            (,)
+              <$> paramMarshaller wherePlanner fst
+              <*> SqlMarshaller.marshallNested snd m
+        )
+        (TableDefinition.tableMarshaller tableDef)
 
 {- |
   'stringifyField' arbitrarily re-labels the 'SqlType' of a field definition
@@ -543,9 +551,15 @@ findSelect select =
       executeMany params = do
         rows <- Select.executeSelect select
         pure . Right $ Many.fromKeys (Fold.toList params) (const (Right rows))
+
+      selectToSqlString :: Select readEntity -> String
+      selectToSqlString =
+        BS8.unpack
+          . RawSql.toExampleBytes
+          . Select.selectToQueryExpr
    in Operation
         { executeOperationOne = executeOne
         , executeOperationMany = executeMany
-        , explainOperationOne = Exp.explainStep undefined --(SelectInternal.selectSql select)
-        , explainOperationMany = Exp.explainStep undefined --(SelectInternal.selectSql select)
+        , explainOperationOne = Exp.explainStep (selectToSqlString select)
+        , explainOperationMany = Exp.explainStep (selectToSqlString select)
         }

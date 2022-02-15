@@ -86,7 +86,7 @@ indexRelationOidField =
 indexAttributeNumbersField :: Orville.FieldDefinition Orville.NotNull [AttributeNumber]
 indexAttributeNumbersField =
   Orville.convertField
-    (Orville.maybeConvertSqlType attributeNumberListToPgVectorText pgVectorTextToAttributeNumberList)
+    (Orville.tryConvertSqlType attributeNumberListToPgVectorText pgVectorTextToAttributeNumberList)
     (Orville.unboundedTextField "indkey")
 
 {- |
@@ -110,15 +110,15 @@ indexIsLiveField :: Orville.FieldDefinition Orville.NotNull Bool
 indexIsLiveField =
   Orville.booleanField "indislive"
 
-pgVectorTextToAttributeNumberList :: T.Text -> Maybe [AttributeNumber]
+pgVectorTextToAttributeNumberList :: T.Text -> Either String [AttributeNumber]
 pgVectorTextToAttributeNumberList text =
   let parser = do
         attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ' ')
         AttoText.endOfInput
         pure attNums
    in case AttoText.parseOnly parser text of
-        Left _ -> Nothing
-        Right nums -> Just nums
+        Left err -> Left ("Unable to decode PostgreSQL Vector as AttributeNumber list: " <> err)
+        Right nums -> Right nums
 
 attributeNumberListToPgVectorText :: [AttributeNumber] -> T.Text
 attributeNumberListToPgVectorText attNums =

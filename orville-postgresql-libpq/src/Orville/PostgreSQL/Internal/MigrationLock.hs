@@ -66,9 +66,10 @@ orvilleLockScope = 17772
 migrationLockId :: Int32
 migrationLockId = 7995632
 
-lockedMarshaller :: SqlMarshaller.SqlMarshaller Bool Bool
+lockedMarshaller :: SqlMarshaller.AnnotatedSqlMarshaller Bool Bool
 lockedMarshaller =
-  SqlMarshaller.marshallField id (FieldDefinition.booleanField "locked")
+  SqlMarshaller.annotateSqlMarshallerEmptyAnnotation $
+    SqlMarshaller.marshallField id (FieldDefinition.booleanField "locked")
 
 tryLockExpr :: RawSql.RawSql
 tryLockExpr =

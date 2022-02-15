@@ -4,6 +4,7 @@
 module Orville.PostgreSQL.Internal.PrimaryKey
   ( PrimaryKey,
     primaryKeyDescription,
+    primaryKeyFieldNames,
     primaryKeyToSql,
     primaryKey,
     PrimaryKeyPart,
@@ -20,7 +21,7 @@ import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, NotNull, fieldColumnName, fieldName, fieldNameToString, fieldValueToSqlValue)
+import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldName, fieldNameToString, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.SelectOptions (WhereCondition, fieldEquals, whereAnd, whereConditionToBooleanExpr)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -46,11 +47,21 @@ data PrimaryKeyPart key
   list of the names of the fields that make up the primary key.
 -}
 primaryKeyDescription :: PrimaryKey key -> String
-primaryKeyDescription keyDef =
-  let partName :: (part -> key) -> FieldDefinition NotNull a -> String
+primaryKeyDescription =
+  List.intercalate ", "
+    . map fieldNameToString
+    . toList
+    . primaryKeyFieldNames
+
+{- |
+  Retrieves the names of the fields that are part of the primary key.
+-}
+primaryKeyFieldNames :: PrimaryKey key -> NonEmpty FieldName
+primaryKeyFieldNames =
+  let partName :: (part -> key) -> FieldDefinition NotNull a -> FieldName
       partName _ field =
-        fieldNameToString (fieldName field)
-   in List.intercalate ", " (toList $ mapPrimaryKeyParts partName keyDef)
+        fieldName field
+   in mapPrimaryKeyParts partName
 
 {- |
   'primaryKeyToSql' converts a Haskell value for a primary key into the

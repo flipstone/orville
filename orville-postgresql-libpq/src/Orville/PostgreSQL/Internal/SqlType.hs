@@ -27,6 +27,7 @@ module Orville.PostgreSQL.Internal.SqlType
     fixedText,
     boundedText,
     textSearchVector,
+    uuid,
     -- date types
     date,
     timestamp,
@@ -36,13 +37,14 @@ module Orville.PostgreSQL.Internal.SqlType
     -- type conversions
     foreignRefType,
     convertSqlType,
-    maybeConvertSqlType,
+    tryConvertSqlType,
   )
 where
 
 import Data.Int (Int16, Int32, Int64)
 import Data.Text (Text)
 import qualified Data.Time as Time
+import qualified Data.UUID as UUID
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Foreign.C.Types as CTypes
 
@@ -78,7 +80,7 @@ data SqlType a = SqlType
     -- into Haskell values. This function should return 'Nothing' to indicate
     -- an error if the conversion is impossible. Otherwise it should return
     -- 'Just' the corresponding 'a' value.
-    sqlTypeFromSql :: SqlValue -> Maybe a
+    sqlTypeFromSql :: SqlValue -> Either String a
   , -- | The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
     -- create an implicit default value. This flag tells Orville's auto
     -- migration logic to ignore the default value rather than drop it as it
@@ -261,6 +263,25 @@ textSearchVector =
     }
 
 {- |
+  'uuid' defines a UUID type. It corresponds to the "UUID" type in PostgreSQL.
+-}
+uuid :: SqlType UUID.UUID
+uuid =
+  let uuidFromText t =
+        case UUID.fromText t of
+          Nothing -> Left "Invalid UUID value"
+          Just validUuid -> Right validUuid
+   in SqlType
+        { sqlTypeExpr = Expr.uuid
+        , sqlTypeReferenceExpr = Nothing
+        , sqlTypeOid = LibPQ.Oid 2950
+        , sqlTypeMaximumLength = Nothing
+        , sqlTypeToSql = SqlValue.fromText . UUID.toText
+        , sqlTypeFromSql = \a -> uuidFromText =<< SqlValue.toText a
+        , sqlTypeDontDropImplicitDefaultDuringMigrate = False
+        }
+
+{- |
   'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
 -}
@@ -348,15 +369,15 @@ foreignRefType sqlType =
     Just refExpr -> sqlType {sqlTypeExpr = refExpr, sqlTypeReferenceExpr = Nothing}
 
 {- |
-  'maybeConvertSqlType' changes the Haskell type used by a 'SqlType' which changing
-  the column type that will be used in the database schema. The functions given
-  will be used to convert the now Haskell type to and from the original type when
-  reading and writing values from the database. When reading an 'a' value from
-  the database, the conversion function should produce 'Nothing' if the value
-  cannot be successfully converted to a 'b'
+  'tryConvertSqlType' changes the Haskell type used by a 'SqlType' which
+  changing the column type that will be used in the database schema. The
+  functions given will be used to convert the now Haskell type to and from the
+  original type when reading and writing values from the database. When reading
+  an 'a' value from the database, the conversion function should produce 'Left
+  with an error message if the value cannot be successfully converted to a 'b'
 -}
-maybeConvertSqlType :: (b -> a) -> (a -> Maybe b) -> SqlType a -> SqlType b
-maybeConvertSqlType bToA aToB sqlType =
+tryConvertSqlType :: (b -> a) -> (a -> Either String b) -> SqlType a -> SqlType b
+tryConvertSqlType bToA aToB sqlType =
   sqlType
     { sqlTypeToSql = sqlTypeToSql sqlType . bToA
     , sqlTypeFromSql = \sql -> do
@@ -370,4 +391,4 @@ maybeConvertSqlType bToA aToB sqlType =
 -}
 convertSqlType :: (b -> a) -> (a -> b) -> SqlType a -> SqlType b
 convertSqlType bToA aToB =
-  maybeConvertSqlType bToA (Just . aToB)
+  tryConvertSqlType bToA (Right . aToB)
