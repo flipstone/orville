@@ -1,6 +1,11 @@
 {-# LANGUAGE GADTs #-}
 
-module Orville.PostgreSQL.Internal.ReturningOption (ReturningOption (..), ReturningClause, NoReturningClause) where
+module Orville.PostgreSQL.Internal.ReturningOption
+  ( ReturningOption (..),
+    ReturningClause,
+    NoReturningClause,
+  )
+where
 
 data ReturningClause
 data NoReturningClause

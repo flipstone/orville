@@ -88,7 +88,9 @@ insertTable returningOption tableDef entities =
 
   This is the lowest level of escape hatch available for 'Select'. The caller can build any query
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
-  a raw 'Expr.InsertExpr'.
+  a raw 'Expr.InsertExpr'. It is expected, that the 'ReturningOption' given matches the
+  'Expr.InsertExpr'. This level of interface does not provide an automatic enforcement of the
+  expectation, however failure is likely if that is not met.
 -}
 rawInsertExpr :: ReturningOption returningClause -> AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity returningClause
 rawInsertExpr WithReturning = InsertReturning

@@ -15,9 +15,7 @@ import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.Expr.Name (QualifiedTableName)
 import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
-import Orville.PostgreSQL.Internal.Expr.Update.SetClauseList
-  ( SetClauseList,
-  )
+import Orville.PostgreSQL.Internal.Expr.Update.SetClauseList (SetClauseList)
 import Orville.PostgreSQL.Internal.Expr.Where (WhereClause)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
