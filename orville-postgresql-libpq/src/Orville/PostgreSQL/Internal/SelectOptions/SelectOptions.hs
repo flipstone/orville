@@ -17,10 +17,11 @@ module Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
   )
 where
 
-import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NEL
 import Data.Monoid (First (First, getFirst))
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import Orville.PostgreSQL.Internal.SelectOptions.OrderBy (OrderBy, orderByToClause)
 import Orville.PostgreSQL.Internal.SelectOptions.WhereCondition (WhereCondition, whereAnd, whereConditionToBooleanExpr)
 
@@ -90,12 +91,10 @@ selectDistinct selectOptions =
   where no 'WhereCondition's have been specified.
 -}
 selectWhereClause :: SelectOptions -> Maybe Expr.WhereClause
-selectWhereClause selectOptions =
-  case i_whereConditions selectOptions of
-    [] ->
-      Nothing
-    (first : rest) ->
-      Just . Expr.whereClause . whereConditionToBooleanExpr $ whereAnd (first :| rest)
+selectWhereClause =
+  fmap (Expr.whereClause . whereConditionToBooleanExpr . ExtraNonEmpty.foldl1' whereAnd)
+    . NEL.nonEmpty
+    . i_whereConditions
 
 {- |
   Constructs a 'SelectOptions' with just 'distinct' set to 'True'.
@@ -121,12 +120,10 @@ selectOrderByClause =
   where no 'GroupByClause's have been specified.
 -}
 selectGroupByClause :: SelectOptions -> Maybe Expr.GroupByClause
-selectGroupByClause selectOptions =
-  case i_groupByExprs selectOptions of
-    [] ->
-      Nothing
-    (first : rest) ->
-      Just . Expr.groupByClause $ foldl Expr.appendGroupByExpr first rest
+selectGroupByClause =
+  fmap (Expr.groupByClause . ExtraNonEmpty.foldl1' Expr.appendGroupByExpr)
+    . NEL.nonEmpty
+    . i_groupByExprs
 
 {- |
   Builds a 'Expr.LimitExpr' that will limit the query results to the
