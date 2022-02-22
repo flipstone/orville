@@ -11,6 +11,7 @@ module Database.Orville.PostgreSQL.Internal.RelationalMap
   ( mkTableDefinition
   , TableParams(..)
   , RelationalMap
+  , fields
   , mapAttr
   , mapField
   , attrField
