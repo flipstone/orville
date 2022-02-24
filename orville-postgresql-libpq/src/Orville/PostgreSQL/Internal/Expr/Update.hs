@@ -13,12 +13,6 @@ module Orville.PostgreSQL.Internal.Expr.Update
   )
 where
 
-import Orville.PostgreSQL.Internal.Expr.Update.SetClause
-  ( SetClause,
-    setColumn,
-  )
+import Orville.PostgreSQL.Internal.Expr.Update.SetClause (SetClause, setColumn)
 import Orville.PostgreSQL.Internal.Expr.Update.SetClauseList (SetClauseList, setClauseList)
-import Orville.PostgreSQL.Internal.Expr.Update.UpdateExpr
-  ( UpdateExpr,
-    updateExpr,
-  )
+import Orville.PostgreSQL.Internal.Expr.Update.UpdateExpr (UpdateExpr, updateExpr)
