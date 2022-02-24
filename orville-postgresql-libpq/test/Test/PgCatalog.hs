@@ -4,7 +4,6 @@ module Test.PgCatalog
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.Set as Set
@@ -64,9 +63,8 @@ prop_queryPgAttribute =
         PgCatalog.pgAttributeTable
         ( Orville.where_ $
             Orville.whereAnd
-              ( Orville.fieldEquals PgCatalog.attributeRelationOidField pgClassOid
-                  :| [Orville.fieldEquals PgCatalog.attributeNameField relname]
-              )
+              (Orville.fieldEquals PgCatalog.attributeRelationOidField pgClassOid)
+              (Orville.fieldEquals PgCatalog.attributeNameField relname)
         )
 
     fmap PgCatalog.pgAttributeName maybePgAttr === Just relname
