@@ -33,6 +33,7 @@ module Database.Orville.PostgreSQL.Core
   , maybeConvertSqlType
   , TableParams(..)
   , RelationalMap
+  , fields
   , mapAttr
   , mapField
   , attrField

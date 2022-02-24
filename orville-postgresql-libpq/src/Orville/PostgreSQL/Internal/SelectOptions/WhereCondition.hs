@@ -3,19 +3,29 @@
 module Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
   ( WhereCondition,
     fieldEquals,
+    (.==),
     fieldNotEquals,
+    (./=),
     fieldGreaterThan,
+    (.>),
     fieldLessThan,
+    (.<),
     fieldGreaterThanOrEqualTo,
+    (.>=),
     fieldLessThanOrEqualTo,
+    (.<=),
     fieldIsNull,
     fieldIsNotNull,
     fieldIn,
+    (.<-),
     fieldNotIn,
+    (.</-),
     fieldTupleIn,
     fieldTupleNotIn,
     whereAnd,
+    (.&&),
     whereOr,
+    (.||),
     whereBooleanExpr,
     whereConditionToBooleanExpr,
   )
@@ -63,11 +73,27 @@ fieldEquals =
   whereColumnComparison Expr.columnEquals
 
 {- |
+  Operator alias for 'fieldEquals'
+-}
+(.==) :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+(.==) = fieldEquals
+
+infixl 9 .==
+
+{- |
   Checks that the value in a field does not equal a particular value.
 -}
 fieldNotEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldNotEquals =
   whereColumnComparison Expr.columnNotEquals
+
+{- |
+  Operator alias for 'fieldNotEquals'
+-}
+(./=) :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+(./=) = fieldNotEquals
+
+infixl 9 ./=
 
 {- |
   Checks that the value in a field is greater than a particular value.
@@ -77,11 +103,27 @@ fieldGreaterThan =
   whereColumnComparison Expr.columnGreaterThan
 
 {- |
+  Operator alias for 'fieldGreaterThan'
+-}
+(.>) :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+(.>) = fieldGreaterThan
+
+infixl 9 .>
+
+{- |
   Checks that the value in a field is less than a particular value.
 -}
 fieldLessThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldLessThan =
   whereColumnComparison Expr.columnLessThan
+
+{- |
+  Operator alias for 'fieldLessThan'
+-}
+(.<) :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+(.<) = fieldLessThan
+
+infixl 9 .<
 
 {- |
   Checks that the value in a field is greater than or equal to a particular value.
@@ -91,11 +133,27 @@ fieldGreaterThanOrEqualTo =
   whereColumnComparison Expr.columnGreaterThanOrEqualTo
 
 {- |
+  Operator alias for 'fieldGreaterThanOrEqualTo'
+-}
+(.>=) :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+(.>=) = fieldGreaterThanOrEqualTo
+
+infixl 9 .>=
+
+{- |
   Checks that the value in a field is less than or equal to a particular value.
 -}
 fieldLessThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldLessThanOrEqualTo =
   whereColumnComparison Expr.columnLessThanOrEqualTo
+
+{- |
+  Operator alias for 'fieldLessThanOrEqualTo'
+-}
+(.<=) :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+(.<=) = fieldLessThanOrEqualTo
+
+infixl 9 .<=
 
 {- |
   Checks that the value in a field is null.
@@ -122,6 +180,14 @@ fieldIn fieldDef values =
       (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
 
 {- |
+  Operator alias for 'fieldIn'
+-}
+(.<-) :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
+(.<-) = fieldIn
+
+infixl 9 .<-
+
+{- |
   Checks that a field does not match a list of values
 -}
 fieldNotIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
@@ -130,6 +196,14 @@ fieldNotIn fieldDef values =
     Expr.columnNotIn
       (FieldDef.fieldColumnName fieldDef)
       (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
+
+{- |
+  Operator alias for 'fieldNotIn'
+-}
+(.</-) :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
+(.</-) = fieldNotIn
+
+infixl 9 .</-
 
 {- |
   Checks that a tuple of two fields is in the list of specified tuplies
@@ -187,28 +261,35 @@ whereColumnComparison columnComparison fieldDef a =
 {- |
   Combines multiple 'WhereCondition's together using 'AND'.
 -}
-whereAnd :: NonEmpty WhereCondition -> WhereCondition
-whereAnd =
-  foldParenthenizedExprs Expr.andExpr
+whereAnd :: WhereCondition -> WhereCondition -> WhereCondition
+whereAnd left right =
+  whereBooleanExpr $
+    Expr.andExpr
+      (Expr.parenthesized (whereConditionToBooleanExpr left))
+      (Expr.parenthesized (whereConditionToBooleanExpr right))
+
+{- |
+  Operator alias for 'whereAnd'
+-}
+(.&&) :: WhereCondition -> WhereCondition -> WhereCondition
+(.&&) = whereAnd
+
+infixr 8 .&&
 
 {- |
   Combines multiple 'WhereCondition's together using 'OR.
 -}
-whereOr :: NonEmpty WhereCondition -> WhereCondition
-whereOr =
-  foldParenthenizedExprs Expr.orExpr
+whereOr :: WhereCondition -> WhereCondition -> WhereCondition
+whereOr left right =
+  whereBooleanExpr $
+    Expr.orExpr
+      (Expr.parenthesized (whereConditionToBooleanExpr left))
+      (Expr.parenthesized (whereConditionToBooleanExpr right))
 
 {- |
-  INTERNAL: Combines a (non-empty) list of 'WhereCondition's together using
-  the provided function to combine each pair.
+  Operator alias for 'whereOr
 -}
-foldParenthenizedExprs ::
-  (Expr.BooleanExpr -> Expr.BooleanExpr -> Expr.BooleanExpr) ->
-  NonEmpty WhereCondition ->
-  WhereCondition
-foldParenthenizedExprs foldExpr conditions =
-  let (first :| rest) =
-        fmap
-          (Expr.parenthesized . whereConditionToBooleanExpr)
-          conditions
-   in WhereCondition $ foldr (flip foldExpr) first rest
+(.||) :: WhereCondition -> WhereCondition -> WhereCondition
+(.||) = whereOr
+
+infixr 8 .||

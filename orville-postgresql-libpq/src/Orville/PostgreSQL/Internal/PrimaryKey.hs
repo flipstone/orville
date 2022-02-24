@@ -21,6 +21,7 @@ import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldName, fieldNameToString, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.SelectOptions (WhereCondition, fieldEquals, whereAnd, whereConditionToBooleanExpr)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
@@ -153,12 +154,14 @@ mkPrimaryKeyExpr keyDef =
 {- |
   'primaryKeyEquals' builds a 'WhereCondition' that will match the row where
   the primary key is equal to the given value. For single-field primary keys
-  this is equivalent to '.==', but 'primaryKeyEquals also handles composite
+  this is equivalent to 'fieldEquals', but 'primaryKeyEquals' also handles composite
   primary keys.
 -}
 primaryKeyEquals :: PrimaryKey key -> key -> WhereCondition
 primaryKeyEquals keyDef key =
-  whereAnd (mapPrimaryKeyParts (partEquals key) keyDef)
+  ExtraNonEmpty.foldl1'
+    whereAnd
+    (mapPrimaryKeyParts (partEquals key) keyDef)
 
 {- |
   Like 'primaryKeyEquals', but returns the condition as a lower-level
