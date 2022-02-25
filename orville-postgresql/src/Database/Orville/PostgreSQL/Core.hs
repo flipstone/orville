@@ -33,6 +33,7 @@ module Database.Orville.PostgreSQL.Core
   , maybeConvertSqlType
   , TableParams(..)
   , RelationalMap
+  , relationalMapToSql
   , fields
   , mapAttr
   , mapField
@@ -115,6 +116,7 @@ module Database.Orville.PostgreSQL.Core
   , ColumnSpecifier(..)
   , col
   , ToSql
+  , runToSql
   , getField
   , getComponent
   , SchemaItem(..)
@@ -433,3 +435,6 @@ sequenceCurrVal seqDef = do
   case n of
     [r] -> pure $ fromIntegral r
     _ -> error $ "Failed to get current value for sequence " ++ sequenceName seqDef ++ "!"
+
+relationalMapToSql :: RelationalMap a b -> ToSql a ()
+relationalMapToSql = mkToSql

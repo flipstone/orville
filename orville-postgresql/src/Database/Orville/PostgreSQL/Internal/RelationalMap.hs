@@ -20,6 +20,7 @@ module Database.Orville.PostgreSQL.Internal.RelationalMap
   , partialMap
   , readOnlyMap
   , readOnlyField
+  , mkToSql
   ) where
 
 import Control.Monad (join, when)
