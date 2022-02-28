@@ -7,6 +7,12 @@ module Orville.PostgreSQL.Internal.OrvilleState
     orvilleConnectionPool,
     orvilleConnectionState,
     orvilleErrorDetailLevel,
+    orvilleTransactionCallback,
+    addTransactionCallback,
+    TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
+    openTransactionEvent,
+    rollbackTransactionEvent,
+    transactionSuccessEvent,
     HasOrvilleState (askOrvilleState, localOrvilleState),
     ConnectionState (NotConnected, Connected),
     ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
@@ -15,6 +21,8 @@ module Orville.PostgreSQL.Internal.OrvilleState
     newTransaction,
     Savepoint,
     savepointNestingLevel,
+    initialSavepoint,
+    nextSavepoint,
   )
 where
 
@@ -33,6 +41,7 @@ data OrvilleState = OrvilleState
   { _orvilleConnectionPool :: Pool Connection
   , _orvilleConnectionState :: ConnectionState
   , _orvilleErrorDetailLevel :: ErrorDetailLevel
+  , _orvilleTransactionCallback :: TransactionEvent -> IO ()
   }
 
 orvilleConnectionPool :: OrvilleState -> Pool Connection
@@ -46,6 +55,30 @@ orvilleConnectionState =
 orvilleErrorDetailLevel :: OrvilleState -> ErrorDetailLevel
 orvilleErrorDetailLevel =
   _orvilleErrorDetailLevel
+
+orvilleTransactionCallback :: OrvilleState -> TransactionEvent -> IO ()
+orvilleTransactionCallback =
+  _orvilleTransactionCallback
+
+{- |
+  Registers a callback to be invoked during transactions.
+
+  The callback given will be called after the SQL statement corresponding
+  to the given event has finished executing. Callbacks will be called
+  in the order the are added.
+-}
+addTransactionCallback ::
+  (TransactionEvent -> IO ()) ->
+  OrvilleState ->
+  OrvilleState
+addTransactionCallback newCallback state =
+  let originalCallback =
+        _orvilleTransactionCallback state
+
+      wrappedCallback event = do
+        originalCallback event
+        newCallback event
+   in state {_orvilleTransactionCallback = wrappedCallback}
 
 {- |
   'HasOrvilleState' is the typeclass that Orville uses to access and manange
@@ -114,6 +147,7 @@ newOrvilleState errorDetailLevel pool =
     { _orvilleConnectionPool = pool
     , _orvilleConnectionState = NotConnected
     , _orvilleErrorDetailLevel = errorDetailLevel
+    , _orvilleTransactionCallback = defaultTransactionCallback
     }
 
 {- |
@@ -171,8 +205,12 @@ newTransaction maybeTransactionState =
     Just (SavepointTransaction savepoint) ->
       SavepointTransaction (nextSavepoint savepoint)
 
+{- |
+  A internal Orville identifier for a savepoint in a PostgreSQL transaction.
+-}
 newtype Savepoint
   = Savepoint Int
+  deriving (Eq, Show)
 
 initialSavepoint :: Savepoint
 initialSavepoint =
@@ -184,3 +222,53 @@ nextSavepoint (Savepoint n) =
 
 savepointNestingLevel :: Savepoint -> Int
 savepointNestingLevel (Savepoint n) = n
+
+{- |
+  Describes an event in the lifecycle of a database transaction. You can use
+  'addTransactionCallBack' to register a callback to respond to these events.
+  The callback will be called after the even in question has been succesfully
+  executed.
+-}
+data TransactionEvent
+  = -- | Indicates a new transaction has been started
+    BeginTransaction
+  | -- | Indicates that a new savepoint has been saved within a transaction
+    NewSavepoint Savepoint
+  | -- | Indicates that a previous savepoint has been released. It can no
+    -- longer be rolled back to.
+    ReleaseSavepoint Savepoint
+  | -- | Indicates that rollbac was performed to a prior savepoint.
+    --
+    -- Note: It is possible to rollback to a savepoint prior to the most recent
+    -- one without releasing or rolling back to intermediate savepoints. Doing
+    -- so destroys any savepoints created after given savepoint. Although
+    -- Orville currently always matches 'NewSavepoint' with either
+    -- 'ReleaseSavepoint' or 'RollbackToSavepoint', it is recommended that you
+    -- do not rely on this behavior.
+    RollbackToSavepoint Savepoint
+  | -- | Indicates that the transaction has been committed.
+    CommitTransaction
+  | -- | Indicates that the transaction has been rolled back.
+    RollbackTransaction
+  deriving (Eq, Show)
+
+defaultTransactionCallback :: TransactionEvent -> IO ()
+defaultTransactionCallback = const (pure ())
+
+openTransactionEvent :: TransactionState -> TransactionEvent
+openTransactionEvent txnState =
+  case txnState of
+    OutermostTransaction -> BeginTransaction
+    SavepointTransaction savepoint -> NewSavepoint savepoint
+
+rollbackTransactionEvent :: TransactionState -> TransactionEvent
+rollbackTransactionEvent txnState =
+  case txnState of
+    OutermostTransaction -> RollbackTransaction
+    SavepointTransaction savepoint -> RollbackToSavepoint savepoint
+
+transactionSuccessEvent :: TransactionState -> TransactionEvent
+transactionSuccessEvent txnState =
+  case txnState of
+    OutermostTransaction -> CommitTransaction
+    SavepointTransaction savepoint -> ReleaseSavepoint savepoint

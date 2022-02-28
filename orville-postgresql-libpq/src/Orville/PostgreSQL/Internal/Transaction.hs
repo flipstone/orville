@@ -47,44 +47,48 @@ withTransaction action =
             }
 
     committed <- liftIO $ IORef.newIORef False
+    callback <- OrvilleState.orvilleTransactionCallback <$> OrvilleState.askOrvilleState
+
     let doAction = do
-          liftIO $ RawSql.executeVoid conn (openTransactionSql transaction)
+          liftIO $ do
+            let openEvent = OrvilleState.openTransactionEvent transaction
+            RawSql.executeVoid conn (transactionEventSql openEvent)
+            callback openEvent
+
           value <-
             OrvilleState.localOrvilleState
               (OrvilleState.connectState innerConnectedState)
               action
           liftIO $ do
-            RawSql.executeVoid conn (transactionSuccessSql transaction)
+            let successEvent = OrvilleState.transactionSuccessEvent transaction
+            RawSql.executeVoid conn (transactionEventSql successEvent)
             liftIO $ IORef.writeIORef committed True
+            callback successEvent
           pure value
     let rollbackUncommitted =
           liftIO $ do
-            finished <- liftIO $ IORef.readIORef committed
-            Monad.when (not finished) (RawSql.executeVoid conn $ rollbackTransactionSql transaction)
+            finished <- IORef.readIORef committed
+            Monad.when (not finished) $ do
+              let rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
+              RawSql.executeVoid conn (transactionEventSql rollbackEvent)
+              callback rollbackEvent
+
     MonadOrville.liftFinally Exception.finally doAction rollbackUncommitted
 
-openTransactionSql :: OrvilleState.TransactionState -> RawSql.RawSql
-openTransactionSql txnState =
-  case txnState of
-    OrvilleState.OutermostTransaction ->
+transactionEventSql :: OrvilleState.TransactionEvent -> RawSql.RawSql
+transactionEventSql event =
+  case event of
+    OrvilleState.BeginTransaction ->
       RawSql.toRawSql $ Expr.beginTransaction Nothing
-    OrvilleState.SavepointTransaction savepoint ->
+    OrvilleState.NewSavepoint savepoint ->
       RawSql.toRawSql $ Expr.savepoint (savepointName savepoint)
-
-rollbackTransactionSql :: OrvilleState.TransactionState -> RawSql.RawSql
-rollbackTransactionSql txnState =
-  case txnState of
-    OrvilleState.OutermostTransaction ->
+    OrvilleState.RollbackTransaction ->
       RawSql.toRawSql $ Expr.rollback
-    OrvilleState.SavepointTransaction savepoint ->
+    OrvilleState.RollbackToSavepoint savepoint ->
       RawSql.toRawSql $ Expr.rollbackTo (savepointName savepoint)
-
-transactionSuccessSql :: OrvilleState.TransactionState -> RawSql.RawSql
-transactionSuccessSql txnState =
-  case txnState of
-    OrvilleState.OutermostTransaction ->
+    OrvilleState.CommitTransaction ->
       RawSql.toRawSql $ Expr.commit
-    OrvilleState.SavepointTransaction savepoint ->
+    OrvilleState.ReleaseSavepoint savepoint ->
       RawSql.toRawSql $ Expr.releaseSavepoint (savepointName savepoint)
 
 {- |

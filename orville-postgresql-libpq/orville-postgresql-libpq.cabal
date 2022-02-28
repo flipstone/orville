@@ -38,6 +38,7 @@ library
       Orville.PostgreSQL.Internal.Expr
       Orville.PostgreSQL.Internal.FieldDefinition
       Orville.PostgreSQL.Internal.MarshallError
+      Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.PgTextFormatValue
       Orville.PostgreSQL.Internal.PrimaryKey
       Orville.PostgreSQL.Internal.RawSql
@@ -48,6 +49,7 @@ library
       Orville.PostgreSQL.Internal.SqlType
       Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Internal.TableDefinition
+      Orville.PostgreSQL.Internal.Transaction
       Orville.PostgreSQL.Plan
       Orville.PostgreSQL.Plan.Explanation
       Orville.PostgreSQL.Plan.Many
@@ -110,14 +112,12 @@ library
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
-      Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.PgTime
       Orville.PostgreSQL.Internal.SelectOptions.OrderBy
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
       Orville.PostgreSQL.Internal.SyntheticField
       Orville.PostgreSQL.Internal.TableIdentifier
-      Orville.PostgreSQL.Internal.Transaction
       Orville.PostgreSQL.Internal.Update
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField

@@ -30,6 +30,7 @@ library:
     - Orville.PostgreSQL.Internal.Expr
     - Orville.PostgreSQL.Internal.FieldDefinition
     - Orville.PostgreSQL.Internal.MarshallError
+    - Orville.PostgreSQL.Internal.OrvilleState
     - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PrimaryKey
     - Orville.PostgreSQL.Internal.RawSql
@@ -40,6 +41,7 @@ library:
     - Orville.PostgreSQL.Internal.SqlType
     - Orville.PostgreSQL.Internal.SqlValue
     - Orville.PostgreSQL.Internal.TableDefinition
+    - Orville.PostgreSQL.Internal.Transaction
     - Orville.PostgreSQL.Plan
     - Orville.PostgreSQL.Plan.Explanation
     - Orville.PostgreSQL.Plan.Many
