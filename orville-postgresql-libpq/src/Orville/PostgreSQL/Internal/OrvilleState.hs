@@ -66,6 +66,15 @@ orvilleTransactionCallback =
   The callback given will be called after the SQL statement corresponding
   to the given event has finished executing. Callbacks will be called
   in the order the are added.
+
+  Note: There is no specialized error handling for these callbacks. This means
+  that if a callback raises an exception no further callbacks will be called
+  and the exception will propagate up until it caught elsewhere. In particular,
+  if an exception is raised by a callback upon opening the transaction it will
+  cause the transaction to be rolled-back the same as any other exception that
+  might happen during the transaction. In general, we recommend only using
+  callbacks that either raise no exceptions or can handle their own exceptions
+  cleanly.
 -}
 addTransactionCallback ::
   (TransactionEvent -> IO ()) ->
