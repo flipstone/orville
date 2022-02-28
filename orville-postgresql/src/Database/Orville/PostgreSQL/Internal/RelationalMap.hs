@@ -21,6 +21,7 @@ module Database.Orville.PostgreSQL.Internal.RelationalMap
   , readOnlyMap
   , readOnlyField
   , mkToSql
+  , relationalMapFromSql
   ) where
 
 import Control.Monad (join, when)
@@ -212,20 +213,21 @@ mkFromSql (PrimaryKey pKeyPart pKeyParts) relMap =
               x -> x
     }
   where
-    fromSql = fromRelMap relMap
+    fromSql = relationalMapFromSql relMap
 
     getColName (PrimaryKeyPart _ fieldDef) = fieldName fieldDef
 
-    fromRelMap :: RelationalMap a b -> FromSql b
-    fromRelMap (RM_Field field) = fieldFromSql field
-    fromRelMap (RM_Nest _ rm) = fromRelMap rm
-    fromRelMap (RM_ReadOnly rm) = fromRelMap rm
-    fromRelMap (RM_MaybeTag rm) = fromRelMap rm
-    fromRelMap (RM_Pure b) = pure b
-    fromRelMap (RM_Apply rmF rmC) = fromRelMap rmF <*> fromRelMap rmC
-    fromRelMap (RM_Partial rm) = do
-      joinFromSqlError (wrapError <$> fromRelMap rm)
+relationalMapFromSql :: RelationalMap a b -> FromSql b
+relationalMapFromSql (RM_Field field) = fieldFromSql field
+relationalMapFromSql (RM_Nest _ rm) = relationalMapFromSql rm
+relationalMapFromSql (RM_ReadOnly rm) = relationalMapFromSql rm
+relationalMapFromSql (RM_MaybeTag rm) = relationalMapFromSql rm
+relationalMapFromSql (RM_Pure b) = pure b
+relationalMapFromSql (RM_Apply rmF rmC) = relationalMapFromSql rmF <*> relationalMapFromSql rmC
+relationalMapFromSql (RM_Partial rm) = joinFromSqlError (wrapError <$> relationalMapFromSql rm)
+  where
     wrapError = either (Left . simpleConversionError) Right
+
 
 mkToSql :: RelationalMap a b -> ToSql a ()
 mkToSql (RM_Field field) =

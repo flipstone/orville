@@ -34,6 +34,7 @@ module Database.Orville.PostgreSQL.Core
   , TableParams(..)
   , RelationalMap
   , relationalMapToSql
+  , relationalMapFromSql
   , fields
   , mapAttr
   , mapField
