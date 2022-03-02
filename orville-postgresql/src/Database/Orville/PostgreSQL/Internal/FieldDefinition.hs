@@ -113,11 +113,19 @@ foreignKeyField ::
   -> TableDefinition readEntity writeEntity key
   -> FieldDefinition nullability key
   -> FieldDefinition nullability key
-foreignKeyField name refTable refField =
+foreignKeyField = foreignKeyFieldOnDelete DoNothing
+
+foreignKeyFieldOnDelete ::
+     OnDelete
+  -> String
+  -> TableDefinition readEntity writeEntity key
+  -> FieldDefinition nullability key
+  -> FieldDefinition nullability key
+foreignKeyFieldOnDelete onDelete name refTable refField =
   FieldDefinition
     name
     (foreignRefType $ fieldType refField)
-    [References refTable refField]
+    [References refTable refField onDelete]
     (fieldNullability refField)
 
 fieldOfType :: SqlType a -> String -> FieldDefinition NotNull a

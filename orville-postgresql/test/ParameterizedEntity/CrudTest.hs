@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module ParameterizedEntity.CrudTest where
 
 import qualified Database.Orville.PostgreSQL as O
@@ -5,8 +6,8 @@ import qualified Database.Orville.PostgreSQL as O
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertEqual, testCase)
 
-import ParameterizedEntity.Data.Virus (bpsVirus, brnVirus, virusId)
-import ParameterizedEntity.Schema (schema, virusTable)
+import ParameterizedEntity.Data.Virus (bpsVirus, brnVirus, virusId, mutationId, Mutation(..), VirusName(..))
+import ParameterizedEntity.Schema (schema, virusTable, mutationTable)
 import qualified TestDB as TestDB
 
 test_crud :: TestTree
@@ -50,4 +51,16 @@ test_crud =
             "Virus was found in the database, but it should have been deleted"
             Nothing
             foundDeletedVirus
+
+      , testCase "Delete - Cascade" $ do
+          foundDeletedMutation <- run $ do
+            TestDB.reset schema
+            insertedVirus <- O.insertRecord virusTable bpsVirus
+            insertedMutation <- O.insertRecord mutationTable (Mutation () (VirusName "Bovine unpopular stomachitis") $ virusId insertedVirus)
+            O.deleteRecord virusTable (virusId insertedVirus)
+            O.findRecord mutationTable (mutationId insertedMutation)
+          assertEqual
+            "Mutation was found in the database, but it should have been deleted via CASCADE"
+            Nothing
+            foundDeletedMutation
       ]

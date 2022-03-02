@@ -71,6 +71,7 @@ module Database.Orville.PostgreSQL.Core
   , Nullable
   , NotNull
   , Nullability(..)
+  , OnDelete(..)
   , isFieldNullable
   , fieldOfType
   , textField
@@ -86,6 +87,7 @@ module Database.Orville.PostgreSQL.Core
   , searchVectorField
   , nullableField
   , foreignKeyField
+  , foreignKeyFieldOnDelete
   , withFlag
   , withName
   , withConversion

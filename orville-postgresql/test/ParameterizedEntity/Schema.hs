@@ -8,4 +8,4 @@ import qualified Database.Orville.PostgreSQL as O
 import ParameterizedEntity.Schema.Virus
 
 schema :: O.SchemaDefinition
-schema = [O.Table virusTable]
+schema = [O.Table virusTable, O.Table mutationTable]

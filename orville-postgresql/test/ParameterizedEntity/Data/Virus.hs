@@ -2,6 +2,8 @@ module ParameterizedEntity.Data.Virus
   ( Virus(..)
   , VirusId(..)
   , VirusName(..)
+  , Mutation(..)
+  , MutationId(..)
   , bpsVirus
   , brnVirus
   ) where
@@ -36,3 +38,13 @@ brnVirus =
     { virusId = ()
     , virusName = VirusName (Text.pack "Black raspberry necrosis")
     }
+
+data Mutation key = Mutation
+  { mutationId :: key
+  , mutationName :: VirusName
+  , mutationParent :: VirusId
+  } deriving (Eq, Show)
+
+newtype MutationId = MutationId
+  { unMutationId :: Int32
+  } deriving (Eq, Show)

@@ -34,11 +34,16 @@ type UpdatedAt = Time.UTCTime
 
 type OccurredAt = Time.UTCTime
 
+data OnDelete
+  = Cascade
+  | DoNothing
+
 data ColumnFlag
   = forall a. ColumnDefault a => Default a
   | Unique
   | forall readEntity writeEntity key nullability. References (TableDefinition readEntity writeEntity key)
                                                               (FieldDefinition nullability key)
+                                                              OnDelete
   | ColumnDescription String
   | AssignedByDatabase
 

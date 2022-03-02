@@ -105,10 +105,15 @@ mkDropColumnDDL name (Just _) = ["DROP COLUMN " ++ (rawExprToSql . generateSql .
 mkFlagDDL :: ColumnFlag -> Maybe String
 mkFlagDDL Unique = Just "UNIQUE"
 mkFlagDDL (Default def) = Just $ "DEFAULT " ++ toColumnDefaultSql def
-mkFlagDDL (References table field) =
-  Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ (rawExprToSql . generateSql . NameForm Nothing . fieldName) field ++ ")"
+mkFlagDDL (References table field onDelete) =
+  Just $ "REFERENCES \"" ++ tableName table ++ "\" (" ++ (rawExprToSql . generateSql . NameForm Nothing . fieldName) field ++ ")" ++ mkOnDeleteDDL onDelete
 mkFlagDDL (ColumnDescription _) = Nothing
 mkFlagDDL AssignedByDatabase = Nothing
+
+mkOnDeleteDDL :: OnDelete -> String
+mkOnDeleteDDL od = case od of
+  DoNothing -> ""
+  Cascade -> " ON DELETE CASCADE"
 
 mkFieldDDL :: FieldDefinition nullability a -> String
 mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
@@ -116,7 +121,7 @@ mkFieldDDL field = name ++ " " ++ sqlType ++ " " ++ flagSql
     name = rawExprToSql . generateSql . fieldToNameForm $ field
     sqlType = sqlTypeDDL (fieldType field)
     flagSql =
-      List.intercalate " " (notNull : mapMaybe mkFlagDDL (fieldFlags field))
+      unwords (notNull : mapMaybe mkFlagDDL (fieldFlags field))
     notNull =
       if isFieldNullable field
         then "NULL"
