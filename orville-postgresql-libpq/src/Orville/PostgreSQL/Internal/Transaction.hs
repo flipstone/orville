@@ -25,10 +25,10 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 {- |
   Performs a an action in an Orville monad within a database transaction. The transaction
   in begun before the action is called. If the action completes without raising an exception,
-  the transaction will be comitted. If the action raises an exception, the transaction will
+  the transaction will be committed. If the action raises an exception, the transaction will
   rollback.
 
-  This function in save to call from within another transaction. When called this way the
+  This function in safe to call from within another transaction. When called this way the
   transaction will establish a new savepoint at the beginning of the nested transaction and
   either release the savepoint or rollback to it as appropriate.
 
