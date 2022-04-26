@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Orville.PostgreSQL.Internal.SyntheticField
   ( SyntheticField,
     syntheticFieldExpression,
@@ -5,11 +7,13 @@ module Orville.PostgreSQL.Internal.SyntheticField
     syntheticFieldValueFromSqlValue,
     syntheticField,
     nullableSyntheticField,
+    prefixSyntheticField,
   )
 where
 
+import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldName, stringToFieldName)
+import Orville.PostgreSQL.Internal.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, stringToFieldName)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 {- |
@@ -76,4 +80,17 @@ nullableSyntheticField synthField =
         if SqlValue.isSqlNull sqlValue
           then Right Nothing
           else Just <$> syntheticFieldValueFromSqlValue synthField sqlValue
+    }
+
+{- |
+  Adds a prefix, followed by an underscore, to the alias used to name the
+  synthetic field.
+-}
+prefixSyntheticField ::
+  String ->
+  SyntheticField a ->
+  SyntheticField a
+prefixSyntheticField prefix synthField =
+  synthField
+    { _syntheticFieldAlias = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (syntheticFieldAlias synthField))
     }

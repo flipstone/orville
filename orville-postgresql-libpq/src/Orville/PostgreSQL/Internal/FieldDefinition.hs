@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {- |
 Module    : Orville.PostgreSQL.Internal.FieldDefinition
@@ -22,6 +23,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldNameToString,
     fieldNameToColumnName,
     fieldNameToByteString,
+    byteStringToFieldName,
     NotNull,
     Nullable,
     convertField,
@@ -30,6 +32,7 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     asymmetricNullableField,
     setDefaultValue,
     removeDefaultValue,
+    prefixField,
     integerField,
     serialField,
     smallIntegerField,
@@ -80,6 +83,9 @@ fieldNameToString =
 fieldNameToByteString :: FieldName -> B8.ByteString
 fieldNameToByteString (FieldName name) =
   name
+
+byteStringToFieldName :: B8.ByteString -> FieldName
+byteStringToFieldName = FieldName
 
 {- |
   'FieldDefinition' determines the SQL constsruction of a column in the
@@ -513,4 +519,16 @@ removeDefaultValue ::
 removeDefaultValue fieldDef =
   fieldDef
     { _fieldDefaultValue = Nothing
+    }
+
+{- |
+  Adds a prefix, followed by an underscore, to a field's name.
+-}
+prefixField ::
+  String ->
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+prefixField prefix fieldDef =
+  fieldDef
+    { _fieldName = FieldName (B8.pack prefix <> "_" <> fieldNameToByteString (fieldName fieldDef))
     }

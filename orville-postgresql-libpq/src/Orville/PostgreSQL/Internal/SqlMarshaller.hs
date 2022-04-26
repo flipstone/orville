@@ -25,6 +25,7 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     marshallNested,
     marshallMaybe,
     marshallPartial,
+    prefixMarshaller,
     ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
     collectFromField,
     foldMarshallerFields,
@@ -48,10 +49,10 @@ import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldValueFromSqlValue, nullableField)
+import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldValueFromSqlValue, nullableField, prefixField)
 import qualified Orville.PostgreSQL.Internal.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
-import Orville.PostgreSQL.Internal.SyntheticField (SyntheticField, nullableSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
+import Orville.PostgreSQL.Internal.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
 
 {- |
   An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
@@ -767,6 +768,31 @@ marshallMaybe =
 -}
 marshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
 marshallPartial = MarshallPartial
+
+{- |
+  Adds a prefix, followed by an underscore, to the names of all of the fields
+  and synthetic fields in a 'SqlMarshaller'.
+-}
+prefixMarshaller ::
+  String ->
+  SqlMarshaller readEntity writeEntity ->
+  SqlMarshaller readEntity writeEntity
+prefixMarshaller prefix = go
+  where
+    go :: SqlMarshaller a b -> SqlMarshaller a b
+    go marshaller = case marshaller of
+      MarshallPure b -> MarshallPure b
+      MarshallApply m1 m2 ->
+        MarshallApply (go m1) $ go m2
+      MarshallNest f m ->
+        MarshallNest f $ go m
+      MarshallField fieldDefinition ->
+        MarshallField $ prefixField prefix fieldDefinition
+      MarshallSyntheticField syntheticField ->
+        MarshallSyntheticField $ prefixSyntheticField prefix syntheticField
+      MarshallMaybeTag m -> MarshallMaybeTag $ go m
+      MarshallPartial m -> MarshallPartial $ go m
+      MarshallReadOnly m -> MarshallReadOnly $ go m
 
 {- |
   Marks a 'SqlMarshaller' as ready only so that it will not attempt to
