@@ -159,6 +159,7 @@ module Orville.PostgreSQL
     ErrorDetailLevel.minimalErrorDetailLevel,
     ErrorDetailLevel.maximalErrorDetailLevel,
     SelectOptions.SelectOptions,
+    SelectOptions.limit,
     SelectOptions.where_,
     SelectOptions.emptySelectOptions,
     SelectOptions.appendSelectOptions,
