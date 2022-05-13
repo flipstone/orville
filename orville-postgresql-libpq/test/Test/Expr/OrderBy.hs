@@ -12,24 +12,27 @@ import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
-import Test.Expr.TestSchema (FooBar (..), assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource)
+import Test.Expr.TestSchema (FooBar (..), assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
 orderByTests :: Pool.Pool Conn.Connection -> Property.Group
 orderByTests pool =
-  Property.group "Expr - OrderBy" $
+  Property.group
+    "Expr - OrderBy"
     [ prop_ascendingExpr pool
     , prop_descendingExpr pool
     , prop_appendOrderByExpr pool
     , prop_orderByColumnsExpr pool
+    , prop_ascendingOrderWithExpr pool
+    , prop_descendingOrderWithExpr pool
     ]
 
 prop_ascendingExpr :: Property.NamedDBProperty
 prop_ascendingExpr =
   orderByTest "ascendingExpr sorts a text column" $
     OrderByTest
-      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-      , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dog"]
+      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog", mkFooBar 3 "dog"]
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByExpr
@@ -41,8 +44,8 @@ prop_descendingExpr :: Property.NamedDBProperty
 prop_descendingExpr =
   orderByTest "descendingExpr sorts a text column" $
     OrderByTest
-      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-      , orderByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dog", FooBar 2 "dingo"]
+      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      , orderByExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "dog", mkFooBar 2 "dingo"]
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByExpr
@@ -54,8 +57,8 @@ prop_appendOrderByExpr :: Property.NamedDBProperty
 prop_appendOrderByExpr =
   orderByTest "appendOrderByExpr causes ordering on both columns" $
     OrderByTest
-      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-      , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
@@ -67,13 +70,43 @@ prop_orderByColumnsExpr :: Property.NamedDBProperty
 prop_orderByColumnsExpr =
   orderByTest "orderByColumnsExpr orders by columns" $
     OrderByTest
-      { orderByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-      , orderByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByColumnsExpr $
               (barColumn, Expr.ascendingOrder)
                 NE.:| [(fooColumn, Expr.descendingOrder)]
+      }
+
+prop_ascendingOrderWithExpr :: Property.NamedDBProperty
+prop_ascendingOrderWithExpr =
+  orderByTest "ascendingOrderWith sorts columns with nulls first/last" $
+    OrderByTest
+      { orderByValuesToInsert =
+          [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
+      , orderByExpectedQueryResults =
+          [FooBar Nothing (Just "dog"), FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog"]
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.appendOrderByExpr
+              (Expr.orderByExpr (RawSql.toRawSql fooColumn) $ Expr.ascendingOrderWith Expr.NullsFirst)
+              (Expr.orderByExpr (RawSql.toRawSql barColumn) $ Expr.ascendingOrderWith Expr.NullsLast)
+      }
+
+prop_descendingOrderWithExpr :: Property.NamedDBProperty
+prop_descendingOrderWithExpr =
+  orderByTest "descendingOrderWith sorts columns with nulls first/last" $
+    OrderByTest
+      { orderByValuesToInsert =
+          [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
+      , orderByExpectedQueryResults =
+          [FooBar Nothing (Just "dog"), FooBar Nothing Nothing, mkFooBar 2 "dog", FooBar (Just 1) Nothing]
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.appendOrderByExpr
+              (Expr.orderByExpr (RawSql.toRawSql fooColumn) $ Expr.descendingOrderWith Expr.NullsFirst)
+              (Expr.orderByExpr (RawSql.toRawSql barColumn) $ Expr.descendingOrderWith Expr.NullsLast)
       }
 
 data OrderByTest = OrderByTest

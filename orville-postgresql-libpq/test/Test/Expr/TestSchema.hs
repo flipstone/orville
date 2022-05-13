@@ -1,5 +1,6 @@
 module Test.Expr.TestSchema
   ( FooBar (..),
+    mkFooBar,
     findAllFooBars,
     fooBarTable,
     fooColumn,
@@ -24,9 +25,13 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
 data FooBar = FooBar
-  { foo :: Int.Int32
-  , bar :: String
+  { foo :: Maybe Int.Int32
+  , bar :: Maybe String
   }
+
+-- Smart constructor for the common case when both fields are not null
+mkFooBar :: Int.Int32 -> String -> FooBar
+mkFooBar f b = FooBar (Just f) (Just b)
 
 fooBarTable :: Expr.QualifiedTableName
 fooBarTable =
@@ -56,17 +61,20 @@ findAllFooBars =
 
 encodeFooBar :: FooBar -> [(Maybe B8.ByteString, SqlValue.SqlValue)]
 encodeFooBar fooBar =
-  [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo fooBar))
-  , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar fooBar))
+  [ (Just (B8.pack "foo"), nullOr SqlValue.fromInt32 (foo fooBar))
+  , (Just (B8.pack "bar"), nullOr SqlValue.fromText (T.pack <$> bar fooBar))
   ]
 
 insertFooBarSource :: [FooBar] -> Expr.InsertSource
 insertFooBarSource fooBars =
   let mkRow fooBar =
-        [ SqlValue.fromInt32 (foo fooBar)
-        , SqlValue.fromText (T.pack $ bar fooBar)
+        [ nullOr SqlValue.fromInt32 (foo fooBar)
+        , nullOr SqlValue.fromText (T.pack <$> bar fooBar)
         ]
    in Expr.insertSqlValues (map mkRow fooBars)
+
+nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
+nullOr = maybe SqlValue.sqlNull
 
 dropAndRecreateTestTable :: Connection.Connection -> IO ()
 dropAndRecreateTestTable connection = do
