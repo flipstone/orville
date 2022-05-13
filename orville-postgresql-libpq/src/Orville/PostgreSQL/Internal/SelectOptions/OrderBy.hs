@@ -3,8 +3,11 @@
 module Orville.PostgreSQL.Internal.SelectOptions.OrderBy
   ( OrderBy,
     Expr.OrderByDirection,
+    Expr.NullsOrder (..),
     Expr.ascendingOrder,
+    Expr.ascendingOrderWith,
     Expr.descendingOrder,
+    Expr.descendingOrderWith,
     orderByOrderByExpr,
     orderByField,
     orderByColumnName,
