@@ -22,7 +22,10 @@ import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExp
   decode the database result set when it is executed.
 -}
 data Insert readEntity returningClause where
-  Insert :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity NoReturningClause
+  Insert ::
+    AnnotatedSqlMarshaller writeEntity readEntity ->
+    Expr.InsertExpr ->
+    Insert readEntity NoReturningClause
   InsertReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity ReturningClause
 
 {- |
@@ -37,14 +40,20 @@ insertToInsertExpr (InsertReturning _ expr) = expr
 {- |
   Excutes the database query for the 'Insert' and returns '()'.
 -}
-executeInsert :: MonadOrville.MonadOrville m => Insert readEntity NoReturningClause -> m ()
+executeInsert ::
+  MonadOrville.MonadOrville m =>
+  Insert readEntity NoReturningClause ->
+  m ()
 executeInsert (Insert _ expr) =
   Execute.executeVoid expr
 
 {- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
   were just inserted) as returned via a RETURNING clause.
 -}
-executeInsertReturnEntities :: MonadOrville.MonadOrville m => Insert readEntity ReturningClause -> m [readEntity]
+executeInsertReturnEntities ::
+  MonadOrville.MonadOrville m =>
+  Insert readEntity ReturningClause ->
+  m [readEntity]
 executeInsertReturnEntities (InsertReturning marshaller expr) =
   Execute.executeAndDecode expr marshaller
 

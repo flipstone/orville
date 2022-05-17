@@ -5,6 +5,7 @@ module Test.Entities.Foo
     table,
     generate,
     generateFooWithName,
+    generateFooWithId,
     generateFooId,
     generateFooName,
     generateList,
@@ -73,6 +74,12 @@ generate =
   Foo
     <$> generateFooId
     <*> generateFooName
+    <*> generateFooAge
+
+generateFooWithId :: FooId -> HH.Gen Foo
+generateFooWithId knownId =
+  Foo knownId
+    <$> generateFooName
     <*> generateFooAge
 
 generateFooWithName :: FooName -> HH.Gen Foo

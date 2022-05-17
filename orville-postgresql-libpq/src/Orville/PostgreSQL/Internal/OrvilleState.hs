@@ -26,7 +26,8 @@ module Orville.PostgreSQL.Internal.OrvilleState
   )
 where
 
-import Control.Monad.Trans.Reader (ReaderT, ask, local)
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Reader (ReaderT, ask, local, mapReaderT)
 import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
@@ -145,6 +146,10 @@ class HasOrvilleState m where
 instance Monad m => HasOrvilleState (ReaderT OrvilleState m) where
   askOrvilleState = ask
   localOrvilleState = local
+
+instance {-# OVERLAPS #-} (Monad m, HasOrvilleState m) => HasOrvilleState (ReaderT r m) where
+  askOrvilleState = lift askOrvilleState
+  localOrvilleState f = mapReaderT (localOrvilleState f)
 
 {- |
   Creates a appropriate initial 'OrvilleState' that will use the connection

@@ -16,4 +16,5 @@ newtype LimitExpr
 limitExpr :: Int -> LimitExpr
 limitExpr limitValue =
   LimitExpr $
-    RawSql.fromString "LIMIT " <> RawSql.parameter (SqlValue.fromInt limitValue)
+    RawSql.fromString "LIMIT "
+      <> RawSql.parameter (SqlValue.fromInt limitValue)

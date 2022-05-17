@@ -32,6 +32,7 @@ library
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
       Orville.PostgreSQL.Connection
+      Orville.PostgreSQL.EntityTrace
       Orville.PostgreSQL.Internal.DefaultValue
       Orville.PostgreSQL.Internal.ErrorDetailLevel
       Orville.PostgreSQL.Internal.ExecutionResult
@@ -160,6 +161,7 @@ test-suite spec
       Test.Entities.FooChild
       Test.Entities.User
       Test.EntityOperations
+      Test.EntityTrace
       Test.Expr.GroupBy
       Test.Expr.InsertUpdateDelete
       Test.Expr.OrderBy
@@ -181,6 +183,7 @@ test-suite spec
       Test.TableDefinition
       Test.TestTable
       Test.Transaction
+      Test.Transaction.Util
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       test

@@ -34,12 +34,11 @@ newtype Orville a = Orville
     , Monad
     , MonadIO
     , MonadOrville.MonadOrvilleControl
+    , MonadOrville.MonadOrville
     , OrvilleState.HasOrvilleState
     , ExSafe.MonadThrow
     , ExSafe.MonadCatch
     )
-
-instance MonadOrville.MonadOrville Orville
 
 {- |
   Runs an 'Orville' operation in the 'IO' monad using the given connection

@@ -13,6 +13,7 @@ import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Test.AutoMigration as AutoMigration
 import qualified Test.Connection as Connection
 import qualified Test.EntityOperations as EntityOperations
+import qualified Test.EntityTrace as EntityTrace
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
@@ -54,6 +55,7 @@ main = do
       , Plan.planTests pool
       , PgCatalog.pgCatalogTests pool
       , AutoMigration.autoMigrationTests pool
+      , EntityTrace.entityTraceTests pool
       ]
 
   Monad.unless (Property.allPassed summary) SE.exitFailure

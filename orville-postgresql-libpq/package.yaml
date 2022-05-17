@@ -24,6 +24,7 @@ library:
     - Orville.PostgreSQL
     - Orville.PostgreSQL.AutoMigration
     - Orville.PostgreSQL.Connection
+    - Orville.PostgreSQL.EntityTrace
     - Orville.PostgreSQL.Internal.DefaultValue
     - Orville.PostgreSQL.Internal.ErrorDetailLevel
     - Orville.PostgreSQL.Internal.ExecutionResult

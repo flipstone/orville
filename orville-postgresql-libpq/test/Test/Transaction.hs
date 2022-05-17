@@ -3,14 +3,12 @@ module Test.Transaction
   )
 where
 
-import qualified Control.Exception.Safe as ExSafe
+import qualified Control.Monad as Monad
 import qualified Data.IORef as IORef
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
@@ -18,6 +16,7 @@ import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
+import qualified Test.Transaction.Util as TransactionUtil
 
 transactionTests :: Pool.Pool Conn.Connection -> Property.Group
 transactionTests pool =
@@ -32,7 +31,7 @@ transactionTests pool =
 prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
 prop_transactionsWithoutExceptionsCommit =
   Property.namedDBProperty "Transactions without exceptions perform a commit" $ \pool -> do
-    nestingLevel <- HH.forAll genNestingLevel
+    nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     tracers <-
       HH.evalIO $ do
@@ -40,20 +39,16 @@ prop_transactionsWithoutExceptionsCommit =
           TestTable.dropAndRecreateTableDef connection tracerTable
 
         Orville.runOrville pool $ do
-          withNestedTransactions nestingLevel $
-            NestedActions
-              { atEachLevel = Orville.insertEntity tracerTable Tracer
-              , atInnermost = pure ()
-              }
-
+          TransactionUtil.runNestedTransactions nestingLevel $ \_ ->
+            Orville.insertEntity tracerTable Tracer
           Orville.findEntitiesBy tracerTable mempty
 
-    length tracers === (nestingLevel + 1)
+    length tracers === nestingLevel
 
 prop_exceptionsLeadToTransactionRollback :: Property.NamedDBProperty
 prop_exceptionsLeadToTransactionRollback =
   Property.namedDBProperty "Exceptions within transaction blocks execute rollbock" $ \pool -> do
-    nestingLevel <- HH.forAll genNestingLevel
+    nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     tracers <-
       HH.evalIO $ do
@@ -61,12 +56,10 @@ prop_exceptionsLeadToTransactionRollback =
           TestTable.dropAndRecreateTableDef connection tracerTable
 
         Orville.runOrville pool $ do
-          ExSafe.handle (\TestError -> pure ()) $
-            withNestedTransactions nestingLevel $
-              NestedActions
-                { atEachLevel = Orville.insertEntity tracerTable Tracer
-                , atInnermost = ExSafe.throw TestError
-                }
+          TransactionUtil.silentlyHandleTestError $
+            TransactionUtil.runNestedTransactions nestingLevel $ \level -> do
+              Orville.insertEntity tracerTable Tracer
+              Monad.when (level >= nestingLevel) TransactionUtil.throwTestError
 
           Orville.findEntitiesBy tracerTable mempty
 
@@ -75,23 +68,19 @@ prop_exceptionsLeadToTransactionRollback =
 prop_savepointsRollbackInnerTransactions :: Property.NamedDBProperty
 prop_savepointsRollbackInnerTransactions =
   Property.namedDBProperty "Savepoints allow inner transactions to rollback while outer transactions commit" $ \pool -> do
-    outerNestingLevel <- HH.forAll genNestingLevel
-    innerNestingLevel <- HH.forAll genNestingLevel
+    outerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
+    innerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
-    let doInnerTransactions =
-          ExSafe.handle (\TestError -> pure ()) $
-            withNestedTransactions innerNestingLevel $
-              NestedActions
-                { atEachLevel = Orville.insertEntity tracerTable Tracer
-                , atInnermost = ExSafe.throw TestError
-                }
+    let innerActions =
+          TransactionUtil.runNestedTransactions innerNestingLevel $ \level -> do
+            Orville.insertEntity tracerTable Tracer
+            Monad.when (level >= innerNestingLevel) TransactionUtil.throwTestError
 
-        doTransactions =
-          withNestedTransactions outerNestingLevel $
-            NestedActions
-              { atEachLevel = Orville.insertEntity tracerTable Tracer
-              , atInnermost = doInnerTransactions
-              }
+        outerActions =
+          TransactionUtil.runNestedTransactions outerNestingLevel $ \level -> do
+            Orville.insertEntity tracerTable Tracer
+            Monad.when (level >= outerNestingLevel) $
+              TransactionUtil.silentlyHandleTestError innerActions
 
     tracers <-
       HH.evalIO $ do
@@ -99,25 +88,22 @@ prop_savepointsRollbackInnerTransactions =
           TestTable.dropAndRecreateTableDef connection tracerTable
 
         Orville.runOrville pool $ do
-          doTransactions
+          outerActions
           Orville.findEntitiesBy tracerTable mempty
 
-    length tracers === (outerNestingLevel + 1)
+    length tracers === outerNestingLevel
 
 prop_callbacksMadeForTransactionCommit :: Property.NamedDBProperty
 prop_callbacksMadeForTransactionCommit =
   Property.namedDBProperty "Callbacks are delivered for a transaction that is commited" $ \pool -> do
-    nestingLevel <- HH.forAll genNestingLevel
+    nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     allEvents <-
-      captureTransactionCallbackEvents pool nestingLevel $
-        NestedActions
-          { atEachLevel = pure ()
-          , atInnermost = pure ()
-          }
+      captureTransactionCallbackEvents pool $
+        TransactionUtil.runNestedTransactions nestingLevel (\_ -> pure ())
 
     let expectedEvents =
-          mkExpectedEventsForNestingLevel nestingLevel $ \maybeSavepoint ->
+          mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
             case maybeSavepoint of
               Nothing -> (Orville.BeginTransaction, Orville.CommitTransaction)
               Just savepoint -> (Orville.NewSavepoint savepoint, Orville.ReleaseSavepoint savepoint)
@@ -127,45 +113,25 @@ prop_callbacksMadeForTransactionCommit =
 prop_callbacksMadeForTransactionRollback :: Property.NamedDBProperty
 prop_callbacksMadeForTransactionRollback =
   Property.namedDBProperty "Callbacks are delivered for a transaction this is rolled back" $ \pool -> do
-    nestingLevel <- HH.forAll genNestingLevel
+    nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
-    allEvents <-
-      captureTransactionCallbackEvents pool nestingLevel $
-        NestedActions
-          { atEachLevel = pure ()
-          , atInnermost = ExSafe.throw TestError
-          }
+    allEvents <- captureTransactionCallbackEvents pool $
+      TransactionUtil.runNestedTransactions nestingLevel $ \level ->
+        Monad.when (level >= nestingLevel) (TransactionUtil.throwTestError)
 
     let expectedEvents =
-          mkExpectedEventsForNestingLevel nestingLevel $ \maybeSavepoint ->
+          mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
             case maybeSavepoint of
               Nothing -> (Orville.BeginTransaction, Orville.RollbackTransaction)
               Just savepoint -> (Orville.NewSavepoint savepoint, Orville.RollbackToSavepoint savepoint)
 
     allEvents === expectedEvents
 
-data NestedActions = NestedActions
-  { atEachLevel :: Orville.Orville ()
-  , atInnermost :: Orville.Orville ()
-  }
-
-withNestedTransactions ::
-  Int ->
-  NestedActions ->
-  Orville.Orville ()
-withNestedTransactions nestingLevel nestedActions =
-  Orville.withTransaction $ do
-    atEachLevel nestedActions
-    if nestingLevel == 0
-      then atInnermost nestedActions
-      else withNestedTransactions (nestingLevel - 1) nestedActions
-
 captureTransactionCallbackEvents ::
   Pool.Pool Conn.Connection ->
-  Int ->
-  NestedActions ->
+  Orville.Orville () ->
   HH.PropertyT IO [Orville.TransactionEvent]
-captureTransactionCallbackEvents pool nestingLevel nestedActions = do
+captureTransactionCallbackEvents pool actions = do
   callbackEventsRef <- HH.evalIO $ IORef.newIORef []
 
   let captureEvent event =
@@ -175,50 +141,28 @@ captureTransactionCallbackEvents pool nestingLevel nestedActions = do
         Orville.addTransactionCallback captureEvent
 
   HH.evalIO $ do
-    Orville.runOrville pool $ do
-      ExSafe.handle (\TestError -> pure ()) $ do
-        Orville.localOrvilleState addEventCaptureCallback $ do
-          withNestedTransactions nestingLevel nestedActions
+    Orville.runOrville pool $
+      TransactionUtil.silentlyHandleTestError $
+        Orville.localOrvilleState addEventCaptureCallback actions
 
     reverse <$> IORef.readIORef callbackEventsRef
 
-mkExpectedEventsForNestingLevel ::
+mkExpectedEventsForNestedActions ::
   Int ->
   (Maybe Orville.Savepoint -> (Orville.TransactionEvent, Orville.TransactionEvent)) ->
   [Orville.TransactionEvent]
-mkExpectedEventsForNestingLevel nestingLevel mkEventsForLevel =
-  let go remainingSavepointsInnerFirst befores afters =
-        let (newBeforeEvent, newAfterEvent) =
-              mkEventsForLevel $
-                case remainingSavepointsInnerFirst of
-                  [] -> Nothing
-                  savepoint : _ -> Just savepoint
+mkExpectedEventsForNestedActions nestingLevel mkEventsForLevel =
+  let appendEvents mbSavepoint (befores, afters) =
+        let (before, after) = mkEventsForLevel mbSavepoint
+         in (before : befores, after : afters)
 
-            newBefores = newBeforeEvent : befores
-            newAfters = newAfterEvent : afters
-         in case remainingSavepointsInnerFirst of
-              [] ->
-                -- The outermost after event is at the head of the list and should
-                -- be the _last_ event that is delived by Orville so we reverse the
-                -- afters event list to construct the list of events in the correct
-                -- expected order
-                newBefores ++ reverse newAfters
-              _ : rest ->
-                go rest newBefores newAfters
+      savepoints =
+        iterate OrvilleState.nextSavepoint OrvilleState.initialSavepoint
 
-      -- A list of all savepoints we expected Orville to create based on the
-      -- nesting level. The list is ordered with the inner-most savepoint first
-      -- to make it easier to build the event list from the inside out
-      savepointsInnerFirst =
-        reverse $
-          take
-            nestingLevel
-            (iterate OrvilleState.nextSavepoint OrvilleState.initialSavepoint)
-   in go savepointsInnerFirst [] []
-
-genNestingLevel :: HH.Gen Int
-genNestingLevel =
-  Gen.integral $ Range.linear 0 5
+      (allBefores, allAfters) =
+        foldr appendEvents ([], []) $
+          take nestingLevel (Nothing : map Just savepoints)
+   in allBefores ++ reverse allAfters
 
 data Tracer
   = Tracer
@@ -231,9 +175,3 @@ tracerMarshaller :: Orville.SqlMarshaller Tracer Tracer
 tracerMarshaller =
   const Tracer
     <$> Orville.marshallField (const $ T.pack "tracer") (Orville.unboundedTextField "tracer")
-
-data TestError
-  = TestError
-  deriving (Show)
-
-instance ExSafe.Exception TestError

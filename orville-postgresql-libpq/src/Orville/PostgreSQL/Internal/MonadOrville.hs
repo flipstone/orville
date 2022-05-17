@@ -18,6 +18,7 @@ import Orville.PostgreSQL.Internal.OrvilleState
   ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
     ConnectionState (Connected, NotConnected),
     HasOrvilleState (askOrvilleState, localOrvilleState),
+    OrvilleState,
     connectState,
     orvilleConnectionPool,
     orvilleConnectionState,
@@ -94,6 +95,8 @@ instance MonadOrvilleControl m => MonadOrvilleControl (ReaderT state m) where
         ioFinally
         (runReaderT action env)
         (runReaderT cleanup env)
+
+instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleState m)
 
 {- |
   'withConnection' should be used to receive a 'Connection' handle for
