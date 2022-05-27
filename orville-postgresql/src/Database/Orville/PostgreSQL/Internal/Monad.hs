@@ -12,11 +12,14 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.Monad where
 
 import Control.Applicative
+import Control.Monad (MonadPlus)
 import Control.Monad.Base
 import Control.Monad.Catch (MonadCatch, MonadMask(..), MonadThrow)
 import Control.Monad.Except
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (ReaderT(..), ask, local, mapReaderT, runReaderT)
 import Control.Monad.State (StateT, mapStateT)
+import Control.Monad.Trans.Class (MonadTrans(lift))
 import Data.Pool
 import Database.HDBC hiding (withTransaction)
 

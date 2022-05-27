@@ -11,6 +11,7 @@ License   : MIT
 module Database.Orville.PostgreSQL.Internal.Types where
 
 import Control.Exception
+import Control.Monad (join)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State

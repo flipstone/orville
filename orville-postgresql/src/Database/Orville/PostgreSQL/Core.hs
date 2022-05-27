@@ -187,6 +187,7 @@ module Database.Orville.PostgreSQL.Core
   , dropIndexesConcurrently
   ) where
 
+import Control.Monad (void, when)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Control.Monad.State

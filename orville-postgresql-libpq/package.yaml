@@ -86,7 +86,7 @@ library:
     - safe-exceptions >=0.1.7
     - text
     - time >=1.5
-    - transformers >= 0.5 && < 0.6
+    - transformers >= 0.5 && < 0.7
     - uuid
 
 tests:
