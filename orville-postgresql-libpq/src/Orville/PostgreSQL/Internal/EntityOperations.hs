@@ -10,6 +10,8 @@ module Orville.PostgreSQL.Internal.EntityOperations
     insertAndReturnEntities,
     updateEntity,
     updateAndReturnEntity,
+    updateFields,
+    updateFieldsAndReturnEntities,
     deleteEntity,
     deleteAndReturnEntity,
     findEntitiesBy,
@@ -24,6 +26,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
 
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
@@ -64,7 +67,7 @@ insertAndReturnEntity entityTable entity = do
       pure returnedEntity
     _ ->
       liftIO . throwIO . RowCountExpectationError $
-        "Expected exactly one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+        "insertAndReturnEntity: Expected exactly one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
 
 {- |
   Inserts a non-empty list of entities into the specified table
@@ -118,8 +121,39 @@ updateAndReturnEntity ::
   key ->
   writeEntity ->
   m (Maybe readEntity)
-updateAndReturnEntity tableDef key =
-  Update.executeUpdateReturnEntity . Update.updateToTableReturning tableDef key
+updateAndReturnEntity tableDef key writeEntity = do
+  returnedEntities <-
+    Update.executeUpdateReturnEntities $
+      Update.updateToTableReturning tableDef key writeEntity
+
+  case returnedEntities of
+    [] ->
+      pure Nothing
+    [updatedEntity] ->
+      pure (Just updatedEntity)
+    _ ->
+      liftIO . throwIO . RowCountExpectationError $
+        "updateAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+
+updateFields ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  [Expr.SetClause] ->
+  Maybe SelectOptions.WhereCondition ->
+  m ()
+updateFields tableDef setClauses mbWhereCondition =
+  Update.executeUpdate $
+    Update.updateToTableFields tableDef setClauses mbWhereCondition
+
+updateFieldsAndReturnEntities ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  [Expr.SetClause] ->
+  Maybe SelectOptions.WhereCondition ->
+  m [readEntity]
+updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
+  Update.executeUpdateReturnEntities $
+    Update.updateToTableFieldsReturning tableDef setClauses mbWhereCondition
 
 {- |
   Deletes the row with the given key

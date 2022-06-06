@@ -13,6 +13,8 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldIsNotNullable,
     fieldDefaultValue,
     fieldNullability,
+    setField,
+    (.:=),
     FieldNullability (..),
     fieldValueToSqlValue,
     fieldValueFromSqlValue,
@@ -532,3 +534,20 @@ prefixField prefix fieldDef =
   fieldDef
     { _fieldName = FieldName (B8.pack prefix <> "_" <> fieldNameToByteString (fieldName fieldDef))
     }
+
+{- |
+  Constructs a 'Expr.SetClause' that will set the column named in the
+  field definition to the given value. The value is be converted to SQL
+  value using 'fieldValueToSqlValue'
+-}
+setField :: FieldDefinition nullability a -> a -> Expr.SetClause
+setField fieldDef value =
+  Expr.setColumn
+    (fieldColumnName fieldDef)
+    (fieldValueToSqlValue fieldDef value)
+
+{- |
+  Operator alias for 'setField'
+-}
+(.:=) :: FieldDefinition nullability a -> a -> Expr.SetClause
+(.:=) = setField

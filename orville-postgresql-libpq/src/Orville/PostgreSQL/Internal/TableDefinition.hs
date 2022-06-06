@@ -24,8 +24,8 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkTablePrimaryKeyExpr,
     mkInsertColumnList,
     mkInsertSource,
-    mkUpdateExpr,
     mkDeleteExpr,
+    mkTableReturningClause,
   )
 where
 
@@ -291,11 +291,15 @@ mkTablePrimaryKeyExpr tableDef =
     TableHasNoKey ->
       Nothing
 
-mkReturningClause ::
+{- |
+  When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
+  return all the columns in the give table definition.
+-}
+mkTableReturningClause ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntty ->
   Maybe Expr.ReturningExpr
-mkReturningClause returningOption tableDef =
+mkTableReturningClause returningOption tableDef =
   case returningOption of
     WithoutReturning ->
       Nothing
@@ -331,7 +335,7 @@ mkInsertExpr returningOption tableDef entities =
         (tableName tableDef)
         (Just insertColumnList)
         insertSource
-        (mkReturningClause returningOption tableDef)
+        (mkTableReturningClause returningOption tableDef)
 
 {- |
   Builds an 'Expr.InsertColumnList' that specifies the columns for an
@@ -387,34 +391,6 @@ collectSqlValue entry encodeRest entity =
       encodeRest entity
 
 {- |
-  Builds an 'Expr.UpdateExpr' that will update the entity at the given 'key'
-  with the values from the 'writeEntity' when executed.
-  SQL table when it is executed.
--}
-mkUpdateExpr ::
-  ReturningOption returningClause ->
-  TableDefinition (HasKey key) writeEntity readEntity ->
-  key ->
-  writeEntity ->
-  Expr.UpdateExpr
-mkUpdateExpr returningOption tableDef key writeEntity =
-  let setClauses =
-        foldMarshallerFields
-          (unannotatedSqlMarshaller $ tableMarshaller tableDef)
-          []
-          (collectSetClauses writeEntity)
-
-      isEntityKey =
-        primaryKeyEqualsExpr
-          (tablePrimaryKey tableDef)
-          key
-   in Expr.updateExpr
-        (tableName tableDef)
-        (Expr.setClauseList setClauses)
-        (Just (Expr.whereClause isEntityKey))
-        (mkReturningClause returningOption tableDef)
-
-{- |
   Builds an 'Expr.DeleteExpr' that will delete the entity with the given 'key'.
 -}
 mkDeleteExpr ::
@@ -430,26 +406,4 @@ mkDeleteExpr returningOption tableDef key =
    in Expr.deleteExpr
         (tableName tableDef)
         (Just (Expr.whereClause isEntityKey))
-        (mkReturningClause returningOption tableDef)
-
-{- |
-  An internal helper function that collects the 'Expr.SetClause's to
-  update all the fields contained in a 'SqlMarshaller'
--}
-collectSetClauses ::
-  entity ->
-  MarshallerField entity ->
-  [Expr.SetClause] ->
-  [Expr.SetClause]
-collectSetClauses entity entry clauses =
-  case entry of
-    Natural fieldDef (Just accessor) ->
-      let newClause =
-            Expr.setColumn
-              (fieldColumnName fieldDef)
-              (fieldValueToSqlValue fieldDef (accessor entity))
-       in newClause : clauses
-    Natural _ Nothing ->
-      clauses
-    Synthetic _ ->
-      clauses
+        (mkTableReturningClause returningOption tableDef)

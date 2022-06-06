@@ -28,6 +28,7 @@ module Orville.PostgreSQL.Internal.SqlMarshaller
     prefixMarshaller,
     ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
     collectFromField,
+    marshallEntityToSetClauses,
     foldMarshallerFields,
     marshallerDerivedColumns,
     mkRowSource,
@@ -49,7 +50,7 @@ import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Internal.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldValueFromSqlValue, nullableField, prefixField)
+import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Internal.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import Orville.PostgreSQL.Internal.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
@@ -199,6 +200,39 @@ collectFromField readOnlyColumnOption fromField entry results =
         ExcludeReadOnlyColumns -> results
     Synthetic _ ->
       results
+
+{- |
+  Uses the field defintions in the marshaller to construct SQL expressions
+  that will set columns of the field defintions to their corresponding value
+  found in the Haskell @writeEntity@  value.
+-}
+marshallEntityToSetClauses ::
+  SqlMarshaller writeEntity readEntity ->
+  writeEntity ->
+  [Expr.SetClause]
+marshallEntityToSetClauses marshaller writeEntity =
+  foldMarshallerFields
+    marshaller
+    []
+    (collectSetClauses writeEntity)
+
+{- |
+  An internal helper function that collects the 'Expr.SetClause's to
+  update all the fields contained in a 'SqlMarshaller'
+-}
+collectSetClauses ::
+  entity ->
+  MarshallerField entity ->
+  [Expr.SetClause] ->
+  [Expr.SetClause]
+collectSetClauses entity entry clauses =
+  case entry of
+    Natural fieldDef (Just accessor) ->
+      setField fieldDef (accessor entity) : clauses
+    Natural _ Nothing ->
+      clauses
+    Synthetic _ ->
+      clauses
 
 {- |
   Specifies whether read-only fields should be included when using functions

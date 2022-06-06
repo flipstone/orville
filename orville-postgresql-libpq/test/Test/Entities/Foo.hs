@@ -10,6 +10,7 @@ module Test.Entities.Foo
     generateFooName,
     generateList,
     generateListUsing,
+    generateNonEmpty,
     withTable,
     fooIdField,
     fooNameField,
@@ -23,6 +24,7 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Function (on)
 import Data.Int (Int32)
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as NEL
 import Data.Pool (Pool, withResource)
 import qualified Data.Text as T
 import qualified Hedgehog as HH
@@ -124,6 +126,12 @@ generateListUsing range generator =
   fmap
     (List.nubBy ((==) `on` fooId))
     (Gen.list range generator)
+
+generateNonEmpty :: HH.Range Int -> HH.Gen (NEL.NonEmpty Foo)
+generateNonEmpty range =
+  fmap
+    (NEL.nubBy ((==) `on` fooId))
+    (Gen.nonEmpty range generate)
 
 withTable :: MonadIO m => Pool Connection -> Orville.Orville a -> m a
 withTable pool operation =
