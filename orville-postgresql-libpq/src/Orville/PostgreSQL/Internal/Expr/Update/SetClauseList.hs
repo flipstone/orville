@@ -11,6 +11,8 @@ module Orville.PostgreSQL.Internal.Expr.Update.SetClauseList
   )
 where
 
+import Data.List.NonEmpty (NonEmpty)
+
 import Orville.PostgreSQL.Internal.Expr.Update.SetClause (SetClause)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -18,6 +20,6 @@ newtype SetClauseList
   = SetClauseList RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-setClauseList :: [SetClause] -> SetClauseList
+setClauseList :: NonEmpty SetClause -> SetClauseList
 setClauseList =
   SetClauseList . RawSql.intercalate RawSql.comma

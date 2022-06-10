@@ -34,6 +34,7 @@ import qualified Orville.PostgreSQL.Internal.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
+import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableId
 import qualified Orville.PostgreSQL.Internal.Update as Update
 
 {- |
@@ -104,8 +105,12 @@ updateEntity ::
   key ->
   writeEntity ->
   m ()
-updateEntity tableDef key =
-  Update.executeUpdate . Update.updateToTable tableDef key
+updateEntity tableDef key writeEntity =
+  case Update.updateToTable tableDef key writeEntity of
+    Nothing ->
+      liftIO . throwIO . EmptyUpdateError . TableDef.tableIdentifier $ tableDef
+    Just update ->
+      Update.executeUpdate update
 
 {- |
   Updates the row with the given key in with the data given by 'writeEntity',
@@ -121,34 +126,45 @@ updateAndReturnEntity ::
   key ->
   writeEntity ->
   m (Maybe readEntity)
-updateAndReturnEntity tableDef key writeEntity = do
-  returnedEntities <-
-    Update.executeUpdateReturnEntities $
-      Update.updateToTableReturning tableDef key writeEntity
+updateAndReturnEntity tableDef key writeEntity =
+  case Update.updateToTableReturning tableDef key writeEntity of
+    Nothing ->
+      liftIO . throwIO . EmptyUpdateError . TableDef.tableIdentifier $ tableDef
+    Just update -> do
+      returnedEntities <- Update.executeUpdateReturnEntities update
 
-  case returnedEntities of
-    [] ->
-      pure Nothing
-    [updatedEntity] ->
-      pure (Just updatedEntity)
-    _ ->
-      liftIO . throwIO . RowCountExpectationError $
-        "updateAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+      case returnedEntities of
+        [] ->
+          pure Nothing
+        [updatedEntity] ->
+          pure (Just updatedEntity)
+        _ ->
+          liftIO . throwIO . RowCountExpectationError $
+            "updateAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
 
+{- |
+  Applies the given 'Expr.SetClause's to the rows in the table that match the
+  given where condition. The easiest way to construct a 'Expr.SetClause' is
+  via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
+-}
 updateFields ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
-  [Expr.SetClause] ->
+  NonEmpty Expr.SetClause ->
   Maybe SelectOptions.WhereCondition ->
   m ()
 updateFields tableDef setClauses mbWhereCondition =
   Update.executeUpdate $
     Update.updateToTableFields tableDef setClauses mbWhereCondition
 
+{- |
+  Like 'updateFields', but uses a @RETURNING@ clause to return the updated
+  version of any rows that were affected by the update.
+-}
 updateFieldsAndReturnEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
-  [Expr.SetClause] ->
+  NonEmpty Expr.SetClause ->
   Maybe SelectOptions.WhereCondition ->
   m [readEntity]
 updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
@@ -236,3 +252,18 @@ newtype RowCountExpectationError
   deriving (Show)
 
 instance Exception RowCountExpectationError
+
+{- |
+  Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the
+  'TableDef.TableDefinition' they are given has no columns to update.
+-}
+newtype EmptyUpdateError
+  = EmptyUpdateError TableId.TableIdentifier
+
+instance Show EmptyUpdateError where
+  show (EmptyUpdateError tableId) =
+    "EmptyUdateError: "
+      <> TableId.tableIdToString tableId
+      <> " has no columns to update."
+
+instance Exception EmptyUpdateError

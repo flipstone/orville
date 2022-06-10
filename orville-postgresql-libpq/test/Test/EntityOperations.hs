@@ -4,6 +4,7 @@ module Test.EntityOperations
 where
 
 import qualified Data.List as List
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Maybe as Maybe
 import qualified Data.Pool as Pool
@@ -229,7 +230,7 @@ prop_updateFields =
         Orville.insertEntities Foo.table foos
         Orville.updateFields
           Foo.table
-          [Orville.setField Foo.fooNameField updatedName]
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
         Orville.findEntitiesBy
           Foo.table
@@ -251,7 +252,7 @@ prop_updateFields_NoMatch =
         Orville.insertEntities Foo.table foos
         Orville.updateFields
           Foo.table
-          [Orville.setField Foo.fooNameField updatedName]
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
         Orville.findEntitiesBy Foo.table mempty
 
@@ -270,7 +271,7 @@ prop_updateFieldsAndReturnEntities =
         Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
-          [Orville.setField Foo.fooNameField updatedName]
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
 
     fmap Foo.fooName updatedFoos === fmap (const updatedName) (NEL.toList foos)
@@ -289,7 +290,7 @@ prop_updateFieldsAndReturnEntities_NoMatch =
         Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
-          [Orville.setField Foo.fooNameField updatedName]
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
 
     updatedFoos === []

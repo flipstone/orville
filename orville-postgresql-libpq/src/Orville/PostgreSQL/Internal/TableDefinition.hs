@@ -293,7 +293,7 @@ mkTablePrimaryKeyExpr tableDef =
 
 {- |
   When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
-  return all the columns in the give table definition.
+  return all the columns in the given table definition.
 -}
 mkTableReturningClause ::
   ReturningOption returningClause ->

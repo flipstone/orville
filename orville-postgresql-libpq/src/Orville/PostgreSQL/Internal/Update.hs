@@ -12,6 +12,8 @@ module Orville.PostgreSQL.Internal.Update
   )
 where
 
+import Data.List.NonEmpty (NonEmpty, nonEmpty)
+
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
@@ -21,7 +23,8 @@ import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkTableReturningClause, tableMarshaller, tableName, tablePrimaryKey)
 
-{- | Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a
+{- |
+  Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a
   'SqlMarshaller' bound to it that, when the update returns data from the database, will be used to
   decode the database result set when it is executed.
 -}
@@ -55,27 +58,34 @@ executeUpdateReturnEntities (UpdateReturning marshaller expr) =
   Execute.executeAndDecode expr marshaller
 
 {- |
-  Builds an 'Update' that will update all of the writable columns described in the
-  'TableDefinition' without returning the data as seen by the database.
+  Builds an 'Update' that will update all of the writable columns described in
+  the 'TableDefinition' without returning the data as seen by the database.
+
+  This function returns 'Nothing' if the 'TableDefinition' has no columns,
+  which would otherwise generate and 'Update' with invalid SQL syntax.
 -}
 updateToTable ::
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  Update readEntity NoReturningClause
+  Maybe (Update readEntity NoReturningClause)
 updateToTable =
   updateTable WithoutReturning
 
 {- |
-  Builds an 'Update' that will update all of the writable columns described in the
-  'TableDefinition' and returning the data as seen by the database. This is useful for getting
-  database managed columns such as auto-incrementing identifiers and sequences.
+  Builds an 'Update' that will update all of the writable columns described in
+  the 'TableDefinition' and returning the data as seen by the database. This is
+  useful for getting database managed columns such as auto-incrementing
+  identifiers and sequences.
+
+  This function returns 'Nothing' if the 'TableDefinition' has no columns,
+  which would otherwise generate and 'Update' with invalid SQL syntax.
 -}
 updateToTableReturning ::
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  Update readEntity ReturningClause
+  Maybe (Update readEntity ReturningClause)
 updateToTableReturning =
   updateTable WithReturning
 
@@ -87,44 +97,57 @@ updateTable ::
   TableDefinition (HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  Update readEntity returningClause
-updateTable returningOption tableDef key writeEntity =
-  let setClauses =
-        marshallEntityToSetClauses
-          (unannotatedSqlMarshaller $ tableMarshaller tableDef)
-          writeEntity
+  Maybe (Update readEntity returningClause)
+updateTable returningOption tableDef key writeEntity = do
+  setClauses <-
+    nonEmpty $
+      marshallEntityToSetClauses
+        (unannotatedSqlMarshaller $ tableMarshaller tableDef)
+        writeEntity
 
-      isEntityKey =
+  let isEntityKey =
         SelectOptions.whereBooleanExpr $
           primaryKeyEqualsExpr
             (tablePrimaryKey tableDef)
             key
-   in updateFields
-        returningOption
-        tableDef
-        setClauses
-        (Just isEntityKey)
+  pure $
+    updateFields
+      returningOption
+      tableDef
+      setClauses
+      (Just isEntityKey)
 
+{- |
+  Builds an 'Update' that will apply the specified column set clauses to rows
+  the specified table without returning the data as seen by the database.
+-}
 updateToTableFields ::
   TableDefinition key writeEntity readEntity ->
-  [Expr.SetClause] ->
+  NonEmpty Expr.SetClause ->
   Maybe SelectOptions.WhereCondition ->
   Update readEntity NoReturningClause
 updateToTableFields =
   updateFields WithoutReturning
 
+{- |
+  Builds an 'Update' that will apply the specified column set clauses to rows
+  the specified table and return the updated version of any rows affected by
+  the update state by using a @RETURNING@ clause.
+-}
 updateToTableFieldsReturning ::
   TableDefinition key writeEntity readEntity ->
-  [Expr.SetClause] ->
+  NonEmpty Expr.SetClause ->
   Maybe SelectOptions.WhereCondition ->
   Update readEntity ReturningClause
 updateToTableFieldsReturning =
   updateFields WithReturning
 
+-- an internal helper function for creating an update with a given
+-- `ReturningOption` to update the specified columns.
 updateFields ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
-  [Expr.SetClause] ->
+  NonEmpty Expr.SetClause ->
   Maybe SelectOptions.WhereCondition ->
   Update readEntity returningClause
 updateFields returingOption tableDef setClauses mbWhereCondition =

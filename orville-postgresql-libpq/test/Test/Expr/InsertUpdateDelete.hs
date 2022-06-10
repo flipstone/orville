@@ -4,6 +4,7 @@ module Test.Expr.InsertUpdateDelete
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
@@ -80,7 +81,7 @@ prop_updateExpr =
         setBarToFerret =
           Expr.updateExpr
             fooBarTable
-            (Expr.setClauseList [Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))])
+            (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
             Nothing
             Nothing
 
@@ -109,7 +110,7 @@ prop_updateExprWithWhere =
         updateDogToForret =
           Expr.updateExpr
             fooBarTable
-            (Expr.setClauseList [Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))])
+            (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
             (Just (Expr.whereClause (Expr.columnEquals barColumn (SqlValue.fromText (T.pack "dog")))))
             Nothing
 
@@ -138,7 +139,7 @@ prop_updateExprWithReturning =
         setBarToFerret =
           Expr.updateExpr
             fooBarTable
-            (Expr.setClauseList [Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))])
+            (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
             Nothing
             (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
