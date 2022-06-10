@@ -59,6 +59,7 @@ library
       Orville.PostgreSQL.PgCatalog
   other-modules:
       Orville.PostgreSQL.Internal.ConstraintDefinition
+      Orville.PostgreSQL.Internal.Delete
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition

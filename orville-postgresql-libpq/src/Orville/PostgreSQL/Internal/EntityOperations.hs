@@ -14,6 +14,8 @@ module Orville.PostgreSQL.Internal.EntityOperations
     updateFieldsAndReturnEntities,
     deleteEntity,
     deleteAndReturnEntity,
+    deleteEntities,
+    deleteAndReturnEntities,
     findEntitiesBy,
     findFirstEntityBy,
     findEntity,
@@ -25,12 +27,11 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
 
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
+import qualified Orville.PostgreSQL.Internal.Delete as Delete
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
-import qualified Orville.PostgreSQL.Internal.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
@@ -179,9 +180,13 @@ deleteEntity ::
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
   m ()
-deleteEntity tableDef key =
-  Execute.executeVoid $
-    TableDef.mkDeleteExpr ReturningOption.WithoutReturning tableDef key
+deleteEntity entityTable key =
+  let primaryKeyCondition =
+        PrimaryKey.primaryKeyEquals
+          (TableDef.tablePrimaryKey entityTable)
+          key
+   in Delete.executeDelete $
+        Delete.deleteFromTable entityTable (Just primaryKeyCondition)
 
 {- |
   Deletes the row with the given key, returning the row that was deleted.
@@ -192,11 +197,47 @@ deleteAndReturnEntity ::
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
   m (Maybe readEntity)
-deleteAndReturnEntity tableDef key =
-  fmap listToMaybe $
-    Execute.executeAndDecode
-      (TableDef.mkDeleteExpr ReturningOption.WithReturning tableDef key)
-      (TableDef.tableMarshaller tableDef)
+deleteAndReturnEntity entityTable key = do
+  let primaryKeyCondition =
+        PrimaryKey.primaryKeyEquals
+          (TableDef.tablePrimaryKey entityTable)
+          key
+
+  returnedEntities <- deleteAndReturnEntities entityTable (Just primaryKeyCondition)
+
+  case returnedEntities of
+    [] ->
+      pure Nothing
+    [updatedEntity] ->
+      pure (Just updatedEntity)
+    _ ->
+      liftIO . throwIO . RowCountExpectationError $
+        "deleteAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+
+{- |
+  Deletes all rows in the give table that match the where condition.
+-}
+deleteEntities ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition key writeEntity readEntity ->
+  Maybe SelectOptions.WhereCondition ->
+  m ()
+deleteEntities entityTable whereCondition =
+  Delete.executeDelete $
+    Delete.deleteFromTable entityTable whereCondition
+
+{- |
+  Deletes all rows in the give table that match the where condition, returning
+  the rows that were deleted.
+-}
+deleteAndReturnEntities ::
+  MonadOrville.MonadOrville m =>
+  TableDef.TableDefinition key writeEntity readEntity ->
+  Maybe SelectOptions.WhereCondition ->
+  m [readEntity]
+deleteAndReturnEntities entityTable whereCondition =
+  Delete.executeDeleteReturnEntities $
+    Delete.deleteFromTableReturning entityTable whereCondition
 
 {- |
   Finds all the entities in the given table according to the specified

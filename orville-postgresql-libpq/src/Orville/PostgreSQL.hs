@@ -14,6 +14,8 @@ module Orville.PostgreSQL
     EntityOperations.updateFieldsAndReturnEntities,
     EntityOperations.deleteEntity,
     EntityOperations.deleteAndReturnEntity,
+    EntityOperations.deleteEntities,
+    EntityOperations.deleteAndReturnEntities,
     EntityOperations.findEntitiesBy,
     EntityOperations.findFirstEntityBy,
     EntityOperations.findEntity,

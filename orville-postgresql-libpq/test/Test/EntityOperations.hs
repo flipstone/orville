@@ -36,6 +36,10 @@ entityOperationsTests pool =
     , prop_deleteAndReturnEntity pool
     , prop_deleteEntity_NoMatch pool
     , prop_deleteAndReturnEntity_NoMatch pool
+    , prop_deleteEntities pool
+    , prop_deleteEntities_NoMatch pool
+    , prop_deleteAndReturnEntities pool
+    , prop_deleteAndReturnEntities_NoMatch pool
     , prop_updateFields pool
     , prop_updateFields_NoMatch pool
     , prop_updateFieldsAndReturnEntities pool
@@ -216,6 +220,78 @@ prop_deleteAndReturnEntity_NoMatch =
         Orville.deleteAndReturnEntity Foo.table mismatchFooId
 
     mbReturnedFoo === Nothing
+
+prop_deleteEntities :: Property.NamedDBProperty
+prop_deleteEntities =
+  Property.singletonNamedDBProperty "deleteEntities deletes all matching rows" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
+
+    let fooIds = fmap Foo.fooId foos
+
+    remainingFoos <-
+      Foo.withTable pool $ do
+        Orville.insertEntities Foo.table foos
+        Orville.deleteEntities
+          Foo.table
+          (Just (Orville.fieldIn Foo.fooIdField fooIds))
+        Orville.findEntitiesBy
+          Foo.table
+          (Orville.where_ (Orville.fieldIn Foo.fooIdField fooIds))
+
+    fmap Foo.fooId remainingFoos === []
+
+prop_deleteEntities_NoMatch :: Property.NamedDBProperty
+prop_deleteEntities_NoMatch =
+  Property.singletonNamedDBProperty "deleteEntities does not delete non matching rows" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
+
+    let fooIds = fmap Foo.fooId foos
+        mismatchedId = maximum fooIds + 1
+
+    remainingFoos <-
+      Foo.withTable pool $ do
+        Orville.insertEntities Foo.table foos
+        Orville.deleteEntities
+          Foo.table
+          (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
+        Orville.findEntitiesBy
+          Foo.table
+          (Orville.where_ (Orville.fieldIn Foo.fooIdField fooIds))
+
+    fmap Foo.fooId remainingFoos === NEL.toList fooIds
+
+prop_deleteAndReturnEntities :: Property.NamedDBProperty
+prop_deleteAndReturnEntities =
+  Property.singletonNamedDBProperty "deleteAndReturnEntities deletes all matching rows" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
+
+    let fooIds = fmap Foo.fooId foos
+
+    deletedFoos <-
+      Foo.withTable pool $ do
+        Orville.insertEntities Foo.table foos
+        Orville.deleteAndReturnEntities
+          Foo.table
+          (Just (Orville.fieldIn Foo.fooIdField fooIds))
+
+    fmap Foo.fooId deletedFoos === NEL.toList fooIds
+
+prop_deleteAndReturnEntities_NoMatch :: Property.NamedDBProperty
+prop_deleteAndReturnEntities_NoMatch =
+  Property.singletonNamedDBProperty "deleteAndReturnEntities does not delete non matching rows" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
+
+    let fooIds = fmap Foo.fooId foos
+        mismatchedId = maximum fooIds + 1
+
+    deletedFoos <-
+      Foo.withTable pool $ do
+        Orville.insertEntities Foo.table foos
+        Orville.deleteAndReturnEntities
+          Foo.table
+          (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
+
+    fmap Foo.fooId deletedFoos === []
 
 prop_updateFields :: Property.NamedDBProperty
 prop_updateFields =

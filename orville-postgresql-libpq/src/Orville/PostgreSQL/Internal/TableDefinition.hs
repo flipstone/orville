@@ -24,7 +24,6 @@ module Orville.PostgreSQL.Internal.TableDefinition
     mkTablePrimaryKeyExpr,
     mkInsertColumnList,
     mkInsertSource,
-    mkDeleteExpr,
     mkTableReturningClause,
   )
 where
@@ -37,7 +36,7 @@ import Orville.PostgreSQL.Internal.ConstraintDefinition (ConstraintDefinition, C
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
-import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyEqualsExpr, primaryKeyFieldNames)
+import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Internal.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
@@ -389,21 +388,3 @@ collectSqlValue entry encodeRest entity =
       encodeRest entity
     Synthetic _ ->
       encodeRest entity
-
-{- |
-  Builds an 'Expr.DeleteExpr' that will delete the entity with the given 'key'.
--}
-mkDeleteExpr ::
-  ReturningOption returningClause ->
-  TableDefinition (HasKey key) writeEntity readEntity ->
-  key ->
-  Expr.DeleteExpr
-mkDeleteExpr returningOption tableDef key =
-  let isEntityKey =
-        primaryKeyEqualsExpr
-          (tablePrimaryKey tableDef)
-          key
-   in Expr.deleteExpr
-        (tableName tableDef)
-        (Just (Expr.whereClause isEntityKey))
-        (mkTableReturningClause returningOption tableDef)

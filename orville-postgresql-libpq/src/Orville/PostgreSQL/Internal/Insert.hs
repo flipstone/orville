@@ -6,7 +6,15 @@ Module    : Orville.PostgreSQL.Internal.Insert
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.Insert (Insert, insertToInsertExpr, executeInsert, executeInsertReturnEntities, insertToTableReturning, insertToTable) where
+module Orville.PostgreSQL.Internal.Insert
+  ( Insert,
+    insertToInsertExpr,
+    executeInsert,
+    executeInsertReturnEntities,
+    insertToTableReturning,
+    insertToTable,
+  )
+where
 
 import Data.List.NonEmpty (NonEmpty)
 
