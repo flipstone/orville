@@ -24,7 +24,7 @@ import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)
 
-{- | Represents an @INSERT@ statement that can be executed against a database. An 'Delete' has a
+{- | Represents a @DELETE@ statement that can be executed against a database. A 'Delete' has a
   'SqlMarshaller' bound to it that, when the delete returns data from the database, will be used to
   decode the database result set when it is executed.
 -}
@@ -64,7 +64,7 @@ executeDeleteReturnEntities (DeleteReturning marshaller expr) =
   Execute.executeAndDecode expr marshaller
 
 {- |
-  Builds an 'Delete' that will delete all of the writeable columns described in the
+  Builds a 'Delete' that will delete all of the writeable columns described in the
   'TableDefinition' without returning the data as seen by the database.
 -}
 deleteFromTable ::
@@ -75,7 +75,7 @@ deleteFromTable =
   deleteTable WithoutReturning
 
 {- |
-  Builds an 'Delete' that will delete all of the writeable columns described in the
+  Builds a 'Delete' that will delete all of the writeable columns described in the
   'TableDefinition' and returning the data as seen by the database. This is useful for getting
   database managed columns such as auto-incrementing identifiers and sequences.
 -}
@@ -86,7 +86,7 @@ deleteFromTableReturning ::
 deleteFromTableReturning =
   deleteTable WithReturning
 
--- an internal helper function for creating an delete with a given `ReturningOption`
+-- an internal helper function for creating a delete with a given `ReturningOption`
 deleteTable ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
@@ -104,10 +104,10 @@ deleteTable returningOption tableDef whereCondition =
    in rawDeleteExpr returningOption (tableMarshaller tableDef) deleteExpr
 
 {- |
-  Builds an 'Delete' that will execute the specified query and use the given 'SqlMarshaller' to
-  decode it. It is up to the caller to ensure that the given 'Expr.DeleteExpr' makes sense and
-  produces a value that can be stored, as well as returning a result that the 'SqlMarshaller' can
-  decode.
+  Builds a 'Delete' that will execute the specified query and use the given
+  'SqlMarshaller' to decode it. It is up to the caller to ensure that the given
+  'Expr.DeleteExpr' makes sense and returns a result that the 'SqlMarshaller'
+  can decode.
 
   This is the lowest level of escape hatch available for 'Delete'. The caller can build any query
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build

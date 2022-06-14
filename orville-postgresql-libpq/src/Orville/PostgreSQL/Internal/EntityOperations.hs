@@ -215,7 +215,7 @@ deleteAndReturnEntity entityTable key = do
         "deleteAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
 
 {- |
-  Deletes all rows in the give table that match the where condition.
+  Deletes all rows in the given table that match the where condition.
 -}
 deleteEntities ::
   MonadOrville.MonadOrville m =>
@@ -227,7 +227,7 @@ deleteEntities entityTable whereCondition =
     Delete.deleteFromTable entityTable whereCondition
 
 {- |
-  Deletes all rows in the give table that match the where condition, returning
+  Deletes all rows in the given table that match the where condition, returning
   the rows that were deleted.
 -}
 deleteAndReturnEntities ::
