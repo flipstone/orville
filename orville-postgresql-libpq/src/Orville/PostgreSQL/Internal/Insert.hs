@@ -21,6 +21,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExpr, tableMarshaller)
@@ -53,7 +54,7 @@ executeInsert ::
   Insert readEntity NoReturningClause ->
   m ()
 executeInsert (Insert _ expr) =
-  Execute.executeVoid expr
+  Execute.executeVoid QueryType.InsertQuery expr
 
 {- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
   were just inserted) as returned via a RETURNING clause.
@@ -63,7 +64,7 @@ executeInsertReturnEntities ::
   Insert readEntity ReturningClause ->
   m [readEntity]
 executeInsertReturnEntities (InsertReturning marshaller expr) =
-  Execute.executeAndDecode expr marshaller
+  Execute.executeAndDecode QueryType.InsertQuery expr marshaller
 
 {- |
   Builds an 'Insert' that will insert all of the writeable columns described in the

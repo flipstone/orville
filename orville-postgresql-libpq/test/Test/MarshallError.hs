@@ -186,7 +186,7 @@ prop_showMarshallErrorRaisedFromOrvilleContext =
     result <-
       HH.evalIO $ do
         E.try . Orville.runOrvilleWithState orvilleState $ do
-          Orville.executeAndDecode sql marshaller
+          Orville.executeAndDecode Orville.SelectQuery sql marshaller
 
     case result of
       Right _ -> do

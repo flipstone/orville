@@ -18,6 +18,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.PrimaryKey (primaryKeyEqualsExpr)
+import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
@@ -46,7 +47,7 @@ updateToUpdateExpr (UpdateReturning _ expr) = expr
 -}
 executeUpdate :: MonadOrville.MonadOrville m => Update readEntity returningClause -> m ()
 executeUpdate =
-  Execute.executeVoid . updateToUpdateExpr
+  Execute.executeVoid QueryType.UpdateQuery . updateToUpdateExpr
 
 {- |
   Executes the database query for the 'Update' and uses its
@@ -55,7 +56,7 @@ executeUpdate =
 -}
 executeUpdateReturnEntities :: MonadOrville.MonadOrville m => Update readEntity ReturningClause -> m [readEntity]
 executeUpdateReturnEntities (UpdateReturning marshaller expr) =
-  Execute.executeAndDecode expr marshaller
+  Execute.executeAndDecode QueryType.UpdateQuery expr marshaller
 
 {- |
   Builds an 'Update' that will update all of the writable columns described in

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Internal.OrvilleState
   ( OrvilleState,
@@ -23,6 +24,8 @@ module Orville.PostgreSQL.Internal.OrvilleState
     savepointNestingLevel,
     initialSavepoint,
     nextSavepoint,
+    orvilleSqlExecutionCallback,
+    addSqlExecutionCallback,
   )
 where
 
@@ -32,6 +35,8 @@ import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
 import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
+import Orville.PostgreSQL.Internal.QueryType (QueryType)
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 {- |
   'OrvilleState' is used to manange opening connections to the database,
@@ -43,6 +48,7 @@ data OrvilleState = OrvilleState
   , _orvilleConnectionState :: ConnectionState
   , _orvilleErrorDetailLevel :: ErrorDetailLevel
   , _orvilleTransactionCallback :: TransactionEvent -> IO ()
+  , _orvilleSqlExecutionCallback :: forall a. QueryType -> RawSql.RawSql -> IO a -> IO a
   }
 
 orvilleConnectionPool :: OrvilleState -> Pool Connection
@@ -162,6 +168,7 @@ newOrvilleState errorDetailLevel pool =
     , _orvilleConnectionState = NotConnected
     , _orvilleErrorDetailLevel = errorDetailLevel
     , _orvilleTransactionCallback = defaultTransactionCallback
+    , _orvilleSqlExecutionCallback = defaultSqlExectionCallback
     }
 
 {- |
@@ -286,3 +293,41 @@ transactionSuccessEvent txnState =
   case txnState of
     OutermostTransaction -> CommitTransaction
     SavepointTransaction savepoint -> ReleaseSavepoint savepoint
+
+orvilleSqlExecutionCallback ::
+  OrvilleState ->
+  forall a.
+  QueryType ->
+  RawSql.RawSql ->
+  IO a ->
+  IO a
+orvilleSqlExecutionCallback =
+  _orvilleSqlExecutionCallback
+
+defaultSqlExectionCallback :: QueryType -> RawSql.RawSql -> IO a -> IO a
+defaultSqlExectionCallback _ _ io = io
+
+{- |
+  Adds a callback to be called when an Orville operation executes a SQL
+  statement. The callback is given the IO action that will perform the
+  query execution and must call that action for the query to be run.
+  In particular, you can use this to time query and log any that are slow.
+
+  Calls to any previously added callbacks will also be execute as part of
+  the IO action passed to the new callback. Thus the newly added callback
+  happens "around" the previously added callback.
+
+  There is no special exception handling done for these callbacks beyond what
+  they implement themelves. Any callbacks should allow for the possibility that
+  the IO action they are given may raise an exception.
+-}
+addSqlExecutionCallback ::
+  (forall a. QueryType -> RawSql.RawSql -> IO a -> IO a) ->
+  OrvilleState ->
+  OrvilleState
+addSqlExecutionCallback outerCallback state =
+  let layeredCallback, innerCallback :: QueryType -> RawSql.RawSql -> IO a -> IO a
+      layeredCallback queryType sql action =
+        outerCallback queryType sql (innerCallback queryType sql action)
+      innerCallback = _orvilleSqlExecutionCallback state
+   in state {_orvilleSqlExecutionCallback = layeredCallback}

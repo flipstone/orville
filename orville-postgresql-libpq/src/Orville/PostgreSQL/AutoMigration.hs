@@ -185,7 +185,7 @@ executeMigrationSteps =
 
 executeMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [MigrationStep] -> m ()
 executeMigrationStepsWithoutTransaction =
-  traverse_ Orville.executeVoid
+  traverse_ (Orville.executeVoid Orville.DDLQuery)
 
 calculateMigrationSteps ::
   PgCatalog.NamespaceName ->
@@ -776,6 +776,7 @@ findCurrentNamespace :: Orville.MonadOrville m => m PgCatalog.NamespaceName
 findCurrentNamespace = do
   results <-
     Orville.executeAndDecode
+      Orville.SelectQuery
       currentNamespaceQuery
       (Orville.annotateSqlMarshallerEmptyAnnotation $ Orville.marshallField id PgCatalog.namespaceNameField)
 

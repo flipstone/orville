@@ -302,6 +302,9 @@ intercalate separator =
   Executes a 'RawSql' value using the 'Conn.executeRaw' function. Make sure
   to read the documentation of 'Conn.executeRaw' for caveats and warnings.
   Use with caution.
+
+  Note that because this is done in 'IO' no callback functions are available to
+  be called.
 -}
 execute :: SqlExpression sql => Connection -> sql -> IO LibPQ.Result
 execute connection sql = do
@@ -312,6 +315,9 @@ execute connection sql = do
   Executes a 'RawSql' value using the 'Conn.executeRawVoid' function. Make sure
   to read the documentation of 'Conn.executeRawVoid' for caveats and warnings.
   Use with caution.
+
+  Note that because this is done in 'IO' no callback functions are available to
+  be called.
 -}
 executeVoid :: SqlExpression sql => Connection -> sql -> IO ()
 executeVoid connection sql = do

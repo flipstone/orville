@@ -52,7 +52,7 @@ prop_roundTrip =
       MIO.liftIO . Orville.runOrville pool $ do
         Orville.withConnection $ \connection -> do
           MIO.liftIO $ TestTable.dropAndRecreateTableDef connection Foo.table
-        Orville.executeVoid insertFoo
+        Orville.executeVoid Orville.InsertQuery insertFoo
         Select.executeSelect selectFoos
 
     foosFromDB === [originalFoo]
@@ -72,7 +72,7 @@ prop_readOnlyFields =
       MIO.liftIO . Orville.runOrville pool $ do
         Orville.withConnection $ \connection -> do
           MIO.liftIO $ TestTable.dropAndRecreateTableDef connection Bar.table
-        Orville.executeVoid insertBar
+        Orville.executeVoid Orville.InsertQuery insertBar
         Select.executeSelect selectBars
 
     fmap Bar.barName barsFromDB === [Bar.barName originalBar]

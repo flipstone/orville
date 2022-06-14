@@ -115,6 +115,7 @@ library
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
       Orville.PostgreSQL.Internal.PgTime
+      Orville.PostgreSQL.Internal.QueryType
       Orville.PostgreSQL.Internal.SelectOptions.OrderBy
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
@@ -163,6 +164,7 @@ test-suite spec
       Test.Entities.User
       Test.EntityOperations
       Test.EntityTrace
+      Test.Execution
       Test.Expr.GroupBy
       Test.Expr.InsertUpdateDelete
       Test.Expr.OrderBy

@@ -163,6 +163,7 @@ module Orville.PostgreSQL
     OrvilleState.addTransactionCallback,
     OrvilleState.TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
     OrvilleState.Savepoint,
+    OrvilleState.addSqlExecutionCallback,
     ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
     ErrorDetailLevel.defaultErrorDetailLevel,
     ErrorDetailLevel.minimalErrorDetailLevel,
@@ -251,6 +252,7 @@ module Orville.PostgreSQL
     Expr.QueryExpr,
     Execute.executeAndDecode,
     Execute.executeVoid,
+    QueryType.QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery),
   )
 where
 
@@ -267,6 +269,7 @@ import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.Orville as Orville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
+import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType

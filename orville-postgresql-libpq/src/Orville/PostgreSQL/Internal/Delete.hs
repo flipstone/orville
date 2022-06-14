@@ -19,6 +19,7 @@ where
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
@@ -51,7 +52,7 @@ executeDelete ::
   Delete readEntity NoReturningClause ->
   m ()
 executeDelete (Delete expr) =
-  Execute.executeVoid expr
+  Execute.executeVoid QueryType.DeleteQuery expr
 
 {- | Excutes the database query for the 'Delete' and uses its 'SqlMarshaller' to decode the rows (that
   were just deleteed) as returned via a RETURNING clause.
@@ -61,7 +62,7 @@ executeDeleteReturnEntities ::
   Delete readEntity ReturningClause ->
   m [readEntity]
 executeDeleteReturnEntities (DeleteReturning marshaller expr) =
-  Execute.executeAndDecode expr marshaller
+  Execute.executeAndDecode QueryType.DeleteQuery expr marshaller
 
 {- |
   Builds a 'Delete' that will delete all of the writeable columns described in the

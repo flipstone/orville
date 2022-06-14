@@ -14,6 +14,7 @@ where
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
+import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, tableMarshaller, tableName)
@@ -40,7 +41,7 @@ selectToQueryExpr (Select _ query) = query
 -}
 executeSelect :: MonadOrville.MonadOrville m => Select row -> m [row]
 executeSelect (Select marshaller query) =
-  Execute.executeAndDecode query marshaller
+  Execute.executeAndDecode QueryType.SelectQuery query marshaller
 
 {- |
   Builds a 'Select' that will select all the columns described in the
