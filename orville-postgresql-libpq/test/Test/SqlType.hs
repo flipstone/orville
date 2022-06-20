@@ -428,8 +428,8 @@ runDecodingTest pool test =
 
 dropAndRecreateTable :: Connection.Connection -> String -> String -> IO ()
 dropAndRecreateTable connection tableName columnTypeDDL = do
-  Connection.executeRawVoid connection (B8.pack $ "DROP TABLE IF EXISTS " <> tableName) []
-  Connection.executeRawVoid connection (B8.pack $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")") []
+  RawSql.executeVoid connection (RawSql.fromString $ "DROP TABLE IF EXISTS " <> tableName)
+  RawSql.executeVoid connection (RawSql.fromString $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")")
 
 decodeSingleValue :: SqlType.SqlType a -> [(key, SqlValue.SqlValue)] -> Either String a
 decodeSingleValue valueType row =

@@ -4,15 +4,19 @@ module Test.Transaction
 where
 
 import qualified Control.Monad as Monad
+import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
@@ -26,6 +30,7 @@ transactionTests pool =
     , prop_savepointsRollbackInnerTransactions pool
     , prop_callbacksMadeForTransactionCommit pool
     , prop_callbacksMadeForTransactionRollback pool
+    , prop_usesCustomBeginTransactionSql pool
     ]
 
 prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
@@ -127,6 +132,34 @@ prop_callbacksMadeForTransactionRollback =
 
     allEvents === expectedEvents
 
+prop_usesCustomBeginTransactionSql :: Property.NamedDBProperty
+prop_usesCustomBeginTransactionSql =
+  Property.namedDBProperty "Uses custom begin transaction sql" $ \pool -> do
+    customExpr <-
+      HH.forAllWith (show . RawSql.toExampleBytes) $
+        Gen.element
+          [ Expr.beginTransaction Nothing
+          , Expr.beginTransaction (Just Expr.readOnly)
+          , Expr.beginTransaction (Just Expr.readWrite)
+          , Expr.beginTransaction (Just Expr.deferrable)
+          , Expr.beginTransaction (Just Expr.notDeferrable)
+          , Expr.beginTransaction (Just (Expr.isolationLevel Expr.serializable))
+          , Expr.beginTransaction (Just (Expr.isolationLevel Expr.repeatableRead))
+          , Expr.beginTransaction (Just (Expr.isolationLevel Expr.readCommitted))
+          , Expr.beginTransaction (Just (Expr.isolationLevel Expr.readUncommitted))
+          ]
+
+    sqlTrace <-
+      captureSqlTrace pool $ do
+        Orville.localOrvilleState
+          (Orville.setBeginTransactionExpr customExpr)
+          (Orville.withTransaction $ pure ())
+
+    sqlTrace
+      === [ (Orville.OtherQuery, RawSql.toExampleBytes Expr.commit)
+          , (Orville.OtherQuery, RawSql.toExampleBytes customExpr)
+          ]
+
 captureTransactionCallbackEvents ::
   Pool.Pool Conn.Connection ->
   Orville.Orville () ->
@@ -175,3 +208,23 @@ tracerMarshaller :: Orville.SqlMarshaller Tracer Tracer
 tracerMarshaller =
   const Tracer
     <$> Orville.marshallField (const $ T.pack "tracer") (Orville.unboundedTextField "tracer")
+
+captureSqlTrace ::
+  Pool.Pool Conn.Connection ->
+  Orville.Orville () ->
+  HH.PropertyT IO [(Orville.QueryType, BS.ByteString)]
+captureSqlTrace pool actions = do
+  queryTraceRef <- HH.evalIO $ IORef.newIORef []
+
+  let captureQuery :: Orville.QueryType -> RawSql.RawSql -> IO a -> IO a
+      captureQuery queryType sql action = do
+        IORef.modifyIORef queryTraceRef ((queryType, RawSql.toExampleBytes sql) :)
+        action
+
+  HH.evalIO $ do
+    Orville.runOrville pool $
+      Orville.localOrvilleState
+        (Orville.addSqlExecutionCallback captureQuery)
+        actions
+
+    IORef.readIORef queryTraceRef

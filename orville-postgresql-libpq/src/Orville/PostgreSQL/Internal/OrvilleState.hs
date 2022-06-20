@@ -26,6 +26,8 @@ module Orville.PostgreSQL.Internal.OrvilleState
     nextSavepoint,
     orvilleSqlExecutionCallback,
     addSqlExecutionCallback,
+    orvilleBeginTransactionExpr,
+    setBeginTransactionExpr,
   )
 where
 
@@ -35,6 +37,7 @@ import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
 import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -49,6 +52,7 @@ data OrvilleState = OrvilleState
   , _orvilleErrorDetailLevel :: ErrorDetailLevel
   , _orvilleTransactionCallback :: TransactionEvent -> IO ()
   , _orvilleSqlExecutionCallback :: forall a. QueryType -> RawSql.RawSql -> IO a -> IO a
+  , _orvilleBeginTransactionExpr :: Expr.BeginTransactionExpr
   }
 
 orvilleConnectionPool :: OrvilleState -> Pool Connection
@@ -66,6 +70,10 @@ orvilleErrorDetailLevel =
 orvilleTransactionCallback :: OrvilleState -> TransactionEvent -> IO ()
 orvilleTransactionCallback =
   _orvilleTransactionCallback
+
+orvilleBeginTransactionExpr :: OrvilleState -> Expr.BeginTransactionExpr
+orvilleBeginTransactionExpr =
+  _orvilleBeginTransactionExpr
 
 {- |
   Registers a callback to be invoked during transactions.
@@ -169,6 +177,7 @@ newOrvilleState errorDetailLevel pool =
     , _orvilleErrorDetailLevel = errorDetailLevel
     , _orvilleTransactionCallback = defaultTransactionCallback
     , _orvilleSqlExecutionCallback = defaultSqlExectionCallback
+    , _orvilleBeginTransactionExpr = defaultBeginTransactionExpr
     }
 
 {- |
@@ -331,3 +340,21 @@ addSqlExecutionCallback outerCallback state =
         outerCallback queryType sql (innerCallback queryType sql action)
       innerCallback = _orvilleSqlExecutionCallback state
    in state {_orvilleSqlExecutionCallback = layeredCallback}
+
+defaultBeginTransactionExpr :: Expr.BeginTransactionExpr
+defaultBeginTransactionExpr =
+  Expr.beginTransaction Nothing
+
+{- |
+  Sets the SQL expression that Orville will use to begin transactions. You can
+  control the transaction isolation level by building your own
+  'Expr.BeginTransactionExpr' with the desired isolation level.
+-}
+setBeginTransactionExpr ::
+  Expr.BeginTransactionExpr ->
+  OrvilleState ->
+  OrvilleState
+setBeginTransactionExpr expr state =
+  state
+    { _orvilleBeginTransactionExpr = expr
+    }

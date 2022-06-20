@@ -14,7 +14,6 @@ module Orville.PostgreSQL.Connection
     NoticeReporting (EnableNoticeReporting, DisableNoticeReporting),
     createConnectionPool,
     executeRaw,
-    executeRawVoid,
     escapeStringLiteral,
   )
 where
@@ -79,15 +78,6 @@ executeRaw connection bs params =
       throwIO NULByteFoundError
     Right paramBytes ->
       underlyingExecute bs paramBytes connection
-
-{- |
- 'executeRawVoid' a version of 'executeRaw' that completely ignores the result.
- If an error occurs it is raised as an exception.
- Use with caution.
--}
-executeRawVoid :: Connection -> BS.ByteString -> [Maybe PgTextFormatValue] -> IO ()
-executeRawVoid connection bs params =
-  void $ executeRaw connection bs params
 
 {- |
  The basic connection interface.
