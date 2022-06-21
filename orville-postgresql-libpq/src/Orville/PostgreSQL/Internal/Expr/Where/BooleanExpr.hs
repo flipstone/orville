@@ -23,6 +23,7 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     columnNotIn,
     columnTupleIn,
     columnTupleNotIn,
+    InValuePredicate,
     inPredicate,
     notInPredicate,
     inValueList,
