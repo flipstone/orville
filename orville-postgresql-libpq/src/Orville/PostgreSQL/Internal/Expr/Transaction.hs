@@ -3,6 +3,12 @@
 module Orville.PostgreSQL.Internal.Expr.Transaction
   ( BeginTransactionExpr,
     beginTransaction,
+    TransactionMode,
+    readWrite,
+    readOnly,
+    deferrable,
+    notDeferrable,
+    isolationLevel,
     IsolationLevel,
     serializable,
     repeatableRead,
@@ -29,13 +35,38 @@ newtype BeginTransactionExpr
   = BeginTransactionExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-beginTransaction :: Maybe IsolationLevel -> BeginTransactionExpr
-beginTransaction maybeIsolationLevel =
+beginTransaction :: Maybe TransactionMode -> BeginTransactionExpr
+beginTransaction maybeTransactionMode =
   BeginTransactionExpr $
     RawSql.intercalate RawSql.space $
       ( RawSql.fromString "BEGIN TRANSACTION" :
-        maybeToList (RawSql.toRawSql <$> maybeIsolationLevel)
+        maybeToList (RawSql.toRawSql <$> maybeTransactionMode)
       )
+
+newtype TransactionMode
+  = TransactionMode RawSql.RawSql
+  deriving (RawSql.SqlExpression)
+
+readWrite :: TransactionMode
+readWrite =
+  TransactionMode (RawSql.fromString "READ WRITE")
+
+readOnly :: TransactionMode
+readOnly =
+  TransactionMode (RawSql.fromString "READ ONLY")
+
+deferrable :: TransactionMode
+deferrable =
+  TransactionMode (RawSql.fromString "DEFERRABLE")
+
+notDeferrable :: TransactionMode
+notDeferrable =
+  TransactionMode (RawSql.fromString "NOT DEFERRABLE")
+
+isolationLevel :: IsolationLevel -> TransactionMode
+isolationLevel level =
+  TransactionMode $
+    (RawSql.fromString "ISOLATION LEVEL " <> RawSql.toRawSql level)
 
 newtype IsolationLevel
   = IsolationLevel RawSql.RawSql

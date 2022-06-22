@@ -17,7 +17,7 @@ module Orville.PostgreSQL.Internal.RawSql
     executeVoid,
     connectionEscaping,
 
-    -- * Fragmants provided for convenience
+    -- * Fragments provided for convenience
     space,
     comma,
     commaSpace,
@@ -37,6 +37,7 @@ module Orville.PostgreSQL.Internal.RawSql
   )
 where
 
+import Control.Monad (void)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as B8
@@ -321,8 +322,7 @@ execute connection sql = do
 -}
 executeVoid :: SqlExpression sql => Connection -> sql -> IO ()
 executeVoid connection sql = do
-  (sqlBytes, params) <- toBytesAndParams (connectionEscaping connection) sql
-  Conn.executeRawVoid connection sqlBytes params
+  void $ execute connection sql
 
 -- | Just a plain old space, provided for convenience
 space :: RawSql

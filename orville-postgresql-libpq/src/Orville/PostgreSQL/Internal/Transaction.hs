@@ -8,9 +8,11 @@ import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.IORef as IORef
 
+import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
+import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 {- |
@@ -38,12 +40,19 @@ withTransaction action =
             }
 
     committed <- liftIO $ IORef.newIORef False
-    callback <- OrvilleState.orvilleTransactionCallback <$> OrvilleState.askOrvilleState
+    state <- OrvilleState.askOrvilleState
 
-    let doAction = do
+    let executeTransactionSql :: RawSql.RawSql -> IO ()
+        executeTransactionSql sql =
+          Execute.executeVoidIO QueryType.OtherQuery sql state conn
+
+        callback =
+          OrvilleState.orvilleTransactionCallback state
+
+        doAction = do
           liftIO $ do
             let openEvent = OrvilleState.openTransactionEvent transaction
-            RawSql.executeVoid conn (transactionEventSql openEvent)
+            executeTransactionSql (transactionEventSql state openEvent)
             callback openEvent
 
           value <-
@@ -52,25 +61,29 @@ withTransaction action =
               action
           liftIO $ do
             let successEvent = OrvilleState.transactionSuccessEvent transaction
-            RawSql.executeVoid conn (transactionEventSql successEvent)
+            executeTransactionSql (transactionEventSql state successEvent)
             liftIO $ IORef.writeIORef committed True
             callback successEvent
           pure value
-    let rollbackUncommitted =
+
+        rollbackUncommitted =
           liftIO $ do
             finished <- IORef.readIORef committed
             Monad.when (not finished) $ do
               let rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
-              RawSql.executeVoid conn (transactionEventSql rollbackEvent)
+              executeTransactionSql (transactionEventSql state rollbackEvent)
               callback rollbackEvent
 
     MonadOrville.liftFinally Exception.finally doAction rollbackUncommitted
 
-transactionEventSql :: OrvilleState.TransactionEvent -> RawSql.RawSql
-transactionEventSql event =
+transactionEventSql ::
+  OrvilleState.OrvilleState ->
+  OrvilleState.TransactionEvent ->
+  RawSql.RawSql
+transactionEventSql state event =
   case event of
     OrvilleState.BeginTransaction ->
-      RawSql.toRawSql $ Expr.beginTransaction Nothing
+      RawSql.toRawSql $ OrvilleState.orvilleBeginTransactionExpr state
     OrvilleState.NewSavepoint savepoint ->
       RawSql.toRawSql $ Expr.savepoint (savepointName savepoint)
     OrvilleState.RollbackTransaction ->

@@ -164,6 +164,7 @@ module Orville.PostgreSQL
     OrvilleState.TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
     OrvilleState.Savepoint,
     OrvilleState.addSqlExecutionCallback,
+    OrvilleState.setBeginTransactionExpr,
     ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
     ErrorDetailLevel.defaultErrorDetailLevel,
     ErrorDetailLevel.minimalErrorDetailLevel,
