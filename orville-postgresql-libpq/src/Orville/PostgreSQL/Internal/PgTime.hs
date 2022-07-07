@@ -1,6 +1,6 @@
 module Orville.PostgreSQL.Internal.PgTime
   ( dayToPostgreSQL,
-    dayFromPostgreSQL,
+    day,
     utcTimeToPostgreSQL,
     utcTimeFromPostgreSQL,
     localTimeToPostgreSQL,
@@ -9,7 +9,9 @@ module Orville.PostgreSQL.Internal.PgTime
 where
 
 import qualified Control.Exception as Exc
+import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.ByteString.Char8 as B8
+import qualified Data.Char as Char
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
@@ -22,13 +24,26 @@ dayToPostgreSQL =
   B8.pack . Time.showGregorian
 
 {- |
-  Parses a 'Time.Day' from a PostgreSQL textual representation. Returns
-  'Nothing' if the parsing fails.
+  An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
+  fails if given an invalid day.
 -}
-dayFromPostgreSQL :: B8.ByteString -> Either String Time.Day
-dayFromPostgreSQL bytes = do
-  string <- utf8BytesToString bytes
-  decodeTime (Time.iso8601DateFormat Nothing) string
+day :: AttoB8.Parser Time.Day
+day = do
+  y <- AttoB8.decimal <* AttoB8.char '-'
+  m <- twoDigits <* AttoB8.char '-'
+  d <- twoDigits
+  maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
+
+{- |
+  An Attoparsec parser for parsing 2 digit integers.
+-}
+twoDigits :: AttoB8.Parser Int
+twoDigits = do
+  tens <- AttoB8.digit
+  ones <- AttoB8.digit
+  pure $ fromChar tens * 10 + fromChar ones
+  where
+    fromChar c = Char.ord c - Char.ord '0'
 
 {- |
   Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL

@@ -348,7 +348,7 @@ fromDay =
 -}
 toDay :: SqlValue -> Either String Time.Day
 toDay =
-  toBytesValue PgTime.dayFromPostgreSQL
+  toParsedValue PgTime.day
 
 {- |
   Encodes a 'Time.UTCTime' in ISO 8601 format for usage with the database.

@@ -335,6 +335,26 @@ dateTests pool =
           , expectedValue = Time.fromGregorian 2020 12 21
           }
     )
+  ,
+    ( String.fromString "Testing the decode of DATE with value 0001-12-21"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DATE"
+          , rawSqlValue = Just $ B8.pack "'0001-12-21'"
+          , sqlType = SqlType.date
+          , expectedValue = Time.fromGregorian 1 12 21
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of DATE with value 10000-12-21"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DATE"
+          , rawSqlValue = Just $ B8.pack "'10000-12-21'"
+          , sqlType = SqlType.date
+          , expectedValue = Time.fromGregorian 10000 12 21
+          }
+    )
   ]
 
 timestampTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
