@@ -374,7 +374,7 @@ fromLocalTime =
 -}
 toLocalTime :: SqlValue -> Either String Time.LocalTime
 toLocalTime =
-  toBytesValue PgTime.localTimeFromPostgreSQL
+  toParsedValue PgTime.localTime
 
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
@@ -382,7 +382,7 @@ toLocalTime =
 -}
 toUTCTime :: SqlValue -> Either String Time.UTCTime
 toUTCTime =
-  toBytesValue PgTime.utcTimeFromPostgreSQL
+  toParsedValue PgTime.utcTime
 
 {- |
   A internal helper function that constructs a 'SqlValue' via a byte string builder
