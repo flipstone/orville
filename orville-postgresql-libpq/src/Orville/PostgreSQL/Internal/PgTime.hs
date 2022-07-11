@@ -8,8 +8,8 @@ module Orville.PostgreSQL.Internal.PgTime
   )
 where
 
-import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.Attoparsec.ByteString as AttoBS
+import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Char as Char
@@ -31,11 +31,11 @@ day :: AttoB8.Parser Time.Day
 day = do
   (y, yearCount) <- decimalWithCount <* AttoB8.char '-'
   if yearCount < 4
-  then fail "invalid date format"
-  else do
-    m <- twoDigits <* AttoB8.char '-'
-    d <- twoDigits
-    maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
+    then fail "invalid date format"
+    else do
+      m <- twoDigits <* AttoB8.char '-'
+      d <- twoDigits
+      maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
 
 {- |
   An Attoparsec parser for parsing 2 digit integral numbers.
@@ -65,12 +65,12 @@ utcTime = do
   lt <- localTime
   sign <- AttoB8.satisfy (\char -> char == '+' || char == '-' || char == 'Z')
   if sign == 'Z'
-  then pure $ Time.localTimeToUTC Time.utc lt
-  else do
-    hour <- twoDigits
-    minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
-    let offset = minute + hour * 60 * if sign == '-' then (-1) else 1
-    pure $ Time.localTimeToUTC (Time.minutesToTimeZone offset) lt
+    then pure $ Time.localTimeToUTC Time.utc lt
+    else do
+      hour <- twoDigits
+      minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
+      let offset = minute + hour * 60 * if sign == '-' then (-1) else 1
+      pure $ Time.localTimeToUTC (Time.minutesToTimeZone offset) lt
 
 {- |
   Renders a 'Time.LocalTime value to a textual representation for PostgreSQL
@@ -106,7 +106,8 @@ decimalWithCount :: Integral a => AttoB8.Parser (a, a)
 decimalWithCount = do
   wrds <- AttoBS.takeWhile1 AttoB8.isDigit_w8
   pure (BS.foldl' step 0 wrds, fromIntegral $ BS.length wrds)
-  where step a w = a * 10 + fromIntegral (w - 48)
+  where
+    step a w = a * 10 + fromIntegral (w - 48)
 
 {- |
   An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
@@ -116,7 +117,7 @@ decimalWithCount = do
 seconds :: AttoB8.Parser Fixed.Pico
 seconds = do
   s <- twoDigits
-  (dec, charCount) <- AttoB8.option (0,0) (AttoB8.char '.' *> decimalWithCount)
+  (dec, charCount) <- AttoB8.option (0, 0) (AttoB8.char '.' *> decimalWithCount)
   if charCount >= 12
-  then pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
-  else pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))
+    then pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
+    else pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))
