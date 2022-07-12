@@ -15,6 +15,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.Char as Char
 import qualified Data.Fixed as Fixed
 import qualified Data.Time as Time
+import qualified Data.Word as Word
 
 {- |
   Renders a 'Time.Day' value to a textual representation for PostgreSQL
@@ -46,6 +47,7 @@ twoDigits = do
   ones <- AttoB8.digit
   pure $ fromChar tens * 10 + fromChar ones
   where
+    fromChar :: Integral a => Char -> a
     fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 
 {- |
@@ -107,6 +109,7 @@ decimalWithCount = do
   wrds <- AttoBS.takeWhile1 AttoB8.isDigit_w8
   pure (BS.foldl' step 0 wrds, fromIntegral $ BS.length wrds)
   where
+    step :: Integral a => a -> Word.Word8 -> a
     step a w = a * 10 + fromIntegral (w - 48)
 
 {- |
