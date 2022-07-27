@@ -39,7 +39,7 @@ import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, field
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Internal.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, marshallerDerivedColumns, unannotatedSqlMarshaller, mapSqlMarshaller)
+import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 
@@ -258,7 +258,7 @@ mapTableMarshaller ::
   TableDefinition key readEntityA writeEntityA ->
   TableDefinition key readEntityB writeEntityB
 mapTableMarshaller f tableDef =
-  tableDef { _tableMarshaller = mapSqlMarshaller f $ _tableMarshaller tableDef }
+  tableDef {_tableMarshaller = mapSqlMarshaller f $ _tableMarshaller tableDef}
 
 {- |
   Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the
