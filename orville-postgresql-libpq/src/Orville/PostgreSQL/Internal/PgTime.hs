@@ -46,9 +46,9 @@ twoDigits = do
   tens <- AttoB8.digit
   ones <- AttoB8.digit
   pure $ fromChar tens * 10 + fromChar ones
-  where
-    fromChar :: Integral a => Char -> a
-    fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
+
+fromChar :: Integral a => Char -> a
+fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 
 {- |
   Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL
@@ -107,10 +107,10 @@ timeOfDay = do
 decimalWithCount :: Integral a => AttoB8.Parser (a, a)
 decimalWithCount = do
   wrds <- AttoBS.takeWhile1 AttoB8.isDigit_w8
-  pure (BS.foldl' step 0 wrds, fromIntegral $ BS.length wrds)
-  where
-    step :: Integral a => a -> Word.Word8 -> a
-    step a w = a * 10 + fromIntegral (w - 48)
+  pure (BS.foldl' appendDigit 0 wrds, fromIntegral $ BS.length wrds)
+
+appendDigit :: Integral a => a -> Word.Word8 -> a
+appendDigit a w = a * 10 + fromIntegral (w - 48)
 
 {- |
   An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
