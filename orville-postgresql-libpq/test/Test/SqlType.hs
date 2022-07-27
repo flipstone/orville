@@ -370,6 +370,16 @@ timestampTests pool =
           }
     )
   ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-20 23:00:00-01'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-20 23:00:00-01'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) 0
+          }
+    )
+  ,
     ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32+00'"
     , runDecodingTest pool $
         DecodingTest
@@ -377,6 +387,36 @@ timestampTests pool =
           , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32+00'"
           , sqlType = SqlType.timestamp
           , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 01:00:00+01'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 01:00:00+01'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:30:00+0030'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:30:00+0030'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) 0
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:30:00+00:30'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:30:00+00:30'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 2020 12 21) 0
           }
     )
   ,
@@ -390,7 +430,7 @@ timestampTests pool =
           }
     )
   ,
-    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32-00'"
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32'"
     , runDecodingTest pool $
         DecodingTest
           { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
@@ -400,13 +440,63 @@ timestampTests pool =
           }
     )
   ,
-    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32+00'"
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32.000'"
     , runDecodingTest pool $
         DecodingTest
           { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
           , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:32.000'"
           , sqlType = SqlType.timestampWithoutZone
           , expectedValue = Time.LocalTime (Time.fromGregorian 2020 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:00.001'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:00:00.001'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian 2020 12 21) (Time.timeToTimeOfDay $ Time.picosecondsToDiffTime (1 * 10 ^ (9 :: Int)))
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 10:00:32'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 10:00:32'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian 2020 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime (60 * 60 * 10 + 32))
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:10:32'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'2020-12-21 00:10:32'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian 2020 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime (60 * 10 + 32))
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '10000-12-21 00:00:32'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'10000-12-21 00:00:32'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian 10000 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '0001-12-21 00:00:32'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'0001-12-21 00:00:32'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian 1 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
           }
     )
   ]

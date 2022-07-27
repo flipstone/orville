@@ -2,19 +2,20 @@ module Orville.PostgreSQL.Internal.PgTime
   ( dayToPostgreSQL,
     day,
     utcTimeToPostgreSQL,
-    utcTimeFromPostgreSQL,
+    utcTime,
     localTimeToPostgreSQL,
-    localTimeFromPostgreSQL,
+    localTime,
   )
 where
 
-import qualified Control.Exception as Exc
+import qualified Data.Attoparsec.ByteString as AttoBS
 import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Char as Char
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TextEnc
+import qualified Data.Fixed as Fixed
 import qualified Data.Time as Time
+import qualified Data.Word as Word
 
 {- |
   Renders a 'Time.Day' value to a textual representation for PostgreSQL
@@ -29,21 +30,25 @@ dayToPostgreSQL =
 -}
 day :: AttoB8.Parser Time.Day
 day = do
-  y <- AttoB8.decimal <* AttoB8.char '-'
-  m <- twoDigits <* AttoB8.char '-'
-  d <- twoDigits
-  maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
+  (y, yearCount) <- decimalWithCount <* AttoB8.char '-'
+  if yearCount < 4
+    then fail "invalid date format"
+    else do
+      m <- twoDigits <* AttoB8.char '-'
+      d <- twoDigits
+      maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
 
 {- |
-  An Attoparsec parser for parsing 2 digit integers.
+  An Attoparsec parser for parsing 2 digit integral numbers.
 -}
-twoDigits :: AttoB8.Parser Int
+twoDigits :: Integral a => AttoB8.Parser a
 twoDigits = do
   tens <- AttoB8.digit
   ones <- AttoB8.digit
   pure $ fromChar tens * 10 + fromChar ones
-  where
-    fromChar c = Char.ord c - Char.ord '0'
+
+fromChar :: Integral a => Char -> a
+fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 
 {- |
   Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL
@@ -53,22 +58,21 @@ utcTimeToPostgreSQL =
   B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S+00"
 
 {- |
-  Parses a 'Time.UTCTime' from a PostgreSQL textual representation. Returns
-  'Nothing' if the parsing fails.
+  An Attoparsec parser for parsing 'Time.UTCTime' from an ISO 8601 style
+  datetime and timezone with a few postgresql specific exceptions. See
+  localTime for more details
 -}
-utcTimeFromPostgreSQL :: B8.ByteString -> Either String Time.UTCTime
-utcTimeFromPostgreSQL bytes = do
-  -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
-  -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
-  -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
-  -- Leading to the ugly hacks below.
-  string <- utf8BytesToString bytes
-
-  let stringWithOffsetPad = string <> "00"
-
-  firstThenTry
-    (decodeTime "%F %T%Q%Z" stringWithOffsetPad)
-    (decodeTime "%F %T%Z" stringWithOffsetPad)
+utcTime :: AttoB8.Parser Time.UTCTime
+utcTime = do
+  lt <- localTime
+  sign <- AttoB8.satisfy (\char -> char == '+' || char == '-' || char == 'Z')
+  if sign == 'Z'
+    then pure $ Time.localTimeToUTC Time.utc lt
+    else do
+      hour <- twoDigits
+      minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
+      let offset = minute + hour * 60 * if sign == '-' then (-1) else 1
+      pure $ Time.localTimeToUTC (Time.minutesToTimeZone offset) lt
 
 {- |
   Renders a 'Time.LocalTime value to a textual representation for PostgreSQL
@@ -78,37 +82,45 @@ localTimeToPostgreSQL =
   B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S"
 
 {- |
-  Parses a 'Time.LocalTime' from a PostgreSQL textual representation. Returns
-  'Nothing' if the parsing fails.
+  An Attoparsec parser for parsing 'Time.LocalTime' from an ISO 8601 style
+  datetime with a few exceptions. The seperator between the date and time
+  is always ' ' and never 'T'.
 -}
-localTimeFromPostgreSQL :: B8.ByteString -> Either String Time.LocalTime
-localTimeFromPostgreSQL bytes = do
-  -- N.B. There are dragons here... Notably the iso8601DateFormat (at least as of time-1.9.x)
-  -- However PostgreSQL adheres to a different version of the standard which ommitted the 'T' and instead used a space.
-  -- Further... PostgreSQL uses the short format for the UTC offset and the haskell library does not support this.
-  -- Leading to the ugly hacks below.
-  string <- utf8BytesToString bytes
+localTime :: AttoB8.Parser Time.LocalTime
+localTime = do
+  Time.LocalTime <$> day <* AttoB8.char ' ' <*> timeOfDay
 
-  firstThenTry
-    (decodeTime "%F %T%Q" string)
-    (decodeTime "%F %T" string)
+{- |
+  An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO 8601 style time.
+-}
+timeOfDay :: AttoB8.Parser Time.TimeOfDay
+timeOfDay = do
+  h <- twoDigits <* AttoB8.char ':'
+  m <- twoDigits
+  s <- AttoB8.option 0 (AttoB8.char ':' *> seconds)
+  maybe (fail "invalid time format") pure $ Time.makeTimeOfDayValid h m s
 
-firstThenTry :: Either String a -> Either String a -> Either String a
-firstThenTry first thenTry =
-  case first of
-    Right _ -> first
-    Left _ -> thenTry
+{- |
+  An Attoparsec parser for parsing a base 10 number and returns the number of
+  digits consumed. Based off of AttoB8.decimal.
+-}
+decimalWithCount :: Integral a => AttoB8.Parser (a, a)
+decimalWithCount = do
+  wrds <- AttoBS.takeWhile1 AttoB8.isDigit_w8
+  pure (BS.foldl' appendDigit 0 wrds, fromIntegral $ BS.length wrds)
 
-utf8BytesToString :: B8.ByteString -> Either String String
-utf8BytesToString bytes =
-  case TextEnc.decodeUtf8' bytes of
-    Right t -> Right (T.unpack t)
-    Left err -> Left (Exc.displayException err)
+appendDigit :: Integral a => a -> Word.Word8 -> a
+appendDigit a w = a * 10 + fromIntegral (w - 48)
 
-decodeTime :: Time.ParseTime a => String -> String -> Either String a
-decodeTime format string =
-  case Time.parseTimeM False Time.defaultTimeLocale format string of
-    Just t ->
-      Right t
-    Nothing ->
-      Left $ "Unable to decode time value in format " <> show format
+{- |
+  An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
+  handle more resolution than postgres uses, and will truncate the seconds
+  fraction if more than 12 digits are present.
+-}
+seconds :: AttoB8.Parser Fixed.Pico
+seconds = do
+  s <- twoDigits
+  (dec, charCount) <- AttoB8.option (0, 0) (AttoB8.char '.' *> decimalWithCount)
+  if charCount >= 12
+    then pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
+    else pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))
