@@ -1,10 +1,15 @@
 module Orville.PostgreSQL.Internal.IndexDefinition
   ( IndexDefinition,
     uniqueIndex,
+    uniqueNamedIndex,
     nonUniqueIndex,
+    nonUniqueNamedIndex,
     mkIndexDefinition,
+    mkNamedIndexDefinition,
     Expr.IndexUniqueness (UniqueIndex, NonUniqueIndex),
-    IndexMigrationKey (IndexMigrationKey, indexKeyUniqueness, indexKeyColumns),
+    IndexMigrationKey (AttributeBasedIndexKey, NamedIndexKey),
+    AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns),
+    NamedIndexMigrationKey,
     indexMigrationKey,
     indexCreateExpr,
   )
@@ -15,6 +20,7 @@ import qualified Data.List.NonEmpty as NEL
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 {- |
   Defines an index that can be added to a 'Orville.PostgreSQL.TableDefinition'.
@@ -28,17 +34,24 @@ data IndexDefinition = IndexDefinition
   , _indexMigrationKey :: IndexMigrationKey
   }
 
+data IndexMigrationKey
+  = AttributeBasedIndexKey AttributeBasedIndexMigrationKey
+  | NamedIndexKey NamedIndexMigrationKey
+  deriving (Eq, Ord)
+
 {- |
   The key used by Orville to determine whether an index should be added to
   a table when performing auto migrations. For most use cases the constructor
   functions that build an 'IndexDefinition' will create this automatically
   for you.
 -}
-data IndexMigrationKey = IndexMigrationKey
+data AttributeBasedIndexMigrationKey = AttributeBasedIndexMigrationKey
   { indexKeyUniqueness :: Expr.IndexUniqueness
   , indexKeyColumns :: [FieldDefinition.FieldName]
   }
   deriving (Eq, Ord, Show)
+
+type NamedIndexMigrationKey = String
 
 {- |
   Gets the 'IndexMigrationKey' for the 'IndexDefinition'
@@ -62,12 +75,28 @@ nonUniqueIndex =
   mkIndexDefinition Expr.NonUniqueIndex
 
 {- |
+  Constructs an 'IndexDefinition' for a @UNIQUE@ index with given SQL and
+  index name
+-}
+nonUniqueNamedIndex :: String -> RawSql.RawSql -> IndexDefinition
+nonUniqueNamedIndex =
+  mkNamedIndexDefinition Expr.NonUniqueIndex
+
+{- |
   Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given
   columns.
 -}
 uniqueIndex :: NonEmpty FieldDefinition.FieldName -> IndexDefinition
 uniqueIndex =
   mkIndexDefinition Expr.UniqueIndex
+
+{- |
+  Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given
+  columns.
+-}
+uniqueNamedIndex :: String -> RawSql.RawSql -> IndexDefinition
+uniqueNamedIndex =
+  mkNamedIndexDefinition Expr.UniqueIndex
 
 {- |
   Constructs an 'IndexDefinition' for an index on the given columns with the
@@ -85,11 +114,32 @@ mkIndexDefinition uniqueness fieldNames =
           (fmap FieldDefinition.fieldNameToColumnName fieldNames)
 
       migrationKey =
-        IndexMigrationKey
+        AttributeBasedIndexMigrationKey
           { indexKeyUniqueness = uniqueness
           , indexKeyColumns = NEL.toList fieldNames
           }
    in IndexDefinition
         { _indexCreateExpr = expr
-        , _indexMigrationKey = migrationKey
+        , _indexMigrationKey = AttributeBasedIndexKey migrationKey
+        }
+
+{- |
+  Constructs an 'IndexDefinition' for an index with the given uniquness, given
+  name, and given SQL.
+-}
+mkNamedIndexDefinition ::
+  Expr.IndexUniqueness ->
+  String ->
+  RawSql.RawSql ->
+  IndexDefinition
+mkNamedIndexDefinition uniqueness indexName indexSql =
+  let expr tableName =
+        Expr.createNamedIndexExpr
+          uniqueness
+          tableName
+          (Expr.indexName indexName)
+          indexSql
+   in IndexDefinition
+        { _indexCreateExpr = expr
+        , _indexMigrationKey = NamedIndexKey indexName
         }

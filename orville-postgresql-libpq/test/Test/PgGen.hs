@@ -3,6 +3,7 @@ module Test.PgGen
     pgDouble,
     pgInt32,
     pgIdentifier,
+    pgIdentifierWithPrefix,
     pgUTCTime,
     pgLocalTime,
     pgDay,
@@ -75,6 +76,18 @@ decimalDigits n =
 pgIdentifier :: HH.Gen String
 pgIdentifier =
   Gen.string (Range.linear 1 63) $ Gen.element pgIdentifierChars
+
+{- |
+  Relation names must be unique in PostgreSQL, so we sometimes generate
+  names with prefixes to avoid conflicts between different types of
+  relations such as tables and indexes.
+-}
+pgIdentifierWithPrefix :: String -> HH.Gen String
+pgIdentifierWithPrefix prefix =
+  fmap (prefix <>)
+    . Gen.string (Range.linear 1 (63 - length prefix))
+    . Gen.element
+    $ pgIdentifierChars
 
 {- |
   A list of characters to include in identifiers when testing. Not all of these
