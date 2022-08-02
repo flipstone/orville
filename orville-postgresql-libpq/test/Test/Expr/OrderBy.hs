@@ -12,7 +12,7 @@ import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
-import Test.Expr.TestSchema (FooBar (..), assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
+import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
 orderByTests :: Pool.Pool Conn.Connection -> Property.Group
@@ -135,4 +135,4 @@ orderByTest testName test =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar (orderByExpectedQueryResults test)
+    assertEqualFooBarRows rows (orderByExpectedQueryResults test)

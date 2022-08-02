@@ -12,6 +12,7 @@ where
 
 import Orville.PostgreSQL.Internal.Expr.Name.ColumnName as Export
 import Orville.PostgreSQL.Internal.Expr.Name.ConstraintName as Export
+import Orville.PostgreSQL.Internal.Expr.Name.CursorName as Export
 import Orville.PostgreSQL.Internal.Expr.Name.Identifier as Export
 import Orville.PostgreSQL.Internal.Expr.Name.IndexName as Export
 import Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName as Export

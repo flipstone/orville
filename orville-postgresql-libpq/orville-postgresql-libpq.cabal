@@ -63,6 +63,7 @@ library
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
+      Orville.PostgreSQL.Internal.Expr.Cursor
       Orville.PostgreSQL.Internal.Expr.Delete
       Orville.PostgreSQL.Internal.Expr.GroupBy
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByClause
@@ -77,6 +78,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Orville.PostgreSQL.Internal.Expr.Name.ConstraintName
+      Orville.PostgreSQL.Internal.Expr.Name.CursorName
       Orville.PostgreSQL.Internal.Expr.Name.Identifier
       Orville.PostgreSQL.Internal.Expr.Name.IndexName
       Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName
@@ -165,6 +167,7 @@ test-suite spec
       Test.EntityOperations
       Test.EntityTrace
       Test.Execution
+      Test.Expr.Cursor
       Test.Expr.GroupBy
       Test.Expr.InsertUpdateDelete
       Test.Expr.OrderBy

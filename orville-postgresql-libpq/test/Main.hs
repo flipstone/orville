@@ -15,6 +15,7 @@ import qualified Test.Connection as Connection
 import qualified Test.EntityOperations as EntityOperations
 import qualified Test.EntityTrace as EntityTrace
 import qualified Test.Execution as Execution
+import qualified Test.Expr.Cursor as ExprCursor
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
@@ -46,6 +47,7 @@ main = do
       , ExprWhere.whereTests pool
       , ExprOrderBy.orderByTests pool
       , ExprTableDefinition.tableDefinitionTests pool
+      , ExprCursor.cursorTests pool
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool
