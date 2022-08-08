@@ -387,7 +387,7 @@ tryConvertSqlType bToA aToB sqlType =
 
 {- |
   'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
-  as 'maybeConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
+  as 'tryConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
 -}
 convertSqlType :: (b -> a) -> (a -> b) -> SqlType a -> SqlType b
 convertSqlType bToA aToB =

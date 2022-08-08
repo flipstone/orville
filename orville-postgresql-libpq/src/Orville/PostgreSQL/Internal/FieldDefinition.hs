@@ -124,7 +124,7 @@ fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue a)
 fieldDefaultValue = _fieldDefaultValue
 
 {- |
- A 'FieldNullability is returned by the 'fieldNullability' function, which
+ A 'FieldNullability' is returned by the 'fieldNullability' function, which
  can be used when a function works on both 'Nullable' and 'NotNull' functions
  but needs to deal with each type of field separately. It adds wrapper
  constructors around the 'FieldDefinition' that you can pattern match on to
@@ -469,8 +469,8 @@ asymmetricNullableField field =
   use this function the create 'FieldDefinition's for based on the primitive
   ones provided, but with more specific Haskell types.
 
-  See 'SqlType.convertSqlType' and 'SqlType.maybeConvertSqlType' for functions
-  to create the conversion needed as the firts argument to 'convertField'.
+  See 'SqlType.convertSqlType' and 'SqlType.tryConvertSqlType' for functions
+  to create the conversion needed as the first argument to 'convertField'.
 -}
 convertField ::
   (SqlType.SqlType a -> SqlType.SqlType b) ->

@@ -20,6 +20,7 @@ module Orville.PostgreSQL
     EntityOperations.findFirstEntityBy,
     EntityOperations.findEntity,
     Connection.createConnectionPool,
+    Connection.NoticeReporting (NoticeReporting,DisableNoticeReporting),
     TableDefinition.TableDefinition,
     TableDefinition.mkTableDefinition,
     TableDefinition.mkTableDefinitionWithoutKey,
