@@ -40,7 +40,6 @@ module Orville.PostgreSQL.Internal.Expr.Cursor
   )
 where
 
--- hide all, last
 import Data.Maybe (catMaybes)
 import Prelude (Either, Int, Maybe (Just), either, fmap, show, ($), (.), (<>))
 
