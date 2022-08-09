@@ -14,7 +14,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-import Test.Expr.TestSchema (assertEqualSqlRows, barColumn, dropAndRecreateTestTable, encodeFooBar, findAllFooBars, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
+import Test.Expr.TestSchema (assertEqualFooBarRows, barColumn, dropAndRecreateTestTable, findAllFooBars, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
 insertUpdateDeleteTests :: Pool.Pool Conn.Connection -> Property.Group
@@ -48,7 +48,7 @@ prop_insertExpr =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar fooBars
+    assertEqualFooBarRows rows fooBars
 
 prop_insertExprWithReturning :: Property.NamedDBProperty
 prop_insertExprWithReturning =
@@ -70,7 +70,7 @@ prop_insertExprWithReturning =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar fooBars
+    assertEqualFooBarRows rows fooBars
 
 prop_updateExpr :: Property.NamedDBProperty
 prop_updateExpr =
@@ -99,7 +99,7 @@ prop_updateExpr =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar newFooBars
+    assertEqualFooBarRows rows newFooBars
 
 prop_updateExprWithWhere :: Property.NamedDBProperty
 prop_updateExprWithWhere =
@@ -128,7 +128,7 @@ prop_updateExprWithWhere =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar newFooBars
+    assertEqualFooBarRows rows newFooBars
 
 prop_updateExprWithReturning :: Property.NamedDBProperty
 prop_updateExprWithReturning =
@@ -155,7 +155,7 @@ prop_updateExprWithReturning =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar newFooBars
+    assertEqualFooBarRows rows newFooBars
 
 prop_deleteExpr :: Property.NamedDBProperty
 prop_deleteExpr =
@@ -182,7 +182,7 @@ prop_deleteExpr =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` []
+    assertEqualFooBarRows rows []
 
 prop_deleteExprWithWhere :: Property.NamedDBProperty
 prop_deleteExprWithWhere =
@@ -210,7 +210,7 @@ prop_deleteExprWithWhere =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar newFooBars
+    assertEqualFooBarRows rows newFooBars
 
 prop_deleteExprWithReturning :: Property.NamedDBProperty
 prop_deleteExprWithReturning =
@@ -235,4 +235,4 @@ prop_deleteExprWithReturning =
 
           ExecResult.readRows result
 
-    rows `assertEqualSqlRows` map encodeFooBar oldFooBars
+    assertEqualFooBarRows rows oldFooBars
