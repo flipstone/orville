@@ -17,7 +17,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
-import Test.Expr.TestSchema (FooBar, assertEqualFooBarRows, dropAndRecreateTestTable, findAllFooBars, fooBarTable, insertFooBarSource, mkFooBar)
+import Test.Expr.TestSchema (FooBar, assertEqualFooBarRows, findAllFooBars, mkFooBar, withFooBarData)
 import qualified Test.Property as Property
 
 cursorTests :: Pool.Pool Conn.Connection -> Property.Group
@@ -272,7 +272,7 @@ prop_cursorFetchRelative =
     assertEqualFooBarRows fourth [row 2]
 
 row :: Int.Int32 -> FooBar
-row n = mkFooBar n ("row" <> show n)
+row n = mkFooBar n ("row " <> show n)
 
 runFetchDirectionsOnData ::
   Pool.Pool Conn.Connection ->
@@ -287,21 +287,6 @@ runFetchDirectionsOnData pool scroll fooBars directions =
             result <- RawSql.execute connection $ Expr.fetch (Just direction) cursorName
             ExecResult.readRows result
        in traverse runDirection directions
-
-withFooBarData ::
-  Pool.Pool Conn.Connection ->
-  [FooBar] ->
-  (Conn.Connection -> IO a) ->
-  HH.PropertyT IO a
-withFooBarData pool fooBars action =
-  MIO.liftIO $
-    Pool.withResource pool $ \connection -> do
-      dropAndRecreateTestTable connection
-
-      RawSql.executeVoid connection $
-        Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
-
-      action connection
 
 withTestCursor ::
   Conn.Connection ->

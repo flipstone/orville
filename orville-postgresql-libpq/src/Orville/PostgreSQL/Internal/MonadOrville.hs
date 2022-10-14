@@ -3,7 +3,7 @@
 
 module Orville.PostgreSQL.Internal.MonadOrville
   ( MonadOrville,
-    MonadOrvilleControl (liftWithConnection, liftFinally),
+    MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket),
     withConnection,
     withConnectedState,
   )
@@ -72,10 +72,21 @@ class MonadOrvilleControl m where
     (forall a. (Connection -> IO a) -> IO a) -> (Connection -> m b) -> m b
 
   {-
-    Orville with use this function to resource cleanup actions from IO
+    Orville will use this function to resource cleanup actions from IO
     into the application monad.
   -}
   liftFinally :: (forall a b. IO a -> IO b -> IO a) -> m c -> m d -> m c
+
+  {-
+    Orville will use this function to lift resource allocation and cleanup
+    from IO into the application monad.
+  -}
+  liftBracket ::
+    (IO a -> (a -> IO b) -> (a -> IO c) -> IO c) ->
+    m a ->
+    (a -> m b) ->
+    (a -> m c) ->
+    m c
 
 instance MonadOrvilleControl IO where
   liftWithConnection ioWithConn =
@@ -83,6 +94,9 @@ instance MonadOrvilleControl IO where
 
   liftFinally ioFinally =
     ioFinally
+
+  liftBracket ioBracket =
+    ioBracket
 
 instance MonadOrvilleControl m => MonadOrvilleControl (ReaderT state m) where
   liftWithConnection ioWithConn action = do
@@ -95,6 +109,14 @@ instance MonadOrvilleControl m => MonadOrvilleControl (ReaderT state m) where
         ioFinally
         (runReaderT action env)
         (runReaderT cleanup env)
+
+  liftBracket ioBracket allocate cleanup action = do
+    ReaderT $ \env ->
+      liftBracket
+        ioBracket
+        (runReaderT allocate env)
+        (\resource -> runReaderT (cleanup resource) env)
+        (\resource -> runReaderT (action resource) env)
 
 instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleState m)
 

@@ -8,6 +8,7 @@ module Test.Expr.TestSchema
     encodeFooBar,
     orderByFoo,
     insertFooBarSource,
+    withFooBarData,
     dropAndRecreateTestTable,
     assertEqualFooBarRows,
     assertEqualSqlRows,
@@ -15,8 +16,10 @@ module Test.Expr.TestSchema
   )
 where
 
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
+import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
@@ -78,6 +81,21 @@ insertFooBarSource fooBars =
 
 nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
 nullOr = maybe SqlValue.sqlNull
+
+withFooBarData ::
+  Pool.Pool Connection.Connection ->
+  [FooBar] ->
+  (Connection.Connection -> IO a) ->
+  HH.PropertyT IO a
+withFooBarData pool fooBars action =
+  MIO.liftIO $
+    Pool.withResource pool $ \connection -> do
+      dropAndRecreateTestTable connection
+
+      RawSql.executeVoid connection $
+        Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
+
+      action connection
 
 dropAndRecreateTestTable :: Connection.Connection -> IO ()
 dropAndRecreateTestTable connection = do

@@ -1,8 +1,10 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Internal.Select
   ( Select,
     executeSelect,
+    useSelect,
     selectToQueryExpr,
     selectTable,
     selectMarshalledColumns,
@@ -40,8 +42,24 @@ selectToQueryExpr (Select _ query) = query
   decode the result set.
 -}
 executeSelect :: MonadOrville.MonadOrville m => Select row -> m [row]
-executeSelect (Select marshaller query) =
-  Execute.executeAndDecode QueryType.SelectQuery query marshaller
+executeSelect =
+  useSelect (Execute.executeAndDecode QueryType.SelectQuery)
+
+{- |
+  Runs a function allowing it to use the data elements containted within the
+  'Select' it pleases. The marshaller that the function is provided can be use
+  to decode results from the query.
+-}
+useSelect ::
+  ( forall writeEntity.
+    Expr.QueryExpr ->
+    AnnotatedSqlMarshaller writeEntity readEntity ->
+    a
+  ) ->
+  Select readEntity ->
+  a
+useSelect f (Select marshaller query) =
+  f query marshaller
 
 {- |
   Builds a 'Select' that will select all the columns described in the

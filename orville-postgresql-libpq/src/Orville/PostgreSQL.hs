@@ -4,7 +4,8 @@ Copyright : Flipstone Technology Partners 2020-2021
 License   : MIT
 -}
 module Orville.PostgreSQL
-  ( EntityOperations.insertEntity,
+  ( -- * Basic operations on entities in tables
+    EntityOperations.insertEntity,
     EntityOperations.insertAndReturnEntity,
     EntityOperations.insertEntities,
     EntityOperations.insertAndReturnEntities,
@@ -19,8 +20,38 @@ module Orville.PostgreSQL
     EntityOperations.findEntitiesBy,
     EntityOperations.findFirstEntityBy,
     EntityOperations.findEntity,
+
+    -- * A simple starter monad for running Orville operations
+    Orville.Orville,
+    Orville.runOrville,
+    Orville.runOrvilleWithState,
+
+    -- * Creating a connection pool
     Connection.createConnectionPool,
     Connection.NoticeReporting (EnableNoticeReporting, DisableNoticeReporting),
+
+    -- * Opening transactions and savepoints
+    Transaction.withTransaction,
+
+    -- * Types for incorporating Orville into other Monads
+    MonadOrville.MonadOrville,
+    MonadOrville.withConnection,
+    MonadOrville.MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket),
+    OrvilleState.HasOrvilleState (askOrvilleState, localOrvilleState),
+    OrvilleState.OrvilleState,
+    OrvilleState.newOrvilleState,
+    OrvilleState.resetOrvilleState,
+    OrvilleState.addTransactionCallback,
+    OrvilleState.TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
+    OrvilleState.Savepoint,
+    OrvilleState.addSqlExecutionCallback,
+    OrvilleState.setBeginTransactionExpr,
+    ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
+    ErrorDetailLevel.defaultErrorDetailLevel,
+    ErrorDetailLevel.minimalErrorDetailLevel,
+    ErrorDetailLevel.maximalErrorDetailLevel,
+
+    -- * Functions for defining a database schema
     TableDefinition.TableDefinition,
     TableDefinition.mkTableDefinition,
     TableDefinition.mkTableDefinitionWithoutKey,
@@ -150,26 +181,10 @@ module Orville.PostgreSQL
     DefaultValue.coerceDefaultValue,
     DefaultValue.defaultValueExpression,
     DefaultValue.rawSqlDefault,
-    Orville.Orville,
-    Orville.runOrville,
-    Orville.runOrvilleWithState,
-    MonadOrville.MonadOrville,
-    MonadOrville.withConnection,
-    Transaction.withTransaction,
-    MonadOrville.MonadOrvilleControl (liftWithConnection),
-    OrvilleState.HasOrvilleState (askOrvilleState, localOrvilleState),
-    OrvilleState.OrvilleState,
-    OrvilleState.newOrvilleState,
-    OrvilleState.resetOrvilleState,
-    OrvilleState.addTransactionCallback,
-    OrvilleState.TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
-    OrvilleState.Savepoint,
-    OrvilleState.addSqlExecutionCallback,
-    OrvilleState.setBeginTransactionExpr,
-    ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
-    ErrorDetailLevel.defaultErrorDetailLevel,
-    ErrorDetailLevel.minimalErrorDetailLevel,
-    ErrorDetailLevel.maximalErrorDetailLevel,
+
+    -- * Functions and operators for putting where clauses, order by clauses
+
+    -- and limits on selects
     SelectOptions.SelectOptions,
     SelectOptions.distinct,
     SelectOptions.groupBy,
@@ -218,16 +233,6 @@ module Orville.PostgreSQL
     SelectOptions.appendOrderBy,
     SelectOptions.orderByToClause,
     SelectOptions.orderByToExpr,
-    SqlType.SqlType
-      ( SqlType.SqlType,
-        SqlType.sqlTypeExpr,
-        SqlType.sqlTypeReferenceExpr,
-        SqlType.sqlTypeOid,
-        SqlType.sqlTypeMaximumLength,
-        SqlType.sqlTypeToSql,
-        SqlType.sqlTypeFromSql,
-        SqlType.sqlTypeDontDropImplicitDefaultDuringMigrate
-      ),
 
     -- * numeric types
     SqlType.integer,
@@ -247,10 +252,21 @@ module Orville.PostgreSQL
     -- * date types
     SqlType.date,
     SqlType.timestamp,
-    -- type conversions
+
+    -- * type conversions
     SqlType.foreignRefType,
     SqlType.convertSqlType,
     SqlType.tryConvertSqlType,
+    SqlType.SqlType
+      ( SqlType.SqlType,
+        SqlType.sqlTypeExpr,
+        SqlType.sqlTypeReferenceExpr,
+        SqlType.sqlTypeOid,
+        SqlType.sqlTypeMaximumLength,
+        SqlType.sqlTypeToSql,
+        SqlType.sqlTypeFromSql,
+        SqlType.sqlTypeDontDropImplicitDefaultDuringMigrate
+      ),
     Expr.QueryExpr,
     Execute.executeAndDecode,
     Execute.executeVoid,

@@ -1,5 +1,5 @@
 module Orville.PostgreSQL.Internal.QueryType
-  ( QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery),
+  ( QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, CursorQuery, OtherQuery),
   )
 where
 
@@ -15,5 +15,6 @@ data QueryType
   | UpdateQuery
   | DeleteQuery
   | DDLQuery
+  | CursorQuery
   | OtherQuery
   deriving (Ord, Eq, Enum, Bounded, Show, Read)

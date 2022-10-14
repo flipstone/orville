@@ -16,7 +16,7 @@ import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 {- |
-  Performs a an action in an Orville monad within a database transaction. The transaction
+  Performs an action in an Orville monad within a database transaction. The transaction
   in begun before the action is called. If the action completes without raising an exception,
   the transaction will be committed. If the action raises an exception, the transaction will
   rollback.
