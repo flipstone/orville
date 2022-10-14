@@ -13,6 +13,7 @@ module Orville.PostgreSQL.Internal.Insert
     executeInsertReturnEntities,
     insertToTableReturning,
     insertToTable,
+    rawInsertExpr,
   )
 where
 
@@ -104,9 +105,9 @@ insertTable returningOption tableDef entities =
   produces a value that can be stored, as well as returning a result that the 'SqlMarshaller' can
   decode.
 
-  This is the lowest level of escape hatch available for 'Select'. The caller can build any query
+  This is the lowest level of escape hatch available for 'Update'. The caller can build any query
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
-  a raw 'Expr.InsertExpr'. It is expected, that the 'ReturningOption' given matches the
+  a raw 'Expr.InsertExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.InsertExpr'. This level of interface does not provide an automatic enforcement of the
   expectation, however failure is likely if that is not met.
 -}

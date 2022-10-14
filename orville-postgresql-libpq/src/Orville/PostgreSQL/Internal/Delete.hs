@@ -13,6 +13,7 @@ module Orville.PostgreSQL.Internal.Delete
     executeDeleteReturnEntities,
     deleteFromTableReturning,
     deleteFromTable,
+    rawDeleteExpr,
   )
 where
 
@@ -112,7 +113,7 @@ deleteTable returningOption tableDef whereCondition =
 
   This is the lowest level of escape hatch available for 'Delete'. The caller can build any query
   that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
-  a raw 'Expr.DeleteExpr'. It is expected, that the 'ReturningOption' given matches the
+  a raw 'Expr.DeleteExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.DeleteExpr'. This level of interface does not provide an automatic enforcement of the
   expectation, however failure is likely if that is not met.
 -}

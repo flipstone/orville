@@ -9,6 +9,7 @@ module Orville.PostgreSQL.Internal.Update
     updateToTable,
     updateToTableFieldsReturning,
     updateToTableFields,
+    rawUpdateExpr,
   )
 where
 
