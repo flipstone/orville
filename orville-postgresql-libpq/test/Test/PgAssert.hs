@@ -9,6 +9,7 @@ module Test.PgAssert
     assertUniqueConstraintExists,
     assertForeignKeyConstraintExists,
     assertIndexExists,
+    ForeignKeyInfo (..),
   )
 where
 
@@ -186,24 +187,35 @@ assertUniqueConstraintExists relationDesc columnNames = do
       HH.annotate $ "Unique constraint " <> show (NEL.toList columnNames) <> " not found"
       HH.failure
 
+data ForeignKeyInfo = ForeignKeyInfo
+  { foreignKeyInfoReferences :: NEL.NonEmpty (String, String)
+  , foreignKeyInfoOnUpdate :: Orville.ForeignKeyAction
+  , foreignKeyInfoOnDelete :: Orville.ForeignKeyAction
+  }
+  deriving (Show, Eq)
+
 assertForeignKeyConstraintExists ::
   (HH.MonadTest m, HasCallStack) =>
   PgCatalog.RelationDescription ->
-  NEL.NonEmpty (String, String) ->
+  ForeignKeyInfo ->
   m ()
-assertForeignKeyConstraintExists relationDesc foreignReferences = do
-  let attNames = map (String.fromString . fst) (NEL.toList foreignReferences)
-      foreignNames = map (String.fromString . snd) (NEL.toList foreignReferences)
+assertForeignKeyConstraintExists relationDesc foreignKeyInfo = do
+  let attNames = map (String.fromString . fst) (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo)
+      foreignNames = map (String.fromString . snd) (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo)
+
       constraintMatches constraintDesc =
-        and
-          [ PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraintDesc) == PgCatalog.ForeignKeyConstraint
-          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
-          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintForeignKey constraintDesc) == Just foreignNames
-          ]
+        let constraintRec = PgCatalog.constraintRecord constraintDesc
+         in and
+              [ PgCatalog.pgConstraintType constraintRec == PgCatalog.ForeignKeyConstraint
+              , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
+              , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintForeignKey constraintDesc) == Just foreignNames
+              , PgCatalog.pgConstraintForeignKeyOnUpdateType constraintRec == Just (foreignKeyInfoOnUpdate foreignKeyInfo)
+              , PgCatalog.pgConstraintForeignKeyOnDeleteType constraintRec == Just (foreignKeyInfoOnDelete foreignKeyInfo)
+              ]
 
   Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
     withFrozenCallStack $ do
-      HH.annotate $ "Foreign key constraint " <> show (NEL.toList foreignReferences) <> " not found"
+      HH.annotate $ "Foreign key constraint " <> show (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo) <> " not found"
       HH.failure
 
 isMatchingConstraintPresent ::

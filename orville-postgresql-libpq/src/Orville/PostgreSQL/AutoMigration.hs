@@ -628,6 +628,10 @@ pgConstraintMigrationKey constraintDesc =
                 fmap
                   pgAttributeNamesToFieldNames
                   (PgCatalog.constraintForeignKey constraintDesc)
+            , Orville.constraintKeyForeignKeyOnUpdateAction =
+                PgCatalog.pgConstraintForeignKeyOnUpdateType $ PgCatalog.constraintRecord constraintDesc
+            , Orville.constraintKeyForeignKeyOnDeleteAction =
+                PgCatalog.pgConstraintForeignKeyOnDeleteType $ PgCatalog.constraintRecord constraintDesc
             }
 
 {- |

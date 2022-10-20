@@ -2,12 +2,18 @@ module Orville.PostgreSQL.Internal.ConstraintDefinition
   ( ConstraintDefinition,
     uniqueConstraint,
     foreignKeyConstraint,
+    foreignKeyConstraintWithOptions,
     ForeignReference (localFieldName, foreignFieldName),
     foreignReference,
-    ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns),
+    ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction),
     ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint),
     constraintMigrationKey,
     constraintSqlExpr,
+    ForeignKeyAction (..),
+    ForeignKeyOptions,
+    foreignKeyOptionsOnDelete,
+    foreignKeyOptionsOnUpdate,
+    defaultForeignKeyOptions,
   )
 where
 
@@ -42,6 +48,8 @@ data ConstraintMigrationKey = ConstraintMigrationKey
   , constraintKeyColumns :: Maybe [FieldDefinition.FieldName]
   , constraintKeyForeignTable :: Maybe TableIdentifier.TableIdentifier
   , constraintKeyForeignColumns :: Maybe [FieldDefinition.FieldName]
+  , constraintKeyForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
+  , constraintKeyForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
   }
   deriving (Eq, Ord, Show)
 
@@ -80,6 +88,8 @@ uniqueConstraint fieldNames =
           , constraintKeyColumns = Just (NEL.toList fieldNames)
           , constraintKeyForeignTable = Nothing
           , constraintKeyForeignColumns = Nothing
+          , constraintKeyForeignKeyOnUpdateAction = Nothing
+          , constraintKeyForeignKeyOnDeleteAction = Nothing
           }
    in ConstraintDefinition
         { _constraintSqlExpr = expr
@@ -112,6 +122,48 @@ foreignReference localName foreignName =
     }
 
 {- |
+  Defines the options for a foreign key constraint.
+  To construct 'ForeignKeyOptions', perform a record update on
+  'defaultForeignKeyOptions'.
+-}
+data ForeignKeyOptions = ForeignKeyOptions
+  { -- | The @ON UPDATE@ action for the foreign key
+    foreignKeyOptionsOnUpdate :: ForeignKeyAction
+  , -- | The @ON DELETE@ action for the foreign key
+    foreignKeyOptionsOnDelete :: ForeignKeyAction
+  }
+
+{- |
+  The default 'ForeignKeyOptions', containing 'NoAction' for both
+  'foreignKeyOptionsOnUpdate' and 'foreignKeyOptionsOnDelete'.
+-}
+defaultForeignKeyOptions :: ForeignKeyOptions
+defaultForeignKeyOptions =
+  ForeignKeyOptions
+    { foreignKeyOptionsOnUpdate = NoAction
+    , foreignKeyOptionsOnDelete = NoAction
+    }
+
+{- |
+  The actions that can be set on 'ForeignKeyOptions'.
+-}
+data ForeignKeyAction
+  = NoAction
+  | Restrict
+  | Cascade
+  | SetNull
+  | SetDefault
+  deriving (Show, Eq, Ord)
+
+foreignKeyActionToExpr :: ForeignKeyAction -> Maybe Expr.ForeignKeyActionExpr
+foreignKeyActionToExpr action = case action of
+  NoAction -> Nothing
+  Restrict -> Just Expr.restrictExpr
+  Cascade -> Just Expr.cascadeExpr
+  SetNull -> Just Expr.setNullExpr
+  SetDefault -> Just Expr.setDefaultExpr
+
+{- |
   Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint.
 -}
 foreignKeyConstraint ::
@@ -121,17 +173,41 @@ foreignKeyConstraint ::
   NonEmpty ForeignReference ->
   ConstraintDefinition
 foreignKeyConstraint foreignTableId foreignReferences =
+  foreignKeyConstraintWithOptions foreignTableId foreignReferences defaultForeignKeyOptions
+
+{- |
+  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with ON UPDATE and
+  ON DELETE actions.
+-}
+foreignKeyConstraintWithOptions ::
+  -- | Identifier of the table referenced by the foreign key
+  TableIdentifier.TableIdentifier ->
+  -- | The columns constrained by the foreign key and those that they reference in the foreign table
+  NonEmpty ForeignReference ->
+  ForeignKeyOptions ->
+  ConstraintDefinition
+foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
   let localFieldNames =
         localFieldName <$> foreignReferences
 
       foreignFieldNames =
         foreignFieldName <$> foreignReferences
 
+      updateAction = foreignKeyOptionsOnUpdate options
+
+      deleteAction = foreignKeyOptionsOnDelete options
+
+      onUpdateExpr = fmap Expr.foreignKeyUpdateActionExpr $ foreignKeyActionToExpr updateAction
+
+      onDeleteExpr = fmap Expr.foreignKeyDeleteActionExpr $ foreignKeyActionToExpr deleteAction
+
       expr =
         Expr.foreignKeyConstraint
           (fmap FieldDefinition.fieldNameToColumnName localFieldNames)
           (TableIdentifier.tableIdQualifiedName foreignTableId)
           (fmap FieldDefinition.fieldNameToColumnName foreignFieldNames)
+          onUpdateExpr
+          onDeleteExpr
 
       migrationKey =
         ConstraintMigrationKey
@@ -139,6 +215,8 @@ foreignKeyConstraint foreignTableId foreignReferences =
           , constraintKeyColumns = Just (NEL.toList localFieldNames)
           , constraintKeyForeignTable = Just foreignTableId
           , constraintKeyForeignColumns = Just (NEL.toList foreignFieldNames)
+          , constraintKeyForeignKeyOnUpdateAction = Just updateAction
+          , constraintKeyForeignKeyOnDeleteAction = Just deleteAction
           }
    in ConstraintDefinition
         { _constraintSqlExpr = expr

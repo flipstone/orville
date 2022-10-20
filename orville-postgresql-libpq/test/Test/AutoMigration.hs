@@ -445,17 +445,25 @@ prop_addAndRemovesForeignKeyConstraints =
     localColumns <- HH.forAll genColumnList
     foreignColumns <- HH.forAll genColumnList
 
-    let genConstraintColumns :: HH.Gen [(NEL.NonEmpty (String, String))]
-        genConstraintColumns =
+    let genForeignKeyInfos :: HH.Gen [PgAssert.ForeignKeyInfo]
+        genForeignKeyInfos =
           fmap Maybe.catMaybes $
             Gen.list (Range.linear 0 10) $ do
               shuffledLocal <- Gen.shuffle localColumns
               shuffledForeign <- Gen.shuffle foreignColumns
 
-              NEL.nonEmpty <$> Gen.subsequence (zip shuffledLocal shuffledForeign)
+              references <- Gen.subsequence (zip shuffledLocal shuffledForeign)
+              onUpdateAction <- generateForeignKeyAction
+              onDeleteAction <- generateForeignKeyAction
 
-    originalConstraintColumns <- HH.forAll genConstraintColumns
-    newConstraintColumns <- HH.forAll genConstraintColumns
+              pure $
+                PgAssert.ForeignKeyInfo
+                  <$> NEL.nonEmpty references
+                  <*> Just onUpdateAction
+                  <*> Just onDeleteAction
+
+    originalForeignKeyInfos <- HH.forAll genForeignKeyInfos
+    newForeignKeyInfos <- HH.forAll genForeignKeyInfos
 
     -- We sort the columns in the unique constraints here to avoid edge cases
     -- with equivalent unique constraints in a different order. In these
@@ -466,16 +474,20 @@ prop_addAndRemovesForeignKeyConstraints =
     -- will not try to drop a constraint that is used in both the original and
     -- new schemas while a foreign key is dropped and a new one added.
     let originalUniqueConstraints =
-          fmap (mkUniqueConstraint . NEL.sort . fmap snd) originalConstraintColumns
+          fmap
+            (mkUniqueConstraint . NEL.sort . fmap snd . PgAssert.foreignKeyInfoReferences)
+            originalForeignKeyInfos
 
         newUniqueConstraints =
-          fmap (mkUniqueConstraint . NEL.sort . fmap snd) newConstraintColumns
+          fmap
+            (mkUniqueConstraint . NEL.sort . fmap snd . PgAssert.foreignKeyInfoReferences)
+            newForeignKeyInfos
 
         originalForeignKeyConstraints =
-          fmap (mkForeignKeyConstraint "migration_test_foreign") originalConstraintColumns
+          fmap (mkForeignKeyConstraint "migration_test_foreign") originalForeignKeyInfos
 
         newForeignKeyConstraints =
-          fmap (mkForeignKeyConstraint "migration_test_foreign") newConstraintColumns
+          fmap (mkForeignKeyConstraint "migration_test_foreign") newForeignKeyInfos
 
         originalLocalTableDef =
           Orville.addTableConstraints originalForeignKeyConstraints $
@@ -507,8 +519,8 @@ prop_addAndRemovesForeignKeyConstraints =
           , AutoMigration.schemaTable newLocalTableDef
           ]
 
-    HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newConstraintColumns \\ originalConstraintColumns))
-    HH.cover 5 (String.fromString "Dropping Constraints") (not $ null (originalConstraintColumns \\ newConstraintColumns))
+    HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newForeignKeyInfos \\ originalForeignKeyInfos))
+    HH.cover 5 (String.fromString "Dropping Constraints") (not $ null (originalForeignKeyInfos \\ newForeignKeyInfos))
 
     firstTimeSteps <-
       HH.evalIO $
@@ -530,8 +542,8 @@ prop_addAndRemovesForeignKeyConstraints =
 
     map RawSql.toExampleBytes secondTimeSteps === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
-    Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newConstraintColumns
-    length (PgCatalog.relationConstraints tableDesc) === length (List.nub newConstraintColumns)
+    Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newForeignKeyInfos
+    length (PgCatalog.relationConstraints tableDesc) === length (List.nub newForeignKeyInfos)
 
 prop_addAndRemovesIndexes :: Property.NamedDBProperty
 prop_addAndRemovesIndexes =
@@ -647,7 +659,15 @@ assertTableStructure pool testTable = do
 
   Fold.traverse_
     (PgAssert.assertForeignKeyConstraintExists tableDesc)
-    (map testForeignKeyReferences . testTableForeignKeys $ testTable)
+    (map mkForeignKeyInfo . testTableForeignKeys $ testTable)
+
+mkForeignKeyInfo :: TestForeignKey -> PgAssert.ForeignKeyInfo
+mkForeignKeyInfo testForeignKey =
+  PgAssert.ForeignKeyInfo
+    { PgAssert.foreignKeyInfoReferences = testForeignKeyReferences testForeignKey
+    , PgAssert.foreignKeyInfoOnUpdate = testForeignKeyOnUpdate testForeignKey
+    , PgAssert.foreignKeyInfoOnDelete = testForeignKeyOnDelete testForeignKey
+    }
 
 data TestTable = TestTable
   { testTableName :: String
@@ -668,6 +688,8 @@ data TestIndex = TestIndex
 data TestForeignKey = TestForeignKey
   { testForeignKeyReferences :: NEL.NonEmpty (String, String)
   , testForeignKeyTableName :: String
+  , testForeignKeyOnUpdate :: Orville.ForeignKeyAction
+  , testForeignKeyOnDelete :: Orville.ForeignKeyAction
   }
   deriving (Show)
 
@@ -738,10 +760,15 @@ addTestTableForeignKeys targets table = do
             NEL.nonEmpty
             (take (targetColumnCount target) <$> Gen.shuffle (testTableColumns table))
 
+        onUpdateAction <- generateForeignKeyAction
+        onDeleteAction <- generateForeignKeyAction
+
         pure $
           TestForeignKey
             { testForeignKeyReferences = NEL.zip sourceColumns targetColumns
             , testForeignKeyTableName = testForeignKeyTargetTableName target
+            , testForeignKeyOnUpdate = onUpdateAction
+            , testForeignKeyOnDelete = onDeleteAction
             }
 
   chosenTargets <-
@@ -752,6 +779,16 @@ addTestTableForeignKeys targets table = do
   foreignKeys <- traverse genForeignKey chosenTargets
 
   pure $ table {testTableForeignKeys = foreignKeys}
+
+generateForeignKeyAction :: HH.Gen Orville.ForeignKeyAction
+generateForeignKeyAction =
+  Gen.element
+    [ Orville.NoAction
+    , Orville.Restrict
+    , Orville.Cascade
+    , Orville.SetNull
+    , Orville.SetDefault
+    ]
 
 generateTestIndexes :: [String] -> HH.Gen [TestIndex]
 generateTestIndexes columns =
@@ -820,9 +857,14 @@ testTableForeignKeyDefinition foreignKey =
           . Orville.unqualifiedNameToTableId
           . testForeignKeyTableName
           $ foreignKey
-   in Orville.foreignKeyConstraint
+   in Orville.foreignKeyConstraintWithOptions
         foreignTableId
         (fmap mkForeignReference $ testForeignKeyReferences foreignKey)
+        ( Orville.defaultForeignKeyOptions
+            { Orville.foreignKeyOptionsOnUpdate = testForeignKeyOnUpdate foreignKey
+            , Orville.foreignKeyOptionsOnDelete = testForeignKeyOnDelete foreignKey
+            }
+        )
 
 generateTestTableColumns :: HH.Gen [String]
 generateTestTableColumns =
@@ -842,12 +884,17 @@ mkUniqueConstraint :: NEL.NonEmpty String -> Orville.ConstraintDefinition
 mkUniqueConstraint columnList =
   Orville.uniqueConstraint (fmap Orville.stringToFieldName columnList)
 
-mkForeignKeyConstraint :: String -> NEL.NonEmpty (String, String) -> Orville.ConstraintDefinition
-mkForeignKeyConstraint foreignTableName referenceList =
+mkForeignKeyConstraint :: String -> PgAssert.ForeignKeyInfo -> Orville.ConstraintDefinition
+mkForeignKeyConstraint foreignTableName foreignKeyInfo =
   let mkForeignReference (localColumn, foreignColumn) =
         Orville.foreignReference
           (Orville.stringToFieldName localColumn)
           (Orville.stringToFieldName foreignColumn)
-   in Orville.foreignKeyConstraint
+   in Orville.foreignKeyConstraintWithOptions
         (Orville.unqualifiedNameToTableId foreignTableName)
-        (fmap mkForeignReference referenceList)
+        (fmap mkForeignReference $ PgAssert.foreignKeyInfoReferences foreignKeyInfo)
+        ( Orville.defaultForeignKeyOptions
+            { Orville.foreignKeyOptionsOnUpdate = PgAssert.foreignKeyInfoOnUpdate foreignKeyInfo
+            , Orville.foreignKeyOptionsOnDelete = PgAssert.foreignKeyInfoOnDelete foreignKeyInfo
+            }
+        )
