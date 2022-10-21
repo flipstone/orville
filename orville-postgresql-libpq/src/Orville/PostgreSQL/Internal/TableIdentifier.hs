@@ -45,12 +45,12 @@ setTableIdSchema schema tableId =
     }
 
 {- |
-  Returns the 'Expr.QualifiedTableName' that should be used to refer to the
+  Returns the 'Expr.Qualified Expr.TableName' that should be used to refer to the
   table in SQL queries.
 -}
-tableIdQualifiedName :: TableIdentifier -> Expr.QualifiedTableName
+tableIdQualifiedName :: TableIdentifier -> Expr.Qualified Expr.TableName
 tableIdQualifiedName tableId =
-  Expr.qualifiedTableName
+  Expr.qualified
     (tableIdSchemaName tableId)
     (tableIdUnqualifiedName tableId)
 

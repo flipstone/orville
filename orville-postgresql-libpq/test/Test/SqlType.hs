@@ -514,7 +514,7 @@ runDecodingTest pool test =
     Pool.withResource pool $ \connection -> do
       MIO.liftIO $ dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
-      let tableName = Expr.qualifiedTableName Nothing (Expr.tableName "decoding_test")
+      let tableName = Expr.qualified Nothing (Expr.tableName "decoding_test")
 
       MIO.liftIO . RawSql.executeVoid connection $
         Expr.insertExpr

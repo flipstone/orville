@@ -99,9 +99,9 @@ groupByTest testName test =
       rows <- MIO.liftIO $ ExecResult.readRows result
       rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
 
-testTable :: Expr.QualifiedTableName
+testTable :: Expr.Qualified Expr.TableName
 testTable =
-  Expr.qualifiedTableName Nothing (Expr.tableName "expr_test")
+  Expr.qualified Nothing (Expr.tableName "expr_test")
 
 fooColumn :: Expr.ColumnName
 fooColumn =

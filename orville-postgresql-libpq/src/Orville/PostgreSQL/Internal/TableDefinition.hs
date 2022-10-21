@@ -160,12 +160,12 @@ tableIdentifier =
   statements. If the table has a schema name set, the name will be qualified
   with it.
 -}
-tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedTableName
+tableName :: TableDefinition key writeEntity readEntity -> Expr.Qualified Expr.TableName
 tableName =
   tableIdQualifiedName . _tableIdentifier
 
 {- |
-  Set's the table's schema to the name in the given string, which will be
+  Sets the table's schema to the name in the given string, which will be
   treated as a SQL identifier. If a table has a schema name set, it will be
   included as a qualified on the table name for all queries involving the
   table.

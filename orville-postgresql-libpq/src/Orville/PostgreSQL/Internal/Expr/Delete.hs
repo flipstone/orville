@@ -8,7 +8,7 @@ where
 
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Internal.Expr.Name (QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.Name (Qualified, TableName)
 import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Internal.Expr.Where (WhereClause)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -18,7 +18,7 @@ newtype DeleteExpr
   deriving (RawSql.SqlExpression)
 
 deleteExpr ::
-  QualifiedTableName ->
+  Qualified TableName ->
   Maybe WhereClause ->
   Maybe ReturningExpr ->
   DeleteExpr

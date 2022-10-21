@@ -18,7 +18,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, Qualified, TableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype TableConstraint
@@ -73,7 +73,7 @@ foreignKeyDeleteActionExpr action =
 
 foreignKeyConstraint ::
   NonEmpty ColumnName ->
-  QualifiedTableName ->
+  Qualified TableName ->
   NonEmpty ColumnName ->
   Maybe ForeignKeyUpdateActionExpr ->
   Maybe ForeignKeyDeleteActionExpr ->

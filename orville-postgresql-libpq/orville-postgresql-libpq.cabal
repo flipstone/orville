@@ -49,10 +49,13 @@ library
       Orville.PostgreSQL.Internal.ReturningOption
       Orville.PostgreSQL.Internal.Select
       Orville.PostgreSQL.Internal.SelectOptions
+      Orville.PostgreSQL.Internal.SequenceDefinition
+      Orville.PostgreSQL.Internal.SequenceIdentifier
       Orville.PostgreSQL.Internal.SqlMarshaller
       Orville.PostgreSQL.Internal.SqlType
       Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Internal.TableDefinition
+      Orville.PostgreSQL.Internal.TableIdentifier
       Orville.PostgreSQL.Internal.Transaction
       Orville.PostgreSQL.Internal.Update
       Orville.PostgreSQL.Plan
@@ -71,6 +74,7 @@ library
       Orville.PostgreSQL.Internal.Expr.GroupBy
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByClause
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByExpr
+      Orville.PostgreSQL.Internal.Expr.IfExists
       Orville.PostgreSQL.Internal.Expr.Index
       Orville.PostgreSQL.Internal.Expr.Insert
       Orville.PostgreSQL.Internal.Expr.Insert.InsertColumnList
@@ -82,11 +86,13 @@ library
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Orville.PostgreSQL.Internal.Expr.Name.ConstraintName
       Orville.PostgreSQL.Internal.Expr.Name.CursorName
+      Orville.PostgreSQL.Internal.Expr.Name.FunctionName
       Orville.PostgreSQL.Internal.Expr.Name.Identifier
       Orville.PostgreSQL.Internal.Expr.Name.IndexName
-      Orville.PostgreSQL.Internal.Expr.Name.QualifiedTableName
+      Orville.PostgreSQL.Internal.Expr.Name.Qualified
       Orville.PostgreSQL.Internal.Expr.Name.SavepointName
       Orville.PostgreSQL.Internal.Expr.Name.SchemaName
+      Orville.PostgreSQL.Internal.Expr.Name.SequenceName
       Orville.PostgreSQL.Internal.Expr.Name.TableName
       Orville.PostgreSQL.Internal.Expr.OffsetExpr
       Orville.PostgreSQL.Internal.Expr.OrderBy
@@ -101,6 +107,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Select
       Orville.PostgreSQL.Internal.Expr.Select.SelectClause
       Orville.PostgreSQL.Internal.Expr.Select.SelectExpr
+      Orville.PostgreSQL.Internal.Expr.SequenceDefinition
       Orville.PostgreSQL.Internal.Expr.TableConstraint
       Orville.PostgreSQL.Internal.Expr.TableDefinition
       Orville.PostgreSQL.Internal.Expr.Transaction
@@ -120,11 +127,12 @@ library
       Orville.PostgreSQL.Internal.Orville
       Orville.PostgreSQL.Internal.PgTime
       Orville.PostgreSQL.Internal.QueryType
+      Orville.PostgreSQL.Internal.RowCountExpectation
       Orville.PostgreSQL.Internal.SelectOptions.OrderBy
       Orville.PostgreSQL.Internal.SelectOptions.SelectOptions
       Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
+      Orville.PostgreSQL.Internal.Sequence
       Orville.PostgreSQL.Internal.SyntheticField
-      Orville.PostgreSQL.Internal.TableIdentifier
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField
       Orville.PostgreSQL.PgCatalog.PgAttribute
@@ -133,6 +141,7 @@ library
       Orville.PostgreSQL.PgCatalog.PgConstraint
       Orville.PostgreSQL.PgCatalog.PgIndex
       Orville.PostgreSQL.PgCatalog.PgNamespace
+      Orville.PostgreSQL.PgCatalog.PgSequence
       Paths_orville_postgresql_libpq
   hs-source-dirs:
       src
@@ -174,6 +183,7 @@ test-suite spec
       Test.Expr.GroupBy
       Test.Expr.InsertUpdateDelete
       Test.Expr.OrderBy
+      Test.Expr.SequenceDefinition
       Test.Expr.TableDefinition
       Test.Expr.TestSchema
       Test.Expr.Where
@@ -183,10 +193,12 @@ test-suite spec
       Test.PgCatalog
       Test.PgGen
       Test.Plan
+      Test.PostgreSQLAxioms
       Test.Property
       Test.RawSql
       Test.ReservedWords
       Test.SelectOptions
+      Test.Sequence
       Test.SqlMarshaller
       Test.SqlType
       Test.TableDefinition

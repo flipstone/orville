@@ -1,7 +1,13 @@
 module Test.PgAssert
   ( assertTableExists,
-    assertTableDoesNotExist,
     assertTableExistsInSchema,
+    assertTableDoesNotExist,
+    assertTableDoesNotExistInSchema,
+    assertSequenceExists,
+    assertSequenceExistsInSchema,
+    assertSequenceDoesNotExist,
+    assertSequenceDoesNotExistInSchema,
+    assertRelationHasPgSequence,
     assertColumnNamesEqual,
     assertColumnExists,
     assertColumnDefaultExists,
@@ -52,20 +58,8 @@ assertTableExistsInSchema ::
   String ->
   String ->
   m PgCatalog.RelationDescription
-assertTableExistsInSchema pool schemaName tableName = do
-  dbDesc <-
-    MIO.liftIO $
-      Orville.runOrville pool $ do
-        PgCatalog.describeDatabaseRelations
-          [(String.fromString schemaName, String.fromString tableName)]
-
-  case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString tableName) dbDesc of
-    Nothing -> do
-      withFrozenCallStack $ do
-        HH.annotate $ tableName <> " table not found"
-        HH.failure
-    Just rel ->
-      pure rel
+assertTableExistsInSchema pool schemaName tableName =
+  assertRelationExistsInSchema pool schemaName tableName PgCatalog.OrdinaryTable
 
 assertTableDoesNotExistInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
@@ -73,7 +67,87 @@ assertTableDoesNotExistInSchema ::
   String ->
   String ->
   m ()
-assertTableDoesNotExistInSchema pool schemaName tableName = do
+assertTableDoesNotExistInSchema pool schemaName tableName =
+  assertRelationDoesNotExistInSchema pool schemaName tableName PgCatalog.OrdinaryTable
+
+assertSequenceExists ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  m PgCatalog.RelationDescription
+assertSequenceExists pool =
+  assertSequenceExistsInSchema pool "public"
+
+assertSequenceDoesNotExist ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  m ()
+assertSequenceDoesNotExist pool =
+  assertSequenceDoesNotExistInSchema pool "public"
+
+assertSequenceExistsInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  String ->
+  m PgCatalog.RelationDescription
+assertSequenceExistsInSchema pool schemaName sequenceName =
+  assertRelationExistsInSchema pool schemaName sequenceName PgCatalog.Sequence
+
+assertSequenceDoesNotExistInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  String ->
+  m ()
+assertSequenceDoesNotExistInSchema pool schemaName sequenceName =
+  assertRelationDoesNotExistInSchema pool schemaName sequenceName PgCatalog.Sequence
+
+assertRelationHasPgSequence ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  m PgCatalog.PgSequence
+assertRelationHasPgSequence relationDesc =
+  case PgCatalog.relationSequence relationDesc of
+    Nothing ->
+      withFrozenCallStack $ do
+        HH.annotate $ "Expected relation to have a PgSequence value, but it did not"
+        HH.failure
+    Just pgSequence ->
+      pure pgSequence
+
+assertRelationExistsInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  String ->
+  PgCatalog.RelationKind ->
+  m PgCatalog.RelationDescription
+assertRelationExistsInSchema pool schemaName relationName relationKind = do
+  dbDesc <-
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        PgCatalog.describeDatabaseRelations
+          [(String.fromString schemaName, String.fromString relationName)]
+
+  case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString relationName) dbDesc of
+    Nothing -> do
+      withFrozenCallStack $ do
+        HH.annotate $ relationName <> " relation not found"
+        HH.failure
+    Just rel -> do
+      PgCatalog.pgClassRelationKind (PgCatalog.relationRecord rel) === relationKind
+      pure rel
+
+assertRelationDoesNotExistInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Pool.Pool Conn.Connection ->
+  String ->
+  String ->
+  PgCatalog.RelationKind ->
+  m ()
+assertRelationDoesNotExistInSchema pool schemaName tableName relationKind = do
   dbDesc <-
     MIO.liftIO $
       Orville.runOrville pool $ do
@@ -83,10 +157,17 @@ assertTableDoesNotExistInSchema pool schemaName tableName = do
   case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString tableName) dbDesc of
     Nothing ->
       pure ()
-    Just _ ->
-      withFrozenCallStack $ do
-        HH.annotate $ tableName <> " table expected to not be present, but was found"
-        HH.failure
+    Just rel ->
+      if PgCatalog.pgClassRelationKind (PgCatalog.relationRecord rel) == relationKind
+        then withFrozenCallStack $ do
+          HH.annotate $
+            tableName
+              <> " relation expected to not be present with kind "
+              <> show relationKind
+              <> ", but it was found"
+
+          HH.failure
+        else pure ()
 
 assertColumnNamesEqual ::
   (HH.MonadTest m, HasCallStack) =>

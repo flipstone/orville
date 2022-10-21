@@ -85,7 +85,7 @@ selectTable tableDef =
 -}
 selectMarshalledColumns ::
   AnnotatedSqlMarshaller writeEntity readEntity ->
-  Expr.QualifiedTableName ->
+  Expr.Qualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
 selectMarshalledColumns marshaller =
@@ -110,7 +110,7 @@ selectMarshalledColumns marshaller =
 selectSelectList ::
   Expr.SelectList ->
   AnnotatedSqlMarshaller writeEntity readEntity ->
-  Expr.QualifiedTableName ->
+  Expr.Qualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
 selectSelectList selectList marshaller qualifiedTableName selectOptions =

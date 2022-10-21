@@ -110,7 +110,7 @@ varchar len =
   --  STATEMENT:  CREATE TABLE field_definition_test(foo VARCHAR($1))
   DataType $
     RawSql.fromString "VARCHAR("
-      <> RawSql.fromString (show len)
+      <> RawSql.int32DecLiteral len
       <> RawSql.fromString ")"
 
 char :: Int32 -> DataType
@@ -121,7 +121,7 @@ char len =
   --  STATEMENT:  CREATE TABLE field_definition_test(foo CHAR($1))
   DataType $
     RawSql.fromString "CHAR("
-      <> RawSql.fromString (show len)
+      <> RawSql.int32DecLiteral len
       <> RawSql.fromString ")"
 
 text :: DataType

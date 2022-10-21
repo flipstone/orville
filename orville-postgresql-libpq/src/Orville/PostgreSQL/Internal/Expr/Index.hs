@@ -11,7 +11,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, IndexName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, IndexName, Qualified, TableName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype CreateIndexExpr
@@ -20,7 +20,7 @@ newtype CreateIndexExpr
 
 createIndexExpr ::
   IndexUniqueness ->
-  QualifiedTableName ->
+  Qualified TableName ->
   NonEmpty ColumnName ->
   CreateIndexExpr
 createIndexExpr uniqueness tableName columns =

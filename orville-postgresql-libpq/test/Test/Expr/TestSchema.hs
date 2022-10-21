@@ -39,9 +39,9 @@ data FooBar = FooBar
 mkFooBar :: Int.Int32 -> String -> FooBar
 mkFooBar f b = FooBar (Just f) (Just b)
 
-fooBarTable :: Expr.QualifiedTableName
+fooBarTable :: Expr.Qualified Expr.TableName
 fooBarTable =
-  Expr.qualifiedTableName Nothing (Expr.tableName "foobar")
+  Expr.qualified Nothing (Expr.tableName "foobar")
 
 fooColumn :: Expr.ColumnName
 fooColumn =

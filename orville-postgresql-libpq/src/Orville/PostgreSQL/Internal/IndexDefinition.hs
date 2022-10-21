@@ -24,7 +24,7 @@ import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
   Orville will then add the index next time you run auto-migrations.
 -}
 data IndexDefinition = IndexDefinition
-  { _indexCreateExpr :: Expr.QualifiedTableName -> Expr.CreateIndexExpr
+  { _indexCreateExpr :: Expr.Qualified Expr.TableName -> Expr.CreateIndexExpr
   , _indexMigrationKey :: IndexMigrationKey
   }
 
@@ -50,7 +50,7 @@ indexMigrationKey = _indexMigrationKey
   Gets the SQL expression that will be used to add the index to the specified
   table.
 -}
-indexCreateExpr :: IndexDefinition -> Expr.QualifiedTableName -> Expr.CreateIndexExpr
+indexCreateExpr :: IndexDefinition -> Expr.Qualified Expr.TableName -> Expr.CreateIndexExpr
 indexCreateExpr = _indexCreateExpr
 
 {- |

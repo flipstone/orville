@@ -10,12 +10,13 @@ module Orville.PostgreSQL.Internal.Expr.ValueExpression
     columnReference,
     valueExpression,
     rowValueConstructor,
+    functionCall,
   )
 where
 
 import qualified Data.List.NonEmpty as NE
 
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, FunctionName)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -33,4 +34,12 @@ rowValueConstructor elements =
   ValueExpression $
     RawSql.leftParen
       <> RawSql.intercalate RawSql.comma elements
+      <> RawSql.rightParen
+
+functionCall :: FunctionName -> [ValueExpression] -> ValueExpression
+functionCall functionName parameters =
+  ValueExpression $
+    RawSql.toRawSql functionName
+      <> RawSql.leftParen
+      <> RawSql.intercalate RawSql.comma parameters
       <> RawSql.rightParen

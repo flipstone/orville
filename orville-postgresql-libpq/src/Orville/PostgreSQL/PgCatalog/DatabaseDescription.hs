@@ -6,6 +6,7 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
     IndexDescription (..),
     IndexMember (..),
     lookupRelation,
+    lookupRelationOfKind,
     lookupAttribute,
     lookupAttributeDefault,
     describeDatabaseRelations,
@@ -20,10 +21,11 @@ import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, AttributeNumber, PgAttribute (pgAttributeName, pgAttributeNumber), attributeIsDroppedField, attributeNumberToInt16, attributeRelationOidField, pgAttributeTable)
 import Orville.PostgreSQL.PgCatalog.PgAttributeDefault (PgAttributeDefault (pgAttributeDefaultAttributeNumber), attributeDefaultRelationOidField, pgAttributeDefaultTable)
-import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationName, namespaceOidField, pgClassTable, relationNameField, relationNameToString)
+import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationKind, RelationName, namespaceOidField, pgClassRelationKind, pgClassTable, relationNameField, relationNameToString)
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
 import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
+import Orville.PostgreSQL.PgCatalog.PgSequence (PgSequence, pgSequenceTable, sequencePgClassOidField)
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Plan.Operation as Op
@@ -37,12 +39,33 @@ data DatabaseDescription = DatabaseDescription
   { databaseRelations :: Map.Map (NamespaceName, RelationName) RelationDescription
   }
 
+{- |
+  Lookup a relation by its qualified name in the @pg_catalog@ schema.
+-}
 lookupRelation ::
   (NamespaceName, RelationName) ->
   DatabaseDescription ->
   Maybe RelationDescription
 lookupRelation key =
   Map.lookup key . databaseRelations
+
+{- |
+  Lookup a relation by its qualified name in the @pg_catalog@ schema. If the
+  relation is not of the expected kind, 'Nothing' is returned.
+-}
+lookupRelationOfKind ::
+  RelationKind ->
+  (NamespaceName, RelationName) ->
+  DatabaseDescription ->
+  Maybe RelationDescription
+lookupRelationOfKind kind key dbDesc =
+  case Map.lookup key (databaseRelations dbDesc) of
+    Just relation ->
+      if pgClassRelationKind (relationRecord relation) == kind
+        then Just relation
+        else Nothing
+    Nothing ->
+      Nothing
 
 {- |
   A description of a particular relation in the PostgreSQL database, including
@@ -54,6 +77,7 @@ data RelationDescription = RelationDescription
   , relationAttributeDefaults :: Map.Map AttributeNumber PgAttributeDefault
   , relationConstraints :: [ConstraintDescription]
   , relationIndexes :: [IndexDescription]
+  , relationSequence :: Maybe PgSequence
   }
 
 {- |
@@ -168,6 +192,7 @@ describeRelationByClass =
             <*> fmap (indexBy pgAttributeDefaultAttributeNumber) findClassAttributeDefaults
             <*> Plan.chain classAndAttributes findClassConstraints
             <*> Plan.chain classAndAttributes findClassIndexes
+            <*> Plan.using pgClass findClassSequence
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
@@ -344,6 +369,11 @@ findAttributeByNumber =
           Just attr ->
             Right attr
    in Plan.assert assertFound $ fmap lookupAttr Plan.askParam
+
+findClassSequence :: Plan.Plan scope PgClass (Maybe PgSequence)
+findClassSequence =
+  Plan.focusParam pgClassOid $
+    Plan.findMaybeOne pgSequenceTable sequencePgClassOidField
 
 indexBy :: Ord key => (row -> key) -> [row] -> Map.Map key row
 indexBy rowKey =

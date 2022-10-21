@@ -240,6 +240,36 @@ module Orville.PostgreSQL
     SelectOptions.orderByToClause,
     SelectOptions.orderByToExpr,
 
+    -- * Functions for defining and working with sequences
+    Sequence.sequenceNextValue,
+    Sequence.sequenceCurrentValue,
+    Sequence.sequenceSetValue,
+    SequenceDefinition.SequenceDefinition,
+    SequenceDefinition.mkSequenceDefinition,
+    SequenceDefinition.setSequenceSchema,
+    SequenceDefinition.sequenceIdentifier,
+    SequenceDefinition.sequenceName,
+    SequenceDefinition.sequenceIncrement,
+    SequenceDefinition.setSequenceIncrement,
+    SequenceDefinition.sequenceMinValue,
+    SequenceDefinition.setSequenceMinValue,
+    SequenceDefinition.sequenceMaxValue,
+    SequenceDefinition.setSequenceMaxValue,
+    SequenceDefinition.sequenceStart,
+    SequenceDefinition.setSequenceStart,
+    SequenceDefinition.sequenceCache,
+    SequenceDefinition.setSequenceCache,
+    SequenceDefinition.sequenceCycle,
+    SequenceDefinition.setSequenceCycle,
+    SequenceDefinition.mkCreateSequenceExpr,
+    SequenceIdentifier.SequenceIdentifier,
+    SequenceIdentifier.unqualifiedNameToSequenceId,
+    SequenceIdentifier.sequenceIdUnqualifiedNameString,
+    SequenceIdentifier.sequenceIdQualifiedName,
+    SequenceIdentifier.setSequenceIdSchema,
+    SequenceIdentifier.sequenceIdSchemaNameString,
+    SequenceIdentifier.sequenceIdToString,
+
     -- * numeric types
     SqlType.integer,
     SqlType.serial,
@@ -295,6 +325,9 @@ import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
+import qualified Orville.PostgreSQL.Internal.Sequence as Sequence
+import qualified Orville.PostgreSQL.Internal.SequenceDefinition as SequenceDefinition
+import qualified Orville.PostgreSQL.Internal.SequenceIdentifier as SequenceIdentifier
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.SyntheticField as SyntheticField

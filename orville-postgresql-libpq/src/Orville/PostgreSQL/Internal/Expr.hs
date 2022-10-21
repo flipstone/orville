@@ -14,6 +14,7 @@ import Orville.PostgreSQL.Internal.Expr.ColumnDefinition as Export
 import Orville.PostgreSQL.Internal.Expr.Cursor as Export
 import Orville.PostgreSQL.Internal.Expr.Delete as Export
 import Orville.PostgreSQL.Internal.Expr.GroupBy as Export
+import Orville.PostgreSQL.Internal.Expr.IfExists as Export
 import Orville.PostgreSQL.Internal.Expr.Index as Export
 import Orville.PostgreSQL.Internal.Expr.Insert as Export
 import Orville.PostgreSQL.Internal.Expr.LimitExpr as Export
@@ -22,6 +23,7 @@ import Orville.PostgreSQL.Internal.Expr.OffsetExpr as Export
 import Orville.PostgreSQL.Internal.Expr.OrderBy as Export
 import Orville.PostgreSQL.Internal.Expr.Query as Export
 import Orville.PostgreSQL.Internal.Expr.ReturningExpr as Export
+import Orville.PostgreSQL.Internal.Expr.SequenceDefinition as Export
 import Orville.PostgreSQL.Internal.Expr.TableConstraint as Export
 import Orville.PostgreSQL.Internal.Expr.TableDefinition as Export
 import Orville.PostgreSQL.Internal.Expr.Transaction as Export

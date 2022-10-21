@@ -70,9 +70,9 @@ prop_addMultipleColumns =
     tableDesc <- PgAssert.assertTableExists pool tableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
 
-exprTableName :: Expr.QualifiedTableName
+exprTableName :: Expr.Qualified Expr.TableName
 exprTableName =
-  Expr.qualifiedTableName Nothing (Expr.tableName tableNameString)
+  Expr.qualified Nothing (Expr.tableName tableNameString)
 
 tableNameString :: String
 tableNameString =

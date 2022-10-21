@@ -41,7 +41,7 @@ module Orville.PostgreSQL.Internal.Expr.Cursor
 where
 
 import Data.Maybe (catMaybes)
-import Prelude (Either, Int, Maybe (Just), either, fmap, show, ($), (.), (<>))
+import Prelude (Either, Int, Maybe (Just), either, fmap, ($), (.), (<>))
 
 import Orville.PostgreSQL.Internal.Expr.Name (CursorName)
 import Orville.PostgreSQL.Internal.Expr.Query (QueryExpr)
@@ -168,7 +168,7 @@ absolute countParam =
   --  LINE 1: FETCH ABSOLUTE $1 \"testcursor\"
   CursorDirection $
     RawSql.fromString "ABSOLUTE "
-      <> RawSql.fromString (show countParam)
+      <> RawSql.intDecLiteral countParam
 
 relative :: Int -> CursorDirection
 relative countParam =
@@ -179,7 +179,7 @@ relative countParam =
       -- when we try we get an error like such error:
       --  ERROR:  syntax error at or near "$1"
       --  LINE 1: FETCH RELATIVE $1 \"testcursor\"
-      RawSql.fromString (show countParam)
+      RawSql.intDecLiteral countParam
 
 count :: Int -> CursorDirection
 count countParam =
@@ -188,7 +188,7 @@ count countParam =
   --  ERROR:  syntax error at or near "$1"
   --  LINE 1: FETCH $1 \"testcursor\"
   CursorDirection $
-    RawSql.fromString (show countParam)
+    RawSql.intDecLiteral countParam
 
 fetchAll :: CursorDirection
 fetchAll =
@@ -206,7 +206,7 @@ forwardCount countParam =
   --  LINE 1: FETCH FORWARD $1 \"testcursor\"
   CursorDirection $
     RawSql.fromString "FORWARD "
-      <> RawSql.fromString (show countParam)
+      <> RawSql.intDecLiteral countParam
 
 forwardAll :: CursorDirection
 forwardAll =
@@ -224,7 +224,7 @@ backwardCount countParam =
   --  LINE 1: FETCH BACKWARD $1 \"testcursor\"
   CursorDirection $
     RawSql.fromString "BACKWARD "
-      <> RawSql.fromString (show countParam)
+      <> RawSql.intDecLiteral countParam
 
 backwardAll :: CursorDirection
 backwardAll =

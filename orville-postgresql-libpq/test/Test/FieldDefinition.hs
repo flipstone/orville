@@ -390,9 +390,9 @@ runDefaultValueInsertOnlyTest pool testCase defaultValue =
           (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
           Nothing
 
-testTable :: Expr.QualifiedTableName
+testTable :: Expr.Qualified Expr.TableName
 testTable =
-  Expr.qualifiedTableName Nothing (Expr.tableName "field_definition_test")
+  Expr.qualified Nothing (Expr.tableName "field_definition_test")
 
 dropAndRecreateTestTable :: FieldDef.FieldDefinition nullability a -> Connection.Connection -> IO ()
 dropAndRecreateTestTable fieldDef connection = do

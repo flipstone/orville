@@ -28,6 +28,13 @@ module Orville.PostgreSQL.Internal.RawSql
     doubleColon,
     stringLiteral,
 
+    -- * Integer values as literals
+    intDecLiteral,
+    int8DecLiteral,
+    int16DecLiteral,
+    int32DecLiteral,
+    int64DecLiteral,
+
     -- * Generic interface for generating sql
     SqlExpression (toRawSql, unsafeFromRawSql),
     toBytesAndParams,
@@ -46,6 +53,7 @@ import Data.DList (DList)
 import qualified Data.DList as DList
 import qualified Data.Foldable as Fold
 import Data.Functor.Identity (Identity (Identity, runIdentity))
+import qualified Data.Int as Int
 import qualified Data.List as List
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
@@ -355,3 +363,48 @@ doubleQuote = fromString "\""
 -- | Just two colons, provided for convenience
 doubleColon :: RawSql
 doubleColon = fromString "::"
+
+{- |
+  Constructs a 'RawSql' from an 'Int.Int8' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+-}
+int8DecLiteral :: Int.Int8 -> RawSql
+int8DecLiteral =
+  SqlSection . BSB.int8Dec
+
+{- |
+  Constructs a 'RawSql' from an 'Int.Int16' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+-}
+int16DecLiteral :: Int.Int16 -> RawSql
+int16DecLiteral =
+  SqlSection . BSB.int16Dec
+
+{- |
+  Constructs a 'RawSql' from an 'Int.Int32' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+-}
+int32DecLiteral :: Int.Int32 -> RawSql
+int32DecLiteral =
+  SqlSection . BSB.int32Dec
+
+{- |
+  Constructs a 'RawSql' from an 'Int.Int64' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+-}
+int64DecLiteral :: Int.Int64 -> RawSql
+int64DecLiteral =
+  SqlSection . BSB.int64Dec
+
+{- |
+  Constructs a 'RawSql' from an 'Int' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+-}
+intDecLiteral :: Int -> RawSql
+intDecLiteral =
+  SqlSection . BSB.intDec

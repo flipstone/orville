@@ -13,7 +13,7 @@ where
 
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Internal.Expr.Name (QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.Name (Qualified, TableName)
 import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Internal.Expr.Update.SetClauseList (SetClauseList)
 import Orville.PostgreSQL.Internal.Expr.Where (WhereClause)
@@ -24,7 +24,7 @@ newtype UpdateExpr
   deriving (RawSql.SqlExpression)
 
 updateExpr ::
-  QualifiedTableName ->
+  Qualified TableName ->
   SetClauseList ->
   Maybe WhereClause ->
   Maybe ReturningExpr ->

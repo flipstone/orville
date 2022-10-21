@@ -8,6 +8,8 @@ module Orville.PostgreSQL.AutoMigration
     SchemaItem,
     schemaTable,
     schemaDropTable,
+    schemaSequence,
+    schemaDropSequence,
     schemaItemSummary,
     MigrationStep,
     MigrationDataError,
@@ -46,6 +48,12 @@ data SchemaItem where
   SchemaDropTable ::
     Orville.TableIdentifier ->
     SchemaItem
+  SchemaSequence ::
+    Orville.SequenceDefinition ->
+    SchemaItem
+  SchemaDropSequence ::
+    Orville.SequenceIdentifier ->
+    SchemaItem
 
 {- |
   Retuns a one-line string describe the 'SchemaItem', suitable for a human to
@@ -61,6 +69,10 @@ schemaItemSummary item =
       "Table " <> Orville.tableIdToString (Orville.tableIdentifier tableDef)
     SchemaDropTable tableId ->
       "Drop table " <> Orville.tableIdToString tableId
+    SchemaSequence sequenceDef ->
+      "Sequence " <> Orville.sequenceIdToString (Orville.sequenceIdentifier sequenceDef)
+    SchemaDropSequence sequenceId ->
+      "Drop sequence " <> Orville.sequenceIdToString sequenceId
 
 {- |
   Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
@@ -80,6 +92,21 @@ schemaDropTable ::
   SchemaItem
 schemaDropTable =
   SchemaDropTable
+
+{- |
+  Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
+-}
+schemaSequence :: Orville.SequenceDefinition -> SchemaItem
+schemaSequence =
+  SchemaSequence
+
+{- |
+  Constructs a 'SchemaItem' that will drop the specified table if it is
+  found in the database.
+-}
+schemaDropSequence :: Orville.SequenceIdentifier -> SchemaItem
+schemaDropSequence =
+  SchemaDropSequence
 
 {- |
   A single SQL statement that will be executed in order to migrate the database
@@ -132,6 +159,7 @@ data StepType
 -}
 data MigrationDataError
   = UnableToDiscoverCurrentSchema String
+  | PgCatalogInvariantViolated String
   deriving (Show)
 
 instance Exception MigrationDataError
@@ -169,11 +197,15 @@ generateMigrationStepsWithoutTransaction schemaItems = do
 
   dbDesc <- PgCatalog.describeDatabaseRelations pgCatalogRelations
 
-  pure
-    . map migrationStep
-    . List.sortOn migrationStepType
-    . concatMap (calculateMigrationSteps currentNamespace dbDesc)
-    $ schemaItems
+  case traverse (calculateMigrationSteps currentNamespace dbDesc) schemaItems of
+    Left err ->
+      liftIO . throwIO $ err
+    Right migrationSteps ->
+      pure
+        . map migrationStep
+        . List.sortOn migrationStepType
+        . concat
+        $ migrationSteps
 
 {- |
   A convenience function for executing a list of 'MigrationStep's that has
@@ -191,31 +223,69 @@ calculateMigrationSteps ::
   PgCatalog.NamespaceName ->
   PgCatalog.DatabaseDescription ->
   SchemaItem ->
-  [MigrationStepWithType]
+  Either MigrationDataError [MigrationStepWithType]
 calculateMigrationSteps currentNamespace dbDesc schemaItem =
   case schemaItem of
     SchemaTable tableDef ->
-      let (schemaName, tableName) =
-            tableIdToPgCatalogNames
-              currentNamespace
-              (Orville.tableIdentifier tableDef)
-       in case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
-            Nothing ->
-              mkCreateTableSteps currentNamespace tableDef
-            Just relationDesc ->
-              mkAlterTableSteps currentNamespace relationDesc tableDef
+      Right $
+        let (schemaName, tableName) =
+              tableIdToPgCatalogNames
+                currentNamespace
+                (Orville.tableIdentifier tableDef)
+         in case PgCatalog.lookupRelationOfKind PgCatalog.OrdinaryTable (schemaName, tableName) dbDesc of
+              Nothing ->
+                mkCreateTableSteps currentNamespace tableDef
+              Just relationDesc ->
+                mkAlterTableSteps currentNamespace relationDesc tableDef
     SchemaDropTable tableId ->
-      let (schemaName, tableName) =
-            tableIdToPgCatalogNames currentNamespace tableId
-       in case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
+      Right $
+        let (schemaName, tableName) =
+              tableIdToPgCatalogNames currentNamespace tableId
+         in case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
+              Nothing ->
+                []
+              Just _ ->
+                let dropTableExpr =
+                      Expr.dropTableExpr
+                        Nothing
+                        (Orville.tableIdQualifiedName tableId)
+                 in [mkMigrationStepWithType AddRemoveTablesAndColumns dropTableExpr]
+    SchemaSequence sequenceDef ->
+      let (schemaName, sequenceName) =
+            sequenceIdToPgCatalogNames
+              currentNamespace
+              (Orville.sequenceIdentifier sequenceDef)
+       in case PgCatalog.lookupRelationOfKind PgCatalog.Sequence (schemaName, sequenceName) dbDesc of
             Nothing ->
-              []
-            Just _ ->
-              let dropTableExpr =
-                    Expr.dropTableExpr
-                      Nothing
-                      (Orville.tableIdQualifiedName tableId)
-               in [mkMigrationStepWithType AddRemoveTablesAndColumns dropTableExpr]
+              Right $
+                [ mkMigrationStepWithType
+                    AddRemoveTablesAndColumns
+                    (Orville.mkCreateSequenceExpr sequenceDef)
+                ]
+            Just relationDesc ->
+              case PgCatalog.relationSequence relationDesc of
+                Nothing ->
+                  Left . PgCatalogInvariantViolated $
+                    "Sequence "
+                      <> PgCatalog.namespaceNameToString schemaName
+                      <> "."
+                      <> PgCatalog.relationNameToString sequenceName
+                      <> " was found in the 'pg_class' table but no corresponding 'pg_sequence' row was found"
+                Just pgSequence ->
+                  Right $
+                    mkAlterSequenceSteps sequenceDef pgSequence
+    SchemaDropSequence sequenceId ->
+      Right $
+        let (schemaName, sequenceName) =
+              sequenceIdToPgCatalogNames currentNamespace sequenceId
+         in case PgCatalog.lookupRelationOfKind PgCatalog.Sequence (schemaName, sequenceName) dbDesc of
+              Nothing ->
+                []
+              Just _ ->
+                [ mkMigrationStepWithType
+                    AddRemoveTablesAndColumns
+                    (Expr.dropSequenceExpr Nothing (Orville.sequenceIdQualifiedName sequenceId))
+                ]
 
 {- |
   Builds 'MigrationStep's that will perform table creation. This function
@@ -350,7 +420,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
   statement.
 -}
 mkConstraintSteps ::
-  Expr.QualifiedTableName ->
+  Expr.Qualified Expr.TableName ->
   [(StepType, Expr.AlterTableAction)] ->
   [MigrationStepWithType]
 mkConstraintSteps tableName actions =
@@ -372,7 +442,7 @@ mkConstraintSteps tableName actions =
   step to perform them. Otherwise returns an empty list.
 -}
 mkAlterColumnSteps ::
-  Expr.QualifiedTableName ->
+  Expr.Qualified Expr.TableName ->
   [Expr.AlterTableAction] ->
   [MigrationStepWithType]
 mkAlterColumnSteps tableName actionExprs =
@@ -639,7 +709,7 @@ pgConstraintMigrationKey constraintDesc =
 -}
 mkAddIndexSteps ::
   Set.Set Orville.IndexMigrationKey ->
-  Expr.QualifiedTableName ->
+  Expr.Qualified Expr.TableName ->
   Orville.IndexDefinition ->
   [MigrationStepWithType]
 mkAddIndexSteps existingIndexes tableName indexDef =
@@ -744,6 +814,10 @@ schemaItemPgCatalogRelation currentNamespace item =
       tableIdToPgCatalogNames currentNamespace (Orville.tableIdentifier tableDef)
     SchemaDropTable tableId ->
       tableIdToPgCatalogNames currentNamespace tableId
+    SchemaSequence sequenceDef ->
+      sequenceIdToPgCatalogNames currentNamespace (Orville.sequenceIdentifier sequenceDef)
+    SchemaDropSequence sequenceId ->
+      sequenceIdToPgCatalogNames currentNamespace sequenceId
 
 tableIdToPgCatalogNames ::
   PgCatalog.NamespaceName ->
@@ -759,6 +833,72 @@ tableIdToPgCatalogNames currentNamespace tableId =
         String.fromString
           . Orville.tableIdUnqualifiedNameString
           $ tableId
+   in (actualNamespace, relationName)
+
+mkAlterSequenceSteps ::
+  Orville.SequenceDefinition ->
+  PgCatalog.PgSequence ->
+  [MigrationStepWithType]
+mkAlterSequenceSteps sequenceDef pgSequence =
+  let ifChanged ::
+        Eq a =>
+        (a -> expr) ->
+        (PgCatalog.PgSequence -> a) ->
+        (Orville.SequenceDefinition -> a) ->
+        Maybe expr
+      ifChanged mkChange getOld getNew =
+        if getOld pgSequence == getNew sequenceDef
+          then Nothing
+          else Just . mkChange . getNew $ sequenceDef
+
+      mbIncrementByExpr =
+        ifChanged Expr.incrementBy PgCatalog.pgSequenceIncrement Orville.sequenceIncrement
+
+      mbMinValueExpr =
+        ifChanged Expr.minValue PgCatalog.pgSequenceMin Orville.sequenceMinValue
+
+      mbMaxValueExpr =
+        ifChanged Expr.maxValue PgCatalog.pgSequenceMax Orville.sequenceMaxValue
+
+      mbStartWithExpr =
+        ifChanged Expr.startWith PgCatalog.pgSequenceStart Orville.sequenceStart
+
+      mbCacheExpr =
+        ifChanged Expr.cache PgCatalog.pgSequenceCache Orville.sequenceCache
+
+      mbCycleExpr =
+        ifChanged Expr.cycleIfTrue PgCatalog.pgSequenceCycle Orville.sequenceCycle
+
+      applyChange :: (Bool, Maybe a -> b) -> Maybe a -> (Bool, b)
+      applyChange (changed, exprF) mbArg =
+        (changed || Maybe.isJust mbArg, exprF mbArg)
+
+      (anyChanges, migrateSequenceExpr) =
+        (False, Expr.alterSequenceExpr (Orville.sequenceName sequenceDef))
+          `applyChange` mbIncrementByExpr
+          `applyChange` mbMinValueExpr
+          `applyChange` mbMaxValueExpr
+          `applyChange` mbStartWithExpr
+          `applyChange` mbCacheExpr
+          `applyChange` mbCycleExpr
+   in if anyChanges
+        then [mkMigrationStepWithType AddRemoveTablesAndColumns migrateSequenceExpr]
+        else []
+
+sequenceIdToPgCatalogNames ::
+  PgCatalog.NamespaceName ->
+  Orville.SequenceIdentifier ->
+  (PgCatalog.NamespaceName, PgCatalog.RelationName)
+sequenceIdToPgCatalogNames currentNamespace sequenceId =
+  let actualNamespace =
+        maybe currentNamespace String.fromString
+          . Orville.sequenceIdSchemaNameString
+          $ sequenceId
+
+      relationName =
+        String.fromString
+          . Orville.sequenceIdUnqualifiedNameString
+          $ sequenceId
    in (actualNamespace, relationName)
 
 currentNamespaceQuery :: Expr.QueryExpr

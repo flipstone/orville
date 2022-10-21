@@ -32,6 +32,7 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
+import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
@@ -64,12 +65,9 @@ insertAndReturnEntity ::
 insertAndReturnEntity entityTable entity = do
   returnedEntities <- insertAndReturnEntities entityTable (entity :| [])
 
-  case returnedEntities of
-    [returnedEntity] ->
-      pure returnedEntity
-    _ ->
-      liftIO . throwIO . RowCountExpectationError $
-        "insertAndReturnEntity: Expected exactly one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+  RowCountExpectation.expectExactlyOneRow
+    "insertAndReturnEntity RETURNING clause"
+    returnedEntities
 
 {- |
   Inserts a non-empty list of entities into the specified table
@@ -133,15 +131,9 @@ updateAndReturnEntity tableDef key writeEntity =
       liftIO . throwIO . EmptyUpdateError . TableDef.tableIdentifier $ tableDef
     Just update -> do
       returnedEntities <- Update.executeUpdateReturnEntities update
-
-      case returnedEntities of
-        [] ->
-          pure Nothing
-        [updatedEntity] ->
-          pure (Just updatedEntity)
-        _ ->
-          liftIO . throwIO . RowCountExpectationError $
-            "updateAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+      RowCountExpectation.expectAtMostOneRow
+        "updateAndReturnEntity RETURNING clause"
+        returnedEntities
 
 {- |
   Applies the given 'Expr.SetClause's to the rows in the table that match the
@@ -205,14 +197,9 @@ deleteAndReturnEntity entityTable key = do
 
   returnedEntities <- deleteAndReturnEntities entityTable (Just primaryKeyCondition)
 
-  case returnedEntities of
-    [] ->
-      pure Nothing
-    [updatedEntity] ->
-      pure (Just updatedEntity)
-    _ ->
-      liftIO . throwIO . RowCountExpectationError $
-        "deleteAndReturnEntity: Expected at most one row to be returned in RETURNING clause, but got " <> show (length returnedEntities)
+  RowCountExpectation.expectAtMostOneRow
+    "deleteAndReturnEntity RETURNING clause"
+    returnedEntities
 
 {- |
   Deletes all rows in the given table that match the where condition.
@@ -282,17 +269,6 @@ findEntity entityTable key =
           (TableDef.tablePrimaryKey entityTable)
           key
    in findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
-
-{- |
-  INTERNAL: This should really never get thrown in the real world. It would be
-  thrown if the returning clause from an insert statement for a single record
-  returned 0 records or more than 1 record.
--}
-newtype RowCountExpectationError
-  = RowCountExpectationError String
-  deriving (Show)
-
-instance Exception RowCountExpectationError
 
 {- |
   Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the

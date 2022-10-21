@@ -15,7 +15,7 @@ import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Internal.Expr.Insert.InsertColumnList (InsertColumnList)
 import Orville.PostgreSQL.Internal.Expr.Insert.InsertSource (InsertSource)
-import Orville.PostgreSQL.Internal.Expr.Name (QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.Name (Qualified, TableName)
 import Orville.PostgreSQL.Internal.Expr.ReturningExpr (ReturningExpr)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -24,7 +24,7 @@ newtype InsertExpr
   deriving (RawSql.SqlExpression)
 
 insertExpr ::
-  QualifiedTableName ->
+  Qualified TableName ->
   Maybe InsertColumnList ->
   InsertSource ->
   Maybe ReturningExpr ->

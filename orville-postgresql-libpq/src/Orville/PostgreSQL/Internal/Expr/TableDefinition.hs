@@ -23,8 +23,6 @@ module Orville.PostgreSQL.Internal.Expr.TableDefinition
     dropNotNull,
     DropTableExpr,
     dropTableExpr,
-    IfExists,
-    ifExists,
   )
 where
 
@@ -32,7 +30,8 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes, maybeToList)
 
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition, DataType)
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, ConstraintName, QualifiedTableName)
+import Orville.PostgreSQL.Internal.Expr.IfExists (IfExists)
+import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, ConstraintName, Qualified, TableName)
 import Orville.PostgreSQL.Internal.Expr.TableConstraint (TableConstraint)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
@@ -41,7 +40,7 @@ newtype CreateTableExpr
   deriving (RawSql.SqlExpression)
 
 createTableExpr ::
-  QualifiedTableName ->
+  Qualified TableName ->
   [ColumnDefinition] ->
   Maybe PrimaryKeyExpr ->
   [TableConstraint] ->
@@ -87,7 +86,7 @@ newtype AlterTableExpr
   = AlterTableExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-alterTableExpr :: QualifiedTableName -> NonEmpty AlterTableAction -> AlterTableExpr
+alterTableExpr :: Qualified TableName -> NonEmpty AlterTableAction -> AlterTableExpr
 alterTableExpr tableName actions =
   AlterTableExpr $
     RawSql.fromString "ALTER TABLE "
@@ -198,7 +197,7 @@ newtype DropTableExpr
   = DropTableExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-dropTableExpr :: Maybe IfExists -> QualifiedTableName -> DropTableExpr
+dropTableExpr :: Maybe IfExists -> Qualified TableName -> DropTableExpr
 dropTableExpr maybeIfExists tableName =
   DropTableExpr $
     RawSql.intercalate
@@ -209,11 +208,3 @@ dropTableExpr maybeIfExists tableName =
           , Just (RawSql.toRawSql tableName)
           ]
       )
-
-newtype IfExists
-  = IfExists RawSql.RawSql
-  deriving (RawSql.SqlExpression)
-
-ifExists :: IfExists
-ifExists =
-  IfExists $ RawSql.fromString "IF EXISTS"

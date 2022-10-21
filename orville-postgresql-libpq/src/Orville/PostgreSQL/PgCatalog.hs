@@ -13,3 +13,4 @@ import Orville.PostgreSQL.PgCatalog.PgClass as Export
 import Orville.PostgreSQL.PgCatalog.PgConstraint as Export
 import Orville.PostgreSQL.PgCatalog.PgIndex as Export
 import Orville.PostgreSQL.PgCatalog.PgNamespace as Export
+import Orville.PostgreSQL.PgCatalog.PgSequence as Export

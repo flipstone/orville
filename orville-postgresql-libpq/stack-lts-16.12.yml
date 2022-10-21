@@ -2,3 +2,5 @@
 resolver: lts-16.12
 packages:
   - .
+extra-deps:
+  - hedgehog-1.0.4

@@ -36,10 +36,10 @@ dropTableNameSql ::
   String ->
   RawSql.RawSql
 dropTableNameSql =
-  dropTableNameExprSql . Expr.qualifiedTableName Nothing . Expr.tableName
+  dropTableNameExprSql . Expr.qualified Nothing . Expr.tableName
 
 dropTableNameExprSql ::
-  Expr.QualifiedTableName ->
+  Expr.Qualified Expr.TableName ->
   RawSql.RawSql
 dropTableNameExprSql name =
   RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql name

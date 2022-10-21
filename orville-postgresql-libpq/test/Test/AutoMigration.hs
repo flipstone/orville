@@ -52,6 +52,9 @@ autoMigrationTests pool =
     , prop_addAndRemovesUniqueConstraints pool
     , prop_addAndRemovesForeignKeyConstraints pool
     , prop_addAndRemovesIndexes pool
+    , prop_createsMissingSequences pool
+    , prop_dropsRequestedSequences pool
+    , prop_altersModifiedSequences pool
     , prop_arbitrarySchemaInitialMigration pool
     ]
 
@@ -74,7 +77,10 @@ prop_createsMissingTables =
           AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
 
     length (firstTimeSteps) === 1
-    _ <- PgAssert.assertTableExists pool (Orville.tableIdUnqualifiedNameString fooTableId)
+    _ <-
+      PgAssert.assertTableExists
+        pool
+        (Orville.tableIdUnqualifiedNameString fooTableId)
     map RawSql.toExampleBytes secondTimeSteps === []
 
 prop_dropsRequestedTables :: Property.NamedDBProperty
@@ -604,6 +610,156 @@ prop_addAndRemovesIndexes =
       (PgAssert.assertIndexExists newTableDesc <$> testIndexUniqueness <*> testIndexColumns)
       newTestIndexes
     length (PgCatalog.relationIndexes newTableDesc) === length (List.nub newTestIndexes)
+
+prop_createsMissingSequences :: Property.NamedDBProperty
+prop_createsMissingSequences =
+  Property.singletonNamedDBProperty "Creates missing sequences" $ \pool -> do
+    let sequenceDef =
+          Orville.mkSequenceDefinition "migration_test_sequence"
+        sequenceId =
+          Orville.sequenceIdentifier sequenceDef
+
+    firstTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence sequenceDef]
+
+    secondTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps firstTimeSteps
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence sequenceDef]
+
+    length (firstTimeSteps) === 1
+    _ <-
+      PgAssert.assertSequenceExists
+        pool
+        (Orville.sequenceIdUnqualifiedNameString sequenceId)
+    map RawSql.toExampleBytes secondTimeSteps === []
+
+prop_dropsRequestedSequences :: Property.NamedDBProperty
+prop_dropsRequestedSequences =
+  Property.singletonNamedDBProperty "Drops requested tables" $ \pool -> do
+    let sequenceDef =
+          Orville.mkSequenceDefinition "migration_test_sequence"
+        sequenceId =
+          Orville.sequenceIdentifier sequenceDef
+
+    firstTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
+          Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateSequenceExpr sequenceDef
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropSequence sequenceId]
+
+    secondTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps firstTimeSteps
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropSequence sequenceId]
+
+    length (firstTimeSteps) === 1
+    PgAssert.assertSequenceDoesNotExist pool (Orville.sequenceIdUnqualifiedNameString sequenceId)
+    map RawSql.toExampleBytes secondTimeSteps === []
+
+prop_altersModifiedSequences :: Property.NamedDBProperty
+prop_altersModifiedSequences =
+  Property.namedDBProperty "Alters modified sequences" $ \pool -> do
+    let baseSequenceDef =
+          Orville.mkSequenceDefinition "migration_test_sequence"
+        generateIncrement =
+          Gen.choice
+            [ Gen.int64 (Range.linearFrom 1 1 maxBound)
+            , Gen.int64 (Range.linearFrom (-1) minBound (-1))
+            ]
+
+    originalSequenceDef <- HH.forAll $ do
+      increment <- generateIncrement
+      minValue <- Gen.int64 (Range.linearFrom 0 minBound (maxBound - 1))
+      maxValue <- Gen.int64 (Range.linear (minValue + 1) maxBound)
+      start <- Gen.int64 (Range.linear minValue maxValue)
+      cache <- Gen.int64 (Range.linear 1 maxBound)
+      cycleFlag <- Gen.bool
+      pure
+        . Orville.setSequenceIncrement increment
+        . Orville.setSequenceMinValue minValue
+        . Orville.setSequenceMaxValue maxValue
+        . Orville.setSequenceStart start
+        . Orville.setSequenceCache cache
+        . Orville.setSequenceCycle cycleFlag
+        $ baseSequenceDef
+
+    newSequenceDef <- HH.forAll $ do
+      mbNewIncrement <- Gen.maybe generateIncrement
+      -- The range between min and max values must contain the current next
+      -- value of the sequence for PostgreSQL to not raise an error. Because
+      -- no value has been fetched from our test sequence, that value is
+      -- the start value from the original sequence definition
+      mbNewMinValue <- Gen.maybe $ Gen.int64 (Range.linear minBound (Orville.sequenceStart originalSequenceDef))
+      mbNewMaxValue <- Gen.maybe $ Gen.int64 (Range.linear (Orville.sequenceStart originalSequenceDef + 1) maxBound)
+
+      -- The new start value must lie in the new range of the sequence. If no
+      -- changes are being made to these values then the will remain the same as
+      -- in the original sequence
+      let newMinValue = Maybe.fromMaybe (Orville.sequenceMinValue originalSequenceDef) mbNewMinValue
+          newMaxValue = Maybe.fromMaybe (Orville.sequenceMaxValue originalSequenceDef) mbNewMaxValue
+      mbNewStart <- Gen.maybe $ Gen.int64 (Range.linear newMinValue newMaxValue)
+      mbNewCache <- Gen.maybe $ Gen.int64 (Range.linear 1 maxBound)
+      mbNewCycleFlag <- Gen.maybe Gen.bool
+      pure
+        . maybe id Orville.setSequenceIncrement mbNewIncrement
+        . maybe id Orville.setSequenceMinValue mbNewMinValue
+        . maybe id Orville.setSequenceMaxValue mbNewMaxValue
+        . maybe id Orville.setSequenceStart mbNewStart
+        . maybe id Orville.setSequenceCache mbNewCache
+        . maybe id Orville.setSequenceCycle mbNewCycleFlag
+        $ originalSequenceDef
+
+    firstTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName originalSequenceDef)
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence originalSequenceDef]
+
+    HH.annotate ("First time steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
+    length (firstTimeSteps) === 1
+
+    secondTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps firstTimeSteps
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence newSequenceDef]
+
+    HH.annotate ("Second time steps: " <> show (map RawSql.toExampleBytes secondTimeSteps))
+    assertSequenceExistsMatching pool originalSequenceDef
+
+    thirdTimeSteps <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationSteps secondTimeSteps
+          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence newSequenceDef]
+
+    assertSequenceExistsMatching pool newSequenceDef
+    map RawSql.toExampleBytes thirdTimeSteps === []
+
+assertSequenceExistsMatching ::
+  (HH.MonadTest m, MIO.MonadIO m) =>
+  Pool.Pool Conn.Connection ->
+  Orville.SequenceDefinition ->
+  m ()
+assertSequenceExistsMatching pool sequenceDef = do
+  sequenceRelation <-
+    PgAssert.assertSequenceExists
+      pool
+      (Orville.sequenceIdUnqualifiedNameString . Orville.sequenceIdentifier $ sequenceDef)
+  pgSequence <- PgAssert.assertRelationHasPgSequence sequenceRelation
+  PgCatalog.pgSequenceIncrement pgSequence === Orville.sequenceIncrement sequenceDef
+  PgCatalog.pgSequenceStart pgSequence === Orville.sequenceStart sequenceDef
+  PgCatalog.pgSequenceMin pgSequence === Orville.sequenceMinValue sequenceDef
+  PgCatalog.pgSequenceMax pgSequence === Orville.sequenceMaxValue sequenceDef
+  PgCatalog.pgSequenceCache pgSequence === Orville.sequenceCache sequenceDef
+  PgCatalog.pgSequenceCycle pgSequence === Orville.sequenceCycle sequenceDef
 
 prop_arbitrarySchemaInitialMigration :: Property.NamedDBProperty
 prop_arbitrarySchemaInitialMigration =

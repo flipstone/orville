@@ -41,10 +41,13 @@ library:
     - Orville.PostgreSQL.Internal.ReturningOption
     - Orville.PostgreSQL.Internal.Select
     - Orville.PostgreSQL.Internal.SelectOptions
+    - Orville.PostgreSQL.Internal.SequenceDefinition
+    - Orville.PostgreSQL.Internal.SequenceIdentifier
     - Orville.PostgreSQL.Internal.SqlMarshaller
     - Orville.PostgreSQL.Internal.SqlType
     - Orville.PostgreSQL.Internal.SqlValue
     - Orville.PostgreSQL.Internal.TableDefinition
+    - Orville.PostgreSQL.Internal.TableIdentifier
     - Orville.PostgreSQL.Internal.Transaction
     - Orville.PostgreSQL.Internal.Update
     - Orville.PostgreSQL.Plan
