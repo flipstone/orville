@@ -10,9 +10,7 @@ module Orville.PostgreSQL.Internal.ConstraintDefinition
     constraintMigrationKey,
     constraintSqlExpr,
     ForeignKeyAction (..),
-    ForeignKeyOptions,
-    foreignKeyOptionsOnDelete,
-    foreignKeyOptionsOnUpdate,
+    ForeignKeyOptions (foreignKeyOptionsOnDelete, foreignKeyOptionsOnUpdate),
     defaultForeignKeyOptions,
   )
 where
