@@ -51,6 +51,10 @@ data PgConstraint = PgConstraint
   , -- | For foreignkey constraints, the attribute numbers of the referenced columns. These
     -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
     pgConstraintForeignKey :: Maybe [AttributeNumber]
+  , -- | For foreignkey constraints, the on update action type
+    pgConstraintForeignKeyOnUpdateType :: Maybe Orville.ForeignKeyAction
+  , -- | For foreignkey constraints, the on delete action type
+    pgConstraintForeignKeyOnDeleteType :: Maybe Orville.ForeignKeyAction
   }
 
 {- |
@@ -115,6 +119,40 @@ pgTextToConstraintType text =
     typ -> Left ("Unrecognized PostgreSQL constraint type: " <> typ)
 
 {- |
+  Converts a 'Maybe Orville.ForeignKeyAction' to the corresponding single character
+  text representation used by PostgreSQL.
+
+  See also 'pgTextToForeignKeyAction'
+-}
+foreignKeyActionToPgText :: Maybe Orville.ForeignKeyAction -> T.Text
+foreignKeyActionToPgText mbfkAction =
+  T.pack $
+    case mbfkAction of
+      Just Orville.NoAction -> "a"
+      Just Orville.Restrict -> "r"
+      Just Orville.Cascade -> "c"
+      Just Orville.SetNull -> "n"
+      Just Orville.SetDefault -> "d"
+      Nothing -> " "
+
+{- |
+  Attempts to parse a PostgreSQL single character textual value as a
+  'Maybe Orville.ForeignKeyAction'
+
+  See also 'foreignKeyActionToPgText'
+-}
+pgTextToForeignKeyAction :: T.Text -> Either String (Maybe Orville.ForeignKeyAction)
+pgTextToForeignKeyAction text =
+  case T.unpack text of
+    "a" -> Right $ Just Orville.NoAction
+    "r" -> Right $ Just Orville.Restrict
+    "c" -> Right $ Just Orville.Cascade
+    "n" -> Right $ Just Orville.SetNull
+    "d" -> Right $ Just Orville.SetDefault
+    " " -> Right Nothing
+    typ -> Left ("Unrecognized PostgreSQL foreign key action type: " <> typ)
+
+{- |
   An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_constraint@ table
 -}
@@ -138,6 +176,8 @@ pgConstraintMarshaller =
     <*> Orville.marshallField pgConstraintKey constraintKeyField
     <*> Orville.marshallField pgConstraintForeignRelationOid constraintForeignRelationOidField
     <*> Orville.marshallField pgConstraintForeignKey constraintForeignKeyField
+    <*> Orville.marshallField pgConstraintForeignKeyOnUpdateType constraintForeignKeyOnUpdateTypeField
+    <*> Orville.marshallField pgConstraintForeignKeyOnDeleteType constraintForeignKeyOnDeleteTypeField
 
 {- |
   The @conname@ column of the @pg_constraint@ table
@@ -203,6 +243,18 @@ constraintForeignKeyField =
     Orville.convertField
       (Orville.tryConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
       (Orville.unboundedTextField "confkey")
+
+constraintForeignKeyOnUpdateTypeField :: Orville.FieldDefinition Orville.NotNull (Maybe Orville.ForeignKeyAction)
+constraintForeignKeyOnUpdateTypeField =
+  Orville.convertField
+    (Orville.tryConvertSqlType foreignKeyActionToPgText pgTextToForeignKeyAction)
+    (Orville.unboundedTextField "confupdtype")
+
+constraintForeignKeyOnDeleteTypeField :: Orville.FieldDefinition Orville.NotNull (Maybe Orville.ForeignKeyAction)
+constraintForeignKeyOnDeleteTypeField =
+  Orville.convertField
+    (Orville.tryConvertSqlType foreignKeyActionToPgText pgTextToForeignKeyAction)
+    (Orville.unboundedTextField "confdeltype")
 
 pgArrayTextToAttributeNumberList :: T.Text -> Either String [AttributeNumber]
 pgArrayTextToAttributeNumberList text =
