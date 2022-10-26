@@ -9,6 +9,7 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
     lookupAttribute,
     lookupAttributeDefault,
     describeDatabaseRelations,
+    describeRelationByClass,
   )
 where
 
