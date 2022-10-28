@@ -1,4 +1,7 @@
-module Test.SqlCommenter (sqlCommenterTests) where
+module Test.SqlCommenter
+  ( sqlCommenterTests
+  )
+where
 
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
@@ -15,10 +18,10 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 
 import Test.Expr.TestSchema
-  ( assertEqualFooBarRows, -- barColumn,
+  ( assertEqualFooBarRows,
     dropAndRecreateTestTable,
     findAllFooBars,
-    fooBarTable, -- fooColumn,
+    fooBarTable,
     insertFooBarSource,
     mkFooBar,
   )
@@ -43,7 +46,7 @@ prop_sqlcommenterEscaped =
               <> RawSql.fromString "WHERE id = 1"
 
         expectedBytes =
-          B8.pack "SELECT * FROM foo WHERE id = 1/*key='value',keyForEscapedValue='queryParam%3Dfoo%20bar%2Fbaz-fizz',keyWith%27InIt='valueWith%27InIt',orm='orville'*/"
+          B8.pack "SELECT * FROM foo WHERE id = 1 /*key='value',keyForEscapedValue='queryParam%3Dfoo%20bar%2Fbaz-fizz',keyWith%27InIt='valueWith%27InIt',orm='orville'*/"
 
         (actualBytes, actualParams) =
           runIdentity $

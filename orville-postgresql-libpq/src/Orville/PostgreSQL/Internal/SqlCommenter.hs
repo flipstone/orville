@@ -9,7 +9,11 @@ Stability : unstable
 This module provides the very basics for [sqlcommenter](https://google.github.io/sqlcommenter)
 support.
 -}
-module Orville.PostgreSQL.Internal.SqlCommenter (SqlCommenter, addComment) where
+module Orville.PostgreSQL.Internal.SqlCommenter
+  ( SqlCommenter
+  , addComment
+  )
+where
 
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -70,9 +74,10 @@ valueSerialization :: SqlCommenter -> SqlCommenter
 valueSerialization =
   fmap (wrapInSingleQuote . escapeQuote . escapeText)
 
+-- Here we ensure there is a space before the comment
 wrapInSqlComment :: T.Text -> T.Text
 wrapInSqlComment txt =
-  T.pack "/*" <> txt <> T.pack "*/"
+  T.pack " /*" <> txt <> T.pack "*/"
 
 wrapInSingleQuote :: T.Text -> T.Text
 wrapInSingleQuote txt =
