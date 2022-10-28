@@ -45,7 +45,7 @@ prop_transactionsWithoutExceptionsCommit =
 
         Orville.runOrville pool $ do
           TransactionUtil.runNestedTransactions nestingLevel $ \_ ->
-            Orville.insertEntity tracerTable Tracer
+            Monad.void $ Orville.insertEntity tracerTable Tracer
           Orville.findEntitiesBy tracerTable mempty
 
     length tracers === nestingLevel
@@ -63,7 +63,7 @@ prop_exceptionsLeadToTransactionRollback =
         Orville.runOrville pool $ do
           TransactionUtil.silentlyHandleTestError $
             TransactionUtil.runNestedTransactions nestingLevel $ \level -> do
-              Orville.insertEntity tracerTable Tracer
+              _ <- Orville.insertEntity tracerTable Tracer
               Monad.when (level >= nestingLevel) TransactionUtil.throwTestError
 
           Orville.findEntitiesBy tracerTable mempty
@@ -78,12 +78,12 @@ prop_savepointsRollbackInnerTransactions =
 
     let innerActions =
           TransactionUtil.runNestedTransactions innerNestingLevel $ \level -> do
-            Orville.insertEntity tracerTable Tracer
+            _ <- Orville.insertEntity tracerTable Tracer
             Monad.when (level >= innerNestingLevel) TransactionUtil.throwTestError
 
         outerActions =
           TransactionUtil.runNestedTransactions outerNestingLevel $ \level -> do
-            Orville.insertEntity tracerTable Tracer
+            _ <- Orville.insertEntity tracerTable Tracer
             Monad.when (level >= outerNestingLevel) $
               TransactionUtil.silentlyHandleTestError innerActions
 

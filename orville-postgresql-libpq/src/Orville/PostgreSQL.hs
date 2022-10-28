@@ -305,6 +305,7 @@ module Orville.PostgreSQL
       ),
     Expr.QueryExpr,
     Execute.executeAndDecode,
+    Execute.executeAndReturnAffectedRows,
     Execute.executeVoid,
     QueryType.QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery),
   )

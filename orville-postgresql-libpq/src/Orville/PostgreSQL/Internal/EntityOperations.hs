@@ -40,13 +40,14 @@ import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableId
 import qualified Orville.PostgreSQL.Internal.Update as Update
 
 {- |
-  Inserts a entity into the specified table.
+  Inserts a entity into the specified table. Returns the number of rows
+  affected by the query.
 -}
 insertEntity ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition key writeEntity readEntity ->
   writeEntity ->
-  m ()
+  m Int
 insertEntity entityTable entity =
   insertEntities entityTable (entity :| [])
 
@@ -70,13 +71,14 @@ insertAndReturnEntity entityTable entity = do
     returnedEntities
 
 {- |
-  Inserts a non-empty list of entities into the specified table
+  Inserts a non-empty list of entities into the specified table. Returns the
+  number of rows affected by the query.
 -}
 insertEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  m ()
+  m Int
 insertEntities tableDef =
   Insert.executeInsert . Insert.insertToTable tableDef
 
@@ -96,14 +98,15 @@ insertAndReturnEntities tableDef =
   Insert.executeInsertReturnEntities . Insert.insertToTableReturning tableDef
 
 {- |
-  Updates the row with the given key in with the data given by 'writeEntity'
+  Updates the row with the given key in with the data given by 'writeEntity'.
+  Returns the number of rows affected by the query.
 -}
 updateEntity ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
-  m ()
+  m Int
 updateEntity tableDef key writeEntity =
   case Update.updateToTable tableDef key writeEntity of
     Nothing ->
@@ -139,13 +142,14 @@ updateAndReturnEntity tableDef key writeEntity =
   Applies the given 'Expr.SetClause's to the rows in the table that match the
   given where condition. The easiest way to construct a 'Expr.SetClause' is
   via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
+  Returns the number of rows affected by the query.
 -}
 updateFields ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
   Maybe SelectOptions.WhereCondition ->
-  m ()
+  m Int
 updateFields tableDef setClauses mbWhereCondition =
   Update.executeUpdate $
     Update.updateToTableFields tableDef setClauses mbWhereCondition
@@ -165,13 +169,14 @@ updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
     Update.updateToTableFieldsReturning tableDef setClauses mbWhereCondition
 
 {- |
-  Deletes the row with the given key
+  Deletes the row with the given key. Returns the number of rows affected
+  by the query.
 -}
 deleteEntity ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   key ->
-  m ()
+  m Int
 deleteEntity entityTable key =
   let primaryKeyCondition =
         PrimaryKey.primaryKeyEquals
@@ -202,13 +207,14 @@ deleteAndReturnEntity entityTable key = do
     returnedEntities
 
 {- |
-  Deletes all rows in the given table that match the where condition.
+  Deletes all rows in the given table that match the where condition. Returns
+  the number of rows affected by the query.
 -}
 deleteEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition key writeEntity readEntity ->
   Maybe SelectOptions.WhereCondition ->
-  m ()
+  m Int
 deleteEntities entityTable whereCondition =
   Delete.executeDelete $
     Delete.deleteFromTable entityTable whereCondition

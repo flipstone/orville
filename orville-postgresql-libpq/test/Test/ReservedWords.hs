@@ -29,7 +29,7 @@ reservedWordsTests pool =
                 TestTable.dropAndRecreateTableDef connection User.table
 
               Orville.runOrville pool $ do
-                Orville.insertEntity User.table originalUser
+                _ <- Orville.insertEntity User.table originalUser
                 Orville.findEntitiesBy User.table mempty
 
           usersFromDB HH.=== [originalUser]

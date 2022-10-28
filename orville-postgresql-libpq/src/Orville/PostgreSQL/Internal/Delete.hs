@@ -46,14 +46,15 @@ deleteFromDeleteExpr (Delete expr) = expr
 deleteFromDeleteExpr (DeleteReturning _ expr) = expr
 
 {- |
-  Excutes the database query for the 'Delete' and returns '()'.
+  Excutes the database query for the 'Delete' and returns the number of
+  rows affected by the query.
 -}
 executeDelete ::
   MonadOrville.MonadOrville m =>
   Delete readEntity NoReturningClause ->
-  m ()
+  m Int
 executeDelete (Delete expr) =
-  Execute.executeVoid QueryType.DeleteQuery expr
+  Execute.executeAndReturnAffectedRows QueryType.DeleteQuery expr
 
 {- | Excutes the database query for the 'Delete' and uses its 'SqlMarshaller' to decode the rows (that
   were just deleteed) as returned via a RETURNING clause.

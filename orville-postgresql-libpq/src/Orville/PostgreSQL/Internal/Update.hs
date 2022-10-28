@@ -44,11 +44,12 @@ updateToUpdateExpr (UpdateNoReturning expr) = expr
 updateToUpdateExpr (UpdateReturning _ expr) = expr
 
 {- |
-  Executes the database query for the 'Update' and returns '()'.
+  Executes the database query for the 'Update' and returns the number of
+  affected rows
 -}
-executeUpdate :: MonadOrville.MonadOrville m => Update readEntity returningClause -> m ()
+executeUpdate :: MonadOrville.MonadOrville m => Update readEntity returningClause -> m Int
 executeUpdate =
-  Execute.executeVoid QueryType.UpdateQuery . updateToUpdateExpr
+  Execute.executeAndReturnAffectedRows QueryType.UpdateQuery . updateToUpdateExpr
 
 {- |
   Executes the database query for the 'Update' and uses its

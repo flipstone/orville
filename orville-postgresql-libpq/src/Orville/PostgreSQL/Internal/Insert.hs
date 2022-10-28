@@ -48,14 +48,15 @@ insertToInsertExpr (Insert _ expr) = expr
 insertToInsertExpr (InsertReturning _ expr) = expr
 
 {- |
-  Excutes the database query for the 'Insert' and returns '()'.
+  Excutes the database query for the 'Insert' and returns the number of rows
+  affected by the query
 -}
 executeInsert ::
   MonadOrville.MonadOrville m =>
   Insert readEntity NoReturningClause ->
-  m ()
+  m Int
 executeInsert (Insert _ expr) =
-  Execute.executeVoid QueryType.InsertQuery expr
+  Execute.executeAndReturnAffectedRows QueryType.InsertQuery expr
 
 {- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
   were just inserted) as returned via a RETURNING clause.

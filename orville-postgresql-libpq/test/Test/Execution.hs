@@ -20,6 +20,8 @@ executionTests pool =
     "Execution"
     [ prop_executeVoidCallbacks pool
     , prop_executeAndDecodeCallbacks pool
+    , prop_executeAndReturnAffectedRows pool
+    , prop_executeAndReturnAffectedRowsCallbacks pool
     ]
 
 prop_executeVoidCallbacks :: Property.NamedDBProperty
@@ -61,6 +63,40 @@ prop_executeAndDecodeCallbacks =
               . Orville.addSqlExecutionCallback (appendTrace traceRef "Inner")
           )
           (Orville.executeAndDecode Orville.SelectQuery selectOne marshaller)
+
+    callbackTrace <- HH.evalIO $ IORef.readIORef traceRef
+    callbackTrace
+      === [ ("Outer", Orville.SelectQuery, RawSql.toExampleBytes selectOne)
+          , ("Inner", Orville.SelectQuery, RawSql.toExampleBytes selectOne)
+          ]
+
+prop_executeAndReturnAffectedRows :: Property.NamedDBProperty
+prop_executeAndReturnAffectedRows =
+  Property.singletonNamedDBProperty "executeAndReturnAffectedRows works as advertised" $ \pool -> do
+    let selectOne =
+          RawSql.fromString "SELECT 1 as number"
+
+    affectedRows <-
+      HH.evalIO . Orville.runOrville pool $ do
+        Orville.executeAndReturnAffectedRows Orville.UpdateQuery selectOne
+
+    affectedRows === 1
+
+prop_executeAndReturnAffectedRowsCallbacks :: Property.NamedDBProperty
+prop_executeAndReturnAffectedRowsCallbacks =
+  Property.singletonNamedDBProperty "executeAndReturnAffectedRows makes execution callbacks" $ \pool -> do
+    traceRef <- HH.evalIO $ IORef.newIORef []
+
+    let selectOne =
+          RawSql.fromString "SELECT 1 as number"
+
+    _ <-
+      HH.evalIO . Orville.runOrville pool $
+        Orville.localOrvilleState
+          ( Orville.addSqlExecutionCallback (appendTrace traceRef "Outer")
+              . Orville.addSqlExecutionCallback (appendTrace traceRef "Inner")
+          )
+          (Orville.executeAndReturnAffectedRows Orville.SelectQuery selectOne)
 
     callbackTrace <- HH.evalIO $ IORef.readIORef traceRef
     callbackTrace
