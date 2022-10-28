@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Internal.RawSql
   ( RawSql,
     parameter,
     fromString,
+    fromText,
     fromBytes,
     intercalate,
     execute,
@@ -55,6 +56,8 @@ import qualified Data.Foldable as Fold
 import Data.Functor.Identity (Identity (Identity, runIdentity))
 import qualified Data.Int as Int
 import qualified Data.List as List
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TextEnc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Orville.PostgreSQL.Connection (Connection)
@@ -257,6 +260,17 @@ buildSqlWithProgress escaping progress rawSql =
 fromString :: String -> RawSql
 fromString =
   SqlSection . BSB.stringUtf8
+
+{- |
+  Constructs a 'RawSql' from a 'Text' value using utf8 encoding.
+
+  Note that because the text is treated as raw sql it completely up to the
+  caller to protected againt sql-injections attacks when using this function.
+  Never use this function with input read from an untrusted source.
+-}
+fromText :: T.Text -> RawSql
+fromText =
+  SqlSection . TextEnc.encodeUtf8Builder
 
 {- |
   Constructs a 'RawSql' from a 'ByteString' value, which is assumed to be

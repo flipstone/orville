@@ -308,6 +308,10 @@ module Orville.PostgreSQL
     Execute.executeAndReturnAffectedRows,
     Execute.executeVoid,
     QueryType.QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery),
+
+    -- * [sqlcommenter](https://google.github.io/sqlcommenter/) support.
+    SqlCommenter.SqlCommenter,
+    SqlCommenter.addComment,
   )
 where
 
@@ -329,6 +333,7 @@ import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.Sequence as Sequence
 import qualified Orville.PostgreSQL.Internal.SequenceDefinition as SequenceDefinition
 import qualified Orville.PostgreSQL.Internal.SequenceIdentifier as SequenceIdentifier
+import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.SyntheticField as SyntheticField

@@ -10,6 +10,7 @@ import qualified Hedgehog as HH
 import qualified System.Exit as SE
 
 import qualified Orville.PostgreSQL.Connection as Connection
+
 import qualified Test.AutoMigration as AutoMigration
 import qualified Test.Connection as Connection
 import qualified Test.Cursor as Cursor
@@ -32,6 +33,7 @@ import qualified Test.RawSql as RawSql
 import qualified Test.ReservedWords as ReservedWords
 import qualified Test.SelectOptions as SelectOptions
 import qualified Test.Sequence as Sequence
+import qualified Test.SqlCommenter as SqlCommenter
 import qualified Test.SqlMarshaller as SqlMarshaller
 import qualified Test.SqlType as SqlType
 import qualified Test.TableDefinition as TableDefinition
@@ -68,6 +70,7 @@ main = do
       , AutoMigration.autoMigrationTests pool
       , EntityTrace.entityTraceTests pool
       , Cursor.cursorTests pool
+      , SqlCommenter.sqlCommenterTests pool
       ]
 
   Monad.unless (Property.allPassed summary) SE.exitFailure
