@@ -10,8 +10,8 @@ This module provides the very basics for [sqlcommenter](https://google.github.io
 support.
 -}
 module Orville.PostgreSQL.Internal.SqlCommenter
-  ( SqlCommenter
-  , addComment
+  ( SqlCommenter,
+    addComment,
   )
 where
 

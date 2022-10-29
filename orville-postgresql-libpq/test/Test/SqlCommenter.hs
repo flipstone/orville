@@ -1,5 +1,5 @@
 module Test.SqlCommenter
-  ( sqlCommenterTests
+  ( sqlCommenterTests,
   )
 where
 
