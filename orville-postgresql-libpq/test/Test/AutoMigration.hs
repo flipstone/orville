@@ -51,10 +51,10 @@ autoMigrationTests pool =
     , prop_respectsImplicitDefaultOnSerialFields pool
     , prop_addAndRemovesUniqueConstraints pool
     , prop_addAndRemovesForeignKeyConstraints pool
-    , prop_addAndRemovesIndexes pool
     , prop_createsMissingSequences pool
     , prop_dropsRequestedSequences pool
     , prop_altersModifiedSequences pool
+    , prop_addsAndRemovesMixedIndexes pool
     , prop_arbitrarySchemaInitialMigration pool
     ]
 
@@ -551,25 +551,25 @@ prop_addAndRemovesForeignKeyConstraints =
     Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newForeignKeyInfos
     length (PgCatalog.relationConstraints tableDesc) === length (List.nub newForeignKeyInfos)
 
-prop_addAndRemovesIndexes :: Property.NamedDBProperty
-prop_addAndRemovesIndexes =
-  Property.namedDBProperty "Adds and removes indexes" $ \pool -> do
+prop_addsAndRemovesMixedIndexes :: Property.NamedDBProperty
+prop_addsAndRemovesMixedIndexes =
+  Property.namedDBProperty "Adds and removes named indexes" $ \pool -> do
     let genColumnList =
           Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
 
     originalColumns <- HH.forAll genColumnList
-    originalTestIndexes <- HH.forAll $ generateTestIndexes originalColumns
+    originalTestIndexes <- HH.forAll $ generateTestIndexes originalColumns "migration_test"
     newColumns <- HH.forAll genColumnList
-    newTestIndexes <- HH.forAll $ generateTestIndexes newColumns
+    newTestIndexes <- HH.forAll $ generateTestIndexes newColumns "migration_test"
 
     let columnsToDrop =
           originalColumns \\ newColumns
 
         originalIndexes =
-          fmap mkTestIndexDefinition originalTestIndexes
+          fmap mkIndexDefinition originalTestIndexes
 
         newIndexes =
-          fmap mkTestIndexDefinition newTestIndexes
+          fmap mkIndexDefinition newTestIndexes
 
         originalTableDef =
           Orville.addTableIndexes originalIndexes $
@@ -836,7 +836,8 @@ data TestTable = TestTable
   deriving (Show)
 
 data TestIndex = TestIndex
-  { testIndexUniqueness :: Orville.IndexUniqueness
+  { testIndexName :: Maybe String
+  , testIndexUniqueness :: Orville.IndexUniqueness
   , testIndexColumns :: NEL.NonEmpty String
   }
   deriving (Show, Eq)
@@ -861,21 +862,36 @@ testTableForeignKeyTargets testTable =
     (TestForeignKeyTarget $ testTableName testTable)
     (testTableUniqueConstraints testTable)
 
-mkTestIndexDefinition :: TestIndex -> Orville.IndexDefinition
-mkTestIndexDefinition testIndex =
-  Orville.mkIndexDefinition
-    (testIndexUniqueness testIndex)
-    (Orville.stringToFieldName <$> testIndexColumns testIndex)
+mkIndexDefinition :: TestIndex -> Orville.IndexDefinition
+mkIndexDefinition testIndex =
+  case testIndexName testIndex of
+    Just name ->
+      -- If the test index has a name, use it to test Orville's support for
+      -- customed, named indexes
+      let indexColumns =
+            RawSql.intercalate RawSql.comma $
+              fmap Expr.columnName (testIndexColumns testIndex)
+       in Orville.mkNamedIndexDefinition
+            (testIndexUniqueness testIndex)
+            name
+            (RawSql.leftParen <> indexColumns <> RawSql.rightParen)
+    Nothing ->
+      -- If the test index has no name, use it to test Orville's support for
+      -- unnamed indexes
+      Orville.mkIndexDefinition
+        (testIndexUniqueness testIndex)
+        (Orville.stringToFieldName <$> testIndexColumns testIndex)
 
 generateTestTable :: HH.Gen TestTable
 generateTestTable = do
   columns <- generateTestTableColumns
 
-  TestTable
-    <$> PgGen.pgIdentifier
-    <*> pure columns
+  tableName <- PgGen.pgIdentifierWithPrefix "t_"
+
+  TestTable tableName
+    <$> pure columns
     <*> Gen.subsequence columns
-    <*> generateTestIndexes columns
+    <*> generateTestIndexes columns tableName
     <*> generateTestUniqueConstraints columns
     <*> pure [] -- No foreign keys can be generated until we've generate test tables
 
@@ -946,14 +962,20 @@ generateForeignKeyAction =
     , Orville.SetDefault
     ]
 
-generateTestIndexes :: [String] -> HH.Gen [TestIndex]
-generateTestIndexes columns =
-  fmap Maybe.catMaybes $
+generateTestIndexes :: [String] -> String -> HH.Gen [TestIndex]
+generateTestIndexes columns tableName = do
+  testIndices <- fmap Maybe.catMaybes $
     Gen.list (Range.linear 0 10) $ do
+      -- The use of `take 8` is to avoid creating a prefix that would be truncated
+      -- but is also long enough to avoid collision when generating indexes for
+      -- an arbitrary amount of tables
+      indexName <- Gen.maybe $ PgGen.pgIdentifierWithPrefix ((take 8 tableName) <> "i_")
       subcolumns <- Gen.subsequence columns
       maybeNonEmptyColumns <- NEL.nonEmpty <$> Gen.shuffle subcolumns
       uniqueness <- Gen.element [Orville.UniqueIndex, Orville.NonUniqueIndex]
-      pure $ fmap (TestIndex uniqueness) maybeNonEmptyColumns
+      pure $ fmap (TestIndex indexName uniqueness) maybeNonEmptyColumns
+
+  pure $ (List.nubBy (Function.on (==) testIndexColumns)) testIndices
 
 generateTestUniqueConstraints :: [String] -> HH.Gen [NEL.NonEmpty String]
 generateTestUniqueConstraints columns =
@@ -970,7 +992,7 @@ testTableSchemaItem testTable =
       addTableItems tableDef =
         Orville.addTableConstraints (testTableForeignKeyDefinition <$> testTableForeignKeys testTable)
           . Orville.addTableConstraints (mkUniqueConstraint <$> testTableUniqueConstraints testTable)
-          . Orville.addTableIndexes (mkTestIndexDefinition <$> testTableIndexes testTable)
+          . Orville.addTableIndexes (mkIndexDefinition <$> testTableIndexes testTable)
           . Orville.setTableSchema "orville_migration_test"
           $ tableDef
    in case testTablePrimaryKeyDefinition testTable of

@@ -386,7 +386,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
 
       existingIndexes =
         Set.fromList
-          . Maybe.mapMaybe pgIndexMigrationKey
+          . concatMap pgIndexMigrationKeys
           . filter (not . isSystemIndex)
           . PgCatalog.relationIndexes
           $ relationDesc
@@ -720,7 +720,7 @@ mkAddIndexSteps existingIndexes tableName indexDef =
         else [mkMigrationStepWithType AddIndexes (Orville.indexCreateExpr indexDef tableName)]
 
 {- |
-  Builds migration steps to create an index if it does not exist.
+  Builds migration steps to drop an index if it should not exist.
 -}
 mkDropIndexSteps ::
   Set.Set Orville.IndexMigrationKey ->
@@ -728,10 +728,10 @@ mkDropIndexSteps ::
   PgCatalog.IndexDescription ->
   [MigrationStepWithType]
 mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
-  case pgIndexMigrationKey indexDesc of
-    Nothing ->
+  case pgIndexMigrationKeys indexDesc of
+    [] ->
       []
-    Just indexKey ->
+    indexKeys ->
       let pgClass =
             PgCatalog.indexPgClass indexDesc
 
@@ -743,7 +743,7 @@ mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
 
           indexOid =
             PgCatalog.pgClassOid pgClass
-       in if Set.member indexKey indexesToKeep
+       in if any (flip Set.member indexesToKeep) indexKeys
             || Set.member indexOid systemIndexOids
             then []
             else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr indexName)]
@@ -775,16 +775,34 @@ pgConstraintImpliedIndexOid pgConstraint =
       Nothing
 
 {- |
-  Builds the orville migration key for a description of an existing index
+  Builds the orville migration keys given a description of an existing index
   so that it can be compared with indexs found in a table definition.
 
   If the description includes expressions as members of the index rather than
   simple attributes, 'Nothing' is returned.
 -}
-pgIndexMigrationKey ::
+pgIndexMigrationKeys ::
   PgCatalog.IndexDescription ->
-  Maybe Orville.IndexMigrationKey
-pgIndexMigrationKey indexDesc = do
+  [Orville.IndexMigrationKey]
+pgIndexMigrationKeys indexDesc =
+  let mkNamedIndexKey =
+        Orville.NamedIndexKey
+          . PgCatalog.relationNameToString
+          . PgCatalog.pgClassRelationName
+          . PgCatalog.indexPgClass
+          $ indexDesc
+      mkAttributeBasedIndexKey =
+        case pgAttributeBasedIndexMigrationKey indexDesc of
+          Just standardKey ->
+            [Orville.AttributeBasedIndexKey standardKey]
+          Nothing ->
+            []
+   in [mkNamedIndexKey] ++ mkAttributeBasedIndexKey
+
+pgAttributeBasedIndexMigrationKey ::
+  PgCatalog.IndexDescription ->
+  Maybe Orville.AttributeBasedIndexMigrationKey
+pgAttributeBasedIndexMigrationKey indexDesc = do
   let indexMemberToFieldName member =
         case member of
           PgCatalog.IndexAttribute attr ->
@@ -799,7 +817,7 @@ pgIndexMigrationKey indexDesc = do
 
   fieldNames <- traverse indexMemberToFieldName (PgCatalog.indexMembers indexDesc)
   pure $
-    Orville.IndexMigrationKey
+    Orville.AttributeBasedIndexMigrationKey
       { Orville.indexKeyUniqueness = uniqueness
       , Orville.indexKeyColumns = fieldNames
       }

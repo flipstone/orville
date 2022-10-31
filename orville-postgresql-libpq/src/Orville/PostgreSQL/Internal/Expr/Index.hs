@@ -6,6 +6,7 @@ module Orville.PostgreSQL.Internal.Expr.Index
     IndexUniqueness (UniqueIndex, NonUniqueIndex),
     DropIndexExpr,
     dropIndexExpr,
+    createNamedIndexExpr,
   )
 where
 
@@ -53,3 +54,20 @@ dropIndexExpr :: IndexName -> DropIndexExpr
 dropIndexExpr indexName =
   DropIndexExpr $
     RawSql.fromString "DROP INDEX " <> RawSql.toRawSql indexName
+
+createNamedIndexExpr ::
+  IndexUniqueness ->
+  Qualified TableName ->
+  IndexName ->
+  RawSql.RawSql ->
+  CreateIndexExpr
+createNamedIndexExpr uniqueness tableName indexName indexSql =
+  CreateIndexExpr $
+    RawSql.fromString "CREATE "
+      <> uniquenessToSql uniqueness
+      <> RawSql.fromString "INDEX "
+      <> RawSql.toRawSql indexName
+      <> RawSql.fromString " ON "
+      <> RawSql.toRawSql tableName
+      <> RawSql.space
+      <> indexSql
