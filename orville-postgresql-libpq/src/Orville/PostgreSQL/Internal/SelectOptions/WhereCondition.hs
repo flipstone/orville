@@ -34,6 +34,7 @@ module Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
 where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
@@ -160,16 +161,22 @@ infixl 9 .<=
 {- |
   Checks that the value in a field matches a like pattern
 -}
-fieldLike :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-fieldLike =
-  whereColumnComparison Expr.columnLike
+fieldLike :: FieldDef.FieldDefinition nullability a -> T.Text -> WhereCondition
+fieldLike fieldDef likePattern =
+  WhereCondition $
+    Expr.columnLike
+      (FieldDef.fieldColumnName fieldDef)
+      (SqlValue.fromText likePattern)
 
 {- |
   Checks that the value in a field matches a like pattern case insensitively
 -}
-fieldLikeInsensitive :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
-fieldLikeInsensitive =
-  whereColumnComparison Expr.columnLikeInsensitive
+fieldLikeInsensitive :: FieldDef.FieldDefinition nullability a -> T.Text -> WhereCondition
+fieldLikeInsensitive fieldDef likePattern =
+  WhereCondition $
+    Expr.columnLikeInsensitive
+      (FieldDef.fieldColumnName fieldDef)
+      (SqlValue.fromText likePattern)
 
 {- |
   Checks that the value in a field is null.

@@ -6,6 +6,7 @@ where
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.Text as T
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Hedgehog as HH
 
@@ -151,14 +152,14 @@ prop_fieldLike =
   Property.singletonNamedProperty "fieldLike generates expected sql" $
     assertWhereClauseEquals
       (Just "WHERE \"foo\" LIKE $1")
-      (SO.where_ $ SO.fieldLike fooField 0)
+      (SO.where_ $ SO.fieldLike fooField $ T.pack "%0%")
 
 prop_fieldLikeInsensitive :: Property.NamedProperty
 prop_fieldLikeInsensitive =
   Property.singletonNamedProperty "fieldLike generates expected sql" $
     assertWhereClauseEquals
       (Just "WHERE \"foo\" ILIKE $1")
-      (SO.where_ $ SO.fieldLikeInsensitive fooField 0)
+      (SO.where_ $ SO.fieldLikeInsensitive fooField $ T.pack "%0%")
 
 prop_fieldIsNull :: Property.NamedProperty
 prop_fieldIsNull =
