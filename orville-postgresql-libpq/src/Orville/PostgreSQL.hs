@@ -215,6 +215,8 @@ module Orville.PostgreSQL
     (SelectOptions..>=),
     SelectOptions.fieldLessThanOrEqualTo,
     (SelectOptions..<=),
+    SelectOptions.fieldLike,
+    SelectOptions.fieldLikeInsensitive,
     SelectOptions.fieldIsNull,
     SelectOptions.fieldIsNotNull,
     SelectOptions.fieldIn,

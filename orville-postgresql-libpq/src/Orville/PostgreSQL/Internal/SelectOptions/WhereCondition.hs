@@ -16,6 +16,8 @@ module Orville.PostgreSQL.Internal.SelectOptions.WhereCondition
     (.<=),
     fieldIsNull,
     fieldIsNotNull,
+    fieldLike,
+    fieldLikeInsensitive,
     fieldIn,
     (.<-),
     fieldNotIn,
@@ -154,6 +156,20 @@ fieldLessThanOrEqualTo =
 (.<=) = fieldLessThanOrEqualTo
 
 infixl 9 .<=
+
+{- |
+  Checks that the value in a field matches a like pattern
+-}
+fieldLike :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldLike =
+  whereColumnComparison Expr.columnLike
+
+{- |
+  Checks that the value in a field matches a like pattern case insensitively
+-}
+fieldLikeInsensitive :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
+fieldLikeInsensitive =
+  whereColumnComparison Expr.columnLikeInsensitive
 
 {- |
   Checks that the value in a field is null.

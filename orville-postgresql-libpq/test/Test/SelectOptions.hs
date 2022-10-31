@@ -35,6 +35,8 @@ selectOptionsTests =
     , prop_fieldGreaterThanOrEqualToOperator
     , prop_fieldIsNull
     , prop_fieldIsNotNull
+    , prop_fieldLike
+    , prop_fieldLikeInsensitive
     , prop_whereAnd
     , prop_whereAndOperator
     , prop_whereOr
@@ -143,6 +145,20 @@ prop_fieldGreaterThanOrEqualToOperator =
     assertWhereClauseEquals
       (Just "WHERE \"foo\" >= $1")
       (SO.where_ $ fooField .>= 0)
+
+prop_fieldLike :: Property.NamedProperty
+prop_fieldLike =
+  Property.singletonNamedProperty "fieldLike generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE \"foo\" LIKE $1")
+      (SO.where_ $ SO.fieldLike fooField 0)
+
+prop_fieldLikeInsensitive :: Property.NamedProperty
+prop_fieldLikeInsensitive =
+  Property.singletonNamedProperty "fieldLike generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE \"foo\" ILIKE $1")
+      (SO.where_ $ SO.fieldLikeInsensitive fooField 0)
 
 prop_fieldIsNull :: Property.NamedProperty
 prop_fieldIsNull =

@@ -13,6 +13,8 @@ module Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
     lessThanOp,
     greaterThanOrEqualsOp,
     lessThanOrEqualsOp,
+    likeOp,
+    iLikeOp,
   )
 where
 
@@ -45,3 +47,11 @@ greaterThanOrEqualsOp =
 lessThanOrEqualsOp :: ComparisonOperator
 lessThanOrEqualsOp =
   ComparisonOperator (RawSql.fromString "<=")
+
+likeOp :: ComparisonOperator
+likeOp =
+  ComparisonOperator (RawSql.fromString "LIKE")
+
+iLikeOp :: ComparisonOperator
+iLikeOp =
+  ComparisonOperator (RawSql.fromString "ILIKE")

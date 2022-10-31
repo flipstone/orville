@@ -16,6 +16,8 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     columnLessThan,
     columnGreaterThanOrEqualTo,
     columnLessThanOrEqualTo,
+    columnLike,
+    columnLikeInsensitive,
     columnIsNull,
     columnIsNotNull,
     comparison,
@@ -33,7 +35,7 @@ where
 import qualified Data.List.NonEmpty as NE
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
 import Orville.PostgreSQL.Internal.Expr.ValueExpression (ValueExpression, columnReference, rowValueConstructor, valueExpression)
-import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, equalsOp, greaterThanOp, greaterThanOrEqualsOp, lessThanOp, lessThanOrEqualsOp, notEqualsOp)
+import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
@@ -151,6 +153,14 @@ columnGreaterThanOrEqualTo name value =
 columnLessThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
 columnLessThanOrEqualTo name value =
   comparison (columnReference name) lessThanOrEqualsOp (valueExpression value)
+
+columnLike :: ColumnName -> SqlValue -> BooleanExpr
+columnLike name value =
+  comparison (columnReference name) likeOp (valueExpression value)
+
+columnLikeInsensitive :: ColumnName -> SqlValue -> BooleanExpr
+columnLikeInsensitive name value =
+  comparison (columnReference name) iLikeOp (valueExpression value)
 
 columnIsNull :: ColumnName -> BooleanExpr
 columnIsNull name =
