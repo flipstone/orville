@@ -46,6 +46,7 @@ module Orville.PostgreSQL
     OrvilleState.Savepoint,
     OrvilleState.addSqlExecutionCallback,
     OrvilleState.setBeginTransactionExpr,
+    OrvilleState.setSqlCommenter,
     ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
     ErrorDetailLevel.defaultErrorDetailLevel,
     ErrorDetailLevel.minimalErrorDetailLevel,

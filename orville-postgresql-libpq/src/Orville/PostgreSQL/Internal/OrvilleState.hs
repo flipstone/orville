@@ -9,6 +9,7 @@ module Orville.PostgreSQL.Internal.OrvilleState
     orvilleConnectionState,
     orvilleErrorDetailLevel,
     orvilleTransactionCallback,
+    orvilleSqlCommenter,
     addTransactionCallback,
     TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
     openTransactionEvent,
@@ -28,6 +29,7 @@ module Orville.PostgreSQL.Internal.OrvilleState
     addSqlExecutionCallback,
     orvilleBeginTransactionExpr,
     setBeginTransactionExpr,
+    setSqlCommenter,
   )
 where
 
@@ -40,6 +42,7 @@ import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import Orville.PostgreSQL.Internal.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 
 {- |
   'OrvilleState' is used to manange opening connections to the database,
@@ -53,6 +56,7 @@ data OrvilleState = OrvilleState
   , _orvilleTransactionCallback :: TransactionEvent -> IO ()
   , _orvilleSqlExecutionCallback :: forall a. QueryType -> RawSql.RawSql -> IO a -> IO a
   , _orvilleBeginTransactionExpr :: Expr.BeginTransactionExpr
+  , _orvilleSqlCommenter :: Maybe SqlCommenter.SqlCommenter
   }
 
 orvilleConnectionPool :: OrvilleState -> Pool Connection
@@ -74,6 +78,10 @@ orvilleTransactionCallback =
 orvilleBeginTransactionExpr :: OrvilleState -> Expr.BeginTransactionExpr
 orvilleBeginTransactionExpr =
   _orvilleBeginTransactionExpr
+
+orvilleSqlCommenter :: OrvilleState -> Maybe SqlCommenter.SqlCommenter
+orvilleSqlCommenter =
+  _orvilleSqlCommenter
 
 {- |
   Registers a callback to be invoked during transactions.
@@ -178,6 +186,7 @@ newOrvilleState errorDetailLevel pool =
     , _orvilleTransactionCallback = defaultTransactionCallback
     , _orvilleSqlExecutionCallback = defaultSqlExectionCallback
     , _orvilleBeginTransactionExpr = defaultBeginTransactionExpr
+    , _orvilleSqlCommenter = Nothing
     }
 
 {- |
@@ -357,4 +366,18 @@ setBeginTransactionExpr ::
 setBeginTransactionExpr expr state =
   state
     { _orvilleBeginTransactionExpr = expr
+    }
+
+{- |
+  Sets the SqlCommenter comment that Orville will then add to any following statement executions.
+
+  @since 0.10.0
+-}
+setSqlCommenter ::
+  SqlCommenter.SqlCommenter ->
+  OrvilleState ->
+  OrvilleState
+setSqlCommenter comments state =
+  state
+    { _orvilleSqlCommenter = Just comments
     }

@@ -6,11 +6,13 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
@@ -33,6 +35,7 @@ sqlCommenterTests pool =
     "SqlCommenter"
     [ prop_sqlcommenterEscaped
     , prop_sqlCommenterInsertExpr pool
+    , prop_sqlCommenterOrvilleState pool
     ]
 
 prop_sqlcommenterEscaped :: Property.NamedProperty
@@ -74,6 +77,20 @@ prop_sqlCommenterInsertExpr =
           ExecResult.readRows result
 
     assertEqualFooBarRows rows fooBars
+
+prop_sqlCommenterOrvilleState :: Property.NamedDBProperty
+prop_sqlCommenterOrvilleState =
+  Property.singletonNamedDBProperty "sqlcommenter support in OrvilleState does not impact execution" $ \pool -> do
+    let selectOne =
+          RawSql.fromString "SELECT 1 as number"
+
+    affectedRows <-
+      HH.evalIO . Orville.runOrville pool $ do
+        Orville.localOrvilleState
+          (Orville.setSqlCommenter staticSqlCommenter)
+          (Orville.executeAndReturnAffectedRows Orville.UpdateQuery selectOne)
+
+    affectedRows === 1
 
 staticSqlCommenter :: SqlCommenter.SqlCommenter
 staticSqlCommenter =
