@@ -966,6 +966,9 @@ generateTestIndexes :: [String] -> String -> HH.Gen [TestIndex]
 generateTestIndexes columns tableName = do
   testIndices <- fmap Maybe.catMaybes $
     Gen.list (Range.linear 0 10) $ do
+      -- The use of `take 8` is to avoid creating a prefix that would be truncated
+      -- but is also long enough to avoid collision when generating indexes for
+      -- an arbitrary amount of tables
       indexName <- Gen.maybe $ PgGen.pgIdentifierWithPrefix ((take 8 tableName) <> "i_")
       subcolumns <- Gen.subsequence columns
       maybeNonEmptyColumns <- NEL.nonEmpty <$> Gen.shuffle subcolumns
