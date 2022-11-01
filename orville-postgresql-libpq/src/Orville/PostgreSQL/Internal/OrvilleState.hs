@@ -9,7 +9,7 @@ module Orville.PostgreSQL.Internal.OrvilleState
     orvilleConnectionState,
     orvilleErrorDetailLevel,
     orvilleTransactionCallback,
-    orvilleSqlCommenter,
+    orvilleSqlCommenterAttributes,
     addTransactionCallback,
     TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
     openTransactionEvent,
@@ -29,12 +29,14 @@ module Orville.PostgreSQL.Internal.OrvilleState
     addSqlExecutionCallback,
     orvilleBeginTransactionExpr,
     setBeginTransactionExpr,
-    setSqlCommenter,
+    setSqlCommenterAttributes,
+    addSqlCommenterAttributes,
   )
 where
 
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Reader (ReaderT, ask, local, mapReaderT)
+import qualified Data.Map.Strict as Map
 import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
@@ -56,7 +58,7 @@ data OrvilleState = OrvilleState
   , _orvilleTransactionCallback :: TransactionEvent -> IO ()
   , _orvilleSqlExecutionCallback :: forall a. QueryType -> RawSql.RawSql -> IO a -> IO a
   , _orvilleBeginTransactionExpr :: Expr.BeginTransactionExpr
-  , _orvilleSqlCommenter :: Maybe SqlCommenter.SqlCommenter
+  , _orvilleSqlCommenterAttributes :: Maybe SqlCommenter.SqlCommenterAttributes
   }
 
 orvilleConnectionPool :: OrvilleState -> Pool Connection
@@ -79,9 +81,9 @@ orvilleBeginTransactionExpr :: OrvilleState -> Expr.BeginTransactionExpr
 orvilleBeginTransactionExpr =
   _orvilleBeginTransactionExpr
 
-orvilleSqlCommenter :: OrvilleState -> Maybe SqlCommenter.SqlCommenter
-orvilleSqlCommenter =
-  _orvilleSqlCommenter
+orvilleSqlCommenterAttributes :: OrvilleState -> Maybe SqlCommenter.SqlCommenterAttributes
+orvilleSqlCommenterAttributes =
+  _orvilleSqlCommenterAttributes
 
 {- |
   Registers a callback to be invoked during transactions.
@@ -186,7 +188,7 @@ newOrvilleState errorDetailLevel pool =
     , _orvilleTransactionCallback = defaultTransactionCallback
     , _orvilleSqlExecutionCallback = defaultSqlExectionCallback
     , _orvilleBeginTransactionExpr = defaultBeginTransactionExpr
-    , _orvilleSqlCommenter = Nothing
+    , _orvilleSqlCommenterAttributes = Nothing
     }
 
 {- |
@@ -369,15 +371,35 @@ setBeginTransactionExpr expr state =
     }
 
 {- |
-  Sets the SqlCommenter comment that Orville will then add to any following statement executions.
+  Sets the SqlCommenterAttributes that Orville will then add to any following statement executions.
 
   @since 0.10.0
 -}
-setSqlCommenter ::
-  SqlCommenter.SqlCommenter ->
+setSqlCommenterAttributes ::
+  SqlCommenter.SqlCommenterAttributes ->
   OrvilleState ->
   OrvilleState
-setSqlCommenter comments state =
+setSqlCommenterAttributes comments state =
   state
-    { _orvilleSqlCommenter = Just comments
+    { _orvilleSqlCommenterAttributes = Just comments
     }
+
+{- |
+  Adds the SqlCommenterAttributes to the already existing that Orville will then add to any following statement executions.
+
+  @since 0.10.0
+-}
+addSqlCommenterAttributes ::
+  SqlCommenter.SqlCommenterAttributes ->
+  OrvilleState ->
+  OrvilleState
+addSqlCommenterAttributes comments state =
+  case orvilleSqlCommenterAttributes state of
+    Nothing ->
+      state
+        { _orvilleSqlCommenterAttributes = Just comments
+        }
+    Just existingAttrs ->
+      state
+        { _orvilleSqlCommenterAttributes = Just $ Map.union comments existingAttrs
+        }

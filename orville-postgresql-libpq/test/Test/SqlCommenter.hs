@@ -32,18 +32,18 @@ import qualified Test.Property as Property
 sqlCommenterTests :: Pool.Pool Conn.Connection -> Property.Group
 sqlCommenterTests pool =
   Property.group
-    "SqlCommenter"
-    [ prop_sqlcommenterEscaped
+    "SqlCommenterAttributes"
+    [ prop_sqlcommenterAttributesEscaped
     , prop_sqlCommenterInsertExpr pool
     , prop_sqlCommenterOrvilleState pool
     ]
 
-prop_sqlcommenterEscaped :: Property.NamedProperty
-prop_sqlcommenterEscaped =
-  Property.singletonNamedProperty "SqlCommenter is escaped and put at end of raw sql" $ do
+prop_sqlcommenterAttributesEscaped :: Property.NamedProperty
+prop_sqlcommenterAttributesEscaped =
+  Property.singletonNamedProperty "SqlCommenterAttributes are escaped and put at end of raw sql" $ do
     let rawSql :: RawSql.RawSql
         rawSql =
-          SqlCommenter.addComment staticSqlCommenter $
+          SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes $
             RawSql.fromString "SELECT * "
               <> RawSql.fromString "FROM foo "
               <> RawSql.fromString "WHERE id = 1"
@@ -70,7 +70,7 @@ prop_sqlCommenterInsertExpr =
 
           let insertExpr = Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
           RawSql.executeVoid connection $
-            SqlCommenter.addComment staticSqlCommenter insertExpr
+            SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes insertExpr
 
           result <- RawSql.execute connection findAllFooBars
 
@@ -87,13 +87,13 @@ prop_sqlCommenterOrvilleState =
     affectedRows <-
       HH.evalIO . Orville.runOrville pool $ do
         Orville.localOrvilleState
-          (Orville.setSqlCommenter staticSqlCommenter)
+          (Orville.setSqlCommenterAttributes staticSqlCommenterAttributes)
           (Orville.executeAndReturnAffectedRows Orville.UpdateQuery selectOne)
 
     affectedRows === 1
 
-staticSqlCommenter :: SqlCommenter.SqlCommenter
-staticSqlCommenter =
+staticSqlCommenterAttributes :: SqlCommenter.SqlCommenterAttributes
+staticSqlCommenterAttributes =
   fmap T.pack
     . Map.mapKeys T.pack
     $ Map.fromList
