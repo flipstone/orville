@@ -74,18 +74,22 @@ lockedMarshaller =
 
 tryLockExpr :: RawSql.RawSql
 tryLockExpr =
-  RawSql.fromString "SELECT pg_try_advisory_xact_lock("
+  RawSql.fromString "SELECT pg_try_advisory_xact_lock"
+    <> RawSql.leftParen
     <> RawSql.parameter (SqlValue.fromInt32 orvilleLockScope)
     <> RawSql.comma
     <> RawSql.parameter (SqlValue.fromInt32 migrationLockId)
-    <> RawSql.fromString ") as locked"
+    <> RawSql.rightParen
+    <> RawSql.fromString " as locked"
 
 waitForLockExpr :: RawSql.RawSql
 waitForLockExpr =
-  RawSql.fromString "SELECT pg_advisory_xact_lock("
+  RawSql.fromString "SELECT pg_advisory_xact_lock"
+    <> RawSql.leftParen
     <> RawSql.parameter (SqlValue.fromInt32 orvilleLockScope)
     <> RawSql.comma
     <> RawSql.parameter (SqlValue.fromInt32 migrationLockId)
+    <> RawSql.rightParen
 
 newtype MigrationLockError
   = MigrationLockError String
