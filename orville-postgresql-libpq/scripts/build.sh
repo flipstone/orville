@@ -48,9 +48,10 @@ else
     docker-compose build
   fi
 
+  echo_when_verbose "Going to run formatting against the codebase.\n"
+  docker-compose run --rm dev sh ./scripts/format-repo.sh
+
   echo_when_verbose "Now running the tests against the supported stack resolvers.\n"
   docker-compose run --rm dev sh ./scripts/test-all
 
-  echo_when_verbose "Going to run formatting against the codebase.\n"
-  docker-compose run --rm dev sh ./scripts/format-repo.sh
 fi

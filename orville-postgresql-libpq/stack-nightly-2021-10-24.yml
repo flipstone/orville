@@ -1,4 +1,0 @@
----
-resolver: nightly-2021-10-24
-packages:
-  - .

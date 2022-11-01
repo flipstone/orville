@@ -7,6 +7,7 @@ where
 import qualified Control.Monad as Monad
 import qualified Data.ByteString.Char8 as B8
 import qualified Hedgehog as HH
+import qualified System.Environment as Env
 import qualified System.Exit as SE
 
 import qualified Orville.PostgreSQL.Connection as Connection
@@ -76,11 +77,19 @@ main = do
   Monad.unless (Property.allPassed summary) SE.exitFailure
 
 createTestConnectionPool :: IO (Connection.Pool Connection.Connection)
-createTestConnectionPool =
-  Connection.createConnectionPool Connection.DisableNoticeReporting 1 10 1 $
-    B8.pack "host=testdb user=orville_test password=orville"
+createTestConnectionPool = do
+  connStr <- lookupConnStr
+  Connection.createConnectionPool Connection.DisableNoticeReporting 1 10 1 connStr
 
 recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
 recheckDBProperty size seed namedProperty = do
   pool <- createTestConnectionPool
   HH.recheck size seed (snd $ namedProperty pool)
+
+lookupConnStr :: IO B8.ByteString
+lookupConnStr = do
+  mbConnHostStr <- Env.lookupEnv "TEST_CONN_HOST"
+  let connStrUserPass = " user=orville_test password=orville"
+  case mbConnHostStr of
+    Nothing -> fail "TEST_CONN_HOST not set, so we don't know what database to connect to!"
+    Just connHost -> pure . B8.pack $ connHost <> connStrUserPass
