@@ -16,9 +16,10 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Orville.PostgreSQL.Connection (Connection)
 import Orville.PostgreSQL.Internal.MonadOrville (MonadOrville, withConnection)
-import Orville.PostgreSQL.Internal.OrvilleState (OrvilleState, askOrvilleState, orvilleErrorDetailLevel, orvilleSqlExecutionCallback)
+import Orville.PostgreSQL.Internal.OrvilleState (OrvilleState, askOrvilleState, orvilleErrorDetailLevel, orvilleSqlCommenterAttributes, orvilleSqlExecutionCallback)
 import Orville.PostgreSQL.Internal.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 
@@ -169,7 +170,12 @@ executeWithCallbacksIO ::
   Connection ->
   IO LibPQ.Result
 executeWithCallbacksIO queryType sql orvilleState conn =
-  let rawSql = RawSql.toRawSql sql
+  let rawSql =
+        case orvilleSqlCommenterAttributes orvilleState of
+          Nothing ->
+            RawSql.toRawSql sql
+          Just sqlCommenterAttributes ->
+            SqlCommenter.addSqlCommenterAttributes sqlCommenterAttributes $ RawSql.toRawSql sql
    in orvilleSqlExecutionCallback
         orvilleState
         queryType

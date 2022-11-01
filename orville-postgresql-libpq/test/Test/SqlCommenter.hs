@@ -6,11 +6,13 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
@@ -30,17 +32,18 @@ import qualified Test.Property as Property
 sqlCommenterTests :: Pool.Pool Conn.Connection -> Property.Group
 sqlCommenterTests pool =
   Property.group
-    "SqlCommenter"
-    [ prop_sqlcommenterEscaped
+    "SqlCommenterAttributes"
+    [ prop_sqlcommenterAttributesEscaped
     , prop_sqlCommenterInsertExpr pool
+    , prop_sqlCommenterOrvilleState pool
     ]
 
-prop_sqlcommenterEscaped :: Property.NamedProperty
-prop_sqlcommenterEscaped =
-  Property.singletonNamedProperty "SqlCommenter is escaped and put at end of raw sql" $ do
+prop_sqlcommenterAttributesEscaped :: Property.NamedProperty
+prop_sqlcommenterAttributesEscaped =
+  Property.singletonNamedProperty "SqlCommenterAttributes are escaped and put at end of raw sql" $ do
     let rawSql :: RawSql.RawSql
         rawSql =
-          SqlCommenter.addComment staticSqlCommenter $
+          SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes $
             RawSql.fromString "SELECT * "
               <> RawSql.fromString "FROM foo "
               <> RawSql.fromString "WHERE id = 1"
@@ -67,7 +70,7 @@ prop_sqlCommenterInsertExpr =
 
           let insertExpr = Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
           RawSql.executeVoid connection $
-            SqlCommenter.addComment staticSqlCommenter insertExpr
+            SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes insertExpr
 
           result <- RawSql.execute connection findAllFooBars
 
@@ -75,8 +78,22 @@ prop_sqlCommenterInsertExpr =
 
     assertEqualFooBarRows rows fooBars
 
-staticSqlCommenter :: SqlCommenter.SqlCommenter
-staticSqlCommenter =
+prop_sqlCommenterOrvilleState :: Property.NamedDBProperty
+prop_sqlCommenterOrvilleState =
+  Property.singletonNamedDBProperty "sqlcommenter support in OrvilleState does not impact execution" $ \pool -> do
+    let selectOne =
+          RawSql.fromString "SELECT 1 as number"
+
+    affectedRows <-
+      HH.evalIO . Orville.runOrville pool $ do
+        Orville.localOrvilleState
+          (Orville.setSqlCommenterAttributes staticSqlCommenterAttributes)
+          (Orville.executeAndReturnAffectedRows Orville.UpdateQuery selectOne)
+
+    affectedRows === 1
+
+staticSqlCommenterAttributes :: SqlCommenter.SqlCommenterAttributes
+staticSqlCommenterAttributes =
   fmap T.pack
     . Map.mapKeys T.pack
     $ Map.fromList

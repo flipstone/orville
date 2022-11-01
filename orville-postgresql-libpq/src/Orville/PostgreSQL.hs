@@ -46,6 +46,8 @@ module Orville.PostgreSQL
     OrvilleState.Savepoint,
     OrvilleState.addSqlExecutionCallback,
     OrvilleState.setBeginTransactionExpr,
+    OrvilleState.setSqlCommenterAttributes,
+    OrvilleState.addSqlCommenterAttributes,
     ErrorDetailLevel.ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
     ErrorDetailLevel.defaultErrorDetailLevel,
     ErrorDetailLevel.minimalErrorDetailLevel,
@@ -314,8 +316,7 @@ module Orville.PostgreSQL
     QueryType.QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery),
 
     -- * [sqlcommenter](https://google.github.io/sqlcommenter/) support.
-    SqlCommenter.SqlCommenter,
-    SqlCommenter.addComment,
+    SqlCommenter.SqlCommenterAttributes,
   )
 where
 
