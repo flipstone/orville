@@ -161,6 +161,8 @@ module Orville.PostgreSQL
     FieldDefinition.fieldOfType,
     FieldDefinition.fieldColumnName,
     FieldDefinition.fieldName,
+    FieldDefinition.fieldDescription,
+    FieldDefinition.setFieldDescription,
     FieldDefinition.FieldName,
     FieldDefinition.stringToFieldName,
     FieldDefinition.fieldNameToString,

@@ -9,6 +9,8 @@ License   : MIT
 module Orville.PostgreSQL.Internal.FieldDefinition
   ( FieldDefinition,
     fieldName,
+    fieldDescription,
+    setFieldDescription,
     fieldType,
     fieldIsNotNullable,
     fieldDefaultValue,
@@ -97,17 +99,35 @@ byteStringToFieldName = FieldName
   the field.
 -}
 data FieldDefinition nullability a = FieldDefinition
-  { _fieldName :: FieldName
-  , _fieldType :: SqlType.SqlType a
-  , _fieldNullability :: NullabilityGADT nullability
-  , _fieldDefaultValue :: Maybe (DefaultValue a)
+  { i_fieldName :: FieldName
+  , i_fieldType :: SqlType.SqlType a
+  , i_fieldNullability :: NullabilityGADT nullability
+  , i_fieldDefaultValue :: Maybe (DefaultValue a)
+  , i_fieldDescription :: Maybe String
   }
 
 {- |
   The name used in database queries to reference the field.
 -}
 fieldName :: FieldDefinition nullability a -> FieldName
-fieldName = _fieldName
+fieldName = i_fieldName
+
+{- |
+  Returns the description that was passed to 'setFieldDescription', if any.
+-}
+fieldDescription :: FieldDefinition nullability a -> Maybe String
+fieldDescription = i_fieldDescription
+
+{- |
+  Sets the description for the field. This description not currently used
+  anywhere by Orville itself, but users can retrieve the description via
+  'fieldDescription' for their own purposes (e.g. generating documentation).
+-}
+setFieldDescription :: String -> FieldDefinition nullability a -> FieldDefinition nullability a
+setFieldDescription description fieldDef =
+  fieldDef
+    { i_fieldDescription = Just description
+    }
 
 {- |
   The 'SqlType' for the 'FieldDefinition' determines the PostgreSQL data type
@@ -115,13 +135,13 @@ fieldName = _fieldName
   from the database.
 -}
 fieldType :: FieldDefinition nullability a -> SqlType.SqlType a
-fieldType = _fieldType
+fieldType = i_fieldType
 
 {- |
   Returns the default value definition for the field, if any has been set.
 -}
 fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue a)
-fieldDefaultValue = _fieldDefaultValue
+fieldDefaultValue = i_fieldDefaultValue
 
 {- |
  A 'FieldNullability' is returned by the 'fieldNullability' function, which
@@ -142,7 +162,7 @@ data FieldNullability a
 -}
 fieldNullability :: FieldDefinition nullability a -> FieldNullability a
 fieldNullability field =
-  case _fieldNullability field of
+  case i_fieldNullability field of
     NullableGADT -> NullableField field
     NotNullGADT -> NotNullField field
 
@@ -151,7 +171,7 @@ fieldNullability field =
 -}
 fieldIsNotNullable :: FieldDefinition nullability a -> Bool
 fieldIsNotNullable field =
-  case _fieldNullability field of
+  case i_fieldNullability field of
     NullableGADT -> False
     NotNullGADT -> True
 
@@ -189,7 +209,7 @@ fieldColumnDefinition fieldDef =
     (fieldColumnName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
     (Just $ fieldColumnConstraint fieldDef)
-    (fmap (Expr.columnDefault . defaultValueExpression) $ _fieldDefaultValue fieldDef)
+    (fmap (Expr.columnDefault . defaultValueExpression) $ i_fieldDefaultValue fieldDef)
 
 {- |
   INTERNAL - Builds the appropriate ColumnConstraint for a field. Currently
@@ -409,10 +429,12 @@ fieldOfType ::
   FieldDefinition NotNull a
 fieldOfType sqlType name =
   FieldDefinition
-    (stringToFieldName name)
-    sqlType
-    NotNullGADT
-    Nothing
+    { i_fieldName = stringToFieldName name
+    , i_fieldType = sqlType
+    , i_fieldNullability = NotNullGADT
+    , i_fieldDefaultValue = Nothing
+    , i_fieldDescription = Nothing
+    }
 
 {- |
   Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field
@@ -433,10 +455,12 @@ nullableField field =
                   else Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
           }
    in FieldDefinition
-        (fieldName field)
-        (nullableType $ fieldType field)
-        NullableGADT
-        (fmap coerceDefaultValue $ _fieldDefaultValue field)
+        { i_fieldName = fieldName field
+        , i_fieldType = nullableType (fieldType field)
+        , i_fieldNullability = NullableGADT
+        , i_fieldDefaultValue = fmap coerceDefaultValue (i_fieldDefaultValue field)
+        , i_fieldDescription = fieldDescription field
+        }
 
 {- |
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
@@ -459,10 +483,12 @@ asymmetricNullableField field =
           , SqlType.sqlTypeFromSql = \sqlValue -> Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
           }
    in FieldDefinition
-        (fieldName field)
-        (nullableType $ fieldType field)
-        NullableGADT
-        (fmap coerceDefaultValue $ _fieldDefaultValue field)
+        { i_fieldName = fieldName field
+        , i_fieldType = nullableType (fieldType field)
+        , i_fieldNullability = NullableGADT
+        , i_fieldDefaultValue = fmap coerceDefaultValue (i_fieldDefaultValue field)
+        , i_fieldDescription = fieldDescription field
+        }
 
 {- |
   Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can
@@ -478,8 +504,8 @@ convertField ::
   FieldDefinition nullability b
 convertField conversion fieldDef =
   fieldDef
-    { _fieldType = conversion (_fieldType fieldDef)
-    , _fieldDefaultValue = fmap coerceDefaultValue (_fieldDefaultValue fieldDef)
+    { i_fieldType = conversion (i_fieldType fieldDef)
+    , i_fieldDefaultValue = fmap coerceDefaultValue (i_fieldDefaultValue fieldDef)
     }
 
 {- |
@@ -508,7 +534,7 @@ setDefaultValue ::
   FieldDefinition nullability a
 setDefaultValue defaultValue fieldDef =
   fieldDef
-    { _fieldDefaultValue = Just defaultValue
+    { i_fieldDefaultValue = Just defaultValue
     }
 
 {- |
@@ -520,7 +546,7 @@ removeDefaultValue ::
   FieldDefinition nullability a
 removeDefaultValue fieldDef =
   fieldDef
-    { _fieldDefaultValue = Nothing
+    { i_fieldDefaultValue = Nothing
     }
 
 {- |
@@ -532,7 +558,7 @@ prefixField ::
   FieldDefinition nullability a
 prefixField prefix fieldDef =
   fieldDef
-    { _fieldName = FieldName (B8.pack prefix <> "_" <> fieldNameToByteString (fieldName fieldDef))
+    { i_fieldName = FieldName (B8.pack prefix <> "_" <> fieldNameToByteString (fieldName fieldDef))
     }
 
 {- |

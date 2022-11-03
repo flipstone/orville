@@ -1,15 +1,12 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.AutoMigration
   ( autoMigrateSchema,
     generateMigrationSteps,
     executeMigrationSteps,
-    SchemaItem,
-    schemaTable,
-    schemaDropTable,
-    schemaSequence,
-    schemaDropSequence,
+    SchemaItem (..),
     schemaItemSummary,
     MigrationStep,
     MigrationDataError,
@@ -42,21 +39,31 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
   a list to be used with 'autoMigrateSchema'.
 -}
 data SchemaItem where
+  -- |
+  --    Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
   SchemaTable ::
     Orville.TableDefinition key writeEntity readEntity ->
     SchemaItem
+  -- |
+  --    Constructs a 'SchemaItem' that will drop the specified table if it is
+  --    found in the database.
   SchemaDropTable ::
     Orville.TableIdentifier ->
     SchemaItem
+  -- |
+  --    Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
   SchemaSequence ::
     Orville.SequenceDefinition ->
     SchemaItem
+  -- |
+  --    Constructs a 'SchemaItem' that will drop the specified table if it is
+  --    found in the database.
   SchemaDropSequence ::
     Orville.SequenceIdentifier ->
     SchemaItem
 
 {- |
-  Retuns a one-line string describe the 'SchemaItem', suitable for a human to
+  Returns a one-line string describe the 'SchemaItem', suitable for a human to
   identify it in a list of output.
 
   For example, a 'SchemaItem' constructed via 'schemaTable' gives @Table <table
@@ -73,40 +80,6 @@ schemaItemSummary item =
       "Sequence " <> Orville.sequenceIdToString (Orville.sequenceIdentifier sequenceDef)
     SchemaDropSequence sequenceId ->
       "Drop sequence " <> Orville.sequenceIdToString sequenceId
-
-{- |
-  Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
--}
-schemaTable ::
-  Orville.TableDefinition key writeEntity readEntity ->
-  SchemaItem
-schemaTable =
-  SchemaTable
-
-{- |
-  Constructs a 'SchemaItem' that will drop the specified table if it is
-  found in the database.
--}
-schemaDropTable ::
-  Orville.TableIdentifier ->
-  SchemaItem
-schemaDropTable =
-  SchemaDropTable
-
-{- |
-  Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
--}
-schemaSequence :: Orville.SequenceDefinition -> SchemaItem
-schemaSequence =
-  SchemaSequence
-
-{- |
-  Constructs a 'SchemaItem' that will drop the specified table if it is
-  found in the database.
--}
-schemaDropSequence :: Orville.SequenceIdentifier -> SchemaItem
-schemaDropSequence =
-  SchemaDropSequence
 
 {- |
   A single SQL statement that will be executed in order to migrate the database

@@ -68,13 +68,13 @@ prop_createsMissingTables =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable Foo.table]
 
     secondTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable Foo.table]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable Foo.table]
 
     length (firstTimeSteps) === 1
     _ <-
@@ -94,13 +94,13 @@ prop_dropsRequestedTables =
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
           Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateTableExpr Foo.table
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropTable fooTableId]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropTable fooTableId]
 
     secondTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropTable fooTableId]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropTable fooTableId]
 
     length (firstTimeSteps) === 1
     PgAssert.assertTableDoesNotExist pool (Orville.tableIdUnqualifiedNameString fooTableId)
@@ -130,13 +130,13 @@ prop_addsAndRemovesColumns =
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr originalTableDef
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     secondTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     map RawSql.toExampleBytes secondTimeSteps === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
@@ -164,7 +164,7 @@ prop_columnsWithSystemNameConflictsRaiseError =
               Nothing
               []
 
-          ExSafe.try $ AutoMigration.autoMigrateSchema [AutoMigration.schemaTable tableWithSystemAttributeNames]
+          ExSafe.try $ AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable tableWithSystemAttributeNames]
 
     case result of
       Left err ->
@@ -233,13 +233,13 @@ prop_altersColumnDataType =
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr originalTableDef
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     secondTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     map RawSql.toExampleBytes secondTimeSteps === []
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
@@ -329,7 +329,7 @@ prop_respectsImplicitDefaultOnSerialFields =
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableDef
           Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr tableDef
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable tableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable tableDef]
 
     originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnDefaultExists originalTableDesc "column"
@@ -338,7 +338,7 @@ prop_respectsImplicitDefaultOnSerialFields =
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable tableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable tableDef]
 
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnDefaultExists newTableDesc "column"
@@ -367,7 +367,7 @@ assertDefaultValuesMigrateProperly pool genSomeField = do
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
         Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr originalTableDef
-        AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+        AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
   originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
   PgAssert.assertColumnDefaultMatches originalTableDesc "column" (Orville.fieldDefaultValue originalField)
@@ -376,7 +376,7 @@ assertDefaultValuesMigrateProperly pool genSomeField = do
     HH.evalIO $
       Orville.runOrville pool $ do
         AutoMigration.executeMigrationSteps firstTimeSteps
-        AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+        AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
   newTableDesc <- PgAssert.assertTableExists pool "migration_test"
   PgAssert.assertColumnDefaultMatches newTableDesc "column" (Orville.fieldDefaultValue newField)
@@ -425,8 +425,8 @@ prop_addAndRemovesUniqueConstraints =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
-          AutoMigration.autoMigrateSchema [AutoMigration.schemaTable originalTableDef]
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable originalTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
 
@@ -434,7 +434,7 @@ prop_addAndRemovesUniqueConstraints =
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     map RawSql.toExampleBytes secondTimeSteps === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
@@ -514,15 +514,15 @@ prop_addAndRemovesForeignKeyConstraints =
     originalSchema <-
       HH.forAllWith (show . map AutoMigration.schemaItemSummary) $
         Gen.shuffle
-          [ AutoMigration.schemaTable originalForeignTableDef
-          , AutoMigration.schemaTable originalLocalTableDef
+          [ AutoMigration.SchemaTable originalForeignTableDef
+          , AutoMigration.SchemaTable originalLocalTableDef
           ]
 
     newSchema <-
       HH.forAllWith (show . map AutoMigration.schemaItemSummary) $
         Gen.shuffle
-          [ AutoMigration.schemaTable newForeignTableDef
-          , AutoMigration.schemaTable newLocalTableDef
+          [ AutoMigration.SchemaTable newForeignTableDef
+          , AutoMigration.SchemaTable newLocalTableDef
           ]
 
     HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newForeignKeyInfos \\ originalForeignKeyInfos))
@@ -587,8 +587,8 @@ prop_addsAndRemovesMixedIndexes =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
-          AutoMigration.autoMigrateSchema [AutoMigration.schemaTable originalTableDef]
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable originalTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
 
@@ -601,7 +601,7 @@ prop_addsAndRemovesMixedIndexes =
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaTable newTableDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     map RawSql.toExampleBytes secondTimeSteps === []
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
@@ -623,13 +623,13 @@ prop_createsMissingSequences =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence sequenceDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence sequenceDef]
 
     secondTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence sequenceDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence sequenceDef]
 
     length (firstTimeSteps) === 1
     _ <-
@@ -651,13 +651,13 @@ prop_dropsRequestedSequences =
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
           Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateSequenceExpr sequenceDef
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropSequence sequenceId]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropSequence sequenceId]
 
     secondTimeSteps <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaDropSequence sequenceId]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropSequence sequenceId]
 
     length (firstTimeSteps) === 1
     PgAssert.assertSequenceDoesNotExist pool (Orville.sequenceIdUnqualifiedNameString sequenceId)
@@ -720,7 +720,7 @@ prop_altersModifiedSequences =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName originalSequenceDef)
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence originalSequenceDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence originalSequenceDef]
 
     HH.annotate ("First time steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
     length (firstTimeSteps) === 1
@@ -729,7 +729,7 @@ prop_altersModifiedSequences =
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence newSequenceDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence newSequenceDef]
 
     HH.annotate ("Second time steps: " <> show (map RawSql.toExampleBytes secondTimeSteps))
     assertSequenceExistsMatching pool originalSequenceDef
@@ -738,7 +738,7 @@ prop_altersModifiedSequences =
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationSteps secondTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.schemaSequence newSequenceDef]
+          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence newSequenceDef]
 
     assertSequenceExistsMatching pool newSequenceDef
     map RawSql.toExampleBytes thirdTimeSteps === []
@@ -997,13 +997,13 @@ testTableSchemaItem testTable =
           $ tableDef
    in case testTablePrimaryKeyDefinition testTable of
         Nothing ->
-          AutoMigration.schemaTable $
+          AutoMigration.SchemaTable $
             addTableItems $
               Orville.mkTableDefinitionWithoutKey
                 (testTableName testTable)
                 (intColumnsMarshaller $ testTableColumns testTable)
         Just primaryKey ->
-          AutoMigration.schemaTable $
+          AutoMigration.SchemaTable $
             addTableItems $
               Orville.mkTableDefinition
                 (testTableName testTable)
