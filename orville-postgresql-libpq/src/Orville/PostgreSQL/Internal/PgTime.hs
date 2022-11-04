@@ -55,7 +55,7 @@ fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 -}
 utcTimeToPostgreSQL :: Time.UTCTime -> B8.ByteString
 utcTimeToPostgreSQL =
-  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S+00"
+  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q+00"
 
 {- |
   An Attoparsec parser for parsing 'Time.UTCTime' from an ISO 8601 style
@@ -79,7 +79,7 @@ utcTime = do
 -}
 localTimeToPostgreSQL :: Time.LocalTime -> B8.ByteString
 localTimeToPostgreSQL =
-  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S"
+  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q"
 
 {- |
   An Attoparsec parser for parsing 'Time.LocalTime' from an ISO 8601 style
