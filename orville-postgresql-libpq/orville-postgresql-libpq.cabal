@@ -70,6 +70,7 @@ library
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
+      Orville.PostgreSQL.Internal.Expr.Count
       Orville.PostgreSQL.Internal.Expr.Cursor
       Orville.PostgreSQL.Internal.Expr.Delete
       Orville.PostgreSQL.Internal.Expr.GroupBy
@@ -181,6 +182,7 @@ test-suite spec
       Test.EntityOperations
       Test.EntityTrace
       Test.Execution
+      Test.Expr.Count
       Test.Expr.Cursor
       Test.Expr.GroupBy
       Test.Expr.InsertUpdateDelete

@@ -29,7 +29,7 @@ module Orville.PostgreSQL.Internal.Expr.Cursor
     last,
     absolute,
     relative,
-    count,
+    rowCount,
     fetchAll,
     forward,
     forwardCount,
@@ -181,8 +181,8 @@ relative countParam =
       --  LINE 1: FETCH RELATIVE $1 \"testcursor\"
       RawSql.intDecLiteral countParam
 
-count :: Int -> CursorDirection
-count countParam =
+rowCount :: Int -> CursorDirection
+rowCount countParam =
   -- postgresql won't let us pass the count as a parameter.
   -- when we try we get an error like such error:
   --  ERROR:  syntax error at or near "$1"

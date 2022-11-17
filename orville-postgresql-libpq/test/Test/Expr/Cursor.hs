@@ -30,7 +30,7 @@ cursorTests pool =
     , prop_cursorMove pool
     , prop_cursorNoScroll pool
     , prop_cursorFetchAll pool
-    , prop_cursorFetchCount pool
+    , prop_cursorFetchRowCount pool
     , prop_cursorFetchForward pool
     , prop_cursorFetchForwardCount pool
     , prop_cursorFetchForwardAll pool
@@ -90,7 +90,7 @@ prop_cursorMove =
     result <-
       withFooBarData pool [row 1, row 2, row 3] $ \connection ->
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
-          RawSql.executeVoid connection $ Expr.move (Just $ Expr.count 2) cursorName
+          RawSql.executeVoid connection $ Expr.move (Just $ Expr.rowCount 2) cursorName
           result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
           ExecResult.readRows result
 
@@ -126,15 +126,15 @@ prop_cursorFetchAll =
 
     assertEqualFooBarRows first [row 1, row 2]
 
-prop_cursorFetchCount :: Property.NamedDBProperty
-prop_cursorFetchCount =
-  Property.singletonNamedDBProperty "Fetch count" $ \pool -> do
+prop_cursorFetchRowCount :: Property.NamedDBProperty
+prop_cursorFetchRowCount =
+  Property.singletonNamedDBProperty "Fetch row count" $ \pool -> do
     [first, second] <-
       runFetchDirectionsOnData
         pool
         Nothing
         [row 1, row 2, row 3]
-        [Expr.count 2, Expr.count 2]
+        [Expr.rowCount 2, Expr.rowCount 2]
 
     assertEqualFooBarRows first [row 1, row 2]
     assertEqualFooBarRows second [row 3]

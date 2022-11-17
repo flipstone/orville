@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Internal.Expr
 where
 
 import Orville.PostgreSQL.Internal.Expr.ColumnDefinition as Export
+import Orville.PostgreSQL.Internal.Expr.Count as Export
 import Orville.PostgreSQL.Internal.Expr.Cursor as Export
 import Orville.PostgreSQL.Internal.Expr.Delete as Export
 import Orville.PostgreSQL.Internal.Expr.GroupBy as Export
