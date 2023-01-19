@@ -73,7 +73,7 @@ whereConditionToBooleanExpr (WhereCondition expr) =
 -}
 fieldEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldEquals =
-  whereColumnComparison Expr.columnEquals
+  whereColumnComparison Expr.equals
 
 {- |
   Operator alias for 'fieldEquals'
@@ -88,7 +88,7 @@ infixl 9 .==
 -}
 fieldNotEquals :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldNotEquals =
-  whereColumnComparison Expr.columnNotEquals
+  whereColumnComparison Expr.notEquals
 
 {- |
   Operator alias for 'fieldNotEquals'
@@ -103,7 +103,7 @@ infixl 9 ./=
 -}
 fieldGreaterThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldGreaterThan =
-  whereColumnComparison Expr.columnGreaterThan
+  whereColumnComparison Expr.greaterThan
 
 {- |
   Operator alias for 'fieldGreaterThan'
@@ -118,7 +118,7 @@ infixl 9 .>
 -}
 fieldLessThan :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldLessThan =
-  whereColumnComparison Expr.columnLessThan
+  whereColumnComparison Expr.lessThan
 
 {- |
   Operator alias for 'fieldLessThan'
@@ -133,7 +133,7 @@ infixl 9 .<
 -}
 fieldGreaterThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldGreaterThanOrEqualTo =
-  whereColumnComparison Expr.columnGreaterThanOrEqualTo
+  whereColumnComparison Expr.greaterThanOrEqualTo
 
 {- |
   Operator alias for 'fieldGreaterThanOrEqualTo'
@@ -148,7 +148,7 @@ infixl 9 .>=
 -}
 fieldLessThanOrEqualTo :: FieldDef.FieldDefinition nullability a -> a -> WhereCondition
 fieldLessThanOrEqualTo =
-  whereColumnComparison Expr.columnLessThanOrEqualTo
+  whereColumnComparison Expr.lessThanOrEqualTo
 
 {- |
   Operator alias for 'fieldLessThanOrEqualTo'
@@ -164,9 +164,9 @@ infixl 9 .<=
 fieldLike :: FieldDef.FieldDefinition nullability a -> T.Text -> WhereCondition
 fieldLike fieldDef likePattern =
   WhereCondition $
-    Expr.columnLike
-      (FieldDef.fieldColumnName fieldDef)
-      (SqlValue.fromText likePattern)
+    Expr.like
+      (FieldDef.fieldColumnReference fieldDef)
+      (Expr.valueExpression (SqlValue.fromText likePattern))
 
 {- |
   Checks that the value in a field matches a like pattern case insensitively
@@ -174,23 +174,23 @@ fieldLike fieldDef likePattern =
 fieldLikeInsensitive :: FieldDef.FieldDefinition nullability a -> T.Text -> WhereCondition
 fieldLikeInsensitive fieldDef likePattern =
   WhereCondition $
-    Expr.columnLikeInsensitive
-      (FieldDef.fieldColumnName fieldDef)
-      (SqlValue.fromText likePattern)
+    Expr.likeInsensitive
+      (FieldDef.fieldColumnReference fieldDef)
+      (Expr.valueExpression (SqlValue.fromText likePattern))
 
 {- |
   Checks that the value in a field is null.
 -}
 fieldIsNull :: FieldDef.FieldDefinition FieldDef.Nullable a -> WhereCondition
 fieldIsNull =
-  WhereCondition . Expr.columnIsNull . FieldDef.fieldColumnName
+  WhereCondition . Expr.isNull . FieldDef.fieldColumnReference
 
 {- |
   Checks that the value in a field is not null.
 -}
 fieldIsNotNull :: FieldDef.FieldDefinition FieldDef.Nullable a -> WhereCondition
 fieldIsNotNull =
-  WhereCondition . Expr.columnIsNotNull . FieldDef.fieldColumnName
+  WhereCondition . Expr.isNotNull . FieldDef.fieldColumnReference
 
 {- |
   Checks that a field matches a list of values
@@ -198,9 +198,9 @@ fieldIsNotNull =
 fieldIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
 fieldIn fieldDef values =
   WhereCondition $
-    Expr.columnIn
-      (FieldDef.fieldColumnName fieldDef)
-      (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
+    Expr.valueIn
+      (FieldDef.fieldColumnReference fieldDef)
+      (fmap (FieldDef.fieldValueToExpression fieldDef) values)
 
 {- |
   Operator alias for 'fieldIn'
@@ -216,9 +216,9 @@ infixl 9 .<-
 fieldNotIn :: FieldDef.FieldDefinition nullability a -> NonEmpty a -> WhereCondition
 fieldNotIn fieldDef values =
   WhereCondition $
-    Expr.columnNotIn
-      (FieldDef.fieldColumnName fieldDef)
-      (fmap (FieldDef.fieldValueToSqlValue fieldDef) values)
+    Expr.valueNotIn
+      (FieldDef.fieldColumnReference fieldDef)
+      (fmap (FieldDef.fieldValueToExpression fieldDef) values)
 
 {- |
   Operator alias for 'fieldNotIn'
@@ -238,8 +238,8 @@ fieldTupleIn ::
   WhereCondition
 fieldTupleIn fieldDefA fieldDefB values =
   WhereCondition $
-    Expr.columnTupleIn
-      (FieldDef.fieldColumnName fieldDefA :| [FieldDef.fieldColumnName fieldDefB])
+    Expr.tupleIn
+      (FieldDef.fieldColumnReference fieldDefA :| [FieldDef.fieldColumnReference fieldDefB])
       (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
 
 {- |
@@ -252,8 +252,8 @@ fieldTupleNotIn ::
   WhereCondition
 fieldTupleNotIn fieldDefA fieldDefB values =
   WhereCondition $
-    Expr.columnTupleNotIn
-      (FieldDef.fieldColumnName fieldDefA :| [FieldDef.fieldColumnName fieldDefB])
+    Expr.tupleNotIn
+      (FieldDef.fieldColumnReference fieldDefA :| [FieldDef.fieldColumnReference fieldDefB])
       (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
 
 {- |
@@ -263,23 +263,23 @@ toSqlValueTuple ::
   FieldDef.FieldDefinition nullabilityA a ->
   FieldDef.FieldDefinition nullabilityB b ->
   (a, b) ->
-  NonEmpty SqlValue.SqlValue
+  NonEmpty Expr.ValueExpression
 toSqlValueTuple fieldDefA fieldDefB (a, b) =
-  FieldDef.fieldValueToSqlValue fieldDefA a
-    :| [FieldDef.fieldValueToSqlValue fieldDefB b]
+  FieldDef.fieldValueToExpression fieldDefA a
+    :| [FieldDef.fieldValueToExpression fieldDefB b]
 
 {- |
   INTERNAL: Constructs a field-based 'WhereCondition' using a function that
   builds a 'Expr.BooleanExpr'
 -}
 whereColumnComparison ::
-  (Expr.ColumnName -> SqlValue.SqlValue -> Expr.BooleanExpr) ->
+  (Expr.ValueExpression -> Expr.ValueExpression -> Expr.BooleanExpr) ->
   (FieldDef.FieldDefinition nullability a -> a -> WhereCondition)
 whereColumnComparison columnComparison fieldDef a =
   WhereCondition $
     columnComparison
-      (FieldDef.fieldColumnName fieldDef)
-      (FieldDef.fieldValueToSqlValue fieldDef a)
+      (FieldDef.fieldColumnReference fieldDef)
+      (FieldDef.fieldValueToExpression fieldDef a)
 
 {- |
   Combines multiple 'WhereCondition's together using 'AND'.

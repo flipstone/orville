@@ -18,9 +18,11 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     setField,
     (.:=),
     FieldNullability (..),
+    fieldValueToExpression,
     fieldValueToSqlValue,
     fieldValueFromSqlValue,
     fieldColumnName,
+    fieldColumnReference,
     fieldColumnDefinition,
     FieldName,
     stringToFieldName,
@@ -177,6 +179,15 @@ fieldIsNotNullable field =
 
 {- |
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
+  representation and packages the resul as a 'Expr.ValueExression' so that
+  it can be easily used with other @Expr@ functions.
+-}
+fieldValueToExpression :: FieldDefinition nullability a -> a -> Expr.ValueExpression
+fieldValueToExpression field =
+  Expr.valueExpression . fieldValueToSqlValue field
+
+{- |
+  Mashalls a Haskell value to be stored in the field to its 'SqlValue'
   representation.
 -}
 fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue.SqlValue
@@ -198,6 +209,14 @@ fieldValueFromSqlValue =
 fieldColumnName :: FieldDefinition nullability a -> Expr.ColumnName
 fieldColumnName =
   fieldNameToColumnName . fieldName
+
+{- |
+  Constructs the 'Expr.ValueExpression for a field for use in SQL expressions
+  from the 'Expr' module.
+-}
+fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
+fieldColumnReference =
+  Expr.columnReference . fieldColumnName
 
 {- |
   Constructions the equivalant 'Expr.FieldDefinition' as a SQL expression,

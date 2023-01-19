@@ -160,6 +160,7 @@ module Orville.PostgreSQL
     FieldDefinition.localTimestampField,
     FieldDefinition.fieldOfType,
     FieldDefinition.fieldColumnName,
+    FieldDefinition.fieldColumnReference,
     FieldDefinition.fieldName,
     FieldDefinition.fieldDescription,
     FieldDefinition.setFieldDescription,

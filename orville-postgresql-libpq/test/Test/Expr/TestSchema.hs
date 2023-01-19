@@ -4,7 +4,9 @@ module Test.Expr.TestSchema
     findAllFooBars,
     fooBarTable,
     fooColumn,
+    fooColumnRef,
     barColumn,
+    barColumnRef,
     encodeFooBar,
     orderByFoo,
     insertFooBarSource,
@@ -47,9 +49,17 @@ fooColumn :: Expr.ColumnName
 fooColumn =
   Expr.columnName "foo"
 
+fooColumnRef :: Expr.ValueExpression
+fooColumnRef =
+  Expr.columnReference fooColumn
+
 barColumn :: Expr.ColumnName
 barColumn =
   Expr.columnName "bar"
+
+barColumnRef :: Expr.ValueExpression
+barColumnRef =
+  Expr.columnReference barColumn
 
 orderByFoo :: Expr.OrderByClause
 orderByFoo =

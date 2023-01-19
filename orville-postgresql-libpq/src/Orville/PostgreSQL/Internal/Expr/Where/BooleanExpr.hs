@@ -10,21 +10,21 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     orExpr,
     andExpr,
     parenthesized,
-    columnEquals,
-    columnNotEquals,
-    columnGreaterThan,
-    columnLessThan,
-    columnGreaterThanOrEqualTo,
-    columnLessThanOrEqualTo,
-    columnLike,
-    columnLikeInsensitive,
-    columnIsNull,
-    columnIsNotNull,
+    equals,
+    notEquals,
+    greaterThan,
+    lessThan,
+    greaterThanOrEqualTo,
+    lessThanOrEqualTo,
+    like,
+    likeInsensitive,
+    isNull,
+    isNotNull,
     comparison,
-    columnIn,
-    columnNotIn,
-    columnTupleIn,
-    columnTupleNotIn,
+    valueIn,
+    valueNotIn,
+    tupleIn,
+    tupleNotIn,
     InValuePredicate,
     inPredicate,
     notInPredicate,
@@ -33,11 +33,9 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
 where
 
 import qualified Data.List.NonEmpty as NE
-import Orville.PostgreSQL.Internal.Expr.Name (ColumnName)
-import Orville.PostgreSQL.Internal.Expr.ValueExpression (ValueExpression, columnReference, rowValueConstructor, valueExpression)
+import Orville.PostgreSQL.Internal.Expr.ValueExpression (ValueExpression, rowValueConstructor)
 import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 
 newtype BooleanExpr
   = BooleanExpr RawSql.RawSql
@@ -57,35 +55,35 @@ andExpr left right =
       <> RawSql.fromString " AND "
       <> RawSql.toRawSql right
 
-columnIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
-columnIn columnName values =
-  inPredicate (columnReference columnName) (inValueList $ fmap valueExpression values)
+valueIn :: ValueExpression -> NE.NonEmpty ValueExpression -> BooleanExpr
+valueIn needle haystack =
+  inPredicate needle (inValueList haystack)
 
-columnNotIn :: ColumnName -> NE.NonEmpty SqlValue -> BooleanExpr
-columnNotIn columnName values =
-  notInPredicate (columnReference columnName) (inValueList $ fmap valueExpression values)
+valueNotIn :: ValueExpression -> NE.NonEmpty ValueExpression -> BooleanExpr
+valueNotIn needle haystack =
+  notInPredicate needle (inValueList haystack)
 
 {- |
-  Checks that the tuple constructed from the given columns in one of the tuples
+  Checks that the tuple constructed from the given values in one of the tuples
   specified in the input list. It is up to the caller to ensure that all the
   tuples given have the same arity.
 -}
-columnTupleIn :: NE.NonEmpty ColumnName -> NE.NonEmpty (NE.NonEmpty SqlValue) -> BooleanExpr
-columnTupleIn columnNames valueLists =
+tupleIn :: NE.NonEmpty ValueExpression -> NE.NonEmpty (NE.NonEmpty ValueExpression) -> BooleanExpr
+tupleIn needle haystack =
   inPredicate
-    (rowValueConstructor $ fmap columnReference columnNames)
-    (inValueList $ fmap (rowValueConstructor . fmap valueExpression) valueLists)
+    (rowValueConstructor needle)
+    (inValueList (fmap rowValueConstructor haystack))
 
 {- |
-  Checks that the tuple constructed from the given columns is NOT one of the
+  Checks that the tuple constructed from the given values is NOT one of the
   tuples specified in the input list. It is up to the caller to ensure that all
   the tuples given have the same arity.
 -}
-columnTupleNotIn :: NE.NonEmpty ColumnName -> NE.NonEmpty (NE.NonEmpty SqlValue) -> BooleanExpr
-columnTupleNotIn columnNames valueLists =
+tupleNotIn :: NE.NonEmpty ValueExpression -> NE.NonEmpty (NE.NonEmpty ValueExpression) -> BooleanExpr
+tupleNotIn needle haystack =
   notInPredicate
-    (rowValueConstructor $ fmap columnReference columnNames)
-    (inValueList $ fmap (rowValueConstructor . fmap valueExpression) valueLists)
+    (rowValueConstructor needle)
+    (inValueList (fmap rowValueConstructor haystack))
 
 inPredicate :: ValueExpression -> InValuePredicate -> BooleanExpr
 inPredicate predicand predicate =
@@ -117,12 +115,44 @@ parenthesized expr =
   BooleanExpr $
     RawSql.leftParen <> RawSql.toRawSql expr <> RawSql.rightParen
 
+equals :: ValueExpression -> ValueExpression -> BooleanExpr
+equals =
+  comparison equalsOp
+
+notEquals :: ValueExpression -> ValueExpression -> BooleanExpr
+notEquals =
+  comparison notEqualsOp
+
+greaterThan :: ValueExpression -> ValueExpression -> BooleanExpr
+greaterThan =
+  comparison greaterThanOp
+
+lessThan :: ValueExpression -> ValueExpression -> BooleanExpr
+lessThan =
+  comparison lessThanOp
+
+greaterThanOrEqualTo :: ValueExpression -> ValueExpression -> BooleanExpr
+greaterThanOrEqualTo =
+  comparison greaterThanOrEqualsOp
+
+lessThanOrEqualTo :: ValueExpression -> ValueExpression -> BooleanExpr
+lessThanOrEqualTo =
+  comparison lessThanOrEqualsOp
+
+like :: ValueExpression -> ValueExpression -> BooleanExpr
+like =
+  comparison likeOp
+
+likeInsensitive :: ValueExpression -> ValueExpression -> BooleanExpr
+likeInsensitive =
+  comparison iLikeOp
+
 comparison ::
-  ValueExpression ->
   ComparisonOperator ->
   ValueExpression ->
+  ValueExpression ->
   BooleanExpr
-comparison left op right =
+comparison op left right =
   BooleanExpr $
     RawSql.toRawSql left
       <> RawSql.space
@@ -130,48 +160,16 @@ comparison left op right =
       <> RawSql.space
       <> RawSql.toRawSql right
 
-columnEquals :: ColumnName -> SqlValue -> BooleanExpr
-columnEquals name value =
-  comparison (columnReference name) equalsOp (valueExpression value)
-
-columnNotEquals :: ColumnName -> SqlValue -> BooleanExpr
-columnNotEquals name value =
-  comparison (columnReference name) notEqualsOp (valueExpression value)
-
-columnGreaterThan :: ColumnName -> SqlValue -> BooleanExpr
-columnGreaterThan name value =
-  comparison (columnReference name) greaterThanOp (valueExpression value)
-
-columnLessThan :: ColumnName -> SqlValue -> BooleanExpr
-columnLessThan name value =
-  comparison (columnReference name) lessThanOp (valueExpression value)
-
-columnGreaterThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
-columnGreaterThanOrEqualTo name value =
-  comparison (columnReference name) greaterThanOrEqualsOp (valueExpression value)
-
-columnLessThanOrEqualTo :: ColumnName -> SqlValue -> BooleanExpr
-columnLessThanOrEqualTo name value =
-  comparison (columnReference name) lessThanOrEqualsOp (valueExpression value)
-
-columnLike :: ColumnName -> SqlValue -> BooleanExpr
-columnLike name value =
-  comparison (columnReference name) likeOp (valueExpression value)
-
-columnLikeInsensitive :: ColumnName -> SqlValue -> BooleanExpr
-columnLikeInsensitive name value =
-  comparison (columnReference name) iLikeOp (valueExpression value)
-
-columnIsNull :: ColumnName -> BooleanExpr
-columnIsNull name =
+isNull :: ValueExpression -> BooleanExpr
+isNull value =
   BooleanExpr $
-    RawSql.toRawSql (columnReference name)
+    RawSql.toRawSql value
       <> RawSql.space
       <> RawSql.fromString "IS NULL"
 
-columnIsNotNull :: ColumnName -> BooleanExpr
-columnIsNotNull name =
+isNotNull :: ValueExpression -> BooleanExpr
+isNotNull value =
   BooleanExpr $
-    RawSql.toRawSql (columnReference name)
+    RawSql.toRawSql value
       <> RawSql.space
       <> RawSql.fromString "IS NOT NULL"
