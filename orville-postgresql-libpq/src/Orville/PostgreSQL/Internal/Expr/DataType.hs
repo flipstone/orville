@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.ColumnDefinition
+Module    : Orville.PostgreSQL.Expr.DataType
 Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
 -}
