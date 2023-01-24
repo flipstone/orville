@@ -147,11 +147,12 @@ prop_bitwiseXor =
           (int32Expression m)
 
     result === Bits.xor n m
+
 prop_bitwiseShiftLeft :: Property.NamedDBProperty
 prop_bitwiseShiftLeft =
   Property.namedDBProperty "bitwiseShiftLeft" $ \pool -> do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
-    m <- HH.forAll (Gen.integral (Range.linear 0 32))
+    m <- HH.forAll (Gen.integral (Range.linear 0 64))
 
     result <-
       evaluateIntegerExpression pool $
@@ -159,13 +160,13 @@ prop_bitwiseShiftLeft =
           (int32Expression n)
           (intExpression m)
 
-    result === Bits.shift n m
+    result === Bits.shiftL n (m `mod` 32)
 
 prop_bitwiseShiftRight :: Property.NamedDBProperty
 prop_bitwiseShiftRight =
-  Property.namedDBProperty "bitwiseShiftLeft" $ \pool -> do
+  Property.namedDBProperty "bitwiseShiftRight" $ \pool -> do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
-    m <- HH.forAll (Gen.integral (Range.linear 0 32))
+    m <- HH.forAll (Gen.integral (Range.linear 0 64))
 
     result <-
       evaluateIntegerExpression pool $
@@ -173,7 +174,7 @@ prop_bitwiseShiftRight =
           (int32Expression n)
           (intExpression m)
 
-    result === Bits.shift n (- m)
+    result === Bits.shiftR n (m `mod` 32)
 
 int32Expression :: Int32 -> Expr.ValueExpression
 int32Expression n =
