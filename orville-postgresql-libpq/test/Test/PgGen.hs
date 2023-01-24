@@ -80,12 +80,14 @@ pgIdentifier =
 {- |
   Relation names must be unique in PostgreSQL, so we sometimes generate
   names with prefixes to avoid conflicts between different types of
-  relations such as tables and indexes.
+  relations such as tables and indexes. The min length value allows the
+  caller to length of the random strings that will be appended to prefix,
+  which case be useful to avoid conflicts.
 -}
-pgIdentifierWithPrefix :: String -> HH.Gen String
-pgIdentifierWithPrefix prefix =
+pgIdentifierWithPrefix :: String -> Int -> HH.Gen String
+pgIdentifierWithPrefix prefix minLength =
   fmap (prefix <>)
-    . Gen.string (Range.linear 1 (63 - length prefix))
+    . Gen.string (Range.linear minLength (63 - length prefix))
     . Gen.element
     $ pgIdentifierChars
 

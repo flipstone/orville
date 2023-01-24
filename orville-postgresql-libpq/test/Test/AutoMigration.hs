@@ -886,7 +886,7 @@ generateTestTable :: HH.Gen TestTable
 generateTestTable = do
   columns <- generateTestTableColumns
 
-  tableName <- PgGen.pgIdentifierWithPrefix "t_"
+  tableName <- PgGen.pgIdentifierWithPrefix "t_" 1
 
   TestTable tableName
     <$> pure columns
@@ -969,7 +969,7 @@ generateTestIndexes columns tableName = do
       -- The use of `take 8` is to avoid creating a prefix that would be truncated
       -- but is also long enough to avoid collision when generating indexes for
       -- an arbitrary amount of tables
-      indexName <- Gen.maybe $ PgGen.pgIdentifierWithPrefix ((take 8 tableName) <> "i_")
+      indexName <- Gen.maybe $ PgGen.pgIdentifierWithPrefix ((take 8 tableName) <> "i_") 3
       subcolumns <- Gen.subsequence columns
       maybeNonEmptyColumns <- NEL.nonEmpty <$> Gen.shuffle subcolumns
       uniqueness <- Gen.element [Orville.UniqueIndex, Orville.NonUniqueIndex]
