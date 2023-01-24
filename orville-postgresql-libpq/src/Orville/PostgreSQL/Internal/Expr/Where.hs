@@ -11,5 +11,4 @@ module Orville.PostgreSQL.Internal.Expr.Where
 where
 
 import Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr as Export
-import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator as Export
 import Orville.PostgreSQL.Internal.Expr.Where.WhereClause as Export

@@ -29,7 +29,8 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes, maybeToList)
 
-import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition, DataType)
+import Orville.PostgreSQL.Internal.Expr.ColumnDefinition (ColumnDefinition)
+import Orville.PostgreSQL.Internal.Expr.DataType (DataType)
 import Orville.PostgreSQL.Internal.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Internal.Expr.Name (ColumnName, ConstraintName, Qualified, TableName)
 import Orville.PostgreSQL.Internal.Expr.TableConstraint (TableConstraint)

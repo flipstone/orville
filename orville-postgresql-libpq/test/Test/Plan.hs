@@ -441,8 +441,8 @@ prop_explain =
           Plan.explain plan
 
     explanation
-      === [ "SELECT \"name\",\"id\",\"name\",\"age\" FROM \"foo\" WHERE \"name\" = $1"
-          , "SELECT \"foo_id\",\"id\",\"foo_id\" FROM \"foo_child\" WHERE \"foo_id\" = $1"
+      === [ "SELECT \"name\",\"id\",\"name\",\"age\" FROM \"foo\" WHERE (\"name\") = ($1)"
+          , "SELECT \"foo_id\",\"id\",\"foo_id\" FROM \"foo_child\" WHERE (\"foo_id\") = ($1)"
           ]
 
 {- |

@@ -28,6 +28,7 @@ module Orville.PostgreSQL.Internal.RawSql
     doubleQuote,
     doubleColon,
     stringLiteral,
+    parenthesized,
 
     -- * Integer values as literals
     intDecLiteral,
@@ -422,3 +423,12 @@ int64DecLiteral =
 intDecLiteral :: Int -> RawSql
 intDecLiteral =
   SqlSection . BSB.intDec
+
+{- |
+  Constructs a 'RawSql' by putting parentheses around an arbitrary expression.
+  The result is returned as a 'RawSql'. It is up to the caller to decide whether
+  it should be wrapped in a more specific expression type.
+-}
+parenthesized :: SqlExpression sql => sql -> RawSql
+parenthesized expr =
+  leftParen <> toRawSql expr <> rightParen

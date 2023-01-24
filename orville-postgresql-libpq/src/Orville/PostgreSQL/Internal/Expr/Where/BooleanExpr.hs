@@ -20,7 +20,6 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
     likeInsensitive,
     isNull,
     isNotNull,
-    comparison,
     valueIn,
     valueNotIn,
     tupleIn,
@@ -33,27 +32,31 @@ module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
 where
 
 import qualified Data.List.NonEmpty as NE
+import Orville.PostgreSQL.Internal.Expr.BinaryOperator (andOp, binaryOpExpression, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp, orOp)
 import Orville.PostgreSQL.Internal.Expr.ValueExpression (ValueExpression, rowValueConstructor)
-import Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator (ComparisonOperator, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype BooleanExpr
   = BooleanExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
+booleanValueExpression :: BooleanExpr -> ValueExpression
+booleanValueExpression (BooleanExpr rawSql) =
+  RawSql.unsafeFromRawSql rawSql
+
 orExpr :: BooleanExpr -> BooleanExpr -> BooleanExpr
 orExpr left right =
-  BooleanExpr $
-    RawSql.toRawSql left
-      <> RawSql.fromString " OR "
-      <> RawSql.toRawSql right
+  binaryOpExpression
+    orOp
+    (booleanValueExpression left)
+    (booleanValueExpression right)
 
 andExpr :: BooleanExpr -> BooleanExpr -> BooleanExpr
 andExpr left right =
-  BooleanExpr $
-    RawSql.toRawSql left
-      <> RawSql.fromString " AND "
-      <> RawSql.toRawSql right
+  binaryOpExpression
+    andOp
+    (booleanValueExpression left)
+    (booleanValueExpression right)
 
 valueIn :: ValueExpression -> NE.NonEmpty ValueExpression -> BooleanExpr
 valueIn needle haystack =
@@ -88,14 +91,14 @@ tupleNotIn needle haystack =
 inPredicate :: ValueExpression -> InValuePredicate -> BooleanExpr
 inPredicate predicand predicate =
   BooleanExpr $
-    RawSql.toRawSql predicand
+    RawSql.parenthesized predicand
       <> RawSql.fromString " IN "
       <> RawSql.toRawSql predicate
 
 notInPredicate :: ValueExpression -> InValuePredicate -> BooleanExpr
 notInPredicate predicand predicate =
   BooleanExpr $
-    RawSql.toRawSql predicand
+    RawSql.parenthesized predicand
       <> RawSql.fromString " NOT IN "
       <> RawSql.toRawSql predicate
 
@@ -117,48 +120,35 @@ parenthesized expr =
 
 equals :: ValueExpression -> ValueExpression -> BooleanExpr
 equals =
-  comparison equalsOp
+  binaryOpExpression equalsOp
 
 notEquals :: ValueExpression -> ValueExpression -> BooleanExpr
 notEquals =
-  comparison notEqualsOp
+  binaryOpExpression notEqualsOp
 
 greaterThan :: ValueExpression -> ValueExpression -> BooleanExpr
 greaterThan =
-  comparison greaterThanOp
+  binaryOpExpression greaterThanOp
 
 lessThan :: ValueExpression -> ValueExpression -> BooleanExpr
 lessThan =
-  comparison lessThanOp
+  binaryOpExpression lessThanOp
 
 greaterThanOrEqualTo :: ValueExpression -> ValueExpression -> BooleanExpr
 greaterThanOrEqualTo =
-  comparison greaterThanOrEqualsOp
+  binaryOpExpression greaterThanOrEqualsOp
 
 lessThanOrEqualTo :: ValueExpression -> ValueExpression -> BooleanExpr
 lessThanOrEqualTo =
-  comparison lessThanOrEqualsOp
+  binaryOpExpression lessThanOrEqualsOp
 
 like :: ValueExpression -> ValueExpression -> BooleanExpr
 like =
-  comparison likeOp
+  binaryOpExpression likeOp
 
 likeInsensitive :: ValueExpression -> ValueExpression -> BooleanExpr
 likeInsensitive =
-  comparison iLikeOp
-
-comparison ::
-  ComparisonOperator ->
-  ValueExpression ->
-  ValueExpression ->
-  BooleanExpr
-comparison op left right =
-  BooleanExpr $
-    RawSql.toRawSql left
-      <> RawSql.space
-      <> RawSql.toRawSql op
-      <> RawSql.space
-      <> RawSql.toRawSql right
+  binaryOpExpression iLikeOp
 
 isNull :: ValueExpression -> BooleanExpr
 isNull value =

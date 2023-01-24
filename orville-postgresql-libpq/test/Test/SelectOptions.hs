@@ -67,98 +67,98 @@ prop_fieldEquals :: Property.NamedProperty
 prop_fieldEquals =
   Property.singletonNamedProperty "fieldEquals generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" = $1")
+      (Just "WHERE (\"foo\") = ($1)")
       (SO.where_ $ SO.fieldEquals fooField 0)
 
 prop_fieldEqualsOperator :: Property.NamedProperty
 prop_fieldEqualsOperator =
   Property.singletonNamedProperty ".== generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" = $1")
+      (Just "WHERE (\"foo\") = ($1)")
       (SO.where_ $ fooField .== 0)
 
 prop_fieldNotEquals :: Property.NamedProperty
 prop_fieldNotEquals =
   Property.singletonNamedProperty "fieldNotEquals generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" <> $1")
+      (Just "WHERE (\"foo\") <> ($1)")
       (SO.where_ $ SO.fieldNotEquals fooField 0)
 
 prop_fieldNotEqualsOperator :: Property.NamedProperty
 prop_fieldNotEqualsOperator =
   Property.singletonNamedProperty "./= generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" <> $1")
+      (Just "WHERE (\"foo\") <> ($1)")
       (SO.where_ $ fooField ./= 0)
 
 prop_fieldLessThan :: Property.NamedProperty
 prop_fieldLessThan =
   Property.singletonNamedProperty "fieldLessThan generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" < $1")
+      (Just "WHERE (\"foo\") < ($1)")
       (SO.where_ $ SO.fieldLessThan fooField 0)
 
 prop_fieldLessThanOperator :: Property.NamedProperty
 prop_fieldLessThanOperator =
   Property.singletonNamedProperty ".< generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" < $1")
+      (Just "WHERE (\"foo\") < ($1)")
       (SO.where_ $ fooField .< 0)
 
 prop_fieldGreaterThan :: Property.NamedProperty
 prop_fieldGreaterThan =
   Property.singletonNamedProperty "fieldGreaterThan generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" > $1")
+      (Just "WHERE (\"foo\") > ($1)")
       (SO.where_ $ SO.fieldGreaterThan fooField 0)
 
 prop_fieldGreaterThanOperator :: Property.NamedProperty
 prop_fieldGreaterThanOperator =
   Property.singletonNamedProperty ".> generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" > $1")
+      (Just "WHERE (\"foo\") > ($1)")
       (SO.where_ $ fooField .> 0)
 
 prop_fieldLessThanOrEqualTo :: Property.NamedProperty
 prop_fieldLessThanOrEqualTo =
   Property.singletonNamedProperty "fieldLessThanOrEqualTo generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" <= $1")
+      (Just "WHERE (\"foo\") <= ($1)")
       (SO.where_ $ SO.fieldLessThanOrEqualTo fooField 0)
 
 prop_fieldLessThanOrEqualToOperator :: Property.NamedProperty
 prop_fieldLessThanOrEqualToOperator =
   Property.singletonNamedProperty ".<= generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" <= $1")
+      (Just "WHERE (\"foo\") <= ($1)")
       (SO.where_ $ fooField .<= 0)
 
 prop_fieldGreaterThanOrEqualTo :: Property.NamedProperty
 prop_fieldGreaterThanOrEqualTo =
   Property.singletonNamedProperty "fieldGreaterThanOrEqualTo generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" >= $1")
+      (Just "WHERE (\"foo\") >= ($1)")
       (SO.where_ $ SO.fieldGreaterThanOrEqualTo fooField 0)
 
 prop_fieldGreaterThanOrEqualToOperator :: Property.NamedProperty
 prop_fieldGreaterThanOrEqualToOperator =
   Property.singletonNamedProperty ".>= generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" >= $1")
+      (Just "WHERE (\"foo\") >= ($1)")
       (SO.where_ $ fooField .>= 0)
 
 prop_fieldLike :: Property.NamedProperty
 prop_fieldLike =
   Property.singletonNamedProperty "fieldLike generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" LIKE $1")
+      (Just "WHERE (\"foo\") LIKE ($1)")
       (SO.where_ $ SO.fieldLike fooField $ T.pack "%0%")
 
 prop_fieldLikeInsensitive :: Property.NamedProperty
 prop_fieldLikeInsensitive =
-  Property.singletonNamedProperty "fieldLike generates expected sql" $
+  Property.singletonNamedProperty "fieldLikeInsensitive generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" ILIKE $1")
+      (Just "WHERE (\"foo\") ILIKE ($1)")
       (SO.where_ $ SO.fieldLikeInsensitive fooField $ T.pack "%0%")
 
 prop_fieldIsNull :: Property.NamedProperty
@@ -179,35 +179,35 @@ prop_whereAnd :: Property.NamedProperty
 prop_whereAnd =
   Property.singletonNamedProperty "whereAnd generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) AND (\"bar\" = $2)")
+      (Just "WHERE ((\"foo\") = ($1)) AND ((\"bar\") = ($2))")
       (SO.where_ $ SO.whereAnd (SO.fieldEquals fooField 10) (SO.fieldEquals barField 20))
 
 prop_whereAndOperator :: Property.NamedProperty
 prop_whereAndOperator =
   Property.singletonNamedProperty ".&& generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) AND (\"bar\" = $2)")
+      (Just "WHERE ((\"foo\") = ($1)) AND ((\"bar\") = ($2))")
       (SO.where_ $ SO.fieldEquals fooField 10 .&& SO.fieldEquals barField 20)
 
 prop_whereOr :: Property.NamedProperty
 prop_whereOr =
   Property.singletonNamedProperty "whereOr generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) OR (\"bar\" = $2)")
+      (Just "WHERE ((\"foo\") = ($1)) OR ((\"bar\") = ($2))")
       (SO.where_ $ SO.whereOr (SO.fieldEquals fooField 10) (SO.fieldEquals barField 20))
 
 prop_whereOrOperator :: Property.NamedProperty
 prop_whereOrOperator =
   Property.singletonNamedProperty ".|| generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) OR (\"bar\" = $2)")
+      (Just "WHERE ((\"foo\") = ($1)) OR ((\"bar\") = ($2))")
       (SO.where_ $ SO.fieldEquals fooField 10 .|| SO.fieldEquals barField 20)
 
 prop_whereAndOrRightAssociativity :: Property.NamedProperty
 prop_whereAndOrRightAssociativity =
   Property.singletonNamedProperty ".|| and .&& are right associative" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) OR ((\"foo\" = $2) AND ((\"foo\" = $3) OR (\"foo\" = $4)))")
+      (Just "WHERE ((\"foo\") = ($1)) OR (((\"foo\") = ($2)) AND (((\"foo\") = ($3)) OR ((\"foo\") = ($4))))")
       ( SO.where_ $
           SO.fieldEquals fooField 10
             .|| SO.fieldEquals fooField 20
@@ -219,7 +219,7 @@ prop_equalityAndOrPrecedence :: Property.NamedProperty
 prop_equalityAndOrPrecedence =
   Property.singletonNamedProperty ".|| and .&& are have reasonable precedence to combine with .== and friends" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) OR ((\"foo\" <> $2) AND ((\"foo\" > $3) OR ((\"foo\" < $4) AND ((\"foo\" >= $5) OR ((\"foo\" <= $6) AND ((\"foo\" IN ($7)) OR (\"foo\" NOT IN ($8))))))))")
+      (Just "WHERE ((\"foo\") = ($1)) OR (((\"foo\") <> ($2)) AND (((\"foo\") > ($3)) OR (((\"foo\") < ($4)) AND (((\"foo\") >= ($5)) OR (((\"foo\") <= ($6)) AND (((\"foo\") IN ($7)) OR ((\"foo\") NOT IN ($8))))))))")
       ( SO.where_ $
           fooField .== 10
             .|| fooField ./= 20
@@ -235,7 +235,7 @@ prop_whereCombined :: Property.NamedProperty
 prop_whereCombined =
   Property.singletonNamedProperty "combining SelectOptions ANDs the where clauses together" $
     assertWhereClauseEquals
-      (Just "WHERE (\"foo\" = $1) AND (\"bar\" = $2)")
+      (Just "WHERE ((\"foo\") = ($1)) AND ((\"bar\") = ($2))")
       ( SO.where_ (SO.fieldEquals fooField 10)
           <> SO.where_ (SO.fieldEquals barField 20)
       )
@@ -244,28 +244,28 @@ prop_fieldIn :: Property.NamedProperty
 prop_fieldIn =
   Property.singletonNamedProperty "fieldIn generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" IN ($1)")
+      (Just "WHERE (\"foo\") IN ($1)")
       (SO.where_ $ SO.fieldIn fooField (10 :| []))
 
 prop_fieldInOperator :: Property.NamedProperty
 prop_fieldInOperator =
   Property.singletonNamedProperty ".<- generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" IN ($1)")
+      (Just "WHERE (\"foo\") IN ($1)")
       (SO.where_ $ fooField .<- (10 :| []))
 
 prop_fieldNotIn :: Property.NamedProperty
 prop_fieldNotIn =
   Property.singletonNamedProperty "fieldNotIn generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" NOT IN ($1, $2)")
+      (Just "WHERE (\"foo\") NOT IN ($1, $2)")
       (SO.where_ $ SO.fieldNotIn fooField (10 :| [20]))
 
 prop_fieldNotInOperator :: Property.NamedProperty
 prop_fieldNotInOperator =
   Property.singletonNamedProperty ".</- generates expected sql" $
     assertWhereClauseEquals
-      (Just "WHERE \"foo\" NOT IN ($1, $2)")
+      (Just "WHERE (\"foo\") NOT IN ($1, $2)")
       (SO.where_ $ fooField .</- (10 :| [20]))
 
 prop_distinct :: Property.NamedProperty

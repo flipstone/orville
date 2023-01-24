@@ -69,9 +69,11 @@ library
       Orville.PostgreSQL.Internal.ConstraintDefinition
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
+      Orville.PostgreSQL.Internal.Expr.BinaryOperator
       Orville.PostgreSQL.Internal.Expr.ColumnDefinition
       Orville.PostgreSQL.Internal.Expr.Count
       Orville.PostgreSQL.Internal.Expr.Cursor
+      Orville.PostgreSQL.Internal.Expr.DataType
       Orville.PostgreSQL.Internal.Expr.Delete
       Orville.PostgreSQL.Internal.Expr.GroupBy
       Orville.PostgreSQL.Internal.Expr.GroupBy.GroupByClause
@@ -84,6 +86,7 @@ library
       Orville.PostgreSQL.Internal.Expr.Insert.InsertSource
       Orville.PostgreSQL.Internal.Expr.Insert.RowValues
       Orville.PostgreSQL.Internal.Expr.LimitExpr
+      Orville.PostgreSQL.Internal.Expr.Math
       Orville.PostgreSQL.Internal.Expr.Name
       Orville.PostgreSQL.Internal.Expr.Name.ColumnName
       Orville.PostgreSQL.Internal.Expr.Name.ConstraintName
@@ -112,6 +115,7 @@ library
       Orville.PostgreSQL.Internal.Expr.SequenceDefinition
       Orville.PostgreSQL.Internal.Expr.TableConstraint
       Orville.PostgreSQL.Internal.Expr.TableDefinition
+      Orville.PostgreSQL.Internal.Expr.Time
       Orville.PostgreSQL.Internal.Expr.Transaction
       Orville.PostgreSQL.Internal.Expr.Update
       Orville.PostgreSQL.Internal.Expr.Update.SetClause
@@ -120,7 +124,6 @@ library
       Orville.PostgreSQL.Internal.Expr.ValueExpression
       Orville.PostgreSQL.Internal.Expr.Where
       Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
-      Orville.PostgreSQL.Internal.Expr.Where.ComparisonOperator
       Orville.PostgreSQL.Internal.Expr.Where.WhereClause
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.IndexDefinition
@@ -186,10 +189,12 @@ test-suite spec
       Test.Expr.Cursor
       Test.Expr.GroupBy
       Test.Expr.InsertUpdateDelete
+      Test.Expr.Math
       Test.Expr.OrderBy
       Test.Expr.SequenceDefinition
       Test.Expr.TableDefinition
       Test.Expr.TestSchema
+      Test.Expr.Time
       Test.Expr.Where
       Test.FieldDefinition
       Test.MarshallError

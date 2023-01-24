@@ -21,9 +21,11 @@ import qualified Test.Execution as Execution
 import qualified Test.Expr.Count as ExprCount
 import qualified Test.Expr.Cursor as ExprCursor
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
+import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
+import qualified Test.Expr.Time as ExprTime
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.MarshallError as MarshallError
@@ -59,6 +61,8 @@ main = do
       , ExprSequenceDefinition.sequenceDefinitionTests pool
       , ExprCursor.cursorTests pool
       , ExprCount.countTests pool
+      , ExprMath.mathTests pool
+      , ExprTime.timeTests pool
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool

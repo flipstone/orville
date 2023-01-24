@@ -282,14 +282,14 @@ whereColumnComparison columnComparison fieldDef a =
       (FieldDef.fieldValueToExpression fieldDef a)
 
 {- |
-  Combines multiple 'WhereCondition's together using 'AND'.
+  Combines multiple 'WhereCondition's together using @AND@
 -}
 whereAnd :: WhereCondition -> WhereCondition -> WhereCondition
 whereAnd left right =
   whereBooleanExpr $
     Expr.andExpr
-      (Expr.parenthesized (whereConditionToBooleanExpr left))
-      (Expr.parenthesized (whereConditionToBooleanExpr right))
+      (whereConditionToBooleanExpr left)
+      (whereConditionToBooleanExpr right)
 
 {- |
   Operator alias for 'whereAnd'
@@ -300,14 +300,14 @@ whereAnd left right =
 infixr 8 .&&
 
 {- |
-  Combines multiple 'WhereCondition's together using 'OR.
+  Combines multiple 'WhereCondition's together using @OR@.
 -}
 whereOr :: WhereCondition -> WhereCondition -> WhereCondition
 whereOr left right =
   whereBooleanExpr $
     Expr.orExpr
-      (Expr.parenthesized (whereConditionToBooleanExpr left))
-      (Expr.parenthesized (whereConditionToBooleanExpr right))
+      (whereConditionToBooleanExpr left)
+      (whereConditionToBooleanExpr right)
 
 {- |
   Operator alias for 'whereOr
