@@ -8,6 +8,7 @@ License   : MIT
 module Orville.PostgreSQL.Internal.Expr.OrderBy.OrderByExpr
   ( OrderByExpr,
     appendOrderByExpr,
+    orderByColumnName,
     orderByExpr,
     orderByColumnsExpr,
   )
@@ -22,6 +23,9 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 newtype OrderByExpr = OrderByExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
+
+instance Semigroup OrderByExpr where
+  (<>) = appendOrderByExpr
 
 appendOrderByExpr :: OrderByExpr -> OrderByExpr -> OrderByExpr
 appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
@@ -38,3 +42,10 @@ orderByColumnsExpr columns =
     columnOrdering :: (ColumnName, OrderByDirection) -> RawSql.RawSql
     columnOrdering (columnName, orderByDirection) =
       RawSql.toRawSql columnName <> RawSql.space <> RawSql.toRawSql orderByDirection
+
+{-- |
+  Orders a query by the given column name in the given order direction.
+-}
+orderByColumnName :: ColumnName -> OrderByDirection -> OrderByExpr
+orderByColumnName =
+  orderByExpr . RawSql.toRawSql

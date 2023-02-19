@@ -21,6 +21,9 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 newtype GroupByExpr = GroupByExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
+instance Semigroup GroupByExpr where
+  (<>) = appendGroupByExpr
+
 appendGroupByExpr :: GroupByExpr -> GroupByExpr -> GroupByExpr
 appendGroupByExpr (GroupByExpr a) (GroupByExpr b) =
   GroupByExpr (a <> RawSql.commaSpace <> b)

@@ -15,8 +15,31 @@ module Orville.PostgreSQL.Internal.FieldDefinition
     fieldIsNotNullable,
     fieldDefaultValue,
     fieldNullability,
+    fieldEquals,
+    (.==),
+    fieldNotEquals,
+    (./=),
+    fieldGreaterThan,
+    (.>),
+    fieldLessThan,
+    (.<),
+    fieldGreaterThanOrEqualTo,
+    (.>=),
+    fieldLessThanOrEqualTo,
+    (.<=),
+    fieldIsNull,
+    fieldIsNotNull,
+    fieldLike,
+    fieldLikeInsensitive,
+    fieldIn,
+    (.<-),
+    fieldNotIn,
+    (.</-),
+    fieldTupleIn,
+    fieldTupleNotIn,
     setField,
     (.:=),
+    orderByField,
     FieldNullability (..),
     fieldValueToExpression,
     fieldValueToSqlValue,
@@ -61,6 +84,7 @@ where
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Coerce as Coerce
 import Data.Int (Int16, Int32, Int64)
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import qualified Data.Time as Time
 import qualified Data.UUID as UUID
@@ -596,3 +620,219 @@ setField fieldDef value =
 -}
 (.:=) :: FieldDefinition nullability a -> a -> Expr.SetClause
 (.:=) = setField
+
+{- |
+  Checks that the value in a field equals a particular value.
+-}
+fieldEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldEquals =
+  whereColumnComparison Expr.equals
+
+{- |
+  Operator alias for 'fieldEquals'
+-}
+(.==) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+(.==) = fieldEquals
+
+infixl 9 .==
+
+{- |
+  Checks that the value in a field does not equal a particular value.
+-}
+fieldNotEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldNotEquals =
+  whereColumnComparison Expr.notEquals
+
+{- |
+  Operator alias for 'fieldNotEquals'
+-}
+(./=) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+(./=) = fieldNotEquals
+
+infixl 9 ./=
+
+{- |
+  Checks that the value in a field is greater than a particular value.
+-}
+fieldGreaterThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldGreaterThan =
+  whereColumnComparison Expr.greaterThan
+
+{- |
+  Operator alias for 'fieldGreaterThan'
+-}
+(.>) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+(.>) = fieldGreaterThan
+
+infixl 9 .>
+
+{- |
+  Checks that the value in a field is less than a particular value.
+-}
+fieldLessThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldLessThan =
+  whereColumnComparison Expr.lessThan
+
+{- |
+  Operator alias for 'fieldLessThan'
+-}
+(.<) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+(.<) = fieldLessThan
+
+infixl 9 .<
+
+{- |
+  Checks that the value in a field is greater than or equal to a particular value.
+-}
+fieldGreaterThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldGreaterThanOrEqualTo =
+  whereColumnComparison Expr.greaterThanOrEqualTo
+
+{- |
+  Operator alias for 'fieldGreaterThanOrEqualTo'
+-}
+(.>=) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+(.>=) = fieldGreaterThanOrEqualTo
+
+infixl 9 .>=
+
+{- |
+  Checks that the value in a field is less than or equal to a particular value.
+-}
+fieldLessThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldLessThanOrEqualTo =
+  whereColumnComparison Expr.lessThanOrEqualTo
+
+{- |
+  Operator alias for 'fieldLessThanOrEqualTo'
+-}
+(.<=) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+(.<=) = fieldLessThanOrEqualTo
+
+infixl 9 .<=
+
+{- |
+  Checks that the value in a field matches a like pattern
+-}
+fieldLike :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldLike fieldDef likePattern =
+  Expr.like
+    (fieldColumnReference fieldDef)
+    (Expr.valueExpression (SqlValue.fromText likePattern))
+
+{- |
+  Checks that the value in a field matches a like pattern case insensitively
+-}
+fieldLikeInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldLikeInsensitive fieldDef likePattern =
+  Expr.likeInsensitive
+    (fieldColumnReference fieldDef)
+    (Expr.valueExpression (SqlValue.fromText likePattern))
+
+{- |
+  Checks that the value in a field is null.
+-}
+fieldIsNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
+fieldIsNull =
+  Expr.isNull . fieldColumnReference
+
+{- |
+  Checks that the value in a field is not null.
+-}
+fieldIsNotNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
+fieldIsNotNull =
+  Expr.isNotNull . fieldColumnReference
+
+{- |
+  Checks that a field matches a list of values
+-}
+fieldIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
+fieldIn fieldDef values =
+  Expr.valueIn
+    (fieldColumnReference fieldDef)
+    (fmap (fieldValueToExpression fieldDef) values)
+
+{- |
+  Operator alias for 'fieldIn'
+-}
+(.<-) :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
+(.<-) = fieldIn
+
+infixl 9 .<-
+
+{- |
+  Checks that a field does not match a list of values
+-}
+fieldNotIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
+fieldNotIn fieldDef values =
+  Expr.valueNotIn
+    (fieldColumnReference fieldDef)
+    (fmap (fieldValueToExpression fieldDef) values)
+
+{- |
+  Operator alias for 'fieldNotIn'
+-}
+(.</-) :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
+(.</-) = fieldNotIn
+
+infixl 9 .</-
+
+{- |
+  Checks that a tuple of two fields is in the list of specified tuplies
+-}
+fieldTupleIn ::
+  FieldDefinition nullabilityA a ->
+  FieldDefinition nullabilityB b ->
+  NonEmpty (a, b) ->
+  Expr.BooleanExpr
+fieldTupleIn fieldDefA fieldDefB values =
+  Expr.tupleIn
+    (fieldColumnReference fieldDefA :| [fieldColumnReference fieldDefB])
+    (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
+
+{- |
+  Checks that a tuple of two fields is not in the list of specified tuplies
+-}
+fieldTupleNotIn ::
+  FieldDefinition nullabilityA a ->
+  FieldDefinition nullabilityB b ->
+  NonEmpty (a, b) ->
+  Expr.BooleanExpr
+fieldTupleNotIn fieldDefA fieldDefB values =
+  Expr.tupleNotIn
+    (fieldColumnReference fieldDefA :| [fieldColumnReference fieldDefB])
+    (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
+
+{- |
+  Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two fields
+-}
+toSqlValueTuple ::
+  FieldDefinition nullabilityA a ->
+  FieldDefinition nullabilityB b ->
+  (a, b) ->
+  NonEmpty Expr.ValueExpression
+toSqlValueTuple fieldDefA fieldDefB (a, b) =
+  fieldValueToExpression fieldDefA a
+    :| [fieldValueToExpression fieldDefB b]
+
+{- |
+  INTERNAL: Constructs a field-based 'Expr.BooleanExpr' using a function that
+  builds a 'Expr.BooleanExpr'
+-}
+whereColumnComparison ::
+  (Expr.ValueExpression -> Expr.ValueExpression -> Expr.BooleanExpr) ->
+  (FieldDefinition nullability a -> a -> Expr.BooleanExpr)
+whereColumnComparison columnComparison fieldDef a =
+  columnComparison
+    (fieldColumnReference fieldDef)
+    (fieldValueToExpression fieldDef a)
+
+{-- |
+  Orders a query by the column name for the given field.
+--}
+orderByField ::
+  FieldDefinition nullability value ->
+  Expr.OrderByDirection ->
+  Expr.OrderByExpr
+orderByField =
+  Expr.orderByColumnName . fieldColumnName

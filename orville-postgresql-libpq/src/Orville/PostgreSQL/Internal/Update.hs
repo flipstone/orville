@@ -18,10 +18,9 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import Orville.PostgreSQL.Internal.PrimaryKey (primaryKeyEqualsExpr)
+import Orville.PostgreSQL.Internal.PrimaryKey (primaryKeyEquals)
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkTableReturningClause, tableMarshaller, tableName, tablePrimaryKey)
 
@@ -109,10 +108,9 @@ updateTable returningOption tableDef key writeEntity = do
         writeEntity
 
   let isEntityKey =
-        SelectOptions.whereBooleanExpr $
-          primaryKeyEqualsExpr
-            (tablePrimaryKey tableDef)
-            key
+        primaryKeyEquals
+          (tablePrimaryKey tableDef)
+          key
   pure $
     updateFields
       returningOption
@@ -127,7 +125,7 @@ updateTable returningOption tableDef key writeEntity = do
 updateToTableFields ::
   TableDefinition key writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   Update readEntity NoReturningClause
 updateToTableFields =
   updateFields WithoutReturning
@@ -140,7 +138,7 @@ updateToTableFields =
 updateToTableFieldsReturning ::
   TableDefinition key writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   Update readEntity ReturningClause
 updateToTableFieldsReturning =
   updateFields WithReturning
@@ -151,13 +149,11 @@ updateFields ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   Update readEntity returningClause
 updateFields returingOption tableDef setClauses mbWhereCondition =
   let whereClause =
-        fmap
-          (Expr.whereClause . SelectOptions.whereConditionToBooleanExpr)
-          mbWhereCondition
+        fmap Expr.whereClause mbWhereCondition
    in rawUpdateExpr returingOption (tableMarshaller tableDef) $
         Expr.updateExpr
           (tableName tableDef)

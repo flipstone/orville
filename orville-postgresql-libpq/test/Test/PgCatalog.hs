@@ -62,7 +62,7 @@ prop_queryPgAttribute =
       Orville.findFirstEntityBy
         PgCatalog.pgAttributeTable
         ( Orville.where_ $
-            Orville.whereAnd
+            Orville.andExpr
               (Orville.fieldEquals PgCatalog.attributeRelationOidField pgClassOid)
               (Orville.fieldEquals PgCatalog.attributeNameField relname)
         )

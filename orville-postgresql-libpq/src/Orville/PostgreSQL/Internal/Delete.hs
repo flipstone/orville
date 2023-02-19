@@ -22,7 +22,6 @@ import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)
 
@@ -72,7 +71,7 @@ executeDeleteReturnEntities (DeleteReturning marshaller expr) =
 -}
 deleteFromTable ::
   TableDefinition key writeEntity readEntity ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   Delete readEntity NoReturningClause
 deleteFromTable =
   deleteTable WithoutReturning
@@ -84,7 +83,7 @@ deleteFromTable =
 -}
 deleteFromTableReturning ::
   TableDefinition key writeEntity readEntity ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   Delete readEntity ReturningClause
 deleteFromTableReturning =
   deleteTable WithReturning
@@ -93,16 +92,13 @@ deleteFromTableReturning =
 deleteTable ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   Delete readEntity returningClause
 deleteTable returningOption tableDef whereCondition =
   let deleteExpr =
         Expr.deleteExpr
           (tableName tableDef)
-          ( fmap
-              (Expr.whereClause . SelectOptions.whereConditionToBooleanExpr)
-              whereCondition
-          )
+          (fmap Expr.whereClause whereCondition)
           (mkTableReturningClause returningOption tableDef)
    in rawDeleteExpr returningOption (tableMarshaller tableDef) deleteExpr
 

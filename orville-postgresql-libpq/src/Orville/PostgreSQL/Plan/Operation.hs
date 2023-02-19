@@ -28,6 +28,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as T
 
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
@@ -171,22 +172,22 @@ data WherePlanner param = WherePlanner
     paramMarshaller :: forall entity. (entity -> param) -> SqlMarshaller.SqlMarshaller entity param
   , -- | 'executeOneWhereCondition' must build a where condition that will
     -- match only those rows that match the input paramater.
-    executeOneWhereCondition :: param -> SelectOptions.WhereCondition
+    executeOneWhereCondition :: param -> Expr.BooleanExpr
   , -- | 'executeManyWhereCondition' must build a where condition that will
     -- match only those rows that match any (not all!) of the input parameters.
-    executeManyWhereCondition :: NonEmpty param -> SelectOptions.WhereCondition
+    executeManyWhereCondition :: NonEmpty param -> Expr.BooleanExpr
   , -- | 'explainOneWhereCondition' must build a where condition that is
     -- suitable to be used as an example of 'executeManyWhereCondition' would
     -- return when given a parameter.  This where condition will be used for
     -- when producing explanations of plans. For example, this could fill in
     -- either an example or dummy value.
-    explainOneWhereCondition :: SelectOptions.WhereCondition
+    explainOneWhereCondition :: Expr.BooleanExpr
   , -- | 'explainManyWhereCondition' must build a where condition that is
     -- suitable to be used as an example of 'executeOneWhereCondition' would
     -- return when given a list of parameters.  This where condition will be
     -- used for when producing explanations of plans. For example, this could
     -- fill in either an example or dummy value.
-    explainManyWhereCondition :: SelectOptions.WhereCondition
+    explainManyWhereCondition :: Expr.BooleanExpr
   }
 
 {- |
@@ -202,10 +203,10 @@ byField fieldDef =
         stringifyField fieldDef
    in WherePlanner
         { paramMarshaller = flip SqlMarshaller.marshallField fieldDef
-        , executeOneWhereCondition = \fieldValue -> SelectOptions.fieldEquals fieldDef fieldValue
-        , executeManyWhereCondition = \fieldValues -> SelectOptions.fieldIn fieldDef fieldValues
-        , explainOneWhereCondition = SelectOptions.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
-        , explainManyWhereCondition = SelectOptions.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
+        , executeOneWhereCondition = \fieldValue -> FieldDefinition.fieldEquals fieldDef fieldValue
+        , executeManyWhereCondition = \fieldValues -> FieldDefinition.fieldIn fieldDef fieldValues
+        , explainOneWhereCondition = FieldDefinition.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
+        , explainManyWhereCondition = FieldDefinition.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
         }
 
 {- |
@@ -237,15 +238,15 @@ byFieldTuple fieldDefA fieldDefB =
         fmap (\(a, b) -> (T.pack a, T.pack b))
    in WherePlanner
         { paramMarshaller = marshaller
-        , executeOneWhereCondition = \fieldValue -> SelectOptions.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
-        , executeManyWhereCondition = \fieldValues -> SelectOptions.fieldTupleIn fieldDefA fieldDefB fieldValues
+        , executeOneWhereCondition = \fieldValue -> FieldDefinition.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
+        , executeManyWhereCondition = \fieldValues -> FieldDefinition.fieldTupleIn fieldDefA fieldDefB fieldValues
         , explainOneWhereCondition =
-            SelectOptions.fieldTupleIn
+            FieldDefinition.fieldTupleIn
               stringyFieldA
               stringyFieldB
               (packAll $ ("EXAMPLE VALUE A", "EXAMPLE VALUE B") :| [])
         , explainManyWhereCondition =
-            SelectOptions.fieldTupleIn
+            FieldDefinition.fieldTupleIn
               stringyFieldA
               stringyFieldB
               (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
@@ -275,7 +276,7 @@ findOneWhere ::
   Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
-  SelectOptions.WhereCondition ->
+  Expr.BooleanExpr ->
   Operation param (Maybe readEntity)
 findOneWhere tableDef wherePlanner cond =
   findOneWithOpts tableDef wherePlanner (SelectOptions.where_ cond)
@@ -344,7 +345,7 @@ findAllWhere ::
   Ord param =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
-  SelectOptions.WhereCondition ->
+  Expr.BooleanExpr ->
   Operation param [readEntity]
 findAllWhere tableDef wherePlanner cond =
   findAllWithOpts tableDef wherePlanner (SelectOptions.where_ cond)

@@ -7,8 +7,10 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Internal.Expr.Where.BooleanExpr
   ( BooleanExpr,
-    orExpr,
     andExpr,
+    (.&&),
+    orExpr,
+    (.||),
     parenthesized,
     equals,
     notEquals,
@@ -51,12 +53,28 @@ orExpr left right =
     (booleanValueExpression left)
     (booleanValueExpression right)
 
+{- |
+  Operator alias for 'orExpr'
+-}
+(.||) :: BooleanExpr -> BooleanExpr -> BooleanExpr
+(.||) = orExpr
+
+infixr 8 .||
+
 andExpr :: BooleanExpr -> BooleanExpr -> BooleanExpr
 andExpr left right =
   binaryOpExpression
     andOp
     (booleanValueExpression left)
     (booleanValueExpression right)
+
+{- |
+  Operator alias for 'andExpr'
+-}
+(.&&) :: BooleanExpr -> BooleanExpr -> BooleanExpr
+(.&&) = andExpr
+
+infixr 8 .&&
 
 valueIn :: ValueExpression -> NE.NonEmpty ValueExpression -> BooleanExpr
 valueIn needle haystack =

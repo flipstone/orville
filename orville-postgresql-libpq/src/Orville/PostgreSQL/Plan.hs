@@ -45,11 +45,10 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NEL
 
--- import qualified Database.Orville.PostgreSQL.Core as Core
+import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.Select (Select)
-import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
@@ -235,7 +234,7 @@ findMaybeOneWhere ::
   Ord fieldValue =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
   FieldDefinition.FieldDefinition nullability fieldValue ->
-  SelectOptions.WhereCondition ->
+  Expr.BooleanExpr ->
   Plan scope fieldValue (Maybe readEntity)
 findMaybeOneWhere tableDef fieldDef cond =
   planOperation (Op.findOneWhere tableDef (Op.byField fieldDef) cond)
@@ -265,7 +264,7 @@ findOneWhere ::
   (Show fieldValue, Ord fieldValue) =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
   FieldDefinition.FieldDefinition nullability fieldValue ->
-  SelectOptions.WhereCondition ->
+  Expr.BooleanExpr ->
   Plan scope fieldValue readEntity
 findOneWhere tableDef fieldDef cond =
   assert
@@ -318,7 +317,7 @@ findAllWhere ::
   Ord fieldValue =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
   FieldDefinition.FieldDefinition nullability fieldValue ->
-  SelectOptions.WhereCondition ->
+  Expr.BooleanExpr ->
   Plan scope fieldValue [readEntity]
 findAllWhere tableDef fieldDef cond =
   planOperation (Op.findAllWhere tableDef (Op.byField fieldDef) cond)

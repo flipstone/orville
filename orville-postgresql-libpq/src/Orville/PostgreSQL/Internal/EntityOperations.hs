@@ -148,7 +148,7 @@ updateFields ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   m Int
 updateFields tableDef setClauses mbWhereCondition =
   Update.executeUpdate $
@@ -162,7 +162,7 @@ updateFieldsAndReturnEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   m [readEntity]
 updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
   Update.executeUpdateReturnEntities $
@@ -213,7 +213,7 @@ deleteAndReturnEntity entityTable key = do
 deleteEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition key writeEntity readEntity ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   m Int
 deleteEntities entityTable whereCondition =
   Delete.executeDelete $
@@ -226,7 +226,7 @@ deleteEntities entityTable whereCondition =
 deleteAndReturnEntities ::
   MonadOrville.MonadOrville m =>
   TableDef.TableDefinition key writeEntity readEntity ->
-  Maybe SelectOptions.WhereCondition ->
+  Maybe Expr.BooleanExpr ->
   m [readEntity]
 deleteAndReturnEntities entityTable whereCondition =
   Delete.executeDeleteReturnEntities $
