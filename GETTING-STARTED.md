@@ -2,18 +2,7 @@
 
 # Getting started with Orville
 
-Orville is a PostgreSQL client library, so it needs a working server to work. The following code block starts a server and makes a user for us to use. Your operating system probably has a custom way to do this, so consult their documentation.
-
-```shell
-screen -d -m su -c '/usr/lib/postgresql/11/bin/postmaster -D /etc/postgresql/11/main/' postgres
-sleep 5
-cat << EOF > create-user
-create database root;
-create user root;
-grant all privileges on database root to root;
-EOF
-su -c 'psql -f create-user' postgres
-```
+Orville is a PostgreSQL client library, so it needs a working server to work. A working setup is assumed in this document.
 
 For this demo, let's make a new project:
 
@@ -38,12 +27,12 @@ import qualified Orville.PostgreSQL.Internal.ExecutionResult as O
 import qualified Orville.PostgreSQL.Internal.RawSql as O
 import qualified Orville.PostgreSQL.Internal.SqlValue as O
 
-import qualified Data.ByteString as BS
 import qualified Data.Pool as Pool
+import           Data.String (IsString(fromString))
 
 main :: IO ()
 main = do
-  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 BS.empty
+  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
   Pool.withResource pool $ \connection -> do
     result <- O.execute connection (O.fromString "SELECT 1+1")
     [[(_, sqlValue)]] <- O.readRows result

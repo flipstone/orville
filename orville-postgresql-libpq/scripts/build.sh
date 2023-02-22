@@ -48,17 +48,13 @@ else
   if [ "$SHOULD_SKIP_IMAGE_BUILD" -eq 0 ]; then
     echo_when_verbose "We start by ensuring the docker image is up to date\n"
     docker-compose build
-
-    cd ../docs
-    docker build -t orville-docs .
-    cd -
   fi
 
   echo_when_verbose "Going to run formatting against the codebase.\n"
   docker-compose run --rm dev sh ./scripts/format-repo.sh
 
   echo_when_verbose "Now verifying documentation.\n"
-  docker run --rm -it -v $(realpath $PWD/..):/orville --entrypoint /orville/GETTING-STARTED.md orville-docs
+  (cd ../docs; docker-compose run --rm docs /orville-root/GETTING-STARTED.md)
 
   echo_when_verbose "Now running the tests against the supported stack resolvers.\n"
   docker-compose run --rm dev sh ./scripts/test-all
