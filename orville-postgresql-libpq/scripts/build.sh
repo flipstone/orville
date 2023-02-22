@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 SHOULD_BE_VERBOSE=0
 SHOULD_SKIP_IMAGE_BUILD=0
 
@@ -43,7 +45,7 @@ if ! command -v docker-compose 2>/dev/null 1>/dev/null; then
 else
   # the actual logic of what "build" means
 
-  if [ ! "$SHOULD_SKIP_IMAGE_BUILD" ]; then
+  if [ "$SHOULD_SKIP_IMAGE_BUILD" -eq 0 ]; then
     echo_when_verbose "We start by ensuring the docker image is up to date\n"
     docker-compose build
   fi
