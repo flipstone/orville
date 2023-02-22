@@ -8,7 +8,6 @@ services:
   docs:
     build: .
     volumes:
-      - .:/orville-libpq
       - cabal:/root/.cabal
       - ..:/orville-root
     depends_on:

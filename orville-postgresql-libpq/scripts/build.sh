@@ -54,7 +54,7 @@ else
   docker-compose run --rm dev sh ./scripts/format-repo.sh
 
   echo_when_verbose "Now verifying documentation.\n"
-  (cd ../docs; docker-compose run --rm docs /orville-root/GETTING-STARTED.md)
+  (cd ../docs; docker-compose run --rm --build docs /orville-root/GETTING-STARTED.md)
 
   echo_when_verbose "Now running the tests against the supported stack resolvers.\n"
   docker-compose run --rm dev sh ./scripts/test-all
