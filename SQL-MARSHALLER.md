@@ -33,7 +33,7 @@ level.
 ```shell
 cat <<EOF > app/Main.hs
 import qualified Orville.PostgreSQL as O
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 
 import qualified Data.Int as Int
 import           Data.String (IsString(fromString))
@@ -110,10 +110,11 @@ EOF
 ```
 
 Now let's write the main function, which does the following:
-1. drops the table if it exists. Otherwise we'd get an error when running the
-   program multiple times.
-1. creates the table using the table defintion. It will match the Haskell
-   record at the time of execution of the statement.
+1. auto migrates using the table defintion. It will match the Haskell record at
+   the time of execution of the statement. The details of migration are out of
+   scope for this article.
+1. deletes the Foo with ID 0, if it exists. Necessary to allow the program to
+   be repeatedly executed, as primary keys can't be duplicated.
 1. inserts an example Foo object with ID 0.
 1. reads it back out using its ID 0. If an entity with the given ID doesn't
    exist, we'd get a Nothing here.
@@ -125,8 +126,8 @@ main :: IO ()
 main = do
   pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
   mFoo <- O.runOrville pool $ do
-    O.executeVoid O.DDLQuery (RawSql.fromString "DROP TABLE IF EXISTS foo")
-    O.executeVoid O.DDLQuery (O.mkCreateTableExpr table)
+    AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable table]
+    _ <- O.deleteEntity table 0
     _ <- O.insertEntity table Foo { fooId = 0, fooName = fromString "Name", fooAge = 91 }
     O.findEntity table 0
   print mFoo
