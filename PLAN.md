@@ -1,0 +1,303 @@
+#!/usr/bin/env mdsh
+
+# Using Plans
+
+This example shows Plans. A Plan contains one or more SQL select statements,
+and when the first is run, its result is passed into the next. The code
+contains a detailed description, this document will just focus on examples.
+
+This example has a table with students, and a table with classes they can take.
+
+Because multiple students can be enrolled in multiple classes, it is a
+many-to-many relationship, which can be modelled with a separate table with two
+foreign keys on it.
+
+First let's initialize a Haskell project. This first part is identical to the
+GETTING-STARTED guide, so we'll avoid explaining it here.
+
+```shell
+mkdir orville-plan
+cd orville-plan
+cabal init -n --exe
+sed -i -re 's/build-depends:/build-depends: orville-postgresql-libpq, resource-pool, text,/' *.cabal
+cat << 'EOF' > cabal.project
+packages: .
+constraints: resource-pool < 0.3
+source-repository-package
+  type: git
+  location: https://github.com/flipstone/orville.git
+  tag: 3e5ad212dfd777690baa4fef29cd103ddff9ec9b
+  subdir: orville-postgresql-libpq
+EOF
+```
+
+These tables are defined in a manner similar to previous tutorials. Note the foreign keys on the `student_class` table.
+
+```shell
+cat << 'EOF' > app/Main.hs
+import qualified Orville.PostgreSQL as O
+import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
+import qualified Orville.PostgreSQL.Plan as Plan
+
+import           Data.List (sort)
+import           Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.Int as Int
+import           Data.String (IsString(fromString))
+import qualified Data.Text as T
+
+-------------
+-- Student --
+-------------
+
+type StudentId = Int.Int32
+type StudentName = T.Text
+type StudentAge = Int.Int32
+
+data Student = Student
+  { studentId :: StudentId
+  , studentName :: StudentName
+  , studentAge :: StudentAge
+  }
+  deriving Show
+
+studentIdField :: O.FieldDefinition O.NotNull StudentId
+studentIdField =
+  O.integerField "id"
+
+studentNameField :: O.FieldDefinition O.NotNull StudentName
+studentNameField =
+  O.unboundedTextField "name"
+
+studentAgeField :: O.FieldDefinition O.NotNull StudentAge
+studentAgeField =
+  O.integerField "age"
+
+studentMarshaller :: O.SqlMarshaller Student Student
+studentMarshaller =
+  Student
+    <$> O.marshallField studentId studentIdField
+    <*> O.marshallField studentName studentNameField
+    <*> O.marshallField studentAge studentAgeField
+
+studentTable :: O.TableDefinition (O.HasKey StudentId) Student Student
+studentTable =
+  O.mkTableDefinition "plan_demo_student" (O.primaryKey studentIdField) studentMarshaller
+
+----------------------------
+-- Student to Class Table --
+----------------------------
+
+studentClassIdField :: O.FieldDefinition O.NotNull Int.Int32
+studentClassIdField =
+  O.integerField "id"
+
+studentClassClassIdField :: O.FieldDefinition O.NotNull Int.Int32
+studentClassClassIdField =
+  O.integerField "class_id"
+
+studentClassStudentIdField :: O.FieldDefinition O.NotNull Int.Int32
+studentClassStudentIdField =
+  O.integerField "student_id"
+
+data StudentClass = StudentClass
+  { studentClassId :: Int.Int32
+  , studentClassClassId :: Int.Int32
+  , studentClassStudentId :: Int.Int32
+  }
+
+studentClassMarshaller :: O.SqlMarshaller StudentClass StudentClass
+studentClassMarshaller =
+  StudentClass
+    <$> O.marshallField studentClassId studentClassIdField
+    <*> O.marshallField studentClassClassId studentClassClassIdField
+    <*> O.marshallField studentClassStudentId studentClassStudentIdField
+
+studentClassTable :: O.TableDefinition (O.HasKey Int.Int32) StudentClass StudentClass
+studentClassTable =
+  O.addTableConstraints
+    [ O.foreignKeyConstraint (O.tableIdentifier classTable) $
+        O.foreignReference (O.fieldName studentClassClassIdField) (O.fieldName classIdField) :| []
+    , O.foreignKeyConstraint (O.tableIdentifier studentTable) $
+        O.foreignReference (O.fieldName studentClassStudentIdField) (O.fieldName studentIdField) :| []
+    ]
+  $ O.mkTableDefinition "plan_demo_student_class" (O.primaryKey studentClassIdField) studentClassMarshaller
+
+-----------
+-- Class --
+-----------
+
+classIdField :: O.FieldDefinition O.NotNull Int.Int32
+classIdField =
+  O.integerField "id"
+
+classSubjectField :: O.FieldDefinition O.NotNull T.Text
+classSubjectField =
+  O.unboundedTextField "subject"
+
+data Class = Class
+  { classId :: Int.Int32
+  , classSubject :: T.Text
+  }
+  deriving (Show, Eq, Ord)
+
+classMarshaller :: O.SqlMarshaller Class Class
+classMarshaller =
+  Class
+    <$> O.marshallField classId classIdField
+    <*> O.marshallField classSubject classSubjectField
+
+classTable :: O.TableDefinition (O.HasKey Int.Int32) Class Class
+classTable =
+  O.mkTableDefinition "plan_demo_class" (O.primaryKey classIdField) classMarshaller
+EOF
+```
+
+The three tables are declared, we'll proceed to the `main` function, which
+ensures some sample data is available, and then queries it in different ways.
+
+Since we have foreign key constraints, we have to create and delete the data in
+an order that doesn't violate these constraints. Orville will throw a Haskell
+runtime exception upon execution of an SQL statement that violates a
+constraint.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+main :: IO ()
+main = do
+  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
+  O.runOrville pool $ do
+    AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable studentTable, AutoMigration.SchemaTable classTable, AutoMigration.SchemaTable studentClassTable]
+    _ <- O.deleteEntity studentClassTable 0
+    _ <- O.deleteEntity studentClassTable 1
+    _ <- O.deleteEntity studentClassTable 2
+    _ <- O.deleteEntity classTable 0
+    _ <- O.deleteEntity classTable 1
+    _ <- O.deleteEntity classTable 2
+    _ <- O.deleteEntity studentTable 0
+    _ <- O.deleteEntity studentTable 1
+    _ <- O.insertEntity studentTable Student { studentId = 0, studentName = fromString "Name", studentAge = 91 }
+    _ <- O.insertEntity studentTable Student { studentId = 1, studentName = fromString "Other Name", studentAge = 42 }
+    _ <- O.insertEntity classTable Class { classId = 0, classSubject = fromString "Painting" }
+    _ <- O.insertEntity classTable Class { classId = 1, classSubject = fromString "Cooking" }
+    _ <- O.insertEntity classTable Class { classId = 2, classSubject = fromString "Swimming" }
+    _ <- O.insertEntity studentClassTable $ StudentClass {studentClassId=0, studentClassClassId=0, studentClassStudentId=0}
+    _ <- O.insertEntity studentClassTable $ StudentClass {studentClassId=1, studentClassClassId=2, studentClassStudentId=0}
+    _ <- O.insertEntity studentClassTable $ StudentClass {studentClassId=2, studentClassClassId=1, studentClassStudentId=1}
+    pure ()
+EOF
+```
+
+Now that the data is available, let's first show off a simple plan which is
+already more powerful than `findEntity`. `findMaybeOne` takes the table, and
+the field to filter on, where as `findEntity` only works using the primary key.
+
+The plan returned by `findMaybeOne` is like a parameterized query, it doesn't
+yet contain the actual value to filter for.
+
+But upon execution, that value has to be provided, and it has to match the type
+of the Plan. `execute` is in MonadOrville just like `findEntity`, so from here
+on out, it is familiar territory.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  print =<< O.runOrville pool (Plan.execute (Plan.findMaybeOne studentTable studentIdField) 0)
+EOF
+```
+
+Just to demonstrate that you can filter on other fields too, let's search for a
+specific student using their name. Note that Orville doesn't have any
+type-level checks for whether there is an index on the field.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  print =<< O.runOrville pool (Plan.execute (Plan.findMaybeOne studentTable studentNameField) (fromString "Other Name"))
+EOF
+```
+
+A plan that takes a single argument and returns a single argument can be passed into `planList` to make it work on multiple values.
+Note how `execute` now takes a list instead of just a single value.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  print =<< O.runOrville pool (Plan.execute (Plan.planList (Plan.findMaybeOne studentTable studentNameField)) [fromString "Other Name", fromString "Name"])
+EOF
+```
+
+Remember how a plan is just a list of SQL statements. This can used in a way
+similar to how `JOIN` is used in SQL.
+
+The function `chain` is used to chain these statements together. After the
+first statement is executed and its result has been sent to the client, Orville
+allows for manipulating the value with `focusParam` before using it in a step.
+
+For simplicity, we'll use `findOne` here which is like `findMaybeOne`, but
+throws exceptions when it fails to find something. In practice, make sure to
+only use `findOne` when there are constraints or there is otherwise certainty
+that a row exists.
+
+The following plan will:
+1. find a student, given a name. Since this is the first step of the plan, the
+   name is the input of the plan.
+1. using the ID of the student, find a row in `student_class` that matches on
+   the `studentClassStudentIdField`. Note that Orville doesn't check that the
+   fields are actually comparable, or that it makes sense to compare them!
+1. using the ID of the `StudentClass`, find a row in `class` that matches on the `class_id`.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  (print =<<) . O.runOrville pool $ Plan.execute
+    (              Plan.findOne studentTable studentNameField
+      `Plan.chain` Plan.focusParam studentId (Plan.findOne studentClassTable studentClassStudentIdField)
+      `Plan.chain` Plan.focusParam studentClassClassId (Plan.findOne classTable classIdField)
+    )
+    (fromString "Other Name")
+EOF
+```
+
+Expanding on the previous example, let's find all the names of the classes they
+attend, instead of just one. This also lets us avoid unsafe uses of `findOne`.
+This new version doesn't throw an exception if a student doesn't attend any
+classes, which would happen when the middle plan would fail. Because of the
+constraint, the final plan can't fail, so that `findOne` kept.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  let
+    studentToClassesPlan :: Plan.Plan scope Student [Class]
+    studentToClassesPlan =
+                   Plan.focusParam studentId (Plan.findAll studentClassTable studentClassStudentIdField)
+      `Plan.chain` Plan.planList (Plan.focusParam studentClassClassId $ Plan.findOne classTable classIdField)
+EOF
+```
+
+This plan can now be used with `findAll` and `planList` to work with multiple students.
+
+We'll sort the inner lists, such that the result is deterministic.
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  (print =<<) . fmap (fmap sort) . O.runOrville pool $ Plan.execute
+    ( Plan.findAll studentTable studentNameField
+      `Plan.chain` Plan.planList studentToClassesPlan
+    )
+    (fromString "Name")
+EOF
+```
+
+See the line above EOF below for the results of this final query.
+
+```shell
+cabal build
+cat << 'EOF' > plan-test.t
+$ cd $TESTDIR
+$ cp $(cabal list-bin exe:orville-plan | tail -n1) $OLDPWD
+$ cd $OLDPWD
+$ ./orville-plan
+Just (Student {studentId = 0, studentName = "Name", studentAge = 91})
+Just (Student {studentId = 1, studentName = "Other Name", studentAge = 42})
+[Just (Student {studentId = 1, studentName = "Other Name", studentAge = 42}),Just (Student {studentId = 0, studentName = "Name", studentAge = 91})]
+Class {classId = 1, classSubject = "Cooking"}
+[[Class {classId = 0, classSubject = "Painting"},Class {classId = 2, classSubject = "Swimming"}]]
+EOF
+~/.local/bin/prysk plan-test.t --indent=0
+```
