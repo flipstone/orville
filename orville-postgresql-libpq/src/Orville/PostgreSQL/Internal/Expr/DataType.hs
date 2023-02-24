@@ -6,7 +6,7 @@ Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
 -}
 module Orville.PostgreSQL.Internal.Expr.DataType
-  ( DataType,
+  ( DataType(..),
     timestampWithZone,
     timestampWithoutZone,
     date,
