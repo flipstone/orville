@@ -3,8 +3,14 @@
 # Using Plans
 
 This example shows Plans. A Plan contains one or more SQL select statements,
-and when the first is run, its result is passed into the next. The code
-contains a detailed description, this document will just focus on examples.
+and when the first is run, its result is passed into the next.
+
+The goal of plans is to prevent [n+1 queries](https://secure.phabricator.com/book/phabcontrib/article/n_plus_one/),
+while still allowing a plan for a single item to be modified to execute against
+many items.
+
+The code contains a detailed description, this document will just focus on
+examples.
 
 This example has a table with students, and a table with classes they can take.
 
@@ -260,6 +266,10 @@ This new version doesn't throw an exception if a student doesn't attend any
 classes, which would happen when the middle plan would fail. Because of the
 constraint, the final plan can't fail, so that `findOne` kept.
 
+Let's extract the `Student -> [Class]` part to its own Plan, which we'll then
+use for the final expression. Note how the following definition is similar to
+the last two lines of the plan above.
+
 ```shell
 cat << 'EOF' >> app/Main.hs
   let
@@ -270,9 +280,25 @@ cat << 'EOF' >> app/Main.hs
 EOF
 ```
 
-This plan can now be used with `findAll` and `planList` to work with multiple students.
+Remember how plans solve the n+1 problem by scaling easily from a single item
+to multiple items. This means that while `studentToClassesPlan` executes as two
+SQL statements, `planList studentToClassesPlan`, a version that works on
+multiple elements, *also* executes as two SQL statements.
 
-We'll sort the inner lists, such that the result is deterministic.
+You can verify this using `explain`, which shows the generated SQL. Note how
+both of these lists have two SQL statements in them:
+
+```shell
+cat << 'EOF' >> app/Main.hs
+  print $ Plan.explain studentToClassesPlan
+  print $ Plan.explain (Plan.planList studentToClassesPlan)
+EOF
+```
+
+With that in mind, let's use `studentToClassesPlan` with `findAll` and
+`planList` to get a list of classes for each matching student.
+
+(we sort the inner lists below, such that the result is deterministic.)
 
 ```shell
 cat << 'EOF' >> app/Main.hs
@@ -297,6 +323,8 @@ Just (Student {studentId = 0, studentName = "Name", studentAge = 91})
 Just (Student {studentId = 1, studentName = "Other Name", studentAge = 42})
 [Just (Student {studentId = 1, studentName = "Other Name", studentAge = 42}),Just (Student {studentId = 0, studentName = "Name", studentAge = 91})]
 Class {classId = 1, classSubject = "Cooking"}
+["SELECT \"student_id\",\"id\",\"class_id\",\"student_id\" FROM \"plan_demo_student_class\" WHERE (\"student_id\") = ($1)","SELECT \"id\",\"id\",\"subject\" FROM \"plan_demo_class\" WHERE (\"id\") IN ($1, $2)"]
+["SELECT \"student_id\",\"id\",\"class_id\",\"student_id\" FROM \"plan_demo_student_class\" WHERE (\"student_id\") IN ($1, $2)","SELECT \"id\",\"id\",\"subject\" FROM \"plan_demo_class\" WHERE (\"id\") IN ($1, $2)"]
 [[Class {classId = 0, classSubject = "Painting"},Class {classId = 2, classSubject = "Swimming"}]]
 EOF
 ~/.local/bin/prysk plan-test.t --indent=0

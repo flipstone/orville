@@ -57,6 +57,7 @@ else
   ( cd ../docs
     docker-compose run --rm --build docs /orville-root/GETTING-STARTED.md
     docker-compose run --rm --build docs /orville-root/SQL-MARSHALLER.md
+    docker-compose run --rm --build docs /orville-root/PLAN.md
   )
 
   echo_when_verbose "Now running the tests against the supported stack resolvers.\n"
