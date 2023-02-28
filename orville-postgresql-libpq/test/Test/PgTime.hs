@@ -1,12 +1,12 @@
 module Test.PgTime
-  ( pgTimeTests
+  ( pgTimeTests,
   )
 where
 
-import           Data.Attoparsec.ByteString (parseOnly)
+import Data.Attoparsec.ByteString (parseOnly)
 import qualified Data.Pool as Pool
 import qualified Data.String as String
-import           Data.Time (UTCTime(..), fromGregorian)
+import Data.Time (UTCTime (..), fromGregorian)
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL.Connection as Conn
