@@ -36,6 +36,7 @@ library:
     - Orville.PostgreSQL.Internal.MarshallError
     - Orville.PostgreSQL.Internal.OrvilleState
     - Orville.PostgreSQL.Internal.PgTextFormatValue
+    - Orville.PostgreSQL.Internal.PgTime
     - Orville.PostgreSQL.Internal.PrimaryKey
     - Orville.PostgreSQL.Internal.RawSql
     - Orville.PostgreSQL.Internal.ReturningOption
@@ -104,6 +105,7 @@ tests:
     source-dirs: test
     main: Main.hs
     dependencies:
+      - attoparsec
       - base
       - bytestring
       - containers

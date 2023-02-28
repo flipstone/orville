@@ -71,7 +71,7 @@ utcTime = do
     else do
       hour <- twoDigits
       minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
-      let offset = minute + hour * 60 * if sign == '-' then (-1) else 1
+      let offset = (minute + hour * 60) * if sign == '-' then (-1) else 1
       pure $ Time.localTimeToUTC (Time.minutesToTimeZone offset) lt
 
 {- |

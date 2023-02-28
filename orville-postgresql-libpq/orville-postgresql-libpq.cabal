@@ -44,6 +44,7 @@ library
       Orville.PostgreSQL.Internal.MarshallError
       Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.PgTextFormatValue
+      Orville.PostgreSQL.Internal.PgTime
       Orville.PostgreSQL.Internal.PrimaryKey
       Orville.PostgreSQL.Internal.RawSql
       Orville.PostgreSQL.Internal.ReturningOption
@@ -130,7 +131,6 @@ library
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville
-      Orville.PostgreSQL.Internal.PgTime
       Orville.PostgreSQL.Internal.QueryType
       Orville.PostgreSQL.Internal.RowCountExpectation
       Orville.PostgreSQL.Internal.Sequence
@@ -198,6 +198,7 @@ test-suite spec
       Test.PgAssert
       Test.PgCatalog
       Test.PgGen
+      Test.PgTime
       Test.Plan
       Test.PostgreSQLAxioms
       Test.Property
@@ -217,7 +218,8 @@ test-suite spec
       test
   ghc-options: -j -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wno-implicit-prelude -Wno-safe -Wno-unsafe -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations -Woverflowed-literals
   build-depends:
-      base
+      attoparsec
+    , base
     , bytestring
     , containers
     , hedgehog
