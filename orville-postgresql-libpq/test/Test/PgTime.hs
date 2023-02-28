@@ -23,7 +23,8 @@ pgTimeTests _pool =
           parseOnly PgTime.utcTime (String.fromString "1971-01-01 00:00:00-00:44:30")
             HH.=== Right (UTCTime (fromGregorian 1971 1 1) (44 * 60 + 30))
       )
-    , ( String.fromString "Handles far future"
+    ,
+      ( String.fromString "Handles far future"
       , Property.singletonProperty $
           -- https://github.com/postgres/postgres/blob/b5737efea00717173c0cc889ebd115966abd8c8c/src/test/regress/sql/timestamptz.sql#L175
           parseOnly PgTime.utcTime (String.fromString "294276-12-31 23:59:59+00")
