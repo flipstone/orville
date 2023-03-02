@@ -71,8 +71,13 @@ utcTime = do
     else do
       hour <- twoDigits
       minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
-      let offset = minute + hour * 60 * if sign == '-' then (-1) else 1
-      pure $ Time.localTimeToUTC (Time.minutesToTimeZone offset) lt
+      second <- AttoB8.option 0 $ AttoB8.char ':' *> twoDigits
+      let offsetSeconds :: Int
+          offsetSeconds = (second + minute * 60 + hour * 3600) * if sign == '+' then (-1) else 1
+          offsetNominalDiffTime = fromIntegral offsetSeconds
+          diffTime = Time.timeOfDayToTime (Time.localTimeOfDay lt)
+          utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime
+      pure $ Time.addUTCTime offsetNominalDiffTime utcTimeWithoutOffset
 
 {- |
   Renders a 'Time.LocalTime value to a textual representation for PostgreSQL

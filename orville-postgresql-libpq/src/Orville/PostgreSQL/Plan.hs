@@ -16,7 +16,9 @@ module Orville.PostgreSQL.Plan
     findMaybeOne,
     findMaybeOneWhere,
     findOne,
+    findOneShowVia,
     findOneWhere,
+    findOneWhereShowVia,
     findAll,
     findAllWhere,
 
@@ -240,25 +242,55 @@ findMaybeOneWhere tableDef fieldDef cond =
   planOperation (Op.findOneWhere tableDef (Op.byField fieldDef) cond)
 
 {- |
-  'findOne' is similar to 'findMaybeOne, but it expects that there will always
+  'findOneShowVia' is similar to 'findMaybeOne, but it expects that there will always
   be a row found matching the plan's input value. If no row is found an
   'Op.AssertionFailed' exception will be thrown. This is a useful convenience
   when looking up foreign-key associations that are expected to be enforced
   by the database itself.
+-}
+findOneShowVia ::
+  Ord fieldValue =>
+  (fieldValue -> String) ->
+  TableDefinition.TableDefinition key writeEntity readEntity ->
+  FieldDefinition.FieldDefinition nullability fieldValue ->
+  Plan scope fieldValue readEntity
+findOneShowVia showParam tableDef fieldDef =
+  assert
+    (assertFound showParam tableDef fieldDef)
+    (findMaybeOne tableDef fieldDef)
+
+{- |
+  'findOne' is an alias to 'findOneShowVia' that uses the 'Show' instance of
+  'fieldValue' when producing a failure message in the result the entity cannot
+  be found.
 -}
 findOne ::
   (Show fieldValue, Ord fieldValue) =>
   TableDefinition.TableDefinition key writeEntity readEntity ->
   FieldDefinition.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue readEntity
-findOne tableDef fieldDef =
-  assert
-    (assertFound tableDef fieldDef)
-    (findMaybeOne tableDef fieldDef)
+findOne = findOneShowVia show
 
 {- |
-  'findOneWhere' is similar to 'findOne', but allows a 'WhereCondition' to be
+  'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a 'WhereCondition' to be
   specified to restrict which rows are matched by the database query.
+-}
+findOneWhereShowVia ::
+  Ord fieldValue =>
+  (fieldValue -> String) ->
+  TableDefinition.TableDefinition key writeEntity readEntity ->
+  FieldDefinition.FieldDefinition nullability fieldValue ->
+  Expr.BooleanExpr ->
+  Plan scope fieldValue readEntity
+findOneWhereShowVia showParam tableDef fieldDef cond =
+  assert
+    (assertFound showParam tableDef fieldDef)
+    (findMaybeOneWhere tableDef fieldDef cond)
+
+{- |
+  'findOneWhere' is an alias to 'findOneWhereShowVia' that uses the 'Show' instance of
+  'fieldValue' when producing a failure message in the result the entity cannot
+  be found.
 -}
 findOneWhere ::
   (Show fieldValue, Ord fieldValue) =>
@@ -266,23 +298,20 @@ findOneWhere ::
   FieldDefinition.FieldDefinition nullability fieldValue ->
   Expr.BooleanExpr ->
   Plan scope fieldValue readEntity
-findOneWhere tableDef fieldDef cond =
-  assert
-    (assertFound tableDef fieldDef)
-    (findMaybeOneWhere tableDef fieldDef cond)
+findOneWhere = findOneWhereShowVia show
 
 {- |
   'assertFound' is an internal helper that checks that row was found where
   one was expected.
 -}
 assertFound ::
-  Show fieldValue =>
+  (fieldValue -> String) ->
   TableDefinition.TableDefinition key writeEntity readEntity ->
   FieldDefinition.FieldDefinition nullability fieldValue ->
   fieldValue ->
   Maybe result ->
   Either String result
-assertFound tableDef fieldDef param maybeRecord =
+assertFound showParam tableDef fieldDef param maybeRecord =
   case maybeRecord of
     Just a ->
       Right a
@@ -294,7 +323,7 @@ assertFound tableDef fieldDef param maybeRecord =
           , " where "
           , FieldDefinition.fieldNameToString $ FieldDefinition.fieldName fieldDef
           , " = "
-          , show param
+          , showParam param
           ]
 
 {- |

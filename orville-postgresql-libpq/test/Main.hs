@@ -30,6 +30,7 @@ import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.MarshallError as MarshallError
 import qualified Test.PgCatalog as PgCatalog
+import qualified Test.PgTime as PgTime
 import qualified Test.Plan as Plan
 import qualified Test.PostgreSQLAxioms as PostgreSQLAxioms
 import qualified Test.Property as Property
@@ -78,6 +79,7 @@ main = do
       , EntityTrace.entityTraceTests pool
       , Cursor.cursorTests pool
       , SqlCommenter.sqlCommenterTests pool
+      , PgTime.pgTimeTests pool
       ]
 
   Monad.unless (Property.allPassed summary) SE.exitFailure
