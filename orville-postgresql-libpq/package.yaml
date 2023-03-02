@@ -1,6 +1,6 @@
 ---
 name: orville-postgresql-libpq
-version: '0.10.0.0'
+version: '0.10.0.1'
 synopsis: ORM
 description: ORM library for PostgreSQL
 category: Database

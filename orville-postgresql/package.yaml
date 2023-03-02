@@ -1,5 +1,5 @@
 name: orville-postgresql
-version: '0.9.0.0'
+version: '0.9.0.1'
 synopsis: ORM
 description: ORM library for PostgreSQL
 category: Database
