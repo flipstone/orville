@@ -19,7 +19,6 @@ cabal init -n --exe
 sed -i -re 's/build-depends:/build-depends: orville-postgresql-libpq, aeson, bytestring, postgresql-libpq, resource-pool, text, vector,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
-constraints: resource-pool < 0.3
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
@@ -29,8 +28,6 @@ EOF
 cat << 'EOF' > app/Main.hs
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
-import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
-import qualified Orville.PostgreSQL.Internal.ExecutionResult as O
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as O
@@ -41,7 +38,6 @@ import           Data.Aeson (FromJSON, ToJSON, Value, eitherDecodeStrict', encod
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Int as Int
-import qualified Data.Pool as Pool
 import           Data.String (IsString(fromString))
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Vector as Vector
@@ -157,7 +153,6 @@ cat << 'EOF' >> app/Main.hs
                                       ]
                                   }
     liftIO . print =<< O.findEntity table 0
-  Pool.withResource pool $ \connection -> do
 EOF
 ```
 
@@ -170,26 +165,10 @@ we want a row returned for each of the values in the `Array` above.
 | 0  | 2   |
 | 0  | 3   |
 
-The query below returns such a result.
-
-```shell
-cat << 'EOF' >> app/Main.hs
-    result <- RawSql.execute connection (RawSql.fromString "SELECT id, jsonb_array_elements(tags) AS tag FROM json_demo")
-EOF
-```
-
-We can fetch the results with the low-level `readRows` API:
-
-```shell
-cat << 'EOF' >> app/Main.hs
-    [[_, (_, one)], [_, (_, two)], [_, (_, three)]] <- O.readRows result
-    liftIO $ print (O.toText one, O.toText two, O.toText three)
-EOF
-```
-
-We can also use an `SqlMarshaller`. The types have to match though: the
-programmer must ensure correspondence of the `Result` and the `SqlMarshaller`.
-If they don't match, `eReadEntities` below will have a `Left` value.
+We can use an `SqlMarshaller` to produce a result like this, even though there
+is no table for the returned schema. The programmer must ensure correspondence
+of the SQL and the `SqlMarshaller`. If they don't match, an exception will be
+thrown.
 
 We'll have the `SqlMarshaller` work with tuples and `marshallReadOnlyField`s.
 These allow for succintly defining a quick one-off `SqlMarshaller`.
@@ -201,12 +180,12 @@ cat << 'EOF' >> app/Main.hs
       marshaller =
         (,) <$> O.marshallReadOnlyField fooIdField
             <*> O.marshallReadOnlyField (O.fieldOfType jsonb "tag")
-    eReadEntities <- SqlMarshaller.marshallResultFromSqlUsingRowIdExtractor
-      ErrorDetailLevel.maximalErrorDetailLevel
-      (SqlMarshaller.mkRowIdentityExtractor [] result)
-      marshaller
-      result
-    print eReadEntities
+    readEntities <-
+      O.executeAndDecode
+        O.SelectQuery
+        (RawSql.fromString "SELECT id, jsonb_array_elements(tags) AS tag FROM json_demo")
+        (SqlMarshaller.annotateSqlMarshallerEmptyAnnotation marshaller)
+    liftIO $ print readEntities
 EOF
 ```
 # Program output and test
@@ -221,8 +200,7 @@ $ cp $(cabal list-bin exe:orville-json | tail -n1) $OLDPWD
 $ cd $OLDPWD
 $ ./orville-json
 Just (Foo {fooId = 0, fooTags = Array [Number 1.0,Number 2.0,Number 3.0]})
-(Right "1",Right "2",Right "3")
-Right [(0,Number 1.0),(0,Number 2.0),(0,Number 3.0)]
+[(0,Number 1.0),(0,Number 2.0),(0,Number 3.0)]
 EOF
 ~/.local/bin/prysk json-test.t --indent=0
 ```
