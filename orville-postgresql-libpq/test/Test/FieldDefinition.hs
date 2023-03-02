@@ -227,89 +227,86 @@ data DefaultValueTest a
   | InsertOnlyDefaultTest (DefaultValue.DefaultValue a)
 
 runRoundTripTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
-runRoundTripTest pool testCase =
-  Pool.withResource pool $ \connection -> do
-    let fieldDef = roundTripFieldDef testCase
+runRoundTripTest pool testCase = do
+  let fieldDef = roundTripFieldDef testCase
 
-    value <- HH.forAll (roundTripGen testCase)
+  value <- HH.forAll (roundTripGen testCase)
+  rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
+    dropAndRecreateTestTable fieldDef connection
 
-    rows <- HH.evalIO $ do
-      dropAndRecreateTestTable fieldDef connection
+    RawSql.executeVoid connection $
+      Expr.insertExpr
+        testTable
+        Nothing
+        (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+        Nothing
 
-      RawSql.executeVoid connection $
-        Expr.insertExpr
-          testTable
-          Nothing
-          (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
-          Nothing
+    result <-
+      RawSql.execute connection $
+        Expr.queryExpr
+          (Expr.selectClause $ Expr.selectExpr Nothing)
+          (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
+          (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
-      result <-
-        RawSql.execute connection $
-          Expr.queryExpr
-            (Expr.selectClause $ Expr.selectExpr Nothing)
-            (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+    Result.readRows result
 
-      Result.readRows result
+  let roundTripResult =
+        case rows of
+          [[(_, sqlValue)]] ->
+            FieldDef.fieldValueFromSqlValue fieldDef sqlValue
+          _ ->
+            Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
-    let roundTripResult =
-          case rows of
-            [[(_, sqlValue)]] ->
-              FieldDef.fieldValueFromSqlValue fieldDef sqlValue
-            _ ->
-              Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
-
-    roundTripResult === Right value
+  roundTripResult === Right value
 
 runNullableRoundTripTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
-runNullableRoundTripTest pool testCase =
-  Pool.withResource pool $ \connection -> do
-    let fieldDef = FieldDef.nullableField (roundTripFieldDef testCase)
+runNullableRoundTripTest pool testCase = do
+  let fieldDef = FieldDef.nullableField (roundTripFieldDef testCase)
 
-    value <-
-      HH.forAll $
-        Gen.frequency
-          [ (1, pure Nothing)
-          , (3, Just <$> roundTripGen testCase)
-          ]
+  value <-
+    HH.forAll $
+      Gen.frequency
+        [ (1, pure Nothing)
+        , (3, Just <$> roundTripGen testCase)
+        ]
 
-    HH.cover 1 (String.fromString "Nothing") (Maybe.isNothing value)
-    HH.cover 20 (String.fromString "Just") (Maybe.isJust value)
+  HH.cover 1 (String.fromString "Nothing") (Maybe.isNothing value)
+  HH.cover 20 (String.fromString "Just") (Maybe.isJust value)
 
-    rows <- HH.evalIO $ do
-      dropAndRecreateTestTable fieldDef connection
+  rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
+    dropAndRecreateTestTable fieldDef connection
 
-      RawSql.executeVoid connection $
-        Expr.insertExpr
-          testTable
-          Nothing
-          (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
-          Nothing
+    RawSql.executeVoid connection $
+      Expr.insertExpr
+        testTable
+        Nothing
+        (Expr.insertSqlValues [[FieldDef.fieldValueToSqlValue fieldDef value]])
+        Nothing
 
-      result <-
-        RawSql.execute connection $
-          Expr.queryExpr
-            (Expr.selectClause $ Expr.selectExpr Nothing)
-            (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+    result <-
+      RawSql.execute connection $
+        Expr.queryExpr
+          (Expr.selectClause $ Expr.selectExpr Nothing)
+          (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
+          (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
-      Result.readRows result
+    Result.readRows result
 
-    let roundTripResult =
-          case rows of
-            [[(_, sqlValue)]] ->
-              FieldDef.fieldValueFromSqlValue fieldDef sqlValue
-            _ ->
-              Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
+  let roundTripResult =
+        case rows of
+          [[(_, sqlValue)]] ->
+            FieldDef.fieldValueFromSqlValue fieldDef sqlValue
+          _ ->
+            Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
-    roundTripResult === Right value
+  roundTripResult === Right value
 
 runNullCounterExampleTest :: Pool.Pool Connection.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
-runNullCounterExampleTest pool testCase =
-  Pool.withResource pool $ \connection -> do
+runNullCounterExampleTest pool testCase = do
+  result <- HH.evalIO . Pool.withResource pool $ \connection -> do
     let fieldDef = roundTripFieldDef testCase
 
-    result <- HH.evalIO . E.try $ do
+    E.try $ do
       dropAndRecreateTestTable fieldDef connection
 
       RawSql.executeVoid connection $
@@ -319,12 +316,12 @@ runNullCounterExampleTest pool testCase =
           (Expr.insertSqlValues [[SqlValue.sqlNull]])
           Nothing
 
-    case result of
-      Left err ->
-        Connection.sqlExecutionErrorSqlState err === Just (B8.pack "23502")
-      Right _ -> do
-        HH.footnote "Expected insert query to fail, but it did not"
-        HH.failure
+  case result of
+    Left err ->
+      Connection.sqlExecutionErrorSqlState err === Just (B8.pack "23502")
+    Right _ -> do
+      HH.footnote "Expected insert query to fail, but it did not"
+      HH.failure
 
 runDefaultValueFieldDefinitionTest ::
   (Show a, Eq a) =>
@@ -332,43 +329,42 @@ runDefaultValueFieldDefinitionTest ::
   FieldDefinitionTest a ->
   (a -> DefaultValue.DefaultValue a) ->
   HH.PropertyT IO ()
-runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue =
-  Pool.withResource pool $ \connection -> do
-    value <- HH.forAll (roundTripGen testCase)
+runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
+  value <- HH.forAll (roundTripGen testCase)
 
-    let defaultValue =
-          mkDefaultValue value
+  let defaultValue =
+        mkDefaultValue value
 
-        fieldDef =
-          FieldDef.setDefaultValue defaultValue $ roundTripFieldDef testCase
+      fieldDef =
+        FieldDef.setDefaultValue defaultValue $ roundTripFieldDef testCase
 
-    rows <- HH.evalIO $ do
-      dropAndRecreateTestTable fieldDef connection
+  rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
+    dropAndRecreateTestTable fieldDef connection
 
-      RawSql.executeVoid connection $
-        Expr.insertExpr
-          testTable
-          Nothing
-          (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
-          Nothing
+    RawSql.executeVoid connection $
+      Expr.insertExpr
+        testTable
+        Nothing
+        (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
+        Nothing
 
-      result <-
-        RawSql.execute connection $
-          Expr.queryExpr
-            (Expr.selectClause $ Expr.selectExpr Nothing)
-            (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
-            (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+    result <-
+      RawSql.execute connection $
+        Expr.queryExpr
+          (Expr.selectClause $ Expr.selectExpr Nothing)
+          (Expr.selectColumns [FieldDef.fieldColumnName fieldDef])
+          (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
 
-      Result.readRows result
+    Result.readRows result
 
-    let roundTripResult =
-          case rows of
-            [[(_, sqlValue)]] ->
-              FieldDef.fieldValueFromSqlValue fieldDef sqlValue
-            _ ->
-              Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
+  let roundTripResult =
+        case rows of
+          [[(_, sqlValue)]] ->
+            FieldDef.fieldValueFromSqlValue fieldDef sqlValue
+          _ ->
+            Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
-    roundTripResult === Right value
+  roundTripResult === Right value
 
 runDefaultValueInsertOnlyTest ::
   Pool.Pool Connection.Connection ->
@@ -376,19 +372,18 @@ runDefaultValueInsertOnlyTest ::
   DefaultValue.DefaultValue a ->
   HH.PropertyT IO ()
 runDefaultValueInsertOnlyTest pool testCase defaultValue =
-  Pool.withResource pool $ \connection -> do
+  HH.evalIO . Pool.withResource pool $ \connection -> do
     let fieldDef =
           FieldDef.setDefaultValue defaultValue $ roundTripFieldDef testCase
 
-    HH.evalIO $ do
-      dropAndRecreateTestTable fieldDef connection
+    dropAndRecreateTestTable fieldDef connection
 
-      RawSql.executeVoid connection $
-        Expr.insertExpr
-          testTable
-          Nothing
-          (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
-          Nothing
+    RawSql.executeVoid connection $
+      Expr.insertExpr
+        testTable
+        Nothing
+        (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
+        Nothing
 
 testTable :: Expr.Qualified Expr.TableName
 testTable =

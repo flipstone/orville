@@ -28,7 +28,6 @@ cabal init -n --exe
 sed -i -re 's/build-depends:/build-depends: orville-postgresql-libpq, resource-pool, text,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
-constraints: resource-pool < 0.3
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git

@@ -510,13 +510,13 @@ data DecodingTest a = DecodingTest
 
 runDecodingTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> DecodingTest a -> HH.Property
 runDecodingTest pool test =
-  Property.singletonProperty $
-    Pool.withResource pool $ \connection -> do
-      MIO.liftIO $ dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
+  Property.singletonProperty $ do
+    rows <- MIO.liftIO . Pool.withResource pool $ \connection -> do
+      dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
       let tableName = Expr.qualified Nothing (Expr.tableName "decoding_test")
 
-      MIO.liftIO . RawSql.executeVoid connection $
+      RawSql.executeVoid connection $
         Expr.insertExpr
           tableName
           Nothing
@@ -524,17 +524,17 @@ runDecodingTest pool test =
           Nothing
 
       result <-
-        MIO.liftIO . RawSql.execute connection $
+        RawSql.execute connection $
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             Expr.selectStar
             (Just $ Expr.tableExpr tableName Nothing Nothing Nothing Nothing Nothing)
 
-      rows <- MIO.liftIO $ ExecutionResult.readRows result
+      ExecutionResult.readRows result
 
-      let actual = map (decodeSingleValue (sqlType test)) rows
+    let actual = map (decodeSingleValue (sqlType test)) rows
 
-      actual === [Right $ expectedValue test]
+    actual === [Right $ expectedValue test]
 
 dropAndRecreateTable :: Connection.Connection -> String -> String -> IO ()
 dropAndRecreateTable connection tableName columnTypeDDL = do
