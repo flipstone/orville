@@ -81,23 +81,23 @@ mkGroupByTestExpectedRows test =
 
 groupByTest :: String -> GroupByTest -> Property.NamedDBProperty
 groupByTest testName test =
-  Property.singletonNamedDBProperty testName $ \pool ->
-    Pool.withResource pool $ \connection -> do
-      MIO.liftIO $ dropAndRecreateTestTable connection
+  Property.singletonNamedDBProperty testName $ \pool -> do
+    rows <- MIO.liftIO . Pool.withResource pool $ \connection -> do
+      dropAndRecreateTestTable connection
 
-      MIO.liftIO . RawSql.executeVoid connection $
+      RawSql.executeVoid connection $
         Expr.insertExpr testTable Nothing (mkGroupByTestInsertSource test) Nothing
 
       result <-
-        MIO.liftIO $
-          RawSql.execute connection $
-            Expr.queryExpr
-              (Expr.selectClause $ Expr.selectExpr Nothing)
-              (Expr.selectColumns [fooColumn, barColumn])
-              (Just $ Expr.tableExpr testTable Nothing Nothing (groupByClause test) Nothing Nothing)
+        RawSql.execute connection $
+          Expr.queryExpr
+            (Expr.selectClause $ Expr.selectExpr Nothing)
+            (Expr.selectColumns [fooColumn, barColumn])
+            (Just $ Expr.tableExpr testTable Nothing Nothing (groupByClause test) Nothing Nothing)
 
-      rows <- MIO.liftIO $ ExecResult.readRows result
-      rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
+      ExecResult.readRows result
+
+    rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
 
 testTable :: Expr.Qualified Expr.TableName
 testTable =

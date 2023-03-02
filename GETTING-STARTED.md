@@ -45,7 +45,6 @@ We need to tell Cabal how to find Orville:
 ```shell
 cat << EOF > cabal.project
 packages: .
-constraints: resource-pool < 0.3
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
