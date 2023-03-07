@@ -59,6 +59,7 @@ else
     docker-compose run --rm --build docs /orville-root/SQL-MARSHALLER.md
     docker-compose run --rm --build docs /orville-root/PLAN.md
     docker-compose run --rm --build docs /orville-root/MIGRATION.md
+    docker-compose run --rm --build docs /orville-root/JSON.md
   )
 
   echo_when_verbose "Now running the tests against the supported stack resolvers.\n"

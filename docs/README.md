@@ -6,5 +6,6 @@ See the tutorials, in order of increasing complexity:
 * [Using SqlMarshaller](../SQL-MARSHALLER.md)
 * [Using Plans](../PLAN.md)
 * [Using Migrations](../MIGRATION.md)
+* [Using JSON](../JSON.md)
 
 Additional documentation is available in the Haddocks.
