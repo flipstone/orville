@@ -19,7 +19,7 @@ where
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldEquals, fieldName, fieldNameToString, fieldValueToSqlValue)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue

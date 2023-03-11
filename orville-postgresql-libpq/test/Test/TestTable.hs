@@ -7,7 +7,7 @@ module Test.TestTable
 where
 
 import Orville.PostgreSQL.Connection (Connection)
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkCreateTableExpr, tableName)
 

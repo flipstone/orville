@@ -11,7 +11,7 @@ module Orville.PostgreSQL.Internal.SequenceIdentifier
   )
 where
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 
 {- |
   An identifier used by Orville to identify a particular sequence in a particular

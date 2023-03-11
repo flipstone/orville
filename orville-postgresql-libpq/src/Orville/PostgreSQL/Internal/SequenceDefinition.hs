@@ -22,7 +22,7 @@ where
 
 import Data.Int (Int64)
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.SequenceIdentifier (SequenceIdentifier, sequenceIdQualifiedName, setSequenceIdSchema, unqualifiedNameToSequenceId)
 
 {- |

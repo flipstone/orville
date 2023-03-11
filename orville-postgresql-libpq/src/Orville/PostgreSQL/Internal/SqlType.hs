@@ -48,7 +48,7 @@ import qualified Data.UUID as UUID
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Foreign.C.Types as CTypes
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 

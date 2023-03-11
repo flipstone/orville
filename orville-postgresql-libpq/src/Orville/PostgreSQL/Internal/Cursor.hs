@@ -33,8 +33,8 @@ import qualified Data.Word as Word
 import qualified System.Random as Random
 import qualified Text.Printf as Printf
 
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.Select (Select, useSelect)

@@ -19,7 +19,7 @@ where
 
 import Data.Monoid (First (First, getFirst))
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 
 {- |
    A 'SelectOptions' is a set of options that can be used to change the way

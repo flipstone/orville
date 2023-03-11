@@ -89,8 +89,8 @@ import qualified Data.Text as T
 import qualified Data.Time as Time
 import qualified Data.UUID as UUID
 
+import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.DefaultValue (DefaultValue, coerceDefaultValue, defaultValueExpression)
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 

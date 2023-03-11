@@ -11,7 +11,7 @@ module Orville.PostgreSQL.Internal.TableIdentifier
   )
 where
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 
 {- |
   An identifier used by Orville to identify a particular table in a particular

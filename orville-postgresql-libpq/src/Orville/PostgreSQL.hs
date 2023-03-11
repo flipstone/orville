@@ -321,12 +321,12 @@ module Orville.PostgreSQL
 where
 
 import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville

@@ -47,7 +47,7 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NEL
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.Select (Select)

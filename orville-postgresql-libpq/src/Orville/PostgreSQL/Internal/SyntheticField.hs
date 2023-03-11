@@ -12,7 +12,7 @@ module Orville.PostgreSQL.Internal.SyntheticField
 where
 
 import qualified Data.ByteString.Char8 as B8
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, stringToFieldName)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 

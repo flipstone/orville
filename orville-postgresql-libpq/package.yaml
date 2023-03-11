@@ -25,12 +25,38 @@ library:
     - Orville.PostgreSQL.AutoMigration
     - Orville.PostgreSQL.Connection
     - Orville.PostgreSQL.EntityTrace
+    - Orville.PostgreSQL.Expr
+    - Orville.PostgreSQL.Expr.BinaryOperator
+    - Orville.PostgreSQL.Expr.ColumnDefinition
+    - Orville.PostgreSQL.Expr.Count
+    - Orville.PostgreSQL.Expr.Cursor
+    - Orville.PostgreSQL.Expr.DataType
+    - Orville.PostgreSQL.Expr.Delete
+    - Orville.PostgreSQL.Expr.GroupBy
+    - Orville.PostgreSQL.Expr.IfExists
+    - Orville.PostgreSQL.Expr.Index
+    - Orville.PostgreSQL.Expr.Insert
+    - Orville.PostgreSQL.Expr.LimitExpr
+    - Orville.PostgreSQL.Expr.Math
+    - Orville.PostgreSQL.Expr.Name
+    - Orville.PostgreSQL.Expr.OffsetExpr
+    - Orville.PostgreSQL.Expr.OrderBy
+    - Orville.PostgreSQL.Expr.Query
+    - Orville.PostgreSQL.Expr.ReturningExpr
+    - Orville.PostgreSQL.Expr.Select
+    - Orville.PostgreSQL.Expr.SequenceDefinition
+    - Orville.PostgreSQL.Expr.TableConstraint
+    - Orville.PostgreSQL.Expr.TableDefinition
+    - Orville.PostgreSQL.Expr.Time
+    - Orville.PostgreSQL.Expr.Transaction
+    - Orville.PostgreSQL.Expr.Update
+    - Orville.PostgreSQL.Expr.ValueExpression
+    - Orville.PostgreSQL.Expr.WhereClause
     - Orville.PostgreSQL.Internal.Cursor
     - Orville.PostgreSQL.Internal.DefaultValue
     - Orville.PostgreSQL.Internal.Delete
     - Orville.PostgreSQL.Internal.ErrorDetailLevel
     - Orville.PostgreSQL.Internal.ExecutionResult
-    - Orville.PostgreSQL.Internal.Expr
     - Orville.PostgreSQL.Internal.FieldDefinition
     - Orville.PostgreSQL.Internal.Insert
     - Orville.PostgreSQL.Internal.MarshallError

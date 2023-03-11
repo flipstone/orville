@@ -15,8 +15,8 @@ where
 
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.PrimaryKey (primaryKeyEquals)
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType

@@ -8,8 +8,8 @@ import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.IORef as IORef
 
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType

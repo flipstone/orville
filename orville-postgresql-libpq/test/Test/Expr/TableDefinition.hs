@@ -9,7 +9,7 @@ import qualified Data.Pool as Pool
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property

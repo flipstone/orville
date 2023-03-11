@@ -29,7 +29,7 @@ import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
 import qualified Numeric as Numeric
 
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.PgTime as PgTime
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 

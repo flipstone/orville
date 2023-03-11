@@ -8,8 +8,8 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
 
 import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as ExecResult
-import qualified Orville.PostgreSQL.Internal.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
