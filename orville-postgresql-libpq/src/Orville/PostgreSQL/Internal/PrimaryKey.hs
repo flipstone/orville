@@ -21,8 +21,8 @@ import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
-import Orville.PostgreSQL.Internal.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldEquals, fieldName, fieldNameToString, fieldValueToSqlValue)
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldEquals, fieldName, fieldNameToString, fieldValueToSqlValue)
 
 {- |
   A Haskell description of the 'FieldDefinition's that make up the primary

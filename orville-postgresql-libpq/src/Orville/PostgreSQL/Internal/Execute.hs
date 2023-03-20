@@ -20,8 +20,8 @@ import Orville.PostgreSQL.Internal.OrvilleState (OrvilleState, askOrvilleState, 
 import Orville.PostgreSQL.Internal.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller
 
 {- |
   Executes a SQL query and decodes the result set using the provided

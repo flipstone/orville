@@ -12,13 +12,12 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.Int (Int32)
 
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Internal.Transaction as Transaction
+import qualified Orville.PostgreSQL.Marshall as Marshall
 
 withLockedTransaction :: forall m a. MonadOrville.MonadOrville m => m a -> m a
 withLockedTransaction action = do
@@ -67,10 +66,10 @@ orvilleLockScope = 17772
 migrationLockId :: Int32
 migrationLockId = 7995632
 
-lockedMarshaller :: SqlMarshaller.AnnotatedSqlMarshaller Bool Bool
+lockedMarshaller :: Marshall.AnnotatedSqlMarshaller Bool Bool
 lockedMarshaller =
-  SqlMarshaller.annotateSqlMarshallerEmptyAnnotation $
-    SqlMarshaller.marshallField id (FieldDefinition.booleanField "locked")
+  Marshall.annotateSqlMarshallerEmptyAnnotation $
+    Marshall.marshallField id (Marshall.booleanField "locked")
 
 tryLockExpr :: RawSql.RawSql
 tryLockExpr =

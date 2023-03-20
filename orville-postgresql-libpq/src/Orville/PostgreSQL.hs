@@ -327,7 +327,6 @@ import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.Orville as Orville
@@ -339,9 +338,10 @@ import qualified Orville.PostgreSQL.Internal.Sequence as Sequence
 import qualified Orville.PostgreSQL.Internal.SequenceDefinition as SequenceDefinition
 import qualified Orville.PostgreSQL.Internal.SequenceIdentifier as SequenceIdentifier
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
-import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
-import qualified Orville.PostgreSQL.Internal.SyntheticField as SyntheticField
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Internal.Transaction as Transaction
+import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller
+import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
+import qualified Orville.PostgreSQL.Marshall.SyntheticField as SyntheticField

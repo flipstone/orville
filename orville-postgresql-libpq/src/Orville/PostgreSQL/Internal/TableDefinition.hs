@@ -35,13 +35,13 @@ import qualified Data.Set as Set
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.ConstraintDefinition (ConstraintDefinition, ConstraintMigrationKey, constraintMigrationKey, constraintSqlExpr)
-import Orville.PostgreSQL.Internal.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Internal.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
 import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
+import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 
 {- |
   Contains the definition of a SQL table for Orville to use for generating

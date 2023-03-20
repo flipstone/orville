@@ -21,8 +21,8 @@ import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.PrimaryKey (primaryKeyEquals)
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkTableReturningClause, tableMarshaller, tableName, tablePrimaryKey)
+import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
 
 {- |
   Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a

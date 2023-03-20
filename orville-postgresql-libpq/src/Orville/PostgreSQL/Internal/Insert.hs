@@ -24,8 +24,8 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkInsertExpr, tableMarshaller)
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
 
 {- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
   'SqlMarshaller' bound to it that, when the insert returns data from the database, will be used to

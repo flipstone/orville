@@ -29,15 +29,13 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.Select (Select)
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
-import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
 import Orville.PostgreSQL.Plan.Many (Many)
 import qualified Orville.PostgreSQL.Plan.Many as Many
@@ -169,7 +167,7 @@ data WherePlanner param = WherePlanner
   { -- | The 'paramMarshaller' function provided here will be used to decode
     -- the parameter field from the result set so that the row can be properly
     -- associated with the input parameter that matched it.
-    paramMarshaller :: forall entity. (entity -> param) -> SqlMarshaller.SqlMarshaller entity param
+    paramMarshaller :: forall entity. (entity -> param) -> Marshall.SqlMarshaller entity param
   , -- | 'executeOneWhereCondition' must build a where condition that will
     -- match only those rows that match the input paramater.
     executeOneWhereCondition :: param -> Expr.BooleanExpr
@@ -196,17 +194,17 @@ data WherePlanner param = WherePlanner
   with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 -}
 byField ::
-  FieldDefinition.FieldDefinition nullability fieldValue ->
+  Marshall.FieldDefinition nullability fieldValue ->
   WherePlanner fieldValue
 byField fieldDef =
   let stringyField =
         stringifyField fieldDef
    in WherePlanner
-        { paramMarshaller = flip SqlMarshaller.marshallField fieldDef
-        , executeOneWhereCondition = \fieldValue -> FieldDefinition.fieldEquals fieldDef fieldValue
-        , executeManyWhereCondition = \fieldValues -> FieldDefinition.fieldIn fieldDef fieldValues
-        , explainOneWhereCondition = FieldDefinition.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
-        , explainManyWhereCondition = FieldDefinition.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
+        { paramMarshaller = flip Marshall.marshallField fieldDef
+        , executeOneWhereCondition = \fieldValue -> Marshall.fieldEquals fieldDef fieldValue
+        , executeManyWhereCondition = \fieldValues -> Marshall.fieldIn fieldDef fieldValues
+        , explainOneWhereCondition = Marshall.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
+        , explainManyWhereCondition = Marshall.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
         }
 
 {- |
@@ -216,8 +214,8 @@ byField fieldDef =
 -}
 byFieldTuple ::
   forall nullabilityA fieldValueA nullabilityB fieldValueB.
-  FieldDefinition.FieldDefinition nullabilityA fieldValueA ->
-  FieldDefinition.FieldDefinition nullabilityB fieldValueB ->
+  Marshall.FieldDefinition nullabilityA fieldValueA ->
+  Marshall.FieldDefinition nullabilityB fieldValueB ->
   WherePlanner (fieldValueA, fieldValueB)
 byFieldTuple fieldDefA fieldDefB =
   let stringyFieldA =
@@ -228,25 +226,25 @@ byFieldTuple fieldDefA fieldDefB =
 
       marshaller ::
         (a -> (fieldValueA, fieldValueB)) ->
-        SqlMarshaller.SqlMarshaller a (fieldValueA, fieldValueB)
+        Marshall.SqlMarshaller a (fieldValueA, fieldValueB)
       marshaller accessor =
         (,)
-          <$> SqlMarshaller.marshallField (fst . accessor) fieldDefA
-          <*> SqlMarshaller.marshallField (snd . accessor) fieldDefB
+          <$> Marshall.marshallField (fst . accessor) fieldDefA
+          <*> Marshall.marshallField (snd . accessor) fieldDefB
 
       packAll =
         fmap (\(a, b) -> (T.pack a, T.pack b))
    in WherePlanner
         { paramMarshaller = marshaller
-        , executeOneWhereCondition = \fieldValue -> FieldDefinition.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
-        , executeManyWhereCondition = \fieldValues -> FieldDefinition.fieldTupleIn fieldDefA fieldDefB fieldValues
+        , executeOneWhereCondition = \fieldValue -> Marshall.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
+        , executeManyWhereCondition = \fieldValues -> Marshall.fieldTupleIn fieldDefA fieldDefB fieldValues
         , explainOneWhereCondition =
-            FieldDefinition.fieldTupleIn
+            Marshall.fieldTupleIn
               stringyFieldA
               stringyFieldB
               (packAll $ ("EXAMPLE VALUE A", "EXAMPLE VALUE B") :| [])
         , explainManyWhereCondition =
-            FieldDefinition.fieldTupleIn
+            Marshall.fieldTupleIn
               stringyFieldA
               stringyFieldB
               (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
@@ -313,11 +311,11 @@ findOneWithOpts tableDef wherePlanner opts =
         (TableDefinition.tableName tableDef)
 
     marshaller =
-      SqlMarshaller.mapSqlMarshaller
+      Marshall.mapSqlMarshaller
         ( \m ->
             (,)
               <$> paramMarshaller wherePlanner fst
-              <*> SqlMarshaller.marshallNested snd m
+              <*> Marshall.marshallNested snd m
         )
         (TableDefinition.tableMarshaller tableDef)
 
@@ -382,11 +380,11 @@ findAllWithOpts tableDef wherePlanner opts =
         (TableDefinition.tableName tableDef)
 
     marshaller =
-      SqlMarshaller.mapSqlMarshaller
+      Marshall.mapSqlMarshaller
         ( \m ->
             (,)
               <$> paramMarshaller wherePlanner fst
-              <*> SqlMarshaller.marshallNested snd m
+              <*> Marshall.marshallNested snd m
         )
         (TableDefinition.tableMarshaller tableDef)
 
@@ -398,10 +396,10 @@ findAllWithOpts tableDef wherePlanner opts =
   values as example inputs in the queries when for explaining plans.
 -}
 stringifyField ::
-  FieldDefinition.FieldDefinition nullability a ->
-  FieldDefinition.FieldDefinition nullability T.Text
+  Marshall.FieldDefinition nullability a ->
+  Marshall.FieldDefinition nullability T.Text
 stringifyField =
-  FieldDefinition.convertField (const SqlType.unboundedText)
+  Marshall.convertField (const Marshall.unboundedText)
 
 {- |
   'SelectOperation' is a helper type for building 'Operation' primitives that

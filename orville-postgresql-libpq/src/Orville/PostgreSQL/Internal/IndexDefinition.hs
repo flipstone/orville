@@ -19,8 +19,8 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NEL
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
 
 {- |
   Defines an index that can be added to a 'Orville.PostgreSQL.TableDefinition'.

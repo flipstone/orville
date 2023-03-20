@@ -13,8 +13,8 @@ import qualified Hedgehog as HH
 import Orville.PostgreSQL ((.&&), (./=), (.<), (.<-), (.</-), (.<=), (.==), (.>), (.>=), (.||))
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDef
 import qualified Test.Property as Property
 
 selectOptionsTests :: Property.Group

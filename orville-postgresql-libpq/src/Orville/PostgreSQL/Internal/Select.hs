@@ -18,8 +18,8 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, tableMarshaller, tableName)
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 
 {- |
   Represents a @SELECT@ statement that can be executed against a database. A

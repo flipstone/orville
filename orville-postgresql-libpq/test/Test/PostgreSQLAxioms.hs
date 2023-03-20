@@ -13,7 +13,7 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
+import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Test.Property as Property
 
 postgreSQLAxiomTests :: Pool.Pool Conn.Connection -> Property.Group

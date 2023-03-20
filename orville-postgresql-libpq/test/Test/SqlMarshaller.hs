@@ -18,10 +18,8 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
-import qualified Orville.PostgreSQL.Internal.MarshallError as MarshallError
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Marshall as Marshall
 
 import Test.Expr.TestSchema (assertEqualSqlRows)
 import qualified Test.PgGen as PgGen
@@ -70,8 +68,8 @@ property_marshellField_readSingleField =
     valuesBefore <- HH.forAll (generateAssociatedValues namesBefore generateInt32)
     valuesAfter <- HH.forAll (generateAssociatedValues namesAfter generateInt32)
 
-    let fieldDef = FieldDefinition.integerField targetName
-        marshaller = SqlMarshaller.marshallField id fieldDef
+    let fieldDef = Marshall.integerField targetName
+        marshaller = Marshall.marshallField id fieldDef
         input =
           Result.mkFakeLibPQResult
             (map B8.pack (namesBefore ++ (targetName : namesAfter)))
@@ -87,22 +85,22 @@ prop_marshallField_missingColumn =
     otherNames <- HH.forAll (generateNamesOtherThan targetName)
     otherValues <- HH.forAll (generateAssociatedValues otherNames generateInt32)
 
-    let fieldDef = FieldDefinition.integerField targetName
-        marshaller = SqlMarshaller.marshallField id fieldDef
+    let fieldDef = Marshall.integerField targetName
+        marshaller = Marshall.marshallField id fieldDef
         input =
           Result.mkFakeLibPQResult
             (map B8.pack otherNames)
             [map SqlValue.fromInt32 otherValues]
 
         expectedError =
-          MarshallError.MarshallError
-            { MarshallError.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
-            , MarshallError.marshallErrorRowIdentifier = mempty
-            , MarshallError.marshallErrorDetails =
-                MarshallError.MissingColumnError $
-                  MarshallError.MissingColumnErrorDetails
-                    { MarshallError.missingColumnName = B8.pack targetName
-                    , MarshallError.actualColumnNames = Set.fromList $ fmap B8.pack otherNames
+          Marshall.MarshallError
+            { Marshall.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
+            , Marshall.marshallErrorRowIdentifier = mempty
+            , Marshall.marshallErrorDetails =
+                Marshall.MissingColumnError $
+                  Marshall.MissingColumnErrorDetails
+                    { Marshall.missingColumnName = B8.pack targetName
+                    , Marshall.actualColumnNames = Set.fromList $ fmap B8.pack otherNames
                     }
             }
 
@@ -117,8 +115,8 @@ prop_marshallField_decodeValueFailure =
     targetName <- HH.forAll generateName
     nonIntegerText <- HH.forAll (Gen.text (Range.linear 0 10) Gen.alpha)
 
-    let fieldDef = FieldDefinition.integerField targetName
-        marshaller = SqlMarshaller.marshallField id fieldDef
+    let fieldDef = Marshall.integerField targetName
+        marshaller = Marshall.marshallField id fieldDef
         input =
           Result.mkFakeLibPQResult
             [B8.pack targetName]
@@ -132,11 +130,11 @@ prop_marshallField_decodeValueFailure =
         HH.footnote "Expected decoding failure, but got success"
         HH.failure
       Left rowDecodeErr ->
-        case MarshallError.marshallErrorDetails rowDecodeErr of
-          MarshallError.DecodingError details ->
-            map fst (MarshallError.decodingErrorValues details) === [B8.pack targetName]
+        case Marshall.marshallErrorDetails rowDecodeErr of
+          Marshall.DecodingError details ->
+            map fst (Marshall.decodingErrorValues details) === [B8.pack targetName]
           err -> do
-            HH.annotate $ MarshallError.renderMarshallErrorDetails ErrorDetailLevel.maximalErrorDetailLevel err
+            HH.annotate $ Marshall.renderMarshallErrorDetails ErrorDetailLevel.maximalErrorDetailLevel err
             HH.footnote "Expected DecodingError error, but got another error instead."
             HH.failure
 
@@ -185,23 +183,23 @@ prop_foldMarshallerFields =
 
     let addField entry fields =
           case entry of
-            SqlMarshaller.Natural fieldDef (Just getValue) ->
-              (FieldDefinition.fieldName fieldDef, FieldDefinition.fieldValueToSqlValue fieldDef (getValue foo)) : fields
-            SqlMarshaller.Natural _ Nothing ->
+            Marshall.Natural fieldDef (Just getValue) ->
+              (Marshall.fieldName fieldDef, Marshall.fieldValueToSqlValue fieldDef (getValue foo)) : fields
+            Marshall.Natural _ Nothing ->
               fields
-            SqlMarshaller.Synthetic _ ->
+            Marshall.Synthetic _ ->
               fields
 
         actualFooRow =
-          SqlMarshaller.foldMarshallerFields
+          Marshall.foldMarshallerFields
             fooMarshaller
             []
             addField
 
         expectedFooRow =
-          [ (FieldDefinition.stringToFieldName "name", SqlValue.fromText $ fooName foo)
-          , (FieldDefinition.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
-          , (FieldDefinition.stringToFieldName "option", maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo)
+          [ (Marshall.stringToFieldName "name", SqlValue.fromText $ fooName foo)
+          , (Marshall.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
+          , (Marshall.stringToFieldName "option", maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo)
           ]
 
     [actualFooRow] `assertEqualSqlRows` [expectedFooRow]
@@ -233,9 +231,9 @@ prop_partialMap =
             (map mkRowValues texts)
 
         marshaller =
-          SqlMarshaller.marshallPartial $
+          Marshall.marshallPartial $
             validateText
-              <$> SqlMarshaller.marshallField id (FieldDefinition.unboundedTextField "text")
+              <$> Marshall.marshallField id (Marshall.unboundedTextField "text")
 
         mkExpected text =
           case validateText text of
@@ -246,14 +244,14 @@ prop_partialMap =
                 -- Use show here to render the error so that MarshallError
                 -- and friends don't need to have an Eq instance
                 show $
-                  MarshallError.MarshallError
-                    { MarshallError.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
-                    , MarshallError.marshallErrorRowIdentifier = mempty
-                    , MarshallError.marshallErrorDetails =
-                        MarshallError.DecodingError $
-                          MarshallError.DecodingErrorDetails
-                            { MarshallError.decodingErrorValues = [(B8.pack "text", SqlValue.fromText text)]
-                            , MarshallError.decodingErrorMessage = message
+                  Marshall.MarshallError
+                    { Marshall.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
+                    , Marshall.marshallErrorRowIdentifier = mempty
+                    , Marshall.marshallErrorDetails =
+                        Marshall.DecodingError $
+                          Marshall.DecodingErrorDetails
+                            { Marshall.decodingErrorValues = [(B8.pack "text", SqlValue.fromText text)]
+                            , Marshall.decodingErrorMessage = message
                             }
                     }
 
@@ -280,12 +278,12 @@ data Bar = Bar
   }
   deriving (Eq, Show)
 
-fooMarshaller :: SqlMarshaller.SqlMarshaller Foo Foo
+fooMarshaller :: Marshall.SqlMarshaller Foo Foo
 fooMarshaller =
   Foo
-    <$> SqlMarshaller.marshallField fooName (FieldDefinition.unboundedTextField "name")
-    <*> SqlMarshaller.marshallField fooSize (FieldDefinition.integerField "size")
-    <*> SqlMarshaller.marshallField fooOption (FieldDefinition.nullableField $ FieldDefinition.booleanField "option")
+    <$> Marshall.marshallField fooName (Marshall.unboundedTextField "name")
+    <*> Marshall.marshallField fooSize (Marshall.integerField "size")
+    <*> Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option")
 
 generateFoo :: HH.Gen Foo
 generateFoo =
@@ -294,12 +292,12 @@ generateFoo =
     <*> generateInt32
     <*> Gen.maybe Gen.bool
 
-barMarshaller :: SqlMarshaller.SqlMarshaller Bar Bar
+barMarshaller :: Marshall.SqlMarshaller Bar Bar
 barMarshaller =
   Bar
-    <$> SqlMarshaller.marshallField barNumber (FieldDefinition.doubleField "number")
-    <*> SqlMarshaller.marshallField barComment (FieldDefinition.nullableField $ FieldDefinition.unboundedTextField "comment")
-    <*> SqlMarshaller.marshallField barLabel (FieldDefinition.nullableField $ FieldDefinition.boundedTextField "label" 16)
+    <$> Marshall.marshallField barNumber (Marshall.doubleField "number")
+    <*> Marshall.marshallField barComment (Marshall.nullableField $ Marshall.unboundedTextField "comment")
+    <*> Marshall.marshallField barLabel (Marshall.nullableField $ Marshall.boundedTextField "label" 16)
 
 generateBar :: HH.Gen Bar
 generateBar =
@@ -338,13 +336,13 @@ marshallTestRowFromSql ::
   , MIO.MonadIO m
   , Result.ExecutionResult result
   ) =>
-  SqlMarshaller.SqlMarshaller writeEntity readEntity ->
+  Marshall.SqlMarshaller writeEntity readEntity ->
   result ->
-  m (Either MarshallError.MarshallError [readEntity])
+  m (Either Marshall.MarshallError [readEntity])
 marshallTestRowFromSql marshaller input =
   HH.evalIO $
-    SqlMarshaller.marshallResultFromSqlUsingRowIdExtractor
+    Marshall.marshallResultFromSqlUsingRowIdExtractor
       ErrorDetailLevel.maximalErrorDetailLevel
-      (SqlMarshaller.mkRowIdentityExtractor [] input)
+      (Marshall.mkRowIdentityExtractor [] input)
       marshaller
       input

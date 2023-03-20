@@ -19,9 +19,9 @@ import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Internal.ExecutionResult as Result
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDef
 
 import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PgGen as PgGen

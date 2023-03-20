@@ -57,9 +57,7 @@ library:
     - Orville.PostgreSQL.Internal.Delete
     - Orville.PostgreSQL.Internal.ErrorDetailLevel
     - Orville.PostgreSQL.Internal.ExecutionResult
-    - Orville.PostgreSQL.Internal.FieldDefinition
     - Orville.PostgreSQL.Internal.Insert
-    - Orville.PostgreSQL.Internal.MarshallError
     - Orville.PostgreSQL.Internal.OrvilleState
     - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PgTime
@@ -71,13 +69,17 @@ library:
     - Orville.PostgreSQL.Internal.SequenceDefinition
     - Orville.PostgreSQL.Internal.SequenceIdentifier
     - Orville.PostgreSQL.Internal.SqlCommenter
-    - Orville.PostgreSQL.Internal.SqlMarshaller
-    - Orville.PostgreSQL.Internal.SqlType
     - Orville.PostgreSQL.Internal.SqlValue
     - Orville.PostgreSQL.Internal.TableDefinition
     - Orville.PostgreSQL.Internal.TableIdentifier
     - Orville.PostgreSQL.Internal.Transaction
     - Orville.PostgreSQL.Internal.Update
+    - Orville.PostgreSQL.Marshall
+    - Orville.PostgreSQL.Marshall.FieldDefinition
+    - Orville.PostgreSQL.Marshall.MarshallError
+    - Orville.PostgreSQL.Marshall.SqlMarshaller
+    - Orville.PostgreSQL.Marshall.SqlType
+    - Orville.PostgreSQL.Marshall.SyntheticField
     - Orville.PostgreSQL.Plan
     - Orville.PostgreSQL.Plan.Explanation
     - Orville.PostgreSQL.Plan.Many

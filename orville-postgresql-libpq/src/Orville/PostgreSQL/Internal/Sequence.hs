@@ -9,12 +9,11 @@ import Data.Int (Int64)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
 import Orville.PostgreSQL.Internal.SequenceDefinition (SequenceDefinition, sequenceName)
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
+import qualified Orville.PostgreSQL.Marshall as Marshall
 
 {- |
   Fetches the next value from a sequence via the PostgreSQL @nextval@ function.
@@ -54,8 +53,8 @@ selectInt64Value caller valueExpression = do
           Nothing
 
       marshaller =
-        SqlMarshaller.annotateSqlMarshallerEmptyAnnotation
-          . SqlMarshaller.marshallField id
-          $ FieldDefinition.bigIntegerField "result"
+        Marshall.annotateSqlMarshallerEmptyAnnotation
+          . Marshall.marshallField id
+          $ Marshall.bigIntegerField "result"
   values <- Execute.executeAndDecode QueryType.SelectQuery queryExpr marshaller
   RowCountExpectation.expectExactlyOneRow caller values

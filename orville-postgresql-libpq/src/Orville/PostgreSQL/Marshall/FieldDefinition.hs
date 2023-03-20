@@ -2,11 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
-Module    : Orville.PostgreSQL.Internal.FieldDefinition
+Module    : Orville.PostgreSQL.Marshall.FieldDefinition
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.FieldDefinition
+module Orville.PostgreSQL.Marshall.FieldDefinition
   ( FieldDefinition,
     fieldName,
     fieldDescription,
@@ -91,8 +91,8 @@ import qualified Data.UUID as UUID
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.DefaultValue (DefaultValue, coerceDefaultValue, defaultValueExpression)
-import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 
 newtype FieldName
   = FieldName B8.ByteString

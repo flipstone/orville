@@ -15,9 +15,9 @@ import qualified Hedgehog.Gen as Gen
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
-import qualified Orville.PostgreSQL.Internal.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 
 import qualified Test.Property as Property
 

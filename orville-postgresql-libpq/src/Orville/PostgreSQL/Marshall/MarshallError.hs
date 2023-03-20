@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.MarshallError
+module Orville.PostgreSQL.Marshall.MarshallError
   ( MarshallError (MarshallError, marshallErrorDetailLevel, marshallErrorRowIdentifier, marshallErrorDetails),
     renderMarshallError,
     MarshallErrorDetails (DecodingError, MissingColumnError),

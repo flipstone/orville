@@ -38,7 +38,7 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.Select (Select, useSelect)
-import Orville.PostgreSQL.Internal.SqlMarshaller (AnnotatedSqlMarshaller)
+import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller)
 
 {- |
   A 'Cursor' allows you to fetch rows incrementally from PostgreSQL. Using

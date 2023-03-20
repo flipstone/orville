@@ -1,9 +1,9 @@
 {- |
-Module    : Orville.PostgreSQL.SqlType
+Module    : Orville.PostgreSQL.Marshall.SqlType
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.SqlType
+module Orville.PostgreSQL.Marshall.SqlType
   ( SqlType
       ( SqlType,
         sqlTypeExpr,

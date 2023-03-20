@@ -7,7 +7,7 @@ where
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Internal.SqlType as SqlType
+import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 
 {- |
   The @oid@ field found on many (but not all!) @pg_catalog@ tables
