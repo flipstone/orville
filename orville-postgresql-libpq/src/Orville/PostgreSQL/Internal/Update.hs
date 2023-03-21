@@ -18,11 +18,10 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import Orville.PostgreSQL.Internal.PrimaryKey (primaryKeyEquals)
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.TableDefinition (HasKey, TableDefinition, mkTableReturningClause, tableMarshaller, tableName, tablePrimaryKey)
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
+import Orville.PostgreSQL.Schema (HasKey, TableDefinition, mkTableReturningClause, primaryKeyEquals, tableMarshaller, tableName, tablePrimaryKey)
 
 {- |
   Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a

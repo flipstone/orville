@@ -34,11 +34,11 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.Select (Select)
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
 import Orville.PostgreSQL.Plan.Many (Many)
 import qualified Orville.PostgreSQL.Plan.Many as Many
+import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
   'Operation' provides a stucture for building primitive operations that can be
@@ -259,7 +259,7 @@ byFieldTuple fieldDefA fieldDefB =
 -}
 findOne ::
   Ord param =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
   Operation param (Maybe readEntity)
 findOne tableDef wherePlanner =
@@ -272,7 +272,7 @@ findOne tableDef wherePlanner =
 -}
 findOneWhere ::
   Ord param =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
   Expr.BooleanExpr ->
   Operation param (Maybe readEntity)
@@ -284,7 +284,7 @@ findOneWhere tableDef wherePlanner cond =
 -}
 findOneWithOpts ::
   Ord param =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
   SelectOptions.SelectOptions ->
   Operation param (Maybe readEntity)
@@ -308,7 +308,7 @@ findOneWithOpts tableDef wherePlanner opts =
     select =
       Select.selectMarshalledColumns
         marshaller
-        (TableDefinition.tableName tableDef)
+        (Schema.tableName tableDef)
 
     marshaller =
       Marshall.mapSqlMarshaller
@@ -317,7 +317,7 @@ findOneWithOpts tableDef wherePlanner opts =
               <$> paramMarshaller wherePlanner fst
               <*> Marshall.marshallNested snd m
         )
-        (TableDefinition.tableMarshaller tableDef)
+        (Schema.tableMarshaller tableDef)
 
 {- |
   'findAll' builds a planning primitive that finds all the rows from the
@@ -328,7 +328,7 @@ findOneWithOpts tableDef wherePlanner opts =
 -}
 findAll ::
   Ord param =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
   Operation param [readEntity]
 findAll tableDef wherePlanner =
@@ -341,7 +341,7 @@ findAll tableDef wherePlanner =
 -}
 findAllWhere ::
   Ord param =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
   Expr.BooleanExpr ->
   Operation param [readEntity]
@@ -353,7 +353,7 @@ findAllWhere tableDef wherePlanner cond =
 -}
 findAllWithOpts ::
   Ord param =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
   SelectOptions.SelectOptions ->
   Operation param [readEntity]
@@ -377,7 +377,7 @@ findAllWithOpts tableDef wherePlanner opts =
     select =
       Select.selectMarshalledColumns
         marshaller
-        (TableDefinition.tableName tableDef)
+        (Schema.tableName tableDef)
 
     marshaller =
       Marshall.mapSqlMarshaller
@@ -386,7 +386,7 @@ findAllWithOpts tableDef wherePlanner opts =
               <$> paramMarshaller wherePlanner fst
               <*> Marshall.marshallNested snd m
         )
-        (TableDefinition.tableMarshaller tableDef)
+        (Schema.tableMarshaller tableDef)
 
 {- |
   'stringifyField' arbitrarily re-labels the 'SqlType' of a field definition

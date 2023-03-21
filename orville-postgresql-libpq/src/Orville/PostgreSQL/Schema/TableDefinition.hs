@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Orville.PostgreSQL.Internal.TableDefinition
+module Orville.PostgreSQL.Schema.TableDefinition
   ( TableDefinition,
     HasKey,
     NoKey,
@@ -34,14 +34,14 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.ConstraintDefinition (ConstraintDefinition, ConstraintMigrationKey, constraintMigrationKey, constraintSqlExpr)
-import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
-import Orville.PostgreSQL.Internal.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Internal.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
-import Orville.PostgreSQL.Internal.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
+import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, ConstraintMigrationKey, constraintMigrationKey, constraintSqlExpr)
+import Orville.PostgreSQL.Schema.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
+import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
+import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 
 {- |
   Contains the definition of a SQL table for Orville to use for generating

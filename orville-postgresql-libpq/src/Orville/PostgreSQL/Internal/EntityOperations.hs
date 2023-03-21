@@ -31,13 +31,11 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Delete as Delete
 import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import qualified Orville.PostgreSQL.Internal.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDef
-import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableId
 import qualified Orville.PostgreSQL.Internal.Update as Update
+import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
   Inserts a entity into the specified table. Returns the number of rows
@@ -45,7 +43,7 @@ import qualified Orville.PostgreSQL.Internal.Update as Update
 -}
 insertEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   writeEntity ->
   m Int
 insertEntity entityTable entity =
@@ -60,7 +58,7 @@ insertEntity entityTable entity =
 -}
 insertAndReturnEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   writeEntity ->
   m readEntity
 insertAndReturnEntity entityTable entity = do
@@ -76,7 +74,7 @@ insertAndReturnEntity entityTable entity = do
 -}
 insertEntities ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m Int
 insertEntities tableDef =
@@ -91,7 +89,7 @@ insertEntities tableDef =
 -}
 insertAndReturnEntities ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m [readEntity]
 insertAndReturnEntities tableDef =
@@ -103,14 +101,14 @@ insertAndReturnEntities tableDef =
 -}
 updateEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
   m Int
 updateEntity tableDef key writeEntity =
   case Update.updateToTable tableDef key writeEntity of
     Nothing ->
-      liftIO . throwIO . EmptyUpdateError . TableDef.tableIdentifier $ tableDef
+      liftIO . throwIO . EmptyUpdateError . Schema.tableIdentifier $ tableDef
     Just update ->
       Update.executeUpdate update
 
@@ -124,14 +122,14 @@ updateEntity tableDef key writeEntity =
 -}
 updateAndReturnEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
   m (Maybe readEntity)
 updateAndReturnEntity tableDef key writeEntity =
   case Update.updateToTableReturning tableDef key writeEntity of
     Nothing ->
-      liftIO . throwIO . EmptyUpdateError . TableDef.tableIdentifier $ tableDef
+      liftIO . throwIO . EmptyUpdateError . Schema.tableIdentifier $ tableDef
     Just update -> do
       returnedEntities <- Update.executeUpdateReturnEntities update
       RowCountExpectation.expectAtMostOneRow
@@ -146,7 +144,7 @@ updateAndReturnEntity tableDef key writeEntity =
 -}
 updateFields ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
   Maybe Expr.BooleanExpr ->
   m Int
@@ -160,7 +158,7 @@ updateFields tableDef setClauses mbWhereCondition =
 -}
 updateFieldsAndReturnEntities ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
   Maybe Expr.BooleanExpr ->
   m [readEntity]
@@ -174,13 +172,13 @@ updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
 -}
 deleteEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   m Int
 deleteEntity entityTable key =
   let primaryKeyCondition =
-        PrimaryKey.primaryKeyEquals
-          (TableDef.tablePrimaryKey entityTable)
+        Schema.primaryKeyEquals
+          (Schema.tablePrimaryKey entityTable)
           key
    in Delete.executeDelete $
         Delete.deleteFromTable entityTable (Just primaryKeyCondition)
@@ -191,13 +189,13 @@ deleteEntity entityTable key =
 -}
 deleteAndReturnEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   m (Maybe readEntity)
 deleteAndReturnEntity entityTable key = do
   let primaryKeyCondition =
-        PrimaryKey.primaryKeyEquals
-          (TableDef.tablePrimaryKey entityTable)
+        Schema.primaryKeyEquals
+          (Schema.tablePrimaryKey entityTable)
           key
 
   returnedEntities <- deleteAndReturnEntities entityTable (Just primaryKeyCondition)
@@ -212,7 +210,7 @@ deleteAndReturnEntity entityTable key = do
 -}
 deleteEntities ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Maybe Expr.BooleanExpr ->
   m Int
 deleteEntities entityTable whereCondition =
@@ -225,7 +223,7 @@ deleteEntities entityTable whereCondition =
 -}
 deleteAndReturnEntities ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Maybe Expr.BooleanExpr ->
   m [readEntity]
 deleteAndReturnEntities entityTable whereCondition =
@@ -239,7 +237,7 @@ deleteAndReturnEntities entityTable whereCondition =
 -}
 findEntitiesBy ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   m [readEntity]
 findEntitiesBy entityTable selectOptions =
@@ -254,7 +252,7 @@ findEntitiesBy entityTable selectOptions =
 -}
 findFirstEntityBy ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   m (Maybe readEntity)
 findFirstEntityBy entityTable selectOptions =
@@ -266,27 +264,27 @@ findFirstEntityBy entityTable selectOptions =
 -}
 findEntity ::
   MonadOrville.MonadOrville m =>
-  TableDef.TableDefinition (TableDef.HasKey key) writeEntity readEntity ->
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   m (Maybe readEntity)
 findEntity entityTable key =
   let primaryKeyCondition =
-        PrimaryKey.primaryKeyEquals
-          (TableDef.tablePrimaryKey entityTable)
+        Schema.primaryKeyEquals
+          (Schema.tablePrimaryKey entityTable)
           key
    in findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
 {- |
   Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the
-  'TableDef.TableDefinition' they are given has no columns to update.
+  'Schema.TableDefinition' they are given has no columns to update.
 -}
 newtype EmptyUpdateError
-  = EmptyUpdateError TableId.TableIdentifier
+  = EmptyUpdateError Schema.TableIdentifier
 
 instance Show EmptyUpdateError where
   show (EmptyUpdateError tableId) =
     "EmptyUdateError: "
-      <> TableId.tableIdToString tableId
+      <> Schema.tableIdToString tableId
       <> " has no columns to update."
 
 instance Exception EmptyUpdateError

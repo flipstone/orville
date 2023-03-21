@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.TableIdentifier
+module Orville.PostgreSQL.Schema.TableIdentifier
   ( TableIdentifier,
     unqualifiedNameToTableId,
     setTableIdSchema,

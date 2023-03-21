@@ -12,8 +12,8 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
-import Orville.PostgreSQL.Internal.SequenceDefinition (SequenceDefinition, sequenceName)
 import qualified Orville.PostgreSQL.Marshall as Marshall
+import Orville.PostgreSQL.Schema (SequenceDefinition, sequenceName)
 
 {- |
   Fetches the next value from a sequence via the PostgreSQL @nextval@ function.

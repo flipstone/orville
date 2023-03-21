@@ -69,17 +69,12 @@ library
       Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.PgTextFormatValue
       Orville.PostgreSQL.Internal.PgTime
-      Orville.PostgreSQL.Internal.PrimaryKey
       Orville.PostgreSQL.Internal.RawSql
       Orville.PostgreSQL.Internal.ReturningOption
       Orville.PostgreSQL.Internal.Select
       Orville.PostgreSQL.Internal.SelectOptions
-      Orville.PostgreSQL.Internal.SequenceDefinition
-      Orville.PostgreSQL.Internal.SequenceIdentifier
       Orville.PostgreSQL.Internal.SqlCommenter
       Orville.PostgreSQL.Internal.SqlValue
-      Orville.PostgreSQL.Internal.TableDefinition
-      Orville.PostgreSQL.Internal.TableIdentifier
       Orville.PostgreSQL.Internal.Transaction
       Orville.PostgreSQL.Internal.Update
       Orville.PostgreSQL.Marshall
@@ -94,6 +89,14 @@ library
       Orville.PostgreSQL.Plan.Operation
       Orville.PostgreSQL.Plan.Syntax
       Orville.PostgreSQL.PgCatalog
+      Orville.PostgreSQL.Schema
+      Orville.PostgreSQL.Schema.ConstraintDefinition
+      Orville.PostgreSQL.Schema.IndexDefinition
+      Orville.PostgreSQL.Schema.PrimaryKey
+      Orville.PostgreSQL.Schema.SequenceDefinition
+      Orville.PostgreSQL.Schema.SequenceIdentifier
+      Orville.PostgreSQL.Schema.TableDefinition
+      Orville.PostgreSQL.Schema.TableIdentifier
   other-modules:
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
@@ -106,11 +109,9 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.SchemaName
       Orville.PostgreSQL.Expr.Internal.Name.SequenceName
       Orville.PostgreSQL.Expr.Internal.Name.TableName
-      Orville.PostgreSQL.Internal.ConstraintDefinition
       Orville.PostgreSQL.Internal.EntityOperations
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Extra.NonEmpty
-      Orville.PostgreSQL.Internal.IndexDefinition
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.Orville

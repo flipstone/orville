@@ -50,13 +50,12 @@ import qualified Data.List.NonEmpty as NEL
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.Select (Select)
-import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
-import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
 import Orville.PostgreSQL.Plan.Many (Many)
 import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Plan.Operation as Op
+import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
   A 'Plan' is an executable set of queries that can be executed to load data
@@ -221,7 +220,7 @@ askParam =
 -}
 findMaybeOne ::
   Ord fieldValue =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue (Maybe readEntity)
 findMaybeOne tableDef fieldDef =
@@ -234,7 +233,7 @@ findMaybeOne tableDef fieldDef =
 -}
 findMaybeOneWhere ::
   Ord fieldValue =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Expr.BooleanExpr ->
   Plan scope fieldValue (Maybe readEntity)
@@ -251,7 +250,7 @@ findMaybeOneWhere tableDef fieldDef cond =
 findOneShowVia ::
   Ord fieldValue =>
   (fieldValue -> String) ->
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue readEntity
 findOneShowVia showParam tableDef fieldDef =
@@ -266,7 +265,7 @@ findOneShowVia showParam tableDef fieldDef =
 -}
 findOne ::
   (Show fieldValue, Ord fieldValue) =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue readEntity
 findOne = findOneShowVia show
@@ -278,7 +277,7 @@ findOne = findOneShowVia show
 findOneWhereShowVia ::
   Ord fieldValue =>
   (fieldValue -> String) ->
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Expr.BooleanExpr ->
   Plan scope fieldValue readEntity
@@ -294,7 +293,7 @@ findOneWhereShowVia showParam tableDef fieldDef cond =
 -}
 findOneWhere ::
   (Show fieldValue, Ord fieldValue) =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Expr.BooleanExpr ->
   Plan scope fieldValue readEntity
@@ -306,7 +305,7 @@ findOneWhere = findOneWhereShowVia show
 -}
 assertFound ::
   (fieldValue -> String) ->
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   fieldValue ->
   Maybe result ->
@@ -319,7 +318,7 @@ assertFound showParam tableDef fieldDef param maybeRecord =
       Left $
         unwords
           [ "Failed to find record in table "
-          , TableIdentifier.tableIdToString $ TableDefinition.tableIdentifier tableDef
+          , Schema.tableIdToString $ Schema.tableIdentifier tableDef
           , " where "
           , Marshall.fieldNameToString $ Marshall.fieldName fieldDef
           , " = "
@@ -332,7 +331,7 @@ assertFound showParam tableDef fieldDef param maybeRecord =
 -}
 findAll ::
   Ord fieldValue =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue [readEntity]
 findAll tableDef fieldDef =
@@ -344,7 +343,7 @@ findAll tableDef fieldDef =
 -}
 findAllWhere ::
   Ord fieldValue =>
-  TableDefinition.TableDefinition key writeEntity readEntity ->
+  Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability fieldValue ->
   Expr.BooleanExpr ->
   Plan scope fieldValue [readEntity]

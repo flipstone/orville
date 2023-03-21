@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.IndexDefinition
+module Orville.PostgreSQL.Schema.IndexDefinition
   ( IndexDefinition,
     uniqueIndex,
     uniqueNamedIndex,

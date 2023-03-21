@@ -61,17 +61,12 @@ library:
     - Orville.PostgreSQL.Internal.OrvilleState
     - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PgTime
-    - Orville.PostgreSQL.Internal.PrimaryKey
     - Orville.PostgreSQL.Internal.RawSql
     - Orville.PostgreSQL.Internal.ReturningOption
     - Orville.PostgreSQL.Internal.Select
     - Orville.PostgreSQL.Internal.SelectOptions
-    - Orville.PostgreSQL.Internal.SequenceDefinition
-    - Orville.PostgreSQL.Internal.SequenceIdentifier
     - Orville.PostgreSQL.Internal.SqlCommenter
     - Orville.PostgreSQL.Internal.SqlValue
-    - Orville.PostgreSQL.Internal.TableDefinition
-    - Orville.PostgreSQL.Internal.TableIdentifier
     - Orville.PostgreSQL.Internal.Transaction
     - Orville.PostgreSQL.Internal.Update
     - Orville.PostgreSQL.Marshall
@@ -86,6 +81,14 @@ library:
     - Orville.PostgreSQL.Plan.Operation
     - Orville.PostgreSQL.Plan.Syntax
     - Orville.PostgreSQL.PgCatalog
+    - Orville.PostgreSQL.Schema
+    - Orville.PostgreSQL.Schema.ConstraintDefinition
+    - Orville.PostgreSQL.Schema.IndexDefinition
+    - Orville.PostgreSQL.Schema.PrimaryKey
+    - Orville.PostgreSQL.Schema.SequenceDefinition
+    - Orville.PostgreSQL.Schema.SequenceIdentifier
+    - Orville.PostgreSQL.Schema.TableDefinition
+    - Orville.PostgreSQL.Schema.TableIdentifier
   when:
     - condition: flag(ci)
       then:

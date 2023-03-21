@@ -17,7 +17,7 @@ import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Internal.Select as Select
-import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
+import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Bar as Bar
 import qualified Test.Entities.Foo as Foo

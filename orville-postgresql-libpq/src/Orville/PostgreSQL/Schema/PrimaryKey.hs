@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Orville.PostgreSQL.Internal.PrimaryKey
+module Orville.PostgreSQL.Schema.PrimaryKey
   ( PrimaryKey,
     primaryKeyDescription,
     primaryKeyFieldNames,

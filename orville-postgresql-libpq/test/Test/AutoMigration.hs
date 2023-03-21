@@ -27,8 +27,8 @@ import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
+import qualified Orville.PostgreSQL.Schema as Schema
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.PgAssert as PgAssert
@@ -129,7 +129,7 @@ prop_addsAndRemovesColumns =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
-          Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
           AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     secondTimeSteps <-
@@ -232,7 +232,7 @@ prop_altersColumnDataType =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
-          Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
           AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
     secondTimeSteps <-
@@ -328,7 +328,7 @@ prop_respectsImplicitDefaultOnSerialFields =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableDef
-          Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr tableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr tableDef
           AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable tableDef]
 
     originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
@@ -366,7 +366,7 @@ assertDefaultValuesMigrateProperly pool genSomeField = do
     HH.evalIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
-        Orville.executeVoid Orville.DDLQuery $ TableDefinition.mkCreateTableExpr originalTableDef
+        Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
         AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
 
   originalTableDesc <- PgAssert.assertTableExists pool "migration_test"

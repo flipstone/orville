@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.ConstraintDefinition
+module Orville.PostgreSQL.Schema.ConstraintDefinition
   ( ConstraintDefinition,
     uniqueConstraint,
     foreignKeyConstraint,
@@ -19,8 +19,8 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NEL
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- |
   Defines a constraint that can be added to a

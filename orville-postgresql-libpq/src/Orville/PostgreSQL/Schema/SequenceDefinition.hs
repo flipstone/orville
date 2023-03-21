@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.SequenceDefinition
+module Orville.PostgreSQL.Schema.SequenceDefinition
   ( SequenceDefinition,
     mkSequenceDefinition,
     setSequenceSchema,
@@ -23,7 +23,7 @@ where
 import Data.Int (Int64)
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.SequenceIdentifier (SequenceIdentifier, sequenceIdQualifiedName, setSequenceIdSchema, unqualifiedNameToSequenceId)
+import Orville.PostgreSQL.Schema.SequenceIdentifier (SequenceIdentifier, sequenceIdQualifiedName, setSequenceIdSchema, unqualifiedNameToSequenceId)
 
 {- |
   Contains the definition of a SQL sequence for Orville to use when creating

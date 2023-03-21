@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.SequenceIdentifier
+module Orville.PostgreSQL.Schema.SequenceIdentifier
   ( SequenceIdentifier,
     unqualifiedNameToSequenceId,
     setSequenceIdSchema,

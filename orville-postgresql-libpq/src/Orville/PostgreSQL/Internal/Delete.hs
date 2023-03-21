@@ -22,8 +22,8 @@ import qualified Orville.PostgreSQL.Internal.Execute as Execute
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
-import Orville.PostgreSQL.Internal.TableDefinition (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
+import Orville.PostgreSQL.Schema (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)
 
 {- | Represents a @DELETE@ statement that can be executed against a database. A 'Delete' has a
   'SqlMarshaller' bound to it that, when the delete returns data from the database, will be used to
