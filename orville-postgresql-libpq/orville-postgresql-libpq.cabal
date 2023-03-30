@@ -66,7 +66,6 @@ library
       Orville.PostgreSQL.Internal.ErrorDetailLevel
       Orville.PostgreSQL.Internal.ExecutionResult
       Orville.PostgreSQL.Internal.Insert
-      Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.PgTextFormatValue
       Orville.PostgreSQL.Internal.PgTime
       Orville.PostgreSQL.Internal.RawSql
@@ -83,6 +82,11 @@ library
       Orville.PostgreSQL.Marshall.SqlMarshaller
       Orville.PostgreSQL.Marshall.SqlType
       Orville.PostgreSQL.Marshall.SyntheticField
+      Orville.PostgreSQL.Monad
+      Orville.PostgreSQL.Monad.HasOrvilleState
+      Orville.PostgreSQL.Monad.MonadOrville
+      Orville.PostgreSQL.Monad.Orville
+      Orville.PostgreSQL.OrvilleState
       Orville.PostgreSQL.Plan
       Orville.PostgreSQL.Plan.Explanation
       Orville.PostgreSQL.Plan.Many
@@ -113,8 +117,6 @@ library
       Orville.PostgreSQL.Internal.Execute
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.MigrationLock
-      Orville.PostgreSQL.Internal.MonadOrville
-      Orville.PostgreSQL.Internal.Orville
       Orville.PostgreSQL.Internal.QueryType
       Orville.PostgreSQL.Internal.RowCountExpectation
       Orville.PostgreSQL.Internal.Sequence

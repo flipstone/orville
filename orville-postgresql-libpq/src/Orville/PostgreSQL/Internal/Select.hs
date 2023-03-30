@@ -15,10 +15,10 @@ where
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
 
 {- |
@@ -41,7 +41,7 @@ selectToQueryExpr (Select _ query) = query
   Excutes the database query for the 'Select' and uses its 'SqlMarshaller' to
   decode the result set.
 -}
-executeSelect :: MonadOrville.MonadOrville m => Select row -> m [row]
+executeSelect :: Monad.MonadOrville m => Select row -> m [row]
 executeSelect =
   useSelect (Execute.executeAndDecode QueryType.SelectQuery)
 

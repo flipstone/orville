@@ -48,9 +48,9 @@ import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NEL
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import Orville.PostgreSQL.Internal.Select (Select)
 import qualified Orville.PostgreSQL.Marshall as Marshall
+import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
 import Orville.PostgreSQL.Plan.Many (Many)
 import qualified Orville.PostgreSQL.Plan.Many as Many
@@ -509,7 +509,7 @@ assert assertion aPlan =
   'execute'.
 -}
 execute ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Plan Execute param result ->
   param ->
   m result
@@ -521,7 +521,7 @@ execute plan param =
   'scope' type to ensure all 'Planned' values are built with 'PlannedOne'.
 -}
 executeOne ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Plan Execute param result ->
   param ->
   m result
@@ -563,7 +563,7 @@ executeOne plan param =
   @scope@ type to ensure all 'Planned' values are built with 'PlannedMany'.
 -}
 executeMany ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Plan ExecuteMany param result ->
   [param] ->
   m (Many.Many param result)

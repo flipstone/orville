@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Orville.PostgreSQL.Internal.MonadOrville
+module Orville.PostgreSQL.Monad.MonadOrville
   ( MonadOrville,
     MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket),
     withConnection,
@@ -14,10 +14,10 @@ import Control.Monad.Trans.Reader (ReaderT (ReaderT), runReaderT)
 import Data.Pool (withResource)
 
 import Orville.PostgreSQL.Connection (Connection)
-import Orville.PostgreSQL.Internal.OrvilleState
+import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
+import Orville.PostgreSQL.OrvilleState
   ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
     ConnectionState (Connected, NotConnected),
-    HasOrvilleState (askOrvilleState, localOrvilleState),
     OrvilleState,
     connectState,
     orvilleConnectionPool,

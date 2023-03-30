@@ -10,10 +10,10 @@ import qualified Data.IORef as IORef
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Monad as Monad
+import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 
 {- |
   Performs an action in an Orville monad within a database transaction. The transaction
@@ -26,11 +26,11 @@ import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
   either release the savepoint or rollback to it as appropriate.
 
   Note: Exceptions are handled using the implementation of
-  'MonadOrville.liftFinally' provided by the 'MonadOrville' instance for @m@.
+  'Monad.liftFinally' provided by the 'MonadOrville' instance for @m@.
 -}
-withTransaction :: MonadOrville.MonadOrville m => m a -> m a
+withTransaction :: Monad.MonadOrville m => m a -> m a
 withTransaction action =
-  MonadOrville.withConnectedState $ \connectedState -> do
+  Monad.withConnectedState $ \connectedState -> do
     let conn = OrvilleState.connectedConnection connectedState
         transaction = OrvilleState.newTransaction (OrvilleState.connectedTransaction connectedState)
 
@@ -40,7 +40,7 @@ withTransaction action =
             }
 
     committed <- liftIO $ IORef.newIORef False
-    state <- OrvilleState.askOrvilleState
+    state <- Monad.askOrvilleState
 
     let executeTransactionSql :: RawSql.RawSql -> IO ()
         executeTransactionSql sql =
@@ -56,7 +56,7 @@ withTransaction action =
             callback openEvent
 
           value <-
-            OrvilleState.localOrvilleState
+            Monad.localOrvilleState
               (OrvilleState.connectState innerConnectedState)
               action
           liftIO $ do
@@ -74,7 +74,7 @@ withTransaction action =
               executeTransactionSql (transactionEventSql state rollbackEvent)
               callback rollbackEvent
 
-    MonadOrville.liftFinally Exception.finally doAction rollbackUncommitted
+    Monad.liftFinally Exception.finally doAction rollbackUncommitted
 
 transactionEventSql ::
   OrvilleState.OrvilleState ->

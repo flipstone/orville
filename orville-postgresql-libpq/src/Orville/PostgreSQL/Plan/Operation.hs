@@ -29,12 +29,12 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import Orville.PostgreSQL.Internal.Select (Select)
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Marshall as Marshall
+import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
 import Orville.PostgreSQL.Plan.Many (Many)
 import qualified Orville.PostgreSQL.Plan.Many as Many
@@ -58,14 +58,14 @@ data Operation param result = Operation
     -- executed with a single input parameter
     executeOperationOne ::
       forall m.
-      (MonadOrville.MonadOrville m) =>
+      (Monad.MonadOrville m) =>
       param ->
       m (Either AssertionFailed result)
   , -- | 'executeOperationMany' will be called when an plan is
     -- executed with multiple input parameters (via 'planMany').
     executeOperationMany ::
       forall m.
-      (MonadOrville.MonadOrville m) =>
+      (Monad.MonadOrville m) =>
       NonEmpty param ->
       m (Either AssertionFailed (Many param result))
   , -- | 'explainOperationOne' will be called when producing an explanation
@@ -478,7 +478,7 @@ explainSelect =
   'SelectOperation' on a single input parameter.
 -}
 executeSelectOne ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   SelectOperation param row result ->
   param ->
   m (Either AssertionFailed result)
@@ -492,7 +492,7 @@ executeSelectOne selectOp param =
 -}
 executeSelectMany ::
   forall param row result m.
-  (Ord param, MonadOrville.MonadOrville m) =>
+  (Ord param, Monad.MonadOrville m) =>
   SelectOperation param row result ->
   NonEmpty param ->
   m (Either AssertionFailed (Many param result))
@@ -542,11 +542,11 @@ executeSelectMany selectOp params = do
 -}
 findSelect :: forall param row. Select.Select row -> Operation param [row]
 findSelect select =
-  let executeOne :: MonadOrville.MonadOrville m => param -> m (Either a [row])
+  let executeOne :: Monad.MonadOrville m => param -> m (Either a [row])
       executeOne _ =
         Right <$> Select.executeSelect select
 
-      executeMany :: MonadOrville.MonadOrville m => NonEmpty param -> m (Either a (Many param [row]))
+      executeMany :: Monad.MonadOrville m => NonEmpty param -> m (Either a (Many param [row]))
       executeMany params = do
         rows <- Select.executeSelect select
         pure . Right $ Many.fromKeys (Fold.toList params) (const (Right rows))

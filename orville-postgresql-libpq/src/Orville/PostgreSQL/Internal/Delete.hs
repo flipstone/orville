@@ -19,10 +19,10 @@ where
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)
 
 {- | Represents a @DELETE@ statement that can be executed against a database. A 'Delete' has a
@@ -49,7 +49,7 @@ deleteFromDeleteExpr (DeleteReturning _ expr) = expr
   rows affected by the query.
 -}
 executeDelete ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Delete readEntity NoReturningClause ->
   m Int
 executeDelete (Delete expr) =
@@ -59,7 +59,7 @@ executeDelete (Delete expr) =
   were just deleteed) as returned via a RETURNING clause.
 -}
 executeDeleteReturnEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Delete readEntity ReturningClause ->
   m [readEntity]
 executeDeleteReturnEntities (DeleteReturning marshaller expr) =

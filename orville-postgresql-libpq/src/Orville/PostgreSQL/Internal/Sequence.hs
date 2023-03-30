@@ -9,16 +9,16 @@ import Data.Int (Int64)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
 import qualified Orville.PostgreSQL.Marshall as Marshall
+import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (SequenceDefinition, sequenceName)
 
 {- |
   Fetches the next value from a sequence via the PostgreSQL @nextval@ function.
 -}
-sequenceNextValue :: MonadOrville.MonadOrville m => SequenceDefinition -> m Int64
+sequenceNextValue :: Monad.MonadOrville m => SequenceDefinition -> m Int64
 sequenceNextValue sequenceDef =
   selectInt64Value
     "sequenceNextValue"
@@ -27,7 +27,7 @@ sequenceNextValue sequenceDef =
 {- |
   Fetches the current value from a sequence via the PostgreSQL @currval@ function.
 -}
-sequenceCurrentValue :: MonadOrville.MonadOrville m => SequenceDefinition -> m Int64
+sequenceCurrentValue :: Monad.MonadOrville m => SequenceDefinition -> m Int64
 sequenceCurrentValue sequenceDef =
   selectInt64Value
     "sequenceCurrentValue"
@@ -36,13 +36,13 @@ sequenceCurrentValue sequenceDef =
 {- |
   Sets the current value from a sequence via the PostgreSQL @setval@ function.
 -}
-sequenceSetValue :: MonadOrville.MonadOrville m => SequenceDefinition -> Int64 -> m Int64
+sequenceSetValue :: Monad.MonadOrville m => SequenceDefinition -> Int64 -> m Int64
 sequenceSetValue sequenceDef newValue =
   selectInt64Value
     "sequenceSetValue"
     (Expr.setVal (sequenceName sequenceDef) newValue)
 
-selectInt64Value :: MonadOrville.MonadOrville m => String -> Expr.ValueExpression -> m Int64
+selectInt64Value :: Monad.MonadOrville m => String -> Expr.ValueExpression -> m Int64
 selectInt64Value caller valueExpression = do
   let queryExpr =
         Expr.queryExpr

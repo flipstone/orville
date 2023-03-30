@@ -15,8 +15,8 @@ import qualified Hedgehog.Gen as Gen
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable

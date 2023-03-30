@@ -30,11 +30,11 @@ import Data.Maybe (listToMaybe)
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Delete as Delete
 import qualified Orville.PostgreSQL.Internal.Insert as Insert
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
 import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.Update as Update
+import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
@@ -42,7 +42,7 @@ import qualified Orville.PostgreSQL.Schema as Schema
   affected by the query.
 -}
 insertEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   writeEntity ->
   m Int
@@ -57,7 +57,7 @@ insertEntity entityTable entity =
   database, such as auto-incrementing ids.
 -}
 insertAndReturnEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   writeEntity ->
   m readEntity
@@ -73,7 +73,7 @@ insertAndReturnEntity entityTable entity = do
   number of rows affected by the query.
 -}
 insertEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m Int
@@ -88,7 +88,7 @@ insertEntities tableDef =
   database, such as auto-incrementing ids.
 -}
 insertAndReturnEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m [readEntity]
@@ -100,7 +100,7 @@ insertAndReturnEntities tableDef =
   Returns the number of rows affected by the query.
 -}
 updateEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
@@ -121,7 +121,7 @@ updateEntity tableDef key writeEntity =
   during update, including columns with triggers attached to them.
 -}
 updateAndReturnEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
@@ -143,7 +143,7 @@ updateAndReturnEntity tableDef key writeEntity =
   Returns the number of rows affected by the query.
 -}
 updateFields ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
   Maybe Expr.BooleanExpr ->
@@ -157,7 +157,7 @@ updateFields tableDef setClauses mbWhereCondition =
   version of any rows that were affected by the update.
 -}
 updateFieldsAndReturnEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
   Maybe Expr.BooleanExpr ->
@@ -171,7 +171,7 @@ updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
   by the query.
 -}
 deleteEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   m Int
@@ -188,7 +188,7 @@ deleteEntity entityTable key =
   If no row matches the given key, 'Nothing' is returned.
 -}
 deleteAndReturnEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   m (Maybe readEntity)
@@ -209,7 +209,7 @@ deleteAndReturnEntity entityTable key = do
   the number of rows affected by the query.
 -}
 deleteEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   Maybe Expr.BooleanExpr ->
   m Int
@@ -222,7 +222,7 @@ deleteEntities entityTable whereCondition =
   the rows that were deleted.
 -}
 deleteAndReturnEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   Maybe Expr.BooleanExpr ->
   m [readEntity]
@@ -236,7 +236,7 @@ deleteAndReturnEntities entityTable whereCondition =
   match, ordering specifications, etc.
 -}
 findEntitiesBy ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   m [readEntity]
@@ -251,7 +251,7 @@ findEntitiesBy entityTable selectOptions =
   database will not guarantee ordering.
 -}
 findFirstEntityBy ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   m (Maybe readEntity)
@@ -263,7 +263,7 @@ findFirstEntityBy entityTable selectOptions =
   Finds a single entity by the table's primary key value.
 -}
 findEntity ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   m (Maybe readEntity)

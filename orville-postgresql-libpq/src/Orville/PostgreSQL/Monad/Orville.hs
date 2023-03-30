@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Orville.PostgreSQL.Internal.Orville
+module Orville.PostgreSQL.Monad.Orville
   ( Orville,
     runOrville,
     runOrvilleWithState,
@@ -14,8 +14,9 @@ import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
+import qualified Orville.PostgreSQL.Monad.HasOrvilleState as HasOrvilleState
+import qualified Orville.PostgreSQL.Monad.MonadOrville as MonadOrville
+import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 
 {- |
   The 'Orville' Monad provides a easy starter implementation of 'MonadOrville'
@@ -35,7 +36,7 @@ newtype Orville a = Orville
     , MonadIO
     , MonadOrville.MonadOrvilleControl
     , MonadOrville.MonadOrville
-    , OrvilleState.HasOrvilleState
+    , HasOrvilleState.HasOrvilleState
     , ExSafe.MonadThrow
     , ExSafe.MonadCatch
     )

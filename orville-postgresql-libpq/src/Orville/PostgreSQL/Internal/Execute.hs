@@ -15,13 +15,13 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Orville.PostgreSQL.Connection (Connection)
-import Orville.PostgreSQL.Internal.MonadOrville (MonadOrville, withConnection)
-import Orville.PostgreSQL.Internal.OrvilleState (OrvilleState, askOrvilleState, orvilleErrorDetailLevel, orvilleSqlCommenterAttributes, orvilleSqlExecutionCallback)
 import Orville.PostgreSQL.Internal.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller
+import Orville.PostgreSQL.Monad (MonadOrville, askOrvilleState, withConnection)
+import Orville.PostgreSQL.OrvilleState (OrvilleState, orvilleErrorDetailLevel, orvilleSqlCommenterAttributes, orvilleSqlExecutionCallback)
 
 {- |
   Executes a SQL query and decodes the result set using the provided

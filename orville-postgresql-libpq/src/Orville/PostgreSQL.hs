@@ -37,7 +37,7 @@ module Orville.PostgreSQL
     MonadOrville.MonadOrville,
     MonadOrville.withConnection,
     MonadOrville.MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket),
-    OrvilleState.HasOrvilleState (askOrvilleState, localOrvilleState),
+    HasOrvilleState.HasOrvilleState (askOrvilleState, localOrvilleState),
     OrvilleState.OrvilleState,
     OrvilleState.newOrvilleState,
     OrvilleState.resetOrvilleState,
@@ -326,9 +326,6 @@ import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
-import qualified Orville.PostgreSQL.Internal.Orville as Orville
-import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Internal.Sequence as Sequence
@@ -338,6 +335,10 @@ import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Marshall.SyntheticField as SyntheticField
+import qualified Orville.PostgreSQL.Monad.HasOrvilleState as HasOrvilleState
+import qualified Orville.PostgreSQL.Monad.MonadOrville as MonadOrville
+import qualified Orville.PostgreSQL.Monad.Orville as Orville
+import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Schema.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Schema.PrimaryKey as PrimaryKey

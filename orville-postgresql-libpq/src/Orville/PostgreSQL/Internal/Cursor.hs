@@ -35,10 +35,10 @@ import qualified Text.Printf as Printf
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.Select (Select, useSelect)
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Monad as Monad
 
 {- |
   A 'Cursor' allows you to fetch rows incrementally from PostgreSQL. Using
@@ -69,14 +69,14 @@ data Cursor readEntity where
   yourself and can do so safely.
 -}
 withCursor ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Maybe Expr.ScrollExpr ->
   Maybe Expr.HoldExpr ->
   Select readEntity ->
   (Cursor readEntity -> m a) ->
   m a
 withCursor scrollExpr holdExpr select useCursor =
-  MonadOrville.liftBracket
+  Monad.liftBracket
     bracket
     (declareCursor scrollExpr holdExpr select)
     closeCursor
@@ -93,7 +93,7 @@ withCursor scrollExpr holdExpr select useCursor =
   behave in general.
 -}
 declareCursor ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Maybe Expr.ScrollExpr ->
   Maybe Expr.HoldExpr ->
   Select readEntity ->
@@ -115,7 +115,7 @@ declareCursor scrollExpr holdExpr =
   opened cursor are closed in the event of an exception.
 -}
 closeCursor ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Cursor readEntity ->
   m ()
 closeCursor (Cursor _ cursorName) =
@@ -130,7 +130,7 @@ closeCursor (Cursor _ cursorName) =
   effect of fetch and the meanings of cursor directions to PostgreSQL.
 -}
 fetch ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Maybe Expr.CursorDirection ->
   Cursor readEntity ->
   m [readEntity]
@@ -146,7 +146,7 @@ fetch direction (Cursor marshaller cursorName) =
   effect of move and the meanings of cursor directions to PostgreSQL.
 -}
 move ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Maybe Expr.CursorDirection ->
   Cursor readEntity ->
   m ()

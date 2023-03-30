@@ -17,6 +17,7 @@ docker-compose.tools-override.yml
 
 # Ignore local stuff
 .local/
+local-docs
 
 #
 instantclient*

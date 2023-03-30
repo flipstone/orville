@@ -21,10 +21,10 @@ import Data.List.NonEmpty (NonEmpty)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkInsertExpr, tableMarshaller)
 
 {- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
@@ -52,7 +52,7 @@ insertToInsertExpr (InsertReturning _ expr) = expr
   affected by the query
 -}
 executeInsert ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Insert readEntity NoReturningClause ->
   m Int
 executeInsert (Insert _ expr) =
@@ -62,7 +62,7 @@ executeInsert (Insert _ expr) =
   were just inserted) as returned via a RETURNING clause.
 -}
 executeInsertReturnEntities ::
-  MonadOrville.MonadOrville m =>
+  Monad.MonadOrville m =>
   Insert readEntity ReturningClause ->
   m [readEntity]
 executeInsertReturnEntities (InsertReturning marshaller expr) =

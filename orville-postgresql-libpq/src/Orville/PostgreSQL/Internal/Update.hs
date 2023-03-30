@@ -17,10 +17,10 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (HasKey, TableDefinition, mkTableReturningClause, primaryKeyEquals, tableMarshaller, tableName, tablePrimaryKey)
 
 {- |
@@ -45,7 +45,7 @@ updateToUpdateExpr (UpdateReturning _ expr) = expr
   Executes the database query for the 'Update' and returns the number of
   affected rows
 -}
-executeUpdate :: MonadOrville.MonadOrville m => Update readEntity returningClause -> m Int
+executeUpdate :: Monad.MonadOrville m => Update readEntity returningClause -> m Int
 executeUpdate =
   Execute.executeAndReturnAffectedRows QueryType.UpdateQuery . updateToUpdateExpr
 
@@ -54,7 +54,7 @@ executeUpdate =
   'AnnotatedSqlMarshaller' to decode any rows that were just updated, as
   returned via a RETURNING clause.
 -}
-executeUpdateReturnEntities :: MonadOrville.MonadOrville m => Update readEntity ReturningClause -> m [readEntity]
+executeUpdateReturnEntities :: Monad.MonadOrville m => Update readEntity ReturningClause -> m [readEntity]
 executeUpdateReturnEntities (UpdateReturning marshaller expr) =
   Execute.executeAndDecode QueryType.UpdateQuery expr marshaller
 
