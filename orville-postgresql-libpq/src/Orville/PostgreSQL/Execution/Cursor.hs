@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module Orville.PostgreSQL.Internal.Cursor
+module Orville.PostgreSQL.Execution.Cursor
   ( withCursor,
     declareCursor,
     closeCursor,
@@ -33,10 +33,10 @@ import qualified Data.Word as Word
 import qualified System.Random as Random
 import qualified Text.Printf as Printf
 
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
+import Orville.PostgreSQL.Execution.Select (Select, useSelect)
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
-import Orville.PostgreSQL.Internal.Select (Select, useSelect)
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 

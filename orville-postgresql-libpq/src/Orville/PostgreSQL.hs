@@ -321,16 +321,16 @@ module Orville.PostgreSQL
 where
 
 import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL.Execution.EntityOperations as EntityOperations
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
+import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
+import qualified Orville.PostgreSQL.Execution.Sequence as Sequence
+import qualified Orville.PostgreSQL.Execution.Transaction as Transaction
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.DefaultValue as DefaultValue
-import qualified Orville.PostgreSQL.Internal.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
-import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import qualified Orville.PostgreSQL.Internal.Sequence as Sequence
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
-import qualified Orville.PostgreSQL.Internal.Transaction as Transaction
 import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType

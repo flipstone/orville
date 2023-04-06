@@ -6,7 +6,7 @@ Module    : Orville.PostgreSQL.Internal.Delete
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.Delete
+module Orville.PostgreSQL.Execution.Delete
   ( Delete,
     deleteFromDeleteExpr,
     executeDelete,
@@ -17,10 +17,10 @@ module Orville.PostgreSQL.Internal.Delete
   )
 where
 
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
+import Orville.PostgreSQL.Execution.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
-import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)

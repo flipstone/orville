@@ -14,8 +14,7 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.Internal.Cursor as Cursor
-import qualified Orville.PostgreSQL.Internal.Select as Select
+import qualified Orville.PostgreSQL.Execution as Exec
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
@@ -45,8 +44,8 @@ prop_withCursorFetch =
       Foo.withTable pool $ do
         Orville.withTransaction $ do
           _ <- Orville.insertEntities Foo.table foos
-          Cursor.withCursor Nothing Nothing selectAllFoosOrderedById $ \cursor ->
-            Cursor.fetch (Just $ Cursor.forwardCount numToFetch) cursor
+          Exec.withCursor Nothing Nothing selectAllFoosOrderedById $ \cursor ->
+            Exec.fetch (Just $ Exec.forwardCount numToFetch) cursor
 
     expectedRows === actualRows
 
@@ -71,14 +70,14 @@ prop_withCursorMove =
       Foo.withTable pool $ do
         Orville.withTransaction $ do
           _ <- Orville.insertEntities Foo.table foos
-          Cursor.withCursor Nothing Nothing selectAllFoosOrderedById $ \cursor -> do
-            Cursor.move (Just $ Cursor.forwardCount numToSkip) cursor
-            Cursor.fetch (Just $ Cursor.forwardCount numToFetch) cursor
+          Exec.withCursor Nothing Nothing selectAllFoosOrderedById $ \cursor -> do
+            Exec.move (Just $ Exec.forwardCount numToSkip) cursor
+            Exec.fetch (Just $ Exec.forwardCount numToFetch) cursor
 
     expectedRows === actualRows
 
-selectAllFoosOrderedById :: Select.Select Foo.Foo
+selectAllFoosOrderedById :: Exec.Select Foo.Foo
 selectAllFoosOrderedById =
-  Select.selectTable
+  Exec.selectTable
     Foo.table
     (Orville.orderBy $ Orville.orderByField Foo.fooIdField Orville.ascendingOrder)

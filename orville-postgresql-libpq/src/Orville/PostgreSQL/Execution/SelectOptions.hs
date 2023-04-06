@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.SelectOptions
+module Orville.PostgreSQL.Execution.SelectOptions
   ( SelectOptions,
     emptySelectOptions,
     appendSelectOptions,

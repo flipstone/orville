@@ -25,6 +25,20 @@ library:
     - Orville.PostgreSQL.AutoMigration
     - Orville.PostgreSQL.Connection
     - Orville.PostgreSQL.EntityTrace
+    - Orville.PostgreSQL.Execution
+    - Orville.PostgreSQL.Execution.Cursor
+    - Orville.PostgreSQL.Execution.Delete
+    - Orville.PostgreSQL.Execution.EntityOperations
+    - Orville.PostgreSQL.Execution.Execute
+    - Orville.PostgreSQL.Execution.ExecutionResult
+    - Orville.PostgreSQL.Execution.Insert
+    - Orville.PostgreSQL.Execution.QueryType
+    - Orville.PostgreSQL.Execution.ReturningOption
+    - Orville.PostgreSQL.Execution.Select
+    - Orville.PostgreSQL.Execution.SelectOptions
+    - Orville.PostgreSQL.Execution.Sequence
+    - Orville.PostgreSQL.Execution.Transaction
+    - Orville.PostgreSQL.Execution.Update
     - Orville.PostgreSQL.Expr
     - Orville.PostgreSQL.Expr.BinaryOperator
     - Orville.PostgreSQL.Expr.ColumnDefinition
@@ -52,22 +66,13 @@ library:
     - Orville.PostgreSQL.Expr.Update
     - Orville.PostgreSQL.Expr.ValueExpression
     - Orville.PostgreSQL.Expr.WhereClause
-    - Orville.PostgreSQL.Internal.Cursor
     - Orville.PostgreSQL.Internal.DefaultValue
-    - Orville.PostgreSQL.Internal.Delete
     - Orville.PostgreSQL.Internal.ErrorDetailLevel
-    - Orville.PostgreSQL.Internal.ExecutionResult
-    - Orville.PostgreSQL.Internal.Insert
     - Orville.PostgreSQL.Internal.PgTextFormatValue
     - Orville.PostgreSQL.Internal.PgTime
     - Orville.PostgreSQL.Internal.RawSql
-    - Orville.PostgreSQL.Internal.ReturningOption
-    - Orville.PostgreSQL.Internal.Select
-    - Orville.PostgreSQL.Internal.SelectOptions
     - Orville.PostgreSQL.Internal.SqlCommenter
     - Orville.PostgreSQL.Internal.SqlValue
-    - Orville.PostgreSQL.Internal.Transaction
-    - Orville.PostgreSQL.Internal.Update
     - Orville.PostgreSQL.Marshall
     - Orville.PostgreSQL.Marshall.FieldDefinition
     - Orville.PostgreSQL.Marshall.MarshallError

@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.Transaction
+module Orville.PostgreSQL.Execution.Transaction
   ( withTransaction,
   )
 where
@@ -8,9 +8,9 @@ import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.IORef as IORef
 
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState

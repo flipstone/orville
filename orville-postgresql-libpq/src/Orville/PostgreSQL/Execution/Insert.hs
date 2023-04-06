@@ -6,7 +6,7 @@ Module    : Orville.PostgreSQL.Internal.Insert
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.Insert
+module Orville.PostgreSQL.Execution.Insert
   ( Insert,
     insertToInsertExpr,
     executeInsert,
@@ -19,10 +19,10 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
+import Orville.PostgreSQL.Execution.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
-import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkInsertExpr, tableMarshaller)

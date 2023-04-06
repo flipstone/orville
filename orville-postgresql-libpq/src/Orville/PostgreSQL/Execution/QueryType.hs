@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.QueryType
+module Orville.PostgreSQL.Execution.QueryType
   ( QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, CursorQuery, OtherQuery),
   )
 where

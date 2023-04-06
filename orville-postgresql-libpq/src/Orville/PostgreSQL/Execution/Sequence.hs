@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.Sequence
+module Orville.PostgreSQL.Execution.Sequence
   ( sequenceNextValue,
     sequenceCurrentValue,
     sequenceSetValue,
@@ -7,9 +7,9 @@ where
 
 import Data.Int (Int64)
 
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad

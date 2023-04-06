@@ -47,8 +47,8 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NEL
 
+import Orville.PostgreSQL.Execution (Select)
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.Select (Select)
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp

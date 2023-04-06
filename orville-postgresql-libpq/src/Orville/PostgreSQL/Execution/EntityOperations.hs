@@ -3,7 +3,7 @@ Module    : Orville.PostgreSQL.Internal.EntityOperations
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.EntityOperations
+module Orville.PostgreSQL.Execution.EntityOperations
   ( insertEntity,
     insertAndReturnEntity,
     insertEntities,
@@ -27,13 +27,13 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
 
+import qualified Orville.PostgreSQL.Execution.Delete as Delete
+import qualified Orville.PostgreSQL.Execution.Insert as Insert
+import qualified Orville.PostgreSQL.Execution.Select as Select
+import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
+import qualified Orville.PostgreSQL.Execution.Update as Update
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Delete as Delete
-import qualified Orville.PostgreSQL.Internal.Insert as Insert
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
-import qualified Orville.PostgreSQL.Internal.Select as Select
-import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
-import qualified Orville.PostgreSQL.Internal.Update as Update
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Schema as Schema
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module Orville.PostgreSQL.Internal.Update
+module Orville.PostgreSQL.Execution.Update
   ( Update,
     updateToUpdateExpr,
     executeUpdate,
@@ -15,10 +15,10 @@ where
 
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 
+import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
+import Orville.PostgreSQL.Execution.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
-import Orville.PostgreSQL.Internal.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller, marshallEntityToSetClauses, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (HasKey, TableDefinition, mkTableReturningClause, primaryKeyEquals, tableMarshaller, tableName, tablePrimaryKey)

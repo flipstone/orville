@@ -36,9 +36,9 @@ import qualified Data.Map.Strict as Map
 import Data.Pool (Pool)
 
 import Orville.PostgreSQL.Connection (Connection)
+import Orville.PostgreSQL.Execution.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
-import Orville.PostgreSQL.Internal.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 

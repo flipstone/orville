@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module Orville.PostgreSQL.Internal.ReturningOption
+module Orville.PostgreSQL.Execution.ReturningOption
   ( ReturningOption (..),
     ReturningClause,
     NoReturningClause,

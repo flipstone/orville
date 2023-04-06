@@ -28,11 +28,9 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as T
 
+import qualified Orville.PostgreSQL.Execution as Exec
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import Orville.PostgreSQL.Internal.Select (Select)
-import qualified Orville.PostgreSQL.Internal.Select as Select
-import qualified Orville.PostgreSQL.Internal.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Plan.Explanation as Exp
@@ -277,7 +275,7 @@ findOneWhere ::
   Expr.BooleanExpr ->
   Operation param (Maybe readEntity)
 findOneWhere tableDef wherePlanner cond =
-  findOneWithOpts tableDef wherePlanner (SelectOptions.where_ cond)
+  findOneWithOpts tableDef wherePlanner (Exec.where_ cond)
 
 {- |
   'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'
@@ -286,7 +284,7 @@ findOneWithOpts ::
   Ord param =>
   Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
-  SelectOptions.SelectOptions ->
+  Exec.SelectOptions ->
   Operation param (Maybe readEntity)
 findOneWithOpts tableDef wherePlanner opts =
   selectOperation selectOp
@@ -294,19 +292,19 @@ findOneWithOpts tableDef wherePlanner opts =
     selectOp =
       SelectOperation
         { selectOne = \param ->
-            select (opts <> SelectOptions.where_ (executeOneWhereCondition wherePlanner param) <> SelectOptions.limit 1)
+            select (opts <> Exec.where_ (executeOneWhereCondition wherePlanner param) <> Exec.limit 1)
         , selectMany = \params ->
-            select (opts <> SelectOptions.where_ (executeManyWhereCondition wherePlanner params))
+            select (opts <> Exec.where_ (executeManyWhereCondition wherePlanner params))
         , explainSelectOne =
-            select (opts <> SelectOptions.where_ (explainOneWhereCondition wherePlanner))
+            select (opts <> Exec.where_ (explainOneWhereCondition wherePlanner))
         , explainSelectMany =
-            select (opts <> SelectOptions.where_ (explainManyWhereCondition wherePlanner))
+            select (opts <> Exec.where_ (explainManyWhereCondition wherePlanner))
         , categorizeRow = fst
         , produceResult = fmap snd . Maybe.listToMaybe
         }
 
     select =
-      Select.selectMarshalledColumns
+      Exec.selectMarshalledColumns
         marshaller
         (Schema.tableName tableDef)
 
@@ -346,7 +344,7 @@ findAllWhere ::
   Expr.BooleanExpr ->
   Operation param [readEntity]
 findAllWhere tableDef wherePlanner cond =
-  findAllWithOpts tableDef wherePlanner (SelectOptions.where_ cond)
+  findAllWithOpts tableDef wherePlanner (Exec.where_ cond)
 
 {- |
   'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'
@@ -355,7 +353,7 @@ findAllWithOpts ::
   Ord param =>
   Schema.TableDefinition key writeEntity readEntity ->
   WherePlanner param ->
-  SelectOptions.SelectOptions ->
+  Exec.SelectOptions ->
   Operation param [readEntity]
 findAllWithOpts tableDef wherePlanner opts =
   selectOperation selectOp
@@ -363,19 +361,19 @@ findAllWithOpts tableDef wherePlanner opts =
     selectOp =
       SelectOperation
         { selectOne = \param ->
-            select (opts <> SelectOptions.where_ (executeOneWhereCondition wherePlanner param))
+            select (opts <> Exec.where_ (executeOneWhereCondition wherePlanner param))
         , selectMany = \params ->
-            select (opts <> SelectOptions.where_ (executeManyWhereCondition wherePlanner params))
+            select (opts <> Exec.where_ (executeManyWhereCondition wherePlanner params))
         , explainSelectOne =
-            select (opts <> SelectOptions.where_ (explainOneWhereCondition wherePlanner))
+            select (opts <> Exec.where_ (explainOneWhereCondition wherePlanner))
         , explainSelectMany =
-            select (opts <> SelectOptions.where_ (explainManyWhereCondition wherePlanner))
+            select (opts <> Exec.where_ (explainManyWhereCondition wherePlanner))
         , categorizeRow = fst
         , produceResult = map snd
         }
 
     select =
-      Select.selectMarshalledColumns
+      Exec.selectMarshalledColumns
         marshaller
         (Schema.tableName tableDef)
 
@@ -421,23 +419,23 @@ data SelectOperation param row result = SelectOperation
     -- Note that the "One-ness" here refers to the single input parameter
     -- rather than result. See 'produceResult' below for more information
     -- about returning one values vs. many from a 'SelectOperation'.
-    selectOne :: param -> Select row
+    selectOne :: param -> Exec.Select row
   , -- | 'selectMany' will be called to build the 'Select' query that should
     -- be run when there are multiple parameters while executing a plan.
     -- Note that the "Many-ness" here refers to the multiple input parameters
     -- rather than result. See 'produceResult' below for more information
     -- about returning one values vs. many from a 'SelectOperation'.
-    selectMany :: NonEmpty param -> Select row
+    selectMany :: NonEmpty param -> Exec.Select row
   , -- | 'explainSelectOne' should show a representative query of what will
     -- be returned when 'selectOne' is used. No input parameter is available
     -- here to build the query, however, because this value is used to
     -- explain a plan without actually running it.
-    explainSelectOne :: Select row
+    explainSelectOne :: Exec.Select row
   , -- | 'explainSelectMany' should show a representative query of what will
     -- be returned when 'selectMany is used. No input parameters are available
     -- here to build the query, however, because this value is used to
     -- explain a plan without actually running it.
-    explainSelectMany :: Select row
+    explainSelectMany :: Exec.Select row
   , -- | 'categorizeRow' will be used when a plan is executed with multiple
     -- parameters to determine which input parameter the row should be
     -- associated with.
@@ -469,9 +467,9 @@ selectOperation selectOp =
     , explainOperationMany = explainSelect $ explainSelectMany selectOp
     }
 
-explainSelect :: Select row -> Exp.Explanation
+explainSelect :: Exec.Select row -> Exp.Explanation
 explainSelect =
-  Exp.explainStep . BS8.unpack . RawSql.toExampleBytes . Select.selectToQueryExpr
+  Exp.explainStep . BS8.unpack . RawSql.toExampleBytes . Exec.selectToQueryExpr
 
 {- |
   'runSelectOne' is an internal helper function that executes a
@@ -484,7 +482,7 @@ executeSelectOne ::
   m (Either AssertionFailed result)
 executeSelectOne selectOp param =
   Right . produceResult selectOp
-    <$> (Select.executeSelect . selectOne selectOp $ param)
+    <$> (Exec.executeSelect . selectOne selectOp $ param)
 
 {- |
   'executeSelectMany' is an internal helper function that executes a
@@ -497,7 +495,7 @@ executeSelectMany ::
   NonEmpty param ->
   m (Either AssertionFailed (Many param result))
 executeSelectMany selectOp params = do
-  rows <- Select.executeSelect . selectMany selectOp $ params
+  rows <- Exec.executeSelect . selectMany selectOp $ params
 
   let -- Seed add initial map with an empty list for every input parameter
       -- to guarantee that each param is a key in the map even if no rows
@@ -540,22 +538,22 @@ executeSelectMany selectOp params = do
   query once and use the entire result set as the result each of the input
   parameters in turn.
 -}
-findSelect :: forall param row. Select.Select row -> Operation param [row]
+findSelect :: forall param row. Exec.Select row -> Operation param [row]
 findSelect select =
   let executeOne :: Monad.MonadOrville m => param -> m (Either a [row])
       executeOne _ =
-        Right <$> Select.executeSelect select
+        Right <$> Exec.executeSelect select
 
       executeMany :: Monad.MonadOrville m => NonEmpty param -> m (Either a (Many param [row]))
       executeMany params = do
-        rows <- Select.executeSelect select
+        rows <- Exec.executeSelect select
         pure . Right $ Many.fromKeys (Fold.toList params) (const (Right rows))
 
-      selectToSqlString :: Select readEntity -> String
+      selectToSqlString :: Exec.Select readEntity -> String
       selectToSqlString =
         BS8.unpack
           . RawSql.toExampleBytes
-          . Select.selectToQueryExpr
+          . Exec.selectToQueryExpr
    in Operation
         { executeOperationOne = executeOne
         , executeOperationMany = executeMany

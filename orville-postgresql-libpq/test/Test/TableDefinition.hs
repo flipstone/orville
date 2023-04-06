@@ -14,9 +14,9 @@ import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL.Execution.ReturningOption as ReturningOption
+import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.ReturningOption as ReturningOption
-import qualified Orville.PostgreSQL.Internal.Select as Select
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Bar as Bar

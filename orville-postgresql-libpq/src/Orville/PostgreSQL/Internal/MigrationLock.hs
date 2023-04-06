@@ -11,11 +11,9 @@ import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as MIO
 import Data.Int (Int32)
 
-import qualified Orville.PostgreSQL.Internal.Execute as Execute
-import qualified Orville.PostgreSQL.Internal.QueryType as QueryType
+import qualified Orville.PostgreSQL.Execution as Exec
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
-import qualified Orville.PostgreSQL.Internal.Transaction as Transaction
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 
@@ -38,9 +36,9 @@ withLockedTransaction action = do
 
           go $ attempts + 1
     runWithTransaction =
-      Transaction.withTransaction $ do
+      Exec.withTransaction $ do
         tryLockResults <-
-          Execute.executeAndDecode QueryType.OtherQuery tryLockExpr lockedMarshaller
+          Exec.executeAndDecode Exec.OtherQuery tryLockExpr lockedMarshaller
 
         case tryLockResults of
           [True] ->
@@ -54,7 +52,7 @@ withLockedTransaction action = do
             -- Orville process migrating the same schema). We must exit the
             -- current transaction and enter a new one, acquiring the lock
             -- again in that new transaction.
-            Execute.executeVoid QueryType.OtherQuery waitForLockExpr
+            Exec.executeVoid Exec.OtherQuery waitForLockExpr
             pure Nothing
           rows ->
             MIO.liftIO . throwIO . MigrationLockError $

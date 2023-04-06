@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.Execute
+module Orville.PostgreSQL.Execution.Execute
   ( executeAndDecode,
     executeAndReturnAffectedRows,
     executeVoid,
@@ -15,7 +15,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Orville.PostgreSQL.Connection (Connection)
-import Orville.PostgreSQL.Internal.QueryType (QueryType)
+import Orville.PostgreSQL.Execution.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue

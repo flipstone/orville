@@ -5,7 +5,7 @@ Module    : Orville.PostgreSQL.SqlType
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Internal.ExecutionResult
+module Orville.PostgreSQL.Execution.ExecutionResult
   ( ExecutionResult (..),
     Column (..),
     Row (..),
