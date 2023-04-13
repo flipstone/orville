@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}

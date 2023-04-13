@@ -1,5 +1,4 @@
 {- |
-Module    : Orville.PostgreSQL.Raw
 Copyright : Flipstone Technology Partners 2020-2021
 License   : MIT
 -}

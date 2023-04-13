@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Internal.Name.CursorName
 Copyright : Flipstone Technology Partners 2022
 License   : MIT
 -}

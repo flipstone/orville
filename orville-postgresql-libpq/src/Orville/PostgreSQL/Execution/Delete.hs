@@ -2,7 +2,6 @@
 
 {- |
 
-Module    : Orville.PostgreSQL.Internal.Delete
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}

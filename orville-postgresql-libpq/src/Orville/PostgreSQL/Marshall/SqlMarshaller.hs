@@ -2,7 +2,6 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Module    : Orville.PostgreSQL.Marshall.SqlMarshaller
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}

@@ -2,7 +2,6 @@
 
 {- |
 
-Module    : Orville.PostgreSQL.Expr.Update
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}

@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Query
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}

@@ -1,5 +1,4 @@
 {- |
-Module    : Orville.PostgreSQL.Internal.EntityOperations
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}

@@ -1,6 +1,5 @@
 {- |
 
-Module    : Orville.PostgreSQL.Internal.SqlCommenter
 Copyright : Flipstone Technology Partners 2016-2022
 License   : MIT
 

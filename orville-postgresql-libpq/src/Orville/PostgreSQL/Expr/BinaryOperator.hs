@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Where.BinaryOperator
 Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
 -}

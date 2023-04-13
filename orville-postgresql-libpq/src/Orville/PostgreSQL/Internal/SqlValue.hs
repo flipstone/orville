@@ -1,6 +1,5 @@
 {- |
 
-Module    : Orville.PostgreSQL.Internal.SqlValue
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 

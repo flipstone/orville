@@ -2,7 +2,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
-Module    : Orville.PostgreSQL.Marshall.FieldDefinition
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}

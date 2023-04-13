@@ -1,6 +1,5 @@
 {- |
 
-Module    : Orville.PostgreSQL.Internal.RawSql
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 

@@ -4,7 +4,6 @@
   qualified do in the example code.
 -}
 {- |
-Module    : Orville.PostgreSQL.Connection
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 

@@ -2,7 +2,6 @@
 
 {- |
 
-Module    : Orville.PostgreSQL.Internal.Insert
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}

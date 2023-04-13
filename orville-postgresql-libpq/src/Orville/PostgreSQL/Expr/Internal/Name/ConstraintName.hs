@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Module    : Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
