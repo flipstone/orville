@@ -24,7 +24,6 @@ import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text.Encoding as Enc
 import GHC.Stack (HasCallStack, withFrozenCallStack)
@@ -32,13 +31,12 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 assertTableExists ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   m PgCatalog.RelationDescription
 assertTableExists pool =
@@ -46,7 +44,7 @@ assertTableExists pool =
 
 assertTableDoesNotExist ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   m ()
 assertTableDoesNotExist pool =
@@ -54,7 +52,7 @@ assertTableDoesNotExist pool =
 
 assertTableExistsInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   String ->
   m PgCatalog.RelationDescription
@@ -63,7 +61,7 @@ assertTableExistsInSchema pool schemaName tableName =
 
 assertTableDoesNotExistInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   String ->
   m ()
@@ -72,7 +70,7 @@ assertTableDoesNotExistInSchema pool schemaName tableName =
 
 assertSequenceExists ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   m PgCatalog.RelationDescription
 assertSequenceExists pool =
@@ -80,7 +78,7 @@ assertSequenceExists pool =
 
 assertSequenceDoesNotExist ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   m ()
 assertSequenceDoesNotExist pool =
@@ -88,7 +86,7 @@ assertSequenceDoesNotExist pool =
 
 assertSequenceExistsInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   String ->
   m PgCatalog.RelationDescription
@@ -97,7 +95,7 @@ assertSequenceExistsInSchema pool schemaName sequenceName =
 
 assertSequenceDoesNotExistInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   String ->
   m ()
@@ -119,7 +117,7 @@ assertRelationHasPgSequence relationDesc =
 
 assertRelationExistsInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   String ->
   PgCatalog.RelationKind ->
@@ -142,7 +140,7 @@ assertRelationExistsInSchema pool schemaName relationName relationKind = do
 
 assertRelationDoesNotExistInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   String ->
   String ->
   PgCatalog.RelationKind ->

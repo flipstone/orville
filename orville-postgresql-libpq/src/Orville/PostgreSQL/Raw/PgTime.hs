@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.PgTime
+module Orville.PostgreSQL.Raw.PgTime
   ( dayToPostgreSQL,
     day,
     utcTimeToPostgreSQL,

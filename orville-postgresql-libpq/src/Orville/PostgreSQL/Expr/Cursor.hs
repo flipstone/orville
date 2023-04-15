@@ -44,7 +44,7 @@ import Prelude (Either, Int, Maybe (Just), either, fmap, ($), (.), (<>))
 
 import Orville.PostgreSQL.Expr.Name (CursorName)
 import Orville.PostgreSQL.Expr.Query (QueryExpr)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype DeclareExpr
   = DeclareExpr RawSql.RawSql

@@ -9,13 +9,12 @@ import qualified Data.String as String
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 
 import qualified Test.Entities.User as User
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-reservedWordsTests :: Pool.Pool Conn.Connection -> Property.Group
+reservedWordsTests :: Orville.Pool Orville.Connection -> Property.Group
 reservedWordsTests pool =
   Property.group "ReservedWords" $
     [

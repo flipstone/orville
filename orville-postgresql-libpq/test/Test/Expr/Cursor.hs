@@ -11,16 +11,17 @@ import qualified Data.Pool as Pool
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
-import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (FooBar, assertEqualFooBarRows, findAllFooBars, mkFooBar, withFooBarData)
 import qualified Test.Property as Property
 
-cursorTests :: Pool.Pool Conn.Connection -> Property.Group
+cursorTests :: Orville.Pool Orville.Connection -> Property.Group
 cursorTests pool =
   Property.group
     "Expr - Cursor"
@@ -275,7 +276,7 @@ row :: Int.Int32 -> FooBar
 row n = mkFooBar n ("row " <> show n)
 
 runFetchDirectionsOnData ::
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   Maybe Expr.ScrollExpr ->
   [FooBar] ->
   [Expr.CursorDirection] ->
@@ -289,7 +290,7 @@ runFetchDirectionsOnData pool scroll fooBars directions =
        in traverse runDirection directions
 
 withTestCursor ::
-  Conn.Connection ->
+  Orville.Connection ->
   Maybe Expr.ScrollExpr ->
   Maybe Expr.HoldExpr ->
   Expr.QueryExpr ->
@@ -307,7 +308,7 @@ withTestCursor connection scroll hold query action =
         RawSql.executeVoid connection $ Expr.close (Right cursorName)
    in ExSafe.bracket_ declare close (action cursorName)
 
-withTestTransaction :: Conn.Connection -> IO a -> IO a
+withTestTransaction :: Orville.Connection -> IO a -> IO a
 withTestTransaction connection action =
   let begin =
         RawSql.executeVoid connection $ Expr.beginTransaction Nothing

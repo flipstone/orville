@@ -6,17 +6,16 @@ where
 import qualified Control.Exception.Safe as ExSafe
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
-import qualified Data.Pool as Pool
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-postgreSQLAxiomTests :: Pool.Pool Conn.Connection -> Property.Group
+postgreSQLAxiomTests :: Orville.Pool Orville.Connection -> Property.Group
 postgreSQLAxiomTests pool =
   Property.group
     "PostgreSQL Axioms"
@@ -45,7 +44,7 @@ prop_bigIntegerBounds =
 
 assertPostgreSQLMinValueMatchesHaskell ::
   (Eq a, Show a, Bounded a, HH.MonadTest m, MIO.MonadIO m, ExSafe.MonadCatch m) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   SqlType.SqlType a ->
   m ()
 assertPostgreSQLMinValueMatchesHaskell pool sqlType = do
@@ -60,7 +59,7 @@ assertPostgreSQLMinValueMatchesHaskell pool sqlType = do
 
 assertPostgreSQLMaxValueMatchesHaskell ::
   (Eq a, Show a, Bounded a, HH.MonadTest m, MIO.MonadIO m, ExSafe.MonadCatch m) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   SqlType.SqlType a ->
   m ()
 assertPostgreSQLMaxValueMatchesHaskell pool sqlType = do
@@ -82,7 +81,7 @@ evalEitherMLeft =
 
 selectValue ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   a ->
   SqlType.SqlType a ->
   m (Either Conn.SqlExecutionError a)
@@ -91,7 +90,7 @@ selectValue pool inputValue sqlType =
 
 selectValueWithModifier ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   a ->
   RawSql.RawSql ->
   SqlType.SqlType a ->

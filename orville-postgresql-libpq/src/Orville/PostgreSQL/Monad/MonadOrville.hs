@@ -13,7 +13,6 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Reader (ReaderT (ReaderT), runReaderT)
 import Data.Pool (withResource)
 
-import Orville.PostgreSQL.Connection (Connection)
 import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
 import Orville.PostgreSQL.OrvilleState
   ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
@@ -23,6 +22,7 @@ import Orville.PostgreSQL.OrvilleState
     orvilleConnectionPool,
     orvilleConnectionState,
   )
+import Orville.PostgreSQL.Raw.Connection (Connection)
 
 {- |
   'MonadOrville' is the typeclass that most Orville operations require to

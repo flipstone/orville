@@ -6,7 +6,6 @@ where
 import Data.Bits ((.&.), (.|.))
 import qualified Data.Bits as Bits
 import Data.Int (Int32)
-import qualified Data.Pool as Pool
 import GHC.Stack (withFrozenCallStack)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -14,13 +13,12 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-mathTests :: Pool.Pool Conn.Connection -> Property.Group
+mathTests :: Orville.Pool Orville.Connection -> Property.Group
 mathTests pool =
   Property.group
     "Expr - Math"
@@ -185,7 +183,7 @@ intExpression n =
   Expr.cast (Expr.valueExpression (SqlValue.fromInt n)) Expr.int
 
 evaluateIntegerExpression ::
-  Conn.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   Expr.ValueExpression ->
   HH.PropertyT IO Int32
 evaluateIntegerExpression pool expression = do

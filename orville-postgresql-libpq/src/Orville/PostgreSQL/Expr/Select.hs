@@ -13,7 +13,7 @@ module Orville.PostgreSQL.Expr.Select
   )
 where
 
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype SelectClause
   = SelectClause RawSql.RawSql

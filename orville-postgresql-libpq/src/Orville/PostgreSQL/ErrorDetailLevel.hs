@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.ErrorDetailLevel
+module Orville.PostgreSQL.ErrorDetailLevel
   ( ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
     defaultErrorDetailLevel,
     minimalErrorDetailLevel,

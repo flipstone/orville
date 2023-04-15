@@ -4,9 +4,9 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 
 The funtions in this module are named with the intent that it is imported
-qualified as 'SqlValue.
+qualified as 'SqlValue'.
 -}
-module Orville.PostgreSQL.Internal.SqlValue
+module Orville.PostgreSQL.Raw.SqlValue
   ( SqlValue,
     isSqlNull,
     sqlNull,
@@ -61,9 +61,9 @@ import qualified Data.Time as Time
 import qualified Data.Typeable as Typeable
 import Data.Word (Word16, Word32, Word64, Word8)
 
-import Orville.PostgreSQL.Internal.PgTextFormatValue (PgTextFormatValue)
-import qualified Orville.PostgreSQL.Internal.PgTextFormatValue as PgTextFormatValue
-import qualified Orville.PostgreSQL.Internal.PgTime as PgTime
+import Orville.PostgreSQL.Raw.PgTextFormatValue (PgTextFormatValue)
+import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
+import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
 
 data SqlValue
   = SqlValue PgTextFormatValue

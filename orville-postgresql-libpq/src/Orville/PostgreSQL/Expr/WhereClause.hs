@@ -38,7 +38,7 @@ import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.BinaryOperator (andOp, binaryOpExpression, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp, orOp)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, rowValueConstructor)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype WhereClause
   = WhereClause RawSql.RawSql

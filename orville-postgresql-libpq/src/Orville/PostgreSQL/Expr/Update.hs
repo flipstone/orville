@@ -21,8 +21,8 @@ import Data.Maybe (catMaybes)
 import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 newtype UpdateExpr
   = UpdateExpr RawSql.RawSql

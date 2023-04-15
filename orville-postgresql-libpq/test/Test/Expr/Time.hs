@@ -6,7 +6,6 @@ where
 import qualified Data.ByteString.Char8 as B8
 import Data.Int (Int32)
 import qualified Data.Maybe as Maybe
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import qualified Data.Time as Time
 import Hedgehog ((===))
@@ -16,14 +15,13 @@ import qualified Hedgehog.Range as Range
 import qualified Text.Printf as Printf
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-timeTests :: Pool.Pool Conn.Connection -> Property.Group
+timeTests :: Orville.Pool Orville.Connection -> Property.Group
 timeTests pool =
   Property.group
     "Expr - Time"

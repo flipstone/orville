@@ -8,7 +8,7 @@ Stability : unstable
 This module provides the very basics for [sqlcommenter](https://google.github.io/sqlcommenter)
 support.
 -}
-module Orville.PostgreSQL.Internal.SqlCommenter
+module Orville.PostgreSQL.Raw.SqlCommenter
   ( SqlCommenterAttributes,
     addSqlCommenterAttributes,
   )
@@ -19,7 +19,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import qualified Network.URI as URI
 
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- | The representation of 'T.Text' key/value pairs for supporting the sqlcommenter specification.
   This allows you to attach key/values of 'T.Text' that supporting systems can use for advanced

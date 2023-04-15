@@ -29,7 +29,7 @@ where
 import Data.Maybe (maybeToList)
 
 import qualified Orville.PostgreSQL.Expr.Name as Name
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype BeginTransactionExpr
   = BeginTransactionExpr RawSql.RawSql

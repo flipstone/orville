@@ -8,16 +8,16 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
-import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, findAllFooBars, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-insertUpdateDeleteTests :: Pool.Pool Conn.Connection -> Property.Group
+insertUpdateDeleteTests :: Orville.Pool Orville.Connection -> Property.Group
 insertUpdateDeleteTests pool =
   Property.group
     "Expr - Insert/Update/Delete"

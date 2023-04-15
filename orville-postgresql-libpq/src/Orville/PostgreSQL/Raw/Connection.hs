@@ -4,7 +4,7 @@
 Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
-module Orville.PostgreSQL.Connection
+module Orville.PostgreSQL.Raw.Connection
   ( Connection,
     Pool,
     ConnectionUsedAfterCloseError,
@@ -30,7 +30,7 @@ import qualified Data.Text.Encoding as Enc
 import Data.Time (NominalDiffTime)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
-import Orville.PostgreSQL.Internal.PgTextFormatValue (NULByteFoundError (NULByteFoundError), PgTextFormatValue, toBytesForLibPQ)
+import Orville.PostgreSQL.Raw.PgTextFormatValue (NULByteFoundError (NULByteFoundError), PgTextFormatValue, toBytesForLibPQ)
 
 {- |
   An option for 'createConnectionPool' than indicates whether the LibPQ should

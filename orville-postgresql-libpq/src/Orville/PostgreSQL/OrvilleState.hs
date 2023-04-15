@@ -35,12 +35,12 @@ where
 import qualified Data.Map.Strict as Map
 import Data.Pool (Pool)
 
-import Orville.PostgreSQL.Connection (Connection)
+import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
+import Orville.PostgreSQL.Raw.Connection (Connection)
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 
 {- |
   'OrvilleState' is used to manange opening connections to the database,

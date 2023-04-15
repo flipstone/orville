@@ -48,8 +48,8 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Foreign.C.Types as CTypes
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   SqlType defines the mapping of a Haskell type (`a`) to a SQL column type in the

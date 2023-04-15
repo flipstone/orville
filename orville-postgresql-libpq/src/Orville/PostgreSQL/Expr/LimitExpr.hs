@@ -6,8 +6,8 @@ module Orville.PostgreSQL.Expr.LimitExpr
   )
 where
 
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 newtype LimitExpr
   = LimitExpr RawSql.RawSql

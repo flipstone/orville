@@ -1,4 +1,4 @@
-module Orville.PostgreSQL.Internal.PgTextFormatValue
+module Orville.PostgreSQL.Raw.PgTextFormatValue
   ( PgTextFormatValue,
     NULByteFoundError (NULByteFoundError),
     unsafeFromByteString,

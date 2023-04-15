@@ -5,7 +5,6 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Map.Strict as Map
-import qualified Data.Pool as Pool
 import qualified Data.Set as Set
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -13,14 +12,13 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-pgCatalogTests :: Pool.Pool Conn.Connection -> Property.Group
+pgCatalogTests :: Orville.Pool Orville.Connection -> Property.Group
 pgCatalogTests pool =
   Property.group
     "PgCatalog"

@@ -12,11 +12,11 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Pool (Pool)
 
-import Orville.PostgreSQL.Connection (Connection)
-import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
+import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Monad.HasOrvilleState as HasOrvilleState
 import qualified Orville.PostgreSQL.Monad.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
+import Orville.PostgreSQL.Raw.Connection (Connection)
 
 {- |
   The 'Orville' Monad provides a easy starter implementation of 'MonadOrville'

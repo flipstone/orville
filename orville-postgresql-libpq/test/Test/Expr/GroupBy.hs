@@ -10,11 +10,11 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
-import qualified Orville.PostgreSQL.Connection as Conn
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualSqlRows)
 import qualified Test.Property as Property
@@ -24,7 +24,7 @@ data FooBar = FooBar
   , bar :: String
   }
 
-groupByTests :: Pool.Pool Conn.Connection -> Property.Group
+groupByTests :: Orville.Pool Orville.Connection -> Property.Group
 groupByTests pool =
   Property.group
     "Expr - GroupBy"
@@ -111,7 +111,7 @@ barColumn :: Expr.ColumnName
 barColumn =
   Expr.columnName "bar"
 
-dropAndRecreateTestTable :: Conn.Connection -> IO ()
+dropAndRecreateTestTable :: Orville.Connection -> IO ()
 dropAndRecreateTestTable connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
   RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql testTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

@@ -19,8 +19,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
-import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   A trivial wrapper for `Int` to help keep track of column vs row number

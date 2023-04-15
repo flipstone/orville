@@ -10,7 +10,7 @@ import qualified Hedgehog as HH
 import qualified System.Environment as Env
 import qualified System.Exit as SE
 
-import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL as Orville
 
 import qualified Test.AutoMigration as AutoMigration
 import qualified Test.Connection as Connection
@@ -84,10 +84,10 @@ main = do
 
   Monad.unless (Property.allPassed summary) SE.exitFailure
 
-createTestConnectionPool :: IO (Connection.Pool Connection.Connection)
+createTestConnectionPool :: IO (Orville.Pool Orville.Connection)
 createTestConnectionPool = do
   connStr <- lookupConnStr
-  Connection.createConnectionPool Connection.DisableNoticeReporting 1 10 1 connStr
+  Orville.createConnectionPool Orville.DisableNoticeReporting 1 10 1 connStr
 
 recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
 recheckDBProperty size seed namedProperty = do

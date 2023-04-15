@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Orville.PostgreSQL.Internal.DefaultValue
+module Orville.PostgreSQL.Marshall.DefaultValue
   ( DefaultValue,
     integerDefault,
     smallIntegerDefault,
@@ -30,8 +30,8 @@ import qualified Data.Time as Time
 import qualified Numeric as Numeric
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.PgTime as PgTime
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
   A 'DefaultValue' is a SQL expression that can be attached to a

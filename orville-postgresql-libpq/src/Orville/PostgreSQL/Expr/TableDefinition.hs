@@ -34,7 +34,7 @@ import Orville.PostgreSQL.Expr.DataType (DataType)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, Qualified, TableName)
 import Orville.PostgreSQL.Expr.TableConstraint (TableConstraint)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype CreateTableExpr
   = CreateTableExpr RawSql.RawSql

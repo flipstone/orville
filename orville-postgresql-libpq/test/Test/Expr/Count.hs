@@ -6,19 +6,17 @@ where
 import qualified Data.Foldable as Fold
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
-import qualified Data.Pool as Pool
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
-countTests :: Pool.Pool Conn.Connection -> Property.Group
+countTests :: Orville.Pool Orville.Connection -> Property.Group
 countTests pool =
   Property.group
     "Expr - Count"

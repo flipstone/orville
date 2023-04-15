@@ -8,7 +8,7 @@ where
 
 import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference, functionCall)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 countFunction :: FunctionName
 countFunction = functionName "count"

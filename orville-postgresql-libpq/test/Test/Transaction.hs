@@ -13,16 +13,15 @@ import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 import qualified Test.Transaction.Util as TransactionUtil
 
-transactionTests :: Pool.Pool Conn.Connection -> Property.Group
+transactionTests :: Orville.Pool Orville.Connection -> Property.Group
 transactionTests pool =
   Property.group "Transaction" $
     [ prop_transactionsWithoutExceptionsCommit pool
@@ -161,7 +160,7 @@ prop_usesCustomBeginTransactionSql =
           ]
 
 captureTransactionCallbackEvents ::
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   Orville.Orville () ->
   HH.PropertyT IO [Orville.TransactionEvent]
 captureTransactionCallbackEvents pool actions = do
@@ -210,7 +209,7 @@ tracerMarshaller =
     <$> Orville.marshallField (const $ T.pack "tracer") (Orville.unboundedTextField "tracer")
 
 captureSqlTrace ::
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   Orville.Orville () ->
   HH.PropertyT IO [(Orville.QueryType, BS.ByteString)]
 captureSqlTrace pool actions = do

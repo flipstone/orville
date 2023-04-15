@@ -12,7 +12,7 @@ where
 
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype Qualified name
   = Qualified RawSql.RawSql

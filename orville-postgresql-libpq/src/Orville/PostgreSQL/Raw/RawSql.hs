@@ -6,7 +6,7 @@ License   : MIT
 The funtions in this module are named with the intent that it is imported
 qualified as 'RawSql'.
 -}
-module Orville.PostgreSQL.Internal.RawSql
+module Orville.PostgreSQL.Raw.RawSql
   ( RawSql,
     parameter,
     fromString,
@@ -60,11 +60,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
-import Orville.PostgreSQL.Connection (Connection)
-import qualified Orville.PostgreSQL.Connection as Conn
-import Orville.PostgreSQL.Internal.PgTextFormatValue (PgTextFormatValue)
-import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
+import Orville.PostgreSQL.Raw.PgTextFormatValue (PgTextFormatValue)
+import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   'RawSql' provides a type for efficiently constructing raw sql statements
@@ -96,10 +95,10 @@ instance SqlExpression RawSql where
   unsafeFromRawSql = id
 
 {- |
-  Provides procedures for escaping parts of a raw SQL query so that they
-  can be safely executed. Escaping may be done in some 'Monad' m, allowing
-  for the use of escaping operations provided by 'Connection', which operate
-  in the 'IO' monad.
+  Provides procedures for escaping parts of a raw SQL query so that they can be
+  safely executed. Escaping may be done in some 'Monad' m, allowing for the use
+  of escaping operations provided by 'Conn.Connection', which operates in the
+  'IO' monad.
 
   See 'connectionEscaping' and 'exampleEscaping'.
 -}
@@ -150,7 +149,7 @@ isEscapedChar c =
   If you don't have a connection available and are only planning on using
   the SQL for explanatory or example purposes, see 'exampleEscaping'.
 -}
-connectionEscaping :: Connection -> Escaping IO
+connectionEscaping :: Conn.Connection -> Escaping IO
 connectionEscaping connection =
   Escaping
     { escapeStringLiteral = Conn.escapeStringLiteral connection
@@ -329,7 +328,7 @@ intercalate separator =
   Note that because this is done in 'IO' no callback functions are available to
   be called.
 -}
-execute :: SqlExpression sql => Connection -> sql -> IO LibPQ.Result
+execute :: SqlExpression sql => Conn.Connection -> sql -> IO LibPQ.Result
 execute connection sql = do
   (sqlBytes, params) <- toBytesAndParams (connectionEscaping connection) sql
   Conn.executeRaw connection sqlBytes params
@@ -342,7 +341,7 @@ execute connection sql = do
   Note that because this is done in 'IO' no callback functions are available to
   be called.
 -}
-executeVoid :: SqlExpression sql => Connection -> sql -> IO ()
+executeVoid :: SqlExpression sql => Conn.Connection -> sql -> IO ()
 executeVoid connection sql = do
   void $ execute connection sql
 

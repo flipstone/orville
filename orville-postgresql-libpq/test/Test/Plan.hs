@@ -16,7 +16,6 @@ import qualified Data.Either as Either
 import Data.Foldable (traverse_)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -24,7 +23,6 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Connection
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
 
@@ -39,8 +37,8 @@ import qualified Test.Entities.FooChild as FooChild
 import qualified Test.Property as Property
 
 {- ORMOLU_DISABLE -}
-{- disable formatting so fourmolu doesn't go haywire with te cpp within the list -}
-planTests :: Pool.Pool Connection.Connection -> Property.Group
+{- disable formatting so fourmolu doesn't go haywire with the cpp within the list -}
+planTests :: Orville.Pool Orville.Connection -> Property.Group
 planTests pool =
   Property.group "Plan" $
     [ prop_askParam pool
