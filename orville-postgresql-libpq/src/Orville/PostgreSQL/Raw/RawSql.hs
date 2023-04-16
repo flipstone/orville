@@ -15,7 +15,7 @@ module Orville.PostgreSQL.Raw.RawSql
     intercalate,
     execute,
     executeVoid,
-    connectionEscaping,
+    connectionQuoting,
 
     -- * Fragments provided for convenience
     space,
@@ -27,6 +27,7 @@ module Orville.PostgreSQL.Raw.RawSql
     doubleQuote,
     doubleColon,
     stringLiteral,
+    identifier,
     parenthesized,
 
     -- * Integer values as literals
@@ -40,8 +41,8 @@ module Orville.PostgreSQL.Raw.RawSql
     SqlExpression (toRawSql, unsafeFromRawSql),
     toBytesAndParams,
     toExampleBytes,
-    Escaping (Escaping, escapeStringLiteral),
-    exampleEscaping,
+    Quoting (Quoting, quoteStringLiteral, quoteIdentifier),
+    exampleQuoting,
   )
 where
 
@@ -75,6 +76,7 @@ data RawSql
   = SqlSection BSB.Builder
   | Parameter SqlValue
   | StringLiteral BS.ByteString
+  | Identifier BS.ByteString
   | Append RawSql RawSql
 
 instance Semigroup RawSql where
@@ -95,80 +97,81 @@ instance SqlExpression RawSql where
   unsafeFromRawSql = id
 
 {- |
-  Provides procedures for escaping parts of a raw SQL query so that they can be
-  safely executed. Escaping may be done in some 'Monad' m, allowing for the use
-  of escaping operations provided by 'Conn.Connection', which operates in the
+  Provides procedures for quoting parts of a raw SQL query so that they can be
+  safely executed. Quoting may be done in some 'Monad' m, allowing for the use
+  of quoting operations provided by 'Conn.Connection', which operates in the
   'IO' monad.
 
-  See 'connectionEscaping' and 'exampleEscaping'.
+  See 'connectionQuoting' and 'exampleQuoting'.
 -}
-data Escaping m = Escaping
-  { escapeStringLiteral :: BS.ByteString -> m BS.ByteString
+data Quoting m = Quoting
+  { quoteStringLiteral :: BS.ByteString -> m BSB.Builder
+  , quoteIdentifier :: BS.ByteString -> m BSB.Builder
   }
 
 {- |
-  Escaping done in pure Haskell that is suitable for showing SQL examples,
+  Quoting done in pure Haskell that is suitable for showing SQL examples,
   but is not guaranteed to be sufficient for all database connections. For
-  escaping that is based on the actual connection to the database, see
-  'connectionEscaping'.
+  quoting that is based on the actual connection to the database, see
+  'connectionQuoting'.
 -}
-exampleEscaping :: Escaping Identity
-exampleEscaping =
-  Escaping
-    { escapeStringLiteral = Identity . exampleEscapeStringLiteral
+exampleQuoting :: Quoting Identity
+exampleQuoting =
+  Quoting
+    { quoteStringLiteral = Identity . exampleQuoteString '\''
+    , quoteIdentifier = Identity . exampleQuoteString '"'
     }
 
-exampleEscapeStringLiteral :: BS.ByteString -> BS.ByteString
-exampleEscapeStringLiteral =
-  B8.unfoldr escape . Right
-  where
-    escape (Right bs) =
-      case B8.uncons bs of
-        Nothing ->
-          Nothing
-        Just (char, rest) ->
-          Just $
-            if isEscapedChar char
-              then ('\\', Left (char, rest))
-              else (char, Right rest)
-    escape (Left (char, rest)) =
-      Just (char, Right rest)
+exampleQuoteString :: Char -> BS.ByteString -> BSB.Builder
+exampleQuoteString quoteChar =
+  let quote (Right bs) =
+        case B8.uncons bs of
+          Nothing ->
+            Nothing
+          Just (char, rest) ->
+            Just $
+              if char == quoteChar
+                then (char, Left (char, rest))
+                else (char, Right rest)
+      quote (Left (char, rest)) =
+        Just (char, Right rest)
 
-isEscapedChar :: Char -> Bool
-isEscapedChar c =
-  case c of
-    '\'' -> True
-    '\\' -> True
-    _ -> False
+      quoteBytes =
+        BSB.char8 quoteChar
+   in \unquoted ->
+        quoteBytes
+          <> BSB.byteString (B8.unfoldr quote (Right unquoted))
+          <> quoteBytes
 
 {- |
-  Escaping done in IO based using the escaping functions provided by the
-  connection, which can apply escaping based on the specific connection
+  Quoting done in IO based using the quoting functions provided by the
+  connection, which can apply quoting based on the specific connection
   properties.
 
   If you don't have a connection available and are only planning on using
-  the SQL for explanatory or example purposes, see 'exampleEscaping'.
+  the SQL for explanatory or example purposes, see 'exampleQuoting'.
 -}
-connectionEscaping :: Conn.Connection -> Escaping IO
-connectionEscaping connection =
-  Escaping
-    { escapeStringLiteral = Conn.escapeStringLiteral connection
+connectionQuoting :: Conn.Connection -> Quoting IO
+connectionQuoting connection =
+  Quoting
+    { quoteStringLiteral = Conn.quoteStringLiteral connection
+    , quoteIdentifier = Conn.quoteIdentifier connection
     }
 
 {- |
   Constructs the actual SQL bytestring and parameter values that will be
   passed to the database to execute a 'RawSql' query. Any string
-  literals thar are included in the SQL expression will be escaping
-  using the given escaping directive.
+  literals thar are included in the SQL expression will be quoting
+  using the given quoting directive.
 -}
 toBytesAndParams ::
   (SqlExpression sql, Monad m) =>
-  Escaping m ->
+  Quoting m ->
   sql ->
   m (BS.ByteString, [Maybe PgTextFormatValue])
-toBytesAndParams escaping sql = do
+toBytesAndParams quoting sql = do
   (byteBuilder, finalProgress) <-
-    buildSqlWithProgress escaping startingProgress (toRawSql sql)
+    buildSqlWithProgress quoting startingProgress (toRawSql sql)
   pure
     ( LBS.toStrict (BSB.toLazyByteString byteBuilder)
     , DList.toList (paramValues finalProgress)
@@ -181,7 +184,7 @@ toBytesAndParams escaping sql = do
 -}
 toExampleBytes :: SqlExpression sql => sql -> BS.ByteString
 toExampleBytes =
-  fst . runIdentity . toBytesAndParams exampleEscaping
+  fst . runIdentity . toBytesAndParams exampleQuoting
 
 {- |
   This is an internal datatype used during the sql building process to track
@@ -223,30 +226,27 @@ snocParam (ParamsProgress count values) newValue =
 -}
 buildSqlWithProgress ::
   Monad m =>
-  Escaping m ->
+  Quoting m ->
   ParamsProgress ->
   RawSql ->
   m (BSB.Builder, ParamsProgress)
-buildSqlWithProgress escaping progress rawSql =
+buildSqlWithProgress quoting progress rawSql =
   case rawSql of
     SqlSection builder ->
       pure (builder, progress)
-    StringLiteral unescapedString -> do
-      escapedString <- escapeStringLiteral escaping unescapedString
-
-      let builder =
-            BSB.char8 '\''
-              <> BSB.byteString escapedString
-              <> BSB.char8 '\''
-
-      pure (builder, progress)
+    StringLiteral unquotedString -> do
+      quotedString <- quoteStringLiteral quoting unquotedString
+      pure (quotedString, progress)
+    Identifier unquotedIdentifier -> do
+      quotedIdentifier <- quoteIdentifier quoting unquotedIdentifier
+      pure (quotedIdentifier, progress)
     Parameter value ->
       let newProgress = snocParam progress (SqlValue.toPgValue value)
           placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
        in pure (placeholder, newProgress)
     Append first second -> do
-      (firstBuilder, nextProgress) <- buildSqlWithProgress escaping progress first
-      (secondBuilder, finalProgress) <- buildSqlWithProgress escaping nextProgress second
+      (firstBuilder, nextProgress) <- buildSqlWithProgress quoting progress first
+      (secondBuilder, finalProgress) <- buildSqlWithProgress quoting nextProgress second
       pure (firstBuilder <> secondBuilder, finalProgress)
 
 {- |
@@ -297,8 +297,8 @@ parameter =
 
 {- |
   Includes a bytestring value as string literal in the SQL statement. The
-  string literal will be escaped and quoted for you, the value provided does
-  not need to include surrounding quotes or escape special characters.
+  string literal will be quoted and escaped for you, the value provided should
+  not include surrounding quotes or quote special characters.
 
   Note: It's better to use the 'parameter' function where possible to pass
   values to be used as input to a SQL statement. There are some situations
@@ -308,6 +308,15 @@ parameter =
 stringLiteral :: BS.ByteString -> RawSql
 stringLiteral =
   StringLiteral
+
+{- |
+  Includes a bytestring value as an identifier in the SQL statement. The
+  identifier will be quoted and escaped for you, the value provided should not
+  include surrounding quotes or quote special characters.
+-}
+identifier :: BS.ByteString -> RawSql
+identifier =
+  Identifier
 
 {- |
   Concatenates a list of 'RawSql' values using another 'RawSql' value as
@@ -330,7 +339,7 @@ intercalate separator =
 -}
 execute :: SqlExpression sql => Conn.Connection -> sql -> IO LibPQ.Result
 execute connection sql = do
-  (sqlBytes, params) <- toBytesAndParams (connectionEscaping connection) sql
+  (sqlBytes, params) <- toBytesAndParams (connectionQuoting connection) sql
   Conn.executeRaw connection sqlBytes params
 
 {- |

@@ -51,7 +51,7 @@ main = do
   summary <-
     Property.checkGroups
       [ Connection.connectionTests pool
-      , RawSql.rawSqlTests
+      , RawSql.rawSqlTests pool
       , Execution.executionTests pool
       , SqlType.sqlTypeTests pool
       , PostgreSQLAxioms.postgreSQLAxiomTests pool

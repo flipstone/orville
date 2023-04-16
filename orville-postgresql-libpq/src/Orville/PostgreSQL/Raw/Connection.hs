@@ -13,7 +13,8 @@ module Orville.PostgreSQL.Raw.Connection
     NoticeReporting (EnableNoticeReporting, DisableNoticeReporting),
     createConnectionPool,
     executeRaw,
-    escapeStringLiteral,
+    quoteStringLiteral,
+    quoteIdentifier,
   )
 where
 
@@ -22,6 +23,7 @@ import Control.Concurrent.MVar (MVar, newMVar, tryReadMVar, tryTakeMVar)
 import Control.Exception (Exception, mask, throwIO)
 import Control.Monad (void)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as B8
 import Data.Maybe (fromMaybe)
 import Data.Pool (Pool, createPool)
@@ -177,22 +179,51 @@ underlyingExecute bs params connection = do
           throwLibPQResultError result execStatus bs
 
 {- |
-  Escapes a string for use as a literal within a  SQL command that will be
-  execute on the given connection. This uses the @PQescapeStringConn@ function
-  from libpq, which takes the character encoding of the connection into
-  account. This function only escapes the characters to be used in as a string
-  literal -- it does not add the surrounding quotes.
+  Escapes and quotes a string for use as a literal within a SQL command that
+  will be execute on the given connection. This uses the @PQescapeStringConn@
+  function from libpq, which takes the character encoding of the connection
+  into account. Not that while @PQescapeStringConn@ does not surround the
+  literal with quotes, this function does for the sake of symmetry with
+  'quoteIdentifier'.
+
+  This function returns a `BSB.Buider` so that the result can be included in
+  a builder being constructed for the surrounding SQL command without making
+  an additional copy of the `BS.Bytestring` returned by LibPQ for the sake of
+  adding the surrounding quotes.
 -}
-escapeStringLiteral :: Connection -> BS.ByteString -> IO BS.ByteString
-escapeStringLiteral connection unescapedString = do
+quoteStringLiteral :: Connection -> BS.ByteString -> IO BSB.Builder
+quoteStringLiteral connection unquotedString = do
   libPQConn <- readLibPQConnectionOrFailIfClosed connection
-  mbEscapedString <- LibPQ.escapeStringConn libPQConn unescapedString
+  mbEscapedString <- LibPQ.escapeStringConn libPQConn unquotedString
 
   case mbEscapedString of
     Nothing ->
       throwConnectionError "Error while escaping string literal" libPQConn
     Just escapedString ->
-      pure escapedString
+      let singleQuote =
+            BSB.char8 '\''
+       in pure (singleQuote <> BSB.byteString escapedString <> singleQuote)
+
+{- |
+  Escapes and quotes a string for use as an identifier within a SQL command
+  that will be execute on the given connection. This uses the
+  @PQescapeIdentifier@ function from libpq, which takes the character encoding
+  of the connection into account and also applies the quotes.
+
+  Although this function does not need to copy the `BS.ByteString` returned by
+  LibPQ to add the quotes (since LibPQ already added them), it returns a
+  `BSB.Builder` nonetheless to maintain symmetry with `quoteStringLiteral`.
+-}
+quoteIdentifier :: Connection -> BS.ByteString -> IO BSB.Builder
+quoteIdentifier connection unquotedString = do
+  libPQConn <- readLibPQConnectionOrFailIfClosed connection
+  mbEscapedString <- LibPQ.escapeIdentifier libPQConn unquotedString
+
+  case mbEscapedString of
+    Nothing ->
+      throwConnectionError "Error while escaping identifier" libPQConn
+    Just quotedString ->
+      pure (BSB.byteString quotedString)
 
 readLibPQConnectionOrFailIfClosed :: Connection -> IO LibPQ.Connection
 readLibPQConnectionOrFailIfClosed (Connection handle) = do

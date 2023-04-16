@@ -5,22 +5,28 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
+import qualified Data.Pool as Pool
 import qualified Data.Text as T
+import Hedgehog ((===))
 import qualified Hedgehog as HH
 
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-rawSqlTests :: Property.Group
-rawSqlTests =
+rawSqlTests :: Orville.Pool Orville.Connection -> Property.Group
+rawSqlTests pool =
   Property.group
     "RawSql"
     [ prop_concatenatesSQLStrings
     , prop_tracksPlaceholders
     , prop_escapesStringLiteralsForExamples
+    , prop_escapesIdentifiersForExamples
+    , prop_escapesStringLiteralsForConnections pool
+    , prop_escapesIdentifiersForConnections pool
     ]
 
 prop_concatenatesSQLStrings :: Property.NamedProperty
@@ -36,10 +42,10 @@ prop_concatenatesSQLStrings =
 
         (actualBytes, actualParams) =
           runIdentity $
-            RawSql.toBytesAndParams RawSql.exampleEscaping rawSql
+            RawSql.toBytesAndParams RawSql.exampleQuoting rawSql
 
-    actualBytes HH.=== expectedBytes
-    actualParams HH.=== []
+    actualBytes === expectedBytes
+    actualParams === []
 
 prop_tracksPlaceholders :: Property.NamedProperty
 prop_tracksPlaceholders =
@@ -72,21 +78,67 @@ prop_tracksPlaceholders =
 
         (actualBytes, actualParams) =
           runIdentity $
-            RawSql.toBytesAndParams RawSql.exampleEscaping rawSql
+            RawSql.toBytesAndParams RawSql.exampleQuoting rawSql
 
-    actualBytes HH.=== expectedBytes
-    actualParams HH.=== expectedParams
+    actualBytes === expectedBytes
+    actualParams === expectedParams
 
 prop_escapesStringLiteralsForExamples :: Property.NamedProperty
 prop_escapesStringLiteralsForExamples =
   Property.singletonNamedProperty "Escapes and quotes string literals for examples" $ do
     let rawSql =
-          RawSql.stringLiteral (B8.pack "Hel\\lo W'orld")
+          RawSql.stringLiteral (B8.pack "Hello W'orld")
 
         expectedBytes =
-          B8.pack "'Hel\\\\lo W\\'orld'"
+          B8.pack "'Hello W''orld'"
 
         actualBytes =
           RawSql.toExampleBytes rawSql
 
-    actualBytes HH.=== expectedBytes
+    actualBytes === expectedBytes
+
+prop_escapesIdentifiersForExamples :: Property.NamedProperty
+prop_escapesIdentifiersForExamples =
+  Property.singletonNamedProperty "Escapes and quotes identifiers for examples" $ do
+    let rawSql =
+          RawSql.identifier (B8.pack "Hello W\"orld")
+
+        expectedBytes =
+          B8.pack "\"Hello W\"\"orld\""
+
+        actualBytes =
+          RawSql.toExampleBytes rawSql
+
+    actualBytes === expectedBytes
+
+prop_escapesStringLiteralsForConnections :: Property.NamedDBProperty
+prop_escapesStringLiteralsForConnections =
+  Property.singletonNamedDBProperty "Escapes and quotes string literals for connections" $ \pool -> do
+    let rawSql =
+          RawSql.stringLiteral (B8.pack "Hello W'orld")
+
+        expectedBytes =
+          B8.pack "'Hello W''orld'"
+
+    (actualBytes, _) <-
+      HH.evalIO $
+        Pool.withResource pool $ \conn ->
+          RawSql.toBytesAndParams (RawSql.connectionQuoting conn) rawSql
+
+    actualBytes === expectedBytes
+
+prop_escapesIdentifiersForConnections :: Property.NamedDBProperty
+prop_escapesIdentifiersForConnections =
+  Property.singletonNamedDBProperty "Escapes and quotes identifiers for connections" $ \pool -> do
+    let rawSql =
+          RawSql.identifier (B8.pack "Hello W\"orld")
+
+        expectedBytes =
+          B8.pack "\"Hello W\"\"orld\""
+
+    (actualBytes, _) <-
+      HH.evalIO $
+        Pool.withResource pool $ \conn ->
+          RawSql.toBytesAndParams (RawSql.connectionQuoting conn) rawSql
+
+    actualBytes === expectedBytes

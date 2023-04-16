@@ -52,7 +52,7 @@ prop_sqlcommenterAttributesEscaped =
 
         (actualBytes, actualParams) =
           runIdentity $
-            RawSql.toBytesAndParams RawSql.exampleEscaping rawSql
+            RawSql.toBytesAndParams RawSql.exampleQuoting rawSql
 
     actualBytes HH.=== expectedBytes
     actualParams HH.=== []
