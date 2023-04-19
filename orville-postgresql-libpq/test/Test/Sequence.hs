@@ -4,16 +4,14 @@ module Test.Sequence
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.Pool as Pool
 import Hedgehog ((===))
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.Property as Property
 
-sequenceTests :: Pool.Pool Conn.Connection -> Property.Group
+sequenceTests :: Orville.Pool Orville.Connection -> Property.Group
 sequenceTests pool =
   Property.group
     "Sequence"

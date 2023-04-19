@@ -13,8 +13,8 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, stringToFieldName)
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   A 'SyntheticField' can be used to evaluate a SQL expression based on the

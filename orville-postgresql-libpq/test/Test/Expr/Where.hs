@@ -9,16 +9,16 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
-import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, fooBarTable, fooColumn, fooColumnRef, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-whereTests :: Pool.Pool Connection.Connection -> Property.Group
+whereTests :: Orville.Pool Orville.Connection -> Property.Group
 whereTests pool =
   Property.group "Expr - WhereClause" $
     [ prop_noWhereClauseSpecified pool

@@ -89,9 +89,9 @@ import qualified Data.Time as Time
 import qualified Data.UUID as UUID
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.DefaultValue (DefaultValue, coerceDefaultValue, defaultValueExpression)
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 newtype FieldName
   = FieldName B8.ByteString
@@ -127,7 +127,7 @@ data FieldDefinition nullability a = FieldDefinition
   { i_fieldName :: FieldName
   , i_fieldType :: SqlType.SqlType a
   , i_fieldNullability :: NullabilityGADT nullability
-  , i_fieldDefaultValue :: Maybe (DefaultValue a)
+  , i_fieldDefaultValue :: Maybe (DefaultValue.DefaultValue a)
   , i_fieldDescription :: Maybe String
   }
 
@@ -165,7 +165,7 @@ fieldType = i_fieldType
 {- |
   Returns the default value definition for the field, if any has been set.
 -}
-fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue a)
+fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue.DefaultValue a)
 fieldDefaultValue = i_fieldDefaultValue
 
 {- |
@@ -251,7 +251,7 @@ fieldColumnDefinition fieldDef =
     (fieldColumnName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
     (Just $ fieldColumnConstraint fieldDef)
-    (fmap (Expr.columnDefault . defaultValueExpression) $ i_fieldDefaultValue fieldDef)
+    (fmap (Expr.columnDefault . DefaultValue.defaultValueExpression) $ i_fieldDefaultValue fieldDef)
 
 {- |
   INTERNAL - Builds the appropriate ColumnConstraint for a field. Currently
@@ -500,7 +500,7 @@ nullableField field =
         { i_fieldName = fieldName field
         , i_fieldType = nullableType (fieldType field)
         , i_fieldNullability = NullableGADT
-        , i_fieldDefaultValue = fmap coerceDefaultValue (i_fieldDefaultValue field)
+        , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
         , i_fieldDescription = fieldDescription field
         }
 
@@ -528,7 +528,7 @@ asymmetricNullableField field =
         { i_fieldName = fieldName field
         , i_fieldType = nullableType (fieldType field)
         , i_fieldNullability = NullableGADT
-        , i_fieldDefaultValue = fmap coerceDefaultValue (i_fieldDefaultValue field)
+        , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
         , i_fieldDescription = fieldDescription field
         }
 
@@ -547,7 +547,7 @@ convertField ::
 convertField conversion fieldDef =
   fieldDef
     { i_fieldType = conversion (i_fieldType fieldDef)
-    , i_fieldDefaultValue = fmap coerceDefaultValue (i_fieldDefaultValue fieldDef)
+    , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue fieldDef)
     }
 
 {- |
@@ -571,7 +571,7 @@ coerceField =
   available to use.
 -}
 setDefaultValue ::
-  DefaultValue a ->
+  DefaultValue.DefaultValue a ->
   FieldDefinition nullability a ->
   FieldDefinition nullability a
 setDefaultValue defaultValue fieldDef =

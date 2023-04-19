@@ -20,8 +20,8 @@ import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
 newtype InsertExpr
   = InsertExpr RawSql.RawSql

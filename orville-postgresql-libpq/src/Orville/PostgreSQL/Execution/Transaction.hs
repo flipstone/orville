@@ -11,9 +11,9 @@ import qualified Data.IORef as IORef
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
   Performs an action in an Orville monad within a database transaction. The transaction

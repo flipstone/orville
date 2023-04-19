@@ -13,7 +13,7 @@ where
 import Data.List.NonEmpty (NonEmpty)
 
 import Orville.PostgreSQL.Expr.Name (ColumnName, IndexName, Qualified, TableName)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype CreateIndexExpr
   = CreateIndexExpr RawSql.RawSql

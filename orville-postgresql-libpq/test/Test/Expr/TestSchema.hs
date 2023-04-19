@@ -27,10 +27,10 @@ import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
-import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 data FooBar = FooBar
   { foo :: Maybe Int.Int32
@@ -93,9 +93,9 @@ nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
 nullOr = maybe SqlValue.sqlNull
 
 withFooBarData ::
-  Pool.Pool Connection.Connection ->
+  Pool.Pool Orville.Connection ->
   [FooBar] ->
-  (Connection.Connection -> IO a) ->
+  (Orville.Connection -> IO a) ->
   HH.PropertyT IO a
 withFooBarData pool fooBars action =
   MIO.liftIO $
@@ -107,7 +107,7 @@ withFooBarData pool fooBars action =
 
       action connection
 
-dropAndRecreateTestTable :: Connection.Connection -> IO ()
+dropAndRecreateTestTable :: Orville.Connection -> IO ()
 dropAndRecreateTestTable connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql fooBarTable)
   RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "(foo INTEGER, bar TEXT)")

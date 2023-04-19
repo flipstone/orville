@@ -27,7 +27,7 @@ where
 
 import Data.Int (Int32)
 
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype DataType
   = DataType RawSql.RawSql

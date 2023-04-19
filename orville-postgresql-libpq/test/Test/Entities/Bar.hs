@@ -17,7 +17,6 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import Orville.PostgreSQL.Connection (Connection)
 
 import qualified Test.PgGen as PgGen
 import qualified Test.TestTable as TestTable
@@ -61,7 +60,7 @@ generateList :: HH.Range Int -> HH.Gen [BarWrite]
 generateList range =
   (Gen.list range generate)
 
-withTable :: MonadIO m => Pool Connection -> Orville.Orville a -> m a
+withTable :: MonadIO m => Pool Orville.Connection -> Orville.Orville a -> m a
 withTable pool operation =
   liftIO $ do
     withResource pool $ \connection ->

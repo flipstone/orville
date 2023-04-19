@@ -29,10 +29,8 @@ import Control.Monad.Trans.Reader (ReaderT, ask, runReaderT)
 import qualified Data.DList as DList
 import Data.Foldable (traverse_)
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
-import Data.Pool (Pool)
 
 import qualified Orville.PostgreSQL as O
-import qualified Orville.PostgreSQL.Connection as Conn
 
 {- |
  'MonadEntityTrace' provides the interface used by functions such as
@@ -614,7 +612,7 @@ recordTracesInState askTraceState traces = do
 runEntityTraceT ::
   MonadIO n =>
   O.ErrorDetailLevel ->
-  Pool Conn.Connection ->
+  O.Pool O.Connection ->
   (O.OrvilleState -> m a -> n a) ->
   EntityTraceT trace m a ->
   n (a, [trace])

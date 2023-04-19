@@ -15,7 +15,6 @@ import Data.List ((\\))
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Maybe as Maybe
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -24,10 +23,10 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
 
 import qualified Test.Entities.Foo as Foo
@@ -36,7 +35,7 @@ import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-autoMigrationTests :: Pool.Pool Conn.Connection -> Property.Group
+autoMigrationTests :: Orville.Pool Orville.Connection -> Property.Group
 autoMigrationTests pool =
   Property.group
     "AutoMigration"
@@ -345,7 +344,7 @@ prop_respectsImplicitDefaultOnSerialFields =
     map RawSql.toExampleBytes secondTimeSteps === []
 
 assertDefaultValuesMigrateProperly ::
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   HH.Gen SomeField ->
   HH.PropertyT IO ()
 assertDefaultValuesMigrateProperly pool genSomeField = do
@@ -745,7 +744,7 @@ prop_altersModifiedSequences =
 
 assertSequenceExistsMatching ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Pool.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   Orville.SequenceDefinition ->
   m ()
 assertSequenceExistsMatching pool sequenceDef = do
@@ -795,7 +794,7 @@ prop_arbitrarySchemaInitialMigration =
 
 assertTableStructure ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Conn.Pool Conn.Connection ->
+  Orville.Pool Orville.Connection ->
   TestTable ->
   m ()
 assertTableStructure pool testTable = do

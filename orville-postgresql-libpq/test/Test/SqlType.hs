@@ -13,16 +13,16 @@ import qualified Data.Time as Time
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
-import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecutionResult
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-sqlTypeTests :: Pool.Pool Connection.Connection -> Property.Group
+sqlTypeTests :: Orville.Pool Orville.Connection -> Property.Group
 sqlTypeTests pool =
   Property.group "SqlType" $
     integerTests pool
@@ -39,7 +39,7 @@ sqlTypeTests pool =
       <> dateTests pool
       <> timestampTests pool
 
-integerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+integerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 integerTests pool =
   [
     ( String.fromString "Testing the decode of INTEGER with value 0"
@@ -73,7 +73,7 @@ integerTests pool =
     )
   ]
 
-smallIntegerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+smallIntegerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 smallIntegerTests pool =
   [
     ( String.fromString "Testing the decode of SMALLINT with value 0"
@@ -107,7 +107,7 @@ smallIntegerTests pool =
     )
   ]
 
-bigIntegerTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigIntegerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 bigIntegerTests pool =
   [
     ( String.fromString "Testing the decode of BIGINT with value 0"
@@ -131,7 +131,7 @@ bigIntegerTests pool =
     )
   ]
 
-serialTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+serialTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 serialTests pool =
   [
     ( String.fromString "Testing the decode of SERIAL with value 0"
@@ -165,7 +165,7 @@ serialTests pool =
     )
   ]
 
-bigSerialTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+bigSerialTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 bigSerialTests pool =
   [
     ( String.fromString "Testing the decode of BIGSERIAL with value 0"
@@ -189,7 +189,7 @@ bigSerialTests pool =
     )
   ]
 
-doubleTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+doubleTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 doubleTests pool =
   [
     ( String.fromString "Testing the decode of DOUBLE PRECISION with value 0"
@@ -213,7 +213,7 @@ doubleTests pool =
     )
   ]
 
-boolTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boolTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 boolTests pool =
   [
     ( String.fromString "Testing the decode of BOOL with value False"
@@ -237,7 +237,7 @@ boolTests pool =
     )
   ]
 
-unboundedTextTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+unboundedTextTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 unboundedTextTests pool =
   [
     ( String.fromString "Testing the decode of TEXT with value abcde"
@@ -251,7 +251,7 @@ unboundedTextTests pool =
     )
   ]
 
-fixedTextTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+fixedTextTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 fixedTextTests pool =
   [
     ( String.fromString "Testing the decode of CHAR(5) with value 'abcde'"
@@ -275,7 +275,7 @@ fixedTextTests pool =
     )
   ]
 
-boundedTextTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+boundedTextTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 boundedTextTests pool =
   [
     ( String.fromString "Testing the decode of VARCHAR(5) with value 'abcde'"
@@ -299,7 +299,7 @@ boundedTextTests pool =
     )
   ]
 
-textSearchVectorTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+textSearchVectorTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 textSearchVectorTests pool =
   [
     ( String.fromString "Testing the decode of TSVECTOR with value 'abcde'"
@@ -323,7 +323,7 @@ textSearchVectorTests pool =
     )
   ]
 
-dateTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+dateTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 dateTests pool =
   [
     ( String.fromString "Testing the decode of DATE with value 2020-12-21"
@@ -357,7 +357,7 @@ dateTests pool =
     )
   ]
 
-timestampTests :: Pool.Pool Connection.Connection -> [(HH.PropertyName, HH.Property)]
+timestampTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 timestampTests pool =
   [
     ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32-00'"
@@ -508,7 +508,7 @@ data DecodingTest a = DecodingTest
   , expectedValue :: a
   }
 
-runDecodingTest :: (Show a, Eq a) => Pool.Pool Connection.Connection -> DecodingTest a -> HH.Property
+runDecodingTest :: (Show a, Eq a) => Orville.Pool Orville.Connection -> DecodingTest a -> HH.Property
 runDecodingTest pool test =
   Property.singletonProperty $ do
     rows <- MIO.liftIO . Pool.withResource pool $ \connection -> do
@@ -536,7 +536,7 @@ runDecodingTest pool test =
 
     actual === [Right $ expectedValue test]
 
-dropAndRecreateTable :: Connection.Connection -> String -> String -> IO ()
+dropAndRecreateTable :: Orville.Connection -> String -> String -> IO ()
 dropAndRecreateTable connection tableName columnTypeDDL = do
   RawSql.executeVoid connection (RawSql.fromString $ "DROP TABLE IF EXISTS " <> tableName)
   RawSql.executeVoid connection (RawSql.fromString $ "CREATE TABLE " <> tableName <> "(foo " <> columnTypeDDL <> ")")

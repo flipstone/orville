@@ -7,7 +7,6 @@ import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Maybe as Maybe
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -16,12 +15,11 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Connection
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
-entityOperationsTests :: Pool.Pool Connection.Connection -> Property.Group
+entityOperationsTests :: Orville.Pool Orville.Connection -> Property.Group
 entityOperationsTests pool =
   Property.group "EntityOperations" $
     [ prop_insertEntitiesFindEntitiesByRoundTrip pool

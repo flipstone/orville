@@ -17,7 +17,7 @@ where
 import Data.List.NonEmpty (NonEmpty)
 
 import Orville.PostgreSQL.Expr.Name (ColumnName)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype GroupByClause
   = GroupByClause RawSql.RawSql

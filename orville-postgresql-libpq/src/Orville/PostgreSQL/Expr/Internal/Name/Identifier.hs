@@ -15,7 +15,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.Identifier
 where
 
 import qualified Data.ByteString.Char8 as B8
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype Identifier
   = Identifier RawSql.RawSql

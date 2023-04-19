@@ -12,10 +12,10 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.Int (Int32)
 
 import qualified Orville.PostgreSQL.Execution as Exec
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 withLockedTransaction :: forall m a. Monad.MonadOrville m => m a -> m a
 withLockedTransaction action = do

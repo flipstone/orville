@@ -4,18 +4,16 @@ module Test.Expr.SequenceDefinition
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.Pool as Pool
 import Hedgehog ((===))
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
-sequenceDefinitionTests :: Pool.Pool Conn.Connection -> Property.Group
+sequenceDefinitionTests :: Orville.Pool Orville.Connection -> Property.Group
 sequenceDefinitionTests pool =
   Property.group
     "Expr - SequenceDefinition"

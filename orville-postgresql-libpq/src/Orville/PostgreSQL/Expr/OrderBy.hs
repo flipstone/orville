@@ -25,7 +25,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.Name (ColumnName)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype OrderByClause
   = OrderByClause RawSql.RawSql

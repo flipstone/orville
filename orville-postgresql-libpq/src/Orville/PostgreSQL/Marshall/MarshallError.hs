@@ -15,9 +15,9 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.List as List
 import qualified Data.Set as Set
 
-import Orville.PostgreSQL.Internal.ErrorDetailLevel (ErrorDetailLevel, redactErrorMessage, redactIdentifierValue, redactNonIdentifierValue, redactSchemaName)
-import qualified Orville.PostgreSQL.Internal.PgTextFormatValue as PgTextFormatValue
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel, redactErrorMessage, redactIdentifierValue, redactNonIdentifierValue, redactSchemaName)
+import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   A 'MarshallError' may be returned from 'marshallResultFromSql' when a row being

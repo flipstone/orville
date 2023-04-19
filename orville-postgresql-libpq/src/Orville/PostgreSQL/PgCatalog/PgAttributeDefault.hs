@@ -9,10 +9,10 @@ import qualified Data.Text as T
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberTypeField)
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   The Haskell representation of data read from the @pg_catalog.pg_attrdef@

@@ -24,11 +24,10 @@ import qualified Hedgehog.Internal.Report as Report
 import qualified Hedgehog.Internal.Runner as Runner
 import qualified Hedgehog.Internal.Seed as Seed
 
-import qualified Data.Pool as Pool
-import qualified Orville.PostgreSQL.Connection as Connection
+import qualified Orville.PostgreSQL as Orville
 
 type NamedProperty = (HH.PropertyName, HH.Property)
-type NamedDBProperty = Pool.Pool Connection.Connection -> NamedProperty
+type NamedDBProperty = Orville.Pool Orville.Connection -> NamedProperty
 
 namedProperty :: String -> HH.PropertyT IO () -> NamedProperty
 namedProperty nameString propertyT =
@@ -43,14 +42,14 @@ singletonNamedProperty nameString property =
 
 namedDBProperty ::
   String ->
-  (Pool.Pool Connection.Connection -> HH.PropertyT IO ()) ->
+  (Orville.Pool Orville.Connection -> HH.PropertyT IO ()) ->
   NamedDBProperty
 namedDBProperty nameString dbProperty pool =
   namedProperty nameString (dbProperty pool)
 
 singletonNamedDBProperty ::
   String ->
-  (Pool.Pool Connection.Connection -> HH.PropertyT IO ()) ->
+  (Orville.Pool Orville.Connection -> HH.PropertyT IO ()) ->
   NamedDBProperty
 singletonNamedDBProperty nameString dbProperty pool =
   HH.withTests 1 <$> namedProperty nameString (dbProperty pool)

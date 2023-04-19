@@ -16,7 +16,7 @@ where
 
 import Orville.PostgreSQL.Expr.Name (functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ParameterName, ValueExpression, functionCall, functionCallNamedParams)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 now :: ValueExpression
 now = functionCall (functionName "now") []

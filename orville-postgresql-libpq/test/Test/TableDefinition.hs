@@ -13,10 +13,10 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Execution.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Execution.Select as Select
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Bar as Bar
@@ -24,7 +24,7 @@ import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-tableDefinitionTests :: Pool.Pool Conn.Connection -> Property.Group
+tableDefinitionTests :: Pool.Pool Orville.Connection -> Property.Group
 tableDefinitionTests pool =
   Property.group
     "TableDefinition"

@@ -33,7 +33,7 @@ module Orville.PostgreSQL.Expr.BinaryOperator
 where
 
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype BinaryOperator
   = BinaryOperator RawSql.RawSql

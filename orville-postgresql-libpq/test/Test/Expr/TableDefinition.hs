@@ -5,16 +5,14 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import qualified Data.Pool as Pool
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
-tableDefinitionTests :: Pool.Pool Conn.Connection -> Property.Group
+tableDefinitionTests :: Orville.Pool Orville.Connection -> Property.Group
 tableDefinitionTests pool =
   Property.group
     "Expr - TableDefinition"

@@ -20,8 +20,8 @@ import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
 import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import Orville.PostgreSQL.Internal.SqlValue (SqlValue)
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
 newtype ValueExpression = ValueExpression RawSql.RawSql
   deriving (RawSql.SqlExpression)

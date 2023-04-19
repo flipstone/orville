@@ -7,7 +7,7 @@ module Orville.PostgreSQL.Expr.ReturningExpr
 where
 
 import Orville.PostgreSQL.Expr.Query (SelectList)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype ReturningExpr
   = ReturningExpr RawSql.RawSql

@@ -5,16 +5,14 @@ where
 
 import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
-import qualified Data.Pool as Pool
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-executionTests :: Pool.Pool Conn.Connection -> Property.Group
+executionTests :: Orville.Pool Orville.Connection -> Property.Group
 executionTests pool =
   Property.group
     "Execution"

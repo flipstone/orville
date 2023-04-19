@@ -41,8 +41,8 @@ import Data.Maybe (catMaybes)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (FunctionName, Qualified, SequenceName, functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, functionCall, valueExpression)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {-
    From https://www.postgresql.org/docs/15/sql-createsequence.html

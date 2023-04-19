@@ -31,7 +31,6 @@ library
   exposed-modules:
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
-      Orville.PostgreSQL.Connection
       Orville.PostgreSQL.EntityTrace
       Orville.PostgreSQL.Execution
       Orville.PostgreSQL.Execution.Cursor
@@ -47,6 +46,7 @@ library
       Orville.PostgreSQL.Execution.Sequence
       Orville.PostgreSQL.Execution.Transaction
       Orville.PostgreSQL.Execution.Update
+      Orville.PostgreSQL.ErrorDetailLevel
       Orville.PostgreSQL.Expr
       Orville.PostgreSQL.Expr.BinaryOperator
       Orville.PostgreSQL.Expr.ColumnDefinition
@@ -74,14 +74,8 @@ library
       Orville.PostgreSQL.Expr.Update
       Orville.PostgreSQL.Expr.ValueExpression
       Orville.PostgreSQL.Expr.WhereClause
-      Orville.PostgreSQL.Internal.DefaultValue
-      Orville.PostgreSQL.Internal.ErrorDetailLevel
-      Orville.PostgreSQL.Internal.PgTextFormatValue
-      Orville.PostgreSQL.Internal.PgTime
-      Orville.PostgreSQL.Internal.RawSql
-      Orville.PostgreSQL.Internal.SqlCommenter
-      Orville.PostgreSQL.Internal.SqlValue
       Orville.PostgreSQL.Marshall
+      Orville.PostgreSQL.Marshall.DefaultValue
       Orville.PostgreSQL.Marshall.FieldDefinition
       Orville.PostgreSQL.Marshall.MarshallError
       Orville.PostgreSQL.Marshall.SqlMarshaller
@@ -98,6 +92,12 @@ library
       Orville.PostgreSQL.Plan.Operation
       Orville.PostgreSQL.Plan.Syntax
       Orville.PostgreSQL.PgCatalog
+      Orville.PostgreSQL.Raw.Connection
+      Orville.PostgreSQL.Raw.PgTextFormatValue
+      Orville.PostgreSQL.Raw.PgTime
+      Orville.PostgreSQL.Raw.RawSql
+      Orville.PostgreSQL.Raw.SqlCommenter
+      Orville.PostgreSQL.Raw.SqlValue
       Orville.PostgreSQL.Schema
       Orville.PostgreSQL.Schema.ConstraintDefinition
       Orville.PostgreSQL.Schema.IndexDefinition

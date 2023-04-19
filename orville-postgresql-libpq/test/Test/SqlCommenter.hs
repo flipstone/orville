@@ -13,11 +13,10 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Conn
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlCommenter as SqlCommenter
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 
 import Test.Expr.TestSchema
   ( assertEqualFooBarRows,
@@ -29,7 +28,7 @@ import Test.Expr.TestSchema
   )
 import qualified Test.Property as Property
 
-sqlCommenterTests :: Pool.Pool Conn.Connection -> Property.Group
+sqlCommenterTests :: Orville.Pool Orville.Connection -> Property.Group
 sqlCommenterTests pool =
   Property.group
     "SqlCommenterAttributes"

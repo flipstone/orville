@@ -11,7 +11,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.IndexName
 where
 
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, identifier)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype IndexName
   = IndexName Identifier

@@ -5,7 +5,6 @@ where
 
 import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as B8
-import qualified Data.Pool as Pool
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -13,15 +12,14 @@ import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Connection as Connection
-import qualified Orville.PostgreSQL.Internal.ErrorDetailLevel as ErrorDetailLevel
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-marshallErrorTests :: Pool.Pool Connection.Connection -> Property.Group
+marshallErrorTests :: Orville.Pool Orville.Connection -> Property.Group
 marshallErrorTests pool =
   Property.group
     "MarshallError"

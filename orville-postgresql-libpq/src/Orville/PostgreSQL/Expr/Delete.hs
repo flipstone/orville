@@ -11,7 +11,7 @@ import Data.Maybe (catMaybes)
 import Orville.PostgreSQL.Expr.Name (Qualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 newtype DeleteExpr
   = DeleteExpr RawSql.RawSql
