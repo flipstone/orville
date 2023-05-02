@@ -1,5 +1,10 @@
 {-# LANGUAGE GADTs #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+-}
 module Orville.PostgreSQL.Execution.ReturningOption
   ( ReturningOption (..),
     ReturningClause,
@@ -7,7 +12,10 @@ module Orville.PostgreSQL.Execution.ReturningOption
   )
 where
 
+-- | A tag, used with 'ReturningOption' to indicate a SQL Returning clause.
 data ReturningClause
+
+-- | A tag, used with 'ReturningOption' to indicate no SQL Returning clause.
 data NoReturningClause
 
 {- |

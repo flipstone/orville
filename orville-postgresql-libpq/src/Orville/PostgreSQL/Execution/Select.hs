@@ -1,6 +1,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+-}
 module Orville.PostgreSQL.Execution.Select
   ( Select,
     executeSelect,

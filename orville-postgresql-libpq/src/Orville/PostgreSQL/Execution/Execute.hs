@@ -1,3 +1,8 @@
+{- |
+Copyright : Flipstone Technology Partners 2021-2023
+License   : MIT
+Stability : Stable
+-}
 module Orville.PostgreSQL.Execution.Execute
   ( executeAndDecode,
     executeAndReturnAffectedRows,

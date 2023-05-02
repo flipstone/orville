@@ -2,6 +2,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Facilities for performing some database migrations automatically.
+See 'autoMigrateSchema' as a primary, high level entry point.
+-}
 module Orville.PostgreSQL.AutoMigration
   ( autoMigrateSchema,
     generateMigrationSteps,
@@ -230,7 +238,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
               (Orville.sequenceIdentifier sequenceDef)
        in case PgCatalog.lookupRelationOfKind PgCatalog.Sequence (schemaName, sequenceName) dbDesc of
             Nothing ->
-              Right $
+              Right
                 [ mkMigrationStepWithType
                     AddRemoveTablesAndColumns
                     (Orville.mkCreateSequenceExpr sequenceDef)

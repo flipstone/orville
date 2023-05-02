@@ -1,3 +1,8 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+-}
 module Orville.PostgreSQL.Execution.QueryType
   ( QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, CursorQuery, OtherQuery),
   )

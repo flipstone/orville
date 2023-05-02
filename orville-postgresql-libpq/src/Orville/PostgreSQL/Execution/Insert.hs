@@ -4,6 +4,7 @@
 
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
+Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.Insert
   ( Insert,

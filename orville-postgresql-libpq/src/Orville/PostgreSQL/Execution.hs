@@ -1,5 +1,10 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+-}
 module Orville.PostgreSQL.Execution
   ( -- * High level modules for most common tasks
     module Orville.PostgreSQL.Execution.EntityOperations,

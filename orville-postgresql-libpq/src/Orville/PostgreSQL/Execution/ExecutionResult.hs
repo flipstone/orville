@@ -1,8 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.ExecutionResult
   ( ExecutionResult (..),
@@ -141,6 +142,9 @@ fakeLibPQGetValue result rowNumber columnNumber =
     row <- Map.lookup rowNumber (fakeLibPQRows result)
     Map.lookup columnNumber row
 
+{- | 'readRows' will consume the 'LibPQ.Result', resulting in the collection of name for the field and
+  'SqlValue' for each field in a row and for each row.
+-}
 readRows :: LibPQ.Result -> IO [[(Maybe BS.ByteString, SqlValue)]]
 readRows res = do
   nrows <- LibPQ.ntuples res

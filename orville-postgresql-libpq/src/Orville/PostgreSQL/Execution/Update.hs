@@ -1,5 +1,10 @@
 {-# LANGUAGE GADTs #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+-}
 module Orville.PostgreSQL.Execution.Update
   ( Update,
     updateToUpdateExpr,

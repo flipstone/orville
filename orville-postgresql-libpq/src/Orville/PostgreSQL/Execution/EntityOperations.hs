@@ -1,6 +1,7 @@
 {- |
-Copyright : Flipstone Technology Partners 2021
+Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
+Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.EntityOperations
   ( insertEntity,

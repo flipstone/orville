@@ -1,6 +1,7 @@
 {- |
-Copyright : Flipstone Technology Partners 2020-2021
+Copyright : Flipstone Technology Partners 2020-2023
 License   : MIT
+Stability : Stable
 -}
 module Orville.PostgreSQL
   ( -- * Basic operations on entities in tables
