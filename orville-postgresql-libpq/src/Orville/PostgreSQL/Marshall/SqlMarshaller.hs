@@ -710,7 +710,7 @@ marshallField accessor fieldDef =
   atLeast21Field :: SyntheticField Bool
   atLeast21Field =
     SyntheticField
-      { syntheticFieldExpression = RawSql.unsafeFromRawSql $ RawSql.fromString "age >= 21"
+      { syntheticFieldExpression = RawSql.unsafeSqlExpression "age >= 21"
       , syntheticFieldAlias = Orville.stringToFieldName "over21"
       , syntheticFieldValueFromSqlValue = SqlValue.toBool
       }

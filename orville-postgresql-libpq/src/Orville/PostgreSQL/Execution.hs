@@ -4,6 +4,8 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution
   ( -- * High level modules for most common tasks
@@ -12,9 +14,7 @@ module Orville.PostgreSQL.Execution
     module Orville.PostgreSQL.Execution.Sequence,
     module Orville.PostgreSQL.Execution.Transaction,
 
-    -- * Mid-level modules with more flexibility for handling less common
-
-    -- queries
+    -- * Mid-level modules with more flexibility for handling less common queries
     module Orville.PostgreSQL.Execution.Select,
     module Orville.PostgreSQL.Execution.Insert,
     module Orville.PostgreSQL.Execution.Update,

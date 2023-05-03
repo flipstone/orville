@@ -33,7 +33,7 @@ newtype IntervalArgument
 
 unsafeIntervalArg :: String -> IntervalArgument
 unsafeIntervalArg =
-  IntervalArgument . RawSql.unsafeFromRawSql . RawSql.fromString
+  IntervalArgument . RawSql.unsafeSqlExpression
 
 years :: IntervalArgument
 years = unsafeIntervalArg "years"

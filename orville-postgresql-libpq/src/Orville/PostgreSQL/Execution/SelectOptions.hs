@@ -2,6 +2,8 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.SelectOptions
   ( SelectOptions,
@@ -31,6 +33,8 @@ import qualified Orville.PostgreSQL.Expr as Expr
    a basic query function works by adding 'WHERE', 'ORDER BY', 'GROUP BY', etc.
    Functions are provided to construct 'SelectOptions' for individual options,
    which may then be combined via '<>' (also exposed as 'appendSelectOptions').
+
+@since 0.10.0.0
 -}
 data SelectOptions = SelectOptions
   { i_distinct :: First Bool
@@ -41,14 +45,18 @@ data SelectOptions = SelectOptions
   , i_groupByExpr :: Maybe Expr.GroupByExpr
   }
 
+-- | @since 0.10.0.0
 instance Semigroup SelectOptions where
   (<>) = appendSelectOptions
 
+-- | @since 0.10.0.0
 instance Monoid SelectOptions where
   mempty = emptySelectOptions
 
 {- |
   A set of empty 'SelectOptions' that will not change how a query is run.
+
+@since 0.10.0.0
 -}
 emptySelectOptions :: SelectOptions
 emptySelectOptions =
@@ -65,6 +73,8 @@ emptySelectOptions =
   Combines multple select options together, unioning the options together where
   possible. For options where this is not possible, (e.g. 'LIMIT'), the one
   on the left is preferred.
+
+@since 0.10.0.0
 -}
 appendSelectOptions :: SelectOptions -> SelectOptions -> SelectOptions
 appendSelectOptions left right =
@@ -87,6 +97,8 @@ unionMaybeWith f mbLeft mbRight =
 {- |
   Builds the 'Expr.SelectClause' that should be used to include the
   'distinct's from the 'SelectOptions' on a query.
+
+@since 0.10.0.0
 -}
 selectDistinct :: SelectOptions -> Expr.SelectClause
 selectDistinct selectOptions =
@@ -98,6 +110,8 @@ selectDistinct selectOptions =
   Builds the 'Expr.WhereClause' that should be used to include the
   'WhereCondition's from the 'SelectOptions' on a query. This will be 'Nothing'
   where no 'WhereCondition's have been specified.
+
+@since 0.10.0.0
 -}
 selectWhereClause :: SelectOptions -> Maybe Expr.WhereClause
 selectWhereClause =
@@ -105,6 +119,8 @@ selectWhereClause =
 
 {- |
   Constructs a 'SelectOptions' with just 'distinct' set to 'True'.
+
+@since 0.10.0.0
 -}
 distinct :: SelectOptions
 distinct =
@@ -116,6 +132,8 @@ distinct =
   Builds the 'Expr.OrderByClause' that should be used to include the
   'OrderByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
   where no 'OrderByClause's have been specified.
+
+@since 0.10.0.0
 -}
 selectOrderByClause :: SelectOptions -> Maybe Expr.OrderByClause
 selectOrderByClause =
@@ -125,6 +143,8 @@ selectOrderByClause =
   Builds the 'Expr.GroupByClause' that should be used to include the
   'GroupByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
   where no 'GroupByClause's have been specified.
+
+@since 0.10.0.0
 -}
 selectGroupByClause :: SelectOptions -> Maybe Expr.GroupByClause
 selectGroupByClause =
@@ -133,6 +153,8 @@ selectGroupByClause =
 {- |
   Builds a 'Expr.LimitExpr' that will limit the query results to the
   number specified in the 'SelectOptions' (if any)
+
+@since 0.10.0.0
 -}
 selectLimitExpr :: SelectOptions -> Maybe Expr.LimitExpr
 selectLimitExpr =
@@ -141,6 +163,8 @@ selectLimitExpr =
 {- |
   Builds a 'Expr.OffsetExpr' that will limit the query results to the
   number specified in the 'SelectOptions' (if any)
+
+@since 0.10.0.0
 -}
 selectOffsetExpr :: SelectOptions -> Maybe Expr.OffsetExpr
 selectOffsetExpr =
@@ -148,6 +172,8 @@ selectOffsetExpr =
 
 {- |
   Constructs a 'SelectOptions' with just the given 'WhereCondition'.
+
+@since 0.10.0.0
 -}
 where_ :: Expr.BooleanExpr -> SelectOptions
 where_ condition =
@@ -157,6 +183,8 @@ where_ condition =
 
 {- |
   Constructs a 'SelectOptions' with just the given 'Expr.OrderByExpr'.
+
+@since 0.10.0.0
 -}
 orderBy :: Expr.OrderByExpr -> SelectOptions
 orderBy order =
@@ -165,7 +193,9 @@ orderBy order =
     }
 
 {- |
-  Constructs a 'SelectOptions' that will apply the given limit
+  Constructs a 'SelectOptions' that will apply the given limit.
+
+@since 0.10.0.0
 -}
 limit :: Int -> SelectOptions
 limit limitValue =
@@ -174,7 +204,9 @@ limit limitValue =
     }
 
 {- |
-  Constructs a 'SelectOptions' that will apply the given offset
+  Constructs a 'SelectOptions' that will apply the given offset.
+
+@since 0.10.0.0
 -}
 offset :: Int -> SelectOptions
 offset offsetValue =
@@ -184,6 +216,8 @@ offset offsetValue =
 
 {- |
   Constructs a 'SelectOptions' with just the given 'GroupByClause'.
+
+@since 0.10.0.0
 -}
 groupBy :: Expr.GroupByExpr -> SelectOptions
 groupBy groupByExpr =

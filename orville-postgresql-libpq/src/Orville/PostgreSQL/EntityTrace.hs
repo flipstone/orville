@@ -9,6 +9,8 @@ License   : MIT
 Stability : Stable
 
 Run various actions with user supplied tracing.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.EntityTrace
   ( EntityTraceT,
@@ -42,6 +44,8 @@ import qualified Orville.PostgreSQL as O
  'insertEntityTraced' to perform tracing as part of their operation. An
  instance for 'ReaderT EntityTraceState' is provided which can be used via
  'runEntityTraceT'.
+
+@since 0.10.0.0
 -}
 class Monad m => MonadEntityTrace trace m | m -> trace where
   recordTraces :: [trace] -> m ()
@@ -71,6 +75,8 @@ applyConstructors runF (Constructors fs) =
   'insertEntityTraced' are used. Use 'mkTracedTable' to build a 'TracedTable'
   with no callbacks and then use 'addInsertTrace' and friends to register
   callbacks callbacks on the table.
+
+@since 0.10.0.0
 -}
 data TracedTable trace key writeEntity readEntity = TracedTable
   { _untracedTableDefinition :: O.TableDefinition (O.HasKey key) writeEntity readEntity
@@ -84,7 +90,9 @@ data TracedTable trace key writeEntity readEntity = TracedTable
   Constructs a 'TracedTable' that wraps the given 'O.TableDefinition' so that
   it can be used with functions such as 'insertEntityTraced'. The resulting
   'TracedTable' has no trace callbacks initially. You can 'addInsertTrace' and
-  similar functions ta add callbacks.
+  similar functions that add callbacks.
+
+@since 0.10.0.0
 -}
 mkTracedTable ::
   (readEntity -> key) ->
@@ -147,6 +155,8 @@ mkDeleteTraces tracedTable key mbDeletedEntity =
   to get access to the table definiton to use the regular untraced Orville
   functions without having to keep a separate reference to the untraced table
   around.
+
+@since 0.10.0.0
 -}
 untracedTableDefinition ::
   TracedTable trace key writeEntity readEntity ->
@@ -159,6 +169,8 @@ untracedTableDefinition =
   @trace@ items to be recorded for that insert. The trace building function
   will be passed the @writeEntity@ given to 'insertEntityTraced' as well as
   the @readEntity@ that is returned as a result of the insert.
+
+@since 0.10.0.0
 -}
 addInsertTrace ::
   (writeEntity -> readEntity -> [trace]) ->
@@ -176,6 +188,8 @@ addInsertTrace mkTraces tracedTable =
   'updateEntityTraced' as well as the any @readEntity@ that is returned as a
   result of the insert. If the update matches no rows in the database, 'Nothing'
   will be passed as the last argument to the trace building function.
+
+@since 0.10.0.0
 -}
 addUpdateTrace ::
   (readEntity -> writeEntity -> Maybe readEntity -> [trace]) ->
@@ -193,6 +207,8 @@ addUpdateTrace mkTraces tracedTable =
   any @readEntity@ that is returned as a result of the delete. If the delete
   matches no rows in the database, 'Nothing' will be passed as the last
   argument to the trace building function.
+
+@since 0.10.0.0
 -}
 addDeleteTrace ::
   (key -> Maybe readEntity -> [trace]) ->
@@ -210,6 +226,8 @@ addDeleteTrace mkTraces tracedTable =
 
   See 'runEntityTraceT' for a stock way to run actions using these trace
   operations and get access to the traces that are recorded.
+
+@since 0.10.0.0
 -}
 insertEntityTraced ::
   MonadEntityTrace trace m =>
@@ -233,6 +251,8 @@ insertEntityTraced tracedTable writeEntity = do
 
   See 'runEntityTraceT' for a stock way to run actions using these trace
   operations and get access to the traces that are recorded.
+
+@since 0.10.0.0
 -}
 updateEntityTraced ::
   MonadEntityTrace trace m =>
@@ -257,6 +277,8 @@ updateEntityTraced tracedTable oldEntity newEntity = do
 
   See 'runEntityTraceT' for a stock way to run actions using these trace
   operations and get access to the traces that are recorded.
+
+@since 0.10.0.0
 -}
 deleteEntityTraced ::
   MonadEntityTrace trace m =>
@@ -275,6 +297,8 @@ deleteEntityTraced tracedTable key = do
 {- |
   An 'EntityTraceState' is created by 'runEntityTraceT' to keep track of
   the state of traces that are to be returned when the function finishes.
+
+@since 0.10.0.0
 -}
 newtype EntityTraceState trace = EntityTraceState
   { _entityTraceStateRef :: IORef (RecordedTraces trace)
@@ -567,10 +591,13 @@ rollbackToSavepoint savepoint traceState = do
   transaction or savepoint is rolled-back any traces that had been recorded by
   'insertEntityTraced', 'updateEntityTrace', or 'deletedEntityTraced' are also
   rolled-back.
+
+@since 0.10.0.0
 -}
 type EntityTraceT trace =
   ReaderT (EntityTraceState trace)
 
+-- | @since 0.10.0.0
 instance O.MonadOrville m => MonadEntityTrace trace (ReaderT (EntityTraceState trace) m) where
   recordTraces =
     recordTracesInState ask
@@ -579,6 +606,7 @@ instance O.MonadOrville m => MonadEntityTrace trace (ReaderT (EntityTraceState t
     -- The 'untraced' argument must be explict here for GHC 9
     lift untraced
 
+-- | @since 0.10.0.0
 instance O.MonadOrville m => O.MonadOrville (ReaderT (EntityTraceState trace) m)
 
 {- |
@@ -613,6 +641,8 @@ recordTracesInState askTraceState traces = do
   successfully committed. If you wish to respond to those traces, you need to catch
   the exception inside the action given to 'runEntityTraceT' so that it can return
   the traces to you.
+
+@since 0.10.0.0
 -}
 runEntityTraceT ::
   MonadIO n =>
@@ -663,7 +693,10 @@ trackTransactions recorded event =
 -}
 newtype EntityTraceTransactionStateError
   = EntityTraceTransactionStateError String
-  deriving (Show)
+  deriving
+    ( -- | @since 0.10.0.0
+      Show
+    )
 
 beginTransactionStateError :: EntityTraceTransactionStateError
 beginTransactionStateError =
@@ -710,4 +743,5 @@ transactionStillOpenAtEndError =
   EntityTraceTransactionStateError
     "Finished runEntityTraceT with a transactions still open in the EntityTraceState."
 
+-- | @since 0.10.0.0
 instance Ex.Exception EntityTraceTransactionStateError

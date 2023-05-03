@@ -9,6 +9,8 @@ Stability : Stable
 
 Facilities for performing some database migrations automatically.
 See 'autoMigrateSchema' as a primary, high level entry point.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.AutoMigration
   ( autoMigrateSchema,
@@ -45,6 +47,8 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   index or constraint. The constructor functions below can be used to create
   items from other types (such as 'Orville.TableDefinition') to put them into
   a list to be used with 'autoMigrateSchema'.
+
+@since 0.10.0.0
 -}
 data SchemaItem where
   -- |
@@ -76,6 +80,8 @@ data SchemaItem where
 
   For example, a 'SchemaItem' constructed via 'schemaTable' gives @Table <table
   name>@.
+
+@since 0.10.0.0
 -}
 schemaItemSummary :: SchemaItem -> String
 schemaItemSummary item =
@@ -93,14 +99,21 @@ schemaItemSummary item =
   A single SQL statement that will be executed in order to migrate the database
   to the desired result. You can use 'generateMigrationSteps' to get a list
   of these yourself for inspection and debugging.
+
+@since 0.10.0.0
 -}
 newtype MigrationStep
   = MigrationStep RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 0.10.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   This type is used internally by Orville to order the migration steps after
   they have been created. It is not exposed outside this module.
+
+@since 0.10.0.0
 -}
 data MigrationStepWithType = MigrationStepWithType
   { migrationStepType :: StepType
@@ -123,6 +136,8 @@ mkMigrationStepWithType stepType sql =
   that the steps can be ordered in a sequence that is guaranteed to succeed.
   The order of the constructors below indicates the order in which steps will
   be run.
+
+@since 0.10.0.0
 -}
 data StepType
   = DropForeignKeys
@@ -132,17 +147,28 @@ data StepType
   | AddIndexes
   | AddUniqueConstraints
   | AddForeignKeys
-  deriving (Eq, Ord)
+  deriving
+    ( -- | @since 0.10.0.0
+      Eq
+    , -- | @since 0.10.0.0
+      Ord
+    )
 
 {- |
   A 'MigrationDataError' will be thrown from the migration functions if data
   necessary for migration cannot be found.
+
+@since 0.10.0.0
 -}
 data MigrationDataError
   = UnableToDiscoverCurrentSchema String
   | PgCatalogInvariantViolated String
-  deriving (Show)
+  deriving
+    ( -- | @since 0.10.0.0
+      Show
+    )
 
+-- | @since 0.10.0.0
 instance Exception MigrationDataError
 
 {- |
@@ -151,6 +177,8 @@ instance Exception MigrationDataError
   necessary.  If any changes need to be made, this function executes. You can
   call 'generateMigrationSteps' and 'executeMigrationSteps' yourself if you
   want to have more control over the process.
+
+@since 0.10.0.0
 -}
 autoMigrateSchema :: Orville.MonadOrville m => [SchemaItem] -> m ()
 autoMigrateSchema schemaItems = do
@@ -165,6 +193,8 @@ autoMigrateSchema schemaItems = do
 
   You can execute the 'MigrationStep's yourself using 'Orville.executeVoid',
   or use the 'executeMigrationSteps' convenience function.
+
+@since 0.10.0.0
 -}
 generateMigrationSteps :: Orville.MonadOrville m => [SchemaItem] -> m [MigrationStep]
 generateMigrationSteps =
@@ -191,6 +221,8 @@ generateMigrationStepsWithoutTransaction schemaItems = do
 {- |
   A convenience function for executing a list of 'MigrationStep's that has
   be previously devised via 'generateMigrationSteps'.
+
+@since 0.10.0.0
 -}
 executeMigrationSteps :: Orville.MonadOrville m => [MigrationStep] -> m ()
 executeMigrationSteps =
@@ -274,6 +306,8 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
   the table already exists in its schema. Multiple steps may be required to
   create the table if foreign keys exist to that reference other tables, which
   may not have been created yet.
+
+@since 0.10.0.0
 -}
 mkCreateTableSteps ::
   PgCatalog.NamespaceName ->
@@ -313,6 +347,8 @@ mkCreateTableSteps currentNamespace tableDef =
   This function uses the given relation description to determine what
   alterations need to be performed. If there is nothing to do, an empty list
   will be returned.
+
+@since 0.10.0.0
 -}
 mkAlterTableSteps ::
   PgCatalog.NamespaceName ->
@@ -399,6 +435,8 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
   dropping constraints) into migration steps based on their 'StepType'. Actions
   with the same 'StepType' will be performed togethir in a single @ALTER TABLE@
   statement.
+
+@since 0.10.0.0
 -}
 mkConstraintSteps ::
   Expr.Qualified Expr.TableName ->
@@ -421,6 +459,8 @@ mkConstraintSteps tableName actions =
 {- |
   If there are any alter table actions for adding or removing columns, creates a migration
   step to perform them. Otherwise returns an empty list.
+
+@since 0.10.0.0
 -}
 mkAlterColumnSteps ::
   Expr.Qualified Expr.TableName ->
@@ -437,6 +477,8 @@ mkAlterColumnSteps tableName actionExprs =
   Builds 'Expr.AlterTableAction' expressions to bring the database schema in
   line with the given 'Orville.FieldDefinition', or none if no change is
   required.
+
+@since 0.10.0.0
 -}
 mkAddAlterColumnActions ::
   PgCatalog.RelationDescription ->
@@ -531,6 +573,8 @@ mkAddAlterColumnActions relationDesc fieldDef =
   is only responsible for handling cases where the attribute does not have a
   correspending 'Orville.FieldDefinition'. See 'mkFieldActions' for those
   cases.
+
+@since 0.10.0.0
 -}
 mkDropColumnActions ::
   Orville.TableDefinition key readEntity writeEntity ->
@@ -550,6 +594,8 @@ mkDropColumnActions tableDef attr = do
   to discover whether a constraint from a table definition matches a constraint
   found to already exist in the database because constraints in the database
   always have schema names included with them.
+
+@since 0.10.0.0
 -}
 setDefaultSchemaNameOnConstraintKey ::
   PgCatalog.NamespaceName ->
@@ -575,6 +621,8 @@ setDefaultSchemaNameOnConstraintKey currentNamespace constraintKey =
 {- |
   Builds 'Expr.AlterTableAction' expressions to create the given table
   constraint if it does not exist.
+
+@since 0.10.0.0
 -}
 mkAddConstraintActions ::
   PgCatalog.NamespaceName ->
@@ -597,6 +645,8 @@ mkAddConstraintActions currentNamespace existingConstraints constraintDef =
 {- |
   Builds 'Expr.AlterTableAction' expressions to drop the given table
   constraint if it should not exist.
+
+@since 0.10.0.0
 -}
 mkDropConstraintActions ::
   Set.Set Orville.ConstraintMigrationKey ->
@@ -632,6 +682,8 @@ mkDropConstraintActions constraintsToKeep constraint =
 
   If the description is for a kind of constraint that Orville does not support,
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 pgConstraintMigrationKey ::
   PgCatalog.ConstraintDescription ->
@@ -687,6 +739,8 @@ pgConstraintMigrationKey constraintDesc =
 
 {- |
   Builds migration steps to create an index if it does not exist.
+
+@since 0.10.0.0
 -}
 mkAddIndexSteps ::
   Set.Set Orville.IndexMigrationKey ->
@@ -702,6 +756,8 @@ mkAddIndexSteps existingIndexes tableName indexDef =
 
 {- |
   Builds migration steps to drop an index if it should not exist.
+
+@since 0.10.0.0
 -}
 mkDropIndexSteps ::
   Set.Set Orville.IndexMigrationKey ->
@@ -738,6 +794,8 @@ mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
   Foreign key constraints also have a supporting index OID in @pg_catalog@, but
   this index is not automatically created due to the constraint, so we don't
   return the index's OID for that case.
+
+@since 0.10.0.0
 -}
 pgConstraintImpliedIndexOid :: PgCatalog.PgConstraint -> Maybe LibPQ.Oid
 pgConstraintImpliedIndexOid pgConstraint =
@@ -761,6 +819,8 @@ pgConstraintImpliedIndexOid pgConstraint =
 
   If the description includes expressions as members of the index rather than
   simple attributes, 'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 pgIndexMigrationKeys ::
   PgCatalog.IndexDescription ->
@@ -909,7 +969,7 @@ currentNamespaceQuery =
             -- current_schema is a special reserved word in postgresql. If you
             -- put it in quotes it tries to treat it as a regular column name,
             -- which then can't be found as a column in the query.
-            (RawSql.unsafeFromRawSql $ RawSql.fromString "current_schema")
+            (RawSql.unsafeSqlExpression "current_schema")
             (Orville.fieldColumnName PgCatalog.namespaceNameField)
         ]
     )

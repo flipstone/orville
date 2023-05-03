@@ -4,6 +4,8 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Cursor
   ( withCursor,
@@ -53,6 +55,8 @@ import qualified Orville.PostgreSQL.Monad as Monad
 
   See 'withCursor', 'fetch' and 'move' for details on creating and using
   'Cursor' values.
+
+@since 0.10.0.0
 -}
 data Cursor readEntity where
   Cursor ::
@@ -72,6 +76,8 @@ data Cursor readEntity where
   We recommend you use this instead of 'declareCursor' and 'closeCursor'
   unless you need to control the cursor resource acquisition and release
   yourself and can do so safely.
+
+@since 0.10.0.0
 -}
 withCursor ::
   Monad.MonadOrville m =>
@@ -96,6 +102,8 @@ withCursor scrollExpr holdExpr select useCursor =
   See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
   about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
   behave in general.
+
+@since 0.10.0.0
 -}
 declareCursor ::
   Monad.MonadOrville m =>
@@ -118,6 +126,8 @@ declareCursor scrollExpr holdExpr =
   This should be used to close any cursors you open via 'declareCursor',
   thought we recommend you use 'withCursor' instead to ensure that any
   opened cursor are closed in the event of an exception.
+
+@since 0.10.0.0
 -}
 closeCursor ::
   Monad.MonadOrville m =>
@@ -133,6 +143,8 @@ closeCursor (Cursor _ cursorName) =
   Fetch rows from a cursor according to the 'Expr.CursorDirection' given. See
   @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
   effect of fetch and the meanings of cursor directions to PostgreSQL.
+
+@since 0.10.0.0
 -}
 fetch ::
   Monad.MonadOrville m =>
@@ -149,6 +161,8 @@ fetch direction (Cursor marshaller cursorName) =
   Moves a cursor according to the 'Expr.CursorDirection' given. See
   @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
   effect of move and the meanings of cursor directions to PostgreSQL.
+
+@since 0.10.0.0
 -}
 move ::
   Monad.MonadOrville m =>

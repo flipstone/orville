@@ -317,7 +317,7 @@ module Orville.PostgreSQL
     Execute.executeVoid,
     QueryType.QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery),
 
-    -- * [sqlcommenter](https://google.github.io/sqlcommenter/) support.
+    -- * [sqlcommenter](https://google.github.io/sqlcommenter/) support
     SqlCommenter.SqlCommenterAttributes,
   )
 where

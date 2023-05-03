@@ -2,6 +2,8 @@
 Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Execute
   ( executeAndDecode,
@@ -35,6 +37,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
   If the query fails or if any row is unable to be decoded by the marshaller,
   an exception will be raised.
+
+@since 0.10.0.0
 -}
 executeAndDecode ::
   (MonadOrville m, RawSql.SqlExpression sql) =>
@@ -58,6 +62,8 @@ executeAndDecode queryType sql marshaller = do
   wil be raised after the query is executed when the result is read.
 
   If the query fails an exception will be raised.
+
+@since 0.10.0.0
 -}
 executeAndReturnAffectedRows ::
   (MonadOrville m, RawSql.SqlExpression sql) =>
@@ -73,6 +79,8 @@ executeAndReturnAffectedRows queryType sql = do
   that have been added to the 'OrvilleState' will be called.
 
   If the query fails an exception will be raised.
+
+@since 0.10.0.0
 -}
 executeVoid ::
   (MonadOrville m, RawSql.SqlExpression sql) =>
@@ -90,6 +98,8 @@ executeVoid queryType sql = do
 
   If the query fails or if any row is unable to be decoded by the marshaller,
   an exception will be raised.
+
+@since 0.10.0.0
 -}
 executeAndDecodeIO ::
   RawSql.SqlExpression sql =>
@@ -128,6 +138,8 @@ executeAndDecodeIO queryType sql marshaller orvilleState conn = do
   wil be raised after the query is executed when the result is read.
 
   If the query fails an exception will be raised.
+
+@since 0.10.0.0
 -}
 executeAndReturnAffectedRowsIO ::
   RawSql.SqlExpression sql =>
@@ -156,6 +168,8 @@ executeAndReturnAffectedRowsIO queryType sql orvilleState conn = do
   that have been added to the 'OrvilleState' will be called.
 
   If the query fails an exception will be raised.
+
+@since 0.10.0.0
 -}
 executeVoidIO ::
   RawSql.SqlExpression sql =>
@@ -191,9 +205,15 @@ executeWithCallbacksIO queryType sql orvilleState conn =
   Thrown by 'executeAndReturnAffectedRows' and 'executeAndReturnAffectedRowsIO'
   if the number of affected rows cannot be successfully read from the LibPQ
   command result.
+
+@since 0.10.0.0
 -}
 newtype AffectedRowsDecodingError
   = AffectedRowsDecodingError String
-  deriving (Show)
+  deriving
+    ( -- | @since 0.10.0.0
+      Show
+    )
 
+-- | @since 0.10.0.0
 instance Exception AffectedRowsDecodingError

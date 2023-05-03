@@ -5,6 +5,8 @@
 Copyright : Flipstone Technology Partners 2021
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Insert
   ( Insert,
@@ -30,6 +32,8 @@ import Orville.PostgreSQL.Schema (TableDefinition, mkInsertExpr, tableMarshaller
 {- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
   'SqlMarshaller' bound to it that, when the insert returns data from the database, will be used to
   decode the database result set when it is executed.
+
+@since 0.10.0.0
 -}
 data Insert readEntity returningClause where
   Insert ::
@@ -42,6 +46,8 @@ data Insert readEntity returningClause where
   Extracts the query that will be run when the insert is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
+
+@since 0.10.0.0
 -}
 insertToInsertExpr :: Insert readEntity returningClause -> Expr.InsertExpr
 insertToInsertExpr (Insert _ expr) = expr
@@ -49,7 +55,9 @@ insertToInsertExpr (InsertReturning _ expr) = expr
 
 {- |
   Excutes the database query for the 'Insert' and returns the number of rows
-  affected by the query
+  affected by the query.
+
+@since 0.10.0.0
 -}
 executeInsert ::
   Monad.MonadOrville m =>
@@ -60,6 +68,8 @@ executeInsert (Insert _ expr) =
 
 {- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
   were just inserted) as returned via a RETURNING clause.
+
+@since 0.10.0.0
 -}
 executeInsertReturnEntities ::
   Monad.MonadOrville m =>
@@ -71,6 +81,8 @@ executeInsertReturnEntities (InsertReturning marshaller expr) =
 {- |
   Builds an 'Insert' that will insert all of the writeable columns described in the
   'TableDefinition' without returning the data as seen by the database.
+
+@since 0.10.0.0
 -}
 insertToTable ::
   TableDefinition key writeEntity readEntity ->
@@ -83,6 +95,8 @@ insertToTable =
   Builds an 'Insert' that will insert all of the writeable columns described in the
   'TableDefinition' and returning the data as seen by the database. This is useful for getting
   database managed columns such as auto-incrementing identifiers and sequences.
+
+@since 0.10.0.0
 -}
 insertToTableReturning ::
   TableDefinition key writeEntity readEntity ->
@@ -111,6 +125,8 @@ insertTable returningOption tableDef entities =
   a raw 'Expr.InsertExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.InsertExpr'. This level of interface does not provide an automatic enforcement of the
   expectation, however failure is likely if that is not met.
+
+@since 0.10.0.0
 -}
 rawInsertExpr :: ReturningOption returningClause -> AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity returningClause
 rawInsertExpr WithReturning = InsertReturning

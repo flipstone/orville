@@ -72,7 +72,7 @@ deriveColumn =
 
 deriveColumnAs :: ValueExpression -> ColumnName -> DerivedColumn
 deriveColumnAs valueExpr asColumn =
-  DerivedColumn $
+  DerivedColumn
     ( RawSql.toRawSql valueExpr
         <> RawSql.fromString " AS "
         <> RawSql.toRawSql asColumn
@@ -97,13 +97,13 @@ tableExpr
   maybeGroupByClause
   maybeLimitExpr
   maybeOffsetExpr =
-    TableExpr $
-      RawSql.intercalate RawSql.space $
-        (RawSql.toRawSql tableName) :
-        catMaybes
-          [ RawSql.toRawSql <$> maybeWhereClause
-          , RawSql.toRawSql <$> maybeOrderByClause
-          , RawSql.toRawSql <$> maybeGroupByClause
-          , RawSql.toRawSql <$> maybeLimitExpr
-          , RawSql.toRawSql <$> maybeOffsetExpr
-          ]
+    TableExpr
+      . RawSql.intercalate RawSql.space
+      $ (RawSql.toRawSql tableName) :
+      catMaybes
+        [ RawSql.toRawSql <$> maybeWhereClause
+        , RawSql.toRawSql <$> maybeOrderByClause
+        , RawSql.toRawSql <$> maybeGroupByClause
+        , RawSql.toRawSql <$> maybeLimitExpr
+        , RawSql.toRawSql <$> maybeOffsetExpr
+        ]

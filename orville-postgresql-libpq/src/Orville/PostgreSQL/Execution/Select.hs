@@ -5,6 +5,8 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Select
   ( Select,
@@ -30,6 +32,8 @@ import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
   Represents a @SELECT@ statement that can be executed against a database. A
   'Select' has a 'SqlMarshaller' bound to it that will be used to decode the
   database result set when it is executed.
+
+@since 0.10.0.0
 -}
 data Select readEntity where
   Select :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.QueryExpr -> Select readEntity
@@ -38,6 +42,8 @@ data Select readEntity where
   Extracts the query that will be run when the select is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
+
+@since 0.10.0.0
 -}
 selectToQueryExpr :: Select readEntity -> Expr.QueryExpr
 selectToQueryExpr (Select _ query) = query
@@ -45,6 +51,8 @@ selectToQueryExpr (Select _ query) = query
 {- |
   Excutes the database query for the 'Select' and uses its 'SqlMarshaller' to
   decode the result set.
+
+@since 0.10.0.0
 -}
 executeSelect :: Monad.MonadOrville m => Select row -> m [row]
 executeSelect =
@@ -54,6 +62,8 @@ executeSelect =
   Runs a function allowing it to use the data elements containted within the
   'Select' it pleases. The marshaller that the function is provided can be use
   to decode results from the query.
+
+@since 0.10.0.0
 -}
 useSelect ::
   ( forall writeEntity.
@@ -72,6 +82,8 @@ useSelect f (Select marshaller query) =
   name and columns are all read from the 'TableDefinition'. If the table is
   being managed with Orville auto migrations, this will match the schema in the
   database.
+
+@since 0.10.0.0
 -}
 selectTable ::
   TableDefinition key writeEntity readEntity ->
@@ -87,6 +99,8 @@ selectTable tableDef =
 
   This function is useful for query a subset of table columns using a custom
   marshaller.
+
+@since 0.10.0.0
 -}
 selectMarshalledColumns ::
   AnnotatedSqlMarshaller writeEntity readEntity ->
@@ -111,6 +125,8 @@ selectMarshalledColumns marshaller =
   desires. If Orville does not support building the 'Expr.SelectList' you need
   using any of the expression building functions, you can resort to
   @RawSql.fromRawSql@ as an escape hatch to build the 'Expr.SelectList' here.
+
+@since 0.10.0.0
 -}
 selectSelectList ::
   Expr.SelectList ->
@@ -142,6 +158,8 @@ selectSelectList selectList marshaller qualifiedTableName selectOptions =
   This is the lowest level of escape hatch available for 'Select'. The caller
   can build any query that Orville supports using the expression building
   functions, or use @RawSql.fromRawSql@ to build a raw 'Expr.QueryExpr'.
+
+@since 0.10.0.0
 -}
 rawSelectQueryExpr ::
   AnnotatedSqlMarshaller writeEntity readEntity ->

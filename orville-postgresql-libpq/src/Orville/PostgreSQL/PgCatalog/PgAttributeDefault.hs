@@ -74,6 +74,6 @@ attributeDefaultAttributeNumberField =
 attributeDefaultExpressionField :: Orville.SyntheticField T.Text
 attributeDefaultExpressionField =
   Orville.syntheticField
-    (RawSql.unsafeFromRawSql $ RawSql.fromString "pg_get_expr(adbin,adrelid)")
+    (RawSql.unsafeSqlExpression "pg_get_expr(adbin,adrelid)")
     "expression"
     SqlValue.toText

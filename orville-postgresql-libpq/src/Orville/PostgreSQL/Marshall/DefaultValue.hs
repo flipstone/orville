@@ -118,7 +118,7 @@ booleanDefault bool =
         case bool of
           True -> "true"
           False -> "false"
-   in DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromString $ pgString
+   in DefaultValue $ RawSql.unsafeSqlExpression pgString
 
 {- |
   Builds a default value from a 'T.Text', for use with unbounded, bounded
@@ -173,10 +173,7 @@ utcTimestampDefault utcTime =
 -}
 currentUTCTimestampDefault :: DefaultValue Time.UTCTime
 currentUTCTimestampDefault =
-  DefaultValue
-    . RawSql.unsafeFromRawSql
-    . RawSql.fromString
-    $ "now()"
+  DefaultValue $ RawSql.unsafeSqlExpression "now()"
 
 {- |
   Builds a default value from a 'Time.LocalTime' for use with local timestamp fields.
@@ -201,10 +198,7 @@ localTimestampDefault localTime =
 -}
 currentLocalTimestampDefault :: DefaultValue Time.LocalTime
 currentLocalTimestampDefault =
-  DefaultValue
-    . RawSql.unsafeFromRawSql
-    . RawSql.fromString
-    $ "('now'::text)::timestamp without time zone"
+  DefaultValue $ RawSql.unsafeSqlExpression "('now'::text)::timestamp without time zone"
 
 {- |
   Coerce's a 'DefaultValue' so that it can be used with field definitions of

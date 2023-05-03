@@ -4,6 +4,8 @@
 Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Delete
   ( Delete,
@@ -27,6 +29,8 @@ import Orville.PostgreSQL.Schema (TableDefinition, mkTableReturningClause, table
 {- | Represents a @DELETE@ statement that can be executed against a database. A 'Delete' has a
   'SqlMarshaller' bound to it that, when the delete returns data from the database, will be used to
   decode the database result set when it is executed.
+
+@since 0.10.0.0
 -}
 data Delete readEntity returningClause where
   Delete ::
@@ -38,6 +42,8 @@ data Delete readEntity returningClause where
   Extracts the query that will be run when the delete is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
+
+@since 0.10.0.0
 -}
 deleteFromDeleteExpr :: Delete readEntity returningClause -> Expr.DeleteExpr
 deleteFromDeleteExpr (Delete expr) = expr
@@ -46,6 +52,8 @@ deleteFromDeleteExpr (DeleteReturning _ expr) = expr
 {- |
   Excutes the database query for the 'Delete' and returns the number of
   rows affected by the query.
+
+@since 0.10.0.0
 -}
 executeDelete ::
   Monad.MonadOrville m =>
@@ -56,6 +64,8 @@ executeDelete (Delete expr) =
 
 {- | Excutes the database query for the 'Delete' and uses its 'SqlMarshaller' to decode the rows (that
   were just deleteed) as returned via a RETURNING clause.
+
+@since 0.10.0.0
 -}
 executeDeleteReturnEntities ::
   Monad.MonadOrville m =>
@@ -67,6 +77,8 @@ executeDeleteReturnEntities (DeleteReturning marshaller expr) =
 {- |
   Builds a 'Delete' that will delete all of the writeable columns described in the
   'TableDefinition' without returning the data as seen by the database.
+
+@since 0.10.0.0
 -}
 deleteFromTable ::
   TableDefinition key writeEntity readEntity ->
@@ -79,6 +91,8 @@ deleteFromTable =
   Builds a 'Delete' that will delete all of the writeable columns described in the
   'TableDefinition' and returning the data as seen by the database. This is useful for getting
   database managed columns such as auto-incrementing identifiers and sequences.
+
+@since 0.10.0.0
 -}
 deleteFromTableReturning ::
   TableDefinition key writeEntity readEntity ->
@@ -112,6 +126,8 @@ deleteTable returningOption tableDef whereCondition =
   a raw 'Expr.DeleteExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.DeleteExpr'. This level of interface does not provide an automatic enforcement of the
   expectation, however failure is likely if that is not met.
+
+@since 0.10.0.0
 -}
 rawDeleteExpr :: ReturningOption returningClause -> AnnotatedSqlMarshaller writeEntity readEntity -> Expr.DeleteExpr -> Delete readEntity returningClause
 rawDeleteExpr WithReturning marshaller = DeleteReturning marshaller

@@ -1,9 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2023
+Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.ExecutionResult
   ( ExecutionResult (..),
@@ -25,17 +27,35 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   A trivial wrapper for `Int` to help keep track of column vs row number
+
+@since 0.10.0.0
 -}
 newtype Column
   = Column Int
-  deriving (Eq, Ord, Enum)
+  deriving
+    ( -- | @since 0.10.0.0
+      Eq
+    , -- | @since 0.10.0.0
+      Ord
+    , -- | @since 0.10.0.0
+      Enum
+    )
 
 {- |
   A trivial wrapper for `Int` to help keep track of column vs row number
+
+@since 0.10.0.0
 -}
 newtype Row
   = Row Int
-  deriving (Eq, Ord, Enum)
+  deriving
+    ( -- | @since 0.10.0.0
+      Eq
+    , -- | @since 0.10.0.0
+      Ord
+    , -- | @since 0.10.0.0
+      Enum
+    )
 
 {- |
   `ExecutionResult` is a common interface for types that represent a result
@@ -44,6 +64,8 @@ newtype Row
   may be useful as well if you are writing custom code for decoding result
   sets and want to test aspects of the decoding that don't require a real
   database.
+
+@since 0.10.0.0
 -}
 class ExecutionResult result where
   maxRowNumber :: result -> IO (Maybe Row)
@@ -51,6 +73,7 @@ class ExecutionResult result where
   columnName :: result -> Column -> IO (Maybe BS.ByteString)
   getValue :: result -> Row -> Column -> IO SqlValue
 
+-- | @since 0.10.0.0
 instance ExecutionResult LibPQ.Result where
   maxRowNumber result = do
     rowCount <- fmap fromEnum (LibPQ.ntuples result)
@@ -78,6 +101,8 @@ instance ExecutionResult LibPQ.Result where
   `ExecutionResult`.  This is mostly useful for writing automated tests that
   can assume a result set has been loaded and just need to test decoding the
   results.
+
+@since 0.10.0.0
 -}
 data FakeLibPQResult = FakeLibPQResult
   { fakeLibPQColumns :: Map.Map Column BS.ByteString
@@ -89,6 +114,8 @@ data FakeLibPQResult = FakeLibPQResult
   the values for each row by their position in list. Any missing values (e.g.
   because a row is shorter than the heeader list) are treated as a SQL Null
   value.
+
+@since 0.10.0.0
 -}
 mkFakeLibPQResult ::
   -- | The column names for the result set
@@ -126,6 +153,7 @@ fakeLibPQMaxColumn result =
         _ ->
           Just (maximum maxColumnsByRow)
 
+-- | @since 0.10.0.0
 instance ExecutionResult FakeLibPQResult where
   maxRowNumber = pure . fakeLibPQMaxRow
   maxColumnNumber = pure . fakeLibPQMaxColumn
@@ -144,6 +172,8 @@ fakeLibPQGetValue result rowNumber columnNumber =
 
 {- | 'readRows' will consume the 'LibPQ.Result', resulting in the collection of name for the field and
   'SqlValue' for each field in a row and for each row.
+
+@since 0.10.0.0
 -}
 readRows :: LibPQ.Result -> IO [[(Maybe BS.ByteString, SqlValue)]]
 readRows res = do

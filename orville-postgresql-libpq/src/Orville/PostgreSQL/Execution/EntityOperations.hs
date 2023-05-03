@@ -2,6 +2,8 @@
 Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.EntityOperations
   ( insertEntity,
@@ -40,6 +42,8 @@ import qualified Orville.PostgreSQL.Schema as Schema
 {- |
   Inserts a entity into the specified table. Returns the number of rows
   affected by the query.
+
+@since 0.10.0.0
 -}
 insertEntity ::
   Monad.MonadOrville m =>
@@ -55,6 +59,8 @@ insertEntity entityTable entity =
 
   You can use this function to obtain any column values filled in by the
   database, such as auto-incrementing ids.
+
+@since 0.10.0.0
 -}
 insertAndReturnEntity ::
   Monad.MonadOrville m =>
@@ -71,6 +77,8 @@ insertAndReturnEntity entityTable entity = do
 {- |
   Inserts a non-empty list of entities into the specified table. Returns the
   number of rows affected by the query.
+
+@since 0.10.0.0
 -}
 insertEntities ::
   Monad.MonadOrville m =>
@@ -86,6 +94,8 @@ insertEntities tableDef =
 
   You can use this function to obtain any column values filled in by the
   database, such as auto-incrementing ids.
+
+@since 0.10.0.0
 -}
 insertAndReturnEntities ::
   Monad.MonadOrville m =>
@@ -98,6 +108,8 @@ insertAndReturnEntities tableDef =
 {- |
   Updates the row with the given key in with the data given by 'writeEntity'.
   Returns the number of rows affected by the query.
+
+@since 0.10.0.0
 -}
 updateEntity ::
   Monad.MonadOrville m =>
@@ -119,6 +131,8 @@ updateEntity tableDef key writeEntity =
 
   You can use this function to obtain any column values computer by the database
   during update, including columns with triggers attached to them.
+
+@since 0.10.0.0
 -}
 updateAndReturnEntity ::
   Monad.MonadOrville m =>
@@ -141,6 +155,8 @@ updateAndReturnEntity tableDef key writeEntity =
   given where condition. The easiest way to construct a 'Expr.SetClause' is
   via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
   Returns the number of rows affected by the query.
+
+@since 0.10.0.0
 -}
 updateFields ::
   Monad.MonadOrville m =>
@@ -155,6 +171,8 @@ updateFields tableDef setClauses mbWhereCondition =
 {- |
   Like 'updateFields', but uses a @RETURNING@ clause to return the updated
   version of any rows that were affected by the update.
+
+@since 0.10.0.0
 -}
 updateFieldsAndReturnEntities ::
   Monad.MonadOrville m =>
@@ -169,6 +187,8 @@ updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
 {- |
   Deletes the row with the given key. Returns the number of rows affected
   by the query.
+
+@since 0.10.0.0
 -}
 deleteEntity ::
   Monad.MonadOrville m =>
@@ -186,6 +206,8 @@ deleteEntity entityTable key =
 {- |
   Deletes the row with the given key, returning the row that was deleted.
   If no row matches the given key, 'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 deleteAndReturnEntity ::
   Monad.MonadOrville m =>
@@ -207,6 +229,8 @@ deleteAndReturnEntity entityTable key = do
 {- |
   Deletes all rows in the given table that match the where condition. Returns
   the number of rows affected by the query.
+
+@since 0.10.0.0
 -}
 deleteEntities ::
   Monad.MonadOrville m =>
@@ -220,6 +244,8 @@ deleteEntities entityTable whereCondition =
 {- |
   Deletes all rows in the given table that match the where condition, returning
   the rows that were deleted.
+
+@since 0.10.0.0
 -}
 deleteAndReturnEntities ::
   Monad.MonadOrville m =>
@@ -234,6 +260,8 @@ deleteAndReturnEntities entityTable whereCondition =
   Finds all the entities in the given table according to the specified
   'SelectOptions.SelectOptions', which may include where conditions to
   match, ordering specifications, etc.
+
+@since 0.10.0.0
 -}
 findEntitiesBy ::
   Monad.MonadOrville m =>
@@ -249,6 +277,8 @@ findEntitiesBy entityTable selectOptions =
   the first item from the list. Usually when you use this you will want to
   provide an order by clause in the 'SelectOptions.SelectOptions' because the
   database will not guarantee ordering.
+
+@since 0.10.0.0
 -}
 findFirstEntityBy ::
   Monad.MonadOrville m =>
@@ -261,6 +291,8 @@ findFirstEntityBy entityTable selectOptions =
 
 {- |
   Finds a single entity by the table's primary key value.
+
+@since 0.10.0.0
 -}
 findEntity ::
   Monad.MonadOrville m =>
@@ -277,14 +309,18 @@ findEntity entityTable key =
 {- |
   Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the
   'Schema.TableDefinition' they are given has no columns to update.
+
+@since 0.10.0.0
 -}
 newtype EmptyUpdateError
   = EmptyUpdateError Schema.TableIdentifier
 
+-- | @since 0.10.0.0
 instance Show EmptyUpdateError where
   show (EmptyUpdateError tableId) =
     "EmptyUdateError: "
       <> Schema.tableIdToString tableId
       <> " has no columns to update."
 
+-- | @since 0.10.0.0
 instance Exception EmptyUpdateError

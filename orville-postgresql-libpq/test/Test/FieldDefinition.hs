@@ -345,7 +345,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
       Expr.insertExpr
         testTable
         Nothing
-        (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
+        (RawSql.unsafeSqlExpression "VALUES(DEFAULT)")
         Nothing
 
     result <-
@@ -382,7 +382,7 @@ runDefaultValueInsertOnlyTest pool testCase defaultValue =
       Expr.insertExpr
         testTable
         Nothing
-        (RawSql.unsafeFromRawSql (RawSql.fromString "VALUES(DEFAULT)"))
+        (RawSql.unsafeSqlExpression "VALUES(DEFAULT)")
         Nothing
 
 testTable :: Expr.Qualified Expr.TableName

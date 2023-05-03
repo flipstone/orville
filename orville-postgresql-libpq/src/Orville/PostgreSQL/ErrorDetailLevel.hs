@@ -2,6 +2,8 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.ErrorDetailLevel
   ( ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
@@ -24,6 +26,8 @@ where
 
   Information will be redacted from error messages for any of the fields
   that are set to @False@.
+
+@since 0.10.0.0
 -}
 data ErrorDetailLevel = ErrorDetailLevel
   { includeErrorMessage :: Bool
@@ -31,11 +35,16 @@ data ErrorDetailLevel = ErrorDetailLevel
   , includeRowIdentifierValues :: Bool
   , includeNonIdentifierValues :: Bool
   }
-  deriving (Show)
+  deriving
+    ( -- | @since 0.10.0.0
+      Show
+    )
 
 {- |
   A minimal 'ErrorDetailLevel' where everything all information (including
   any situationally-specific error message!) is redacted from error messages.
+
+@since 0.10.0.0
 -}
 minimalErrorDetailLevel :: ErrorDetailLevel
 minimalErrorDetailLevel =
@@ -51,6 +60,8 @@ minimalErrorDetailLevel =
   information such as the error message, schema names and row identifiers, but
   avoids untentionally leaking non-identifier values from the database by
   redacting them.
+
+@since 0.10.0.0
 -}
 defaultErrorDetailLevel :: ErrorDetailLevel
 defaultErrorDetailLevel =
@@ -66,6 +77,8 @@ defaultErrorDetailLevel =
   messages. Error messages will include values from the database for any
   columns are involved in a decoding failure, including some which you may
   not have intended to expose through error message. Use with caution.
+
+@since 0.10.0.0
 -}
 maximalErrorDetailLevel :: ErrorDetailLevel
 maximalErrorDetailLevel =
@@ -79,6 +92,8 @@ maximalErrorDetailLevel =
 {- |
   Redacts given the error message string if the 'ErrorDetailLevel' indicates
   that error messages should be redacted.
+
+@since 0.10.0.0
 -}
 redactErrorMessage :: ErrorDetailLevel -> String -> String
 redactErrorMessage detailLevel message =
@@ -89,6 +104,8 @@ redactErrorMessage detailLevel message =
 {- |
   Redacts given the schema name string if the 'ErrorDetailLevel' indicates
   that schema names should be redacted.
+
+@since 0.10.0.0
 -}
 redactSchemaName :: ErrorDetailLevel -> String -> String
 redactSchemaName detailLevel schemaName =
@@ -99,6 +116,8 @@ redactSchemaName detailLevel schemaName =
 {- |
   Redacts given the identifier value string if the 'ErrorDetailLevel' indicates
   that identifier values should be redacted.
+
+@since 0.10.0.0
 -}
 redactIdentifierValue :: ErrorDetailLevel -> String -> String
 redactIdentifierValue detailLevel idValue =
@@ -109,6 +128,8 @@ redactIdentifierValue detailLevel idValue =
 {- |
   Redacts given the non-identifier value string if the 'ErrorDetailLevel' indicates
   that non-identifier values should be redacted.
+
+@since 0.10.0.0
 -}
 redactNonIdentifierValue :: ErrorDetailLevel -> String -> String
 redactNonIdentifierValue detailLevel nonIdValue =

@@ -1,6 +1,6 @@
 {- |
 
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
 
 The funtions in this module are named with the intent that it is imported
@@ -39,6 +39,7 @@ module Orville.PostgreSQL.Raw.RawSql
 
     -- * Generic interface for generating sql
     SqlExpression (toRawSql, unsafeFromRawSql),
+    unsafeSqlExpression,
     toBytesAndParams,
     toExampleBytes,
     Quoting (Quoting, quoteStringLiteral, quoteIdentifier),
@@ -71,6 +72,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   from smaller parts and then executing them. It also supports using placeholder
   values to pass parameters with a query without having to interpolate them
   as part of the actual sql state and being exposed to sql injection.
+
+@since 0.10.0.0
 -}
 data RawSql
   = SqlSection BSB.Builder
@@ -95,6 +98,14 @@ class SqlExpression a where
 instance SqlExpression RawSql where
   toRawSql = id
   unsafeFromRawSql = id
+
+{- | A conveinence function for creating an arbitrary 'SqlExpression' from a 'String'. Great care should be exercised in use of this function as it cannot provide any sort of correctness guarantee.
+
+@since 0.10.0.2
+-}
+unsafeSqlExpression :: SqlExpression a => String -> a
+unsafeSqlExpression =
+  unsafeFromRawSql . fromString
 
 {- |
   Provides procedures for quoting parts of a raw SQL query so that they can be

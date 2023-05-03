@@ -75,9 +75,9 @@ prop_cursorCloseAll =
           cursorName = Expr.fromIdentifier $ Expr.identifier "testcursor"
 
           declare =
-            RawSql.executeVoid connection $
-              Expr.declare cursorName Nothing (Just Expr.withHold) $
-                RawSql.unsafeFromRawSql $ RawSql.fromString "SELECT 1"
+            RawSql.executeVoid connection
+              . Expr.declare cursorName Nothing (Just Expr.withHold)
+              $ RawSql.unsafeSqlExpression "SELECT 1"
 
           close =
             RawSql.executeVoid connection $ Expr.close (Left Expr.allCursors)
