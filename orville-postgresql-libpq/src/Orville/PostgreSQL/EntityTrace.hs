@@ -26,6 +26,7 @@ module Orville.PostgreSQL.EntityTrace
     addDeleteTrace,
     untracedTableDefinition,
     MonadEntityTrace (recordTraces, liftOrvilleUntraced),
+    recordTracesInState,
   )
 where
 
@@ -610,13 +611,10 @@ instance O.MonadOrville m => MonadEntityTrace trace (ReaderT (EntityTraceState t
 instance O.MonadOrville m => O.MonadOrville (ReaderT (EntityTraceState trace) m)
 
 {- |
-  INTERNAL: Mutates the 'EntityTraceState' that is returned by the given "ask"
-  operation. We may decide to expose this in the future so that it's possible
-  to build an instance of 'MonadEntityTrace' by tracking an 'EntityTraceState'
-  in a user-provided 'ReaderT' (or other) context, but to do so we would need
-  to provide a relatively safe API for instantiating the 'EntityTraceState' and
-  'O.OrvilleState' together to ensure that the transaction callback is
-  registered and the transaction state between the two is in sync.
+  Mutates the 'EntityTraceState' that is returned by the given "ask" operation.
+  We expose this so that it's possible to build an instance of
+  'MonadEntityTrace' by tracking an 'EntityTraceState' in a user-provided
+  'ReaderT' (or other) context.
 -}
 recordTracesInState ::
   MonadIO m =>
