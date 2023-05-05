@@ -648,9 +648,9 @@ runEntityTraceT ::
   MonadIO n =>
   O.ErrorDetailLevel ->
   O.Pool O.Connection ->
-  (O.OrvilleState -> m a -> n a) ->
+  (O.OrvilleState -> m a -> n b) ->
   EntityTraceT trace m a ->
-  n (a, [trace])
+  n (b, [trace])
 runEntityTraceT errorDetailLevel pool runM traceT = do
   ref <- liftIO $ EntityTraceState <$> newIORef emptyTraceData
   let mAction =
