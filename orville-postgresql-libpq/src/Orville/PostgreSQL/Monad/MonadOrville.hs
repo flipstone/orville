@@ -82,11 +82,11 @@ class MonadOrvilleControl m where
     from IO into the application monad.
   -}
   liftBracket ::
-    (IO a -> (a -> IO b) -> (a -> IO c) -> IO c) ->
-    m a ->
-    (a -> m b) ->
-    (a -> m c) ->
-    m c
+    (forall a b c. IO a -> (a -> IO b) -> (a -> IO c) -> IO c) ->
+    m d ->
+    (d -> m e) ->
+    (d -> m f) ->
+    m f
 
 instance MonadOrvilleControl IO where
   liftWithConnection ioWithConn =
