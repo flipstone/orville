@@ -27,6 +27,7 @@ module Orville.PostgreSQL.EntityTrace
     untracedTableDefinition,
     MonadEntityTrace (recordTraces, liftOrvilleUntraced),
     recordTracesInState,
+    clearTracesInState,
   )
 where
 
@@ -624,6 +625,18 @@ recordTracesInState ::
 recordTracesInState askTraceState traces = do
   recordedTraces <- askTraceState
   liftIO $ addTracesToRecord recordedTraces traces
+
+{- |
+  Clears the EntityTraceState.
+  Mutates the 'EntityTraceState' that is returned by the given "ask" operation.
+-}
+clearTracesInState ::
+  MonadIO m =>
+  m (EntityTraceState trace) ->
+  m ()
+clearTracesInState askTraceState = do
+  traceState <- askTraceState
+  liftIO $ atomicModifyIORef'_ (_entityTraceStateRef traceState) (const emptyTraceData)
 
 {- |
   'runEntityTraceT' runs an Orville action that has tracing behavior and
