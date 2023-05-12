@@ -21,6 +21,7 @@ module Orville.PostgreSQL.Execution.SelectOptions
     limit,
     offset,
     groupBy,
+    selectOptionsQueryExpr,
   )
 where
 
@@ -224,3 +225,38 @@ groupBy groupByExpr =
   emptySelectOptions
     { i_groupByExpr = Just groupByExpr
     }
+
+{- |
+  Builds a 'QueryExpr' that will use the specified 'Expr.SelectList' when building
+  the @SELECT@ statement to execute. It it up to the caller to make sure that
+  the 'Expr.SelectList' expression makes sens for the table being queried, and
+  that the names of the columns in the result set match those expected by the
+  given 'SqlMarshaller', which will be used to decode it.
+
+  This function is useful for building more advanced queries that need to
+  select things other than simple columns from the table, such as using
+  aggregate functions. The 'Expr.SelectList' can be built however the caller
+  desires. If Orville does not support building the 'Expr.SelectList' you need
+  using any of the expression building functions, you can resort to
+  @RawSql.fromRawSql@ as an escape hatch to build the 'Expr.SelectList' here.
+
+@since 0.10.0.0
+-}
+selectOptionsQueryExpr ::
+  Expr.SelectList ->
+  Expr.Qualified Expr.TableName ->
+  SelectOptions ->
+  Expr.QueryExpr
+selectOptionsQueryExpr selectList qualifiedTableName selectOptions =
+  Expr.queryExpr
+    (selectDistinct selectOptions)
+    selectList
+    ( Just $
+        Expr.tableExpr
+          qualifiedTableName
+          (selectWhereClause selectOptions)
+          (selectOrderByClause selectOptions)
+          (selectGroupByClause selectOptions)
+          (selectLimitExpr selectOptions)
+          (selectOffsetExpr selectOptions)
+    )
