@@ -15,7 +15,7 @@ module Orville.PostgreSQL.Execution.Select
     selectToQueryExpr,
     selectTable,
     selectMarshalledColumns,
-    selectSelectList,
+    querySelectList,
     rawSelectQueryExpr,
   )
 where
@@ -107,13 +107,15 @@ selectMarshalledColumns ::
   Expr.Qualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
-selectMarshalledColumns marshaller =
-  selectSelectList
-    (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
-    marshaller
+selectMarshalledColumns marshaller qualifiedTableName selectOptions =
+  rawSelectQueryExpr marshaller $
+    querySelectList
+      (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
+      qualifiedTableName
+      selectOptions
 
 {- |
-  Builds a 'Select' that will use the specified 'Expr.SelectList' when building
+  Builds a 'QueryExpr' that will use the specified 'Expr.SelectList' when building
   the @SELECT@ statement to execute. It it up to the caller to make sure that
   the 'Expr.SelectList' expression makes sens for the table being queried, and
   that the names of the columns in the result set match those expected by the
@@ -128,26 +130,24 @@ selectMarshalledColumns marshaller =
 
 @since 0.10.0.0
 -}
-selectSelectList ::
+querySelectList ::
   Expr.SelectList ->
-  AnnotatedSqlMarshaller writeEntity readEntity ->
   Expr.Qualified Expr.TableName ->
   SelectOptions.SelectOptions ->
-  Select readEntity
-selectSelectList selectList marshaller qualifiedTableName selectOptions =
-  rawSelectQueryExpr marshaller $
-    Expr.queryExpr
-      (SelectOptions.selectDistinct selectOptions)
-      selectList
-      ( Just $
-          Expr.tableExpr
-            qualifiedTableName
-            (SelectOptions.selectWhereClause selectOptions)
-            (SelectOptions.selectOrderByClause selectOptions)
-            (SelectOptions.selectGroupByClause selectOptions)
-            (SelectOptions.selectLimitExpr selectOptions)
-            (SelectOptions.selectOffsetExpr selectOptions)
-      )
+  Expr.QueryExpr
+querySelectList selectList qualifiedTableName selectOptions =
+  Expr.queryExpr
+    (SelectOptions.selectDistinct selectOptions)
+    selectList
+    ( Just $
+        Expr.tableExpr
+          qualifiedTableName
+          (SelectOptions.selectWhereClause selectOptions)
+          (SelectOptions.selectOrderByClause selectOptions)
+          (SelectOptions.selectGroupByClause selectOptions)
+          (SelectOptions.selectLimitExpr selectOptions)
+          (SelectOptions.selectOffsetExpr selectOptions)
+    )
 
 {- |
   Builds a 'Select' that will execute the specified query and use the given
