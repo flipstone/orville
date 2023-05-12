@@ -9,9 +9,27 @@ where
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
+{- |
+Type to represent a SQL offset expression (e.g. @OFFSET ...@)
+
+There is an low level escape hatch included here, by means of the instance of
+'RawSql.SqlExpression'. This is intended to be used when some functionality is
+required but not already included. The exension mechanism provided does require
+care in use as no guarantees are provided for correctness in usage.
+
+For example, if one wanted to write a offset expression by hand and
+use it in a place that expected a 'OffsetExpr', that could be done as
+
+ > RawSql.unsafeSqlExpression "OFFSET some expression"
+
+@since 0.10.0.0
+-}
 newtype OffsetExpr
   = OffsetExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 0.10.0.0
+      RawSql.SqlExpression
+    )
 
 offsetExpr :: Int -> OffsetExpr
 offsetExpr offsetValue =
