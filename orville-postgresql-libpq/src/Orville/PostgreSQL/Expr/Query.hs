@@ -33,6 +33,21 @@ import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
+{- |
+Type to represent a SQL query -- e.g. a @SELECT@ statement.
+
+There is an low level escape hatch included here, by means of the instance of
+'RawSql.SqlExpression'. This is intended to be used when some functionality is
+required but not already included. The exension mechanism provided does require
+care in use as no guarantees are provided for correctness in usage.
+
+For example, if one wanted to write a query by hand
+and use it in a place that expected a 'QueryExpr', that could be done as
+
+ > RawSql.unsafeSqlExpression "SELECT 1"
+
+@since 0.10.0.0
+-}
 newtype QueryExpr
   = QueryExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
@@ -51,6 +66,21 @@ queryExpr querySelectClause selectList maybeTableExpr =
         , fromMaybe (RawSql.fromString "") maybeFromClause
         ]
 
+{- |
+Type to represent a select use for a SQL query.
+
+There is an low level escape hatch included here, by means of the instance of
+'RawSql.SqlExpression'. This is intended to be used when some functionality is
+required but not already included. The exension mechanism provided does require
+care in use as no guarantees are provided for correctness in usage.
+
+For example, if one wanted to write a select list by hand
+and use it in a place that expected a 'SelectList', that could be done as
+
+ > RawSql.unsafeSqlExpression "foo,bar,baz"
+
+@since 0.10.0.0
+-}
 newtype SelectList = SelectList RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
