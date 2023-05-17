@@ -27,17 +27,13 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
 {- |
-Type to represent a SQL "INSERT" statement
+Type to represent a SQL "INSERT" statement. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> INSERT INTO foo (id) VALUES (1),(3),(3)
 
-For example, if one wanted to write an insert by hand and use it in a place that
-expected a 'InsertExpr', that could be done as
-
- > RawSql.unsafeSqlExpression "INSERT <some unusual insert>"
+'InsertExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -73,17 +69,13 @@ insertExpr target maybeInsertColumns source maybeReturning =
       ]
 
 {- |
-Type to represent the SQL columns list for an insert statement
+Type to represent the SQL columns list for an insert statement. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> (foo,bar,baz)
 
-For example, if one wanted to write insert columns by hand and use them in a
-place that expected a 'InsertExpr', that could be done as
-
- > RawSql.unsafeSqlExpression "(my,raw,column,list)"
+'InsertColumnList' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -107,18 +99,13 @@ insertColumnList columnNames =
       <> RawSql.rightParen
 
 {- |
-Type to represent the SQL for the source of data for an insert statement (e.g.
-a @VALUES@ clause).
+Type to represent the SQL for the source of data for an insert statement E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> VALUES ('Bob',32),('Cindy',33)
 
-For example, if one wanted to write an insert source by hand and use
-it in a place that expected a 'InsertSource', that could be done as
-
- > RawSql.unsafeSqlExpression "VALUES ('my','raw','insert','values')"
+'InsertSource' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -150,18 +137,14 @@ insertSqlValues =
   insertRowValues . fmap rowValues
 
 {- |
-Type to represent a SQL row literal (e.g. for use as a row to insert
-inside a @VALUES@ clause).
+Type to represent a SQL row literal. For example, a single row to insert
+in a @VALUES@ clause. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> ('Cindy',33)
 
-For example, if one wanted to write a row by hand and use it in a place that
-expected a 'RowValues', that could be done as
-
- > RawSql.unsafeSqlExpression "('my','raw','insert','values')"
+'RowValues' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

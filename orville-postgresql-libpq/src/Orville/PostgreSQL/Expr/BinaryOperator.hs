@@ -41,17 +41,14 @@ where
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- | Type to represent any SQL operator of two arguments.
+{- |
+Type to represent any SQL operator of two arguments. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
+> AND
 
-For example, if one wanted to have a binary operator corresponding to the fictional SQL operator
-MY_OPERATOR, that could be done as
-
- > RawSql.unsafeSqlExpression "MY_OPERATOR"
+'BinaryOperator' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
