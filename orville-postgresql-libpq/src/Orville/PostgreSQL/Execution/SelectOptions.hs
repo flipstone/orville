@@ -244,16 +244,16 @@ groupBy groupByExpr =
 -}
 selectOptionsQueryExpr ::
   Expr.SelectList ->
-  Expr.Qualified Expr.TableName ->
+  Expr.TableReferenceList ->
   SelectOptions ->
   Expr.QueryExpr
-selectOptionsQueryExpr selectList qualifiedTableName selectOptions =
+selectOptionsQueryExpr selectList tableReferenceList selectOptions =
   Expr.queryExpr
     (selectDistinct selectOptions)
     selectList
     ( Just $
         Expr.tableExpr
-          qualifiedTableName
+          tableReferenceList
           (selectWhereClause selectOptions)
           (selectOrderByClause selectOptions)
           (selectGroupByClause selectOptions)

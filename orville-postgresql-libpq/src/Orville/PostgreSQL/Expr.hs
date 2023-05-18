@@ -29,6 +29,7 @@ module Orville.PostgreSQL.Expr
     module Orville.PostgreSQL.Expr.SequenceDefinition,
     module Orville.PostgreSQL.Expr.TableConstraint,
     module Orville.PostgreSQL.Expr.TableDefinition,
+    module Orville.PostgreSQL.Expr.TableReferenceList,
     module Orville.PostgreSQL.Expr.Time,
     module Orville.PostgreSQL.Expr.Transaction,
     module Orville.PostgreSQL.Expr.Update,
@@ -61,6 +62,7 @@ import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
 import Orville.PostgreSQL.Expr.TableConstraint
 import Orville.PostgreSQL.Expr.TableDefinition
+import Orville.PostgreSQL.Expr.TableReferenceList
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
 import Orville.PostgreSQL.Expr.Update

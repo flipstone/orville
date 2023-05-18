@@ -23,10 +23,11 @@ import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
+import Orville.PostgreSQL.Expr.TableReferenceList (TableReferenceList)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -83,7 +84,7 @@ newtype TableExpr
   deriving (RawSql.SqlExpression)
 
 tableExpr ::
-  Qualified TableName ->
+  TableReferenceList ->
   Maybe WhereClause ->
   Maybe OrderByClause ->
   Maybe GroupByClause ->
@@ -91,7 +92,7 @@ tableExpr ::
   Maybe OffsetExpr ->
   TableExpr
 tableExpr
-  tableName
+  tableReferenceList
   maybeWhereClause
   maybeOrderByClause
   maybeGroupByClause
@@ -99,7 +100,7 @@ tableExpr
   maybeOffsetExpr =
     TableExpr
       . RawSql.intercalate RawSql.space
-      $ (RawSql.toRawSql tableName) :
+      $ RawSql.toRawSql tableReferenceList :
       catMaybes
         [ RawSql.toRawSql <$> maybeWhereClause
         , RawSql.toRawSql <$> maybeOrderByClause

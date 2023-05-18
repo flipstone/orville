@@ -59,7 +59,7 @@ prop_countColumn =
                     (Expr.columnName "count")
                 ]
             )
-            (Just (Expr.tableExpr (Orville.tableName Foo.table) Nothing Nothing Nothing Nothing Nothing))
+            (Just (Expr.tableExpr (Expr.referencesTable $ Orville.tableName Foo.table) Nothing Nothing Nothing Nothing Nothing))
 
         marshaller =
           Orville.annotateSqlMarshallerEmptyAnnotation $

@@ -246,7 +246,7 @@ runRoundTripTest pool testCase = do
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
           (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
-          (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+          (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
     Result.readRows result
 
@@ -288,7 +288,7 @@ runNullableRoundTripTest pool testCase = do
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
           (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
-          (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+          (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
     Result.readRows result
 
@@ -353,7 +353,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
           (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
-          (Just $ Expr.tableExpr testTable Nothing Nothing Nothing Nothing Nothing)
+          (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
     Result.readRows result
 

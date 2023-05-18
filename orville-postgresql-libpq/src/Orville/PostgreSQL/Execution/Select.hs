@@ -110,7 +110,7 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
-      qualifiedTableName
+      (Expr.referencesTable qualifiedTableName)
       selectOptions
 
 {- |
