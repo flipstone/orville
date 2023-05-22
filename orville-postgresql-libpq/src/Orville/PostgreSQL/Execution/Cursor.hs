@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 
 {- |
 Copyright : Flipstone Technology Partners 2023
@@ -8,12 +9,15 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Cursor
-  ( withCursor,
+  ( Cursor,
+    withCursor,
     declareCursor,
     closeCursor,
     newCursorName,
     fetch,
     move,
+    acquireCursor,
+    acquireCursorUnlift,
     Expr.CursorDirection,
     Expr.next,
     Expr.prior,
@@ -34,6 +38,8 @@ where
 
 import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
+import Data.Acquire (Acquire, mkAcquire)
 import qualified Data.Time as Time
 import qualified Data.Time.Clock.POSIX as POSIXTime
 import qualified Data.Word as Word
@@ -194,3 +200,24 @@ newCursorName =
         "orville_cursor_%x_%08x"
         nowAsInteger
         (randomWord :: Word.Word32)
+
+acquireCursor ::
+  Monad.MonadOrville m =>
+  Maybe Expr.ScrollExpr ->
+  Maybe Expr.HoldExpr ->
+  Select readEntity ->
+  (forall a. m a -> IO a) ->
+  Acquire (Cursor readEntity)
+acquireCursor scrollExpr holdExpr select runInIO =
+  mkAcquire
+    (runInIO $ declareCursor scrollExpr holdExpr select)
+    (runInIO . closeCursor)
+
+acquireCursorUnlift ::
+  (MonadUnliftIO m, Monad.MonadOrville m) =>
+  Maybe Expr.ScrollExpr ->
+  Maybe Expr.HoldExpr ->
+  Select readEntity ->
+  m (Acquire (Cursor readEntity))
+acquireCursorUnlift scrollExpr holdExpr select =
+  withRunInIO $ \runInIO -> pure (acquireCursor scrollExpr holdExpr select runInIO)

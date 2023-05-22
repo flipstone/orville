@@ -144,10 +144,12 @@ library
     , postgresql-libpq >=0.9.4.2 && <0.10
     , random >=1.0 && <2
     , resource-pool
+    , resourcet >=1.2 && <1.4
     , safe-exceptions >=0.1.7
     , text
     , time >=1.9.1
     , transformers >=0.5 && <0.7
+    , unliftio-core >=0.1 && <0.3
     , uuid
   if flag(ci)
     ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wmissing-import-lists -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations -Wno-implicit-prelude -Wno-safe -Wno-unsafe
