@@ -201,6 +201,19 @@ newCursorName =
         nowAsInteger
         (randomWord :: Word.Word32)
 
+{- |
+  Acquire a @CURSOR@ context with an associated closer.
+
+  The cursor is wrapped in an 'Acquire', which allows for it to be closed
+  automatically in if the 'm' is e.g. also a
+  'Control.Monad.Trans.Resource.MonadResource'.
+
+  See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
+  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
+  behave in general.
+
+  @since 0.10.0.0
+-}
 acquireCursor ::
   Monad.MonadOrville m =>
   Maybe Expr.ScrollExpr ->
@@ -213,6 +226,22 @@ acquireCursor scrollExpr holdExpr select runInIO =
     (runInIO $ declareCursor scrollExpr holdExpr select)
     (runInIO . closeCursor)
 
+{- |
+  Acquire a @CURSOR@ in a 'MonadUnliftIO' context, with an associated closer.
+
+  The cursor is wrapped in an 'Acquire', which allows for it to be closed
+  automatically in if the 'm' is e.g. also a
+  'Control.Monad.Trans.Resource.MonadResource'.
+
+  This could be used with 'Conduit.allocateAcquire` after lifting to a
+  'Data.Conduit.ConduitT' context.
+
+  See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
+  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
+  behave in general.
+
+  @since 0.10.0.0
+-}
 acquireCursorUnlift ::
   (MonadUnliftIO m, Monad.MonadOrville m) =>
   Maybe Expr.ScrollExpr ->
