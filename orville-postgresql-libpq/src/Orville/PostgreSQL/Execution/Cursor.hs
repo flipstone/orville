@@ -8,7 +8,8 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Cursor
-  ( withCursor,
+  ( Cursor,
+    withCursor,
     declareCursor,
     closeCursor,
     newCursorName,
