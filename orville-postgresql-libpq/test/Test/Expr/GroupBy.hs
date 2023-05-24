@@ -37,7 +37,7 @@ prop_groupByColumnsExpr =
   groupByTest "groupByColumnsExpr groups by columns" $
     GroupByTest
       { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
-      , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 3 "dog", FooBar 1 "dog"]
+      , groupByExpectedQueryResults = [FooBar 3 "dog", FooBar 2 "dingo", FooBar 1 "dog"]
       , groupByClause =
           Just . Expr.groupByClause $
             Expr.groupByColumnsExpr $
@@ -49,7 +49,7 @@ prop_appendGroupByExpr =
   groupByTest "appendGroupByExpr causes grouping on both clauses" $
     GroupByTest
       { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo", FooBar 1 "dog", FooBar 2 "dingo"]
-      , groupByExpectedQueryResults = [FooBar 1 "dog", FooBar 3 "dingo", FooBar 2 "dingo"]
+      , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo"]
       , groupByClause =
           Just . Expr.groupByClause $
             Expr.appendGroupByExpr
