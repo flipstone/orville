@@ -20,6 +20,7 @@ import qualified Test.EntityTrace as EntityTrace
 import qualified Test.Execution as Execution
 import qualified Test.Expr.Count as ExprCount
 import qualified Test.Expr.Cursor as ExprCursor
+import qualified Test.Expr.GroupByOrderBy as ExprGroupByOrderBy
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
 import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
@@ -58,6 +59,7 @@ main = do
       , ExprInsertUpdateDelete.insertUpdateDeleteTests pool
       , ExprWhere.whereTests pool
       , ExprOrderBy.orderByTests pool
+      , ExprGroupByOrderBy.groupByOrderByTests pool
       , ExprTableDefinition.tableDefinitionTests pool
       , ExprSequenceDefinition.sequenceDefinitionTests pool
       , ExprCursor.cursorTests pool
