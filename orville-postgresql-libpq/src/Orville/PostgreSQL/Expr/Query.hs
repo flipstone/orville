@@ -103,8 +103,8 @@ tableExpr
       $ RawSql.toRawSql tableReferenceList :
       catMaybes
         [ RawSql.toRawSql <$> maybeWhereClause
-        , RawSql.toRawSql <$> maybeOrderByClause
         , RawSql.toRawSql <$> maybeGroupByClause
+        , RawSql.toRawSql <$> maybeOrderByClause
         , RawSql.toRawSql <$> maybeLimitExpr
         , RawSql.toRawSql <$> maybeOffsetExpr
         ]
