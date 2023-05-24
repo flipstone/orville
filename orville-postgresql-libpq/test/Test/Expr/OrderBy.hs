@@ -131,7 +131,7 @@ orderByTest testName test =
               Expr.queryExpr
                 (Expr.selectClause $ Expr.selectExpr Nothing)
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Just $ Expr.tableExpr (Expr.referencesTable fooBarTable) Nothing (orderByClause test) Nothing Nothing Nothing)
+                (Just $ Expr.tableExpr (Expr.referencesTable fooBarTable) Nothing Nothing (orderByClause test) Nothing Nothing)
 
           ExecResult.readRows result
 

@@ -93,7 +93,7 @@ groupByTest testName test =
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [fooColumn, barColumn])
-            (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing (groupByClause test) Nothing Nothing)
+            (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing (groupByClause test) Nothing Nothing Nothing)
 
       ExecResult.readRows result
 

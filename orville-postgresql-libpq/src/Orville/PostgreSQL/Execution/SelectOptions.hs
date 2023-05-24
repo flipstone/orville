@@ -255,8 +255,8 @@ selectOptionsQueryExpr selectList tableReferenceList selectOptions =
         Expr.tableExpr
           tableReferenceList
           (selectWhereClause selectOptions)
-          (selectOrderByClause selectOptions)
           (selectGroupByClause selectOptions)
+          (selectOrderByClause selectOptions)
           (selectLimitExpr selectOptions)
           (selectOffsetExpr selectOptions)
     )

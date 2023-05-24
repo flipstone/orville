@@ -86,16 +86,16 @@ newtype TableExpr
 tableExpr ::
   TableReferenceList ->
   Maybe WhereClause ->
-  Maybe OrderByClause ->
   Maybe GroupByClause ->
+  Maybe OrderByClause ->
   Maybe LimitExpr ->
   Maybe OffsetExpr ->
   TableExpr
 tableExpr
   tableReferenceList
   maybeWhereClause
-  maybeOrderByClause
   maybeGroupByClause
+  maybeOrderByClause
   maybeLimitExpr
   maybeOffsetExpr =
     TableExpr
