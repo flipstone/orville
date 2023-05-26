@@ -77,6 +77,7 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
     localTimestampField,
     uuidField,
     fieldOfType,
+    whereColumnComparison,
   )
 where
 
@@ -815,7 +816,7 @@ toSqlValueTuple fieldDefA fieldDefB (a, b) =
     :| [fieldValueToExpression fieldDefB b]
 
 {- |
-  INTERNAL: Constructs a field-based 'Expr.BooleanExpr' using a function that
+  Constructs a field-based 'Expr.BooleanExpr' using a function that
   builds a 'Expr.BooleanExpr'
 -}
 whereColumnComparison ::
