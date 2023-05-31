@@ -636,7 +636,7 @@ clearTracesInState ::
   m ()
 clearTracesInState askTraceState = do
   traceState <- askTraceState
-  liftIO $ atomicModifyIORef'_ (_entityTraceStateRef traceState) (const emptyTraceData)
+  liftIO $ atomicModifyIORef'_ (_entityTraceStateRef traceState) (\x -> x {committedTracesDList = mempty})
 
 {- |
   'runEntityTraceT' runs an Orville action that has tracing behavior and
