@@ -330,6 +330,17 @@ data TransactionStack trace
   | SavepointCreated O.Savepoint (DList.DList trace) (TransactionStack trace)
 
 {- |
+  INTERNAL: Clears all the traces in the stack.
+-}
+clearUncommittedTraces :: TransactionStack trace -> TransactionStack trace
+clearUncommittedTraces stack =
+  case stack of
+    TransactionOpened _ ->
+      TransactionOpened mempty
+    SavepointCreated savepoint _traces embeddedStack ->
+      SavepointCreated savepoint mempty (clearUncommittedTraces embeddedStack)
+
+{- |
   INTERNAL: Assembles all the traces for the 'TransactionStack' into a 'DList'
   in the order in which they originally occurred
 -}
@@ -627,7 +638,7 @@ recordTracesInState askTraceState traces = do
   liftIO $ addTracesToRecord recordedTraces traces
 
 {- |
-  Clears the EntityTraceState.
+  Clears both committed and uncomitted traces in the EntityTraceState.
   Mutates the 'EntityTraceState' that is returned by the given "ask" operation.
 -}
 clearTracesInState ::
@@ -636,7 +647,12 @@ clearTracesInState ::
   m ()
 clearTracesInState askTraceState = do
   traceState <- askTraceState
-  liftIO $ atomicModifyIORef'_ (_entityTraceStateRef traceState) (\x -> x {committedTracesDList = mempty})
+  liftIO
+    . atomicModifyIORef'_ (_entityTraceStateRef traceState)
+    $ \recordedTraces ->
+        RecordedTraces mempty
+        . fmap clearUncommittedTraces
+        $ currentTransactionStack recordedTraces
 
 {- |
   'runEntityTraceT' runs an Orville action that has tracing behavior and
