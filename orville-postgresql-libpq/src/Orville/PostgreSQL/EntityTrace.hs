@@ -650,7 +650,7 @@ clearTracesInState askTraceState = do
   liftIO
     . atomicModifyIORef'_ (_entityTraceStateRef traceState)
     $ \recordedTraces ->
-        RecordedTraces mempty
+      RecordedTraces mempty
         . fmap clearUncommittedTraces
         $ currentTransactionStack recordedTraces
 
