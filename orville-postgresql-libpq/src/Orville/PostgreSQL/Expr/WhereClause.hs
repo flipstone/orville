@@ -8,6 +8,7 @@ module Orville.PostgreSQL.Expr.WhereClause
   ( WhereClause,
     whereClause,
     BooleanExpr,
+    literalBooleanExpr,
     andExpr,
     (.&&),
     orExpr,
@@ -52,6 +53,13 @@ whereClause booleanExpr =
 newtype BooleanExpr
   = BooleanExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
+
+literalBooleanExpr :: Bool -> BooleanExpr
+literalBooleanExpr bool =
+  BooleanExpr . RawSql.fromString $
+    case bool of
+      False -> "FALSE"
+      True -> "TRUE"
 
 booleanValueExpression :: BooleanExpr -> ValueExpression
 booleanValueExpression (BooleanExpr rawSql) =
