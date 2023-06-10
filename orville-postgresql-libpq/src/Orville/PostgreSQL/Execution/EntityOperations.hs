@@ -21,6 +21,7 @@ module Orville.PostgreSQL.Execution.EntityOperations
     findEntitiesBy,
     findFirstEntityBy,
     findEntity,
+    findEntities,
   )
 where
 
@@ -305,6 +306,23 @@ findEntity entityTable key =
           (Schema.tablePrimaryKey entityTable)
           key
    in findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
+
+{- |
+  Finds multiple entities by the table's primary key.
+
+@since 0.10.0.0
+-}
+findEntities ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
+  NonEmpty key ->
+  m [readEntity]
+findEntities entityTable keys =
+  let primaryKeyCondition =
+        Schema.primaryKeyIn
+          (Schema.tablePrimaryKey entityTable)
+          keys
+   in findEntitiesBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
 {- |
   Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the

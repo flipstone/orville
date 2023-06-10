@@ -20,6 +20,7 @@ module Orville.PostgreSQL
     EntityOperations.findEntitiesBy,
     EntityOperations.findFirstEntityBy,
     EntityOperations.findEntity,
+    EntityOperations.findEntities,
 
     -- * A simple starter monad for running Orville operations
     Orville.Orville,
