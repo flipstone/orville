@@ -169,14 +169,13 @@ underlyingExecute bs params connection = do
 
   case mbResult of
     Nothing -> do
-      throwConnectionError "No result returned from exec by libpq" libPQConn
+      throwExecutionErrorWithoutResult libPQConn bs
     Just result -> do
       execStatus <- LibPQ.resultStatus result
 
       if isRowReadableStatus execStatus
         then pure result
-        else do
-          throwLibPQResultError result execStatus bs
+        else throwExecutionErrorWithResult result execStatus bs
 
 {- |
   Escapes and quotes a string for use as a literal within a SQL command that
@@ -245,18 +244,33 @@ throwConnectionError message conn = do
       , connectionErrorLibPQMessage = mbLibPQError
       }
 
-throwLibPQResultError ::
+throwExecutionErrorWithoutResult ::
+  LibPQ.Connection ->
+  BS.ByteString ->
+  IO a
+throwExecutionErrorWithoutResult conn queryBS = do
+  mbLibPQError <- LibPQ.errorMessage conn
+
+  throwIO $
+    SqlExecutionError
+      { sqlExecutionErrorExecStatus = Nothing
+      , sqlExecutionErrorMessage = fromMaybe (B8.pack "No error message available from LibPQ") mbLibPQError
+      , sqlExecutionErrorSqlState = Nothing
+      , sqlExecutionErrorSqlQuery = queryBS
+      }
+
+throwExecutionErrorWithResult ::
   LibPQ.Result ->
   LibPQ.ExecStatus ->
   BS.ByteString ->
   IO a
-throwLibPQResultError result execStatus queryBS = do
+throwExecutionErrorWithResult result execStatus queryBS = do
   mbLibPQError <- LibPQ.resultErrorMessage result
   mbSqlState <- LibPQ.resultErrorField result LibPQ.DiagSqlstate
 
   throwIO $
     SqlExecutionError
-      { sqlExecutionErrorExecStatus = execStatus
+      { sqlExecutionErrorExecStatus = Just execStatus
       , sqlExecutionErrorMessage = fromMaybe (B8.pack "No error message available from LibPQ") mbLibPQError
       , sqlExecutionErrorSqlState = mbSqlState
       , sqlExecutionErrorSqlQuery = queryBS
@@ -312,7 +326,7 @@ instance Show ConnectionError where
 instance Exception ConnectionError
 
 data SqlExecutionError = SqlExecutionError
-  { sqlExecutionErrorExecStatus :: LibPQ.ExecStatus
+  { sqlExecutionErrorExecStatus :: Maybe LibPQ.ExecStatus
   , sqlExecutionErrorMessage :: BS.ByteString
   , sqlExecutionErrorSqlState :: Maybe BS.ByteString
   , sqlExecutionErrorSqlQuery :: BS.ByteString
