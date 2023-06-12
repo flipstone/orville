@@ -54,6 +54,7 @@ planTests pool =
     , prop_planMany_planEither pool
     , prop_bindAndUse pool
     , prop_planMany_bindAndUse pool
+    , prop_planMany_findOne_dedupesInClauses pool
 #if defined(MIN_VERSION_GLASGOW_HASKELL)
 #if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
     , prop_bindAndUse_qualifiedDo pool
@@ -349,6 +350,25 @@ prop_planMany_bindAndUse =
     assertEachManyResult allFooNames results $ \fooName (foo, children) -> do
       Foo.fooName foo === fooName
       assertAllMatchesFound FooChild.fooChildId children (FooChild.isChildOf foo) allChildren
+
+prop_planMany_findOne_dedupesInClauses :: Property.NamedDBProperty
+prop_planMany_findOne_dedupesInClauses =
+  Property.singletonNamedDBProperty "planMany/findOne dedupes in clause to avoid PostgreSQL parameter limit" $ \pool -> do
+    let plan :: Plan.Plan scope [Foo.FooId] (Many.Many Foo.FooId Foo.Foo)
+        plan =
+          Plan.planMany (Plan.findOne Foo.table Foo.fooIdField)
+
+    unsavedFoo <- HH.forAll Foo.generate
+
+    results <-
+      FooChild.withTables pool $ do
+        savedFoo <- Orville.insertAndReturnEntity Foo.table unsavedFoo
+        let fooIds =
+              replicate 65536 (Foo.fooId savedFoo)
+
+        Plan.execute plan fooIds
+
+    length (Many.elems results) === 65536
 
 #if defined(MIN_VERSION_GLASGOW_HASKELL)
 #if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)

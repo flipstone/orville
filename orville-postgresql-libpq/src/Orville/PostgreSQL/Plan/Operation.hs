@@ -26,6 +26,7 @@ import qualified Data.Foldable as Fold
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
+import qualified Data.Set as Set
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL.Execution as Exec
@@ -192,6 +193,7 @@ data WherePlanner param = WherePlanner
   with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 -}
 byField ::
+  Ord fieldValue =>
   Marshall.FieldDefinition nullability fieldValue ->
   WherePlanner fieldValue
 byField fieldDef =
@@ -200,7 +202,7 @@ byField fieldDef =
    in WherePlanner
         { paramMarshaller = flip Marshall.marshallField fieldDef
         , executeOneWhereCondition = \fieldValue -> Marshall.fieldEquals fieldDef fieldValue
-        , executeManyWhereCondition = \fieldValues -> Marshall.fieldIn fieldDef fieldValues
+        , executeManyWhereCondition = \fieldValues -> Marshall.fieldIn fieldDef (dedupeFieldValues fieldValues)
         , explainOneWhereCondition = Marshall.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
         , explainManyWhereCondition = Marshall.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
         }
@@ -212,6 +214,7 @@ byField fieldDef =
 -}
 byFieldTuple ::
   forall nullabilityA fieldValueA nullabilityB fieldValueB.
+  (Ord fieldValueA, Ord fieldValueB) =>
   Marshall.FieldDefinition nullabilityA fieldValueA ->
   Marshall.FieldDefinition nullabilityB fieldValueB ->
   WherePlanner (fieldValueA, fieldValueB)
@@ -235,7 +238,7 @@ byFieldTuple fieldDefA fieldDefB =
    in WherePlanner
         { paramMarshaller = marshaller
         , executeOneWhereCondition = \fieldValue -> Marshall.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
-        , executeManyWhereCondition = \fieldValues -> Marshall.fieldTupleIn fieldDefA fieldDefB fieldValues
+        , executeManyWhereCondition = \fieldValues -> Marshall.fieldTupleIn fieldDefA fieldDefB (dedupeFieldValues fieldValues)
         , explainOneWhereCondition =
             Marshall.fieldTupleIn
               stringyFieldA
@@ -247,6 +250,15 @@ byFieldTuple fieldDefA fieldDefB =
               stringyFieldB
               (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
         }
+
+dedupeFieldValues :: Ord a => NonEmpty a -> NonEmpty a
+dedupeFieldValues (first :| rest) =
+  let dedupedWithoutFirst =
+        Set.toList
+          . Set.delete first
+          . Set.fromList
+          $ rest
+   in first :| dedupedWithoutFirst
 
 {- |
   'findOne' builds a planning primitive that finds (at most) one row from the
