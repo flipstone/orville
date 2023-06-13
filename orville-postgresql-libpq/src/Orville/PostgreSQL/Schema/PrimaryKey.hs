@@ -169,10 +169,9 @@ primaryKeyEquals keyDef key =
   primary keys.
 -}
 primaryKeyIn :: PrimaryKey key -> NonEmpty key -> Expr.BooleanExpr
-primaryKeyIn keyDef keys =
-  ExtraNonEmpty.foldl1'
-    Expr.orExpr
-    (primaryKeyEquals keyDef <$> keys)
+primaryKeyIn keyDef =
+  ExtraNonEmpty.foldl1' Expr.orExpr
+    . fmap (primaryKeyEquals keyDef)
 
 {- |
   INTERNAL: builds the where condition for a single part of the key
