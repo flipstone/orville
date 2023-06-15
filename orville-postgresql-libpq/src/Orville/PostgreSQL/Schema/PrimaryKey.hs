@@ -13,6 +13,7 @@ module Orville.PostgreSQL.Schema.PrimaryKey
     mapPrimaryKeyParts,
     mkPrimaryKeyExpr,
     primaryKeyEquals,
+    primaryKeyIn,
   )
 where
 
@@ -160,6 +161,17 @@ primaryKeyEquals keyDef key =
   ExtraNonEmpty.foldl1'
     Expr.andExpr
     (mapPrimaryKeyParts (partEquals key) keyDef)
+
+{- |
+  'primaryKeyIn' builds a 'Expr.BooleanExpr' that will match rows where
+  the primary key is contained the given list. For single-field primary keys
+  this is equivalent to 'fieldIn', but 'primaryKeyIn' also handles composite
+  primary keys.
+-}
+primaryKeyIn :: PrimaryKey key -> NonEmpty key -> Expr.BooleanExpr
+primaryKeyIn keyDef =
+  ExtraNonEmpty.foldl1' Expr.orExpr
+    . fmap (primaryKeyEquals keyDef)
 
 {- |
   INTERNAL: builds the where condition for a single part of the key

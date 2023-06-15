@@ -26,6 +26,7 @@ entityOperationsTests pool =
     , prop_insertEntitiesAffectedRows pool
     , prop_insertEntitiesFindFirstEntityByRoundTrip pool
     , prop_insertEntityFindEntityRoundTrip pool
+    , prop_insertEntityFindEntitiesRoundTrip pool
     , prop_insertAndReturnEntity pool
     , prop_updateEntity pool
     , prop_updateEntityAffectedRows pool
@@ -110,6 +111,18 @@ prop_insertEntityFindEntityRoundTrip =
         Orville.findEntity Foo.table (Foo.fooId originalFoo)
 
     mbRetrievedFoo === Just originalFoo
+
+prop_insertEntityFindEntitiesRoundTrip :: Property.NamedDBProperty
+prop_insertEntityFindEntitiesRoundTrip =
+  Property.singletonNamedDBProperty "insertEntity/findEntities form a round trip" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
+
+    retrievedFoos <-
+      Foo.withTable pool $ do
+        _ <- Orville.insertEntities Foo.table foos
+        Orville.findEntities Foo.table (Foo.fooId <$> foos)
+
+    List.sortOn Foo.fooId retrievedFoos === List.sortOn Foo.fooId (NEL.toList foos)
 
 prop_insertAndReturnEntity :: Property.NamedDBProperty
 prop_insertAndReturnEntity =
