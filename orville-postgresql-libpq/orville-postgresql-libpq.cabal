@@ -191,6 +191,7 @@ test-suite spec
       Test.PostgreSQLAxioms
       Test.Property
       Test.RawSql
+      Test.ReadRows
       Test.ReservedWords
       Test.SelectOptions
       Test.Sequence

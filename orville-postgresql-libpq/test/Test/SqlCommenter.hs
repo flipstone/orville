@@ -13,7 +13,6 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
@@ -27,6 +26,7 @@ import Test.Expr.TestSchema
     mkFooBar,
   )
 import qualified Test.Property as Property
+import qualified Test.ReadRows as ReadRows
 
 sqlCommenterTests :: Orville.Pool Orville.Connection -> Property.Group
 sqlCommenterTests pool =
@@ -73,7 +73,7 @@ prop_sqlCommenterInsertExpr =
 
           result <- RawSql.execute connection findAllFooBars
 
-          ExecResult.readRows result
+          ReadRows.readRows result
 
     assertEqualFooBarRows rows fooBars
 

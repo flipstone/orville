@@ -14,13 +14,13 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecutionResult
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
+import qualified Test.ReadRows as ReadRows
 
 sqlTypeTests :: Orville.Pool Orville.Connection -> Property.Group
 sqlTypeTests pool =
@@ -530,7 +530,7 @@ runDecodingTest pool test =
             Expr.selectStar
             (Just $ Expr.tableExpr (Expr.referencesTable tableName) Nothing Nothing Nothing Nothing Nothing)
 
-      ExecutionResult.readRows result
+      ReadRows.readRows result
 
     let actual = map (decodeSingleValue (sqlType test)) rows
 

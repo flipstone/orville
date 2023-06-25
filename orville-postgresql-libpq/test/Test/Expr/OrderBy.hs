@@ -8,12 +8,12 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Pool as Pool
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Execution.ExecutionResult as ExecResult
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
+import qualified Test.ReadRows as ReadRows
 
 orderByTests :: Orville.Pool Orville.Connection -> Property.Group
 orderByTests pool =
@@ -133,6 +133,6 @@ orderByTest testName test =
                 (Expr.selectColumns [fooColumn, barColumn])
                 (Just $ Expr.tableExpr (Expr.referencesTable fooBarTable) Nothing Nothing (orderByClause test) Nothing Nothing)
 
-          ExecResult.readRows result
+          ReadRows.readRows result
 
     assertEqualFooBarRows rows (orderByExpectedQueryResults test)
