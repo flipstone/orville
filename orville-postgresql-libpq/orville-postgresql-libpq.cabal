@@ -107,6 +107,7 @@ library
       Orville.PostgreSQL.Schema.SequenceIdentifier
       Orville.PostgreSQL.Schema.TableDefinition
       Orville.PostgreSQL.Schema.TableIdentifier
+      Orville.PostgreSQL.UnliftIO
   other-modules:
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
@@ -148,6 +149,7 @@ library
     , text
     , time >=1.9.1
     , transformers >=0.5 && <0.7
+    , unliftio-core >=0.1 && <0.3
     , uuid
   if flag(ci)
     ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wmissing-import-lists -Wnoncanonical-monad-instances -Wredundant-constraints -Wpartial-fields -Wmissed-specialisations -Wno-implicit-prelude -Wno-safe -Wno-unsafe
