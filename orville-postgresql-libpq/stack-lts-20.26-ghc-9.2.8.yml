@@ -1,5 +1,5 @@
 ---
-resolver: lts-18.7
+resolver: lts-20.26
 packages:
   - .
 allow-different-user: true
