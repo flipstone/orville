@@ -1,5 +1,34 @@
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2021-2023
+License   : MIT
+Stability : Stable
+
+This module provides function that can be used to implement
+'MonadOrvilleControl' for monads that implement 'MonadUnliftIO'. For example,
+
+@
+module MyMonad
+  ( MyMonad
+  ) where
+
+import qualified Control.Monad.IO.Unlift as UnliftIO
+import qualified Orville.PostgreSQL as O
+import qualified Orville.PostgreSQL.UnliftIO as OrvilleUnliftIO
+
+newtype MyMonad =
+  ...
+  deriving (UnliftIO.MonadUnliftIO)
+
+instance O.MonadOrvilleControl MyMonad where
+  liftWithConnection = OrvilleUnliftIO.liftWithConnectionViaUnliftIO
+  liftFinally = OrvilleUnliftIO.liftFinallyViaUnliftIO
+  liftBracket = OrvilleUnliftIO.liftBracketViaUnLiftIO
+@
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.UnliftIO
   ( liftWithConnectionViaUnliftIO,
     liftFinallyViaUnliftIO,
@@ -13,6 +42,8 @@ import qualified Control.Monad.IO.Unlift as UL
   liftWithConnectionViaUnliftIO can be use as the implementation of
   'liftWithConnection' for 'MonadOrvilleControl' when the 'Monad'
   implements 'MonadUnliftIO'.
+
+  @since 0.10.0.0
 -}
 liftWithConnectionViaUnliftIO ::
   UL.MonadUnliftIO m =>
@@ -26,6 +57,8 @@ liftWithConnectionViaUnliftIO ioWithConn action =
   liftFinallyViaUnliftIO can be use as the implementation of
   'liftFinally' for 'MonadOrvilleControl' when the 'Monad'
   implements 'MonadUnliftIO'.
+
+  @since 0.10.0.0
 -}
 liftFinallyViaUnliftIO ::
   UL.MonadUnliftIO m =>
@@ -41,6 +74,8 @@ liftFinallyViaUnliftIO ioFinally action cleanup = do
   liftBracketViaUnLiftIO can be use as the implementation of
   'liftBracket for 'MonadOrvilleControl' when the 'Monad'
   implements 'MonadUnliftIO'.
+
+  @since 0.10.0.0
 -}
 liftBracketViaUnLiftIO ::
   UL.MonadUnliftIO m =>
