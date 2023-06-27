@@ -60,8 +60,9 @@ class
   support (e.g. the State monad or continuations), then you may need to
   use 'monad-control' instead.
 
-  TODO: Orville will provide helpers for using 'unliftio' and 'monad-control',
-  before release, we just haven't gotten quite there yet.
+  See 'Orville.PostgreSQL.UnliftIO' for functions that can be used as the
+  implementation of the methods below for monads that implement
+  'MonadUnliftIO'.
 -}
 class MonadOrvilleControl m where
   {-
