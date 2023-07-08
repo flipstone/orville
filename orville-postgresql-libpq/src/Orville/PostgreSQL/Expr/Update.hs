@@ -6,12 +6,12 @@ Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Update
-  ( UpdateExpr,
-    updateExpr,
-    SetClauseList,
-    setClauseList,
-    SetClause,
-    setColumn,
+  ( UpdateExpr
+  , updateExpr
+  , SetClauseList
+  , setClauseList
+  , SetClause
+  , setColumn
   )
 where
 

@@ -1,7 +1,7 @@
 module Orville.PostgreSQL.PgCatalog.PgAttributeDefault
-  ( PgAttributeDefault (..),
-    pgAttributeDefaultTable,
-    attributeDefaultRelationOidField,
+  ( PgAttributeDefault (..)
+  , pgAttributeDefaultTable
+  , attributeDefaultRelationOidField
   )
 where
 
@@ -19,17 +19,17 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   table.
 -}
 data PgAttributeDefault = PgAttributeDefault
-  { -- | The PostgreSQL @oid@ for the default value
-    pgAttributeDefaultOid :: LibPQ.Oid
-  , -- | The PostgreSQL @oid@ for the relation that this
-    -- attribute belongs to. References @pg_class.oid@
-    pgAttributeDefaultRelationOid :: LibPQ.Oid
-  , -- | The PostgreSQL attribute number for the column that this
-    -- default belongs to. References @pg_attribute.attnum@.
-    pgAttributeDefaultAttributeNumber :: AttributeNumber
-  , -- | The PostgreSQL default value expression, as decompiled from the
-    -- @adbin@ column using the PostgreSQL @pg_get_expr@ function.
-    pgAttributeDefaultExpression :: T.Text
+  { pgAttributeDefaultOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the default value
+  , pgAttributeDefaultRelationOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the relation that this
+  -- attribute belongs to. References @pg_class.oid@
+  , pgAttributeDefaultAttributeNumber :: AttributeNumber
+  -- ^ The PostgreSQL attribute number for the column that this
+  -- default belongs to. References @pg_attribute.attnum@.
+  , pgAttributeDefaultExpression :: T.Text
+  -- ^ The PostgreSQL default value expression, as decompiled from the
+  -- @adbin@ column using the PostgreSQL @pg_get_expr@ function.
   }
 
 {- |

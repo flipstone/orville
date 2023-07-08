@@ -1,5 +1,5 @@
 module Test.ReadRows
-  ( readRows,
+  ( readRows
   )
 where
 
@@ -14,25 +14,26 @@ readRows res = do
   nrows <- LibPQ.ntuples res
   nfields <- LibPQ.nfields res
 
-  let rowIndices =
-        listOfIndicesByCount nrows
+  let
+    rowIndices =
+      listOfIndicesByCount nrows
 
-      fieldIndices =
-        listOfIndicesByCount nfields
+    fieldIndices =
+      listOfIndicesByCount nfields
 
-      -- N.B. the usage of `getvalue'` here is important as this version returns a
-      -- _copy_ of the data in the `Result` rather than a _reference_.
-      -- This allows the `Result` to be garbage collected instead of being held onto indefinitely.
-      readValue rowIndex fieldIndex = do
-        name <- LibPQ.fname res fieldIndex
-        rawValue <- LibPQ.getvalue' res rowIndex fieldIndex
-        pure $
-          ( name
-          , SqlValue.fromRawBytesNullable rawValue
-          )
+    -- N.B. the usage of `getvalue'` here is important as this version returns a
+    -- _copy_ of the data in the `Result` rather than a _reference_.
+    -- This allows the `Result` to be garbage collected instead of being held onto indefinitely.
+    readValue rowIndex fieldIndex = do
+      name <- LibPQ.fname res fieldIndex
+      rawValue <- LibPQ.getvalue' res rowIndex fieldIndex
+      pure $
+        ( name
+        , SqlValue.fromRawBytesNullable rawValue
+        )
 
-      readRow rowIndex =
-        traverse (readValue rowIndex) fieldIndices
+    readRow rowIndex =
+      traverse (readValue rowIndex) fieldIndices
 
   traverse readRow rowIndices
 

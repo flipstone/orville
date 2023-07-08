@@ -1,13 +1,13 @@
 module Orville.PostgreSQL.Schema.SequenceIdentifier
-  ( SequenceIdentifier,
-    unqualifiedNameToSequenceId,
-    setSequenceIdSchema,
-    sequenceIdQualifiedName,
-    sequenceIdUnqualifiedName,
-    sequenceIdSchemaName,
-    sequenceIdToString,
-    sequenceIdUnqualifiedNameString,
-    sequenceIdSchemaNameString,
+  ( SequenceIdentifier
+  , unqualifiedNameToSequenceId
+  , setSequenceIdSchema
+  , sequenceIdQualifiedName
+  , sequenceIdUnqualifiedName
+  , sequenceIdSchemaName
+  , sequenceIdToString
+  , sequenceIdUnqualifiedNameString
+  , sequenceIdSchemaNameString
   )
 where
 

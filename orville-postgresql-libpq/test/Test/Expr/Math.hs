@@ -1,5 +1,5 @@
 module Test.Expr.Math
-  ( mathTests,
+  ( mathTests
   )
 where
 
@@ -187,18 +187,19 @@ evaluateIntegerExpression ::
   Expr.ValueExpression ->
   HH.PropertyT IO Int32
 evaluateIntegerExpression pool expression = do
-  let sql =
-        Expr.queryExpr
-          (Expr.selectClause (Expr.selectExpr Nothing))
-          ( Expr.selectDerivedColumns
-              [ Expr.deriveColumnAs expression (Expr.columnName "result")
-              ]
-          )
-          Nothing
+  let
+    sql =
+      Expr.queryExpr
+        (Expr.selectClause (Expr.selectExpr Nothing))
+        ( Expr.selectDerivedColumns
+            [ Expr.deriveColumnAs expression (Expr.columnName "result")
+            ]
+        )
+        Nothing
 
-      marshaller =
-        Orville.annotateSqlMarshallerEmptyAnnotation $
-          Orville.marshallField id (Orville.integerField "result")
+    marshaller =
+      Orville.annotateSqlMarshallerEmptyAnnotation $
+        Orville.marshallField id (Orville.integerField "result")
 
   results <-
     HH.evalIO $

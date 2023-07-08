@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.Delete
-  ( DeleteExpr,
-    deleteExpr,
+  ( DeleteExpr
+  , deleteExpr
   )
 where
 

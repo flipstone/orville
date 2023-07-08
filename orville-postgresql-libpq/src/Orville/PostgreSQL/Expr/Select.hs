@@ -5,11 +5,11 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Select
-  ( SelectClause,
-    selectClause,
-    SelectExpr,
-    selectExpr,
-    Distinct (Distinct),
+  ( SelectClause
+  , selectClause
+  , SelectExpr
+  , selectExpr
+  , Distinct (Distinct)
   )
 where
 

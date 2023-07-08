@@ -1,22 +1,22 @@
 module Orville.PostgreSQL.Schema.SequenceDefinition
-  ( SequenceDefinition,
-    mkSequenceDefinition,
-    setSequenceSchema,
-    sequenceIdentifier,
-    sequenceName,
-    sequenceIncrement,
-    setSequenceIncrement,
-    sequenceMinValue,
-    setSequenceMinValue,
-    sequenceMaxValue,
-    setSequenceMaxValue,
-    sequenceStart,
-    setSequenceStart,
-    sequenceCache,
-    setSequenceCache,
-    sequenceCycle,
-    setSequenceCycle,
-    mkCreateSequenceExpr,
+  ( SequenceDefinition
+  , mkSequenceDefinition
+  , setSequenceSchema
+  , sequenceIdentifier
+  , sequenceName
+  , sequenceIncrement
+  , setSequenceIncrement
+  , sequenceMinValue
+  , setSequenceMinValue
+  , sequenceMaxValue
+  , setSequenceMaxValue
+  , sequenceStart
+  , setSequenceStart
+  , sequenceCache
+  , setSequenceCache
+  , sequenceCycle
+  , setSequenceCycle
+  , mkCreateSequenceExpr
   )
 where
 

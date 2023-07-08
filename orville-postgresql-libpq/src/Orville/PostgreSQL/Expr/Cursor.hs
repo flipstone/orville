@@ -8,37 +8,37 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Cursor
-  ( DeclareExpr,
-    declare,
-    ScrollExpr,
-    scroll,
-    noScroll,
-    HoldExpr,
-    withHold,
-    withoutHold,
-    CloseExpr,
-    close,
-    AllCursors,
-    allCursors,
-    FetchExpr,
-    fetch,
-    MoveExpr,
-    move,
-    CursorDirection,
-    next,
-    prior,
-    first,
-    last,
-    absolute,
-    relative,
-    rowCount,
-    fetchAll,
-    forward,
-    forwardCount,
-    forwardAll,
-    backward,
-    backwardCount,
-    backwardAll,
+  ( DeclareExpr
+  , declare
+  , ScrollExpr
+  , scroll
+  , noScroll
+  , HoldExpr
+  , withHold
+  , withoutHold
+  , CloseExpr
+  , close
+  , AllCursors
+  , allCursors
+  , FetchExpr
+  , fetch
+  , MoveExpr
+  , move
+  , CursorDirection
+  , next
+  , prior
+  , first
+  , last
+  , absolute
+  , relative
+  , rowCount
+  , fetchAll
+  , forward
+  , forwardCount
+  , forwardAll
+  , backward
+  , backwardCount
+  , backwardAll
   )
 where
 

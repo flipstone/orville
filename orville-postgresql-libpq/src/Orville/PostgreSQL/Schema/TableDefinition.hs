@@ -2,30 +2,30 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Schema.TableDefinition
-  ( TableDefinition,
-    HasKey,
-    NoKey,
-    mkTableDefinition,
-    mkTableDefinitionWithoutKey,
-    dropColumns,
-    columnsToDrop,
-    tableIdentifier,
-    tableName,
-    setTableSchema,
-    tableConstraints,
-    addTableConstraints,
-    tableIndexes,
-    addTableIndexes,
-    tablePrimaryKey,
-    tableMarshaller,
-    mapTableMarshaller,
-    mkInsertExpr,
-    mkCreateTableExpr,
-    mkTableColumnDefinitions,
-    mkTablePrimaryKeyExpr,
-    mkInsertColumnList,
-    mkInsertSource,
-    mkTableReturningClause,
+  ( TableDefinition
+  , HasKey
+  , NoKey
+  , mkTableDefinition
+  , mkTableDefinitionWithoutKey
+  , dropColumns
+  , columnsToDrop
+  , tableIdentifier
+  , tableName
+  , setTableSchema
+  , tableConstraints
+  , addTableConstraints
+  , tableIndexes
+  , addTableIndexes
+  , tablePrimaryKey
+  , tableMarshaller
+  , mapTableMarshaller
+  , mkInsertExpr
+  , mkCreateTableExpr
+  , mkTableColumnDefinitions
+  , mkTablePrimaryKeyExpr
+  , mkInsertColumnList
+  , mkInsertSource
+  , mkTableReturningClause
   )
 where
 
@@ -202,11 +202,13 @@ addTableConstraints ::
   TableDefinition key writeEntity readEntity ->
   TableDefinition key writeEntity readEntity
 addTableConstraints constraintDefs tableDef =
-  let addConstraint constraint constraintMap =
-        Map.insert (constraintMigrationKey constraint) constraint constraintMap
-   in tableDef
-        { _tableConstraints = foldr addConstraint (_tableConstraints tableDef) constraintDefs
-        }
+  let
+    addConstraint constraint constraintMap =
+      Map.insert (constraintMigrationKey constraint) constraint constraintMap
+  in
+    tableDef
+      { _tableConstraints = foldr addConstraint (_tableConstraints tableDef) constraintDefs
+      }
 
 {- |
   Retrieves all the table indexes that have been added to the table via
@@ -230,11 +232,13 @@ addTableIndexes ::
   TableDefinition key writeEntity readEntity ->
   TableDefinition key writeEntity readEntity
 addTableIndexes indexDefs tableDef =
-  let addIndex index indexMap =
-        Map.insert (indexMigrationKey index) index indexMap
-   in tableDef
-        { _tableIndexes = foldr addIndex (_tableIndexes tableDef) indexDefs
-        }
+  let
+    addIndex index indexMap =
+      Map.insert (indexMigrationKey index) index indexMap
+  in
+    tableDef
+      { _tableIndexes = foldr addIndex (_tableIndexes tableDef) indexDefs
+      }
 
 {- |
   Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
@@ -333,19 +337,21 @@ mkInsertExpr ::
   NonEmpty writeEntity ->
   Expr.InsertExpr
 mkInsertExpr returningOption tableDef entities =
-  let marshaller =
-        unannotatedSqlMarshaller $ tableMarshaller tableDef
+  let
+    marshaller =
+      unannotatedSqlMarshaller $ tableMarshaller tableDef
 
-      insertColumnList =
-        mkInsertColumnList marshaller
+    insertColumnList =
+      mkInsertColumnList marshaller
 
-      insertSource =
-        mkInsertSource marshaller entities
-   in Expr.insertExpr
-        (tableName tableDef)
-        (Just insertColumnList)
-        insertSource
-        (mkTableReturningClause returningOption tableDef)
+    insertSource =
+      mkInsertSource marshaller entities
+  in
+    Expr.insertExpr
+      (tableName tableDef)
+      (Just insertColumnList)
+      insertSource
+      (mkTableReturningClause returningOption tableDef)
 
 {- |
   Builds an 'Expr.InsertColumnList' that specifies the columns for an
@@ -377,9 +383,11 @@ mkInsertSource ::
   NonEmpty writeEntity ->
   Expr.InsertSource
 mkInsertSource marshaller entities =
-  let encodeRow =
-        foldMarshallerFields marshaller (const []) collectSqlValue
-   in Expr.insertSqlValues $ map encodeRow (toList entities)
+  let
+    encodeRow =
+      foldMarshallerFields marshaller (const []) collectSqlValue
+  in
+    Expr.insertSqlValues $ map encodeRow (toList entities)
 
 {- |
   An internal helper function that collects the 'SqlValue' encoded value for a

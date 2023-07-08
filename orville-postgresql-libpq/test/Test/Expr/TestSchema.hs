@@ -1,20 +1,20 @@
 module Test.Expr.TestSchema
-  ( FooBar (..),
-    mkFooBar,
-    findAllFooBars,
-    fooBarTable,
-    fooColumn,
-    fooColumnRef,
-    barColumn,
-    barColumnRef,
-    encodeFooBar,
-    orderByFoo,
-    insertFooBarSource,
-    withFooBarData,
-    dropAndRecreateTestTable,
-    assertEqualFooBarRows,
-    assertEqualSqlRows,
-    sqlRowsToText,
+  ( FooBar (..)
+  , mkFooBar
+  , findAllFooBars
+  , fooBarTable
+  , fooColumn
+  , fooColumnRef
+  , barColumn
+  , barColumnRef
+  , encodeFooBar
+  , orderByFoo
+  , insertFooBarSource
+  , withFooBarData
+  , dropAndRecreateTestTable
+  , assertEqualFooBarRows
+  , assertEqualSqlRows
+  , sqlRowsToText
   )
 where
 
@@ -83,11 +83,13 @@ encodeFooBar fooBar =
 
 insertFooBarSource :: [FooBar] -> Expr.InsertSource
 insertFooBarSource fooBars =
-  let mkRow fooBar =
-        [ nullOr SqlValue.fromInt32 (foo fooBar)
-        , nullOr SqlValue.fromText (T.pack <$> bar fooBar)
-        ]
-   in Expr.insertSqlValues (map mkRow fooBars)
+  let
+    mkRow fooBar =
+      [ nullOr SqlValue.fromInt32 (foo fooBar)
+      , nullOr SqlValue.fromText (T.pack <$> bar fooBar)
+      ]
+  in
+    Expr.insertSqlValues (map mkRow fooBars)
 
 nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
 nullOr = maybe SqlValue.sqlNull

@@ -1,5 +1,5 @@
 module Test.FieldDefinition
-  ( fieldDefinitionTests,
+  ( fieldDefinitionTests
   )
 where
 
@@ -169,14 +169,14 @@ testFieldProperties ::
 testFieldProperties pool fieldDefName roundTripTest =
   ( ( String.fromString (fieldDefName <> " - can round trip values (not null)")
     , HH.property $ runRoundTripTest pool roundTripTest
-    ) :
-    ( String.fromString (fieldDefName <> " - can round trip values (nullable)")
-    , HH.property $ runNullableRoundTripTest pool roundTripTest
-    ) :
-    ( String.fromString (fieldDefName <> " - cannot insert null values into a not null field")
-    , Property.singletonProperty $ runNullCounterExampleTest pool roundTripTest
-    ) :
-    map (testDefaultValueProperties pool fieldDefName roundTripTest) (roundTripDefaultValueTests roundTripTest)
+    )
+      : ( String.fromString (fieldDefName <> " - can round trip values (nullable)")
+        , HH.property $ runNullableRoundTripTest pool roundTripTest
+        )
+      : ( String.fromString (fieldDefName <> " - cannot insert null values into a not null field")
+        , Property.singletonProperty $ runNullCounterExampleTest pool roundTripTest
+        )
+      : map (testDefaultValueProperties pool fieldDefName roundTripTest) (roundTripDefaultValueTests roundTripTest)
   )
 
 testDefaultValueProperties ::
@@ -228,7 +228,8 @@ data DefaultValueTest a
 
 runRoundTripTest :: (Show a, Eq a) => Orville.Pool Orville.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runRoundTripTest pool testCase = do
-  let fieldDef = roundTripFieldDef testCase
+  let
+    fieldDef = roundTripFieldDef testCase
 
   value <- HH.forAll (roundTripGen testCase)
   rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
@@ -250,18 +251,20 @@ runRoundTripTest pool testCase = do
 
     ReadRows.readRows result
 
-  let roundTripResult =
-        case rows of
-          [[(_, sqlValue)]] ->
-            Marshall.fieldValueFromSqlValue fieldDef sqlValue
-          _ ->
-            Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
+  let
+    roundTripResult =
+      case rows of
+        [[(_, sqlValue)]] ->
+          Marshall.fieldValueFromSqlValue fieldDef sqlValue
+        _ ->
+          Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
   roundTripResult === Right value
 
 runNullableRoundTripTest :: (Show a, Eq a) => Orville.Pool Orville.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runNullableRoundTripTest pool testCase = do
-  let fieldDef = Marshall.nullableField (roundTripFieldDef testCase)
+  let
+    fieldDef = Marshall.nullableField (roundTripFieldDef testCase)
 
   value <-
     HH.forAll $
@@ -292,19 +295,21 @@ runNullableRoundTripTest pool testCase = do
 
     ReadRows.readRows result
 
-  let roundTripResult =
-        case rows of
-          [[(_, sqlValue)]] ->
-            Marshall.fieldValueFromSqlValue fieldDef sqlValue
-          _ ->
-            Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
+  let
+    roundTripResult =
+      case rows of
+        [[(_, sqlValue)]] ->
+          Marshall.fieldValueFromSqlValue fieldDef sqlValue
+        _ ->
+          Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
   roundTripResult === Right value
 
 runNullCounterExampleTest :: Orville.Pool Orville.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runNullCounterExampleTest pool testCase = do
   result <- HH.evalIO . Pool.withResource pool $ \connection -> do
-    let fieldDef = roundTripFieldDef testCase
+    let
+      fieldDef = roundTripFieldDef testCase
 
     E.try $ do
       dropAndRecreateTestTable fieldDef connection
@@ -332,11 +337,12 @@ runDefaultValueFieldDefinitionTest ::
 runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
   value <- HH.forAll (roundTripGen testCase)
 
-  let defaultValue =
-        mkDefaultValue value
+  let
+    defaultValue =
+      mkDefaultValue value
 
-      fieldDef =
-        Marshall.setDefaultValue defaultValue $ roundTripFieldDef testCase
+    fieldDef =
+      Marshall.setDefaultValue defaultValue $ roundTripFieldDef testCase
 
   rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
     dropAndRecreateTestTable fieldDef connection
@@ -357,12 +363,13 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
 
     ReadRows.readRows result
 
-  let roundTripResult =
-        case rows of
-          [[(_, sqlValue)]] ->
-            Marshall.fieldValueFromSqlValue fieldDef sqlValue
-          _ ->
-            Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
+  let
+    roundTripResult =
+      case rows of
+        [[(_, sqlValue)]] ->
+          Marshall.fieldValueFromSqlValue fieldDef sqlValue
+        _ ->
+          Left ("Expected one row with one value in results, but got: " ++ show (sqlRowsToText rows))
 
   roundTripResult === Right value
 
@@ -373,8 +380,9 @@ runDefaultValueInsertOnlyTest ::
   HH.PropertyT IO ()
 runDefaultValueInsertOnlyTest pool testCase defaultValue =
   HH.evalIO . Pool.withResource pool $ \connection -> do
-    let fieldDef =
-          Marshall.setDefaultValue defaultValue $ roundTripFieldDef testCase
+    let
+      fieldDef =
+        Marshall.setDefaultValue defaultValue $ roundTripFieldDef testCase
 
     dropAndRecreateTestTable fieldDef connection
 

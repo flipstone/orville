@@ -1,10 +1,10 @@
 module Test.Entities.Bar
-  ( Bar (..),
-    table,
-    generate,
-    generateList,
-    withTable,
-    barIdField,
+  ( Bar (..)
+  , table
+  , generate
+  , generateList
+  , withTable
+  , barIdField
   )
 where
 

@@ -1,8 +1,8 @@
 module Orville.PostgreSQL.PgCatalog.PgIndex
-  ( PgIndex (..),
-    pgIndexTable,
-    indexRelationOidField,
-    indexIsLiveField,
+  ( PgIndex (..)
+  , pgIndexTable
+  , indexRelationOidField
+  , indexIsLiveField
   )
 where
 
@@ -23,26 +23,26 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
   about indices is also contained in the @pg_catalog.pg_class@ table as well.
 -}
 data PgIndex = PgIndex
-  { -- | The PostgreSQL @oid@ of the @pg_class@ entry for this index.
-    pgIndexPgClassOid :: LibPQ.Oid
-  , -- | The PostgreSQL @oid@ of the @pg_class@ entry for the table that this
-    -- index is for.
-    pgIndexRelationOid :: LibPQ.Oid
-  , -- | An array of attribute numbers references the columns the table that
-    -- are included in the index. An attribute number of @0@ indicates an
-    -- expression over the table's columns rather than just a reference to a
-    -- column.
-    --
-    -- In PostgreSQL 11+ this includes both key columns and non-key
-    -- included columns. Orville is currently not aware of this distinction,
-    -- however.
-    pgIndexAttributeNumbers :: [AttributeNumber]
-  , -- | Indicates whether this is a unique index
-    pgIndexIsUnique :: Bool
-  , -- | Indicates whether this is the primary key index for the table
-    pgIndexIsPrimary :: Bool
-  , -- | When @False@, indicates that this index is in the process of being dropped and should be ignored
-    pgIndexIsLive :: Bool
+  { pgIndexPgClassOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ of the @pg_class@ entry for this index.
+  , pgIndexRelationOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ of the @pg_class@ entry for the table that this
+  -- index is for.
+  , pgIndexAttributeNumbers :: [AttributeNumber]
+  -- ^ An array of attribute numbers references the columns the table that
+  -- are included in the index. An attribute number of @0@ indicates an
+  -- expression over the table's columns rather than just a reference to a
+  -- column.
+  --
+  -- In PostgreSQL 11+ this includes both key columns and non-key
+  -- included columns. Orville is currently not aware of this distinction,
+  -- however.
+  , pgIndexIsUnique :: Bool
+  -- ^ Indicates whether this is a unique index
+  , pgIndexIsPrimary :: Bool
+  -- ^ Indicates whether this is the primary key index for the table
+  , pgIndexIsLive :: Bool
+  -- ^ When @False@, indicates that this index is in the process of being dropped and should be ignored
   }
 
 {- |
@@ -112,18 +112,22 @@ indexIsLiveField =
 
 pgVectorTextToAttributeNumberList :: T.Text -> Either String [AttributeNumber]
 pgVectorTextToAttributeNumberList text =
-  let parser = do
-        attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ' ')
-        AttoText.endOfInput
-        pure attNums
-   in case AttoText.parseOnly parser text of
-        Left err -> Left ("Unable to decode PostgreSQL Vector as AttributeNumber list: " <> err)
-        Right nums -> Right nums
+  let
+    parser = do
+      attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ' ')
+      AttoText.endOfInput
+      pure attNums
+  in
+    case AttoText.parseOnly parser text of
+      Left err -> Left ("Unable to decode PostgreSQL Vector as AttributeNumber list: " <> err)
+      Right nums -> Right nums
 
 attributeNumberListToPgVectorText :: [AttributeNumber] -> T.Text
 attributeNumberListToPgVectorText attNums =
-  let spaceDelimitedAttributeNumbers =
-        mconcat $
-          List.intersperse (LTB.singleton ' ') (map attributeNumberTextBuilder attNums)
-   in LT.toStrict . LTB.toLazyText $
-        spaceDelimitedAttributeNumbers
+  let
+    spaceDelimitedAttributeNumbers =
+      mconcat $
+        List.intersperse (LTB.singleton ' ') (map attributeNumberTextBuilder attNums)
+  in
+    LT.toStrict . LTB.toLazyText $
+      spaceDelimitedAttributeNumbers

@@ -1,22 +1,22 @@
 module Test.Entities.Foo
-  ( Foo (..),
-    FooId,
-    FooName,
-    table,
-    generate,
-    generateFooWithName,
-    generateFooWithId,
-    generateFooId,
-    generateFooName,
-    generateList,
-    generateListUsing,
-    generateNonEmpty,
-    withTable,
-    fooIdField,
-    fooNameField,
-    fooAgeField,
-    hasName,
-    averageFooAge,
+  ( Foo (..)
+  , FooId
+  , FooName
+  , table
+  , generate
+  , generateFooWithName
+  , generateFooWithId
+  , generateFooId
+  , generateFooName
+  , generateList
+  , generateListUsing
+  , generateNonEmpty
+  , withTable
+  , fooIdField
+  , fooNameField
+  , fooAgeField
+  , hasName
+  , averageFooAge
   )
 where
 

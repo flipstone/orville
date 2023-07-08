@@ -5,14 +5,14 @@ Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Insert
-  ( InsertExpr,
-    insertExpr,
-    InsertColumnList,
-    insertColumnList,
-    InsertSource,
-    insertSqlValues,
-    RowValues,
-    rowValues,
+  ( InsertExpr
+  , insertExpr
+  , InsertColumnList
+  , insertColumnList
+  , InsertSource
+  , insertSqlValues
+  , RowValues
+  , rowValues
   )
 where
 

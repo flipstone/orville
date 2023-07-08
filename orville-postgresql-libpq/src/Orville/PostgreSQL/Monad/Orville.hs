@@ -1,9 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Monad.Orville
-  ( Orville,
-    runOrville,
-    runOrvilleWithState,
+  ( Orville
+  , runOrville
+  , runOrvilleWithState
   )
 where
 

@@ -5,8 +5,8 @@ Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.IndexName
-  ( IndexName,
-    indexName,
+  ( IndexName
+  , indexName
   )
 where
 

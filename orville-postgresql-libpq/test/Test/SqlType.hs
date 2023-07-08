@@ -1,5 +1,5 @@
 module Test.SqlType
-  ( sqlTypeTests,
+  ( sqlTypeTests
   )
 where
 
@@ -514,7 +514,8 @@ runDecodingTest pool test =
     rows <- MIO.liftIO . Pool.withResource pool $ \connection -> do
       dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
-      let tableName = Expr.qualified Nothing (Expr.tableName "decoding_test")
+      let
+        tableName = Expr.qualified Nothing (Expr.tableName "decoding_test")
 
       RawSql.executeVoid connection $
         Expr.insertExpr
@@ -532,7 +533,8 @@ runDecodingTest pool test =
 
       ReadRows.readRows result
 
-    let actual = map (decodeSingleValue (sqlType test)) rows
+    let
+      actual = map (decodeSingleValue (sqlType test)) rows
 
     actual === [Right $ expectedValue test]
 

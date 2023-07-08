@@ -4,9 +4,9 @@ License   : MIT
 Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.Sequence
-  ( sequenceNextValue,
-    sequenceCurrentValue,
-    sequenceSetValue,
+  ( sequenceNextValue
+  , sequenceCurrentValue
+  , sequenceSetValue
   )
 where
 
@@ -49,17 +49,18 @@ sequenceSetValue sequenceDef newValue =
 
 selectInt64Value :: Monad.MonadOrville m => String -> Expr.ValueExpression -> m Int64
 selectInt64Value caller valueExpression = do
-  let queryExpr =
-        Expr.queryExpr
-          (Expr.selectClause (Expr.selectExpr Nothing))
-          ( Expr.selectDerivedColumns
-              [Expr.deriveColumnAs valueExpression (Expr.columnName "result")]
-          )
-          Nothing
+  let
+    queryExpr =
+      Expr.queryExpr
+        (Expr.selectClause (Expr.selectExpr Nothing))
+        ( Expr.selectDerivedColumns
+            [Expr.deriveColumnAs valueExpression (Expr.columnName "result")]
+        )
+        Nothing
 
-      marshaller =
-        Marshall.annotateSqlMarshallerEmptyAnnotation
-          . Marshall.marshallField id
-          $ Marshall.bigIntegerField "result"
+    marshaller =
+      Marshall.annotateSqlMarshallerEmptyAnnotation
+        . Marshall.marshallField id
+        $ Marshall.bigIntegerField "result"
   values <- Execute.executeAndDecode QueryType.SelectQuery queryExpr marshaller
   RowCountExpectation.expectExactlyOneRow caller values

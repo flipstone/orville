@@ -1,5 +1,5 @@
 module Test.Expr.Cursor
-  ( cursorTests,
+  ( cursorTests
   )
 where
 
@@ -71,16 +71,17 @@ prop_cursorCloseAll :: Property.NamedDBProperty
 prop_cursorCloseAll =
   Property.singletonNamedDBProperty "Close all cursors" $ \pool -> do
     MIO.liftIO . Pool.withResource pool $ \connection -> do
-      let cursorName :: Expr.CursorName
-          cursorName = Expr.fromIdentifier $ Expr.identifier "testcursor"
+      let
+        cursorName :: Expr.CursorName
+        cursorName = Expr.fromIdentifier $ Expr.identifier "testcursor"
 
-          declare =
-            RawSql.executeVoid connection
-              . Expr.declare cursorName Nothing (Just Expr.withHold)
-              $ RawSql.unsafeSqlExpression "SELECT 1"
+        declare =
+          RawSql.executeVoid connection
+            . Expr.declare cursorName Nothing (Just Expr.withHold)
+            $ RawSql.unsafeSqlExpression "SELECT 1"
 
-          close =
-            RawSql.executeVoid connection $ Expr.close (Left Expr.allCursors)
+        close =
+          RawSql.executeVoid connection $ Expr.close (Left Expr.allCursors)
 
       -- As long as close doesn't raise an exception, the test passes
       ExSafe.bracket_ declare close (pure ())
@@ -284,10 +285,12 @@ runFetchDirectionsOnData ::
 runFetchDirectionsOnData pool scroll fooBars directions =
   withFooBarData pool fooBars $ \connection ->
     withTestCursor connection scroll (Just Expr.withHold) findAllFooBars $ \cursorName ->
-      let runDirection direction = do
-            result <- RawSql.execute connection $ Expr.fetch (Just direction) cursorName
-            ReadRows.readRows result
-       in traverse runDirection directions
+      let
+        runDirection direction = do
+          result <- RawSql.execute connection $ Expr.fetch (Just direction) cursorName
+          ReadRows.readRows result
+      in
+        traverse runDirection directions
 
 withTestCursor ::
   Orville.Connection ->
@@ -297,22 +300,26 @@ withTestCursor ::
   (Expr.CursorName -> IO a) ->
   IO a
 withTestCursor connection scroll hold query action =
-  let cursorName :: Expr.CursorName
-      cursorName = Expr.fromIdentifier $ Expr.identifier "testcursor"
+  let
+    cursorName :: Expr.CursorName
+    cursorName = Expr.fromIdentifier $ Expr.identifier "testcursor"
 
-      declare =
-        RawSql.executeVoid connection $
-          Expr.declare cursorName scroll hold query
+    declare =
+      RawSql.executeVoid connection $
+        Expr.declare cursorName scroll hold query
 
-      close =
-        RawSql.executeVoid connection $ Expr.close (Right cursorName)
-   in ExSafe.bracket_ declare close (action cursorName)
+    close =
+      RawSql.executeVoid connection $ Expr.close (Right cursorName)
+  in
+    ExSafe.bracket_ declare close (action cursorName)
 
 withTestTransaction :: Orville.Connection -> IO a -> IO a
 withTestTransaction connection action =
-  let begin =
-        RawSql.executeVoid connection $ Expr.beginTransaction Nothing
+  let
+    begin =
+      RawSql.executeVoid connection $ Expr.beginTransaction Nothing
 
-      commit =
-        RawSql.executeVoid connection $ Expr.commit
-   in ExSafe.bracket_ begin commit action
+    commit =
+      RawSql.executeVoid connection $ Expr.commit
+  in
+    ExSafe.bracket_ begin commit action

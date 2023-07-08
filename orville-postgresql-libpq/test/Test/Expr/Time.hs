@@ -1,5 +1,5 @@
 module Test.Expr.Time
-  ( timeTests,
+  ( timeTests
   )
 where
 
@@ -32,18 +32,19 @@ timeTests pool =
 prop_now :: Property.NamedDBProperty
 prop_now =
   Property.singletonNamedDBProperty "now()" $ \pool -> do
-    let sql =
-          Expr.queryExpr
-            (Expr.selectClause (Expr.selectExpr Nothing))
-            ( Expr.selectDerivedColumns
-                [ Expr.deriveColumnAs Expr.now (Expr.columnName "result")
-                ]
-            )
-            Nothing
+    let
+      sql =
+        Expr.queryExpr
+          (Expr.selectClause (Expr.selectExpr Nothing))
+          ( Expr.selectDerivedColumns
+              [ Expr.deriveColumnAs Expr.now (Expr.columnName "result")
+              ]
+          )
+          Nothing
 
-        marshaller =
-          Orville.annotateSqlMarshallerEmptyAnnotation $
-            Orville.marshallField id (Orville.utcTimestampField "result")
+      marshaller =
+        Orville.annotateSqlMarshallerEmptyAnnotation $
+          Orville.marshallField id (Orville.utcTimestampField "result")
 
     result <-
       HH.evalIO $
@@ -75,24 +76,25 @@ prop_makeInterval =
         , (Expr.seconds, seconds)
         ]
 
-    let intervalExpression =
-          Expr.makeInterval $
-            map
-              (\(arg, value) -> (arg, Expr.valueExpression (SqlValue.fromInt32 value)))
-              intervalValues
+    let
+      intervalExpression =
+        Expr.makeInterval $
+          map
+            (\(arg, value) -> (arg, Expr.valueExpression (SqlValue.fromInt32 value)))
+            intervalValues
 
-        sql =
-          Expr.queryExpr
-            (Expr.selectClause (Expr.selectExpr Nothing))
-            ( Expr.selectDerivedColumns
-                [ Expr.deriveColumnAs intervalExpression (Expr.columnName "result")
-                ]
-            )
-            Nothing
+      sql =
+        Expr.queryExpr
+          (Expr.selectClause (Expr.selectExpr Nothing))
+          ( Expr.selectDerivedColumns
+              [ Expr.deriveColumnAs intervalExpression (Expr.columnName "result")
+              ]
+          )
+          Nothing
 
-        marshaller =
-          Orville.annotateSqlMarshallerEmptyAnnotation $
-            Orville.marshallField id (Orville.unboundedTextField "result")
+      marshaller =
+        Orville.annotateSqlMarshallerEmptyAnnotation $
+          Orville.marshallField id (Orville.unboundedTextField "result")
 
     result <-
       HH.evalIO $
@@ -103,28 +105,30 @@ prop_makeInterval =
 
 renderExpectedValue :: [(Expr.IntervalArgument, Int32)] -> T.Text
 renderExpectedValue values =
-  let valuesByName =
-        map
-          (\(arg, value) -> (RawSql.toExampleBytes arg, value))
-          values
+  let
+    valuesByName =
+      map
+        (\(arg, value) -> (RawSql.toExampleBytes arg, value))
+        values
 
-      lookupInterval name =
-        Maybe.fromMaybe 0 (lookup (B8.pack name) valuesByName)
+    lookupInterval name =
+      Maybe.fromMaybe 0 (lookup (B8.pack name) valuesByName)
 
-      render :: Int32 -> String -> Maybe T.Text
-      render value singularName =
-        case value of
-          0 -> Nothing
-          1 -> Just (T.pack (Printf.printf "%d %s" value singularName))
-          _ -> Just (T.pack (Printf.printf "%d %ss" value singularName))
+    render :: Int32 -> String -> Maybe T.Text
+    render value singularName =
+      case value of
+        0 -> Nothing
+        1 -> Just (T.pack (Printf.printf "%d %s" value singularName))
+        _ -> Just (T.pack (Printf.printf "%d %ss" value singularName))
 
-      mbTime =
-        case (lookupInterval "hours", lookupInterval "mins", lookupInterval "secs") of
-          (0, 0, 0) -> Nothing
-          (h, m, s) -> Just (T.pack (Printf.printf "%02d:%02d:%02d" h m s))
-   in T.intercalate (T.pack " ") . Maybe.catMaybes $
-        [ render (lookupInterval "years") "year"
-        , render (lookupInterval "months") "mon"
-        , render ((7 * lookupInterval "weeks") + lookupInterval "days") "day"
-        , mbTime
-        ]
+    mbTime =
+      case (lookupInterval "hours", lookupInterval "mins", lookupInterval "secs") of
+        (0, 0, 0) -> Nothing
+        (h, m, s) -> Just (T.pack (Printf.printf "%02d:%02d:%02d" h m s))
+  in
+    T.intercalate (T.pack " ") . Maybe.catMaybes $
+      [ render (lookupInterval "years") "year"
+      , render (lookupInterval "months") "mon"
+      , render ((7 * lookupInterval "weeks") + lookupInterval "days") "day"
+      , mbTime
+      ]

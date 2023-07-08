@@ -1,5 +1,5 @@
 module Test.Execution
-  ( executionTests,
+  ( executionTests
   )
 where
 
@@ -27,8 +27,9 @@ prop_executeVoidCallbacks =
   Property.singletonNamedDBProperty "exceuteVoid makes execution callbacks" $ \pool -> do
     traceRef <- HH.evalIO $ IORef.newIORef []
 
-    let selectOne =
-          RawSql.fromString "SELECT 1 as number"
+    let
+      selectOne =
+        RawSql.fromString "SELECT 1 as number"
 
     HH.evalIO . Orville.runOrville pool $
       Orville.localOrvilleState
@@ -48,12 +49,13 @@ prop_executeAndDecodeCallbacks =
   Property.singletonNamedDBProperty "exceuteAndDecode makes execution callbacks" $ \pool -> do
     traceRef <- HH.evalIO $ IORef.newIORef []
 
-    let selectOne =
-          RawSql.fromString "SELECT 1 as number"
+    let
+      selectOne =
+        RawSql.fromString "SELECT 1 as number"
 
-        marshaller =
-          Orville.annotateSqlMarshallerEmptyAnnotation $
-            Orville.marshallField id (Orville.integerField "number")
+      marshaller =
+        Orville.annotateSqlMarshallerEmptyAnnotation $
+          Orville.marshallField id (Orville.integerField "number")
     _ <-
       HH.evalIO . Orville.runOrville pool $
         Orville.localOrvilleState
@@ -71,8 +73,9 @@ prop_executeAndDecodeCallbacks =
 prop_executeAndReturnAffectedRows :: Property.NamedDBProperty
 prop_executeAndReturnAffectedRows =
   Property.singletonNamedDBProperty "executeAndReturnAffectedRows works as advertised" $ \pool -> do
-    let selectOne =
-          RawSql.fromString "SELECT 1 as number"
+    let
+      selectOne =
+        RawSql.fromString "SELECT 1 as number"
 
     affectedRows <-
       HH.evalIO . Orville.runOrville pool $ do
@@ -85,8 +88,9 @@ prop_executeAndReturnAffectedRowsCallbacks =
   Property.singletonNamedDBProperty "executeAndReturnAffectedRows makes execution callbacks" $ \pool -> do
     traceRef <- HH.evalIO $ IORef.newIORef []
 
-    let selectOne =
-          RawSql.fromString "SELECT 1 as number"
+    let
+      selectOne =
+        RawSql.fromString "SELECT 1 as number"
 
     _ <-
       HH.evalIO . Orville.runOrville pool $
@@ -110,6 +114,7 @@ appendTrace ::
   IO a ->
   IO a
 appendTrace traceRef label queryType sql action = do
-  let trace = (label, queryType, RawSql.toExampleBytes sql)
+  let
+    trace = (label, queryType, RawSql.toExampleBytes sql)
   IORef.modifyIORef traceRef (++ [trace])
   action

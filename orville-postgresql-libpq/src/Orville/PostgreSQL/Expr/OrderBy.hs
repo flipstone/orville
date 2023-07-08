@@ -5,19 +5,19 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.OrderBy
-  ( OrderByClause,
-    orderByClause,
-    OrderByExpr,
-    appendOrderByExpr,
-    orderByColumnName,
-    orderByExpr,
-    orderByColumnsExpr,
-    OrderByDirection,
-    NullsOrder (NullsFirst, NullsLast),
-    ascendingOrder,
-    descendingOrder,
-    ascendingOrderWith,
-    descendingOrderWith,
+  ( OrderByClause
+  , orderByClause
+  , OrderByExpr
+  , appendOrderByExpr
+  , orderByColumnName
+  , orderByExpr
+  , orderByColumnsExpr
+  , OrderByDirection
+  , NullsOrder (NullsFirst, NullsLast)
+  , ascendingOrder
+  , descendingOrder
+  , ascendingOrderWith
+  , descendingOrderWith
   )
 where
 
@@ -51,10 +51,10 @@ orderByExpr sql orderSql =
 orderByColumnsExpr :: NonEmpty (ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr columns =
   OrderByExpr . RawSql.intercalate RawSql.commaSpace . NE.map columnOrdering $ columns
-  where
-    columnOrdering :: (ColumnName, OrderByDirection) -> RawSql.RawSql
-    columnOrdering (columnName, orderByDirection) =
-      RawSql.toRawSql columnName <> RawSql.space <> RawSql.toRawSql orderByDirection
+ where
+  columnOrdering :: (ColumnName, OrderByDirection) -> RawSql.RawSql
+  columnOrdering (columnName, orderByDirection) =
+    RawSql.toRawSql columnName <> RawSql.space <> RawSql.toRawSql orderByDirection
 
 {-- |
   Orders a query by the given column name in the given order direction.

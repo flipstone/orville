@@ -6,22 +6,22 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.SelectOptions
-  ( SelectOptions,
-    emptySelectOptions,
-    appendSelectOptions,
-    selectDistinct,
-    selectWhereClause,
-    selectOrderByClause,
-    selectGroupByClause,
-    selectLimitExpr,
-    selectOffsetExpr,
-    distinct,
-    where_,
-    orderBy,
-    limit,
-    offset,
-    groupBy,
-    selectOptionsQueryExpr,
+  ( SelectOptions
+  , emptySelectOptions
+  , appendSelectOptions
+  , selectDistinct
+  , selectWhereClause
+  , selectOrderByClause
+  , selectGroupByClause
+  , selectLimitExpr
+  , selectOffsetExpr
+  , distinct
+  , where_
+  , orderBy
+  , limit
+  , offset
+  , groupBy
+  , selectOptionsQueryExpr
   )
 where
 

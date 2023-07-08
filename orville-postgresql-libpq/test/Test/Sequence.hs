@@ -1,5 +1,5 @@
 module Test.Sequence
-  ( sequenceTests,
+  ( sequenceTests
   )
 where
 

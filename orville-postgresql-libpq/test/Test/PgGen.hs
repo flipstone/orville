@@ -1,12 +1,12 @@
 module Test.PgGen
-  ( pgText,
-    pgDouble,
-    pgInt32,
-    pgIdentifier,
-    pgIdentifierWithPrefix,
-    pgUTCTime,
-    pgLocalTime,
-    pgDay,
+  ( pgText
+  , pgDouble
+  , pgInt32
+  , pgIdentifier
+  , pgIdentifierWithPrefix
+  , pgUTCTime
+  , pgLocalTime
+  , pgDay
   )
 where
 
@@ -37,35 +37,38 @@ pgInt32 =
 -}
 pgDouble :: HH.Gen Double
 pgDouble = do
-  let -- We use 14 instead of 15 here to allow for the addinitional power
-      -- of 10 that may end up coming from the mantissa, based on the
-      -- value of 'maxMantissa' below
-      maxExpn =
-        truncate (logBase 2 (10 ^ (14 :: Int)) :: Double)
+  let
+    -- We use 14 instead of 15 here to allow for the addinitional power
+    -- of 10 that may end up coming from the mantissa, based on the
+    -- value of 'maxMantissa' below
+    maxExpn =
+      truncate (logBase 2 (10 ^ (14 :: Int)) :: Double)
 
-      maxMantissa =
-        10
+    maxMantissa =
+      10
 
-  mantissa <- Gen.integral (Range.linearFrom 0 (- maxMantissa) maxMantissa)
-  expn <- Gen.integral (Range.linearFrom 0 (- maxExpn) maxExpn)
+  mantissa <- Gen.integral (Range.linearFrom 0 (-maxMantissa) maxMantissa)
+  expn <- Gen.integral (Range.linearFrom 0 (-maxExpn) maxExpn)
   pure . roundExcessPrecisionAfterDecimal 15 $ encodeFloat mantissa expn
 
 roundExcessPrecisionAfterDecimal :: Integer -> Double -> Double
 roundExcessPrecisionAfterDecimal maxTotalPrecision double =
-  let digitsBeforeDecimal =
-        decimalDigits (truncate double)
+  let
+    digitsBeforeDecimal =
+      decimalDigits (truncate double)
 
-      digitsAfterDecimal =
-        maxTotalPrecision - digitsBeforeDecimal
+    digitsAfterDecimal =
+      maxTotalPrecision - digitsBeforeDecimal
 
-      roundingFactor =
-        10.0 ^^ digitsAfterDecimal
+    roundingFactor =
+      10.0 ^^ digitsAfterDecimal
 
-      roundDouble =
-        fromInteger . round
-   in if digitsAfterDecimal > 0
-        then roundDouble (double * roundingFactor) / roundingFactor
-        else double
+    roundDouble =
+      fromInteger . round
+  in
+    if digitsAfterDecimal > 0
+      then roundDouble (double * roundingFactor) / roundingFactor
+      else double
 
 decimalDigits :: Integer -> Integer
 decimalDigits n =

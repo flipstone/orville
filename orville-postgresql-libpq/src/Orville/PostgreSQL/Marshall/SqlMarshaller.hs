@@ -6,36 +6,36 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Marshall.SqlMarshaller
-  ( SqlMarshaller,
-    AnnotatedSqlMarshaller,
-    annotateSqlMarshaller,
-    annotateSqlMarshallerEmptyAnnotation,
-    unannotatedSqlMarshaller,
-    mapSqlMarshaller,
-    MarshallerField (Natural, Synthetic),
-    marshallResultFromSql,
-    marshallResultFromSqlUsingRowIdExtractor,
-    RowIdentityExtractor,
-    mkRowIdentityExtractor,
-    marshallField,
-    marshallSyntheticField,
-    marshallReadOnlyField,
-    marshallReadOnly,
-    marshallNested,
-    marshallMaybe,
-    marshallPartial,
-    prefixMarshaller,
-    ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns),
-    collectFromField,
-    marshallEntityToSetClauses,
-    foldMarshallerFields,
-    marshallerDerivedColumns,
-    mkRowSource,
-    RowSource,
-    mapRowSource,
-    applyRowSource,
-    constRowSource,
-    failRowSource,
+  ( SqlMarshaller
+  , AnnotatedSqlMarshaller
+  , annotateSqlMarshaller
+  , annotateSqlMarshallerEmptyAnnotation
+  , unannotatedSqlMarshaller
+  , mapSqlMarshaller
+  , MarshallerField (Natural, Synthetic)
+  , marshallResultFromSql
+  , marshallResultFromSqlUsingRowIdExtractor
+  , RowIdentityExtractor
+  , mkRowIdentityExtractor
+  , marshallField
+  , marshallSyntheticField
+  , marshallReadOnlyField
+  , marshallReadOnly
+  , marshallNested
+  , marshallMaybe
+  , marshallPartial
+  , prefixMarshaller
+  , ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns)
+  , collectFromField
+  , marshallEntityToSetClauses
+  , foldMarshallerFields
+  , marshallerDerivedColumns
+  , mkRowSource
+  , RowSource
+  , mapRowSource
+  , applyRowSource
+  , constRowSource
+  , failRowSource
   )
 where
 
@@ -149,21 +149,23 @@ marshallerDerivedColumns ::
   SqlMarshaller writeEntity readEntity ->
   [Expr.DerivedColumn]
 marshallerDerivedColumns marshaller =
-  let collectDerivedColumn ::
-        MarshallerField writeEntity ->
-        [Expr.DerivedColumn] ->
-        [Expr.DerivedColumn]
-      collectDerivedColumn entry columns =
-        case entry of
-          Natural fieldDef _ ->
-            (Expr.deriveColumn . Expr.columnReference . fieldColumnName $ fieldDef) :
-            columns
-          Synthetic synthField ->
-            Expr.deriveColumnAs
-              (syntheticFieldExpression synthField)
-              (fieldNameToColumnName $ syntheticFieldAlias synthField) :
-            columns
-   in foldMarshallerFields marshaller [] collectDerivedColumn
+  let
+    collectDerivedColumn ::
+      MarshallerField writeEntity ->
+      [Expr.DerivedColumn] ->
+      [Expr.DerivedColumn]
+    collectDerivedColumn entry columns =
+      case entry of
+        Natural fieldDef _ ->
+          (Expr.deriveColumn . Expr.columnReference . fieldColumnName $ fieldDef)
+            : columns
+        Synthetic synthField ->
+          Expr.deriveColumnAs
+            (syntheticFieldExpression synthField)
+            (fieldNameToColumnName $ syntheticFieldAlias synthField)
+            : columns
+  in
+    foldMarshallerFields marshaller [] collectDerivedColumn
 
 {- |
   Represents a primitive entry in a 'SqlMarshaller'. This type is used with
@@ -272,9 +274,11 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
     MarshallPure _ ->
       currentResult
     MarshallApply submarshallerA submarshallerB ->
-      let subresultB =
-            foldMarshallerFieldsPart submarshallerB getPart currentResult addToResult
-       in foldMarshallerFieldsPart submarshallerA getPart subresultB addToResult
+      let
+        subresultB =
+          foldMarshallerFieldsPart submarshallerB getPart currentResult addToResult
+      in
+        foldMarshallerFieldsPart submarshallerA getPart subresultB addToResult
     MarshallNest nestingFunction submarshaller ->
       foldMarshallerFieldsPart submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
     MarshallField fieldDefinition ->
@@ -339,23 +343,23 @@ marshallResultFromSqlUsingRowIdExtractor errorDetailLevel rowIdExtractor marshal
 traverseSequence :: (a -> IO (Either err b)) -> [a] -> IO (Either err [b])
 traverseSequence f =
   go
-  where
-    go as =
-      case as of
-        [] ->
-          pure (Right [])
-        a : rest -> do
-          eitherB <- f a
-          case eitherB of
-            Left err ->
-              pure (Left err)
-            Right b -> do
-              eitherBS <- go rest
-              case eitherBS of
-                Left err ->
-                  pure (Left err)
-                Right bs ->
-                  pure (Right (b : bs))
+ where
+  go as =
+    case as of
+      [] ->
+        pure (Right [])
+      a : rest -> do
+        eitherB <- f a
+        case eitherB of
+          Left err ->
+            pure (Left err)
+          Right b -> do
+            eitherBS <- go rest
+            case eitherBS of
+              Left err ->
+                pure (Left err)
+              Right bs ->
+                pure (Right (b : bs))
 
 {- |
   Attempts to decode a result set row that has already been fetched from the
@@ -463,43 +467,46 @@ mkRowSource ::
 mkRowSource marshaller result = do
   columnMap <- prepareColumnMap result
 
-  let mkSource :: SqlMarshaller a b -> RowSource b
-      mkSource marshallerPart =
-        -- Note, this case statement is evaluated before the row argument is
-        -- ever passed to a 'RowSource' to ensure that a single 'RowSource'
-        -- operation is build and re-used when decoding many rows.
-        case marshallerPart of
-          MarshallPure readEntity ->
-            constRowSource readEntity
-          MarshallApply marshallAToB marshallA ->
-            mkSource marshallAToB <*> mkSource marshallA
-          MarshallNest _ someMarshaller ->
-            mkSource someMarshaller
-          MarshallField fieldDef ->
-            mkFieldNameSource
-              (fieldName fieldDef)
-              (fieldValueFromSqlValue fieldDef)
-              columnMap
-              result
-          MarshallSyntheticField syntheticField ->
-            mkFieldNameSource
-              (syntheticFieldAlias syntheticField)
-              (syntheticFieldValueFromSqlValue syntheticField)
-              columnMap
-              result
-          MarshallMaybeTag m ->
-            mkSource m
-          MarshallPartial m ->
-            let fieldNames =
-                  foldMarshallerFields m [] $ \marshallerField names ->
-                    case marshallerField of
-                      Natural field _ ->
-                        fieldName field : names
-                      Synthetic field ->
-                        syntheticFieldAlias field : names
-             in partialRowSource fieldNames columnMap result (mkSource m)
-          MarshallReadOnly m ->
-            mkSource m
+  let
+    mkSource :: SqlMarshaller a b -> RowSource b
+    mkSource marshallerPart =
+      -- Note, this case statement is evaluated before the row argument is
+      -- ever passed to a 'RowSource' to ensure that a single 'RowSource'
+      -- operation is build and re-used when decoding many rows.
+      case marshallerPart of
+        MarshallPure readEntity ->
+          constRowSource readEntity
+        MarshallApply marshallAToB marshallA ->
+          mkSource marshallAToB <*> mkSource marshallA
+        MarshallNest _ someMarshaller ->
+          mkSource someMarshaller
+        MarshallField fieldDef ->
+          mkFieldNameSource
+            (fieldName fieldDef)
+            (fieldValueFromSqlValue fieldDef)
+            columnMap
+            result
+        MarshallSyntheticField syntheticField ->
+          mkFieldNameSource
+            (syntheticFieldAlias syntheticField)
+            (syntheticFieldValueFromSqlValue syntheticField)
+            columnMap
+            result
+        MarshallMaybeTag m ->
+          mkSource m
+        MarshallPartial m ->
+          let
+            fieldNames =
+              foldMarshallerFields m [] $ \marshallerField names ->
+                case marshallerField of
+                  Natural field _ ->
+                    fieldName field : names
+                  Synthetic field ->
+                    syntheticFieldAlias field : names
+          in
+            partialRowSource fieldNames columnMap result (mkSource m)
+        MarshallReadOnly m ->
+          mkSource m
 
   pure . mkSource $ marshaller
 
@@ -517,16 +524,17 @@ partialRowSource fieldNames columnMap result (RowSource f) =
       Left marshallError ->
         pure $ Left marshallError
       Right (Left errorMessage) -> do
-        let columnNames =
-              map fieldNameToByteString fieldNames
+        let
+          columnNames =
+            map fieldNameToByteString fieldNames
 
-            lookupValue columnName =
-              case Map.lookup columnName columnMap of
-                Nothing ->
-                  pure (columnName, SqlValue.sqlNull)
-                Just columnNumber -> do
-                  value <- Result.getValue result row columnNumber
-                  pure (columnName, value)
+          lookupValue columnName =
+            case Map.lookup columnName columnMap of
+              Nothing ->
+                pure (columnName, SqlValue.sqlNull)
+              Just columnNumber -> do
+                value <- Result.getValue result row columnNumber
+                pure (columnName, value)
 
         values <- traverse lookupValue columnNames
 
@@ -571,15 +579,16 @@ prepareColumnMap ::
 prepareColumnMap result = do
   mbMaxColumn <- Result.maxColumnNumber result
 
-  let mkNameEntry columnNumber = do
-        mbColumnName <- Result.columnName result columnNumber
+  let
+    mkNameEntry columnNumber = do
+      mbColumnName <- Result.columnName result columnNumber
 
-        pure $
-          case mbColumnName of
-            Just name ->
-              Just (name, columnNumber)
-            Nothing ->
-              Nothing
+      pure $
+        case mbColumnName of
+          Just name ->
+            Just (name, columnNumber)
+          Nothing ->
+            Nothing
 
   case mbMaxColumn of
     Nothing ->
@@ -607,12 +616,14 @@ mkColumnRowSource sourceFieldName fromSqlValue result column =
       Right value ->
         pure (Right value)
       Left err ->
-        let details =
-              MarshallError.DecodingErrorDetails
-                { MarshallError.decodingErrorValues = [(fieldNameToByteString sourceFieldName, sqlValue)]
-                , MarshallError.decodingErrorMessage = err
-                }
-         in pure (Left $ MarshallError.DecodingError details)
+        let
+          details =
+            MarshallError.DecodingErrorDetails
+              { MarshallError.decodingErrorValues = [(fieldNameToByteString sourceFieldName, sqlValue)]
+              , MarshallError.decodingErrorMessage = err
+              }
+        in
+          pure (Left $ MarshallError.DecodingError details)
 
 {- |
   A 'RowIdentityExtractor' is used to retrieve identifying information
@@ -640,20 +651,21 @@ mkRowIdentityExtractor ::
   RowIdentityExtractor
 mkRowIdentityExtractor fields result =
   RowIdentityExtractor $ \row -> do
-    let fieldNameSet =
-          Set.fromList
-            . fmap fieldNameToByteString
-            $ fields
+    let
+      fieldNameSet =
+        Set.fromList
+          . fmap fieldNameToByteString
+          $ fields
 
-        getIdentityValue columnNumber = do
-          mbColumnName <- Result.columnName result columnNumber
+      getIdentityValue columnNumber = do
+        mbColumnName <- Result.columnName result columnNumber
 
-          case mbColumnName of
-            Just name | Set.member name fieldNameSet -> do
-              value <- Result.getValue result row columnNumber
-              pure $ Just (name, value)
-            _ ->
-              pure Nothing
+        case mbColumnName of
+          Just name | Set.member name fieldNameSet -> do
+            value <- Result.getValue result row columnNumber
+            pure $ Just (name, value)
+          _ ->
+            pure Nothing
 
     mbMaxColumn <- Result.maxColumnNumber result
 
@@ -772,28 +784,28 @@ marshallMaybe =
   -- it as having been done so we don't double-map it
   -- in a future 'maybeMapper' call.
   MarshallMaybeTag . go
-  where
-    go :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
-    go marshaller =
-      case marshaller of
-        MarshallPure a ->
-          MarshallPure $ pure a
-        MarshallApply func a ->
-          MarshallApply (fmap (<*>) $ go func) (go a)
-        MarshallNest f a ->
-          MarshallNest (fmap f) (go a)
-        (MarshallMaybeTag _) ->
-          Just <$> MarshallNest join marshaller
-        MarshallField field ->
-          case fieldNullability field of
-            NotNullField f -> MarshallField (nullableField f)
-            NullableField f -> MarshallField (asymmetricNullableField f)
-        MarshallSyntheticField synthField ->
-          MarshallSyntheticField (nullableSyntheticField synthField)
-        MarshallPartial m ->
-          MarshallPartial (fmap sequence $ go m)
-        MarshallReadOnly m ->
-          MarshallReadOnly (go m)
+ where
+  go :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
+  go marshaller =
+    case marshaller of
+      MarshallPure a ->
+        MarshallPure $ pure a
+      MarshallApply func a ->
+        MarshallApply (fmap (<*>) $ go func) (go a)
+      MarshallNest f a ->
+        MarshallNest (fmap f) (go a)
+      (MarshallMaybeTag _) ->
+        Just <$> MarshallNest join marshaller
+      MarshallField field ->
+        case fieldNullability field of
+          NotNullField f -> MarshallField (nullableField f)
+          NullableField f -> MarshallField (asymmetricNullableField f)
+      MarshallSyntheticField synthField ->
+        MarshallSyntheticField (nullableSyntheticField synthField)
+      MarshallPartial m ->
+        MarshallPartial (fmap sequence $ go m)
+      MarshallReadOnly m ->
+        MarshallReadOnly (go m)
 
 {- |
   Builds a 'SqlMarshaller' that will raise a decoding error when the value
@@ -811,21 +823,21 @@ prefixMarshaller ::
   SqlMarshaller readEntity writeEntity ->
   SqlMarshaller readEntity writeEntity
 prefixMarshaller prefix = go
-  where
-    go :: SqlMarshaller a b -> SqlMarshaller a b
-    go marshaller = case marshaller of
-      MarshallPure b -> MarshallPure b
-      MarshallApply m1 m2 ->
-        MarshallApply (go m1) $ go m2
-      MarshallNest f m ->
-        MarshallNest f $ go m
-      MarshallField fieldDefinition ->
-        MarshallField $ prefixField prefix fieldDefinition
-      MarshallSyntheticField syntheticField ->
-        MarshallSyntheticField $ prefixSyntheticField prefix syntheticField
-      MarshallMaybeTag m -> MarshallMaybeTag $ go m
-      MarshallPartial m -> MarshallPartial $ go m
-      MarshallReadOnly m -> MarshallReadOnly $ go m
+ where
+  go :: SqlMarshaller a b -> SqlMarshaller a b
+  go marshaller = case marshaller of
+    MarshallPure b -> MarshallPure b
+    MarshallApply m1 m2 ->
+      MarshallApply (go m1) $ go m2
+    MarshallNest f m ->
+      MarshallNest f $ go m
+    MarshallField fieldDefinition ->
+      MarshallField $ prefixField prefix fieldDefinition
+    MarshallSyntheticField syntheticField ->
+      MarshallSyntheticField $ prefixSyntheticField prefix syntheticField
+    MarshallMaybeTag m -> MarshallMaybeTag $ go m
+    MarshallPartial m -> MarshallPartial $ go m
+    MarshallReadOnly m -> MarshallReadOnly $ go m
 
 {- |
   Marks a 'SqlMarshaller' as ready only so that it will not attempt to

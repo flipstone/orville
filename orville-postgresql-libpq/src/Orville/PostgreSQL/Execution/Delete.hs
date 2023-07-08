@@ -8,13 +8,13 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Delete
-  ( Delete,
-    deleteFromDeleteExpr,
-    executeDelete,
-    executeDeleteReturnEntities,
-    deleteFromTableReturning,
-    deleteFromTable,
-    rawDeleteExpr,
+  ( Delete
+  , deleteFromDeleteExpr
+  , executeDelete
+  , executeDeleteReturnEntities
+  , deleteFromTableReturning
+  , deleteFromTable
+  , rawDeleteExpr
   )
 where
 
@@ -108,12 +108,14 @@ deleteTable ::
   Maybe Expr.BooleanExpr ->
   Delete readEntity returningClause
 deleteTable returningOption tableDef whereCondition =
-  let deleteExpr =
-        Expr.deleteExpr
-          (tableName tableDef)
-          (fmap Expr.whereClause whereCondition)
-          (mkTableReturningClause returningOption tableDef)
-   in rawDeleteExpr returningOption (tableMarshaller tableDef) deleteExpr
+  let
+    deleteExpr =
+      Expr.deleteExpr
+        (tableName tableDef)
+        (fmap Expr.whereClause whereCondition)
+        (mkTableReturningClause returningOption tableDef)
+  in
+    rawDeleteExpr returningOption (tableMarshaller tableDef) deleteExpr
 
 {- |
   Builds a 'Delete' that will execute the specified query and use the given

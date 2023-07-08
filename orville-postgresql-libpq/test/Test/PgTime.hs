@@ -1,5 +1,5 @@
 module Test.PgTime
-  ( pgTimeTests,
+  ( pgTimeTests
   )
 where
 

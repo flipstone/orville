@@ -5,16 +5,16 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Raw.Connection
-  ( Connection,
-    Pool,
-    ConnectionUsedAfterCloseError,
-    ConnectionError,
-    SqlExecutionError (..),
-    NoticeReporting (EnableNoticeReporting, DisableNoticeReporting),
-    createConnectionPool,
-    executeRaw,
-    quoteStringLiteral,
-    quoteIdentifier,
+  ( Connection
+  , Pool
+  , ConnectionUsedAfterCloseError
+  , ConnectionError
+  , SqlExecutionError (..)
+  , NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
+  , createConnectionPool
+  , executeRaw
+  , quoteStringLiteral
+  , quoteIdentifier
   )
 where
 
@@ -95,33 +95,35 @@ newtype Connection = Connection (MVar LibPQ.Connection)
 -}
 connect :: NoticeReporting -> BS.ByteString -> IO Connection
 connect noticeReporting connectionString =
-  let checkSocketAndThreadWait conn threadWaitFn = do
-        fd <- LibPQ.socket conn
-        case fd of
-          Nothing -> do
-            throwConnectionError "connect: failed to get file descriptor for socket" conn
-          Just fd' -> do
-            threadWaitFn fd'
-            poll conn
+  let
+    checkSocketAndThreadWait conn threadWaitFn = do
+      fd <- LibPQ.socket conn
+      case fd of
+        Nothing -> do
+          throwConnectionError "connect: failed to get file descriptor for socket" conn
+        Just fd' -> do
+          threadWaitFn fd'
+          poll conn
 
-      poll conn = do
-        pollStatus <- LibPQ.connectPoll conn
-        case pollStatus of
-          LibPQ.PollingFailed -> do
-            throwConnectionError "connect: polling failed while connecting to database server" conn
-          LibPQ.PollingReading ->
-            checkSocketAndThreadWait conn threadWaitRead
-          LibPQ.PollingWriting ->
-            checkSocketAndThreadWait conn threadWaitWrite
-          LibPQ.PollingOk -> do
-            connectionHandle <- newMVar conn
-            pure (Connection connectionHandle)
-   in do
-        connection <- LibPQ.connectStart connectionString
-        case noticeReporting of
-          DisableNoticeReporting -> LibPQ.disableNoticeReporting connection
-          EnableNoticeReporting -> LibPQ.enableNoticeReporting connection
-        poll connection
+    poll conn = do
+      pollStatus <- LibPQ.connectPoll conn
+      case pollStatus of
+        LibPQ.PollingFailed -> do
+          throwConnectionError "connect: polling failed while connecting to database server" conn
+        LibPQ.PollingReading ->
+          checkSocketAndThreadWait conn threadWaitRead
+        LibPQ.PollingWriting ->
+          checkSocketAndThreadWait conn threadWaitWrite
+        LibPQ.PollingOk -> do
+          connectionHandle <- newMVar conn
+          pure (Connection connectionHandle)
+  in
+    do
+      connection <- LibPQ.connectStart connectionString
+      case noticeReporting of
+        DisableNoticeReporting -> LibPQ.disableNoticeReporting connection
+        EnableNoticeReporting -> LibPQ.enableNoticeReporting connection
+      poll connection
 
 {- |
   'close' has many subtleties to it.
@@ -140,11 +142,13 @@ connect noticeReporting connectionString =
 -}
 close :: Connection -> IO ()
 close (Connection handle') =
-  let underlyingFinish :: (forall a. IO a -> IO a) -> IO (Maybe ())
-      underlyingFinish restore = do
-        underlyingConnection <- tryTakeMVar handle'
-        restore (traverse LibPQ.finish underlyingConnection)
-   in void $ mask underlyingFinish
+  let
+    underlyingFinish :: (forall a. IO a -> IO a) -> IO (Maybe ())
+    underlyingFinish restore = do
+      underlyingConnection <- tryTakeMVar handle'
+      restore (traverse LibPQ.finish underlyingConnection)
+  in
+    void $ mask underlyingFinish
 
 {- |
  'underlyingExecute' is the internal, primitive execute function.
@@ -199,9 +203,11 @@ quoteStringLiteral connection unquotedString = do
     Nothing ->
       throwConnectionError "Error while escaping string literal" libPQConn
     Just escapedString ->
-      let singleQuote =
-            BSB.char8 '\''
-       in pure (singleQuote <> BSB.byteString escapedString <> singleQuote)
+      let
+        singleQuote =
+          BSB.char8 '\''
+      in
+        pure (singleQuote <> BSB.byteString escapedString <> singleQuote)
 
 {- |
   Escapes and quotes a string for use as an identifier within a SQL command
@@ -311,17 +317,19 @@ data ConnectionError = ConnectionError
 
 instance Show ConnectionError where
   show err =
-    let libPQErrorMsg =
-          case connectionErrorLibPQMessage err of
-            Nothing ->
-              "<no underying error available>"
-            Just libPQMsg ->
-              case Enc.decodeUtf8' libPQMsg of
-                Right decoded ->
-                  T.unpack decoded
-                Left decodingErr ->
-                  "Error decoding libPQ messages as utf8: " <> show decodingErr
-     in connectionErrorMessage err <> ": " <> libPQErrorMsg
+    let
+      libPQErrorMsg =
+        case connectionErrorLibPQMessage err of
+          Nothing ->
+            "<no underying error available>"
+          Just libPQMsg ->
+            case Enc.decodeUtf8' libPQMsg of
+              Right decoded ->
+                T.unpack decoded
+              Left decodingErr ->
+                "Error decoding libPQ messages as utf8: " <> show decodingErr
+    in
+      connectionErrorMessage err <> ": " <> libPQErrorMsg
 
 instance Exception ConnectionError
 

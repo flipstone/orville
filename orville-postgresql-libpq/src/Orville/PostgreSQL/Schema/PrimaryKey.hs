@@ -2,18 +2,18 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Schema.PrimaryKey
-  ( PrimaryKey,
-    primaryKeyDescription,
-    primaryKeyFieldNames,
-    primaryKeyToSql,
-    primaryKey,
-    PrimaryKeyPart,
-    compositePrimaryKey,
-    primaryKeyPart,
-    mapPrimaryKeyParts,
-    mkPrimaryKeyExpr,
-    primaryKeyEquals,
-    primaryKeyIn,
+  ( PrimaryKey
+  , primaryKeyDescription
+  , primaryKeyFieldNames
+  , primaryKeyToSql
+  , primaryKey
+  , PrimaryKeyPart
+  , compositePrimaryKey
+  , primaryKeyPart
+  , mapPrimaryKeyParts
+  , mkPrimaryKeyExpr
+  , primaryKeyEquals
+  , primaryKeyIn
   )
 where
 
@@ -58,10 +58,12 @@ primaryKeyDescription =
 -}
 primaryKeyFieldNames :: PrimaryKey key -> NonEmpty FieldName
 primaryKeyFieldNames =
-  let partName :: (part -> key) -> FieldDefinition NotNull a -> FieldName
-      partName _ field =
-        fieldName field
-   in mapPrimaryKeyParts partName
+  let
+    partName :: (part -> key) -> FieldDefinition NotNull a -> FieldName
+    partName _ field =
+      fieldName field
+  in
+    mapPrimaryKeyParts partName
 
 {- |
   'primaryKeyToSql' converts a Haskell value for a primary key into the
@@ -136,9 +138,11 @@ mapPrimaryKeyParts ::
   PrimaryKey key ->
   NonEmpty a
 mapPrimaryKeyParts f (PrimaryKey first rest) =
-  let doPart (PrimaryKeyPart getPart field) =
-        f getPart field
-   in fmap doPart (first :| rest)
+  let
+    doPart (PrimaryKeyPart getPart field) =
+      f getPart field
+  in
+    fmap doPart (first :| rest)
 
 {- |
   Builds a 'Expr.PrimaryKeyExpr' that is suitable to be used when creating
@@ -146,9 +150,11 @@ mapPrimaryKeyParts f (PrimaryKey first rest) =
 -}
 mkPrimaryKeyExpr :: PrimaryKey key -> Expr.PrimaryKeyExpr
 mkPrimaryKeyExpr keyDef =
-  let names =
-        mapPrimaryKeyParts (\_ field -> fieldColumnName field) keyDef
-   in Expr.primaryKeyExpr names
+  let
+    names =
+      mapPrimaryKeyParts (\_ field -> fieldColumnName field) keyDef
+  in
+    Expr.primaryKeyExpr names
 
 {- |
   'primaryKeyEquals' builds a 'Expr.BooleanExpr' that will match the row where

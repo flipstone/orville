@@ -1,16 +1,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.Time
-  ( now,
-    makeInterval,
-    IntervalArgument,
-    years,
-    months,
-    weeks,
-    days,
-    hours,
-    minutes,
-    seconds,
+  ( now
+  , makeInterval
+  , IntervalArgument
+  , years
+  , months
+  , weeks
+  , days
+  , hours
+  , minutes
+  , seconds
   )
 where
 

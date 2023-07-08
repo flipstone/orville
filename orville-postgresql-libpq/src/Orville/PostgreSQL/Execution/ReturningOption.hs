@@ -8,9 +8,9 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.ReturningOption
-  ( ReturningOption (..),
-    ReturningClause,
-    NoReturningClause,
+  ( ReturningOption (..)
+  , ReturningClause
+  , NoReturningClause
   )
 where
 

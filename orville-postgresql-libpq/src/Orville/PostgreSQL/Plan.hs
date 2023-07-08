@@ -2,43 +2,43 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Plan
-  ( Plan,
-    Planned,
-    Execute,
-    Explain,
-    askParam,
+  ( Plan
+  , Planned
+  , Execute
+  , Explain
+  , askParam
 
     -- * Using a Plan after it is constructed
-    execute,
-    explain,
+  , execute
+  , explain
 
     -- * Making a Plan to find rows in the database
-    findMaybeOne,
-    findMaybeOneWhere,
-    findOne,
-    findOneShowVia,
-    findOneWhere,
-    findOneWhereShowVia,
-    findAll,
-    findAllWhere,
+  , findMaybeOne
+  , findMaybeOneWhere
+  , findOne
+  , findOneShowVia
+  , findOneWhere
+  , findOneWhereShowVia
+  , findAll
+  , findAllWhere
 
     -- * Creating a multi-step Plan from other Plan values
-    bind,
-    use,
-    using,
-    chain,
-    apply,
-    planMany,
-    planList,
-    focusParam,
-    planEither,
-    planMaybe,
+  , bind
+  , use
+  , using
+  , chain
+  , apply
+  , planMany
+  , planList
+  , focusParam
+  , planEither
+  , planMaybe
 
     -- * Bridges from other types into Plan
-    Op.AssertionFailed,
-    assert,
-    planSelect,
-    planOperation,
+  , Op.AssertionFailed
+  , assert
+  , planSelect
+  , planOperation
   )
 where
 
@@ -493,11 +493,13 @@ assert ::
   Plan scope param a ->
   Plan scope param b
 assert assertion aPlan =
-  let eitherPlan =
-        assertion
-          <$> askParam
-          <*> aPlan
-   in chain eitherPlan (PlanOp Op.assertRight)
+  let
+    eitherPlan =
+      assertion
+        <$> askParam
+        <*> aPlan
+  in
+    chain eitherPlan (PlanOp Op.assertRight)
 
 {- |
   'execute' accepts the input parameter (or parameters) expected by a 'Plan'
@@ -582,26 +584,30 @@ executeMany plan params =
             Right results ->
               pure results
     PlanMany manyPlan -> do
-      let flatParams = concat params
+      let
+        flatParams = concat params
 
       allResults <- executeMany manyPlan flatParams
 
-      let restrictResults subParams =
-            Many.fromKeys subParams (\k -> Many.lookup k allResults)
+      let
+        restrictResults subParams =
+          Many.fromKeys subParams (\k -> Many.lookup k allResults)
 
       pure $ Many.fromKeys params (Right . restrictResults)
     PlanEither leftPlan rightPlan -> do
-      let (leftParams, rightParams) = partitionEithers params
+      let
+        (leftParams, rightParams) = partitionEithers params
 
       leftResults <- executeMany leftPlan leftParams
       rightResults <- executeMany rightPlan rightParams
 
-      let eitherResult eitherK =
-            case eitherK of
-              Left k ->
-                Left <$> Many.lookup k leftResults
-              Right k ->
-                Right <$> Many.lookup k rightResults
+      let
+        eitherResult eitherK =
+          case eitherK of
+            Left k ->
+              Left <$> Many.lookup k leftResults
+            Right k ->
+              Right <$> Many.lookup k rightResults
 
       pure $ Many.fromKeys params eitherResult
     Bind intermPlan continue -> do
@@ -664,8 +670,10 @@ explainPlan mult plan =
     PlanEither leftPlan rightPlan ->
       explainPlan mult leftPlan <> explainPlan mult rightPlan
     Bind intermPlan continue ->
-      let nextPlan = continue PlannedExplain
-       in explainPlan mult intermPlan <> explainPlan mult nextPlan
+      let
+        nextPlan = continue PlannedExplain
+      in
+        explainPlan mult intermPlan <> explainPlan mult nextPlan
     Use _ ->
       Exp.noExplanation
     Pure _ ->

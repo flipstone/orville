@@ -9,13 +9,13 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Select
-  ( Select,
-    executeSelect,
-    useSelect,
-    selectToQueryExpr,
-    selectTable,
-    selectMarshalledColumns,
-    rawSelectQueryExpr,
+  ( Select
+  , executeSelect
+  , useSelect
+  , selectToQueryExpr
+  , selectTable
+  , selectMarshalledColumns
+  , rawSelectQueryExpr
   )
 where
 

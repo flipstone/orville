@@ -1,5 +1,5 @@
 module Test.SqlCommenter
-  ( sqlCommenterTests,
+  ( sqlCommenterTests
   )
 where
 
@@ -18,12 +18,12 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 
 import Test.Expr.TestSchema
-  ( assertEqualFooBarRows,
-    dropAndRecreateTestTable,
-    findAllFooBars,
-    fooBarTable,
-    insertFooBarSource,
-    mkFooBar,
+  ( assertEqualFooBarRows
+  , dropAndRecreateTestTable
+  , findAllFooBars
+  , fooBarTable
+  , insertFooBarSource
+  , mkFooBar
   )
 import qualified Test.Property as Property
 import qualified Test.ReadRows as ReadRows
@@ -40,19 +40,20 @@ sqlCommenterTests pool =
 prop_sqlcommenterAttributesEscaped :: Property.NamedProperty
 prop_sqlcommenterAttributesEscaped =
   Property.singletonNamedProperty "SqlCommenterAttributes are escaped and put at end of raw sql" $ do
-    let rawSql :: RawSql.RawSql
-        rawSql =
-          SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes $
-            RawSql.fromString "SELECT * "
-              <> RawSql.fromString "FROM foo "
-              <> RawSql.fromString "WHERE id = 1"
+    let
+      rawSql :: RawSql.RawSql
+      rawSql =
+        SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes $
+          RawSql.fromString "SELECT * "
+            <> RawSql.fromString "FROM foo "
+            <> RawSql.fromString "WHERE id = 1"
 
-        expectedBytes =
-          B8.pack "SELECT * FROM foo WHERE id = 1 /*key='value',keyForEscapedValue='queryParam%3Dfoo%20bar%2Fbaz-fizz',keyWith%27InIt='valueWith%27InIt',orm='orville'*/"
+      expectedBytes =
+        B8.pack "SELECT * FROM foo WHERE id = 1 /*key='value',keyForEscapedValue='queryParam%3Dfoo%20bar%2Fbaz-fizz',keyWith%27InIt='valueWith%27InIt',orm='orville'*/"
 
-        (actualBytes, actualParams) =
-          runIdentity $
-            RawSql.toBytesAndParams RawSql.exampleQuoting rawSql
+      (actualBytes, actualParams) =
+        runIdentity $
+          RawSql.toBytesAndParams RawSql.exampleQuoting rawSql
 
     actualBytes HH.=== expectedBytes
     actualParams HH.=== []
@@ -60,14 +61,16 @@ prop_sqlcommenterAttributesEscaped =
 prop_sqlCommenterInsertExpr :: Property.NamedDBProperty
 prop_sqlCommenterInsertExpr =
   Property.singletonNamedDBProperty "sqlcommenter support does not impact ability of insertExpr inserting values" $ \pool -> do
-    let fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+    let
+      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
     rows <-
       MIO.liftIO $
         Pool.withResource pool $ \connection -> do
           dropAndRecreateTestTable connection
 
-          let insertExpr = Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
+          let
+            insertExpr = Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
           RawSql.executeVoid connection $
             SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes insertExpr
 
@@ -80,8 +83,9 @@ prop_sqlCommenterInsertExpr =
 prop_sqlCommenterOrvilleState :: Property.NamedDBProperty
 prop_sqlCommenterOrvilleState =
   Property.singletonNamedDBProperty "sqlcommenter support in OrvilleState does not impact execution" $ \pool -> do
-    let selectOne =
-          RawSql.fromString "SELECT 1 as number"
+    let
+      selectOne =
+        RawSql.fromString "SELECT 1 as number"
 
     affectedRows <-
       HH.evalIO . Orville.runOrville pool $ do

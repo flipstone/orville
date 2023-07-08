@@ -1,5 +1,5 @@
 module Test.Expr.GroupBy
-  ( groupByTests,
+  ( groupByTests
   )
 where
 
@@ -65,19 +65,23 @@ data GroupByTest = GroupByTest
 
 mkGroupByTestInsertSource :: GroupByTest -> Expr.InsertSource
 mkGroupByTestInsertSource test =
-  let mkRow foobar =
-        [ SqlValue.fromInt32 (foo foobar)
-        , SqlValue.fromText (T.pack $ bar foobar)
-        ]
-   in Expr.insertSqlValues (map mkRow $ groupByValuesToInsert test)
+  let
+    mkRow foobar =
+      [ SqlValue.fromInt32 (foo foobar)
+      , SqlValue.fromText (T.pack $ bar foobar)
+      ]
+  in
+    Expr.insertSqlValues (map mkRow $ groupByValuesToInsert test)
 
 mkGroupByTestExpectedRows :: GroupByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByTestExpectedRows test =
-  let mkRow foobar =
-        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
-        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
-        ]
-   in fmap mkRow (groupByExpectedQueryResults test)
+  let
+    mkRow foobar =
+      [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+      , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+      ]
+  in
+    fmap mkRow (groupByExpectedQueryResults test)
 
 groupByTest :: String -> GroupByTest -> Property.NamedDBProperty
 groupByTest testName test =

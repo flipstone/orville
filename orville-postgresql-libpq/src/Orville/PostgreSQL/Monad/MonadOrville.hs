@@ -2,10 +2,10 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Monad.MonadOrville
-  ( MonadOrville,
-    MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket),
-    withConnection,
-    withConnectedState,
+  ( MonadOrville
+  , MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket)
+  , withConnection
+  , withConnectedState
   )
 where
 
@@ -15,12 +15,12 @@ import Data.Pool (withResource)
 
 import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
 import Orville.PostgreSQL.OrvilleState
-  ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
-    ConnectionState (Connected, NotConnected),
-    OrvilleState,
-    connectState,
-    orvilleConnectionPool,
-    orvilleConnectionState,
+  ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction)
+  , ConnectionState (Connected, NotConnected)
+  , OrvilleState
+  , connectState
+  , orvilleConnectionPool
+  , orvilleConnectionState
   )
 import Orville.PostgreSQL.Raw.Connection (Connection)
 
@@ -148,12 +148,16 @@ withConnectedState connectedAction = do
     Connected connectedState ->
       connectedAction connectedState
     NotConnected ->
-      let pool = orvilleConnectionPool state
-       in liftWithConnection (withResource pool) $ \conn ->
-            let connectedState =
-                  ConnectedState
-                    { connectedConnection = conn
-                    , connectedTransaction = Nothing
-                    }
-             in localOrvilleState (connectState connectedState) $
-                  connectedAction connectedState
+      let
+        pool = orvilleConnectionPool state
+      in
+        liftWithConnection (withResource pool) $ \conn ->
+          let
+            connectedState =
+              ConnectedState
+                { connectedConnection = conn
+                , connectedTransaction = Nothing
+                }
+          in
+            localOrvilleState (connectState connectedState) $
+              connectedAction connectedState

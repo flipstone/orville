@@ -1,6 +1,6 @@
 module Orville.PostgreSQL.Internal.RowCountExpectation
-  ( expectExactlyOneRow,
-    expectAtMostOneRow,
+  ( expectExactlyOneRow
+  , expectAtMostOneRow
   )
 where
 

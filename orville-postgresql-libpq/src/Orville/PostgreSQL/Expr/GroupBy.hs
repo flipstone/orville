@@ -5,12 +5,12 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.GroupBy
-  ( GroupByClause,
-    groupByClause,
-    GroupByExpr,
-    appendGroupByExpr,
-    groupByExpr,
-    groupByColumnsExpr,
+  ( GroupByClause
+  , groupByClause
+  , GroupByExpr
+  , appendGroupByExpr
+  , groupByExpr
+  , groupByColumnsExpr
   )
 where
 

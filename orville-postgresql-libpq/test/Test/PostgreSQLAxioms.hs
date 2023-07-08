@@ -1,5 +1,5 @@
 module Test.PostgreSQLAxioms
-  ( postgreSQLAxiomTests,
+  ( postgreSQLAxiomTests
   )
 where
 
@@ -74,10 +74,12 @@ assertPostgreSQLMaxValueMatchesHaskell pool sqlType = do
 
 evalEitherMLeft :: (HH.MonadTest m, ExSafe.MonadCatch m, Show b) => m (Either a b) -> m a
 evalEitherMLeft =
-  let swap :: Either a b -> Either b a
-      swap (Left a) = Right a
-      swap (Right b) = Left b
-   in HH.evalEitherM . fmap swap
+  let
+    swap :: Either a b -> Either b a
+    swap (Left a) = Right a
+    swap (Right b) = Left b
+  in
+    HH.evalEitherM . fmap swap
 
 selectValue ::
   (HH.MonadTest m, MIO.MonadIO m) =>
@@ -96,18 +98,19 @@ selectValueWithModifier ::
   SqlType.SqlType a ->
   m (Either Conn.SqlExecutionError a)
 selectValueWithModifier pool inputValue modifier sqlType = do
-  let selectOne =
-        RawSql.fromString "SELECT (("
-          <> RawSql.parameter (SqlType.sqlTypeToSql sqlType inputValue)
-          <> modifier
-          <> RawSql.fromString ")"
-          <> RawSql.fromString "::"
-          <> RawSql.toRawSql (SqlType.sqlTypeExpr sqlType)
-          <> RawSql.fromString ") as result"
+  let
+    selectOne =
+      RawSql.fromString "SELECT (("
+        <> RawSql.parameter (SqlType.sqlTypeToSql sqlType inputValue)
+        <> modifier
+        <> RawSql.fromString ")"
+        <> RawSql.fromString "::"
+        <> RawSql.toRawSql (SqlType.sqlTypeExpr sqlType)
+        <> RawSql.fromString ") as result"
 
-      marshaller =
-        Orville.annotateSqlMarshallerEmptyAnnotation $
-          Orville.marshallField id (Orville.fieldOfType sqlType "result")
+    marshaller =
+      Orville.annotateSqlMarshallerEmptyAnnotation $
+        Orville.marshallField id (Orville.fieldOfType sqlType "result")
 
   errOrResults <-
     HH.evalIO . Orville.runOrville pool . ExSafe.try $

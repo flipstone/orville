@@ -1,9 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.PgCatalog.PgSequence
-  ( PgSequence (..),
-    pgSequenceTable,
-    sequencePgClassOidField,
+  ( PgSequence (..)
+  , pgSequenceTable
+  , sequencePgClassOidField
   )
 where
 
@@ -18,23 +18,23 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
   table. Rows in this table sequences in PostgreSQL.
 -}
 data PgSequence = PgSequence
-  { -- | The PostgreSQL @oid@ of the @pg_class@ for this sequence
-    pgSequenceClassOid :: LibPQ.Oid
-  , -- | The PostgreSQL @oid@ of the data type  of the sequence. References
-    -- @pg_type.oid@
-    pgSequenceTypeOid :: LibPQ.Oid
-  , -- | The start value of the sequence
-    pgSequenceStart :: Int64
-  , -- | The increment value of the sequence
-    pgSequenceIncrement :: Int64
-  , -- | The max value of the sequence
-    pgSequenceMax :: Int64
-  , -- | The max value of the sequence
-    pgSequenceMin :: Int64
-  , -- | The cache size of the sequence
-    pgSequenceCache :: Int64
-  , -- | Wether the sequence cycles
-    pgSequenceCycle :: Bool
+  { pgSequenceClassOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ of the @pg_class@ for this sequence
+  , pgSequenceTypeOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ of the data type  of the sequence. References
+  -- @pg_type.oid@
+  , pgSequenceStart :: Int64
+  -- ^ The start value of the sequence
+  , pgSequenceIncrement :: Int64
+  -- ^ The increment value of the sequence
+  , pgSequenceMax :: Int64
+  -- ^ The max value of the sequence
+  , pgSequenceMin :: Int64
+  -- ^ The max value of the sequence
+  , pgSequenceCache :: Int64
+  -- ^ The cache size of the sequence
+  , pgSequenceCycle :: Bool
+  -- ^ Wether the sequence cycles
   }
 
 {- |

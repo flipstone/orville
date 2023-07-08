@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module Orville.PostgreSQL.Schema
-  ( module Orville.PostgreSQL.Schema.TableDefinition,
-    module Orville.PostgreSQL.Schema.TableIdentifier,
-    module Orville.PostgreSQL.Schema.PrimaryKey,
-    module Orville.PostgreSQL.Schema.IndexDefinition,
-    module Orville.PostgreSQL.Schema.ConstraintDefinition,
-    module Orville.PostgreSQL.Schema.SequenceDefinition,
-    module Orville.PostgreSQL.Schema.SequenceIdentifier,
+  ( module Orville.PostgreSQL.Schema.TableDefinition
+  , module Orville.PostgreSQL.Schema.TableIdentifier
+  , module Orville.PostgreSQL.Schema.PrimaryKey
+  , module Orville.PostgreSQL.Schema.IndexDefinition
+  , module Orville.PostgreSQL.Schema.ConstraintDefinition
+  , module Orville.PostgreSQL.Schema.SequenceDefinition
+  , module Orville.PostgreSQL.Schema.SequenceIdentifier
   )
 where
 

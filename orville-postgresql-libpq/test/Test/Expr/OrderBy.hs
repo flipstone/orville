@@ -1,5 +1,5 @@
 module Test.Expr.OrderBy
-  ( orderByTests,
+  ( orderByTests
   )
 where
 

@@ -1,11 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.PgCatalog.PgNamespace
-  ( PgNamespace (..),
-    NamespaceName,
-    namespaceNameToString,
-    pgNamespaceTable,
-    namespaceNameField,
+  ( PgNamespace (..)
+  , NamespaceName
+  , namespaceNameToString
+  , pgNamespaceTable
+  , namespaceNameField
   )
 where
 
@@ -22,11 +22,11 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField)
   organization.
 -}
 data PgNamespace = PgNamespace
-  { -- | The PostgreSQL @oid@ for the namespace. This is referenced from
-    -- other tables, such as @pg_class@.
-    pgNamespaceOid :: LibPQ.Oid
-  , -- | The name of the namespace.
-    pgNamespaceName :: NamespaceName
+  { pgNamespaceOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the namespace. This is referenced from
+  -- other tables, such as @pg_class@.
+  , pgNamespaceName :: NamespaceName
+  -- ^ The name of the namespace.
   }
 
 {- |

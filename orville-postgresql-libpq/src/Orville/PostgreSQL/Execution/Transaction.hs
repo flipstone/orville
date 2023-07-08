@@ -4,7 +4,7 @@ License   : MIT
 Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.Transaction
-  ( withTransaction,
+  ( withTransaction
   )
 where
 
@@ -36,48 +36,53 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 withTransaction :: Monad.MonadOrville m => m a -> m a
 withTransaction action =
   Monad.withConnectedState $ \connectedState -> do
-    let conn = OrvilleState.connectedConnection connectedState
-        transaction = OrvilleState.newTransaction (OrvilleState.connectedTransaction connectedState)
+    let
+      conn = OrvilleState.connectedConnection connectedState
+      transaction = OrvilleState.newTransaction (OrvilleState.connectedTransaction connectedState)
 
-        innerConnectedState =
-          connectedState
-            { OrvilleState.connectedTransaction = Just transaction
-            }
+      innerConnectedState =
+        connectedState
+          { OrvilleState.connectedTransaction = Just transaction
+          }
 
     committed <- liftIO $ IORef.newIORef False
     state <- Monad.askOrvilleState
 
-    let executeTransactionSql :: RawSql.RawSql -> IO ()
-        executeTransactionSql sql =
-          Execute.executeVoidIO QueryType.OtherQuery sql state conn
+    let
+      executeTransactionSql :: RawSql.RawSql -> IO ()
+      executeTransactionSql sql =
+        Execute.executeVoidIO QueryType.OtherQuery sql state conn
 
-        callback =
-          OrvilleState.orvilleTransactionCallback state
+      callback =
+        OrvilleState.orvilleTransactionCallback state
 
-        doAction = do
-          liftIO $ do
-            let openEvent = OrvilleState.openTransactionEvent transaction
-            executeTransactionSql (transactionEventSql state openEvent)
-            callback openEvent
+      doAction = do
+        liftIO $ do
+          let
+            openEvent = OrvilleState.openTransactionEvent transaction
+          executeTransactionSql (transactionEventSql state openEvent)
+          callback openEvent
 
-          value <-
-            Monad.localOrvilleState
-              (OrvilleState.connectState innerConnectedState)
-              action
-          liftIO $ do
-            let successEvent = OrvilleState.transactionSuccessEvent transaction
-            executeTransactionSql (transactionEventSql state successEvent)
-            liftIO $ IORef.writeIORef committed True
-            callback successEvent
-          pure value
+        value <-
+          Monad.localOrvilleState
+            (OrvilleState.connectState innerConnectedState)
+            action
+        liftIO $ do
+          let
+            successEvent = OrvilleState.transactionSuccessEvent transaction
+          executeTransactionSql (transactionEventSql state successEvent)
+          liftIO $ IORef.writeIORef committed True
+          callback successEvent
+        pure value
 
-        rollbackUncommitted =
-          liftIO $ do
-            finished <- IORef.readIORef committed
-            Monad.when (not finished) $ do
-              let rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
-              executeTransactionSql (transactionEventSql state rollbackEvent)
-              callback rollbackEvent
+      rollbackUncommitted =
+        liftIO $ do
+          finished <- IORef.readIORef committed
+          Monad.when (not finished) $ do
+            let
+              rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
+            executeTransactionSql (transactionEventSql state rollbackEvent)
+            callback rollbackEvent
 
     Monad.liftFinally Exception.finally doAction rollbackUncommitted
 
@@ -112,5 +117,7 @@ transactionEventSql state event =
 -}
 savepointName :: OrvilleState.Savepoint -> Expr.SavepointName
 savepointName savepoint =
-  let n = OrvilleState.savepointNestingLevel savepoint
-   in Expr.savepointName ("orville_savepoint_level_" <> show n)
+  let
+    n = OrvilleState.savepointNestingLevel savepoint
+  in
+    Expr.savepointName ("orville_savepoint_level_" <> show n)

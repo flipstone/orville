@@ -5,8 +5,8 @@ Copyright : Flipstone Technology Partners 2022
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.FunctionName
-  ( FunctionName,
-    functionName,
+  ( FunctionName
+  , functionName
   )
 where
 

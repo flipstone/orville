@@ -1,12 +1,12 @@
 module Orville.PostgreSQL.Marshall.MarshallError
-  ( MarshallError (MarshallError, marshallErrorDetailLevel, marshallErrorRowIdentifier, marshallErrorDetails),
-    renderMarshallError,
-    MarshallErrorDetails (DecodingError, MissingColumnError),
-    renderMarshallErrorDetails,
-    DecodingErrorDetails (DecodingErrorDetails, decodingErrorValues, decodingErrorMessage),
-    renderDecodingErrorDetails,
-    MissingColumnErrorDetails (MissingColumnErrorDetails, missingColumnName, actualColumnNames),
-    renderMissingColumnErrorDetails,
+  ( MarshallError (MarshallError, marshallErrorDetailLevel, marshallErrorRowIdentifier, marshallErrorDetails)
+  , renderMarshallError
+  , MarshallErrorDetails (DecodingError, MissingColumnError)
+  , renderMarshallErrorDetails
+  , DecodingErrorDetails (DecodingErrorDetails, decodingErrorValues, decodingErrorMessage)
+  , renderDecodingErrorDetails
+  , MissingColumnErrorDetails (MissingColumnErrorDetails, missingColumnName, actualColumnNames)
+  , renderMissingColumnErrorDetails
   )
 where
 
@@ -25,16 +25,16 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   'SqlMarshaller' that is decoding it.
 -}
 data MarshallError = MarshallError
-  { -- | The level of details that will be used to render this error as a
-    -- message if 'show' is called
-    marshallErrorDetailLevel :: ErrorDetailLevel
-  , -- | The identifier of the row that caused the error. This is a list
-    -- of pairs of column name and value in their raw form from the database
-    -- to avoid further possible decoding errors when reading the values
-    marshallErrorRowIdentifier :: [(B8.ByteString, SqlValue.SqlValue)]
-  , -- | The detailed information about the error that occurred during
-    -- decoding
-    marshallErrorDetails :: MarshallErrorDetails
+  { marshallErrorDetailLevel :: ErrorDetailLevel
+  -- ^ The level of details that will be used to render this error as a
+  -- message if 'show' is called
+  , marshallErrorRowIdentifier :: [(B8.ByteString, SqlValue.SqlValue)]
+  -- ^ The identifier of the row that caused the error. This is a list
+  -- of pairs of column name and value in their raw form from the database
+  -- to avoid further possible decoding errors when reading the values
+  , marshallErrorDetails :: MarshallErrorDetails
+  -- ^ The detailed information about the error that occurred during
+  -- decoding
   }
 
 instance Show MarshallError where
@@ -60,16 +60,18 @@ instance Exception MarshallError
 -}
 renderMarshallError :: ErrorDetailLevel -> MarshallError -> String
 renderMarshallError detailLevel marshallError =
-  let presentableRowId =
-        map
-          (presentSqlColumnValue detailLevel redactIdentifierValue)
-          (marshallErrorRowIdentifier marshallError)
-   in concat
-        [ "Unable to decode row with identifier ["
-        , List.intercalate ", " presentableRowId
-        , "]: "
-        , renderMarshallErrorDetails detailLevel (marshallErrorDetails marshallError)
-        ]
+  let
+    presentableRowId =
+      map
+        (presentSqlColumnValue detailLevel redactIdentifierValue)
+        (marshallErrorRowIdentifier marshallError)
+  in
+    concat
+      [ "Unable to decode row with identifier ["
+      , List.intercalate ", " presentableRowId
+      , "]: "
+      , renderMarshallErrorDetails detailLevel (marshallErrorDetails marshallError)
+      ]
 
 {- |
   A internal helper to present a redacted column name and sql value in an error
@@ -83,16 +85,18 @@ presentSqlColumnValue ::
   (B8.ByteString, SqlValue.SqlValue) ->
   String
 presentSqlColumnValue detailLevel redacter (columnName, sqlValue) =
-  let sqlValueString =
-        redacter detailLevel $
-          case SqlValue.toPgValue sqlValue of
-            Nothing ->
-              "NULL"
-            Just pgValue ->
-              B8.unpack . PgTextFormatValue.toByteString $ pgValue
-   in redactSchemaName detailLevel (B8.unpack columnName)
-        <> " = "
-        <> sqlValueString
+  let
+    sqlValueString =
+      redacter detailLevel $
+        case SqlValue.toPgValue sqlValue of
+          Nothing ->
+            "NULL"
+          Just pgValue ->
+            B8.unpack . PgTextFormatValue.toByteString $ pgValue
+  in
+    redactSchemaName detailLevel (B8.unpack columnName)
+      <> " = "
+      <> sqlValueString
 
 {- |
   A 'MarshallErrorDetails' may be returned from 'marshallFromSql' if the result set
@@ -131,17 +135,19 @@ data DecodingErrorDetails = DecodingErrorDetails
 -}
 renderDecodingErrorDetails :: ErrorDetailLevel -> DecodingErrorDetails -> String
 renderDecodingErrorDetails detailLevel details =
-  let presentableErrorValues =
-        map
-          (presentSqlColumnValue detailLevel redactNonIdentifierValue)
-          (decodingErrorValues details)
-   in concat
-        [ "Unable to decode columns from result set: "
-        , redactErrorMessage detailLevel (decodingErrorMessage details)
-        , ". Value(s) that failed to decode: ["
-        , List.intercalate ", " presentableErrorValues
-        , "]"
-        ]
+  let
+    presentableErrorValues =
+      map
+        (presentSqlColumnValue detailLevel redactNonIdentifierValue)
+        (decodingErrorValues details)
+  in
+    concat
+      [ "Unable to decode columns from result set: "
+      , redactErrorMessage detailLevel (decodingErrorMessage details)
+      , ". Value(s) that failed to decode: ["
+      , List.intercalate ", " presentableErrorValues
+      , "]"
+      ]
 
 {- |
   Details about an column that was found to be missing in a SQL result set
@@ -158,14 +164,16 @@ data MissingColumnErrorDetails = MissingColumnErrorDetails
 -}
 renderMissingColumnErrorDetails :: ErrorDetailLevel -> MissingColumnErrorDetails -> String
 renderMissingColumnErrorDetails detailLevel details =
-  let presentableActualNames =
-        map
-          (redactSchemaName detailLevel . B8.unpack)
-          (Set.toList $ actualColumnNames details)
-   in concat
-        [ "Column "
-        , redactSchemaName detailLevel (B8.unpack $ missingColumnName details)
-        , " not found in results set. Actual columns were ["
-        , List.intercalate ", " presentableActualNames
-        , "]"
-        ]
+  let
+    presentableActualNames =
+      map
+        (redactSchemaName detailLevel . B8.unpack)
+        (Set.toList $ actualColumnNames details)
+  in
+    concat
+      [ "Column "
+      , redactSchemaName detailLevel (B8.unpack $ missingColumnName details)
+      , " not found in results set. Actual columns were ["
+      , List.intercalate ", " presentableActualNames
+      , "]"
+      ]

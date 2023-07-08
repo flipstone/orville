@@ -1,14 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.PgCatalog.PgClass
-  ( PgClass (..),
-    RelationName,
-    relationNameToString,
-    RelationKind (..),
-    pgClassTable,
-    relationNameField,
-    namespaceOidField,
-    relationKindField,
+  ( PgClass (..)
+  , RelationName
+  , relationNameToString
+  , RelationKind (..)
+  , pgClassTable
+  , relationNameField
+  , namespaceOidField
+  , relationKindField
   )
 where
 
@@ -25,15 +25,15 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
   materialized views, composite types and TOAST tables.
 -}
 data PgClass = PgClass
-  { -- | The PostgreSQL @oid@ for the relation
-    pgClassOid :: LibPQ.Oid
-  , -- | The PostgreSQL @oid@ of the namespace that the relation belongs to.
-    -- References @pg_namespace.oid@.
-    pgClassNamespaceOid :: LibPQ.Oid
-  , -- | The name of relation
-    pgClassRelationName :: RelationName
-  , -- | The kind of relation (table, view, etc)
-    pgClassRelationKind :: RelationKind
+  { pgClassOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the relation
+  , pgClassNamespaceOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
+  -- References @pg_namespace.oid@.
+  , pgClassRelationName :: RelationName
+  -- ^ The name of relation
+  , pgClassRelationKind :: RelationKind
+  -- ^ The kind of relation (table, view, etc)
   }
 
 {- |

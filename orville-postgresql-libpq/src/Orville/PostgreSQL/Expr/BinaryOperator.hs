@@ -8,30 +8,30 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.BinaryOperator
-  ( BinaryOperator,
-    binaryOperator,
-    binaryOpExpression,
-    equalsOp,
-    notEqualsOp,
-    greaterThanOp,
-    lessThanOp,
-    greaterThanOrEqualsOp,
-    lessThanOrEqualsOp,
-    likeOp,
-    iLikeOp,
-    orOp,
-    andOp,
-    plusOp,
-    minusOp,
-    multiplicationOp,
-    divisionOp,
-    moduloOp,
-    exponentiationOp,
-    bitwiseAndOp,
-    bitwiseOrOp,
-    bitwiseXorOp,
-    bitwiseShiftLeftOp,
-    bitwiseShiftRightOp,
+  ( BinaryOperator
+  , binaryOperator
+  , binaryOpExpression
+  , equalsOp
+  , notEqualsOp
+  , greaterThanOp
+  , lessThanOp
+  , greaterThanOrEqualsOp
+  , lessThanOrEqualsOp
+  , likeOp
+  , iLikeOp
+  , orOp
+  , andOp
+  , plusOp
+  , minusOp
+  , multiplicationOp
+  , divisionOp
+  , moduloOp
+  , exponentiationOp
+  , bitwiseAndOp
+  , bitwiseOrOp
+  , bitwiseXorOp
+  , bitwiseShiftLeftOp
+  , bitwiseShiftRightOp
   )
 where
 

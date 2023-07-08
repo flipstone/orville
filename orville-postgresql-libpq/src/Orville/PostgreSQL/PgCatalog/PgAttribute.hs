@@ -1,23 +1,23 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.PgCatalog.PgAttribute
-  ( PgAttribute (..),
-    pgAttributeMaxLength,
-    AttributeName,
-    attributeNameToString,
-    AttributeNumber,
-    attributeNumberToInt16,
-    attributeNumberFromInt16,
-    attributeNumberTextBuilder,
-    attributeNumberParser,
-    isOrdinaryColumn,
-    pgAttributeTable,
-    attributeRelationOidField,
-    attributeNameField,
-    attributeTypeOidField,
-    attributeLengthField,
-    attributeIsDroppedField,
-    attributeNumberTypeField,
+  ( PgAttribute (..)
+  , pgAttributeMaxLength
+  , AttributeName
+  , attributeNameToString
+  , AttributeNumber
+  , attributeNumberToInt16
+  , attributeNumberFromInt16
+  , attributeNumberTextBuilder
+  , attributeNumberParser
+  , isOrdinaryColumn
+  , pgAttributeTable
+  , attributeRelationOidField
+  , attributeNameField
+  , attributeTypeOidField
+  , attributeLengthField
+  , attributeIsDroppedField
+  , attributeNumberTypeField
   )
 where
 
@@ -40,25 +40,25 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
   See also 'Orville.PostgreSQL.PgCatalog.PgClass'.
 -}
 data PgAttribute = PgAttribute
-  { -- | The PostgreSQL @oid@ for the relation that this
-    -- attribute belongs to. References @pg_class.oid@
-    pgAttributeRelationOid :: LibPQ.Oid
-  , -- | The name of attribute
-    pgAttributeName :: AttributeName
-  , -- | The PostgreSQL number of attribute
-    pgAttributeNumber :: AttributeNumber
-  , -- | The PostgreSQL @oid@ for the type of this attribute. References
-    -- @pg_type.oid@
-    pgAttributeTypeOid :: LibPQ.Oid
-  , -- | The length of this attributes type (a copy of @pg_type.typlen@). Note
-    -- that this is _NOT_ the maximum length of a @varchar@ column!
-    pgAttributeLength :: Int16
-  , -- | Type-specific data supplied at creation time, such as the maximum length of a @varchar@ column
-    pgAttributeTypeModifier :: Int32
-  , -- | Indicates whether the column has been dropped and is not longer valid
-    pgAttributeIsDropped :: Bool
-  , -- | Indicates whether the column has a not-null constraint
-    pgAttributeIsNotNull :: Bool
+  { pgAttributeRelationOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the relation that this
+  -- attribute belongs to. References @pg_class.oid@
+  , pgAttributeName :: AttributeName
+  -- ^ The name of attribute
+  , pgAttributeNumber :: AttributeNumber
+  -- ^ The PostgreSQL number of attribute
+  , pgAttributeTypeOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the type of this attribute. References
+  -- @pg_type.oid@
+  , pgAttributeLength :: Int16
+  -- ^ The length of this attributes type (a copy of @pg_type.typlen@). Note
+  -- that this is _NOT_ the maximum length of a @varchar@ column!
+  , pgAttributeTypeModifier :: Int32
+  -- ^ Type-specific data supplied at creation time, such as the maximum length of a @varchar@ column
+  , pgAttributeIsDropped :: Bool
+  -- ^ Indicates whether the column has been dropped and is not longer valid
+  , pgAttributeIsNotNull :: Bool
+  -- ^ Indicates whether the column has a not-null constraint
   }
 
 {- |
@@ -74,24 +74,26 @@ pgAttributeMaxLength attr =
   -- checking whether to use the typid and typmod from the attribute or the
   -- base type and typemod from the domain type.
   --
-  let charTypes =
-        [LibPQ.Oid 1042, LibPQ.Oid 1043] -- char, varchar
-      bitTypes =
-        [LibPQ.Oid 1560, LibPQ.Oid 1562] -- bit, varbit
-      typeOid =
-        pgAttributeTypeOid attr
+  let
+    charTypes =
+      [LibPQ.Oid 1042, LibPQ.Oid 1043] -- char, varchar
+    bitTypes =
+      [LibPQ.Oid 1560, LibPQ.Oid 1562] -- bit, varbit
+    typeOid =
+      pgAttributeTypeOid attr
 
-      typeMod =
-        pgAttributeTypeModifier attr
-   in if typeMod == -1
-        then Nothing
-        else
-          if typeOid `elem` charTypes
-            then Just (typeMod - 4)
-            else
-              if typeOid `elem` bitTypes
-                then Just typeMod
-                else Nothing
+    typeMod =
+      pgAttributeTypeModifier attr
+  in
+    if typeMod == -1
+      then Nothing
+      else
+        if typeOid `elem` charTypes
+          then Just (typeMod - 4)
+          else
+            if typeOid `elem` bitTypes
+              then Just typeMod
+              else Nothing
 
 {- |
   Determines whether the attribute represents a system column by inspecting

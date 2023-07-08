@@ -9,8 +9,8 @@ This module provides the very basics for [sqlcommenter](https://google.github.io
 support.
 -}
 module Orville.PostgreSQL.Raw.SqlCommenter
-  ( SqlCommenterAttributes,
-    addSqlCommenterAttributes,
+  ( SqlCommenterAttributes
+  , addSqlCommenterAttributes
   )
 where
 

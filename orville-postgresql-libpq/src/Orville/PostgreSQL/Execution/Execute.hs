@@ -6,13 +6,13 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Execute
-  ( executeAndDecode,
-    executeAndReturnAffectedRows,
-    executeVoid,
-    executeAndDecodeIO,
-    executeAndReturnAffectedRowsIO,
-    executeVoidIO,
-    AffectedRowsDecodingError,
+  ( executeAndDecode
+  , executeAndReturnAffectedRows
+  , executeVoid
+  , executeAndDecodeIO
+  , executeAndReturnAffectedRowsIO
+  , executeVoidIO
+  , AffectedRowsDecodingError
   )
 where
 
@@ -112,7 +112,8 @@ executeAndDecodeIO ::
 executeAndDecodeIO queryType sql marshaller orvilleState conn = do
   libPqResult <- executeWithCallbacksIO queryType sql orvilleState conn
 
-  let errorDetailLevel = orvilleErrorDetailLevel orvilleState
+  let
+    errorDetailLevel = orvilleErrorDetailLevel orvilleState
 
   decodingResult <-
     SqlMarshaller.marshallResultFromSql
@@ -189,17 +190,19 @@ executeWithCallbacksIO ::
   Connection ->
   IO LibPQ.Result
 executeWithCallbacksIO queryType sql orvilleState conn =
-  let rawSql =
-        case orvilleSqlCommenterAttributes orvilleState of
-          Nothing ->
-            RawSql.toRawSql sql
-          Just sqlCommenterAttributes ->
-            SqlCommenter.addSqlCommenterAttributes sqlCommenterAttributes $ RawSql.toRawSql sql
-   in orvilleSqlExecutionCallback
-        orvilleState
-        queryType
-        rawSql
-        (RawSql.execute conn rawSql)
+  let
+    rawSql =
+      case orvilleSqlCommenterAttributes orvilleState of
+        Nothing ->
+          RawSql.toRawSql sql
+        Just sqlCommenterAttributes ->
+          SqlCommenter.addSqlCommenterAttributes sqlCommenterAttributes $ RawSql.toRawSql sql
+  in
+    orvilleSqlExecutionCallback
+      orvilleState
+      queryType
+      rawSql
+      (RawSql.execute conn rawSql)
 
 {- |
   Thrown by 'executeAndReturnAffectedRows' and 'executeAndReturnAffectedRowsIO'

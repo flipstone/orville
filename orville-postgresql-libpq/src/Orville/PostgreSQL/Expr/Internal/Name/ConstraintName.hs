@@ -5,8 +5,8 @@ Copyright : Flipstone Technology Partners 2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
-  ( ConstraintName,
-    constraintName,
+  ( ConstraintName
+  , constraintName
   )
 where
 

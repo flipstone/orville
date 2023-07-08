@@ -1,7 +1,7 @@
 module Test.Entities.User
-  ( User (..),
-    table,
-    generate,
+  ( User (..)
+  , table
+  , generate
   )
 where
 

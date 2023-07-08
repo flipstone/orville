@@ -1,8 +1,8 @@
 module Test.TestTable
-  ( dropAndRecreateTableDef,
-    dropTableDef,
-    dropTableDefSql,
-    dropTableNameSql,
+  ( dropAndRecreateTableDef
+  , dropTableDef
+  , dropTableDefSql
+  , dropTableNameSql
   )
 where
 

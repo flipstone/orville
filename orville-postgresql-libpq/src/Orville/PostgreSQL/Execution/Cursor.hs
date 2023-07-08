@@ -8,28 +8,28 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Cursor
-  ( Cursor,
-    withCursor,
-    declareCursor,
-    closeCursor,
-    newCursorName,
-    fetch,
-    move,
-    Expr.CursorDirection,
-    Expr.next,
-    Expr.prior,
-    Expr.first,
-    Expr.last,
-    Expr.absolute,
-    Expr.relative,
-    Expr.count,
-    Expr.fetchAll,
-    Expr.forward,
-    Expr.forwardCount,
-    Expr.forwardAll,
-    Expr.backward,
-    Expr.backwardCount,
-    Expr.backwardAll,
+  ( Cursor
+  , withCursor
+  , declareCursor
+  , closeCursor
+  , newCursorName
+  , fetch
+  , move
+  , Expr.CursorDirection
+  , Expr.next
+  , Expr.prior
+  , Expr.first
+  , Expr.last
+  , Expr.absolute
+  , Expr.relative
+  , Expr.count
+  , Expr.fetchAll
+  , Expr.forward
+  , Expr.forwardCount
+  , Expr.forwardAll
+  , Expr.backward
+  , Expr.backwardCount
+  , Expr.backwardAll
   )
 where
 
@@ -116,8 +116,9 @@ declareCursor scrollExpr holdExpr =
   useSelect $ \queryExpr marshaller -> do
     cursorName <- newCursorName
 
-    let declareExpr =
-          Expr.declare cursorName scrollExpr holdExpr queryExpr
+    let
+      declareExpr =
+        Expr.declare cursorName scrollExpr holdExpr queryExpr
 
     _ <- Execute.executeVoid QueryType.CursorQuery declareExpr
     pure (Cursor marshaller cursorName)
@@ -187,8 +188,9 @@ newCursorName =
     now <- POSIXTime.getPOSIXTime
     randomWord <- Random.randomIO
 
-    let nowAsInteger =
-          fromEnum . Time.nominalDiffTimeToSeconds $ now
+    let
+      nowAsInteger =
+        fromEnum . Time.nominalDiffTimeToSeconds $ now
 
     pure . Expr.cursorName $
       Printf.printf

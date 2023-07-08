@@ -5,7 +5,7 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Name
-  ( module Export,
+  ( module Export
   )
 where
 

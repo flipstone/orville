@@ -1,23 +1,23 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Marshall.DefaultValue
-  ( DefaultValue,
-    integerDefault,
-    smallIntegerDefault,
-    bigIntegerDefault,
-    integralDefault,
-    doubleDefault,
-    booleanDefault,
-    textDefault,
-    dateDefault,
-    currentDateDefault,
-    utcTimestampDefault,
-    currentUTCTimestampDefault,
-    localTimestampDefault,
-    currentLocalTimestampDefault,
-    coerceDefaultValue,
-    defaultValueExpression,
-    rawSqlDefault,
+  ( DefaultValue
+  , integerDefault
+  , smallIntegerDefault
+  , bigIntegerDefault
+  , integralDefault
+  , doubleDefault
+  , booleanDefault
+  , textDefault
+  , dateDefault
+  , currentDateDefault
+  , utcTimestampDefault
+  , currentUTCTimestampDefault
+  , localTimestampDefault
+  , currentLocalTimestampDefault
+  , coerceDefaultValue
+  , defaultValueExpression
+  , rawSqlDefault
   )
 where
 
@@ -55,18 +55,20 @@ newtype DefaultValue a
 -}
 integralDefault :: Integral n => n -> DefaultValue n
 integralDefault n =
-  let decimalBytes =
-        LBS.toStrict
-          . BSB.toLazyByteString
-          . BSB.integerDec
-          . toInteger
-          $ n
-   in if n < 0
-        then
-          DefaultValue . RawSql.unsafeFromRawSql $
-            RawSql.stringLiteral decimalBytes
-              <> RawSql.fromString "::integer"
-        else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
+  let
+    decimalBytes =
+      LBS.toStrict
+        . BSB.toLazyByteString
+        . BSB.integerDec
+        . toInteger
+        $ n
+  in
+    if n < 0
+      then
+        DefaultValue . RawSql.unsafeFromRawSql $
+          RawSql.stringLiteral decimalBytes
+            <> RawSql.fromString "::integer"
+      else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
 
 {- |
   Builds a default value from an 'Int16' for use with small integer fields.
@@ -97,28 +99,32 @@ bigIntegerDefault = integralDefault
 -}
 doubleDefault :: Double -> DefaultValue Double
 doubleDefault d =
-  let decimalBytes =
-        LBS.toStrict
-          . BSB.toLazyByteString
-          . BSB.string7
-          $ Numeric.showFFloat Nothing d ""
-   in if d < 0
-        then
-          DefaultValue . RawSql.unsafeFromRawSql $
-            RawSql.stringLiteral decimalBytes
-              <> RawSql.fromString "::numeric"
-        else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
+  let
+    decimalBytes =
+      LBS.toStrict
+        . BSB.toLazyByteString
+        . BSB.string7
+        $ Numeric.showFFloat Nothing d ""
+  in
+    if d < 0
+      then
+        DefaultValue . RawSql.unsafeFromRawSql $
+          RawSql.stringLiteral decimalBytes
+            <> RawSql.fromString "::numeric"
+      else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
 
 {- |
   Builds a default value from a 'Bool', for use with boolean fields.
 -}
 booleanDefault :: Bool -> DefaultValue Bool
 booleanDefault bool =
-  let pgString =
-        case bool of
-          True -> "true"
-          False -> "false"
-   in DefaultValue $ RawSql.unsafeSqlExpression pgString
+  let
+    pgString =
+      case bool of
+        True -> "true"
+        False -> "false"
+  in
+    DefaultValue $ RawSql.unsafeSqlExpression pgString
 
 {- |
   Builds a default value from a 'T.Text', for use with unbounded, bounded
@@ -135,11 +141,13 @@ textDefault text =
 -}
 dateDefault :: Time.Day -> DefaultValue Time.Day
 dateDefault day =
-  let pgText =
-        PgTime.dayToPostgreSQL day
-   in DefaultValue . RawSql.unsafeFromRawSql $
-        RawSql.stringLiteral pgText
-          <> RawSql.fromString "::date"
+  let
+    pgText =
+      PgTime.dayToPostgreSQL day
+  in
+    DefaultValue . RawSql.unsafeFromRawSql $
+      RawSql.stringLiteral pgText
+        <> RawSql.fromString "::date"
 
 {- |
   Builds a default value that will default to the current date (i.e. the
@@ -159,11 +167,13 @@ currentDateDefault =
 -}
 utcTimestampDefault :: Time.UTCTime -> DefaultValue Time.UTCTime
 utcTimestampDefault utcTime =
-  let pgText =
-        PgTime.utcTimeToPostgreSQL utcTime
-   in DefaultValue . RawSql.unsafeFromRawSql $
-        RawSql.stringLiteral pgText
-          <> RawSql.fromString "::timestamp with time zone"
+  let
+    pgText =
+      PgTime.utcTimeToPostgreSQL utcTime
+  in
+    DefaultValue . RawSql.unsafeFromRawSql $
+      RawSql.stringLiteral pgText
+        <> RawSql.fromString "::timestamp with time zone"
 
 {- |
   Builds a default value that will default to the current utc time (i.e. the
@@ -180,12 +190,14 @@ currentUTCTimestampDefault =
 -}
 localTimestampDefault :: Time.LocalTime -> DefaultValue Time.LocalTime
 localTimestampDefault localTime =
-  let pgText =
-        PgTime.localTimeToPostgreSQL localTime
-   in DefaultValue
-        . RawSql.unsafeFromRawSql
-        $ RawSql.stringLiteral pgText
-          <> RawSql.fromString "::timestamp without time zone"
+  let
+    pgText =
+      PgTime.localTimeToPostgreSQL localTime
+  in
+    DefaultValue
+      . RawSql.unsafeFromRawSql
+      $ RawSql.stringLiteral pgText
+        <> RawSql.fromString "::timestamp without time zone"
 
 {- |
   Builds a default value that will default to the current local time (i.e. the

@@ -6,78 +6,78 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Marshall.FieldDefinition
-  ( FieldDefinition,
-    fieldName,
-    fieldDescription,
-    setFieldDescription,
-    fieldType,
-    fieldIsNotNullable,
-    fieldDefaultValue,
-    fieldNullability,
-    fieldEquals,
-    (.==),
-    fieldNotEquals,
-    (./=),
-    fieldGreaterThan,
-    (.>),
-    fieldLessThan,
-    (.<),
-    fieldGreaterThanOrEqualTo,
-    (.>=),
-    fieldLessThanOrEqualTo,
-    (.<=),
-    fieldIsNull,
-    fieldIsNotNull,
-    fieldLike,
-    fieldLikeInsensitive,
-    fieldIn,
-    (.<-),
-    fieldNotIn,
-    (.</-),
-    fieldTupleIn,
-    fieldTupleNotIn,
-    setField,
-    (.:=),
-    orderByField,
-    FieldNullability (..),
-    fieldValueToExpression,
-    fieldValueToSqlValue,
-    fieldValueFromSqlValue,
-    fieldColumnName,
-    fieldColumnReference,
-    fieldColumnDefinition,
-    FieldName,
-    stringToFieldName,
-    fieldNameToString,
-    fieldNameToColumnName,
-    fieldNameToByteString,
-    byteStringToFieldName,
-    NotNull,
-    Nullable,
-    convertField,
-    coerceField,
-    nullableField,
-    asymmetricNullableField,
-    setDefaultValue,
-    removeDefaultValue,
-    prefixField,
-    integerField,
-    serialField,
-    smallIntegerField,
-    bigIntegerField,
-    bigSerialField,
-    doubleField,
-    booleanField,
-    unboundedTextField,
-    boundedTextField,
-    fixedTextField,
-    textSearchVectorField,
-    dateField,
-    utcTimestampField,
-    localTimestampField,
-    uuidField,
-    fieldOfType,
-    whereColumnComparison,
+  ( FieldDefinition
+  , fieldName
+  , fieldDescription
+  , setFieldDescription
+  , fieldType
+  , fieldIsNotNullable
+  , fieldDefaultValue
+  , fieldNullability
+  , fieldEquals
+  , (.==)
+  , fieldNotEquals
+  , (./=)
+  , fieldGreaterThan
+  , (.>)
+  , fieldLessThan
+  , (.<)
+  , fieldGreaterThanOrEqualTo
+  , (.>=)
+  , fieldLessThanOrEqualTo
+  , (.<=)
+  , fieldIsNull
+  , fieldIsNotNull
+  , fieldLike
+  , fieldLikeInsensitive
+  , fieldIn
+  , (.<-)
+  , fieldNotIn
+  , (.</-)
+  , fieldTupleIn
+  , fieldTupleNotIn
+  , setField
+  , (.:=)
+  , orderByField
+  , FieldNullability (..)
+  , fieldValueToExpression
+  , fieldValueToSqlValue
+  , fieldValueFromSqlValue
+  , fieldColumnName
+  , fieldColumnReference
+  , fieldColumnDefinition
+  , FieldName
+  , stringToFieldName
+  , fieldNameToString
+  , fieldNameToColumnName
+  , fieldNameToByteString
+  , byteStringToFieldName
+  , NotNull
+  , Nullable
+  , convertField
+  , coerceField
+  , nullableField
+  , asymmetricNullableField
+  , setDefaultValue
+  , removeDefaultValue
+  , prefixField
+  , integerField
+  , serialField
+  , smallIntegerField
+  , bigIntegerField
+  , bigSerialField
+  , doubleField
+  , booleanField
+  , unboundedTextField
+  , boundedTextField
+  , fixedTextField
+  , textSearchVectorField
+  , dateField
+  , utcTimestampField
+  , localTimestampField
+  , uuidField
+  , fieldOfType
+  , whereColumnComparison
   )
 where
 
@@ -487,23 +487,25 @@ fieldOfType sqlType name =
 -}
 nullableField :: FieldDefinition NotNull a -> FieldDefinition Nullable (Maybe a)
 nullableField field =
-  let nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
-      nullableType sqlType =
-        sqlType
-          { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
-          , SqlType.sqlTypeFromSql =
-              \sqlValue ->
-                if SqlValue.isSqlNull sqlValue
-                  then Right Nothing
-                  else Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
-          }
-   in FieldDefinition
-        { i_fieldName = fieldName field
-        , i_fieldType = nullableType (fieldType field)
-        , i_fieldNullability = NullableGADT
-        , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
-        , i_fieldDescription = fieldDescription field
+  let
+    nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
+    nullableType sqlType =
+      sqlType
+        { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
+        , SqlType.sqlTypeFromSql =
+            \sqlValue ->
+              if SqlValue.isSqlNull sqlValue
+                then Right Nothing
+                else Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
         }
+  in
+    FieldDefinition
+      { i_fieldName = fieldName field
+      , i_fieldType = nullableType (fieldType field)
+      , i_fieldNullability = NullableGADT
+      , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
+      , i_fieldDescription = fieldDescription field
+      }
 
 {- |
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
@@ -519,19 +521,21 @@ nullableField field =
 -}
 asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
 asymmetricNullableField field =
-  let nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
-      nullableType sqlType =
-        sqlType
-          { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
-          , SqlType.sqlTypeFromSql = \sqlValue -> Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
-          }
-   in FieldDefinition
-        { i_fieldName = fieldName field
-        , i_fieldType = nullableType (fieldType field)
-        , i_fieldNullability = NullableGADT
-        , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
-        , i_fieldDescription = fieldDescription field
+  let
+    nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
+    nullableType sqlType =
+      sqlType
+        { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
+        , SqlType.sqlTypeFromSql = \sqlValue -> Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
         }
+  in
+    FieldDefinition
+      { i_fieldName = fieldName field
+      , i_fieldType = nullableType (fieldType field)
+      , i_fieldNullability = NullableGADT
+      , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
+      , i_fieldDescription = fieldDescription field
+      }
 
 {- |
   Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can

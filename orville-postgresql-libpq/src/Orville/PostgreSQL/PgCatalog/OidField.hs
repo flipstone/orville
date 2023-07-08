@@ -1,6 +1,6 @@
 module Orville.PostgreSQL.PgCatalog.OidField
-  ( oidField,
-    oidTypeField,
+  ( oidField
+  , oidTypeField
   )
 where
 

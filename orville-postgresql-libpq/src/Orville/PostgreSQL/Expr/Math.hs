@@ -1,15 +1,15 @@
 module Orville.PostgreSQL.Expr.Math
-  ( plus,
-    minus,
-    multiply,
-    divide,
-    modulo,
-    exponentiate,
-    bitwiseAnd,
-    bitwiseOr,
-    bitwiseXor,
-    bitwiseShiftLeft,
-    bitwiseShiftRight,
+  ( plus
+  , minus
+  , multiply
+  , divide
+  , modulo
+  , exponentiate
+  , bitwiseAnd
+  , bitwiseOr
+  , bitwiseXor
+  , bitwiseShiftLeft
+  , bitwiseShiftRight
   )
 where
 

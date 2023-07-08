@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.LimitExpr
-  ( LimitExpr,
-    limitExpr,
+  ( LimitExpr
+  , limitExpr
   )
 where
 

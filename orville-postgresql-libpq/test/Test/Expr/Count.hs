@@ -1,5 +1,5 @@
 module Test.Expr.Count
-  ( countTests,
+  ( countTests
   )
 where
 
@@ -27,18 +27,19 @@ countTests pool =
 prop_count1 :: Property.NamedDBProperty
 prop_count1 =
   Property.singletonNamedDBProperty "SELECT COUNT(1)" $ \pool -> do
-    let sql =
-          Expr.queryExpr
-            (Expr.selectClause (Expr.selectExpr Nothing))
-            ( Expr.selectDerivedColumns
-                [ Expr.deriveColumnAs Expr.count1 (Expr.columnName "count")
-                ]
-            )
-            Nothing
+    let
+      sql =
+        Expr.queryExpr
+          (Expr.selectClause (Expr.selectExpr Nothing))
+          ( Expr.selectDerivedColumns
+              [ Expr.deriveColumnAs Expr.count1 (Expr.columnName "count")
+              ]
+          )
+          Nothing
 
-        marshaller =
-          Orville.annotateSqlMarshallerEmptyAnnotation $
-            Orville.marshallField id (Orville.integerField "count")
+      marshaller =
+        Orville.annotateSqlMarshallerEmptyAnnotation $
+          Orville.marshallField id (Orville.integerField "count")
 
     result <-
       HH.evalIO $
@@ -50,20 +51,21 @@ prop_count1 =
 prop_countColumn :: Property.NamedDBProperty
 prop_countColumn =
   Property.singletonNamedDBProperty "In transaction" $ \pool -> do
-    let sql =
-          Expr.queryExpr
-            (Expr.selectClause (Expr.selectExpr Nothing))
-            ( Expr.selectDerivedColumns
-                [ Expr.deriveColumnAs
-                    (Expr.countColumn (Orville.fieldColumnName Foo.fooIdField))
-                    (Expr.columnName "count")
-                ]
-            )
-            (Just (Expr.tableExpr (Expr.referencesTable $ Orville.tableName Foo.table) Nothing Nothing Nothing Nothing Nothing))
+    let
+      sql =
+        Expr.queryExpr
+          (Expr.selectClause (Expr.selectExpr Nothing))
+          ( Expr.selectDerivedColumns
+              [ Expr.deriveColumnAs
+                  (Expr.countColumn (Orville.fieldColumnName Foo.fooIdField))
+                  (Expr.columnName "count")
+              ]
+          )
+          (Just (Expr.tableExpr (Expr.referencesTable $ Orville.tableName Foo.table) Nothing Nothing Nothing Nothing Nothing))
 
-        marshaller =
-          Orville.annotateSqlMarshallerEmptyAnnotation $
-            Orville.marshallField id (Orville.integerField "count")
+      marshaller =
+        Orville.annotateSqlMarshallerEmptyAnnotation $
+          Orville.marshallField id (Orville.integerField "count")
 
     foos <- HH.forAll (Foo.generateList (Range.linear 0 5))
 

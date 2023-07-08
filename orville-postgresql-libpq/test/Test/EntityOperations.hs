@@ -1,5 +1,5 @@
 module Test.EntityOperations
-  ( entityOperationsTests,
+  ( entityOperationsTests
   )
 where
 
@@ -75,10 +75,11 @@ prop_insertEntitiesFindFirstEntityByRoundTrip =
         mapM_ (Orville.insertEntities Foo.table) (NEL.nonEmpty originalFoos)
         Orville.findFirstEntityBy Foo.table mempty
 
-    let expectedLength =
-          case originalFoos of
-            [] -> 0
-            _ -> 1
+    let
+      expectedLength =
+        case originalFoos of
+          [] -> 0
+          _ -> 1
 
     -- Once we add order by to 'SelectOptions' we can order by something here
     -- and assert which item is returned.
@@ -181,8 +182,9 @@ prop_updateEntity_NoMatch =
     originalFoo <- HH.forAll Foo.generate
     newFoo <- HH.forAll Foo.generate
 
-    let mismatchFooId =
-          1 + Foo.fooId originalFoo
+    let
+      mismatchFooId =
+        1 + Foo.fooId originalFoo
 
     retrievedFoos <-
       Foo.withTable pool $ do
@@ -198,8 +200,9 @@ prop_updateAndReturnEntity_NoMatch =
     originalFoo <- HH.forAll Foo.generate
     newFoo <- HH.forAll Foo.generate
 
-    let mismatchFooId =
-          1 + Foo.fooId originalFoo
+    let
+      mismatchFooId =
+        1 + Foo.fooId originalFoo
 
     mbReturnedFoo <-
       Foo.withTable pool $ do
@@ -212,7 +215,8 @@ prop_deleteEntity :: Property.NamedDBProperty
 prop_deleteEntity =
   Property.singletonNamedDBProperty "deleteEntity deletes row at the given key" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
-    let withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
+    let
+      withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
     anotherFoo <- HH.forAll . withDifferentKey $ Foo.generate
 
     retrievedFoos <-
@@ -228,7 +232,8 @@ prop_deleteEntityAffectedRows :: Property.NamedDBProperty
 prop_deleteEntityAffectedRows =
   Property.singletonNamedDBProperty "deleteEntity returns the number of affected rows" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
-    let withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
+    let
+      withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
     anotherFoo <- HH.forAll . withDifferentKey $ Foo.generate
 
     affectedRows <-
@@ -255,8 +260,9 @@ prop_deleteEntity_NoMatch =
   Property.singletonNamedDBProperty "deleteEntity deletes no rows when key doesn't match" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
 
-    let mismatchFooId =
-          1 + Foo.fooId originalFoo
+    let
+      mismatchFooId =
+        1 + Foo.fooId originalFoo
 
     retrievedFoos <-
       Foo.withTable pool $ do
@@ -271,8 +277,9 @@ prop_deleteAndReturnEntity_NoMatch =
   Property.singletonNamedDBProperty "deleteAndReturnEntity returns Nothing when key doesn't match" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
 
-    let mismatchFooId =
-          1 + Foo.fooId originalFoo
+    let
+      mismatchFooId =
+        1 + Foo.fooId originalFoo
 
     mbReturnedFoo <-
       Foo.withTable pool $ do
@@ -286,7 +293,8 @@ prop_deleteEntities =
   Property.singletonNamedDBProperty "deleteEntities deletes all matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
+    let
+      fooIds = fmap Foo.fooId foos
 
     remainingFoos <-
       Foo.withTable pool $ do
@@ -306,7 +314,8 @@ prop_deleteEntitiesAffectedRows =
   Property.singletonNamedDBProperty "deleteEntities returns the number of affected rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
+    let
+      fooIds = fmap Foo.fooId foos
 
     affectedRows <-
       Foo.withTable pool $ do
@@ -322,8 +331,9 @@ prop_deleteEntities_NoMatch =
   Property.singletonNamedDBProperty "deleteEntities does not delete non matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        mismatchedId = maximum fooIds + 1
+    let
+      fooIds = fmap Foo.fooId foos
+      mismatchedId = maximum fooIds + 1
 
     remainingFoos <-
       Foo.withTable pool $ do
@@ -343,7 +353,8 @@ prop_deleteAndReturnEntities =
   Property.singletonNamedDBProperty "deleteAndReturnEntities deletes all matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
+    let
+      fooIds = fmap Foo.fooId foos
 
     deletedFoos <-
       Foo.withTable pool $ do
@@ -359,8 +370,9 @@ prop_deleteAndReturnEntities_NoMatch =
   Property.singletonNamedDBProperty "deleteAndReturnEntities does not delete non matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        mismatchedId = maximum fooIds + 1
+    let
+      fooIds = fmap Foo.fooId foos
+      mismatchedId = maximum fooIds + 1
 
     deletedFoos <-
       Foo.withTable pool $ do
@@ -376,8 +388,9 @@ prop_updateFields =
   Property.singletonNamedDBProperty "updateFields updates all matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        updatedName = T.pack "Updated"
+    let
+      fooIds = fmap Foo.fooId foos
+      updatedName = T.pack "Updated"
 
     updatedFoos <-
       Foo.withTable pool $ do
@@ -398,9 +411,10 @@ prop_updateFields_NoMatch =
   Property.singletonNamedDBProperty "updateFields updates no non-matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        updatedName = T.pack "Updated"
-        mismatchedId = maximum fooIds + 1
+    let
+      fooIds = fmap Foo.fooId foos
+      updatedName = T.pack "Updated"
+      mismatchedId = maximum fooIds + 1
 
     foosAfterUpdate <-
       Foo.withTable pool $ do
@@ -419,8 +433,9 @@ prop_updateFieldsAffectedRows =
   Property.singletonNamedDBProperty "updateFields returns the number of affeted rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        updatedName = T.pack "Updated"
+    let
+      fooIds = fmap Foo.fooId foos
+      updatedName = T.pack "Updated"
 
     affectedRows <-
       Foo.withTable pool $ do
@@ -437,8 +452,9 @@ prop_updateFieldsAndReturnEntities =
   Property.singletonNamedDBProperty "updateFieldsAndReturnEntities returns updated rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        updatedName = T.pack "Updated"
+    let
+      fooIds = fmap Foo.fooId foos
+      updatedName = T.pack "Updated"
 
     updatedFoos <-
       Foo.withTable pool $ do
@@ -455,9 +471,10 @@ prop_updateFieldsAndReturnEntities_NoMatch =
   Property.singletonNamedDBProperty "updateFieldsAndReturnEntities returns no non-matching rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
-    let fooIds = fmap Foo.fooId foos
-        updatedName = T.pack "Updated"
-        mismatchedId = maximum fooIds + 1
+    let
+      fooIds = fmap Foo.fooId foos
+      updatedName = T.pack "Updated"
+      mismatchedId = maximum fooIds + 1
 
     updatedFoos <-
       Foo.withTable pool $ do

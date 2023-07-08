@@ -30,9 +30,9 @@ instance O.MonadOrvilleControl MyMonad where
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.UnliftIO
-  ( liftWithConnectionViaUnliftIO,
-    liftFinallyViaUnliftIO,
-    liftBracketViaUnLiftIO,
+  ( liftWithConnectionViaUnliftIO
+  , liftFinallyViaUnliftIO
+  , liftBracketViaUnLiftIO
   )
 where
 

@@ -1,5 +1,5 @@
 module Test.Expr.TableDefinition
-  ( tableDefinitionTests,
+  ( tableDefinitionTests
   )
 where
 

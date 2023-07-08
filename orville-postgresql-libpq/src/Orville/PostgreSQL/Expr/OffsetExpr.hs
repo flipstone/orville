@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.OffsetExpr
-  ( OffsetExpr,
-    offsetExpr,
+  ( OffsetExpr
+  , offsetExpr
   )
 where
 

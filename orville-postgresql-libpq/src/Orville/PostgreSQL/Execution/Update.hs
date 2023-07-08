@@ -6,15 +6,15 @@ License   : MIT
 Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.Update
-  ( Update,
-    updateToUpdateExpr,
-    executeUpdate,
-    executeUpdateReturnEntities,
-    updateToTableReturning,
-    updateToTable,
-    updateToTableFieldsReturning,
-    updateToTableFields,
-    rawUpdateExpr,
+  ( Update
+  , updateToUpdateExpr
+  , executeUpdate
+  , executeUpdateReturnEntities
+  , updateToTableReturning
+  , updateToTable
+  , updateToTableFieldsReturning
+  , updateToTableFields
+  , rawUpdateExpr
   )
 where
 
@@ -111,10 +111,11 @@ updateTable returningOption tableDef key writeEntity = do
         (unannotatedSqlMarshaller $ tableMarshaller tableDef)
         writeEntity
 
-  let isEntityKey =
-        primaryKeyEquals
-          (tablePrimaryKey tableDef)
-          key
+  let
+    isEntityKey =
+      primaryKeyEquals
+        (tablePrimaryKey tableDef)
+        key
   pure $
     updateFields
       returningOption
@@ -156,14 +157,16 @@ updateFields ::
   Maybe Expr.BooleanExpr ->
   Update readEntity returningClause
 updateFields returingOption tableDef setClauses mbWhereCondition =
-  let whereClause =
-        fmap Expr.whereClause mbWhereCondition
-   in rawUpdateExpr returingOption (tableMarshaller tableDef) $
-        Expr.updateExpr
-          (tableName tableDef)
-          (Expr.setClauseList setClauses)
-          whereClause
-          (mkTableReturningClause returingOption tableDef)
+  let
+    whereClause =
+      fmap Expr.whereClause mbWhereCondition
+  in
+    rawUpdateExpr returingOption (tableMarshaller tableDef) $
+      Expr.updateExpr
+        (tableName tableDef)
+        (Expr.setClauseList setClauses)
+        whereClause
+        (mkTableReturningClause returingOption tableDef)
 
 {- |
   Builds an 'Update' that will execute the specified query and use the given 'AnnotatedSqlMarshaller' to

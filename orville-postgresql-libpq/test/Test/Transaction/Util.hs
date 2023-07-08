@@ -1,11 +1,11 @@
 module Test.Transaction.Util
-  ( TestError,
-    throwTestError,
-    silentlyHandleTestError,
-    genNestingLevel,
-    runNestedTransactions,
-    runNestedTransactionItems,
-    transationNestingLevelRange,
+  ( TestError
+  , throwTestError
+  , silentlyHandleTestError
+  , genNestingLevel
+  , runNestedTransactions
+  , runNestedTransactionItems
+  , transationNestingLevelRange
   )
 where
 
@@ -36,15 +36,17 @@ runNestedTransactionItems ::
   (a -> m ()) ->
   m ()
 runNestedTransactionItems items doLevel =
-  let go is =
-        case is of
-          [] ->
-            pure ()
-          (item : rest) ->
-            Orville.withTransaction $ do
-              doLevel item
-              go rest
-   in go items
+  let
+    go is =
+      case is of
+        [] ->
+          pure ()
+        (item : rest) ->
+          Orville.withTransaction $ do
+            doLevel item
+            go rest
+  in
+    go items
 
 throwTestError :: ExSafe.MonadThrow m => m a
 throwTestError =

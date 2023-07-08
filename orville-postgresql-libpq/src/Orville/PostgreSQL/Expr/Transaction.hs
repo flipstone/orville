@@ -1,28 +1,28 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.Transaction
-  ( BeginTransactionExpr,
-    beginTransaction,
-    TransactionMode,
-    readWrite,
-    readOnly,
-    deferrable,
-    notDeferrable,
-    isolationLevel,
-    IsolationLevel,
-    serializable,
-    repeatableRead,
-    readCommitted,
-    readUncommitted,
-    CommitExpr,
-    commit,
-    RollbackExpr,
-    rollback,
-    rollbackTo,
-    SavepointExpr,
-    savepoint,
-    ReleaseSavepointExpr,
-    releaseSavepoint,
+  ( BeginTransactionExpr
+  , beginTransaction
+  , TransactionMode
+  , readWrite
+  , readOnly
+  , deferrable
+  , notDeferrable
+  , isolationLevel
+  , IsolationLevel
+  , serializable
+  , repeatableRead
+  , readCommitted
+  , readUncommitted
+  , CommitExpr
+  , commit
+  , RollbackExpr
+  , rollback
+  , rollbackTo
+  , SavepointExpr
+  , savepoint
+  , ReleaseSavepointExpr
+  , releaseSavepoint
   )
 where
 
@@ -39,8 +39,8 @@ beginTransaction :: Maybe TransactionMode -> BeginTransactionExpr
 beginTransaction maybeTransactionMode =
   BeginTransactionExpr $
     RawSql.intercalate RawSql.space $
-      ( RawSql.fromString "BEGIN TRANSACTION" :
-        maybeToList (RawSql.toRawSql <$> maybeTransactionMode)
+      ( RawSql.fromString "BEGIN TRANSACTION"
+          : maybeToList (RawSql.toRawSql <$> maybeTransactionMode)
       )
 
 newtype TransactionMode

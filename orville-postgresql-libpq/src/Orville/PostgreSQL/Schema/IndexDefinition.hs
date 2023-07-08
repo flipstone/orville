@@ -1,17 +1,17 @@
 module Orville.PostgreSQL.Schema.IndexDefinition
-  ( IndexDefinition,
-    uniqueIndex,
-    uniqueNamedIndex,
-    nonUniqueIndex,
-    nonUniqueNamedIndex,
-    mkIndexDefinition,
-    mkNamedIndexDefinition,
-    Expr.IndexUniqueness (UniqueIndex, NonUniqueIndex),
-    IndexMigrationKey (AttributeBasedIndexKey, NamedIndexKey),
-    AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns),
-    NamedIndexMigrationKey,
-    indexMigrationKey,
-    indexCreateExpr,
+  ( IndexDefinition
+  , uniqueIndex
+  , uniqueNamedIndex
+  , nonUniqueIndex
+  , nonUniqueNamedIndex
+  , mkIndexDefinition
+  , mkNamedIndexDefinition
+  , Expr.IndexUniqueness (UniqueIndex, NonUniqueIndex)
+  , IndexMigrationKey (AttributeBasedIndexKey, NamedIndexKey)
+  , AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns)
+  , NamedIndexMigrationKey
+  , indexMigrationKey
+  , indexCreateExpr
   )
 where
 
@@ -107,21 +107,23 @@ mkIndexDefinition ::
   NonEmpty FieldDefinition.FieldName ->
   IndexDefinition
 mkIndexDefinition uniqueness fieldNames =
-  let expr tableName =
-        Expr.createIndexExpr
-          uniqueness
-          tableName
-          (fmap FieldDefinition.fieldNameToColumnName fieldNames)
+  let
+    expr tableName =
+      Expr.createIndexExpr
+        uniqueness
+        tableName
+        (fmap FieldDefinition.fieldNameToColumnName fieldNames)
 
-      migrationKey =
-        AttributeBasedIndexMigrationKey
-          { indexKeyUniqueness = uniqueness
-          , indexKeyColumns = NEL.toList fieldNames
-          }
-   in IndexDefinition
-        { _indexCreateExpr = expr
-        , _indexMigrationKey = AttributeBasedIndexKey migrationKey
+    migrationKey =
+      AttributeBasedIndexMigrationKey
+        { indexKeyUniqueness = uniqueness
+        , indexKeyColumns = NEL.toList fieldNames
         }
+  in
+    IndexDefinition
+      { _indexCreateExpr = expr
+      , _indexMigrationKey = AttributeBasedIndexKey migrationKey
+      }
 
 {- |
   Constructs an 'IndexDefinition' for an index with the given uniquness, given
@@ -133,13 +135,15 @@ mkNamedIndexDefinition ::
   RawSql.RawSql ->
   IndexDefinition
 mkNamedIndexDefinition uniqueness indexName indexSql =
-  let expr tableName =
-        Expr.createNamedIndexExpr
-          uniqueness
-          tableName
-          (Expr.indexName indexName)
-          indexSql
-   in IndexDefinition
-        { _indexCreateExpr = expr
-        , _indexMigrationKey = NamedIndexKey indexName
-        }
+  let
+    expr tableName =
+      Expr.createNamedIndexExpr
+        uniqueness
+        tableName
+        (Expr.indexName indexName)
+        indexSql
+  in
+    IndexDefinition
+      { _indexCreateExpr = expr
+      , _indexMigrationKey = NamedIndexKey indexName
+      }

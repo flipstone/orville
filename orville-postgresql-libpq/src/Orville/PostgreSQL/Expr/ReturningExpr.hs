@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.ReturningExpr
-  ( ReturningExpr,
-    returningExpr,
+  ( ReturningExpr
+  , returningExpr
   )
 where
 

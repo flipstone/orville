@@ -5,10 +5,10 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.Identifier
-  ( Identifier,
-    identifier,
-    identifierFromBytes,
-    IdentifierExpression (toIdentifier, fromIdentifier),
+  ( Identifier
+  , identifier
+  , identifierFromBytes
+  , IdentifierExpression (toIdentifier, fromIdentifier)
   )
 where
 

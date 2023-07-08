@@ -1,13 +1,13 @@
 module Orville.PostgreSQL.Schema.TableIdentifier
-  ( TableIdentifier,
-    unqualifiedNameToTableId,
-    setTableIdSchema,
-    tableIdQualifiedName,
-    tableIdUnqualifiedName,
-    tableIdSchemaName,
-    tableIdToString,
-    tableIdUnqualifiedNameString,
-    tableIdSchemaNameString,
+  ( TableIdentifier
+  , unqualifiedNameToTableId
+  , setTableIdSchema
+  , tableIdQualifiedName
+  , tableIdUnqualifiedName
+  , tableIdSchemaName
+  , tableIdToString
+  , tableIdUnqualifiedNameString
+  , tableIdSchemaNameString
   )
 where
 

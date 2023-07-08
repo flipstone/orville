@@ -1,6 +1,6 @@
 module Main
-  ( main,
-    recheckDBProperty,
+  ( main
+  , recheckDBProperty
   )
 where
 
@@ -101,7 +101,8 @@ recheckDBProperty size seed namedProperty = do
 lookupConnStr :: IO B8.ByteString
 lookupConnStr = do
   mbConnHostStr <- Env.lookupEnv "TEST_CONN_HOST"
-  let connStrUserPass = " user=orville_test password=orville"
+  let
+    connStrUserPass = " user=orville_test password=orville"
   case mbConnHostStr of
     Nothing -> fail "TEST_CONN_HOST not set, so we don't know what database to connect to!"
     Just connHost -> pure . B8.pack $ connHost <> connStrUserPass

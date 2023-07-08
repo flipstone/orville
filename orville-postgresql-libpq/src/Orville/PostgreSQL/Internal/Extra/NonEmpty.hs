@@ -3,7 +3,7 @@
   via the orville public interface.
 -}
 module Orville.PostgreSQL.Internal.Extra.NonEmpty
-  ( foldl1',
+  ( foldl1'
   )
 where
 

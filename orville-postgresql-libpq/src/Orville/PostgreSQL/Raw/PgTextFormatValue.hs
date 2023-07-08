@@ -1,10 +1,10 @@
 module Orville.PostgreSQL.Raw.PgTextFormatValue
-  ( PgTextFormatValue,
-    NULByteFoundError (NULByteFoundError),
-    unsafeFromByteString,
-    fromByteString,
-    toByteString,
-    toBytesForLibPQ,
+  ( PgTextFormatValue
+  , NULByteFoundError (NULByteFoundError)
+  , unsafeFromByteString
+  , fromByteString
+  , toByteString
+  , toBytesForLibPQ
   )
 where
 

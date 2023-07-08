@@ -1,5 +1,5 @@
 module Test.PgCatalog
-  ( pgCatalogTests,
+  ( pgCatalogTests
   )
 where
 
@@ -71,13 +71,14 @@ prop_queryPgAttribute =
 prop_queryPgAttributeDefault :: Property.NamedDBProperty
 prop_queryPgAttributeDefault =
   Property.singletonNamedDBProperty "Can query the pg_attrdef table to find out about a default value" $ \pool -> do
-    let fieldDefWithDefault =
-          Orville.setDefaultValue (Orville.integerDefault 0) (Orville.integerField "foo")
+    let
+      fieldDefWithDefault =
+        Orville.setDefaultValue (Orville.integerDefault 0) (Orville.integerField "foo")
 
-        tableDef =
-          Orville.mkTableDefinitionWithoutKey
-            "test_pg_attrdef_query"
-            (Orville.marshallField id fieldDefWithDefault)
+      tableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "test_pg_attrdef_query"
+          (Orville.marshallField id fieldDefWithDefault)
 
     maybePgClassRecord <- HH.evalIO . Orville.runOrville pool $ do
       Orville.withConnection $ \connection ->
@@ -130,11 +131,12 @@ prop_queryPgConstraint =
 prop_describeDatabaseRelations :: Property.NamedDBProperty
 prop_describeDatabaseRelations =
   Property.singletonNamedDBProperty "Can describe relations from different schemas at once" $ \pool -> do
-    let relationsToDescribe =
-          [ (pgCatalog, pgNamespace)
-          , (pgCatalog, pgClass)
-          , (informationSchema, tables)
-          ]
+    let
+      relationsToDescribe =
+        [ (pgCatalog, pgNamespace)
+        , (pgCatalog, pgClass)
+        , (informationSchema, tables)
+        ]
 
     desc <- HH.evalIO . Orville.runOrville pool $ do
       PgCatalog.describeDatabaseRelations relationsToDescribe

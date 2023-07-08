@@ -6,22 +6,22 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.EntityOperations
-  ( insertEntity,
-    insertAndReturnEntity,
-    insertEntities,
-    insertAndReturnEntities,
-    updateEntity,
-    updateAndReturnEntity,
-    updateFields,
-    updateFieldsAndReturnEntities,
-    deleteEntity,
-    deleteAndReturnEntity,
-    deleteEntities,
-    deleteAndReturnEntities,
-    findEntitiesBy,
-    findFirstEntityBy,
-    findEntity,
-    findEntities,
+  ( insertEntity
+  , insertAndReturnEntity
+  , insertEntities
+  , insertAndReturnEntities
+  , updateEntity
+  , updateAndReturnEntity
+  , updateFields
+  , updateFieldsAndReturnEntities
+  , deleteEntity
+  , deleteAndReturnEntity
+  , deleteEntities
+  , deleteAndReturnEntities
+  , findEntitiesBy
+  , findFirstEntityBy
+  , findEntity
+  , findEntities
   )
 where
 
@@ -197,12 +197,14 @@ deleteEntity ::
   key ->
   m Int
 deleteEntity entityTable key =
-  let primaryKeyCondition =
-        Schema.primaryKeyEquals
-          (Schema.tablePrimaryKey entityTable)
-          key
-   in Delete.executeDelete $
-        Delete.deleteFromTable entityTable (Just primaryKeyCondition)
+  let
+    primaryKeyCondition =
+      Schema.primaryKeyEquals
+        (Schema.tablePrimaryKey entityTable)
+        key
+  in
+    Delete.executeDelete $
+      Delete.deleteFromTable entityTable (Just primaryKeyCondition)
 
 {- |
   Deletes the row with the given key, returning the row that was deleted.
@@ -216,10 +218,11 @@ deleteAndReturnEntity ::
   key ->
   m (Maybe readEntity)
 deleteAndReturnEntity entityTable key = do
-  let primaryKeyCondition =
-        Schema.primaryKeyEquals
-          (Schema.tablePrimaryKey entityTable)
-          key
+  let
+    primaryKeyCondition =
+      Schema.primaryKeyEquals
+        (Schema.tablePrimaryKey entityTable)
+        key
 
   returnedEntities <- deleteAndReturnEntities entityTable (Just primaryKeyCondition)
 
@@ -301,11 +304,13 @@ findEntity ::
   key ->
   m (Maybe readEntity)
 findEntity entityTable key =
-  let primaryKeyCondition =
-        Schema.primaryKeyEquals
-          (Schema.tablePrimaryKey entityTable)
-          key
-   in findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
+  let
+    primaryKeyCondition =
+      Schema.primaryKeyEquals
+        (Schema.tablePrimaryKey entityTable)
+        key
+  in
+    findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
 {- |
   Finds multiple entities by the table's primary key.
@@ -318,11 +323,13 @@ findEntities ::
   NonEmpty key ->
   m [readEntity]
 findEntities entityTable keys =
-  let primaryKeyCondition =
-        Schema.primaryKeyIn
-          (Schema.tablePrimaryKey entityTable)
-          keys
-   in findEntitiesBy entityTable (SelectOptions.where_ primaryKeyCondition)
+  let
+    primaryKeyCondition =
+      Schema.primaryKeyIn
+        (Schema.tablePrimaryKey entityTable)
+        keys
+  in
+    findEntitiesBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
 {- |
   Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the

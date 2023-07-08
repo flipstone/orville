@@ -1,21 +1,21 @@
 module Test.PgAssert
-  ( assertTableExists,
-    assertTableExistsInSchema,
-    assertTableDoesNotExist,
-    assertTableDoesNotExistInSchema,
-    assertSequenceExists,
-    assertSequenceExistsInSchema,
-    assertSequenceDoesNotExist,
-    assertSequenceDoesNotExistInSchema,
-    assertRelationHasPgSequence,
-    assertColumnNamesEqual,
-    assertColumnExists,
-    assertColumnDefaultExists,
-    assertColumnDefaultMatches,
-    assertUniqueConstraintExists,
-    assertForeignKeyConstraintExists,
-    assertIndexExists,
-    ForeignKeyInfo (..),
+  ( assertTableExists
+  , assertTableExistsInSchema
+  , assertTableDoesNotExist
+  , assertTableDoesNotExistInSchema
+  , assertSequenceExists
+  , assertSequenceExistsInSchema
+  , assertSequenceDoesNotExist
+  , assertSequenceDoesNotExistInSchema
+  , assertRelationHasPgSequence
+  , assertColumnNamesEqual
+  , assertColumnExists
+  , assertColumnDefaultExists
+  , assertColumnDefaultMatches
+  , assertUniqueConstraintExists
+  , assertForeignKeyConstraintExists
+  , assertIndexExists
+  , ForeignKeyInfo (..)
   )
 where
 
@@ -173,12 +173,13 @@ assertColumnNamesEqual ::
   [String] ->
   m ()
 assertColumnNamesEqual relationDesc expectedColumns = do
-  let attributeNames =
-        fmap PgCatalog.pgAttributeName
-          . filter PgCatalog.isOrdinaryColumn
-          . Map.elems
-          . PgCatalog.relationAttributes
-          $ relationDesc
+  let
+    attributeNames =
+      fmap PgCatalog.pgAttributeName
+        . filter PgCatalog.isOrdinaryColumn
+        . Map.elems
+        . PgCatalog.relationAttributes
+        $ relationDesc
 
   withFrozenCallStack $
     List.sort attributeNames === List.sort (map String.fromString expectedColumns)
@@ -205,7 +206,8 @@ assertColumnDefaultExists ::
 assertColumnDefaultExists relationDesc columnName = do
   attr <- assertColumnExists relationDesc columnName
 
-  let actualDefault = PgCatalog.lookupAttributeDefault attr relationDesc
+  let
+    actualDefault = PgCatalog.lookupAttributeDefault attr relationDesc
 
   withFrozenCallStack $
     case actualDefault of
@@ -224,7 +226,8 @@ assertColumnDefaultMatches ::
 assertColumnDefaultMatches relationDesc columnName expectedDefault = do
   attr <- assertColumnExists relationDesc columnName
 
-  let actualDefault = PgCatalog.lookupAttributeDefault attr relationDesc
+  let
+    actualDefault = PgCatalog.lookupAttributeDefault attr relationDesc
 
   withFrozenCallStack $
     case (expectedDefault, actualDefault) of
@@ -237,16 +240,18 @@ assertColumnDefaultMatches relationDesc columnName expectedDefault = do
         HH.annotate $ columnName <> " expected to have a default, but it did not"
         HH.failure
       (Just defaultValue, Just pgDefault) ->
-        let expectedBytes =
-              RawSql.toExampleBytes
-                . Orville.defaultValueExpression
-                $ defaultValue
+        let
+          expectedBytes =
+            RawSql.toExampleBytes
+              . Orville.defaultValueExpression
+              $ defaultValue
 
-            actualBytes =
-              Enc.encodeUtf8
-                . PgCatalog.pgAttributeDefaultExpression
-                $ pgDefault
-         in expectedBytes === actualBytes
+          actualBytes =
+            Enc.encodeUtf8
+              . PgCatalog.pgAttributeDefaultExpression
+              $ pgDefault
+        in
+          expectedBytes === actualBytes
 
 assertUniqueConstraintExists ::
   (HH.MonadTest m, HasCallStack) =>
@@ -254,12 +259,13 @@ assertUniqueConstraintExists ::
   NEL.NonEmpty String ->
   m ()
 assertUniqueConstraintExists relationDesc columnNames = do
-  let attNames = map String.fromString (NEL.toList columnNames)
-      constraintMatches constraintDesc =
-        and
-          [ PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraintDesc) == PgCatalog.UniqueConstraint
-          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
-          ]
+  let
+    attNames = map String.fromString (NEL.toList columnNames)
+    constraintMatches constraintDesc =
+      and
+        [ PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraintDesc) == PgCatalog.UniqueConstraint
+        , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
+        ]
 
   Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
     withFrozenCallStack $ do
@@ -279,18 +285,21 @@ assertForeignKeyConstraintExists ::
   ForeignKeyInfo ->
   m ()
 assertForeignKeyConstraintExists relationDesc foreignKeyInfo = do
-  let attNames = map (String.fromString . fst) (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo)
-      foreignNames = map (String.fromString . snd) (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo)
+  let
+    attNames = map (String.fromString . fst) (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo)
+    foreignNames = map (String.fromString . snd) (NEL.toList $ foreignKeyInfoReferences foreignKeyInfo)
 
-      constraintMatches constraintDesc =
-        let constraintRec = PgCatalog.constraintRecord constraintDesc
-         in and
-              [ PgCatalog.pgConstraintType constraintRec == PgCatalog.ForeignKeyConstraint
-              , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
-              , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintForeignKey constraintDesc) == Just foreignNames
-              , PgCatalog.pgConstraintForeignKeyOnUpdateType constraintRec == Just (foreignKeyInfoOnUpdate foreignKeyInfo)
-              , PgCatalog.pgConstraintForeignKeyOnDeleteType constraintRec == Just (foreignKeyInfoOnDelete foreignKeyInfo)
-              ]
+    constraintMatches constraintDesc =
+      let
+        constraintRec = PgCatalog.constraintRecord constraintDesc
+      in
+        and
+          [ PgCatalog.pgConstraintType constraintRec == PgCatalog.ForeignKeyConstraint
+          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintKey constraintDesc) == Just attNames
+          , fmap (map PgCatalog.pgAttributeName) (PgCatalog.constraintForeignKey constraintDesc) == Just foreignNames
+          , PgCatalog.pgConstraintForeignKeyOnUpdateType constraintRec == Just (foreignKeyInfoOnUpdate foreignKeyInfo)
+          , PgCatalog.pgConstraintForeignKeyOnDeleteType constraintRec == Just (foreignKeyInfoOnDelete foreignKeyInfo)
+          ]
 
   Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
     withFrozenCallStack $ do
@@ -313,40 +322,41 @@ assertIndexExists ::
   NEL.NonEmpty String ->
   m ()
 assertIndexExists relationDesc uniqueness columnNames = do
-  let expectedMemberNames =
-        map (Just . String.fromString) (NEL.toList columnNames)
+  let
+    expectedMemberNames =
+      map (Just . String.fromString) (NEL.toList columnNames)
 
-      memberAttributeName member =
-        case member of
-          PgCatalog.IndexAttribute attr -> Just $ PgCatalog.pgAttributeName attr
-          PgCatalog.IndexExpression -> Nothing
+    memberAttributeName member =
+      case member of
+        PgCatalog.IndexAttribute attr -> Just $ PgCatalog.pgAttributeName attr
+        PgCatalog.IndexExpression -> Nothing
 
-      isUnique =
-        case uniqueness of
-          Orville.UniqueIndex -> True
-          Orville.NonUniqueIndex -> False
+    isUnique =
+      case uniqueness of
+        Orville.UniqueIndex -> True
+        Orville.NonUniqueIndex -> False
 
-      shouldIgnoreConstraintIndex constraint =
-        elem
-          (PgCatalog.pgConstraintType constraint)
-          [ PgCatalog.PrimaryKeyConstraint
-          , PgCatalog.UniqueConstraint
-          , PgCatalog.ExclusionConstraint
-          ]
+    shouldIgnoreConstraintIndex constraint =
+      elem
+        (PgCatalog.pgConstraintType constraint)
+        [ PgCatalog.PrimaryKeyConstraint
+        , PgCatalog.UniqueConstraint
+        , PgCatalog.ExclusionConstraint
+        ]
 
-      constraintIndexesToIgnore =
-        map PgCatalog.pgConstraintIndexOid
-          . filter shouldIgnoreConstraintIndex
-          . map PgCatalog.constraintRecord
-          . PgCatalog.relationConstraints
-          $ relationDesc
+    constraintIndexesToIgnore =
+      map PgCatalog.pgConstraintIndexOid
+        . filter shouldIgnoreConstraintIndex
+        . map PgCatalog.constraintRecord
+        . PgCatalog.relationConstraints
+        $ relationDesc
 
-      indexMatches indexDesc =
-        and
-          [ PgCatalog.pgIndexIsUnique (PgCatalog.indexRecord indexDesc) == isUnique
-          , fmap memberAttributeName (PgCatalog.indexMembers indexDesc) == expectedMemberNames
-          , not $ (elem (PgCatalog.pgIndexPgClassOid $ PgCatalog.indexRecord indexDesc) constraintIndexesToIgnore)
-          ]
+    indexMatches indexDesc =
+      and
+        [ PgCatalog.pgIndexIsUnique (PgCatalog.indexRecord indexDesc) == isUnique
+        , fmap memberAttributeName (PgCatalog.indexMembers indexDesc) == expectedMemberNames
+        , not $ (elem (PgCatalog.pgIndexPgClassOid $ PgCatalog.indexRecord indexDesc) constraintIndexesToIgnore)
+        ]
 
   Monad.when (not $ isMatchingIndexPresent indexMatches relationDesc) $
     withFrozenCallStack $ do

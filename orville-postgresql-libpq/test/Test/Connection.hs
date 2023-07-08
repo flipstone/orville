@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Connection
-  ( connectionTests,
+  ( connectionTests
   )
 where
 
@@ -35,8 +35,9 @@ prop_safeOrUnsafeNonNullBytes =
   Property.namedDBProperty "executeRaw can pass non-null bytes equivalents whether checked for NUL or not" $ \pool -> do
     text <- HH.forAll $ PgGen.pgText (Range.linear 0 256)
 
-    let notNulBytes =
-          Enc.encodeUtf8 text
+    let
+      notNulBytes =
+        Enc.encodeUtf8 text
 
     value <-
       MIO.liftIO . Pool.withResource pool $ \connection -> do
@@ -58,12 +59,13 @@ prop_errorOnSafeNulByte =
     textBefore <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
     textAfter <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
 
-    let bytesWithNul =
-          B8.concat
-            [ Enc.encodeUtf8 textBefore
-            , B8.pack "\NUL"
-            , Enc.encodeUtf8 textAfter
-            ]
+    let
+      bytesWithNul =
+        B8.concat
+          [ Enc.encodeUtf8 textBefore
+          , B8.pack "\NUL"
+          , Enc.encodeUtf8 textAfter
+          ]
 
     result <-
       MIO.liftIO . E.try . Pool.withResource pool $ \connection ->
@@ -86,15 +88,16 @@ prop_truncateValuesAtUnsafeNulByte =
     textBefore <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
     textAfter <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
 
-    let bytesBefore =
-          Enc.encodeUtf8 textBefore
+    let
+      bytesBefore =
+        Enc.encodeUtf8 textBefore
 
-        bytesWithNul =
-          B8.concat
-            [ bytesBefore
-            , B8.pack "\NUL"
-            , Enc.encodeUtf8 textAfter
-            ]
+      bytesWithNul =
+        B8.concat
+          [ bytesBefore
+          , B8.pack "\NUL"
+          , Enc.encodeUtf8 textAfter
+          ]
 
     value <-
       MIO.liftIO . Pool.withResource pool $ \connection -> do
@@ -129,7 +132,8 @@ prop_errorOnInvalidSql =
       Left err -> do
         Connection.sqlExecutionErrorExecStatus err === Just LibPQ.FatalError
 
-        let syntaxErrorState = B8.pack "42601"
+        let
+          syntaxErrorState = B8.pack "42601"
 
         Connection.sqlExecutionErrorSqlState err === Just syntaxErrorState
       Right _ -> do

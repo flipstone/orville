@@ -9,13 +9,13 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Insert
-  ( Insert,
-    insertToInsertExpr,
-    executeInsert,
-    executeInsertReturnEntities,
-    insertToTableReturning,
-    insertToTable,
-    rawInsertExpr,
+  ( Insert
+  , insertToInsertExpr
+  , executeInsert
+  , executeInsertReturnEntities
+  , insertToTableReturning
+  , insertToTable
+  , rawInsertExpr
   )
 where
 

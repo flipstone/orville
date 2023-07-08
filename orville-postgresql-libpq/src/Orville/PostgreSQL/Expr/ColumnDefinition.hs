@@ -8,13 +8,13 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.ColumnDefinition
-  ( ColumnDefinition,
-    columnDefinition,
-    ColumnConstraint,
-    notNullConstraint,
-    nullConstraint,
-    ColumnDefault,
-    columnDefault,
+  ( ColumnDefinition
+  , columnDefinition
+  , ColumnConstraint
+  , notNullConstraint
+  , nullConstraint
+  , ColumnDefault
+  , columnDefault
   )
 where
 

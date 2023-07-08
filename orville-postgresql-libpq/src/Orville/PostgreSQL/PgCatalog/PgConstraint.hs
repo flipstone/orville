@@ -1,12 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.PgCatalog.PgConstraint
-  ( PgConstraint (..),
-    ConstraintType (..),
-    ConstraintName,
-    constraintNameToString,
-    pgConstraintTable,
-    constraintRelationOidField,
+  ( PgConstraint (..)
+  , ConstraintType (..)
+  , ConstraintName
+  , constraintNameToString
+  , pgConstraintTable
+  , constraintRelationOidField
   )
 where
 
@@ -28,33 +28,33 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
   key and exclusion constraints on tables.
 -}
 data PgConstraint = PgConstraint
-  { -- | The PostgreSQL @oid@ for the constraint
-    pgConstraintOid :: LibPQ.Oid
-  , -- | The constraint name (which may not be unique)
-    pgConstraintName :: ConstraintName
-  , -- | The oid of the namespace that contains the constraint
-    pgConstraintNamespaceOid :: LibPQ.Oid
-  , -- | The type of constraint
-    pgConstraintType :: ConstraintType
-  , -- | The PostgreSQL @oid@ of the table that the constraint is on
-    -- (or @0@ if not a table constraint)
-    pgConstraintRelationOid :: LibPQ.Oid
-  , -- | The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
-    -- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
-    pgConstraintIndexOid :: LibPQ.Oid
-  , -- | For table constraints, the attribute numbers of the constrained columns. These
-    -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
-    pgConstraintKey :: Maybe [AttributeNumber]
-  , -- | For foreign key constraints, the PostgreSQL @oid@ of the table the
-    -- foreign key references
-    pgConstraintForeignRelationOid :: LibPQ.Oid
-  , -- | For foreignkey constraints, the attribute numbers of the referenced columns. These
-    -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
-    pgConstraintForeignKey :: Maybe [AttributeNumber]
-  , -- | For foreignkey constraints, the on update action type
-    pgConstraintForeignKeyOnUpdateType :: Maybe Orville.ForeignKeyAction
-  , -- | For foreignkey constraints, the on delete action type
-    pgConstraintForeignKeyOnDeleteType :: Maybe Orville.ForeignKeyAction
+  { pgConstraintOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ for the constraint
+  , pgConstraintName :: ConstraintName
+  -- ^ The constraint name (which may not be unique)
+  , pgConstraintNamespaceOid :: LibPQ.Oid
+  -- ^ The oid of the namespace that contains the constraint
+  , pgConstraintType :: ConstraintType
+  -- ^ The type of constraint
+  , pgConstraintRelationOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ of the table that the constraint is on
+  -- (or @0@ if not a table constraint)
+  , pgConstraintIndexOid :: LibPQ.Oid
+  -- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
+  -- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
+  , pgConstraintKey :: Maybe [AttributeNumber]
+  -- ^ For table constraints, the attribute numbers of the constrained columns. These
+  -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
+  , pgConstraintForeignRelationOid :: LibPQ.Oid
+  -- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the
+  -- foreign key references
+  , pgConstraintForeignKey :: Maybe [AttributeNumber]
+  -- ^ For foreignkey constraints, the attribute numbers of the referenced columns. These
+  -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
+  , pgConstraintForeignKeyOnUpdateType :: Maybe Orville.ForeignKeyAction
+  -- ^ For foreignkey constraints, the on update action type
+  , pgConstraintForeignKeyOnDeleteType :: Maybe Orville.ForeignKeyAction
+  -- ^ For foreignkey constraints, the on delete action type
   }
 
 {- |
@@ -258,20 +258,24 @@ constraintForeignKeyOnDeleteTypeField =
 
 pgArrayTextToAttributeNumberList :: T.Text -> Either String [AttributeNumber]
 pgArrayTextToAttributeNumberList text =
-  let parser = do
-        _ <- AttoText.char '{'
-        attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ',')
-        _ <- AttoText.char '}'
-        AttoText.endOfInput
-        pure attNums
-   in case AttoText.parseOnly parser text of
-        Left err -> Left ("Unable to decode PostgreSQL Array as AttributeNumber list: " <> err)
-        Right nums -> Right nums
+  let
+    parser = do
+      _ <- AttoText.char '{'
+      attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ',')
+      _ <- AttoText.char '}'
+      AttoText.endOfInput
+      pure attNums
+  in
+    case AttoText.parseOnly parser text of
+      Left err -> Left ("Unable to decode PostgreSQL Array as AttributeNumber list: " <> err)
+      Right nums -> Right nums
 
 attributeNumberListToPgArrayText :: [AttributeNumber] -> T.Text
 attributeNumberListToPgArrayText attNums =
-  let commaDelimitedAttributeNumbers =
-        mconcat $
-          List.intersperse (LTB.singleton ',') (map attributeNumberTextBuilder attNums)
-   in LT.toStrict . LTB.toLazyText $
-        LTB.singleton '{' <> commaDelimitedAttributeNumbers <> LTB.singleton '}'
+  let
+    commaDelimitedAttributeNumbers =
+      mconcat $
+        List.intersperse (LTB.singleton ',') (map attributeNumberTextBuilder attNums)
+  in
+    LT.toStrict . LTB.toLazyText $
+      LTB.singleton '{' <> commaDelimitedAttributeNumbers <> LTB.singleton '}'

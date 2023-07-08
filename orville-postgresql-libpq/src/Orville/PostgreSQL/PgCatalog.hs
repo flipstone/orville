@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module Orville.PostgreSQL.PgCatalog
-  ( module Export,
+  ( module Export
   )
 where
 

@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.Monad.HasOrvilleState
-  ( HasOrvilleState (askOrvilleState, localOrvilleState),
+  ( HasOrvilleState (askOrvilleState, localOrvilleState)
   )
 where
 

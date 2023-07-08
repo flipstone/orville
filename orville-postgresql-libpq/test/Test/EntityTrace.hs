@@ -1,5 +1,5 @@
 module Test.EntityTrace
-  ( entityTraceTests,
+  ( entityTraceTests
   )
 where
 
@@ -102,22 +102,23 @@ prop_tracesWithinRolledBackSavepointsAreDropped =
           , (1, pure (length foos))
           ]
 
-    let (outerFoos, innerFoos) =
-          splitAt outerLevels foos
+    let
+      (outerFoos, innerFoos) =
+        splitAt outerLevels foos
 
-        innerActions =
-          TransactionUtil.runNestedTransactionItems innerFoos $ \foo -> do
-            Monad.void $ EntityTrace.insertEntityTraced tracedFooTable foo
-            Monad.when (foo == last innerFoos) TransactionUtil.throwTestError
+      innerActions =
+        TransactionUtil.runNestedTransactionItems innerFoos $ \foo -> do
+          Monad.void $ EntityTrace.insertEntityTraced tracedFooTable foo
+          Monad.when (foo == last innerFoos) TransactionUtil.throwTestError
 
-        outerActions =
-          if null outerFoos
-            then TransactionUtil.silentlyHandleTestError innerActions
-            else do
-              TransactionUtil.runNestedTransactionItems outerFoos $ \foo -> do
-                Monad.void $ EntityTrace.insertEntityTraced tracedFooTable foo
-                Monad.when (foo == last outerFoos) $
-                  TransactionUtil.silentlyHandleTestError innerActions
+      outerActions =
+        if null outerFoos
+          then TransactionUtil.silentlyHandleTestError innerActions
+          else do
+            TransactionUtil.runNestedTransactionItems outerFoos $ \foo -> do
+              Monad.void $ EntityTrace.insertEntityTraced tracedFooTable foo
+              Monad.when (foo == last outerFoos) $
+                TransactionUtil.silentlyHandleTestError innerActions
 
     Foo.withTable pool (pure ())
 
@@ -126,8 +127,9 @@ prop_tracesWithinRolledBackSavepointsAreDropped =
         EntityTrace.runEntityTraceT Orville.defaultErrorDetailLevel pool Orville.runOrvilleWithState $ do
           outerActions
 
-    let hasInner = not $ null innerFoos
-        hasOuter = not $ null outerFoos
+    let
+      hasInner = not $ null innerFoos
+      hasOuter = not $ null outerFoos
 
     HH.cover 5 (String.fromString "With inner transactions") hasInner
     HH.cover 5 (String.fromString "With outer transactions") hasOuter

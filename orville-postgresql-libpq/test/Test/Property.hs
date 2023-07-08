@@ -1,16 +1,16 @@
 module Test.Property
-  ( NamedProperty,
-    namedProperty,
-    singletonNamedProperty,
-    NamedDBProperty,
-    namedDBProperty,
-    singletonNamedDBProperty,
-    singletonProperty,
-    Group (..),
-    group,
-    checkGroups,
-    checkGroup,
-    allPassed,
+  ( NamedProperty
+  , namedProperty
+  , singletonNamedProperty
+  , NamedDBProperty
+  , namedDBProperty
+  , singletonNamedDBProperty
+  , singletonProperty
+  , Group (..)
+  , group
+  , checkGroups
+  , checkGroup
+  , allPassed
   )
 where
 
@@ -74,8 +74,9 @@ checkGroups groups = do
 
 checkGroup :: Config.UseColor -> Group -> IO Report.Summary
 checkGroup useColor propGroup = do
-  let name = groupName propGroup
-      properties = groupProperties propGroup
+  let
+    name = groupName propGroup
+    properties = groupProperties propGroup
 
   putStrLn $ "• " <> name <> " : " <> show (length properties) <> " properties"
   foldMap (checkProperty useColor) properties
@@ -91,7 +92,8 @@ checkProperty useColor (name, prop) = do
       (Property.propertyTest prop)
       (\_ -> pure ())
 
-  let result = Report.reportStatus report
+  let
+    result = Report.reportStatus report
 
   Monad.when (result /= Report.OK) $ do
     putStrLn =<< Report.renderResult useColor (Just name) report

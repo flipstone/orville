@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module Orville.PostgreSQL.Monad
-  ( module Orville.PostgreSQL.Monad.Orville,
-    module Orville.PostgreSQL.Monad.HasOrvilleState,
-    module Orville.PostgreSQL.Monad.MonadOrville,
+  ( module Orville.PostgreSQL.Monad.Orville
+  , module Orville.PostgreSQL.Monad.HasOrvilleState
+  , module Orville.PostgreSQL.Monad.MonadOrville
   )
 where
 

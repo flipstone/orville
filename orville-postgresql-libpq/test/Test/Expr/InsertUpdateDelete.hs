@@ -1,5 +1,5 @@
 module Test.Expr.InsertUpdateDelete
-  ( insertUpdateDeleteTests,
+  ( insertUpdateDeleteTests
   )
 where
 
@@ -34,7 +34,8 @@ insertUpdateDeleteTests pool =
 prop_insertExpr :: Property.NamedDBProperty
 prop_insertExpr =
   Property.singletonNamedDBProperty "insertExpr inserts values" $ \pool -> do
-    let fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+    let
+      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
     rows <-
       MIO.liftIO $
@@ -53,7 +54,8 @@ prop_insertExpr =
 prop_insertExprWithReturning :: Property.NamedDBProperty
 prop_insertExprWithReturning =
   Property.singletonNamedDBProperty "insertExpr with returning clause returns the requested columns" $ \pool -> do
-    let fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+    let
+      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
     rows <-
       MIO.liftIO $
@@ -75,15 +77,16 @@ prop_insertExprWithReturning =
 prop_updateExpr :: Property.NamedDBProperty
 prop_updateExpr =
   Property.singletonNamedDBProperty "updateExpr updates rows in the db" $ \pool -> do
-    let oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-        newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
+    let
+      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
 
-        setBarToFerret =
-          Expr.updateExpr
-            fooBarTable
-            (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
-            Nothing
-            Nothing
+      setBarToFerret =
+        Expr.updateExpr
+          fooBarTable
+          (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
+          Nothing
+          Nothing
 
     rows <-
       MIO.liftIO $
@@ -104,15 +107,16 @@ prop_updateExpr =
 prop_updateExprWithWhere :: Property.NamedDBProperty
 prop_updateExprWithWhere =
   Property.singletonNamedDBProperty "updateExpr uses a where clause when given" $ \pool -> do
-    let oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-        newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "cat"]
+    let
+      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "cat"]
 
-        updateDogToForret =
-          Expr.updateExpr
-            fooBarTable
-            (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
-            (Just (Expr.whereClause (Expr.equals barColumnRef (Expr.valueExpression (SqlValue.fromText (T.pack "dog"))))))
-            Nothing
+      updateDogToForret =
+        Expr.updateExpr
+          fooBarTable
+          (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
+          (Just (Expr.whereClause (Expr.equals barColumnRef (Expr.valueExpression (SqlValue.fromText (T.pack "dog"))))))
+          Nothing
 
     rows <-
       MIO.liftIO $
@@ -133,15 +137,16 @@ prop_updateExprWithWhere =
 prop_updateExprWithReturning :: Property.NamedDBProperty
 prop_updateExprWithReturning =
   Property.singletonNamedDBProperty "updateExpr with returning clause returns the new records" $ \pool -> do
-    let oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-        newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
+    let
+      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
 
-        setBarToFerret =
-          Expr.updateExpr
-            fooBarTable
-            (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
-            Nothing
-            (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
+      setBarToFerret =
+        Expr.updateExpr
+          fooBarTable
+          (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
+          Nothing
+          (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
     rows <-
       MIO.liftIO $
@@ -160,13 +165,14 @@ prop_updateExprWithReturning =
 prop_deleteExpr :: Property.NamedDBProperty
 prop_deleteExpr =
   Property.singletonNamedDBProperty "deleteExpr deletes rows in the db" $ \pool -> do
-    let oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+    let
+      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
-        deleteRows =
-          Expr.deleteExpr
-            fooBarTable
-            Nothing
-            Nothing
+      deleteRows =
+        Expr.deleteExpr
+          fooBarTable
+          Nothing
+          Nothing
 
     rows <-
       MIO.liftIO $
@@ -187,14 +193,15 @@ prop_deleteExpr =
 prop_deleteExprWithWhere :: Property.NamedDBProperty
 prop_deleteExprWithWhere =
   Property.singletonNamedDBProperty "deleteExpr uses a where clause when given" $ \pool -> do
-    let oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-        newFooBars = [mkFooBar 2 "cat"]
+    let
+      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = [mkFooBar 2 "cat"]
 
-        deleteDogs =
-          Expr.deleteExpr
-            fooBarTable
-            (Just (Expr.whereClause (Expr.equals barColumnRef (Expr.valueExpression (SqlValue.fromText (T.pack "dog"))))))
-            Nothing
+      deleteDogs =
+        Expr.deleteExpr
+          fooBarTable
+          (Just (Expr.whereClause (Expr.equals barColumnRef (Expr.valueExpression (SqlValue.fromText (T.pack "dog"))))))
+          Nothing
 
     rows <-
       MIO.liftIO $
@@ -215,13 +222,14 @@ prop_deleteExprWithWhere =
 prop_deleteExprWithReturning :: Property.NamedDBProperty
 prop_deleteExprWithReturning =
   Property.singletonNamedDBProperty "deleteExpr with returning returns the original rows" $ \pool -> do
-    let oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+    let
+      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
-        deleteDogs =
-          Expr.deleteExpr
-            fooBarTable
-            Nothing
-            (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
+      deleteDogs =
+        Expr.deleteExpr
+          fooBarTable
+          Nothing
+          (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
     rows <-
       MIO.liftIO $

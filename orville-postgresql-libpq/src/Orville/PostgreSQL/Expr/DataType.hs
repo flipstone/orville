@@ -5,23 +5,23 @@ Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.DataType
-  ( DataType,
-    timestampWithZone,
-    timestampWithoutZone,
-    date,
-    tsvector,
-    varchar,
-    char,
-    text,
-    uuid,
-    boolean,
-    doublePrecision,
-    bigSerial,
-    bigInt,
-    serial,
-    int,
-    smallint,
-    oid,
+  ( DataType
+  , timestampWithZone
+  , timestampWithoutZone
+  , date
+  , tsvector
+  , varchar
+  , char
+  , text
+  , uuid
+  , boolean
+  , doublePrecision
+  , bigSerial
+  , bigInt
+  , serial
+  , int
+  , smallint
+  , oid
   )
 where
 

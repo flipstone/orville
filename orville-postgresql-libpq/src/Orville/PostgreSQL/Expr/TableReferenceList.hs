@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.TableReferenceList
-  ( TableReferenceList,
-    referencesTable,
+  ( TableReferenceList
+  , referencesTable
   )
 where
 

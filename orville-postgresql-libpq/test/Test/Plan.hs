@@ -6,7 +6,7 @@
 #endif
 #endif
 module Test.Plan
-  ( planTests,
+  ( planTests
   )
 where
 
@@ -69,8 +69,9 @@ planTests pool =
 prop_askParam :: Property.NamedDBProperty
 prop_askParam =
   Property.namedDBProperty "askParam returns the plan's parameter" $ \pool -> do
-    let plan :: Plan.Plan scope Int Int
-        plan = Plan.askParam
+    let
+      plan :: Plan.Plan scope Int Int
+      plan = Plan.askParam
 
     inputParam <- HH.forAll $ Gen.integral (Range.constant minBound maxBound)
     resultParam <- MIO.liftIO $ Orville.runOrville pool (Plan.execute plan inputParam)
@@ -79,8 +80,9 @@ prop_askParam =
 prop_findMaybeOne :: Property.NamedDBProperty
 prop_findMaybeOne =
   Property.namedDBProperty "findMaybeOne finds a row where the field matches (if any)" $ \pool -> do
-    let plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
-        plan = Plan.findMaybeOne Foo.table Foo.fooNameField
+    let
+      plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
+      plan = Plan.findMaybeOne Foo.table Foo.fooNameField
 
     (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
@@ -88,7 +90,8 @@ prop_findMaybeOne =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
-    let isMatch = Foo.hasName targetName
+    let
+      isMatch = Foo.hasName targetName
 
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
@@ -96,8 +99,9 @@ prop_findMaybeOne =
 prop_planMany_findMaybeOne :: Property.NamedDBProperty
 prop_planMany_findMaybeOne =
   Property.namedDBProperty "(planMany findMaybeOne) finds a row where the field matches for each input" $ \pool -> do
-    let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
-        plan = Plan.planMany $ Plan.findMaybeOne Foo.table Foo.fooNameField
+    let
+      plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
+      plan = Plan.planMany $ Plan.findMaybeOne Foo.table Foo.fooNameField
 
     (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
@@ -105,7 +109,8 @@ prop_planMany_findMaybeOne =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
-    let isMatch foo = elem (Foo.fooName foo) targetNames
+    let
+      isMatch foo = elem (Foo.fooName foo) targetNames
 
     coverSearchResultCases isMatch foos
 
@@ -118,12 +123,13 @@ prop_planMany_findMaybeOne =
 prop_findMaybeOneWhere :: Property.NamedDBProperty
 prop_findMaybeOneWhere =
   Property.namedDBProperty "findMaybeOneWhere finds a row where the field matches (if any), with the given condition" $ \pool -> do
-    let plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
-        plan =
-          Plan.findMaybeOneWhere
-            Foo.table
-            Foo.fooNameField
-            (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+    let
+      plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
+      plan =
+        Plan.findMaybeOneWhere
+          Foo.table
+          Foo.fooNameField
+          (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
     (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
@@ -131,7 +137,8 @@ prop_findMaybeOneWhere =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
-    let isMatch foo = Foo.hasName targetName foo && Foo.fooAge foo > Foo.averageFooAge
+    let
+      isMatch foo = Foo.hasName targetName foo && Foo.fooAge foo > Foo.averageFooAge
 
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
@@ -139,13 +146,14 @@ prop_findMaybeOneWhere =
 prop_planMany_findMaybeOneWhere :: Property.NamedDBProperty
 prop_planMany_findMaybeOneWhere =
   Property.namedDBProperty "(planMany findMaybeOneWhere) finds a row where the field matches for each input, with the given condition" $ \pool -> do
-    let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
-        plan =
-          Plan.planMany $
-            Plan.findMaybeOneWhere
-              Foo.table
-              Foo.fooNameField
-              (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+    let
+      plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
+      plan =
+        Plan.planMany $
+          Plan.findMaybeOneWhere
+            Foo.table
+            Foo.fooNameField
+            (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
     (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
@@ -153,9 +161,10 @@ prop_planMany_findMaybeOneWhere =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
-    let isMatch foo =
-          elem (Foo.fooName foo) targetNames
-            && Foo.fooAge foo > Foo.averageFooAge
+    let
+      isMatch foo =
+        elem (Foo.fooName foo) targetNames
+          && Foo.fooAge foo > Foo.averageFooAge
 
     coverSearchResultCases isMatch foos
 
@@ -168,8 +177,9 @@ prop_planMany_findMaybeOneWhere =
 prop_findAll :: Property.NamedDBProperty
 prop_findAll =
   Property.namedDBProperty "findAll finds all rows where the field matches" $ \pool -> do
-    let plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
-        plan = Plan.findAll Foo.table Foo.fooNameField
+    let
+      plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
+      plan = Plan.findAll Foo.table Foo.fooNameField
 
     (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
@@ -177,7 +187,8 @@ prop_findAll =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
-    let isMatch = Foo.hasName targetName
+    let
+      isMatch = Foo.hasName targetName
 
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
@@ -185,8 +196,9 @@ prop_findAll =
 prop_planMany_findAll :: Property.NamedDBProperty
 prop_planMany_findAll =
   Property.namedDBProperty "(planMany findAll) finds all rows where the field matches for each list of inputs" $ \pool -> do
-    let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
-        plan = Plan.planMany (Plan.findAll Foo.table Foo.fooNameField)
+    let
+      plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
+      plan = Plan.planMany (Plan.findAll Foo.table Foo.fooNameField)
 
     (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
@@ -194,7 +206,8 @@ prop_planMany_findAll =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
-    let isMatch foo = elem (Foo.fooName foo) targetNames
+    let
+      isMatch foo = elem (Foo.fooName foo) targetNames
 
     coverSearchResultCases isMatch foos
     assertEachManyResult targetNames results $ \targetName foundFoos ->
@@ -203,12 +216,13 @@ prop_planMany_findAll =
 prop_findAllWhere :: Property.NamedDBProperty
 prop_findAllWhere =
   Property.namedDBProperty "findAllWhere finds all rows where the field matches, with the given condition" $ \pool -> do
-    let plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
-        plan =
-          Plan.findAllWhere
-            Foo.table
-            Foo.fooNameField
-            (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+    let
+      plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
+      plan =
+        Plan.findAllWhere
+          Foo.table
+          Foo.fooNameField
+          (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
     (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
@@ -216,7 +230,8 @@ prop_findAllWhere =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
-    let isMatch foo = Foo.hasName targetName foo && Foo.fooAge foo > Foo.averageFooAge
+    let
+      isMatch foo = Foo.hasName targetName foo && Foo.fooAge foo > Foo.averageFooAge
 
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
@@ -224,13 +239,14 @@ prop_findAllWhere =
 prop_planMany_findAllWhere :: Property.NamedDBProperty
 prop_planMany_findAllWhere =
   Property.namedDBProperty "(planMany findAllWhere) finds all rows where the field matches for each list of inputs, with the given condition" $ \pool -> do
-    let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
-        plan =
-          Plan.planMany $
-            Plan.findAllWhere
-              Foo.table
-              Foo.fooNameField
-              (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+    let
+      plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
+      plan =
+        Plan.planMany $
+          Plan.findAllWhere
+            Foo.table
+            Foo.fooNameField
+            (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
     (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
@@ -238,7 +254,8 @@ prop_planMany_findAllWhere =
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
-    let isMatch foo = elem (Foo.fooName foo) targetNames && Foo.fooAge foo > Foo.averageFooAge
+    let
+      isMatch foo = elem (Foo.fooName foo) targetNames && Foo.fooAge foo > Foo.averageFooAge
 
     coverSearchResultCases isMatch foos
     assertEachManyResult targetNames results $ \targetName foundFoos ->
@@ -247,12 +264,13 @@ prop_planMany_findAllWhere =
 prop_planEither :: Property.NamedDBProperty
 prop_planEither =
   Property.namedDBProperty "planEither executes either the right or left plan based on input" $ \pool -> do
-    let plan :: Plan.Plan scope (Either Foo.FooId Foo.FooName) Foo.Foo
-        plan =
-          either id id
-            <$> Plan.planEither
-              (Plan.findOne Foo.table Foo.fooIdField)
-              (Plan.findOne Foo.table Foo.fooNameField)
+    let
+      plan :: Plan.Plan scope (Either Foo.FooId Foo.FooName) Foo.Foo
+      plan =
+        either id id
+          <$> Plan.planEither
+            (Plan.findOne Foo.table Foo.fooIdField)
+            (Plan.findOne Foo.table Foo.fooNameField)
 
     foo <- HH.forAll Foo.generate
     param <-
@@ -271,22 +289,24 @@ prop_planEither =
 prop_planMany_planEither :: Property.NamedDBProperty
 prop_planMany_planEither =
   Property.namedDBProperty "(planMany planEither) executes either the right and left plans with appropriate inputs" $ \pool -> do
-    let plan :: Plan.Plan scope [Either Foo.FooId Foo.FooName] (Many.Many (Either Foo.FooId Foo.FooName) Foo.Foo)
-        plan =
-          Plan.planMany $
-            either id id
-              <$> Plan.planEither
-                (Plan.findOne Foo.table Foo.fooIdField)
-                (Plan.findOne Foo.table Foo.fooNameField)
+    let
+      plan :: Plan.Plan scope [Either Foo.FooId Foo.FooName] (Many.Many (Either Foo.FooId Foo.FooName) Foo.Foo)
+      plan =
+        Plan.planMany $
+          either id id
+            <$> Plan.planEither
+              (Plan.findOne Foo.table Foo.fooIdField)
+              (Plan.findOne Foo.table Foo.fooNameField)
 
     foos <- HH.forAll $ Foo.generateList (Range.linear 0 10)
 
-    let pickInput :: Foo.Foo -> HH.PropertyT IO (Either Foo.FooId Foo.FooName)
-        pickInput foo =
-          HH.forAll . Gen.element $
-            [ Left (Foo.fooId foo)
-            , Right (Foo.fooName foo)
-            ]
+    let
+      pickInput :: Foo.Foo -> HH.PropertyT IO (Either Foo.FooId Foo.FooName)
+      pickInput foo =
+        HH.forAll . Gen.element $
+          [ Left (Foo.fooId foo)
+          , Right (Foo.fooName foo)
+          ]
 
     params <- traverse pickInput foos
 
@@ -305,13 +325,16 @@ prop_planMany_planEither =
 prop_bindAndUse :: Property.NamedDBProperty
 prop_bindAndUse =
   Property.namedDBProperty "bind/use allows caller to use plan output as input for another plan" $ \pool -> do
-    let plan :: Plan.Plan scope Foo.FooName (Foo.Foo, [FooChild.FooChild])
-        plan =
-          Plan.bind (Plan.findOne Foo.table Foo.fooNameField) $ \foo ->
-            let fooId = Foo.fooId <$> foo
-             in (,)
-                  <$> Plan.use foo
-                  <*> Plan.using fooId (Plan.findAll FooChild.table FooChild.fooChildFooIdField)
+    let
+      plan :: Plan.Plan scope Foo.FooName (Foo.Foo, [FooChild.FooChild])
+      plan =
+        Plan.bind (Plan.findOne Foo.table Foo.fooNameField) $ \foo ->
+          let
+            fooId = Foo.fooId <$> foo
+          in
+            (,)
+              <$> Plan.use foo
+              <*> Plan.using fooId (Plan.findAll FooChild.table FooChild.fooChildFooIdField)
 
     foo <- HH.forAll Foo.generate
     fooChild <- HH.forAll $ FooChild.generate [foo]
@@ -327,19 +350,23 @@ prop_bindAndUse =
 prop_planMany_bindAndUse :: Property.NamedDBProperty
 prop_planMany_bindAndUse =
   Property.namedDBProperty "(planMany bind/use) allows caller to use plan output as input for another plan" $ \pool -> do
-    let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Foo.Foo, [FooChild.FooChild]))
-        plan =
-          Plan.planMany $
-            Plan.bind (Plan.findOne Foo.table Foo.fooNameField) $ \foo ->
-              let fooId = Foo.fooId <$> foo
-               in (,)
-                    <$> Plan.use foo
-                    <*> Plan.using fooId (Plan.findAll FooChild.table FooChild.fooChildFooIdField)
+    let
+      plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Foo.Foo, [FooChild.FooChild]))
+      plan =
+        Plan.planMany $
+          Plan.bind (Plan.findOne Foo.table Foo.fooNameField) $ \foo ->
+            let
+              fooId = Foo.fooId <$> foo
+            in
+              (,)
+                <$> Plan.use foo
+                <*> Plan.using fooId (Plan.findAll FooChild.table FooChild.fooChildFooIdField)
 
     allFoos <- HH.forAll $ Foo.generateList (Range.linear 1 5)
     allChildren <- HH.forAll $ FooChild.generateList (Range.linear 0 20) allFoos
 
-    let allFooNames = Foo.fooName <$> allFoos
+    let
+      allFooNames = Foo.fooName <$> allFoos
 
     results <-
       FooChild.withTables pool $ do
@@ -354,17 +381,19 @@ prop_planMany_bindAndUse =
 prop_planMany_findOne_dedupesInClauses :: Property.NamedDBProperty
 prop_planMany_findOne_dedupesInClauses =
   Property.singletonNamedDBProperty "planMany/findOne dedupes in clause to avoid PostgreSQL parameter limit" $ \pool -> do
-    let plan :: Plan.Plan scope [Foo.FooId] (Many.Many Foo.FooId Foo.Foo)
-        plan =
-          Plan.planMany (Plan.findOne Foo.table Foo.fooIdField)
+    let
+      plan :: Plan.Plan scope [Foo.FooId] (Many.Many Foo.FooId Foo.Foo)
+      plan =
+        Plan.planMany (Plan.findOne Foo.table Foo.fooIdField)
 
     unsavedFoo <- HH.forAll Foo.generate
 
     results <-
       FooChild.withTables pool $ do
         savedFoo <- Orville.insertAndReturnEntity Foo.table unsavedFoo
-        let fooIds =
-              replicate 65536 (Foo.fooId savedFoo)
+        let
+          fooIds =
+            replicate 65536 (Foo.fooId savedFoo)
 
         Plan.execute plan fooIds
 
@@ -438,9 +467,10 @@ prop_planMany_bindAndUse_qualifiedDo =
 prop_assert :: Property.NamedDBProperty
 prop_assert =
   Property.namedDBProperty "assert raises an AssertionError in IO" $ \pool -> do
-    let plan :: Plan.Plan scope (Either String ()) ()
-        plan =
-          Plan.assert (\_ value -> value) Plan.askParam
+    let
+      plan :: Plan.Plan scope (Either String ()) ()
+      plan =
+        Plan.assert (\_ value -> value) Plan.askParam
 
     input <- HH.forAll $ Gen.element [Left "Test Error", Right ()]
     result <- MIO.liftIO $ Exception.try $ Orville.runOrville pool (Plan.execute plan input)
@@ -449,14 +479,15 @@ prop_assert =
 prop_explain :: Property.NamedProperty
 prop_explain =
   Property.namedProperty "explain shows the SQL steps that will be executed" $ do
-    let plan :: Plan.Plan scope Foo.FooName [FooChild.FooChild]
-        plan =
-          Plan.chain
-            (Plan.findOne Foo.table Foo.fooNameField)
-            (Plan.focusParam Foo.fooId $ Plan.findAll FooChild.table FooChild.fooChildFooIdField)
+    let
+      plan :: Plan.Plan scope Foo.FooName [FooChild.FooChild]
+      plan =
+        Plan.chain
+          (Plan.findOne Foo.table Foo.fooNameField)
+          (Plan.focusParam Foo.fooId $ Plan.findAll FooChild.table FooChild.fooChildFooIdField)
 
-        explanation =
-          Plan.explain plan
+      explanation =
+        Plan.explain plan
 
     explanation
       === [ "SELECT \"name\",\"id\",\"name\",\"age\" FROM \"foo\" WHERE (\"name\") = ($1)"
@@ -471,11 +502,12 @@ generateSearchTargetAndSubjects :: HH.Gen (Foo.FooName, [Foo.Foo])
 generateSearchTargetAndSubjects = do
   targetName <- Foo.generateFooName
 
-  let generatePossibleTargetFoo =
-        Gen.choice
-          [ Foo.generateFooWithName targetName
-          , Foo.generate
-          ]
+  let
+    generatePossibleTargetFoo =
+      Gen.choice
+        [ Foo.generateFooWithName targetName
+        , Foo.generate
+        ]
 
   foos <- Foo.generateListUsing (Range.linear 0 5) generatePossibleTargetFoo
   pure (targetName, foos)
@@ -488,8 +520,9 @@ generateSearchTargetListAndSubjects :: HH.Gen ([Foo.FooName], [Foo.Foo])
 generateSearchTargetListAndSubjects = do
   targetNames <- Gen.list (Range.linear 0 5) Foo.generateFooName
 
-  let generatePossibleTargetFoo =
-        Gen.choice (Foo.generate : fmap Foo.generateFooWithName targetNames)
+  let
+    generatePossibleTargetFoo =
+      Gen.choice (Foo.generate : fmap Foo.generateFooWithName targetNames)
 
   foos <- Foo.generateListUsing (Range.linear 0 5) generatePossibleTargetFoo
   pure (targetNames, foos)
@@ -555,12 +588,13 @@ assertEachManyResult ::
   (key -> value -> m ()) ->
   m ()
 assertEachManyResult expectedKeys manyValues assertion = do
-  let checkResult key =
-        case Many.lookup key manyValues of
-          Left Many.NotAKey -> do
-            HH.footnote $ "Expected " <> show key <> " to be a key in results, but it was not"
-            HH.failure
-          Right value ->
-            assertion key value
+  let
+    checkResult key =
+      case Many.lookup key manyValues of
+        Left Many.NotAKey -> do
+          HH.footnote $ "Expected " <> show key <> " to be a key in results, but it was not"
+          HH.failure
+        Right value ->
+          assertion key value
 
   traverse_ checkResult expectedKeys

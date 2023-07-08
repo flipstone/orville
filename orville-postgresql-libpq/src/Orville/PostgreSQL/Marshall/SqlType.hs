@@ -4,39 +4,39 @@ License   : MIT
 -}
 module Orville.PostgreSQL.Marshall.SqlType
   ( SqlType
-      ( SqlType,
-        sqlTypeExpr,
-        sqlTypeReferenceExpr,
-        sqlTypeOid,
-        sqlTypeMaximumLength,
-        sqlTypeToSql,
-        sqlTypeFromSql,
-        sqlTypeDontDropImplicitDefaultDuringMigrate
-      ),
-    -- numeric types
-    integer,
-    serial,
-    bigInteger,
-    bigSerial,
-    smallInteger,
-    double,
-    -- textual-ish types
-    boolean,
-    unboundedText,
-    fixedText,
-    boundedText,
-    textSearchVector,
-    uuid,
-    -- date types
-    date,
-    timestamp,
-    timestampWithoutZone,
-    -- postgresql types
-    oid,
-    -- type conversions
-    foreignRefType,
-    convertSqlType,
-    tryConvertSqlType,
+      ( SqlType
+      , sqlTypeExpr
+      , sqlTypeReferenceExpr
+      , sqlTypeOid
+      , sqlTypeMaximumLength
+      , sqlTypeToSql
+      , sqlTypeFromSql
+      , sqlTypeDontDropImplicitDefaultDuringMigrate
+      )
+  -- numeric types
+  , integer
+  , serial
+  , bigInteger
+  , bigSerial
+  , smallInteger
+  , double
+  -- textual-ish types
+  , boolean
+  , unboundedText
+  , fixedText
+  , boundedText
+  , textSearchVector
+  , uuid
+  -- date types
+  , date
+  , timestamp
+  , timestampWithoutZone
+  -- postgresql types
+  , oid
+  -- type conversions
+  , foreignRefType
+  , convertSqlType
+  , tryConvertSqlType
   )
 where
 
@@ -58,33 +58,33 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   and migrate columns using the type.
 -}
 data SqlType a = SqlType
-  { -- | The sql data type expression to use when creating/migrating columns of
-    -- this type
-    sqlTypeExpr :: Expr.DataType
-  , -- | The sql data type experession to use when creating/migrating columns
-    -- with foreign keys to this type. This is used foreignRefType to build a
-    -- new SqlType when making foreign key fields
-    sqlTypeReferenceExpr :: Maybe Expr.DataType
-  , -- | The Oid for the type in postgresql. This will be used during
-    -- migrations to determine whether the column type needs to be altered.
-    sqlTypeOid :: LibPQ.Oid
-  , -- | The maximum length for lengths that take a type parameter (such as
-    -- @char@ and @varchar@).  This will be used during migration to determine
-    -- whether the column type needs to be altered.
-    sqlTypeMaximumLength :: Maybe Int32
-  , -- | A function for converting Haskell values of this type into values to
-    -- be stored in the database.
-    sqlTypeToSql :: a -> SqlValue
-  , -- | A function for converting values of this are stored in the database
-    -- into Haskell values. This function should return 'Nothing' to indicate
-    -- an error if the conversion is impossible. Otherwise it should return
-    -- 'Just' the corresponding 'a' value.
-    sqlTypeFromSql :: SqlValue -> Either String a
-  , -- | The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
-    -- create an implicit default value. This flag tells Orville's auto
-    -- migration logic to ignore the default value rather than drop it as it
-    -- normally would.
-    sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+  { sqlTypeExpr :: Expr.DataType
+  -- ^ The sql data type expression to use when creating/migrating columns of
+  -- this type
+  , sqlTypeReferenceExpr :: Maybe Expr.DataType
+  -- ^ The sql data type experession to use when creating/migrating columns
+  -- with foreign keys to this type. This is used foreignRefType to build a
+  -- new SqlType when making foreign key fields
+  , sqlTypeOid :: LibPQ.Oid
+  -- ^ The Oid for the type in postgresql. This will be used during
+  -- migrations to determine whether the column type needs to be altered.
+  , sqlTypeMaximumLength :: Maybe Int32
+  -- ^ The maximum length for lengths that take a type parameter (such as
+  -- @char@ and @varchar@).  This will be used during migration to determine
+  -- whether the column type needs to be altered.
+  , sqlTypeToSql :: a -> SqlValue
+  -- ^ A function for converting Haskell values of this type into values to
+  -- be stored in the database.
+  , sqlTypeFromSql :: SqlValue -> Either String a
+  -- ^ A function for converting values of this are stored in the database
+  -- into Haskell values. This function should return 'Nothing' to indicate
+  -- an error if the conversion is impossible. Otherwise it should return
+  -- 'Just' the corresponding 'a' value.
+  , sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+  -- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
+  -- create an implicit default value. This flag tells Orville's auto
+  -- migration logic to ignore the default value rather than drop it as it
+  -- normally would.
   }
 
 {- |
@@ -266,19 +266,21 @@ textSearchVector =
 -}
 uuid :: SqlType UUID.UUID
 uuid =
-  let uuidFromText t =
-        case UUID.fromText t of
-          Nothing -> Left "Invalid UUID value"
-          Just validUuid -> Right validUuid
-   in SqlType
-        { sqlTypeExpr = Expr.uuid
-        , sqlTypeReferenceExpr = Nothing
-        , sqlTypeOid = LibPQ.Oid 2950
-        , sqlTypeMaximumLength = Nothing
-        , sqlTypeToSql = SqlValue.fromText . UUID.toText
-        , sqlTypeFromSql = \a -> uuidFromText =<< SqlValue.toText a
-        , sqlTypeDontDropImplicitDefaultDuringMigrate = False
-        }
+  let
+    uuidFromText t =
+      case UUID.fromText t of
+        Nothing -> Left "Invalid UUID value"
+        Just validUuid -> Right validUuid
+  in
+    SqlType
+      { sqlTypeExpr = Expr.uuid
+      , sqlTypeReferenceExpr = Nothing
+      , sqlTypeOid = LibPQ.Oid 2950
+      , sqlTypeMaximumLength = Nothing
+      , sqlTypeToSql = SqlValue.fromText . UUID.toText
+      , sqlTypeFromSql = \a -> uuidFromText =<< SqlValue.toText a
+      , sqlTypeDontDropImplicitDefaultDuringMigrate = False
+      }
 
 {- |
   'date' defines a type representing a calendar date (without time zone). It corresponds

@@ -5,14 +5,14 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.ValueExpression
-  ( ValueExpression,
-    cast,
-    ParameterName,
-    columnReference,
-    valueExpression,
-    rowValueConstructor,
-    functionCall,
-    functionCallNamedParams,
+  ( ValueExpression
+  , cast
+  , ParameterName
+  , columnReference
+  , valueExpression
+  , rowValueConstructor
+  , functionCall
+  , functionCallNamedParams
   )
 where
 

@@ -38,7 +38,7 @@ findFooFamily = PlanSyntax.do $
 -}
 {- ORMOLU_ENABLE -}
 module Orville.PostgreSQL.Plan.Syntax
-  ( (>>=),
+  ( (>>=)
   )
 where
 

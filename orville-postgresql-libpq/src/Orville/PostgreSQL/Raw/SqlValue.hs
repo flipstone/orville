@@ -7,44 +7,44 @@ The funtions in this module are named with the intent that it is imported
 qualified as 'SqlValue'.
 -}
 module Orville.PostgreSQL.Raw.SqlValue
-  ( SqlValue,
-    isSqlNull,
-    sqlNull,
-    fromInt8,
-    toInt8,
-    fromInt16,
-    toInt16,
-    fromInt32,
-    toInt32,
-    fromInt64,
-    toInt64,
-    fromInt,
-    toInt,
-    fromWord8,
-    toWord8,
-    fromWord16,
-    toWord16,
-    fromWord32,
-    toWord32,
-    fromWord64,
-    toWord64,
-    fromWord,
-    toWord,
-    fromDouble,
-    toDouble,
-    fromBool,
-    toBool,
-    fromText,
-    toText,
-    fromDay,
-    toDay,
-    fromUTCTime,
-    toUTCTime,
-    fromLocalTime,
-    toLocalTime,
-    fromRawBytes,
-    fromRawBytesNullable,
-    toPgValue,
+  ( SqlValue
+  , isSqlNull
+  , sqlNull
+  , fromInt8
+  , toInt8
+  , fromInt16
+  , toInt16
+  , fromInt32
+  , toInt32
+  , fromInt64
+  , toInt64
+  , fromInt
+  , toInt
+  , fromWord8
+  , toWord8
+  , fromWord16
+  , toWord16
+  , fromWord32
+  , toWord32
+  , fromWord64
+  , toWord64
+  , fromWord
+  , toWord
+  , fromDouble
+  , toDouble
+  , fromBool
+  , toBool
+  , fromText
+  , toText
+  , fromDay
+  , toDay
+  , fromUTCTime
+  , toUTCTime
+  , fromLocalTime
+  , toLocalTime
+  , fromRawBytes
+  , fromRawBytesNullable
+  , toPgValue
   )
 where
 
@@ -417,18 +417,20 @@ toBytesValue ::
   SqlValue ->
   Either String a
 toBytesValue byteParser sqlValue =
-  let result =
-        case sqlValue of
-          SqlNull ->
-            Left "Unexpected SQL NULL value"
-          SqlValue bytes ->
-            byteParser (PgTextFormatValue.toByteString bytes)
+  let
+    result =
+      case sqlValue of
+        SqlNull ->
+          Left "Unexpected SQL NULL value"
+        SqlValue bytes ->
+          byteParser (PgTextFormatValue.toByteString bytes)
 
-      typeRepOfA =
-        -- result is the 'proxy a' for typeRep
-        Typeable.typeRep result
-   in case result of
-        Right _ ->
-          result
-        Left err ->
-          Left $ "Failed to decode PostgreSQL value as " <> Typeable.showsTypeRep typeRepOfA (": " <> err)
+    typeRepOfA =
+      -- result is the 'proxy a' for typeRep
+      Typeable.typeRep result
+  in
+    case result of
+      Right _ ->
+        result
+      Left err ->
+        Left $ "Failed to decode PostgreSQL value as " <> Typeable.showsTypeRep typeRepOfA (": " <> err)

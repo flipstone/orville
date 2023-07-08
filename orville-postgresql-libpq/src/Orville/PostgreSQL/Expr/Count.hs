@@ -6,10 +6,10 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Count
-  ( count,
-    countFunction,
-    count1,
-    countColumn,
+  ( count
+  , countFunction
+  , count1
+  , countColumn
   )
 where
 

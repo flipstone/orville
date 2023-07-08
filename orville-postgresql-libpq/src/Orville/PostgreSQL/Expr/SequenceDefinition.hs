@@ -1,34 +1,34 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.SequenceDefinition
-  ( CreateSequenceExpr,
-    createSequenceExpr,
-    AlterSequenceExpr,
-    alterSequenceExpr,
-    IncrementByExpr,
-    incrementBy,
-    MinValueExpr,
-    minValue,
-    noMinValue,
-    MaxValueExpr,
-    maxValue,
-    noMaxValue,
-    StartWithExpr,
-    startWith,
-    CacheExpr,
-    cache,
-    CycleExpr,
-    cycle,
-    noCycle,
-    cycleIfTrue,
-    DropSequenceExpr,
-    dropSequenceExpr,
-    nextVal,
-    nextValFunction,
-    currVal,
-    currValFunction,
-    setVal,
-    setValFunction,
+  ( CreateSequenceExpr
+  , createSequenceExpr
+  , AlterSequenceExpr
+  , alterSequenceExpr
+  , IncrementByExpr
+  , incrementBy
+  , MinValueExpr
+  , minValue
+  , noMinValue
+  , MaxValueExpr
+  , maxValue
+  , noMaxValue
+  , StartWithExpr
+  , startWith
+  , CacheExpr
+  , cache
+  , CycleExpr
+  , cycle
+  , noCycle
+  , cycleIfTrue
+  , DropSequenceExpr
+  , dropSequenceExpr
+  , nextVal
+  , nextValFunction
+  , currVal
+  , currValFunction
+  , setVal
+  , setValFunction
   )
 where
 

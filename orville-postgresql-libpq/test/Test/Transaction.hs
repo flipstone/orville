@@ -1,5 +1,5 @@
 module Test.Transaction
-  ( transactionTests,
+  ( transactionTests
   )
 where
 
@@ -75,16 +75,17 @@ prop_savepointsRollbackInnerTransactions =
     outerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
     innerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
-    let innerActions =
-          TransactionUtil.runNestedTransactions innerNestingLevel $ \level -> do
-            _ <- Orville.insertEntity tracerTable Tracer
-            Monad.when (level >= innerNestingLevel) TransactionUtil.throwTestError
+    let
+      innerActions =
+        TransactionUtil.runNestedTransactions innerNestingLevel $ \level -> do
+          _ <- Orville.insertEntity tracerTable Tracer
+          Monad.when (level >= innerNestingLevel) TransactionUtil.throwTestError
 
-        outerActions =
-          TransactionUtil.runNestedTransactions outerNestingLevel $ \level -> do
-            _ <- Orville.insertEntity tracerTable Tracer
-            Monad.when (level >= outerNestingLevel) $
-              TransactionUtil.silentlyHandleTestError innerActions
+      outerActions =
+        TransactionUtil.runNestedTransactions outerNestingLevel $ \level -> do
+          _ <- Orville.insertEntity tracerTable Tracer
+          Monad.when (level >= outerNestingLevel) $
+            TransactionUtil.silentlyHandleTestError innerActions
 
     tracers <-
       HH.evalIO $ do
@@ -106,11 +107,12 @@ prop_callbacksMadeForTransactionCommit =
       captureTransactionCallbackEvents pool $
         TransactionUtil.runNestedTransactions nestingLevel (\_ -> pure ())
 
-    let expectedEvents =
-          mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
-            case maybeSavepoint of
-              Nothing -> (Orville.BeginTransaction, Orville.CommitTransaction)
-              Just savepoint -> (Orville.NewSavepoint savepoint, Orville.ReleaseSavepoint savepoint)
+    let
+      expectedEvents =
+        mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
+          case maybeSavepoint of
+            Nothing -> (Orville.BeginTransaction, Orville.CommitTransaction)
+            Just savepoint -> (Orville.NewSavepoint savepoint, Orville.ReleaseSavepoint savepoint)
 
     allEvents === expectedEvents
 
@@ -123,11 +125,12 @@ prop_callbacksMadeForTransactionRollback =
       TransactionUtil.runNestedTransactions nestingLevel $ \level ->
         Monad.when (level >= nestingLevel) (TransactionUtil.throwTestError)
 
-    let expectedEvents =
-          mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
-            case maybeSavepoint of
-              Nothing -> (Orville.BeginTransaction, Orville.RollbackTransaction)
-              Just savepoint -> (Orville.NewSavepoint savepoint, Orville.RollbackToSavepoint savepoint)
+    let
+      expectedEvents =
+        mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
+          case maybeSavepoint of
+            Nothing -> (Orville.BeginTransaction, Orville.RollbackTransaction)
+            Just savepoint -> (Orville.NewSavepoint savepoint, Orville.RollbackToSavepoint savepoint)
 
     allEvents === expectedEvents
 
@@ -166,11 +169,12 @@ captureTransactionCallbackEvents ::
 captureTransactionCallbackEvents pool actions = do
   callbackEventsRef <- HH.evalIO $ IORef.newIORef []
 
-  let captureEvent event =
-        IORef.modifyIORef callbackEventsRef (event :)
+  let
+    captureEvent event =
+      IORef.modifyIORef callbackEventsRef (event :)
 
-      addEventCaptureCallback =
-        Orville.addTransactionCallback captureEvent
+    addEventCaptureCallback =
+      Orville.addTransactionCallback captureEvent
 
   HH.evalIO $ do
     Orville.runOrville pool $
@@ -184,17 +188,21 @@ mkExpectedEventsForNestedActions ::
   (Maybe Orville.Savepoint -> (Orville.TransactionEvent, Orville.TransactionEvent)) ->
   [Orville.TransactionEvent]
 mkExpectedEventsForNestedActions nestingLevel mkEventsForLevel =
-  let appendEvents mbSavepoint (befores, afters) =
-        let (before, after) = mkEventsForLevel mbSavepoint
-         in (before : befores, after : afters)
+  let
+    appendEvents mbSavepoint (befores, afters) =
+      let
+        (before, after) = mkEventsForLevel mbSavepoint
+      in
+        (before : befores, after : afters)
 
-      savepoints =
-        iterate OrvilleState.nextSavepoint OrvilleState.initialSavepoint
+    savepoints =
+      iterate OrvilleState.nextSavepoint OrvilleState.initialSavepoint
 
-      (allBefores, allAfters) =
-        foldr appendEvents ([], []) $
-          take nestingLevel (Nothing : map Just savepoints)
-   in allBefores ++ reverse allAfters
+    (allBefores, allAfters) =
+      foldr appendEvents ([], []) $
+        take nestingLevel (Nothing : map Just savepoints)
+  in
+    allBefores ++ reverse allAfters
 
 data Tracer
   = Tracer
@@ -215,10 +223,11 @@ captureSqlTrace ::
 captureSqlTrace pool actions = do
   queryTraceRef <- HH.evalIO $ IORef.newIORef []
 
-  let captureQuery :: Orville.QueryType -> RawSql.RawSql -> IO a -> IO a
-      captureQuery queryType sql action = do
-        IORef.modifyIORef queryTraceRef ((queryType, RawSql.toExampleBytes sql) :)
-        action
+  let
+    captureQuery :: Orville.QueryType -> RawSql.RawSql -> IO a -> IO a
+    captureQuery queryType sql action = do
+      IORef.modifyIORef queryTraceRef ((queryType, RawSql.toExampleBytes sql) :)
+      action
 
   HH.evalIO $ do
     Orville.runOrville pool $

@@ -13,21 +13,21 @@ Run various actions with user supplied tracing.
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.EntityTrace
-  ( EntityTraceT,
-    EntityTraceState,
-    runEntityTraceT,
-    insertEntityTraced,
-    updateEntityTraced,
-    deleteEntityTraced,
-    TracedTable,
-    mkTracedTable,
-    addInsertTrace,
-    addUpdateTrace,
-    addDeleteTrace,
-    untracedTableDefinition,
-    MonadEntityTrace (recordTraces, liftOrvilleUntraced),
-    recordTracesInState,
-    clearTracesInState,
+  ( EntityTraceT
+  , EntityTraceState
+  , runEntityTraceT
+  , insertEntityTraced
+  , updateEntityTraced
+  , deleteEntityTraced
+  , TracedTable
+  , mkTracedTable
+  , addInsertTrace
+  , addUpdateTrace
+  , addDeleteTrace
+  , untracedTableDefinition
+  , MonadEntityTrace (recordTraces, liftOrvilleUntraced)
+  , recordTracesInState
+  , clearTracesInState
   )
 where
 
@@ -380,19 +380,21 @@ releaseTransactionStackSavepoint ::
   TransactionStack trace ->
   Either String (TransactionStack trace)
 releaseTransactionStackSavepoint targetSavepoint =
-  let go ::
-        DList.DList trace ->
-        TransactionStack trace ->
-        Either String (TransactionStack trace)
-      go savedTraces stack =
-        case stack of
-          TransactionOpened _ ->
-            Left "Tried to release savepoint that could not be found in EntityTrace TransactionStack"
-          SavepointCreated currentSavepoint traces remainingStack ->
-            if currentSavepoint == targetSavepoint
-              then Right (appendTracesAtTopOfStack (traces <> savedTraces) remainingStack)
-              else go (traces <> savedTraces) remainingStack
-   in go DList.empty
+  let
+    go ::
+      DList.DList trace ->
+      TransactionStack trace ->
+      Either String (TransactionStack trace)
+    go savedTraces stack =
+      case stack of
+        TransactionOpened _ ->
+          Left "Tried to release savepoint that could not be found in EntityTrace TransactionStack"
+        SavepointCreated currentSavepoint traces remainingStack ->
+          if currentSavepoint == targetSavepoint
+            then Right (appendTracesAtTopOfStack (traces <> savedTraces) remainingStack)
+            else go (traces <> savedTraces) remainingStack
+  in
+    go DList.empty
 
 {- |
   INTERNAL: Rolls back the transaction stack to a savepoint, eliminating any
@@ -408,16 +410,18 @@ rollbackTransactionStackToSavepoint ::
   TransactionStack trace ->
   Either String (TransactionStack trace)
 rollbackTransactionStackToSavepoint targetSavepoint =
-  let go :: TransactionStack trace -> Either String (TransactionStack trace)
-      go stack =
-        case stack of
-          TransactionOpened _ ->
-            Left "Tried to rollback savepoint that could not be found in EntityTrace TransactionStack"
-          SavepointCreated currentSavepoint _uncommitedTraces remainingStack ->
-            if currentSavepoint == targetSavepoint
-              then Right (SavepointCreated currentSavepoint DList.empty remainingStack)
-              else go remainingStack
-   in go
+  let
+    go :: TransactionStack trace -> Either String (TransactionStack trace)
+    go stack =
+      case stack of
+        TransactionOpened _ ->
+          Left "Tried to rollback savepoint that could not be found in EntityTrace TransactionStack"
+        SavepointCreated currentSavepoint _uncommitedTraces remainingStack ->
+          if currentSavepoint == targetSavepoint
+            then Right (SavepointCreated currentSavepoint DList.empty remainingStack)
+            else go remainingStack
+  in
+    go
 
 {- |
   INTERNAL: A starting point for 'RecordedTraces' where nothing has been
@@ -680,13 +684,14 @@ runEntityTraceT ::
   n (b, [trace])
 runEntityTraceT errorDetailLevel pool runM traceT = do
   ref <- liftIO $ EntityTraceState <$> newIORef emptyTraceData
-  let mAction =
-        runReaderT traceT ref
+  let
+    mAction =
+      runReaderT traceT ref
 
-      orvilleState =
-        O.addTransactionCallback
-          (trackTransactions ref)
-          (O.newOrvilleState errorDetailLevel pool)
+    orvilleState =
+      O.addTransactionCallback
+        (trackTransactions ref)
+        (O.newOrvilleState errorDetailLevel pool)
 
   a <- runM orvilleState mAction
   traceData <- liftIO (readIORef $ _entityTraceStateRef ref)

@@ -1,14 +1,14 @@
 module Orville.PostgreSQL.Plan.Many
-  ( Many,
-    NotAKey (NotAKey),
-    fromKeys,
-    lookup,
-    keys,
-    elems,
-    map,
-    toMap,
-    apply,
-    compose,
+  ( Many
+  , NotAKey (NotAKey)
+  , fromKeys
+  , lookup
+  , keys
+  , elems
+  , map
+  , toMap
+  , apply
+  , compose
   )
 where
 
@@ -76,9 +76,9 @@ apply ::
   (Many param b)
 apply manyFs manyAs =
   fromKeys (keys manyFs) applyF
-  where
-    applyF param =
-      lookup param manyFs <*> lookup param manyAs
+ where
+  applyF param =
+    lookup param manyFs <*> lookup param manyAs
 
 {- |
   'compose' uses the values of a 'Many' value as keys to a second 'Many' to
@@ -87,10 +87,10 @@ apply manyFs manyAs =
 compose :: Many b c -> Many a b -> Many a c
 compose manyBC manyAB =
   fromKeys (keys manyAB) aToC
-  where
-    aToC a = do
-      b <- lookup a manyAB
-      lookup b manyBC
+ where
+  aToC a = do
+    b <- lookup a manyAB
+    lookup b manyBC
 
 {- |
   'keys' fetches the list of keys from a 'Many'. Note that is a list and not
@@ -118,13 +118,13 @@ elems (Many ks keyToValue) =
 toMap :: Ord k => Many k a -> Map.Map k a
 toMap (Many ks keyToValue) =
   Map.fromList (Maybe.mapMaybe mkPair ks)
-  where
-    mkPair k =
-      case keyToValue k of
-        Left NotAKey ->
-          Nothing
-        Right value ->
-          Just (k, value)
+ where
+  mkPair k =
+    case keyToValue k of
+      Left NotAKey ->
+        Nothing
+      Right value ->
+        Just (k, value)
 
 {- |
   'lookup' returns the value for the given parameter. If the given @k@ is

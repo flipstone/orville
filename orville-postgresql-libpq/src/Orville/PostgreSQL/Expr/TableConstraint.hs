@@ -1,18 +1,18 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.TableConstraint
-  ( TableConstraint,
-    uniqueConstraint,
-    foreignKeyConstraint,
-    ForeignKeyActionExpr,
-    restrictExpr,
-    cascadeExpr,
-    setNullExpr,
-    setDefaultExpr,
-    ForeignKeyDeleteActionExpr,
-    foreignKeyDeleteActionExpr,
-    ForeignKeyUpdateActionExpr,
-    foreignKeyUpdateActionExpr,
+  ( TableConstraint
+  , uniqueConstraint
+  , foreignKeyConstraint
+  , ForeignKeyActionExpr
+  , restrictExpr
+  , cascadeExpr
+  , setNullExpr
+  , setDefaultExpr
+  , ForeignKeyDeleteActionExpr
+  , foreignKeyDeleteActionExpr
+  , ForeignKeyUpdateActionExpr
+  , foreignKeyUpdateActionExpr
   )
 where
 

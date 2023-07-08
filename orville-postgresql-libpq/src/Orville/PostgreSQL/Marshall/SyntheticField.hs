@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Orville.PostgreSQL.Marshall.SyntheticField
-  ( SyntheticField,
-    syntheticFieldExpression,
-    syntheticFieldAlias,
-    syntheticFieldValueFromSqlValue,
-    syntheticField,
-    nullableSyntheticField,
-    prefixSyntheticField,
+  ( SyntheticField
+  , syntheticFieldExpression
+  , syntheticFieldAlias
+  , syntheticFieldValueFromSqlValue
+  , syntheticField
+  , nullableSyntheticField
+  , prefixSyntheticField
   )
 where
 

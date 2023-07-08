@@ -1,28 +1,28 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.TableDefinition
-  ( CreateTableExpr,
-    createTableExpr,
-    PrimaryKeyExpr,
-    primaryKeyExpr,
-    AlterTableExpr,
-    alterTableExpr,
-    AlterTableAction,
-    addColumn,
-    dropColumn,
-    addConstraint,
-    dropConstraint,
-    alterColumnType,
-    alterColumnSetDefault,
-    alterColumnDropDefault,
-    UsingClause,
-    usingCast,
-    alterColumnNullability,
-    AlterNotNull,
-    setNotNull,
-    dropNotNull,
-    DropTableExpr,
-    dropTableExpr,
+  ( CreateTableExpr
+  , createTableExpr
+  , PrimaryKeyExpr
+  , primaryKeyExpr
+  , AlterTableExpr
+  , alterTableExpr
+  , AlterTableAction
+  , addColumn
+  , dropColumn
+  , addConstraint
+  , dropConstraint
+  , alterColumnType
+  , alterColumnSetDefault
+  , alterColumnDropDefault
+  , UsingClause
+  , usingCast
+  , alterColumnNullability
+  , AlterNotNull
+  , setNotNull
+  , dropNotNull
+  , DropTableExpr
+  , dropTableExpr
   )
 where
 
@@ -47,27 +47,29 @@ createTableExpr ::
   [TableConstraint] ->
   CreateTableExpr
 createTableExpr tableName columnDefs mbPrimaryKey constraints =
-  let columnDefsSql =
-        map RawSql.toRawSql columnDefs
+  let
+    columnDefsSql =
+      map RawSql.toRawSql columnDefs
 
-      constraintsSql =
-        map RawSql.toRawSql constraints
+    constraintsSql =
+      map RawSql.toRawSql constraints
 
-      tableElementsSql =
-        case mbPrimaryKey of
-          Nothing ->
-            columnDefsSql <> constraintsSql
-          Just primaryKey ->
-            RawSql.toRawSql primaryKey : (columnDefsSql <> constraintsSql)
-   in CreateTableExpr $
-        mconcat
-          [ RawSql.fromString "CREATE TABLE "
-          , RawSql.toRawSql tableName
-          , RawSql.space
-          , RawSql.leftParen
-          , RawSql.intercalate RawSql.comma tableElementsSql
-          , RawSql.rightParen
-          ]
+    tableElementsSql =
+      case mbPrimaryKey of
+        Nothing ->
+          columnDefsSql <> constraintsSql
+        Just primaryKey ->
+          RawSql.toRawSql primaryKey : (columnDefsSql <> constraintsSql)
+  in
+    CreateTableExpr $
+      mconcat
+        [ RawSql.fromString "CREATE TABLE "
+        , RawSql.toRawSql tableName
+        , RawSql.space
+        , RawSql.leftParen
+        , RawSql.intercalate RawSql.comma tableElementsSql
+        , RawSql.rightParen
+        ]
 
 newtype PrimaryKeyExpr
   = PrimaryKeyExpr RawSql.RawSql
@@ -128,11 +130,11 @@ alterColumnType columnName dataType maybeUsingClause =
   AlterTableAction $
     RawSql.intercalate
       RawSql.space
-      ( RawSql.fromString "ALTER COLUMN" :
-        RawSql.toRawSql columnName :
-        RawSql.fromString "TYPE" :
-        RawSql.toRawSql dataType :
-        maybeToList (fmap RawSql.toRawSql maybeUsingClause)
+      ( RawSql.fromString "ALTER COLUMN"
+          : RawSql.toRawSql columnName
+          : RawSql.fromString "TYPE"
+          : RawSql.toRawSql dataType
+          : maybeToList (fmap RawSql.toRawSql maybeUsingClause)
       )
 
 newtype UsingClause

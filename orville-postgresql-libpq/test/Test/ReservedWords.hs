@@ -1,5 +1,5 @@
 module Test.ReservedWords
-  ( reservedWordsTests,
+  ( reservedWordsTests
   )
 where
 

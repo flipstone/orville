@@ -1,5 +1,5 @@
 module Test.TableDefinition
-  ( tableDefinitionTests,
+  ( tableDefinitionTests
   )
 where
 
@@ -39,14 +39,15 @@ prop_roundTrip =
   Property.namedDBProperty "Creates a table that can round trip an entity through it" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
 
-    let insertFoo =
-          TableDefinition.mkInsertExpr
-            ReturningOption.WithoutReturning
-            Foo.table
-            (originalFoo :| [])
+    let
+      insertFoo =
+        TableDefinition.mkInsertExpr
+          ReturningOption.WithoutReturning
+          Foo.table
+          (originalFoo :| [])
 
-        selectFoos =
-          Select.selectTable Foo.table mempty
+      selectFoos =
+        Select.selectTable Foo.table mempty
 
     foosFromDB <-
       MIO.liftIO . Orville.runOrville pool $ do
@@ -62,11 +63,12 @@ prop_readOnlyFields =
   Property.namedDBProperty "Creates a table that can read from read only fields" $ \pool -> do
     originalBar <- HH.forAll Bar.generate
 
-    let insertBar =
-          TableDefinition.mkInsertExpr ReturningOption.WithoutReturning Bar.table (originalBar :| [])
+    let
+      insertBar =
+        TableDefinition.mkInsertExpr ReturningOption.WithoutReturning Bar.table (originalBar :| [])
 
-        selectBars =
-          Select.selectTable Bar.table mempty
+      selectBars =
+        Select.selectTable Bar.table mempty
 
     barsFromDB <-
       MIO.liftIO . Orville.runOrville pool $ do
@@ -82,14 +84,15 @@ prop_primaryKey =
   Property.singletonNamedDBProperty "Creates a primary key that rejects duplicate records" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
 
-    let conflictingFoo =
-          originalFoo {Foo.fooName = T.reverse $ Foo.fooName originalFoo}
+    let
+      conflictingFoo =
+        originalFoo {Foo.fooName = T.reverse $ Foo.fooName originalFoo}
 
-        insertFoos =
-          TableDefinition.mkInsertExpr
-            ReturningOption.WithoutReturning
-            Foo.table
-            (originalFoo :| [conflictingFoo])
+      insertFoos =
+        TableDefinition.mkInsertExpr
+          ReturningOption.WithoutReturning
+          Foo.table
+          (originalFoo :| [conflictingFoo])
 
     result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
       TestTable.dropAndRecreateTableDef connection Foo.table
@@ -107,19 +110,20 @@ prop_uniqueConstraint =
   Property.singletonNamedDBProperty "Creates a unique constraint that rejects duplicate records" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
 
-    let fooTableWithUniqueNameConstraint =
-          Orville.addTableConstraints
-            [Orville.uniqueConstraint (Orville.fieldName Foo.fooNameField :| [])]
-            Foo.table
+    let
+      fooTableWithUniqueNameConstraint =
+        Orville.addTableConstraints
+          [Orville.uniqueConstraint (Orville.fieldName Foo.fooNameField :| [])]
+          Foo.table
 
-        conflictingFoo =
-          originalFoo {Foo.fooId = 1 + Foo.fooId originalFoo}
+      conflictingFoo =
+        originalFoo {Foo.fooId = 1 + Foo.fooId originalFoo}
 
-        insertFoos =
-          TableDefinition.mkInsertExpr
-            ReturningOption.WithoutReturning
-            Foo.table
-            (originalFoo :| [conflictingFoo])
+      insertFoos =
+        TableDefinition.mkInsertExpr
+          ReturningOption.WithoutReturning
+          Foo.table
+          (originalFoo :| [conflictingFoo])
 
     result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
       TestTable.dropAndRecreateTableDef connection fooTableWithUniqueNameConstraint

@@ -1,12 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.Index
-  ( CreateIndexExpr,
-    createIndexExpr,
-    IndexUniqueness (UniqueIndex, NonUniqueIndex),
-    DropIndexExpr,
-    dropIndexExpr,
-    createNamedIndexExpr,
+  ( CreateIndexExpr
+  , createIndexExpr
+  , IndexUniqueness (UniqueIndex, NonUniqueIndex)
+  , DropIndexExpr
+  , dropIndexExpr
+  , createNamedIndexExpr
   )
 where
 

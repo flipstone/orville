@@ -1,5 +1,5 @@
 module Test.Expr.SequenceDefinition
-  ( sequenceDefinitionTests,
+  ( sequenceDefinitionTests
   )
 where
 

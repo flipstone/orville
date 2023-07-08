@@ -1,5 +1,5 @@
 module Test.Cursor
-  ( cursorTests,
+  ( cursorTests
   )
 where
 
@@ -32,11 +32,12 @@ prop_withCursorFetch =
     -- PostgreSQL so we avoid generating 0 for the fetch count in this test
     numToFetch <- HH.forAll (Gen.integral (Range.linear 1 (length foos)))
 
-    let expectedRows =
-          take numToFetch
-            . List.sortBy (Ord.comparing Foo.fooId)
-            . NEL.toList
-            $ foos
+    let
+      expectedRows =
+        take numToFetch
+          . List.sortBy (Ord.comparing Foo.fooId)
+          . NEL.toList
+          $ foos
 
     actualRows <-
       Foo.withTable pool $ do
@@ -57,12 +58,13 @@ prop_withCursorMove =
     numToSkip <- HH.forAll (Gen.integral (Range.linear 0 (length foos - 1)))
     numToFetch <- HH.forAll (Gen.integral (Range.linear 1 (length foos - numToSkip)))
 
-    let expectedRows =
-          take numToFetch
-            . drop numToSkip
-            . List.sortBy (Ord.comparing Foo.fooId)
-            . NEL.toList
-            $ foos
+    let
+      expectedRows =
+        take numToFetch
+          . drop numToSkip
+          . List.sortBy (Ord.comparing Foo.fooId)
+          . NEL.toList
+          $ foos
 
     actualRows <-
       Foo.withTable pool $ do

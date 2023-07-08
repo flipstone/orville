@@ -1,8 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Orville.PostgreSQL.Expr.IfExists
-  ( IfExists,
-    ifExists,
+  ( IfExists
+  , ifExists
   )
 where
 

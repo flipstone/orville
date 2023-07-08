@@ -1,5 +1,5 @@
 module Test.Expr.GroupByOrderBy
-  ( groupByOrderByTests,
+  ( groupByOrderByTests
   )
 where
 
@@ -55,19 +55,23 @@ data GroupByOrderByTest = GroupByOrderByTest
 
 mkGroupByOrderByTestInsertSource :: GroupByOrderByTest -> Expr.InsertSource
 mkGroupByOrderByTestInsertSource test =
-  let mkRow foobar =
-        [ SqlValue.fromInt32 (foo foobar)
-        , SqlValue.fromText (T.pack $ bar foobar)
-        ]
-   in Expr.insertSqlValues (map mkRow $ valuesToInsert test)
+  let
+    mkRow foobar =
+      [ SqlValue.fromInt32 (foo foobar)
+      , SqlValue.fromText (T.pack $ bar foobar)
+      ]
+  in
+    Expr.insertSqlValues (map mkRow $ valuesToInsert test)
 
 mkGroupByOrderByTestExpectedRows :: GroupByOrderByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByOrderByTestExpectedRows test =
-  let mkRow foobar =
-        [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
-        , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
-        ]
-   in fmap mkRow (expectedQueryResults test)
+  let
+    mkRow foobar =
+      [ (Just (B8.pack "foo"), SqlValue.fromInt32 (foo foobar))
+      , (Just (B8.pack "bar"), SqlValue.fromText (T.pack $ bar foobar))
+      ]
+  in
+    fmap mkRow (expectedQueryResults test)
 
 groupByOrderByTest :: String -> GroupByOrderByTest -> Property.NamedDBProperty
 groupByOrderByTest testName test =

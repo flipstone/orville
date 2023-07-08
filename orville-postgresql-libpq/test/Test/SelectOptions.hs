@@ -1,5 +1,5 @@
 module Test.SelectOptions
-  ( selectOptionsTests,
+  ( selectOptionsTests
   )
 where
 
@@ -221,14 +221,22 @@ prop_equalityAndOrPrecedence =
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) OR (((\"foo\") <> ($2)) AND (((\"foo\") > ($3)) OR (((\"foo\") < ($4)) AND (((\"foo\") >= ($5)) OR (((\"foo\") <= ($6)) AND (((\"foo\") IN ($7)) OR ((\"foo\") NOT IN ($8))))))))")
       ( O.where_ $
-          fooField .== 10
-            .|| fooField ./= 20
-            .&& fooField .> 30
-            .|| fooField .< 40
-            .&& fooField .>= 50
-            .|| fooField .<= 60
-            .&& fooField .<- (70 :| [])
-            .|| fooField .</- (80 :| [])
+          fooField
+            .== 10
+            .|| fooField
+            ./= 20
+            .&& fooField
+            .> 30
+            .|| fooField
+            .< 40
+            .&& fooField
+            .>= 50
+            .|| fooField
+            .<= 60
+            .&& fooField
+            .<- (70 :| [])
+            .|| fooField
+            .</- (80 :| [])
       )
 
 prop_whereCombined :: Property.NamedProperty

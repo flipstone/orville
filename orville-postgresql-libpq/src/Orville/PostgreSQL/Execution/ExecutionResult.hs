@@ -8,11 +8,11 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.ExecutionResult
-  ( ExecutionResult (..),
-    Column (..),
-    Row (..),
-    FakeLibPQResult,
-    mkFakeLibPQResult,
+  ( ExecutionResult (..)
+  , Column (..)
+  , Row (..)
+  , FakeLibPQResult
+  , mkFakeLibPQResult
   )
 where
 
@@ -123,16 +123,19 @@ mkFakeLibPQResult ::
   [[SqlValue]] ->
   FakeLibPQResult
 mkFakeLibPQResult columnList valuesList =
-  let indexedRows = do
-        (rowNumber, row) <- zip [Row 0 ..] valuesList
+  let
+    indexedRows = do
+      (rowNumber, row) <- zip [Row 0 ..] valuesList
 
-        let indexedColumns = zip [Column 0 ..] row
+      let
+        indexedColumns = zip [Column 0 ..] row
 
-        pure (rowNumber, Map.fromList indexedColumns)
-   in FakeLibPQResult
-        { fakeLibPQColumns = Map.fromList (zip [Column 0 ..] columnList)
-        , fakeLibPQRows = Map.fromList indexedRows
-        }
+      pure (rowNumber, Map.fromList indexedColumns)
+  in
+    FakeLibPQResult
+      { fakeLibPQColumns = Map.fromList (zip [Column 0 ..] columnList)
+      , fakeLibPQRows = Map.fromList indexedRows
+      }
 
 fakeLibPQMaxRow :: FakeLibPQResult -> Maybe Row
 fakeLibPQMaxRow =
@@ -140,17 +143,19 @@ fakeLibPQMaxRow =
 
 fakeLibPQMaxColumn :: FakeLibPQResult -> Maybe Column
 fakeLibPQMaxColumn result =
-  let maxColumnsByRow =
-        map fst
-          . Maybe.mapMaybe Map.lookupMax
-          . Map.elems
-          . fakeLibPQRows
-          $ result
-   in case maxColumnsByRow of
-        [] ->
-          Nothing
-        _ ->
-          Just (maximum maxColumnsByRow)
+  let
+    maxColumnsByRow =
+      map fst
+        . Maybe.mapMaybe Map.lookupMax
+        . Map.elems
+        . fakeLibPQRows
+        $ result
+  in
+    case maxColumnsByRow of
+      [] ->
+        Nothing
+      _ ->
+        Just (maximum maxColumnsByRow)
 
 -- | @since 0.10.0.0
 instance ExecutionResult FakeLibPQResult where

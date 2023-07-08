@@ -5,33 +5,33 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.WhereClause
-  ( WhereClause,
-    whereClause,
-    BooleanExpr,
-    literalBooleanExpr,
-    andExpr,
-    (.&&),
-    orExpr,
-    (.||),
-    parenthesized,
-    equals,
-    notEquals,
-    greaterThan,
-    lessThan,
-    greaterThanOrEqualTo,
-    lessThanOrEqualTo,
-    like,
-    likeInsensitive,
-    isNull,
-    isNotNull,
-    valueIn,
-    valueNotIn,
-    tupleIn,
-    tupleNotIn,
-    InValuePredicate,
-    inPredicate,
-    notInPredicate,
-    inValueList,
+  ( WhereClause
+  , whereClause
+  , BooleanExpr
+  , literalBooleanExpr
+  , andExpr
+  , (.&&)
+  , orExpr
+  , (.||)
+  , parenthesized
+  , equals
+  , notEquals
+  , greaterThan
+  , lessThan
+  , greaterThanOrEqualTo
+  , lessThanOrEqualTo
+  , like
+  , likeInsensitive
+  , isNull
+  , isNotNull
+  , valueIn
+  , valueNotIn
+  , tupleIn
+  , tupleNotIn
+  , InValuePredicate
+  , inPredicate
+  , notInPredicate
+  , inValueList
   )
 where
 

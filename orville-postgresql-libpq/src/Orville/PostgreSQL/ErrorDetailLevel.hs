@@ -6,14 +6,14 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.ErrorDetailLevel
-  ( ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues),
-    defaultErrorDetailLevel,
-    minimalErrorDetailLevel,
-    maximalErrorDetailLevel,
-    redactErrorMessage,
-    redactSchemaName,
-    redactIdentifierValue,
-    redactNonIdentifierValue,
+  ( ErrorDetailLevel (ErrorDetailLevel, includeErrorMessage, includeSchemaNames, includeRowIdentifierValues, includeNonIdentifierValues)
+  , defaultErrorDetailLevel
+  , minimalErrorDetailLevel
+  , maximalErrorDetailLevel
+  , redactErrorMessage
+  , redactSchemaName
+  , redactIdentifierValue
+  , redactNonIdentifierValue
   )
 where
 

@@ -1,34 +1,34 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Orville.PostgreSQL.OrvilleState
-  ( OrvilleState,
-    newOrvilleState,
-    resetOrvilleState,
-    orvilleConnectionPool,
-    orvilleConnectionState,
-    orvilleErrorDetailLevel,
-    orvilleTransactionCallback,
-    orvilleSqlCommenterAttributes,
-    addTransactionCallback,
-    TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction),
-    openTransactionEvent,
-    rollbackTransactionEvent,
-    transactionSuccessEvent,
-    ConnectionState (NotConnected, Connected),
-    ConnectedState (ConnectedState, connectedConnection, connectedTransaction),
-    connectState,
-    TransactionState (OutermostTransaction, SavepointTransaction),
-    newTransaction,
-    Savepoint,
-    savepointNestingLevel,
-    initialSavepoint,
-    nextSavepoint,
-    orvilleSqlExecutionCallback,
-    addSqlExecutionCallback,
-    orvilleBeginTransactionExpr,
-    setBeginTransactionExpr,
-    setSqlCommenterAttributes,
-    addSqlCommenterAttributes,
+  ( OrvilleState
+  , newOrvilleState
+  , resetOrvilleState
+  , orvilleConnectionPool
+  , orvilleConnectionState
+  , orvilleErrorDetailLevel
+  , orvilleTransactionCallback
+  , orvilleSqlCommenterAttributes
+  , addTransactionCallback
+  , TransactionEvent (BeginTransaction, NewSavepoint, ReleaseSavepoint, RollbackToSavepoint, CommitTransaction, RollbackTransaction)
+  , openTransactionEvent
+  , rollbackTransactionEvent
+  , transactionSuccessEvent
+  , ConnectionState (NotConnected, Connected)
+  , ConnectedState (ConnectedState, connectedConnection, connectedTransaction)
+  , connectState
+  , TransactionState (OutermostTransaction, SavepointTransaction)
+  , newTransaction
+  , Savepoint
+  , savepointNestingLevel
+  , initialSavepoint
+  , nextSavepoint
+  , orvilleSqlExecutionCallback
+  , addSqlExecutionCallback
+  , orvilleBeginTransactionExpr
+  , setBeginTransactionExpr
+  , setSqlCommenterAttributes
+  , addSqlCommenterAttributes
   )
 where
 
@@ -102,13 +102,15 @@ addTransactionCallback ::
   OrvilleState ->
   OrvilleState
 addTransactionCallback newCallback state =
-  let originalCallback =
-        _orvilleTransactionCallback state
+  let
+    originalCallback =
+      _orvilleTransactionCallback state
 
-      wrappedCallback event = do
-        originalCallback event
-        newCallback event
-   in state {_orvilleTransactionCallback = wrappedCallback}
+    wrappedCallback event = do
+      originalCallback event
+      newCallback event
+  in
+    state {_orvilleTransactionCallback = wrappedCallback}
 
 {- |
   Creates a appropriate initial 'OrvilleState' that will use the connection
@@ -281,11 +283,13 @@ addSqlExecutionCallback ::
   OrvilleState ->
   OrvilleState
 addSqlExecutionCallback outerCallback state =
-  let layeredCallback, innerCallback :: QueryType -> RawSql.RawSql -> IO a -> IO a
-      layeredCallback queryType sql action =
-        outerCallback queryType sql (innerCallback queryType sql action)
-      innerCallback = _orvilleSqlExecutionCallback state
-   in state {_orvilleSqlExecutionCallback = layeredCallback}
+  let
+    layeredCallback, innerCallback :: QueryType -> RawSql.RawSql -> IO a -> IO a
+    layeredCallback queryType sql action =
+      outerCallback queryType sql (innerCallback queryType sql action)
+    innerCallback = _orvilleSqlExecutionCallback state
+  in
+    state {_orvilleSqlExecutionCallback = layeredCallback}
 
 defaultBeginTransactionExpr :: Expr.BeginTransactionExpr
 defaultBeginTransactionExpr =

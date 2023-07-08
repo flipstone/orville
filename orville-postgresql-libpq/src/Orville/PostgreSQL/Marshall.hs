@@ -1,12 +1,12 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 module Orville.PostgreSQL.Marshall
-  ( module Orville.PostgreSQL.Marshall.SqlMarshaller,
-    module Orville.PostgreSQL.Marshall.FieldDefinition,
-    module Orville.PostgreSQL.Marshall.DefaultValue,
-    module Orville.PostgreSQL.Marshall.SyntheticField,
-    module Orville.PostgreSQL.Marshall.MarshallError,
-    module Orville.PostgreSQL.Marshall.SqlType,
+  ( module Orville.PostgreSQL.Marshall.SqlMarshaller
+  , module Orville.PostgreSQL.Marshall.FieldDefinition
+  , module Orville.PostgreSQL.Marshall.DefaultValue
+  , module Orville.PostgreSQL.Marshall.SyntheticField
+  , module Orville.PostgreSQL.Marshall.MarshallError
+  , module Orville.PostgreSQL.Marshall.SqlType
   )
 where
 

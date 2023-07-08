@@ -1,8 +1,8 @@
 module Orville.PostgreSQL.Plan.Explanation
-  ( Explanation,
-    noExplanation,
-    explainStep,
-    explanationSteps,
+  ( Explanation
+  , noExplanation
+  , explainStep
+  , explanationSteps
   )
 where
 

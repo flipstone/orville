@@ -1,5 +1,5 @@
 module Test.SqlMarshaller
-  ( sqlMarshallerTests,
+  ( sqlMarshallerTests
   )
 where
 
@@ -68,12 +68,13 @@ property_marshellField_readSingleField =
     valuesBefore <- HH.forAll (generateAssociatedValues namesBefore generateInt32)
     valuesAfter <- HH.forAll (generateAssociatedValues namesAfter generateInt32)
 
-    let fieldDef = Marshall.integerField targetName
-        marshaller = Marshall.marshallField id fieldDef
-        input =
-          Result.mkFakeLibPQResult
-            (map B8.pack (namesBefore ++ (targetName : namesAfter)))
-            [map SqlValue.fromInt32 (valuesBefore ++ (targetValue : valuesAfter))]
+    let
+      fieldDef = Marshall.integerField targetName
+      marshaller = Marshall.marshallField id fieldDef
+      input =
+        Result.mkFakeLibPQResult
+          (map B8.pack (namesBefore ++ (targetName : namesAfter)))
+          [map SqlValue.fromInt32 (valuesBefore ++ (targetValue : valuesAfter))]
 
     result <- marshallTestRowFromSql marshaller input
     Bifunctor.first show result === Right [targetValue]
@@ -85,24 +86,25 @@ prop_marshallField_missingColumn =
     otherNames <- HH.forAll (generateNamesOtherThan targetName)
     otherValues <- HH.forAll (generateAssociatedValues otherNames generateInt32)
 
-    let fieldDef = Marshall.integerField targetName
-        marshaller = Marshall.marshallField id fieldDef
-        input =
-          Result.mkFakeLibPQResult
-            (map B8.pack otherNames)
-            [map SqlValue.fromInt32 otherValues]
+    let
+      fieldDef = Marshall.integerField targetName
+      marshaller = Marshall.marshallField id fieldDef
+      input =
+        Result.mkFakeLibPQResult
+          (map B8.pack otherNames)
+          [map SqlValue.fromInt32 otherValues]
 
-        expectedError =
-          Marshall.MarshallError
-            { Marshall.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
-            , Marshall.marshallErrorRowIdentifier = mempty
-            , Marshall.marshallErrorDetails =
-                Marshall.MissingColumnError $
-                  Marshall.MissingColumnErrorDetails
-                    { Marshall.missingColumnName = B8.pack targetName
-                    , Marshall.actualColumnNames = Set.fromList $ fmap B8.pack otherNames
-                    }
-            }
+      expectedError =
+        Marshall.MarshallError
+          { Marshall.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
+          , Marshall.marshallErrorRowIdentifier = mempty
+          , Marshall.marshallErrorDetails =
+              Marshall.MissingColumnError $
+                Marshall.MissingColumnErrorDetails
+                  { Marshall.missingColumnName = B8.pack targetName
+                  , Marshall.actualColumnNames = Set.fromList $ fmap B8.pack otherNames
+                  }
+          }
 
     result <- marshallTestRowFromSql marshaller input
     -- Use show on the error here so MarshallError and friends don't
@@ -115,12 +117,13 @@ prop_marshallField_decodeValueFailure =
     targetName <- HH.forAll generateName
     nonIntegerText <- HH.forAll (Gen.text (Range.linear 0 10) Gen.alpha)
 
-    let fieldDef = Marshall.integerField targetName
-        marshaller = Marshall.marshallField id fieldDef
-        input =
-          Result.mkFakeLibPQResult
-            [B8.pack targetName]
-            [[SqlValue.fromText nonIntegerText]]
+    let
+      fieldDef = Marshall.integerField targetName
+      marshaller = Marshall.marshallField id fieldDef
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack targetName]
+          [[SqlValue.fromText nonIntegerText]]
 
     result <- marshallTestRowFromSql marshaller input
 
@@ -143,16 +146,17 @@ prop_marshallResultFromSql_Foo =
   Property.namedProperty "marshallResultFromSql decodes all rows in Foo result set" $ do
     foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
 
-    let mkRowValues foo =
-          [ SqlValue.fromText (fooName foo)
-          , SqlValue.fromInt32 (fooSize foo)
-          , maybe SqlValue.sqlNull SqlValue.fromBool (fooOption foo)
-          ]
+    let
+      mkRowValues foo =
+        [ SqlValue.fromText (fooName foo)
+        , SqlValue.fromInt32 (fooSize foo)
+        , maybe SqlValue.sqlNull SqlValue.fromBool (fooOption foo)
+        ]
 
-        input =
-          Result.mkFakeLibPQResult
-            [B8.pack "name", B8.pack "size", B8.pack "option"]
-            (map mkRowValues foos)
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "name", B8.pack "size", B8.pack "option"]
+          (map mkRowValues foos)
 
     result <- marshallTestRowFromSql fooMarshaller input
     Bifunctor.first show result === Right foos
@@ -162,16 +166,17 @@ prop_marshallResultFromSql_Bar =
   Property.namedProperty "marshallResultFromSql decodes all rows in Bar result set" $ do
     bars <- HH.forAll $ Gen.list (Range.linear 0 10) generateBar
 
-    let mkRowValues bar =
-          [ SqlValue.fromDouble (barNumber bar)
-          , maybe SqlValue.sqlNull SqlValue.fromText (barComment bar)
-          , maybe SqlValue.sqlNull SqlValue.fromText (barLabel bar)
-          ]
+    let
+      mkRowValues bar =
+        [ SqlValue.fromDouble (barNumber bar)
+        , maybe SqlValue.sqlNull SqlValue.fromText (barComment bar)
+        , maybe SqlValue.sqlNull SqlValue.fromText (barLabel bar)
+        ]
 
-        input =
-          Result.mkFakeLibPQResult
-            [B8.pack "number", B8.pack "comment", B8.pack "label"]
-            (map mkRowValues bars)
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "number", B8.pack "comment", B8.pack "label"]
+          (map mkRowValues bars)
 
     result <- marshallTestRowFromSql barMarshaller input
     Bifunctor.first show result === Right bars
@@ -181,26 +186,27 @@ prop_foldMarshallerFields =
   Property.namedProperty "foldMarshallerFields collects all fields as their sql values" $ do
     foo <- HH.forAll generateFoo
 
-    let addField entry fields =
-          case entry of
-            Marshall.Natural fieldDef (Just getValue) ->
-              (Marshall.fieldName fieldDef, Marshall.fieldValueToSqlValue fieldDef (getValue foo)) : fields
-            Marshall.Natural _ Nothing ->
-              fields
-            Marshall.Synthetic _ ->
-              fields
+    let
+      addField entry fields =
+        case entry of
+          Marshall.Natural fieldDef (Just getValue) ->
+            (Marshall.fieldName fieldDef, Marshall.fieldValueToSqlValue fieldDef (getValue foo)) : fields
+          Marshall.Natural _ Nothing ->
+            fields
+          Marshall.Synthetic _ ->
+            fields
 
-        actualFooRow =
-          Marshall.foldMarshallerFields
-            fooMarshaller
-            []
-            addField
+      actualFooRow =
+        Marshall.foldMarshallerFields
+          fooMarshaller
+          []
+          addField
 
-        expectedFooRow =
-          [ (Marshall.stringToFieldName "name", SqlValue.fromText $ fooName foo)
-          , (Marshall.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
-          , (Marshall.stringToFieldName "option", maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo)
-          ]
+      expectedFooRow =
+        [ (Marshall.stringToFieldName "name", SqlValue.fromText $ fooName foo)
+        , (Marshall.stringToFieldName "size", SqlValue.fromInt32 $ fooSize foo)
+        , (Marshall.stringToFieldName "option", maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo)
+        ]
 
     [actualFooRow] `assertEqualSqlRows` [expectedFooRow]
 
@@ -216,47 +222,48 @@ prop_partialMap =
   Property.namedProperty "can use marshallPartial to fail decoding with in a custom way" $ do
     texts <- HH.forAll $ Gen.list (Range.linear 0 10) (PgGen.pgText (Range.linear 0 10))
 
-    let validateText text =
-          if T.length text > 8
-            then Left "Text too long"
-            else Right text
+    let
+      validateText text =
+        if T.length text > 8
+          then Left "Text too long"
+          else Right text
 
-        mkRowValues text =
-          [ SqlValue.fromText text
-          ]
+      mkRowValues text =
+        [ SqlValue.fromText text
+        ]
 
-        input =
-          Result.mkFakeLibPQResult
-            [B8.pack "text"]
-            (map mkRowValues texts)
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "text"]
+          (map mkRowValues texts)
 
-        marshaller =
-          Marshall.marshallPartial $
-            validateText
-              <$> Marshall.marshallField id (Marshall.unboundedTextField "text")
+      marshaller =
+        Marshall.marshallPartial $
+          validateText
+            <$> Marshall.marshallField id (Marshall.unboundedTextField "text")
 
-        mkExpected text =
-          case validateText text of
-            Right validText ->
-              Right validText
-            Left message ->
-              Left $
-                -- Use show here to render the error so that MarshallError
-                -- and friends don't need to have an Eq instance
-                show $
-                  Marshall.MarshallError
-                    { Marshall.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
-                    , Marshall.marshallErrorRowIdentifier = mempty
-                    , Marshall.marshallErrorDetails =
-                        Marshall.DecodingError $
-                          Marshall.DecodingErrorDetails
-                            { Marshall.decodingErrorValues = [(B8.pack "text", SqlValue.fromText text)]
-                            , Marshall.decodingErrorMessage = message
-                            }
-                    }
+      mkExpected text =
+        case validateText text of
+          Right validText ->
+            Right validText
+          Left message ->
+            Left $
+              -- Use show here to render the error so that MarshallError
+              -- and friends don't need to have an Eq instance
+              show $
+                Marshall.MarshallError
+                  { Marshall.marshallErrorDetailLevel = ErrorDetailLevel.maximalErrorDetailLevel
+                  , Marshall.marshallErrorRowIdentifier = mempty
+                  , Marshall.marshallErrorDetails =
+                      Marshall.DecodingError $
+                        Marshall.DecodingErrorDetails
+                          { Marshall.decodingErrorValues = [(B8.pack "text", SqlValue.fromText text)]
+                          , Marshall.decodingErrorMessage = message
+                          }
+                  }
 
-        expected =
-          traverse mkExpected texts
+      expected =
+        traverse mkExpected texts
 
     HH.cover 1 (String.fromString "With no errors") (Either.isRight expected)
     HH.cover 1 (String.fromString "With at least one error") (Either.isLeft expected)

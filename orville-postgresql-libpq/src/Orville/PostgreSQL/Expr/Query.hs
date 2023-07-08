@@ -5,17 +5,17 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Query
-  ( QueryExpr,
-    queryExpr,
-    SelectList,
-    selectColumns,
-    DerivedColumn,
-    deriveColumn,
-    deriveColumnAs,
-    selectDerivedColumns,
-    selectStar,
-    TableExpr,
-    tableExpr,
+  ( QueryExpr
+  , queryExpr
+  , SelectList
+  , selectColumns
+  , DerivedColumn
+  , deriveColumn
+  , deriveColumnAs
+  , selectDerivedColumns
+  , selectStar
+  , TableExpr
+  , tableExpr
   )
 where
 
@@ -39,15 +39,17 @@ newtype QueryExpr
 
 queryExpr :: SelectClause -> SelectList -> Maybe TableExpr -> QueryExpr
 queryExpr querySelectClause selectList maybeTableExpr =
-  let maybeFromClause = do
-        table <- maybeTableExpr
-        pure (RawSql.fromString " FROM " <> RawSql.toRawSql table)
-   in QueryExpr $
-        mconcat
-          [ RawSql.toRawSql querySelectClause
-          , RawSql.toRawSql selectList
-          , fromMaybe (RawSql.fromString "") maybeFromClause
-          ]
+  let
+    maybeFromClause = do
+      table <- maybeTableExpr
+      pure (RawSql.fromString " FROM " <> RawSql.toRawSql table)
+  in
+    QueryExpr $
+      mconcat
+        [ RawSql.toRawSql querySelectClause
+        , RawSql.toRawSql selectList
+        , fromMaybe (RawSql.fromString "") maybeFromClause
+        ]
 
 newtype SelectList = SelectList RawSql.RawSql
   deriving (RawSql.SqlExpression)
@@ -100,11 +102,11 @@ tableExpr
   maybeOffsetExpr =
     TableExpr
       . RawSql.intercalate RawSql.space
-      $ RawSql.toRawSql tableReferenceList :
-      catMaybes
-        [ RawSql.toRawSql <$> maybeWhereClause
-        , RawSql.toRawSql <$> maybeGroupByClause
-        , RawSql.toRawSql <$> maybeOrderByClause
-        , RawSql.toRawSql <$> maybeLimitExpr
-        , RawSql.toRawSql <$> maybeOffsetExpr
-        ]
+      $ RawSql.toRawSql tableReferenceList
+        : catMaybes
+          [ RawSql.toRawSql <$> maybeWhereClause
+          , RawSql.toRawSql <$> maybeGroupByClause
+          , RawSql.toRawSql <$> maybeOrderByClause
+          , RawSql.toRawSql <$> maybeLimitExpr
+          , RawSql.toRawSql <$> maybeOffsetExpr
+          ]

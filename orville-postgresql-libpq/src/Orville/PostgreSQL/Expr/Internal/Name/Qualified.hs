@@ -5,8 +5,8 @@ Copyright : Flipstone Technology Partners 2016-2021
 License   : MIT
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.Qualified
-  ( Qualified,
-    qualified,
+  ( Qualified
+  , qualified
   )
 where
 

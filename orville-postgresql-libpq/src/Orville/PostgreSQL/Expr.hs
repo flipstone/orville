@@ -8,33 +8,33 @@ Stability : Stable
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr
-  ( module Orville.PostgreSQL.Expr.BinaryOperator,
-    module Orville.PostgreSQL.Expr.ColumnDefinition,
-    module Orville.PostgreSQL.Expr.Count,
-    module Orville.PostgreSQL.Expr.Cursor,
-    module Orville.PostgreSQL.Expr.DataType,
-    module Orville.PostgreSQL.Expr.Delete,
-    module Orville.PostgreSQL.Expr.GroupBy,
-    module Orville.PostgreSQL.Expr.IfExists,
-    module Orville.PostgreSQL.Expr.Index,
-    module Orville.PostgreSQL.Expr.Insert,
-    module Orville.PostgreSQL.Expr.LimitExpr,
-    module Orville.PostgreSQL.Expr.Math,
-    module Orville.PostgreSQL.Expr.Name,
-    module Orville.PostgreSQL.Expr.OffsetExpr,
-    module Orville.PostgreSQL.Expr.OrderBy,
-    module Orville.PostgreSQL.Expr.Query,
-    module Orville.PostgreSQL.Expr.ReturningExpr,
-    module Orville.PostgreSQL.Expr.Select,
-    module Orville.PostgreSQL.Expr.SequenceDefinition,
-    module Orville.PostgreSQL.Expr.TableConstraint,
-    module Orville.PostgreSQL.Expr.TableDefinition,
-    module Orville.PostgreSQL.Expr.TableReferenceList,
-    module Orville.PostgreSQL.Expr.Time,
-    module Orville.PostgreSQL.Expr.Transaction,
-    module Orville.PostgreSQL.Expr.Update,
-    module Orville.PostgreSQL.Expr.ValueExpression,
-    module Orville.PostgreSQL.Expr.WhereClause,
+  ( module Orville.PostgreSQL.Expr.BinaryOperator
+  , module Orville.PostgreSQL.Expr.ColumnDefinition
+  , module Orville.PostgreSQL.Expr.Count
+  , module Orville.PostgreSQL.Expr.Cursor
+  , module Orville.PostgreSQL.Expr.DataType
+  , module Orville.PostgreSQL.Expr.Delete
+  , module Orville.PostgreSQL.Expr.GroupBy
+  , module Orville.PostgreSQL.Expr.IfExists
+  , module Orville.PostgreSQL.Expr.Index
+  , module Orville.PostgreSQL.Expr.Insert
+  , module Orville.PostgreSQL.Expr.LimitExpr
+  , module Orville.PostgreSQL.Expr.Math
+  , module Orville.PostgreSQL.Expr.Name
+  , module Orville.PostgreSQL.Expr.OffsetExpr
+  , module Orville.PostgreSQL.Expr.OrderBy
+  , module Orville.PostgreSQL.Expr.Query
+  , module Orville.PostgreSQL.Expr.ReturningExpr
+  , module Orville.PostgreSQL.Expr.Select
+  , module Orville.PostgreSQL.Expr.SequenceDefinition
+  , module Orville.PostgreSQL.Expr.TableConstraint
+  , module Orville.PostgreSQL.Expr.TableDefinition
+  , module Orville.PostgreSQL.Expr.TableReferenceList
+  , module Orville.PostgreSQL.Expr.Time
+  , module Orville.PostgreSQL.Expr.Transaction
+  , module Orville.PostgreSQL.Expr.Update
+  , module Orville.PostgreSQL.Expr.ValueExpression
+  , module Orville.PostgreSQL.Expr.WhereClause
   )
 where
 

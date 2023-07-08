@@ -7,43 +7,43 @@ The funtions in this module are named with the intent that it is imported
 qualified as 'RawSql'.
 -}
 module Orville.PostgreSQL.Raw.RawSql
-  ( RawSql,
-    parameter,
-    fromString,
-    fromText,
-    fromBytes,
-    intercalate,
-    execute,
-    executeVoid,
-    connectionQuoting,
+  ( RawSql
+  , parameter
+  , fromString
+  , fromText
+  , fromBytes
+  , intercalate
+  , execute
+  , executeVoid
+  , connectionQuoting
 
     -- * Fragments provided for convenience
-    space,
-    comma,
-    commaSpace,
-    leftParen,
-    rightParen,
-    dot,
-    doubleQuote,
-    doubleColon,
-    stringLiteral,
-    identifier,
-    parenthesized,
+  , space
+  , comma
+  , commaSpace
+  , leftParen
+  , rightParen
+  , dot
+  , doubleQuote
+  , doubleColon
+  , stringLiteral
+  , identifier
+  , parenthesized
 
     -- * Integer values as literals
-    intDecLiteral,
-    int8DecLiteral,
-    int16DecLiteral,
-    int32DecLiteral,
-    int64DecLiteral,
+  , intDecLiteral
+  , int8DecLiteral
+  , int16DecLiteral
+  , int32DecLiteral
+  , int64DecLiteral
 
     -- * Generic interface for generating sql
-    SqlExpression (toRawSql, unsafeFromRawSql),
-    unsafeSqlExpression,
-    toBytesAndParams,
-    toExampleBytes,
-    Quoting (Quoting, quoteStringLiteral, quoteIdentifier),
-    exampleQuoting,
+  , SqlExpression (toRawSql, unsafeFromRawSql)
+  , unsafeSqlExpression
+  , toBytesAndParams
+  , toExampleBytes
+  , Quoting (Quoting, quoteStringLiteral, quoteIdentifier)
+  , exampleQuoting
   )
 where
 
@@ -135,24 +135,26 @@ exampleQuoting =
 
 exampleQuoteString :: Char -> BS.ByteString -> BSB.Builder
 exampleQuoteString quoteChar =
-  let quote (Right bs) =
-        case B8.uncons bs of
-          Nothing ->
-            Nothing
-          Just (char, rest) ->
-            Just $
-              if char == quoteChar
-                then (char, Left (char, rest))
-                else (char, Right rest)
-      quote (Left (char, rest)) =
-        Just (char, Right rest)
+  let
+    quote (Right bs) =
+      case B8.uncons bs of
+        Nothing ->
+          Nothing
+        Just (char, rest) ->
+          Just $
+            if char == quoteChar
+              then (char, Left (char, rest))
+              else (char, Right rest)
+    quote (Left (char, rest)) =
+      Just (char, Right rest)
 
-      quoteBytes =
-        BSB.char8 quoteChar
-   in \unquoted ->
-        quoteBytes
-          <> BSB.byteString (B8.unfoldr quote (Right unquoted))
-          <> quoteBytes
+    quoteBytes =
+      BSB.char8 quoteChar
+  in
+    \unquoted ->
+      quoteBytes
+        <> BSB.byteString (B8.unfoldr quote (Right unquoted))
+        <> quoteBytes
 
 {- |
   Quoting done in IO based using the quoting functions provided by the
@@ -252,9 +254,11 @@ buildSqlWithProgress quoting progress rawSql =
       quotedIdentifier <- quoteIdentifier quoting unquotedIdentifier
       pure (quotedIdentifier, progress)
     Parameter value ->
-      let newProgress = snocParam progress (SqlValue.toPgValue value)
-          placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
-       in pure (placeholder, newProgress)
+      let
+        newProgress = snocParam progress (SqlValue.toPgValue value)
+        placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
+      in
+        pure (placeholder, newProgress)
     Append first second -> do
       (firstBuilder, nextProgress) <- buildSqlWithProgress quoting progress first
       (secondBuilder, finalProgress) <- buildSqlWithProgress quoting nextProgress second

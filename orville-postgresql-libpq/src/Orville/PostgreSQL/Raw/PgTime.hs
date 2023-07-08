@@ -1,10 +1,10 @@
 module Orville.PostgreSQL.Raw.PgTime
-  ( dayToPostgreSQL,
-    day,
-    utcTimeToPostgreSQL,
-    utcTime,
-    localTimeToPostgreSQL,
-    localTime,
+  ( dayToPostgreSQL
+  , day
+  , utcTimeToPostgreSQL
+  , utcTime
+  , localTimeToPostgreSQL
+  , localTime
   )
 where
 
@@ -72,11 +72,12 @@ utcTime = do
       hour <- twoDigits
       minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
       second <- AttoB8.option 0 $ AttoB8.char ':' *> twoDigits
-      let offsetSeconds :: Int
-          offsetSeconds = (second + minute * 60 + hour * 3600) * if sign == '+' then (-1) else 1
-          offsetNominalDiffTime = fromIntegral offsetSeconds
-          diffTime = Time.timeOfDayToTime (Time.localTimeOfDay lt)
-          utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime
+      let
+        offsetSeconds :: Int
+        offsetSeconds = (second + minute * 60 + hour * 3600) * if sign == '+' then (-1) else 1
+        offsetNominalDiffTime = fromIntegral offsetSeconds
+        diffTime = Time.timeOfDayToTime (Time.localTimeOfDay lt)
+        utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime
       pure $ Time.addUTCTime offsetNominalDiffTime utcTimeWithoutOffset
 
 {- |

@@ -1,5 +1,5 @@
 module Test.Expr.Where
-  ( whereTests,
+  ( whereTests
   )
 where
 

@@ -1,12 +1,12 @@
 module Test.Entities.FooChild
-  ( FooChild (..),
-    isChildOf,
-    table,
-    fooChildIdField,
-    fooChildFooIdField,
-    generate,
-    generateList,
-    withTables,
+  ( FooChild (..)
+  , isChildOf
+  , table
+  , fooChildIdField
+  , fooChildFooIdField
+  , generate
+  , generateList
+  , withTables
   )
 where
 
