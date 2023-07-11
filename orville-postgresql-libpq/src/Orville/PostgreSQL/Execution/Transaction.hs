@@ -8,14 +8,12 @@ module Orville.PostgreSQL.Execution.Transaction
   )
 where
 
-import qualified Control.Exception as Exception
-import qualified Control.Monad as Monad
-import Control.Monad.IO.Class (liftIO)
-import qualified Data.IORef as IORef
+import Control.Monad.IO.Class (MonadIO, liftIO)
 
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -30,8 +28,8 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   transaction will establish a new savepoint at the beginning of the nested transaction and
   either release the savepoint or rollback to it as appropriate.
 
-  Note: Exceptions are handled using the implementation of
-  'Monad.liftFinally' provided by the 'MonadOrville' instance for @m@.
+  Note: Exceptions are handled using the implementations of 'Monad.catch' and
+  'Monad.mask'  provided by the 'MonadOrvilleControl' instance for @m@.
 -}
 withTransaction :: Monad.MonadOrville m => m a -> m a
 withTransaction action =
@@ -45,7 +43,6 @@ withTransaction action =
           { OrvilleState.connectedTransaction = Just transaction
           }
 
-    committed <- liftIO $ IORef.newIORef False
     state <- Monad.askOrvilleState
 
     let
@@ -56,35 +53,34 @@ withTransaction action =
       callback =
         OrvilleState.orvilleTransactionCallback state
 
-      doAction = do
+      beginTransaction = do
         liftIO $ do
           let
             openEvent = OrvilleState.openTransactionEvent transaction
           executeTransactionSql (transactionEventSql state openEvent)
           callback openEvent
 
-        value <-
-          Monad.localOrvilleState
-            (OrvilleState.connectState innerConnectedState)
-            action
-        liftIO $ do
-          let
-            successEvent = OrvilleState.transactionSuccessEvent transaction
-          executeTransactionSql (transactionEventSql state successEvent)
-          liftIO $ IORef.writeIORef committed True
-          callback successEvent
-        pure value
+      doAction () =
+        Monad.localOrvilleState
+          (OrvilleState.connectState innerConnectedState)
+          action
 
-      rollbackUncommitted =
-        liftIO $ do
-          finished <- IORef.readIORef committed
-          Monad.when (not finished) $ do
-            let
-              rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
-            executeTransactionSql (transactionEventSql state rollbackEvent)
-            callback rollbackEvent
+      finishTransaction :: MonadIO m => () -> Bracket.BracketResult -> m ()
+      finishTransaction () result =
+        liftIO $
+          case result of
+            Bracket.BracketSuccess -> do
+              let
+                successEvent = OrvilleState.transactionSuccessEvent transaction
+              executeTransactionSql (transactionEventSql state successEvent)
+              callback successEvent
+            Bracket.BracketError -> do
+              let
+                rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
+              executeTransactionSql (transactionEventSql state rollbackEvent)
+              callback rollbackEvent
 
-    Monad.liftFinally Exception.finally doAction rollbackUncommitted
+    Bracket.bracketWithResult beginTransaction finishTransaction doAction
 
 transactionEventSql ::
   OrvilleState.OrvilleState ->

@@ -33,7 +33,6 @@ module Orville.PostgreSQL.Execution.Cursor
   )
 where
 
-import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import qualified Data.Time as Time
 import qualified Data.Time.Clock.POSIX as POSIXTime
@@ -45,6 +44,7 @@ import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import Orville.PostgreSQL.Execution.Select (Select, useSelect)
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 
@@ -88,10 +88,9 @@ withCursor ::
   (Cursor readEntity -> m a) ->
   m a
 withCursor scrollExpr holdExpr select useCursor =
-  Monad.liftBracket
-    bracket
+  Bracket.bracketWithResult
     (declareCursor scrollExpr holdExpr select)
-    closeCursor
+    (\cursor _bracketResult -> closeCursor cursor)
     useCursor
 
 {- |

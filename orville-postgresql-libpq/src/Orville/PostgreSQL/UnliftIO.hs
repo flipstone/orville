@@ -23,16 +23,16 @@ newtype MyMonad =
 
 instance O.MonadOrvilleControl MyMonad where
   liftWithConnection = OrvilleUnliftIO.liftWithConnectionViaUnliftIO
-  liftFinally = OrvilleUnliftIO.liftFinallyViaUnliftIO
-  liftBracket = OrvilleUnliftIO.liftBracketViaUnLiftIO
+  liftCatch = OrvilleUnliftIO.liftCatchViaUnliftIO
+  liftMask = OrvilleUnliftIO.liftMaskViaUnliftIO
 @
 
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.UnliftIO
   ( liftWithConnectionViaUnliftIO
-  , liftFinallyViaUnliftIO
-  , liftBracketViaUnLiftIO
+  , liftCatchViaUnliftIO
+  , liftMaskViaUnliftIO
   )
 where
 
@@ -54,40 +54,41 @@ liftWithConnectionViaUnliftIO ioWithConn action =
   UL.withRunInIO $ \runInIO -> ioWithConn (runInIO . action)
 
 {- |
-  liftFinallyViaUnliftIO can be use as the implementation of
-  'liftFinally' for 'MonadOrvilleControl' when the 'Monad'
+  liftCatchViaUnliftIO can be use as the implementation of
+  'liftCatch' for 'MonadOrvilleControl' when the 'Monad'
   implements 'MonadUnliftIO'.
 
   @since 0.10.0.0
 -}
-liftFinallyViaUnliftIO ::
-  UL.MonadUnliftIO m =>
-  (forall a b. IO a -> IO b -> IO a) ->
-  m c ->
-  m d ->
-  m c
-liftFinallyViaUnliftIO ioFinally action cleanup = do
-  unlio <- UL.askUnliftIO
-  UL.liftIO $ ioFinally (UL.unliftIO unlio action) (UL.unliftIO unlio cleanup)
-
-{- |
-  liftBracketViaUnLiftIO can be use as the implementation of
-  'liftBracket for 'MonadOrvilleControl' when the 'Monad'
-  implements 'MonadUnliftIO'.
-
-  @since 0.10.0.0
--}
-liftBracketViaUnLiftIO ::
-  UL.MonadUnliftIO m =>
-  (forall a b c. IO a -> (a -> IO b) -> (a -> IO c) -> IO c) ->
-  m d ->
-  (d -> m e) ->
-  (d -> m f) ->
-  m f
-liftBracketViaUnLiftIO bracketIO setup final action = do
+liftCatchViaUnliftIO ::
+  (UL.MonadUnliftIO m) =>
+  (forall a. IO a -> (e -> IO a) -> IO a) ->
+  m b ->
+  (e -> m b) ->
+  m b
+liftCatchViaUnliftIO ioCatch action handler = do
   unlio <- UL.askUnliftIO
   UL.liftIO $
-    bracketIO
-      (UL.unliftIO unlio setup)
-      (UL.unliftIO unlio . final)
-      (UL.unliftIO unlio . action)
+    ioCatch
+      (UL.unliftIO unlio action)
+      (\ex -> UL.unliftIO unlio (handler ex))
+
+{- |
+  liftMaskViaUnliftIO can be use as the implementation of
+  'liftMask for 'MonadOrvilleControl' when the 'Monad'
+  implements 'MonadUnliftIO'.
+
+  @since 0.10.0.0
+-}
+liftMaskViaUnliftIO ::
+  UL.MonadUnliftIO m =>
+  (forall b. ((forall a. IO a -> IO a) -> IO b) -> IO b) ->
+  ((forall a. m a -> m a) -> m c) ->
+  m c
+liftMaskViaUnliftIO ioMask action = do
+  unlio <- UL.askUnliftIO
+  UL.liftIO $
+    ioMask $ \restore ->
+      UL.unliftIO
+        unlio
+        (action (UL.liftIO . restore . UL.unliftIO unlio))

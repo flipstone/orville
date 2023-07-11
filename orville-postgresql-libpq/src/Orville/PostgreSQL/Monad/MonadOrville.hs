@@ -3,14 +3,15 @@
 
 module Orville.PostgreSQL.Monad.MonadOrville
   ( MonadOrville
-  , MonadOrvilleControl (liftWithConnection, liftFinally, liftBracket)
+  , MonadOrvilleControl (liftWithConnection, liftCatch, liftMask)
   , withConnection
   , withConnectedState
   )
 where
 
+import Control.Exception (Exception)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Reader (ReaderT (ReaderT), runReaderT)
+import Control.Monad.Trans.Reader (ReaderT (ReaderT), mapReaderT, runReaderT)
 import Data.Pool (withResource)
 
 import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
@@ -73,51 +74,52 @@ class MonadOrvilleControl m where
     (forall a. (Connection -> IO a) -> IO a) -> (Connection -> m b) -> m b
 
   {-
-    Orville will use this function to resource cleanup actions from IO
-    into the application monad.
+    Orville will use this function to lift exception catches into the
+    application monad.
   -}
-  liftFinally :: (forall a b. IO a -> IO b -> IO a) -> m c -> m d -> m c
+  liftCatch ::
+    Exception e =>
+    (forall a. IO a -> (e -> IO a) -> IO a) ->
+    m b ->
+    (e -> m b) ->
+    m b
 
   {-
-    Orville will use this function to lift resource allocation and cleanup
-    from IO into the application monad.
+    Orville will use this function to lift `mask` calls into the application
+    monad to guarantee resource cleanup is executed even when asynchrouns
+    exceptions are thrown.
   -}
-  liftBracket ::
-    (forall a b c. IO a -> (a -> IO b) -> (a -> IO c) -> IO c) ->
-    m d ->
-    (d -> m e) ->
-    (d -> m f) ->
-    m f
+  liftMask ::
+    (forall b. ((forall a. IO a -> IO a) -> IO b) -> IO b) ->
+    ((forall a. m a -> m a) -> m c) ->
+    m c
 
 instance MonadOrvilleControl IO where
   liftWithConnection ioWithConn =
     ioWithConn
 
-  liftFinally ioFinally =
-    ioFinally
+  liftCatch ioCatch =
+    ioCatch
 
-  liftBracket ioBracket =
-    ioBracket
+  liftMask ioMask =
+    ioMask
 
 instance MonadOrvilleControl m => MonadOrvilleControl (ReaderT state m) where
   liftWithConnection ioWithConn action = do
     ReaderT $ \env ->
       liftWithConnection ioWithConn (flip runReaderT env . action)
 
-  liftFinally ioFinally action cleanup = do
+  liftCatch ioCatch action handler =
     ReaderT $ \env ->
-      liftFinally
-        ioFinally
+      liftCatch
+        ioCatch
         (runReaderT action env)
-        (runReaderT cleanup env)
+        (\e -> runReaderT (handler e) env)
 
-  liftBracket ioBracket allocate cleanup action = do
+  liftMask ioMask action =
     ReaderT $ \env ->
-      liftBracket
-        ioBracket
-        (runReaderT allocate env)
-        (\resource -> runReaderT (cleanup resource) env)
-        (\resource -> runReaderT (action resource) env)
+      liftMask ioMask $ \restore ->
+        runReaderT (action (mapReaderT restore)) env
 
 instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleState m)
 

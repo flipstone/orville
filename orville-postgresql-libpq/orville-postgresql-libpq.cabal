@@ -120,6 +120,7 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.SchemaName
       Orville.PostgreSQL.Expr.Internal.Name.SequenceName
       Orville.PostgreSQL.Expr.Internal.Name.TableName
+      Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.MigrationLock
       Orville.PostgreSQL.Internal.RowCountExpectation
