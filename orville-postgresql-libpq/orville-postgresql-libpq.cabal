@@ -144,7 +144,7 @@ library
     , network-uri ==2.6.*
     , postgresql-libpq >=0.9.4.2 && <0.10
     , random >=1.0 && <2
-    , resource-pool
+    , resource-pool <0.3 || >=0.4
     , safe-exceptions >=0.1.7
     , text
     , time >=1.9.1

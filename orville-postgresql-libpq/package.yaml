@@ -135,7 +135,7 @@ library:
     - containers >= 0.6 && < 0.7
     - network-uri >= 2.6 && < 2.7
     - random >= 1.0 && <2
-    - resource-pool
+    - resource-pool <0.3 || >= 0.4
     - safe-exceptions >=0.1.7
     - text
     - time >=1.9.1
