@@ -76,6 +76,7 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , utcTimestampField
   , localTimestampField
   , uuidField
+  , jsonbField
   , fieldOfType
   , whereColumnComparison
   )
@@ -383,8 +384,6 @@ unboundedTextField = fieldOfType SqlType.unboundedText
   Builds a 'FieldDefinition' that stores Haskell 'T.Text' values as the
   PostgreSQL "VARCHAR" type. Attempting to store a value beyond the length
   specified will cause an error.
-
-  -- TODO: We should have a test for this.
 -}
 boundedTextField ::
   -- | Name of the field in the database
@@ -399,8 +398,6 @@ boundedTextField name len = fieldOfType (SqlType.boundedText len) name
   PostgreSQL "CHAR" type. Attempting to store a value beyond the length
   specified will cause an error. Storing a value that is not the full
   length of the field will result in padding by the database.
-
-  -- TODO: We should have a test for this.
 -}
 fixedTextField ::
   -- | Name of the field in the database
@@ -416,6 +413,15 @@ fixedTextField name len = fieldOfType (SqlType.fixedText len) name
 -}
 textSearchVectorField :: String -> FieldDefinition NotNull T.Text
 textSearchVectorField = fieldOfType SqlType.textSearchVector
+
+{- |
+  Builds a 'FieldDefinition' that stores Haskell 'T.Text' values as the
+  PostgreSQL "JSOBN" type.
+-}
+jsonbField ::
+  String ->
+  FieldDefinition NotNull T.Text
+jsonbField = fieldOfType SqlType.jsonb
 
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Time.Day' values as the

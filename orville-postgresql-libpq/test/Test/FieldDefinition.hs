@@ -42,6 +42,7 @@ fieldDefinitionTests pool =
       <> dateField pool
       <> utcTimestampField pool
       <> localTimestampField pool
+      <> jsonbField pool
 
 integerField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 integerField pool =
@@ -158,6 +159,15 @@ localTimestampField pool =
           , InsertOnlyDefaultTest Marshall.currentLocalTimestampDefault
           ]
       , roundTripGen = PgGen.pgLocalTime
+      }
+
+jsonbField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+jsonbField pool =
+  testFieldProperties pool "jsonbField" $
+    FieldDefinitionTest
+      { roundTripFieldDef = Marshall.jsonbField "foo"
+      , roundTripDefaultValueTests = []
+      , roundTripGen = PgGen.pgJSON
       }
 
 testFieldProperties ::

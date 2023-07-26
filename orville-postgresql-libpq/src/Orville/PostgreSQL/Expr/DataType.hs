@@ -21,6 +21,7 @@ module Orville.PostgreSQL.Expr.DataType
   , serial
   , int
   , smallint
+  , jsonb
   , oid
   )
 where
@@ -124,6 +125,10 @@ int =
 smallint :: DataType
 smallint =
   DataType (RawSql.fromString "SMALLINT")
+
+jsonb :: DataType
+jsonb =
+  DataType (RawSql.fromString "JSONB")
 
 oid :: DataType
 oid =

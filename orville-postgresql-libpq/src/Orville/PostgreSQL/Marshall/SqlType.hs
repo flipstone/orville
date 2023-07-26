@@ -31,6 +31,8 @@ module Orville.PostgreSQL.Marshall.SqlType
   , date
   , timestamp
   , timestampWithoutZone
+  -- json types
+  , jsonb
   -- postgresql types
   , oid
   -- type conversions
@@ -335,6 +337,22 @@ timestampWithoutZone =
     , sqlTypeMaximumLength = Nothing
     , sqlTypeToSql = SqlValue.fromLocalTime
     , sqlTypeFromSql = SqlValue.toLocalTime
+    , sqlTypeDontDropImplicitDefaultDuringMigrate = False
+    }
+
+{- |
+   'jsonb' represents any type that can be converted To and From JSON. This corresponds
+   to the "JSONB" type in PostgreSQL.
+-}
+jsonb :: SqlType Text
+jsonb =
+  SqlType
+    { sqlTypeExpr = Expr.jsonb
+    , sqlTypeReferenceExpr = Nothing
+    , sqlTypeOid = LibPQ.Oid 3802
+    , sqlTypeMaximumLength = Nothing
+    , sqlTypeToSql = SqlValue.fromText
+    , sqlTypeFromSql = SqlValue.toText
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 

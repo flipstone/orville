@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Test.PgGen
   ( pgText
   , pgDouble
@@ -7,6 +9,7 @@ module Test.PgGen
   , pgUTCTime
   , pgLocalTime
   , pgDay
+  , pgJSON
   )
 where
 
@@ -124,6 +127,18 @@ pgDay = do
 
 pgTimeOfDay :: HH.Gen Time.TimeOfDay
 pgTimeOfDay = fmap Time.timeToTimeOfDay pgDiffTime
+
+pgJSON :: HH.Gen T.Text
+pgJSON = do
+  let
+    alphaNumText :: HH.Range Int -> HH.Gen T.Text
+    alphaNumText range =
+      Gen.text range $ Gen.filter (/= '\NUL') Gen.alphaNum
+
+  jsonKey <- alphaNumText (Range.constant 0 1024)
+  jsonValue <- alphaNumText (Range.constant 0 1024)
+
+  pure $ "{\"" <> jsonKey <> "\": \"" <> jsonValue <> "\"}"
 
 pgDiffTime :: HH.Gen Time.DiffTime
 pgDiffTime =

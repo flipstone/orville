@@ -38,6 +38,7 @@ sqlTypeTests pool =
       <> textSearchVectorTests pool
       <> dateTests pool
       <> timestampTests pool
+      <> jsonbTests pool
 
 integerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
 integerTests pool =
@@ -319,6 +320,20 @@ textSearchVectorTests pool =
           , rawSqlValue = Just $ B8.pack "'fghi'"
           , sqlType = SqlType.textSearchVector
           , expectedValue = T.pack "'fghi'"
+          }
+    )
+  ]
+
+jsonbTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+jsonbTests pool =
+  [
+    ( String.fromString "Testing the decode of graph '{\"key\": \"value\"}'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "JSONB"
+          , rawSqlValue = Just $ B8.pack "{\"key\": \"value\"}"
+          , sqlType = SqlType.jsonb
+          , expectedValue = T.pack "{\"key\": \"value\"}"
           }
     )
   ]
