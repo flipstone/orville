@@ -11,4 +11,4 @@ let-style: newline
 in-style: left-align
 unicode: never # default
 respectful: true # default
-
+single-constraint-parens: never

@@ -39,30 +39,30 @@ echo_when_verbose() {
   fi
 }
 
-if ! command -v docker-compose 2>/dev/null 1>/dev/null; then
-  printf "docker-compose is used to build, but wasn't found!";
+if ! command -v docker compose 2>/dev/null 1>/dev/null; then
+  printf "docker compose is used to build, but wasn't found!";
   exit 1;
 else
   # the actual logic of what "build" means
 
   if [ "$SHOULD_SKIP_IMAGE_BUILD" -eq 0 ]; then
     echo_when_verbose "We start by ensuring the docker image is up to date\n"
-    docker-compose build
+    docker compose build
   fi
 
   echo_when_verbose "Going to run formatting against the codebase.\n"
-  docker-compose run --rm dev sh ./scripts/format-repo.sh
+  docker compose run --rm dev sh ./scripts/format-repo.sh
 
   echo_when_verbose "Now verifying documentation.\n"
   ( cd ../docs
-    docker-compose run --rm --build docs /orville-root/GETTING-STARTED.md
-    docker-compose run --rm --build docs /orville-root/SQL-MARSHALLER.md
-    docker-compose run --rm --build docs /orville-root/PLAN.md
-    docker-compose run --rm --build docs /orville-root/MIGRATION.md
-    docker-compose run --rm --build docs /orville-root/JSON.md
+    docker compose run --rm --build docs /orville-root/GETTING-STARTED.md
+    docker compose run --rm --build docs /orville-root/SQL-MARSHALLER.md
+    docker compose run --rm --build docs /orville-root/PLAN.md
+    docker compose run --rm --build docs /orville-root/MIGRATION.md
+    docker compose run --rm --build docs /orville-root/JSON.md
   )
 
   echo_when_verbose "Now running the tests against the supported stack resolvers.\n"
-  docker-compose run --rm dev sh ./scripts/test-all
+  docker compose run --rm dev sh ./scripts/test-all
 
 fi

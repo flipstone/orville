@@ -61,7 +61,7 @@ liftWithConnectionViaUnliftIO ioWithConn action =
   @since 0.10.0.0
 -}
 liftCatchViaUnliftIO ::
-  (UL.MonadUnliftIO m) =>
+  UL.MonadUnliftIO m =>
   (forall a. IO a -> (e -> IO a) -> IO a) ->
   m b ->
   (e -> m b) ->

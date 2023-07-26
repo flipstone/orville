@@ -55,14 +55,14 @@ import qualified Orville.PostgreSQL.Schema as Schema
 data Operation param result = Operation
   { executeOperationOne ::
       forall m.
-      (Monad.MonadOrville m) =>
+      Monad.MonadOrville m =>
       param ->
       m (Either AssertionFailed result)
   -- ^ 'executeOperationOne' will be called when an plan is
   -- executed with a single input parameter
   , executeOperationMany ::
       forall m.
-      (Monad.MonadOrville m) =>
+      Monad.MonadOrville m =>
       NonEmpty param ->
       m (Either AssertionFailed (Many param result))
   -- ^ 'executeOperationMany' will be called when an plan is
