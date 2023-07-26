@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
 
 {- |
@@ -26,7 +27,11 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as B8
 import Data.Maybe (fromMaybe)
+#if MIN_VERSION_resource_pool(0,4,0)
+import Data.Pool (Pool, newPool, defaultPoolConfig, setNumStripes)
+#else
 import Data.Pool (Pool, createPool)
+#endif
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import Data.Time (NominalDiffTime)
@@ -57,8 +62,18 @@ createConnectionPool ::
   -- | A PostgreSQL connection string
   BS.ByteString ->
   IO (Pool Connection)
+#if MIN_VERSION_resource_pool(0,4,0)
+createConnectionPool noticeReporting stripes linger maxRes connectionString =
+  newPool . setNumStripes (Just stripes) $
+    defaultPoolConfig
+      (connect noticeReporting connectionString)
+      close
+      (realToFrac linger)
+      (stripes * maxRes)
+#else
 createConnectionPool noticeReporting stripes linger maxRes connectionString =
   createPool (connect noticeReporting connectionString) close stripes linger maxRes
+#endif
 
 {- |
  'executeRaw' runs a given SQL statement returning the raw underlying result.

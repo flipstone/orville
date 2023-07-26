@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   ( DatabaseDescription (..)
   , RelationDescription (..)
@@ -13,7 +15,10 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   )
 where
 
+#if MIN_VERSION_base(4,18,0)
+#else
 import Control.Applicative (liftA2)
+#endif
 import qualified Data.Map.Strict as Map
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
