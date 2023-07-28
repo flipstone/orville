@@ -416,7 +416,9 @@ textSearchVectorField = fieldOfType SqlType.textSearchVector
 
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'T.Text' values as the
-  PostgreSQL "JSOBN" type.
+  PostgreSQL "JSONB" type.
+
+@since 0.10.0.1
 -}
 jsonbField ::
   String ->

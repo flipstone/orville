@@ -343,6 +343,8 @@ timestampWithoutZone =
 {- |
    'jsonb' represents any type that can be converted To and From JSON. This corresponds
    to the "JSONB" type in PostgreSQL.
+
+@since 0.10.0.1
 -}
 jsonb :: SqlType Text
 jsonb =

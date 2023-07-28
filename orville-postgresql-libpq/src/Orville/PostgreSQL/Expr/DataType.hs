@@ -33,9 +33,9 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 {- |
 Type to represent any SQL data type expression.
 
-There is an low level escape hatch included here, by means of the instance of
+There is a low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to have a data type corresponding to the fictional
@@ -82,7 +82,7 @@ varchar len =
 char :: Int32 -> DataType
 char len =
   -- postgresql won't let us pass the field length as a parameter.
-  -- when we try we get an error like such error:
+  -- when we try, we get an error like such:
   --  ERROR:  syntax error at or near "$1" at character 48
   --  STATEMENT:  CREATE TABLE field_definition_test(foo CHAR($1))
   DataType $
@@ -125,6 +125,12 @@ int =
 smallint :: DataType
 smallint =
   DataType (RawSql.fromString "SMALLINT")
+
+{- |
+  A 'DataType' that represents the PostgreSQL "JSONB" data type.
+
+@since 0.10.0.1
+-}
 
 jsonb :: DataType
 jsonb =
