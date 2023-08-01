@@ -399,7 +399,7 @@ prop_updateFields =
           Orville.updateFields
             Foo.table
             (Orville.setField Foo.fooNameField updatedName :| [])
-            (Just (Orville.fieldIn Foo.fooIdField fooIds))
+            (Orville.fieldIn Foo.fooIdField fooIds)
         Orville.findEntitiesBy
           Foo.table
           (Orville.where_ (Orville.fieldIn Foo.fooIdField fooIds))
@@ -423,7 +423,7 @@ prop_updateFields_NoMatch =
           Orville.updateFields
             Foo.table
             (Orville.setField Foo.fooNameField updatedName :| [])
-            (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
+            (Orville.fieldEquals Foo.fooIdField mismatchedId)
         Orville.findEntitiesBy Foo.table mempty
 
     List.sortOn Foo.fooId foosAfterUpdate === List.sortOn Foo.fooId (NEL.toList foos)
@@ -443,7 +443,7 @@ prop_updateFieldsAffectedRows =
         Orville.updateFields
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
-          (Just (Orville.fieldIn Foo.fooIdField fooIds))
+          (Orville.fieldIn Foo.fooIdField fooIds)
 
     affectedRows === length foos
 
@@ -462,7 +462,7 @@ prop_updateFieldsAndReturnEntities =
         Orville.updateFieldsAndReturnEntities
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
-          (Just (Orville.fieldIn Foo.fooIdField fooIds))
+          (Orville.fieldIn Foo.fooIdField fooIds)
 
     fmap Foo.fooName updatedFoos === fmap (const updatedName) (NEL.toList foos)
 
@@ -482,6 +482,6 @@ prop_updateFieldsAndReturnEntities_NoMatch =
         Orville.updateFieldsAndReturnEntities
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
-          (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
+          (Orville.fieldEquals Foo.fooIdField mismatchedId)
 
     updatedFoos === []

@@ -163,11 +163,11 @@ updateFields ::
   Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe Expr.BooleanExpr ->
+  Expr.BooleanExpr ->
   m Int
-updateFields tableDef setClauses mbWhereCondition =
+updateFields tableDef setClauses whereCondition =
   Update.executeUpdate $
-    Update.updateToTableFields tableDef setClauses mbWhereCondition
+    Update.updateToTableFields tableDef setClauses (Just whereCondition)
 
 {- |
   Like 'updateFields', but uses a @RETURNING@ clause to return the updated
@@ -179,11 +179,11 @@ updateFieldsAndReturnEntities ::
   Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
-  Maybe Expr.BooleanExpr ->
+  Expr.BooleanExpr ->
   m [readEntity]
-updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
+updateFieldsAndReturnEntities tableDef setClauses whereCondition =
   Update.executeUpdateReturnEntities $
-    Update.updateToTableFieldsReturning tableDef setClauses mbWhereCondition
+    Update.updateToTableFieldsReturning tableDef setClauses (Just whereCondition)
 
 {- |
   Deletes the row with the given key. Returns the number of rows affected
