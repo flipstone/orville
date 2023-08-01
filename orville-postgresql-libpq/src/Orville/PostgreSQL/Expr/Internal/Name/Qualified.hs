@@ -1,17 +1,23 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability : Stable
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   ( Qualified
-  , qualified
+  , qualifyTable
+  , qualifySequence
+  , qualifyColumn
   )
 where
 
+import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
+import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
+import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -36,12 +42,48 @@ newtype Qualified name
       RawSql.SqlExpression
     )
 
-qualified ::
+{- | Optionally qualifies a 'TableName' with a 'SchemaName'. Generally you would want the higher
+level function 'tableIdQualifiedName'.
+
+@since 0.10.0.0
+-}
+qualifyTable ::
+  Maybe SchemaName ->
+  TableName ->
+  Qualified TableName
+qualifyTable = unsafeSchemaQualify
+
+{- | Optionally qualifies a 'SequenceName' with a 'SchemaName'. Generally you would want the higher
+level function 'sequenceIdQualifiedName'.
+
+@since 0.10.0.0
+-}
+qualifySequence ::
+  Maybe SchemaName ->
+  SequenceName ->
+  Qualified SequenceName
+qualifySequence = unsafeSchemaQualify
+
+{- | Qualifies a 'ColumnName' with a 'TableName' and, optionally, a 'SchemaName'. This should be
+used to refer to the column in SQL queries where a qualified reference is appropriate.
+
+@since 0.10.0.0
+-}
+qualifyColumn :: Maybe SchemaName -> TableName -> ColumnName -> Qualified ColumnName
+qualifyColumn mbSchemaName tableName unqualifiedName =
+  unsafeSchemaQualify mbSchemaName
+    . RawSql.unsafeFromRawSql
+    $ RawSql.toRawSql (toIdentifier tableName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
+
+-- Note: Not everything actually makes sense to be qualified by _only_ a schema name, such as
+-- columns, as in 'qualifyColumn'. But this does give us a nice uniform way to provide the
+-- functionality in those more type restricted scenarios.
+unsafeSchemaQualify ::
   IdentifierExpression name =>
   Maybe SchemaName ->
   name ->
   Qualified name
-qualified mbSchemaName unqualifiedName =
+unsafeSchemaQualify mbSchemaName unqualifiedName =
   case mbSchemaName of
     Nothing ->
       Qualified . RawSql.toRawSql . toIdentifier $ unqualifiedName

@@ -59,7 +59,7 @@ prop_createWithWithOptions =
 
 exprSequenceName :: Expr.Qualified Expr.SequenceName
 exprSequenceName =
-  Expr.qualified Nothing (Expr.sequenceName sequenceNameString)
+  Expr.qualifySequence Nothing (Expr.sequenceName sequenceNameString)
 
 sequenceNameString :: String
 sequenceNameString =

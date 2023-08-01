@@ -18,8 +18,8 @@ import qualified Orville.PostgreSQL.Expr as Expr
   schema.
 -}
 data SequenceIdentifier = SequenceIdentifier
-  { _sequenceIdName :: String
-  , _sequenceIdSchema :: Maybe String
+  { i_sequenceIdName :: String
+  , i_sequenceIdSchema :: Maybe String
   }
   deriving (Eq, Ord, Show)
 
@@ -30,8 +30,8 @@ data SequenceIdentifier = SequenceIdentifier
 unqualifiedNameToSequenceId :: String -> SequenceIdentifier
 unqualifiedNameToSequenceId name =
   SequenceIdentifier
-    { _sequenceIdName = name
-    , _sequenceIdSchema = Nothing
+    { i_sequenceIdName = name
+    , i_sequenceIdSchema = Nothing
     }
 
 {- |
@@ -41,7 +41,7 @@ unqualifiedNameToSequenceId name =
 setSequenceIdSchema :: String -> SequenceIdentifier -> SequenceIdentifier
 setSequenceIdSchema schema sequenceId =
   sequenceId
-    { _sequenceIdSchema = Just schema
+    { i_sequenceIdSchema = Just schema
     }
 
 {- |
@@ -50,7 +50,7 @@ setSequenceIdSchema schema sequenceId =
 -}
 sequenceIdQualifiedName :: SequenceIdentifier -> Expr.Qualified Expr.SequenceName
 sequenceIdQualifiedName sequenceId =
-  Expr.qualified
+  Expr.qualifySequence
     (sequenceIdSchemaName sequenceId)
     (sequenceIdUnqualifiedName sequenceId)
 
@@ -60,7 +60,7 @@ sequenceIdQualifiedName sequenceId =
 -}
 sequenceIdUnqualifiedName :: SequenceIdentifier -> Expr.SequenceName
 sequenceIdUnqualifiedName =
-  Expr.sequenceName . _sequenceIdName
+  Expr.sequenceName . i_sequenceIdName
 
 {- |
   Returns the 'Expr.SchemaName' (if any) that should be used to qualify
@@ -68,21 +68,21 @@ sequenceIdUnqualifiedName =
 -}
 sequenceIdSchemaName :: SequenceIdentifier -> Maybe Expr.SchemaName
 sequenceIdSchemaName =
-  fmap Expr.schemaName . _sequenceIdSchema
+  fmap Expr.schemaName . i_sequenceIdSchema
 
 {- |
   Retrieves the unqualified name of the sequence as a string.
 -}
 sequenceIdUnqualifiedNameString :: SequenceIdentifier -> String
 sequenceIdUnqualifiedNameString =
-  _sequenceIdName
+  i_sequenceIdName
 
 {- |
   Retrieves the schema name of the sequence as a string
 -}
 sequenceIdSchemaNameString :: SequenceIdentifier -> Maybe String
 sequenceIdSchemaNameString =
-  _sequenceIdSchema
+  i_sequenceIdSchema
 
 {- |
   Converts a 'SequenceIdentifier' for a string for descriptive purposes. The
@@ -93,8 +93,8 @@ sequenceIdSchemaNameString =
 -}
 sequenceIdToString :: SequenceIdentifier -> String
 sequenceIdToString sequenceId =
-  case _sequenceIdSchema sequenceId of
+  case i_sequenceIdSchema sequenceId of
     Nothing ->
-      _sequenceIdName sequenceId
+      i_sequenceIdName sequenceId
     Just schema ->
-      schema <> "." <> _sequenceIdName sequenceId
+      schema <> "." <> i_sequenceIdName sequenceId

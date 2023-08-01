@@ -530,7 +530,7 @@ runDecodingTest pool test =
       dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
       let
-        tableName = Expr.qualified Nothing (Expr.tableName "decoding_test")
+        tableName = Expr.qualifyTable Nothing (Expr.tableName "decoding_test")
 
       RawSql.executeVoid connection $
         Expr.insertExpr

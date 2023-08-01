@@ -95,7 +95,7 @@ groupByOrderByTest testName test =
 
 testTable :: Expr.Qualified Expr.TableName
 testTable =
-  Expr.qualified Nothing (Expr.tableName "expr_test")
+  Expr.qualifyTable Nothing (Expr.tableName "expr_test")
 
 fooColumn :: Expr.ColumnName
 fooColumn =

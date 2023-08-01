@@ -57,12 +57,12 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSch
     from the result set when entities are queried from this table.
 -}
 data TableDefinition key writeEntity readEntity = TableDefinition
-  { _tableIdentifier :: TableIdentifier
-  , _tablePrimaryKey :: TablePrimaryKey key
-  , _tableMarshaller :: AnnotatedSqlMarshaller writeEntity readEntity
-  , _tableColumnsToDrop :: Set.Set String
-  , _tableConstraints :: Map.Map ConstraintMigrationKey ConstraintDefinition
-  , _tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
+  { i_tableIdentifier :: TableIdentifier
+  , i_tablePrimaryKey :: TablePrimaryKey key
+  , i_tableMarshaller :: AnnotatedSqlMarshaller writeEntity readEntity
+  , i_tableColumnsToDrop :: Set.Set String
+  , i_tableConstraints :: Map.Map ConstraintMigrationKey ConstraintDefinition
+  , i_tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
   }
 
 data HasKey key
@@ -88,12 +88,12 @@ mkTableDefinition ::
   TableDefinition (HasKey key) writeEntity readEntity
 mkTableDefinition name primaryKey marshaller =
   TableDefinition
-    { _tableIdentifier = unqualifiedNameToTableId name
-    , _tablePrimaryKey = TableHasKey primaryKey
-    , _tableMarshaller = annotateSqlMarshaller (toList $ primaryKeyFieldNames primaryKey) marshaller
-    , _tableColumnsToDrop = Set.empty
-    , _tableConstraints = Map.empty
-    , _tableIndexes = Map.empty
+    { i_tableIdentifier = unqualifiedNameToTableId name
+    , i_tablePrimaryKey = TableHasKey primaryKey
+    , i_tableMarshaller = annotateSqlMarshaller (toList $ primaryKeyFieldNames primaryKey) marshaller
+    , i_tableColumnsToDrop = Set.empty
+    , i_tableConstraints = Map.empty
+    , i_tableIndexes = Map.empty
     }
 
 {- |
@@ -111,12 +111,12 @@ mkTableDefinitionWithoutKey ::
   TableDefinition NoKey writeEntity readEntity
 mkTableDefinitionWithoutKey name marshaller =
   TableDefinition
-    { _tableIdentifier = unqualifiedNameToTableId name
-    , _tablePrimaryKey = TableHasNoKey
-    , _tableMarshaller = annotateSqlMarshallerEmptyAnnotation marshaller
-    , _tableColumnsToDrop = Set.empty
-    , _tableConstraints = Map.empty
-    , _tableIndexes = Map.empty
+    { i_tableIdentifier = unqualifiedNameToTableId name
+    , i_tablePrimaryKey = TableHasNoKey
+    , i_tableMarshaller = annotateSqlMarshallerEmptyAnnotation marshaller
+    , i_tableColumnsToDrop = Set.empty
+    , i_tableConstraints = Map.empty
+    , i_tableIndexes = Map.empty
     }
 
 {- |
@@ -138,7 +138,7 @@ dropColumns ::
   TableDefinition key writeEntity readEntity
 dropColumns columns tableDef =
   tableDef
-    { _tableColumnsToDrop = _tableColumnsToDrop tableDef <> Set.fromList columns
+    { i_tableColumnsToDrop = i_tableColumnsToDrop tableDef <> Set.fromList columns
     }
 
 {- |
@@ -146,14 +146,14 @@ dropColumns columns tableDef =
 -}
 columnsToDrop :: TableDefinition key writeEntity readEntity -> Set.Set String
 columnsToDrop =
-  _tableColumnsToDrop
+  i_tableColumnsToDrop
 
 {- |
   Returns the table's 'TableIdentifier'
 -}
 tableIdentifier :: TableDefinition key writeEntity readEntity -> TableIdentifier
 tableIdentifier =
-  _tableIdentifier
+  i_tableIdentifier
 
 {- |
   Returns the table's name as an expression that can be used to build SQL
@@ -162,7 +162,7 @@ tableIdentifier =
 -}
 tableName :: TableDefinition key writeEntity readEntity -> Expr.Qualified Expr.TableName
 tableName =
-  tableIdQualifiedName . _tableIdentifier
+  tableIdQualifiedName . i_tableIdentifier
 
 {- |
   Sets the table's schema to the name in the given string, which will be
@@ -176,7 +176,7 @@ setTableSchema ::
   TableDefinition key writeEntity readEntity
 setTableSchema schemaName tableDef =
   tableDef
-    { _tableIdentifier = setTableIdSchema schemaName (_tableIdentifier tableDef)
+    { i_tableIdentifier = setTableIdSchema schemaName (i_tableIdentifier tableDef)
     }
 
 {- |
@@ -187,7 +187,7 @@ tableConstraints ::
   TableDefinition key writeEntity readEntity ->
   Map.Map ConstraintMigrationKey ConstraintDefinition
 tableConstraints =
-  _tableConstraints
+  i_tableConstraints
 
 {- |
   Adds the given table constraints to the table definition.
@@ -207,7 +207,7 @@ addTableConstraints constraintDefs tableDef =
       Map.insert (constraintMigrationKey constraint) constraint constraintMap
   in
     tableDef
-      { _tableConstraints = foldr addConstraint (_tableConstraints tableDef) constraintDefs
+      { i_tableConstraints = foldr addConstraint (i_tableConstraints tableDef) constraintDefs
       }
 
 {- |
@@ -218,7 +218,7 @@ tableIndexes ::
   TableDefinition key writeEntity readEntity ->
   Map.Map IndexMigrationKey IndexDefinition
 tableIndexes =
-  _tableIndexes
+  i_tableIndexes
 
 {- |
   Adds the given table indexes to the table definition.
@@ -237,7 +237,7 @@ addTableIndexes indexDefs tableDef =
       Map.insert (indexMigrationKey index) index indexMap
   in
     tableDef
-      { _tableIndexes = foldr addIndex (_tableIndexes tableDef) indexDefs
+      { i_tableIndexes = foldr addIndex (i_tableIndexes tableDef) indexDefs
       }
 
 {- |
@@ -245,14 +245,14 @@ addTableIndexes indexDefs tableDef =
 -}
 tablePrimaryKey :: TableDefinition (HasKey key) writeEntity readEntity -> PrimaryKey key
 tablePrimaryKey def =
-  case _tablePrimaryKey def of
+  case i_tablePrimaryKey def of
     TableHasKey primaryKey -> primaryKey
 
 {- |
   Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
 -}
 tableMarshaller :: TableDefinition key writeEntity readEntity -> AnnotatedSqlMarshaller writeEntity readEntity
-tableMarshaller = _tableMarshaller
+tableMarshaller = i_tableMarshaller
 
 {- |
   Applies the provided function to the underlying 'SqlMarshaller' of the 'TableDefinition'
@@ -262,7 +262,7 @@ mapTableMarshaller ::
   TableDefinition key readEntityA writeEntityA ->
   TableDefinition key readEntityB writeEntityB
 mapTableMarshaller f tableDef =
-  tableDef {_tableMarshaller = mapSqlMarshaller f $ _tableMarshaller tableDef}
+  tableDef {i_tableMarshaller = mapSqlMarshaller f $ i_tableMarshaller tableDef}
 
 {- |
   Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the
@@ -276,7 +276,7 @@ mkCreateTableExpr tableDef =
     (tableName tableDef)
     (mkTableColumnDefinitions tableDef)
     (mkTablePrimaryKeyExpr tableDef)
-    (map constraintSqlExpr . Map.elems . _tableConstraints $ tableDef)
+    (map constraintSqlExpr . Map.elems . i_tableConstraints $ tableDef)
 
 {- |
   Builds the 'Expr.ColumnDefinitions' for all the fields described by the
@@ -299,7 +299,7 @@ mkTablePrimaryKeyExpr ::
   TableDefinition key writeEntity readEntity ->
   Maybe Expr.PrimaryKeyExpr
 mkTablePrimaryKeyExpr tableDef =
-  case _tablePrimaryKey tableDef of
+  case i_tablePrimaryKey tableDef of
     TableHasKey primaryKey ->
       Just $ mkPrimaryKeyExpr primaryKey
     TableHasNoKey ->
