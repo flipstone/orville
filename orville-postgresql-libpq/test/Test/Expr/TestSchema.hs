@@ -43,7 +43,7 @@ mkFooBar f b = FooBar (Just f) (Just b)
 
 fooBarTable :: Expr.Qualified Expr.TableName
 fooBarTable =
-  Expr.qualified Nothing (Expr.tableName "foobar")
+  Expr.qualifyTable Nothing (Expr.tableName "foobar")
 
 fooColumn :: Expr.ColumnName
 fooColumn =

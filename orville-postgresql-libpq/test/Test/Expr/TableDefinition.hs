@@ -70,7 +70,7 @@ prop_addMultipleColumns =
 
 exprTableName :: Expr.Qualified Expr.TableName
 exprTableName =
-  Expr.qualified Nothing (Expr.tableName tableNameString)
+  Expr.qualifyTable Nothing (Expr.tableName tableNameString)
 
 tableNameString :: String
 tableNameString =

@@ -405,7 +405,7 @@ runDefaultValueInsertOnlyTest pool testCase defaultValue =
 
 testTable :: Expr.Qualified Expr.TableName
 testTable =
-  Expr.qualified Nothing (Expr.tableName "field_definition_test")
+  Expr.qualifyTable Nothing (Expr.tableName "field_definition_test")
 
 dropAndRecreateTestTable :: Marshall.FieldDefinition nullability a -> Orville.Connection -> IO ()
 dropAndRecreateTestTable fieldDef connection = do

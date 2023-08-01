@@ -18,8 +18,8 @@ import qualified Orville.PostgreSQL.Expr as Expr
   schema.
 -}
 data TableIdentifier = TableIdentifier
-  { _tableIdName :: String
-  , _tableIdSchema :: Maybe String
+  { i_tableIdName :: String
+  , i_tableIdSchema :: Maybe String
   }
   deriving (Eq, Ord, Show)
 
@@ -30,8 +30,8 @@ data TableIdentifier = TableIdentifier
 unqualifiedNameToTableId :: String -> TableIdentifier
 unqualifiedNameToTableId name =
   TableIdentifier
-    { _tableIdName = name
-    , _tableIdSchema = Nothing
+    { i_tableIdName = name
+    , i_tableIdSchema = Nothing
     }
 
 {- |
@@ -41,7 +41,7 @@ unqualifiedNameToTableId name =
 setTableIdSchema :: String -> TableIdentifier -> TableIdentifier
 setTableIdSchema schema tableId =
   tableId
-    { _tableIdSchema = Just schema
+    { i_tableIdSchema = Just schema
     }
 
 {- |
@@ -50,7 +50,7 @@ setTableIdSchema schema tableId =
 -}
 tableIdQualifiedName :: TableIdentifier -> Expr.Qualified Expr.TableName
 tableIdQualifiedName tableId =
-  Expr.qualified
+  Expr.qualifyTable
     (tableIdSchemaName tableId)
     (tableIdUnqualifiedName tableId)
 
@@ -60,7 +60,7 @@ tableIdQualifiedName tableId =
 -}
 tableIdUnqualifiedName :: TableIdentifier -> Expr.TableName
 tableIdUnqualifiedName =
-  Expr.tableName . _tableIdName
+  Expr.tableName . i_tableIdName
 
 {- |
   Returns the 'Expr.SchemaName' (if any) that should be used to qualify
@@ -68,21 +68,21 @@ tableIdUnqualifiedName =
 -}
 tableIdSchemaName :: TableIdentifier -> Maybe Expr.SchemaName
 tableIdSchemaName =
-  fmap Expr.schemaName . _tableIdSchema
+  fmap Expr.schemaName . i_tableIdSchema
 
 {- |
   Retrieves the unqualified name of the table as a string.
 -}
 tableIdUnqualifiedNameString :: TableIdentifier -> String
 tableIdUnqualifiedNameString =
-  _tableIdName
+  i_tableIdName
 
 {- |
   Retrieves the schema name of the table as a string
 -}
 tableIdSchemaNameString :: TableIdentifier -> Maybe String
 tableIdSchemaNameString =
-  _tableIdSchema
+  i_tableIdSchema
 
 {- |
   Converts a 'TableIdentifier' for a string for descriptive purposes. The
@@ -93,8 +93,8 @@ tableIdSchemaNameString =
 -}
 tableIdToString :: TableIdentifier -> String
 tableIdToString tableId =
-  case _tableIdSchema tableId of
+  case i_tableIdSchema tableId of
     Nothing ->
-      _tableIdName tableId
+      i_tableIdName tableId
     Just schema ->
-      schema <> "." <> _tableIdName tableId
+      schema <> "." <> i_tableIdName tableId

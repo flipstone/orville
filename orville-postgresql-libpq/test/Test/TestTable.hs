@@ -36,7 +36,7 @@ dropTableNameSql ::
   String ->
   RawSql.RawSql
 dropTableNameSql =
-  dropTableNameExprSql . Expr.qualified Nothing . Expr.tableName
+  dropTableNameExprSql . Expr.qualifyTable Nothing . Expr.tableName
 
 dropTableNameExprSql ::
   Expr.Qualified Expr.TableName ->

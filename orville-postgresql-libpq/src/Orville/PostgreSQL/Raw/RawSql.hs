@@ -99,7 +99,9 @@ instance SqlExpression RawSql where
   toRawSql = id
   unsafeFromRawSql = id
 
-{- | A conveinence function for creating an arbitrary 'SqlExpression' from a 'String'. Great care should be exercised in use of this function as it cannot provide any sort of correctness guarantee.
+{- | A conveinence function for creating an arbitrary 'SqlExpression' from a 'String'. Great care
+   should be exercised in use of this function as it cannot provide any sort of correctness
+   guarantee.
 
 @since 0.10.0.2
 -}

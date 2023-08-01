@@ -131,7 +131,6 @@ smallint =
 
 @since 0.10.0.1
 -}
-
 jsonb :: DataType
 jsonb =
   DataType (RawSql.fromString "JSONB")
