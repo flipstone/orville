@@ -26,6 +26,7 @@ import qualified Data.Foldable as Fold
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
@@ -518,27 +519,29 @@ executeSelectMany selectOp params = do
   rows <- Exec.executeSelect . selectMany selectOp $ params
 
   let
-    -- Seed add initial map with an empty list for every input parameter
+    paramList :: [param]
+    paramList = Fold.toList params
+
+    -- Seed add initial map with an empty seq for every input parameter
     -- to guarantee that each param is a key in the map even if no rows
     -- where returned from the select query for that param.
-    emptyRowsMap :: Map.Map param [a]
+    emptyRowsMap :: Map.Map param (Seq.Seq a)
     emptyRowsMap =
       Map.fromList
-        . map (\param -> (param, []))
-        . Fold.toList
-        $ params
+        . map (\param -> (param, Seq.empty))
+        $ paramList
 
     insertRow results row =
       Map.alter
-        (\mbRows -> Just (row : Maybe.fromMaybe [] mbRows))
+        (\mbRows -> Just (Maybe.fromMaybe Seq.empty mbRows Seq.|> row))
         (categorizeRow selectOp row)
         results
 
     rowMap =
-      produceResult selectOp <$> Fold.foldl' insertRow emptyRowsMap rows
+      produceResult selectOp . Fold.toList <$> Fold.foldl' insertRow emptyRowsMap rows
 
     manyRows =
-      Many.fromKeys (Fold.toList params) $ \param ->
+      Many.fromKeys paramList $ \param ->
         case Map.lookup param rowMap of
           Nothing ->
             -- Because we seeded the map above with all the input parameters we
