@@ -3,6 +3,7 @@
 module Orville.PostgreSQL.Expr.TableReferenceList
   ( TableReferenceList
   , referencesTable
+  , aliasReferencesTable
   )
 where
 
@@ -14,6 +15,10 @@ newtype TableReferenceList
   deriving (RawSql.SqlExpression)
 
 referencesTable :: Qualified TableName -> TableReferenceList
-referencesTable qualifiedTableName =
-  TableReferenceList $
-    RawSql.toRawSql qualifiedTableName
+referencesTable =
+  TableReferenceList . RawSql.toRawSql
+
+aliasReferencesTable :: Qualified TableName -> TableName -> TableReferenceList
+aliasReferencesTable qualifiedTableName asTableName =
+  TableReferenceList
+    (RawSql.toRawSql qualifiedTableName <> RawSql.fromString " AS " <> RawSql.toRawSql asTableName)

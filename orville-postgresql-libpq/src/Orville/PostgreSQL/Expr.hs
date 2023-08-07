@@ -26,6 +26,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Query
   , module Orville.PostgreSQL.Expr.ReturningExpr
   , module Orville.PostgreSQL.Expr.Select
+  , module Orville.PostgreSQL.Expr.Join
   , module Orville.PostgreSQL.Expr.SequenceDefinition
   , module Orville.PostgreSQL.Expr.TableConstraint
   , module Orville.PostgreSQL.Expr.TableDefinition
@@ -51,6 +52,7 @@ import Orville.PostgreSQL.Expr.GroupBy
 import Orville.PostgreSQL.Expr.IfExists
 import Orville.PostgreSQL.Expr.Index
 import Orville.PostgreSQL.Expr.Insert
+import Orville.PostgreSQL.Expr.Join
 import Orville.PostgreSQL.Expr.LimitExpr
 import Orville.PostgreSQL.Expr.Math
 import Orville.PostgreSQL.Expr.Name
