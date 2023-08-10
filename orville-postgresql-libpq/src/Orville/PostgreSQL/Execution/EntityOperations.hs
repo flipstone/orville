@@ -7,16 +7,22 @@ Stability : Stable
 -}
 module Orville.PostgreSQL.Execution.EntityOperations
   ( insertEntity
+  , insertEntityAndReturnRowCount
   , insertAndReturnEntity
   , insertEntities
   , insertAndReturnEntities
+  , insertEntitiesAndReturnRowCount
   , updateEntity
+  , updateEntityAndReturnRowCount
   , updateAndReturnEntity
   , updateFields
   , updateFieldsAndReturnEntities
+  , updateFieldsAndReturnRowCount
   , deleteEntity
+  , deleteEntityAndReturnRowCount
   , deleteAndReturnEntity
   , deleteEntities
+  , deleteEntitiesAndReturnRowCount
   , deleteAndReturnEntities
   , findEntitiesBy
   , findFirstEntityBy
@@ -26,6 +32,7 @@ module Orville.PostgreSQL.Execution.EntityOperations
 where
 
 import Control.Exception (Exception, throwIO)
+import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (listToMaybe)
@@ -41,8 +48,7 @@ import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
-  Inserts a entity into the specified table. Returns the number of rows
-  affected by the query.
+  Inserts a entity into the specified table.
 
 @since 0.10.0.0
 -}
@@ -50,9 +56,23 @@ insertEntity ::
   Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   writeEntity ->
+  m ()
+insertEntity entityTable =
+  Monad.void . insertEntityAndReturnRowCount entityTable
+
+{- |
+  Inserts a entity into the specified table. Returns the number of rows
+  affected by the query.
+
+@since 0.10.0.0
+-}
+insertEntityAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  writeEntity ->
   m Int
-insertEntity entityTable entity =
-  insertEntities entityTable (entity :| [])
+insertEntityAndReturnRowCount entityTable entity =
+  insertEntitiesAndReturnRowCount entityTable (entity :| [])
 
 {- |
   Inserts a entity into the specified table, returning the data inserted into
@@ -76,8 +96,7 @@ insertAndReturnEntity entityTable entity = do
     returnedEntities
 
 {- |
-  Inserts a non-empty list of entities into the specified table. Returns the
-  number of rows affected by the query.
+  Inserts a non-empty list of entities into the specified table.
 
 @since 0.10.0.0
 -}
@@ -85,8 +104,22 @@ insertEntities ::
   Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  m Int
+  m ()
 insertEntities tableDef =
+  Monad.void . insertEntitiesAndReturnRowCount tableDef
+
+{- |
+  Inserts a non-empty list of entities into the specified table. Returns the
+  number of rows affected by the query.
+
+@since 0.10.0.0
+-}
+insertEntitiesAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  NonEmpty writeEntity ->
+  m Int
+insertEntitiesAndReturnRowCount tableDef =
   Insert.executeInsert . Insert.insertToTable tableDef
 
 {- |
@@ -108,7 +141,6 @@ insertAndReturnEntities tableDef =
 
 {- |
   Updates the row with the given key in with the data given by 'writeEntity'.
-  Returns the number of rows affected by the query.
 
 @since 0.10.0.0
 -}
@@ -117,8 +149,23 @@ updateEntity ::
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
   writeEntity ->
+  m ()
+updateEntity tableDef key =
+  Monad.void . updateEntityAndReturnRowCount tableDef key
+
+{- |
+  Updates the row with the given key in with the data given by 'writeEntity'.
+  Returns the number of rows affected by the query.
+
+@since 0.10.0.0
+-}
+updateEntityAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
+  key ->
+  writeEntity ->
   m Int
-updateEntity tableDef key writeEntity =
+updateEntityAndReturnRowCount tableDef key writeEntity =
   case Update.updateToTable tableDef key writeEntity of
     Nothing ->
       liftIO . throwIO . EmptyUpdateError . Schema.tableIdentifier $ tableDef
@@ -155,7 +202,6 @@ updateAndReturnEntity tableDef key writeEntity =
   Applies the given 'Expr.SetClause's to the rows in the table that match the
   given where condition. The easiest way to construct a 'Expr.SetClause' is
   via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
-  Returns the number of rows affected by the query.
 
 @since 0.10.0.0
 -}
@@ -164,8 +210,25 @@ updateFields ::
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   NonEmpty Expr.SetClause ->
   Maybe Expr.BooleanExpr ->
+  m ()
+updateFields tableDef setClauses =
+  Monad.void . updateFieldsAndReturnRowCount tableDef setClauses
+
+{- |
+  Applies the given 'Expr.SetClause's to the rows in the table that match the
+  given where condition. The easiest way to construct a 'Expr.SetClause' is
+  via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
+  Returns the number of rows affected by the query.
+
+@since 0.10.0.0
+-}
+updateFieldsAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
+  NonEmpty Expr.SetClause ->
+  Maybe Expr.BooleanExpr ->
   m Int
-updateFields tableDef setClauses mbWhereCondition =
+updateFieldsAndReturnRowCount tableDef setClauses mbWhereCondition =
   Update.executeUpdate $
     Update.updateToTableFields tableDef setClauses mbWhereCondition
 
@@ -186,8 +249,7 @@ updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
     Update.updateToTableFieldsReturning tableDef setClauses mbWhereCondition
 
 {- |
-  Deletes the row with the given key. Returns the number of rows affected
-  by the query.
+  Deletes the row with the given key.
 
 @since 0.10.0.0
 -}
@@ -195,8 +257,22 @@ deleteEntity ::
   Monad.MonadOrville m =>
   Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
   key ->
+  m ()
+deleteEntity entityTable =
+  Monad.void . deleteEntityAndReturnRowCount entityTable
+
+{- |
+  Deletes the row with the given key. Returns the number of rows affected
+  by the query.
+
+@since 0.10.0.0
+-}
+deleteEntityAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition (Schema.HasKey key) writeEntity readEntity ->
+  key ->
   m Int
-deleteEntity entityTable key =
+deleteEntityAndReturnRowCount entityTable key =
   let
     primaryKeyCondition =
       Schema.primaryKeyEquals
@@ -231,8 +307,7 @@ deleteAndReturnEntity entityTable key = do
     returnedEntities
 
 {- |
-  Deletes all rows in the given table that match the where condition. Returns
-  the number of rows affected by the query.
+  Deletes all rows in the given table that match the where condition.
 
 @since 0.10.0.0
 -}
@@ -240,8 +315,22 @@ deleteEntities ::
   Monad.MonadOrville m =>
   Schema.TableDefinition key writeEntity readEntity ->
   Maybe Expr.BooleanExpr ->
+  m ()
+deleteEntities entityTable =
+  Monad.void . deleteEntitiesAndReturnRowCount entityTable
+
+{- |
+  Deletes all rows in the given table that match the where condition. Returns
+  the number of rows affected by the query.
+
+@since 0.10.0.0
+-}
+deleteEntitiesAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Maybe Expr.BooleanExpr ->
   m Int
-deleteEntities entityTable whereCondition =
+deleteEntitiesAndReturnRowCount entityTable whereCondition =
   Delete.executeDelete $
     Delete.deleteFromTable entityTable whereCondition
 

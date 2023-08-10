@@ -57,7 +57,7 @@ prop_insertEntitiesFindEntitiesByRoundTrip =
 
     retrievedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table originalFoo
         Orville.findEntitiesBy Foo.table mempty
 
     retrievedFoos === [originalFoo]
@@ -97,7 +97,7 @@ prop_insertEntitiesAffectedRows =
       Foo.withTable pool $ do
         case NEL.nonEmpty originalFoos of
           Nothing -> pure 0
-          Just nonEmptyFoos -> Orville.insertEntities Foo.table nonEmptyFoos
+          Just nonEmptyFoos -> Orville.insertEntitiesAndReturnRowCount Foo.table nonEmptyFoos
 
     affectedRows === length originalFoos
 
@@ -108,7 +108,7 @@ prop_insertEntityFindEntityRoundTrip =
 
     mbRetrievedFoo <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table originalFoo
         Orville.findEntity Foo.table (Foo.fooId originalFoo)
 
     mbRetrievedFoo === Just originalFoo
@@ -120,7 +120,7 @@ prop_insertEntityFindEntitiesRoundTrip =
 
     retrievedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
+        Orville.insertEntities Foo.table foos
         Orville.findEntities Foo.table (Foo.fooId <$> foos)
 
     List.sortOn Foo.fooId retrievedFoos === List.sortOn Foo.fooId (NEL.toList foos)
@@ -144,8 +144,8 @@ prop_updateEntity =
 
     returnedFoo <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
-        _ <- Orville.updateEntity Foo.table (Foo.fooId originalFoo) newFoo
+        Orville.insertEntity Foo.table originalFoo
+        Orville.updateEntity Foo.table (Foo.fooId originalFoo) newFoo
         Orville.findEntitiesBy Foo.table mempty
 
     returnedFoo === [newFoo]
@@ -158,8 +158,8 @@ prop_updateEntityAffectedRows =
 
     affectedRows <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
-        Orville.updateEntity Foo.table (Foo.fooId originalFoo) newFoo
+        Orville.insertEntity Foo.table originalFoo
+        Orville.updateEntityAndReturnRowCount Foo.table (Foo.fooId originalFoo) newFoo
 
     affectedRows === 1
 
@@ -171,7 +171,7 @@ prop_updateAndReturnEntity =
 
     mbReturnedFoo <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table originalFoo
         Orville.updateAndReturnEntity Foo.table (Foo.fooId originalFoo) newFoo
 
     mbReturnedFoo === Just newFoo
@@ -188,8 +188,8 @@ prop_updateEntity_NoMatch =
 
     retrievedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
-        _ <- Orville.updateEntity Foo.table mismatchFooId newFoo
+        Orville.insertEntity Foo.table originalFoo
+        Orville.updateEntity Foo.table mismatchFooId newFoo
         Orville.findEntitiesBy Foo.table mempty
 
     retrievedFoos === [originalFoo]
@@ -206,7 +206,7 @@ prop_updateAndReturnEntity_NoMatch =
 
     mbReturnedFoo <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table originalFoo
         Orville.updateAndReturnEntity Foo.table mismatchFooId newFoo
 
     mbReturnedFoo === Nothing
@@ -221,9 +221,9 @@ prop_deleteEntity =
 
     retrievedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
-        _ <- Orville.insertEntity Foo.table anotherFoo
-        _ <- Orville.deleteEntity Foo.table (Foo.fooId originalFoo)
+        Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table anotherFoo
+        Orville.deleteEntity Foo.table (Foo.fooId originalFoo)
         Orville.findEntitiesBy Foo.table mempty
 
     retrievedFoos === [anotherFoo]
@@ -238,9 +238,9 @@ prop_deleteEntityAffectedRows =
 
     affectedRows <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
-        _ <- Orville.insertEntity Foo.table anotherFoo
-        Orville.deleteEntity Foo.table (Foo.fooId originalFoo)
+        Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table anotherFoo
+        Orville.deleteEntityAndReturnRowCount Foo.table (Foo.fooId originalFoo)
 
     affectedRows === 1
 
@@ -250,7 +250,7 @@ prop_deleteAndReturnEntity =
     originalFoo <- HH.forAll Foo.generate
     mbReturnedFoo <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table originalFoo
         Orville.deleteAndReturnEntity Foo.table (Foo.fooId originalFoo)
 
     mbReturnedFoo === Just originalFoo
@@ -266,8 +266,8 @@ prop_deleteEntity_NoMatch =
 
     retrievedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
-        _ <- Orville.deleteEntity Foo.table mismatchFooId
+        Orville.insertEntity Foo.table originalFoo
+        Orville.deleteEntity Foo.table mismatchFooId
         Orville.findEntitiesBy Foo.table mempty
 
     retrievedFoos === [originalFoo]
@@ -283,7 +283,7 @@ prop_deleteAndReturnEntity_NoMatch =
 
     mbReturnedFoo <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntity Foo.table originalFoo
+        Orville.insertEntity Foo.table originalFoo
         Orville.deleteAndReturnEntity Foo.table mismatchFooId
 
     mbReturnedFoo === Nothing
@@ -298,11 +298,10 @@ prop_deleteEntities =
 
     remainingFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
-        _ <-
-          Orville.deleteEntities
-            Foo.table
-            (Just (Orville.fieldIn Foo.fooIdField fooIds))
+        Orville.insertEntities Foo.table foos
+        Orville.deleteEntities
+          Foo.table
+          (Just (Orville.fieldIn Foo.fooIdField fooIds))
         Orville.findEntitiesBy
           Foo.table
           (Orville.where_ (Orville.fieldIn Foo.fooIdField fooIds))
@@ -319,8 +318,8 @@ prop_deleteEntitiesAffectedRows =
 
     affectedRows <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
-        Orville.deleteEntities
+        Orville.insertEntities Foo.table foos
+        Orville.deleteEntitiesAndReturnRowCount
           Foo.table
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
 
@@ -337,11 +336,10 @@ prop_deleteEntities_NoMatch =
 
     remainingFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
-        _ <-
-          Orville.deleteEntities
-            Foo.table
-            (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
+        Orville.insertEntities Foo.table foos
+        Orville.deleteEntities
+          Foo.table
+          (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
         Orville.findEntitiesBy
           Foo.table
           (Orville.where_ (Orville.fieldIn Foo.fooIdField fooIds))
@@ -358,7 +356,7 @@ prop_deleteAndReturnEntities =
 
     deletedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
+        Orville.insertEntities Foo.table foos
         Orville.deleteAndReturnEntities
           Foo.table
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
@@ -376,7 +374,7 @@ prop_deleteAndReturnEntities_NoMatch =
 
     deletedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
+        Orville.insertEntities Foo.table foos
         Orville.deleteAndReturnEntities
           Foo.table
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
@@ -394,12 +392,11 @@ prop_updateFields =
 
     updatedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
-        _ <-
-          Orville.updateFields
-            Foo.table
-            (Orville.setField Foo.fooNameField updatedName :| [])
-            (Just (Orville.fieldIn Foo.fooIdField fooIds))
+        Orville.insertEntities Foo.table foos
+        Orville.updateFields
+          Foo.table
+          (Orville.setField Foo.fooNameField updatedName :| [])
+          (Just (Orville.fieldIn Foo.fooIdField fooIds))
         Orville.findEntitiesBy
           Foo.table
           (Orville.where_ (Orville.fieldIn Foo.fooIdField fooIds))
@@ -418,12 +415,11 @@ prop_updateFields_NoMatch =
 
     foosAfterUpdate <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
-        _ <-
-          Orville.updateFields
-            Foo.table
-            (Orville.setField Foo.fooNameField updatedName :| [])
-            (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
+        Orville.insertEntities Foo.table foos
+        Orville.updateFields
+          Foo.table
+          (Orville.setField Foo.fooNameField updatedName :| [])
+          (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
         Orville.findEntitiesBy Foo.table mempty
 
     List.sortOn Foo.fooId foosAfterUpdate === List.sortOn Foo.fooId (NEL.toList foos)
@@ -439,8 +435,8 @@ prop_updateFieldsAffectedRows =
 
     affectedRows <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
-        Orville.updateFields
+        Orville.insertEntities Foo.table foos
+        Orville.updateFieldsAndReturnRowCount
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
@@ -458,7 +454,7 @@ prop_updateFieldsAndReturnEntities =
 
     updatedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
+        Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
@@ -478,7 +474,7 @@ prop_updateFieldsAndReturnEntities_NoMatch =
 
     updatedFoos <-
       Foo.withTable pool $ do
-        _ <- Orville.insertEntities Foo.table foos
+        Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])

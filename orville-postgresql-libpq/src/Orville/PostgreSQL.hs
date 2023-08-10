@@ -6,16 +6,22 @@ Stability : Stable
 module Orville.PostgreSQL
   ( -- * Basic operations on entities in tables
     EntityOperations.insertEntity
+  , EntityOperations.insertEntityAndReturnRowCount
   , EntityOperations.insertAndReturnEntity
   , EntityOperations.insertEntities
+  , EntityOperations.insertEntitiesAndReturnRowCount
   , EntityOperations.insertAndReturnEntities
   , EntityOperations.updateEntity
+  , EntityOperations.updateEntityAndReturnRowCount
   , EntityOperations.updateAndReturnEntity
   , EntityOperations.updateFields
   , EntityOperations.updateFieldsAndReturnEntities
+  , EntityOperations.updateFieldsAndReturnRowCount
   , EntityOperations.deleteEntity
+  , EntityOperations.deleteEntityAndReturnRowCount
   , EntityOperations.deleteAndReturnEntity
   , EntityOperations.deleteEntities
+  , EntityOperations.deleteEntitiesAndReturnRowCount
   , EntityOperations.deleteAndReturnEntities
   , EntityOperations.findEntitiesBy
   , EntityOperations.findFirstEntityBy
