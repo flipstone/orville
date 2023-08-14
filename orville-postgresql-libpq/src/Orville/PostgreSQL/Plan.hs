@@ -27,6 +27,7 @@ module Orville.PostgreSQL.Plan
   , use
   , using
   , chain
+  , chainMaybe
   , apply
   , planMany
   , planList
@@ -43,6 +44,7 @@ module Orville.PostgreSQL.Plan
 where
 
 import Control.Exception (throwIO)
+import Control.Monad (join)
 import qualified Control.Monad.IO.Class as MIO
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NEL
@@ -480,6 +482,27 @@ chain ::
   Plan scope a c
 chain =
   Chain
+
+{- |
+  'chainMaybe' connects two plans that both yield Maybes.
+  If the first plan yields no result, the second is skipped.
+  See also 'chain'.
+
+  @since 0.10.0.1
+-}
+chainMaybe ::
+  Plan scope a (Maybe b) ->
+  Plan scope b (Maybe c) ->
+  Plan scope a (Maybe c)
+chainMaybe a b =
+  let
+    optionalInput ::
+      Plan scope a (Maybe b) ->
+      Plan scope (Maybe a) (Maybe b)
+    optionalInput =
+      fmap join . planMaybe
+  in
+    Chain a (optionalInput b)
 
 {- |
   'assert' allows you to make an assertion about a plans result that will throw
