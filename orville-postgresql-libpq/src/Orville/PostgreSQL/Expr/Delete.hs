@@ -48,4 +48,5 @@ deleteExpr tableName maybeWhereClause maybeReturningExpr =
         , Just $ RawSql.toRawSql tableName
         , fmap RawSql.toRawSql maybeWhereClause
         , fmap RawSql.toRawSql maybeReturningExpr
+
         ]
