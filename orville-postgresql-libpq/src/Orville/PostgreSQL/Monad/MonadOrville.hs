@@ -5,6 +5,7 @@ module Orville.PostgreSQL.Monad.MonadOrville
   ( MonadOrville
   , MonadOrvilleControl (liftWithConnection, liftCatch, liftMask)
   , withConnection
+  , withConnection_
   , withConnectedState
   )
 where
@@ -137,6 +138,19 @@ instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleStat
 withConnection :: MonadOrville m => (Connection -> m a) -> m a
 withConnection connectedAction = do
   withConnectedState (connectedAction . connectedConnection)
+
+{- |
+  'withConnection_' is a convenience version of 'withConnection' for those that
+  don't need the actual connection handle. You might want to use this function
+  even without using the handle because it ensures that all the Orville
+  operations performed by the action passed to it occur on the same connection.
+  Orville uses connection pooling, so unless you use either 'withConnection' or
+  'withTransaction' each database operation may be performed on a different
+  connection.
+-}
+withConnection_ :: MonadOrville m => m a -> m a
+withConnection_ =
+  withConnection . const
 
 {- |
   INTERNAL: This in an internal version of 'withConnection' that gives access to

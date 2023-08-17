@@ -44,6 +44,7 @@ module Orville.PostgreSQL
 
     -- * Types for incorporating Orville into other Monads
   , MonadOrville.MonadOrville
+  , MonadOrville.withConnection_
   , MonadOrville.withConnection
   , MonadOrville.MonadOrvilleControl (liftWithConnection, liftCatch, liftMask)
   , HasOrvilleState.HasOrvilleState (askOrvilleState, localOrvilleState)
