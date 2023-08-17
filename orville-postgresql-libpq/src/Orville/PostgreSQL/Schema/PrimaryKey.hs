@@ -22,7 +22,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldEquals, fieldName, fieldNameToString, fieldValueToSqlValue)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldEquals, fieldIn, fieldName, fieldNameToString, fieldValueToSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
@@ -175,9 +175,14 @@ primaryKeyEquals keyDef key =
   primary keys.
 -}
 primaryKeyIn :: PrimaryKey key -> NonEmpty key -> Expr.BooleanExpr
-primaryKeyIn keyDef =
-  ExtraNonEmpty.foldl1' Expr.orExpr
-    . fmap (primaryKeyEquals keyDef)
+primaryKeyIn keyDef keys =
+  case keyDef of
+    PrimaryKey (PrimaryKeyPart getPart field) [] ->
+      fieldIn field (fmap getPart keys)
+    _ ->
+      ExtraNonEmpty.foldl1'
+        Expr.orExpr
+        (fmap (primaryKeyEquals keyDef) keys)
 
 {- |
   INTERNAL: builds the where condition for a single part of the key

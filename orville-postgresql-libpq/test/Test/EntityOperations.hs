@@ -16,6 +16,7 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 
+import qualified Test.Entities.CompositeKeyEntity as CompositeKeyEntity
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
@@ -27,6 +28,7 @@ entityOperationsTests pool =
     , prop_insertEntitiesFindFirstEntityByRoundTrip pool
     , prop_insertEntityFindEntityRoundTrip pool
     , prop_insertEntityFindEntitiesRoundTrip pool
+    , prop_insertEntityFindEntitiesCompositeKeyRoundTrip pool
     , prop_insertAndReturnEntity pool
     , prop_updateEntity pool
     , prop_updateEntityAffectedRows pool
@@ -124,6 +126,18 @@ prop_insertEntityFindEntitiesRoundTrip =
         Orville.findEntities Foo.table (Foo.fooId <$> foos)
 
     List.sortOn Foo.fooId retrievedFoos === List.sortOn Foo.fooId (NEL.toList foos)
+
+prop_insertEntityFindEntitiesCompositeKeyRoundTrip :: Property.NamedDBProperty
+prop_insertEntityFindEntitiesCompositeKeyRoundTrip =
+  Property.singletonNamedDBProperty "insertEntity/findEntities form a round trip (composite primary key)" $ \pool -> do
+    compositeKeyEntities <- HH.forAll $ CompositeKeyEntity.generateNonEmpty (Range.linear 1 5)
+
+    retrievedCompositeKeyEntities <-
+      CompositeKeyEntity.withTable pool $ do
+        Orville.insertEntities CompositeKeyEntity.table compositeKeyEntities
+        Orville.findEntities CompositeKeyEntity.table (CompositeKeyEntity.compositeKey <$> compositeKeyEntities)
+
+    List.sortOn CompositeKeyEntity.compositeKey retrievedCompositeKeyEntities === List.sortOn CompositeKeyEntity.compositeKey (NEL.toList compositeKeyEntities)
 
 prop_insertAndReturnEntity :: Property.NamedDBProperty
 prop_insertAndReturnEntity =

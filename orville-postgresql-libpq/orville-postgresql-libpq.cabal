@@ -167,6 +167,7 @@ test-suite spec
       Test.Connection
       Test.Cursor
       Test.Entities.Bar
+      Test.Entities.CompositeKeyEntity
       Test.Entities.Foo
       Test.Entities.FooChild
       Test.Entities.User
