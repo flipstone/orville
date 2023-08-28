@@ -1,4 +1,4 @@
-name: orville-postgresql
+name: orville-postgresql-legacy
 version: '0.9.0.1'
 synopsis: ORM
 description: ORM library for PostgreSQL
@@ -72,7 +72,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - orville-postgresql
+    - orville-postgresql-legacy
 
 tests:
   spec:
@@ -81,7 +81,7 @@ tests:
       - test
     dependencies:
       - resource-pool
-      - orville-postgresql
+      - orville-postgresql-legacy
       - tasty
       - tasty-discover
       - tasty-hunit
