@@ -1,12 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: a69a4ba51007c4d7af950e06da789690d714ed85ef1af99fabe3b70efef0631e
 
-name:           orville-postgresql
+name:           orville-postgresql-legacy
 version:        0.9.0.1
 synopsis:       ORM
 description:    ORM library for PostgreSQL
@@ -15,9 +13,9 @@ author:         Flipstone Technology Partners
 maintainer:     development@flipstone.com
 license:        MIT
 license-file:   LICENSE
+build-type:     Simple
 tested-with:
     GHC == 7.10.3, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4
-build-type:     Simple
 extra-source-files:
     README.md
 
@@ -83,7 +81,7 @@ library
       Database.Orville.PostgreSQL.Internal.Types
       Database.Orville.PostgreSQL.Internal.Where
       Database.Orville.PostgreSQL.Pagination
-      Paths_orville_postgresql
+      Paths_orville_postgresql_legacy
   hs-source-dirs:
       src
   default-extensions:
@@ -121,7 +119,7 @@ executable orville-sample-exe
       Example.Data.Student
       Example.Schema.Student
       Example.SchemaStudent
-      Paths_orville_postgresql
+      Paths_orville_postgresql_legacy
   hs-source-dirs:
       sample-project
   default-extensions:
@@ -141,7 +139,7 @@ executable orville-sample-exe
     , lifted-base >=0.2
     , monad-control >=1.0
     , mtl >=2.2
-    , orville-postgresql
+    , orville-postgresql-legacy
     , profunctors >=5.2
     , resource-pool >=0.2
     , resourcet >=1.1
@@ -191,7 +189,7 @@ test-suite spec
       TriggerTest
       UnliftIOTest
       WhereConditionTest
-      Paths_orville_postgresql
+      Paths_orville_postgresql_legacy
   hs-source-dirs:
       test
   default-extensions:
@@ -211,7 +209,7 @@ test-suite spec
     , lifted-base >=0.2
     , monad-control >=1.0
     , mtl >=2.2
-    , orville-postgresql
+    , orville-postgresql-legacy
     , profunctors >=5.2
     , resource-pool
     , resourcet >=1.1
