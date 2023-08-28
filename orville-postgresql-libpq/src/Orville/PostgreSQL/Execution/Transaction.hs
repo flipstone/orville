@@ -2,6 +2,11 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+This module provides the functionality to work with SQL transactions, notably to ensure some Haskell
+action occurs within a database transaction.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Transaction
   ( withTransaction
@@ -30,6 +35,8 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
   Note: Exceptions are handled using the implementations of 'Monad.catch' and
   'Monad.mask'  provided by the 'MonadOrvilleControl' instance for @m@.
+
+@since 0.10.0.0
 -}
 withTransaction :: Monad.MonadOrville m => m a -> m a
 withTransaction action =

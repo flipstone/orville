@@ -2,6 +2,11 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+Interactions to work with database sequence values on the Haskell side. Including inspection of the
+current and next values in the sequence as well as updating a sequence to a given value.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Sequence
   ( sequenceNextValue
@@ -22,6 +27,8 @@ import Orville.PostgreSQL.Schema (SequenceDefinition, sequenceName)
 
 {- |
   Fetches the next value from a sequence via the PostgreSQL @nextval@ function.
+
+@since 0.10.0.0
 -}
 sequenceNextValue :: Monad.MonadOrville m => SequenceDefinition -> m Int64
 sequenceNextValue sequenceDef =
@@ -31,6 +38,8 @@ sequenceNextValue sequenceDef =
 
 {- |
   Fetches the current value from a sequence via the PostgreSQL @currval@ function.
+
+@since 0.10.0.0
 -}
 sequenceCurrentValue :: Monad.MonadOrville m => SequenceDefinition -> m Int64
 sequenceCurrentValue sequenceDef =
@@ -40,6 +49,8 @@ sequenceCurrentValue sequenceDef =
 
 {- |
   Sets the current value from a sequence via the PostgreSQL @setval@ function.
+
+@since 0.10.0.0
 -}
 sequenceSetValue :: Monad.MonadOrville m => SequenceDefinition -> Int64 -> m Int64
 sequenceSetValue sequenceDef newValue =

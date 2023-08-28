@@ -108,6 +108,13 @@ data FakeLibPQResult = FakeLibPQResult
   , fakeLibPQRows :: Map.Map Row (Map.Map Column SqlValue)
   }
 
+-- | @since 0.10.0.0
+instance ExecutionResult FakeLibPQResult where
+  maxRowNumber = pure . fakeLibPQMaxRow
+  maxColumnNumber = pure . fakeLibPQMaxColumn
+  columnName result = pure . fakeLibPQColumnName result
+  getValue result column = pure . fakeLibPQGetValue result column
+
 {- |
   Constructs a `FakeLibPQResult`. The column names given as associated with
   the values for each row by their position in list. Any missing values (e.g.
@@ -156,13 +163,6 @@ fakeLibPQMaxColumn result =
         Nothing
       _ ->
         Just (maximum maxColumnsByRow)
-
--- | @since 0.10.0.0
-instance ExecutionResult FakeLibPQResult where
-  maxRowNumber = pure . fakeLibPQMaxRow
-  maxColumnNumber = pure . fakeLibPQMaxColumn
-  columnName result = pure . fakeLibPQColumnName result
-  getValue result column = pure . fakeLibPQGetValue result column
 
 fakeLibPQColumnName :: FakeLibPQResult -> Column -> (Maybe BS.ByteString)
 fakeLibPQColumnName result column =

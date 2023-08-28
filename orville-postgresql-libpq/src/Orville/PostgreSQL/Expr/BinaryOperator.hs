@@ -5,6 +5,9 @@ Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
 Stability : Stable
 
+Provides a type representing SQL operators with exactly two arguments. As well as values of that
+type for many common operators.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.BinaryOperator
@@ -256,6 +259,7 @@ binaryOpExpression op left right =
     (RawSql.unsafeFromRawSql (RawSql.leftParen <> RawSql.toRawSql left <> RawSql.rightParen))
     (RawSql.unsafeFromRawSql (RawSql.leftParen <> RawSql.toRawSql right <> RawSql.rightParen))
 
+-- internal helper function
 binaryOpExpressionUnparenthenizedArguments ::
   RawSql.SqlExpression sql =>
   BinaryOperator ->

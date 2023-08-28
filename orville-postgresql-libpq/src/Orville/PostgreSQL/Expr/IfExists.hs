@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability: Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Expr.IfExists
   ( IfExists
   , ifExists
@@ -30,6 +37,11 @@ newtype IfExists
       RawSql.SqlExpression
     )
 
+{- |
+A value of the SQL "IF EXISTS"
+
+@since 0.10.0.0
+-}
 ifExists :: IfExists
 ifExists =
   IfExists $ RawSql.fromString "IF EXISTS"

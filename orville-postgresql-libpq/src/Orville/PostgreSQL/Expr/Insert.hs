@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Insert
   ( InsertExpr
@@ -45,6 +48,13 @@ newtype InsertExpr
       RawSql.SqlExpression
     )
 
+{- | Create an 'InsertExpr' for the given 'TableName', limited to the specific columns if
+given. Callers of this likely want to use a function to create the 'InsertSource' to ensure the
+input values are correctly used as parameters. This function does not include that protection
+itself.
+
+@since 0.10.0.0
+-}
 insertExpr ::
   Qualified TableName ->
   Maybe InsertColumnList ->
@@ -52,15 +62,15 @@ insertExpr ::
   Maybe ReturningExpr ->
   InsertExpr
 insertExpr target maybeInsertColumns source maybeReturning =
-  InsertExpr $
-    RawSql.intercalate RawSql.space $
-      catMaybes
-        [ Just $ RawSql.fromString "INSERT INTO"
-        , Just $ RawSql.toRawSql target
-        , fmap RawSql.toRawSql maybeInsertColumns
-        , Just $ RawSql.toRawSql source
-        , fmap RawSql.toRawSql maybeReturning
-        ]
+  InsertExpr
+    . RawSql.intercalate RawSql.space
+    $ catMaybes
+      [ Just $ RawSql.fromString "INSERT INTO"
+      , Just $ RawSql.toRawSql target
+      , fmap RawSql.toRawSql maybeInsertColumns
+      , Just $ RawSql.toRawSql source
+      , fmap RawSql.toRawSql maybeReturning
+      ]
 
 {- |
 Type to represent the SQL columns list for an insert statement
@@ -84,6 +94,11 @@ newtype InsertColumnList
       RawSql.SqlExpression
     )
 
+{- | Create an 'InsertColumnList' for the given 'ColumnName's, making sure the columns are wrapped in
+parens and commas are used to separate.
+
+@since 0.10.0.0
+-}
 insertColumnList :: [ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
@@ -114,15 +129,25 @@ newtype InsertSource
       RawSql.SqlExpression
     )
 
+{- | Create an 'InsertSource' for the given 'RowValues'. This ensures that all input values are used
+as parameters and comma separated in the generated SQL.
+
+@since 0.10.0.0
+-}
 insertRowValues :: [RowValues] -> InsertSource
 insertRowValues rows =
   InsertSource $
     RawSql.fromString "VALUES "
       <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql rows)
 
+{- | Create an 'InsertSource' for the given 'SqlValues'. This ensures that all input values are used
+as parameters and comma separated in the generated SQL.
+
+@since 0.10.0.0
+-}
 insertSqlValues :: [[SqlValue]] -> InsertSource
-insertSqlValues rows =
-  insertRowValues (fmap rowValues rows)
+insertSqlValues =
+  insertRowValues . fmap rowValues
 
 {- |
 Type to represent a SQL row literal (e.g. for use as a row to insert
@@ -147,6 +172,11 @@ newtype RowValues
       RawSql.SqlExpression
     )
 
+{- | Create a 'RowValues' for the given 'SqlValues'. This ensures that all input values are used as
+parameters and comma separated in the generated SQL.
+
+@since 0.10.0.0
+-}
 rowValues :: [SqlValue] -> RowValues
 rowValues values =
   RowValues $

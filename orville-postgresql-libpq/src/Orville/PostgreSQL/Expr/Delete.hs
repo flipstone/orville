@@ -1,5 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Provides a type representing SQL DELETE and construction of that type.
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Expr.Delete
   ( DeleteExpr
   , deleteExpr
@@ -35,6 +44,13 @@ newtype DeleteExpr
       RawSql.SqlExpression
     )
 
+{- |
+
+Construct a SQL DELETE from a table, optionally limiting with a 'WhereClause' and optionally
+returning a 'ReturningExpr'.
+
+@since 0.10.0.0
+-}
 deleteExpr ::
   Qualified TableName ->
   Maybe WhereClause ->

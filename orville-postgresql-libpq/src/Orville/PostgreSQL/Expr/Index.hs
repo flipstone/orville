@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability: Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Expr.Index
   ( CreateIndexExpr
   , createIndexExpr
@@ -37,6 +44,12 @@ newtype CreateIndexExpr
       RawSql.SqlExpression
     )
 
+{- |
+Construct a SQL CREATE INDEX from an indicator of if the index should be unique, a table, and
+corresponding collection of 'ColumnName's.  .
+
+@since 0.10.0.0
+-}
 createIndexExpr ::
   IndexUniqueness ->
   Qualified TableName ->
@@ -53,11 +66,46 @@ createIndexExpr uniqueness tableName columns =
       <> RawSql.intercalate RawSql.comma columns
       <> RawSql.rightParen
 
+{- | Construct a SQL CREATE INDEX from an indicator of if the index should be unique, a table, a name
+for the index, and some sql representing the rest of the index creation.
+
+@since 0.10.0.0
+-}
+createNamedIndexExpr ::
+  IndexUniqueness ->
+  Qualified TableName ->
+  IndexName ->
+  RawSql.RawSql ->
+  CreateIndexExpr
+createNamedIndexExpr uniqueness tableName indexName indexSql =
+  CreateIndexExpr $
+    RawSql.fromString "CREATE "
+      <> uniquenessToSql uniqueness
+      <> RawSql.fromString "INDEX "
+      <> RawSql.toRawSql indexName
+      <> RawSql.fromString " ON "
+      <> RawSql.toRawSql tableName
+      <> RawSql.space
+      <> indexSql
+
+{- |
+Type to represent if an index should be unique.
+
+@since 0.10.0.0
+-}
 data IndexUniqueness
   = UniqueIndex
   | NonUniqueIndex
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 0.10.0.0
+      Eq
+    , -- | @since 0.10.0.0
+      Ord
+    , -- | @since 0.10.0.0
+      Show
+    )
 
+-- Internal helper
 uniquenessToSql :: IndexUniqueness -> RawSql.RawSql
 uniquenessToSql uniqueness =
   case uniqueness of
@@ -86,24 +134,12 @@ newtype DropIndexExpr
       RawSql.SqlExpression
     )
 
+{- |
+Construct a SQL DROP INDEX for a given 'IndexName'.
+
+@since 0.10.0.0
+-}
 dropIndexExpr :: IndexName -> DropIndexExpr
 dropIndexExpr indexName =
   DropIndexExpr $
     RawSql.fromString "DROP INDEX " <> RawSql.toRawSql indexName
-
-createNamedIndexExpr ::
-  IndexUniqueness ->
-  Qualified TableName ->
-  IndexName ->
-  RawSql.RawSql ->
-  CreateIndexExpr
-createNamedIndexExpr uniqueness tableName indexName indexSql =
-  CreateIndexExpr $
-    RawSql.fromString "CREATE "
-      <> uniquenessToSql uniqueness
-      <> RawSql.fromString "INDEX "
-      <> RawSql.toRawSql indexName
-      <> RawSql.fromString " ON "
-      <> RawSql.toRawSql tableName
-      <> RawSql.space
-      <> indexSql

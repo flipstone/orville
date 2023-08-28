@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability: Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.GroupBy
   ( GroupByClause
@@ -41,6 +44,10 @@ newtype GroupByClause
       RawSql.SqlExpression
     )
 
+{- | Create a full sql GROUP BY clause with the given expression.
+
+@since 0.10.0.0
+-}
 groupByClause :: GroupByExpr -> GroupByClause
 groupByClause expr = GroupByClause (RawSql.fromString "GROUP BY " <> RawSql.toRawSql expr)
 
@@ -67,17 +74,33 @@ newtype GroupByExpr
       RawSql.SqlExpression
     )
 
+{- |
+@since 0.10.0.0
+-}
 instance Semigroup GroupByExpr where
   (<>) = appendGroupByExpr
 
+{- | Combines two 'GroupByExpr's with a comma between them.
+
+@since 0.10.0.0
+-}
 appendGroupByExpr :: GroupByExpr -> GroupByExpr -> GroupByExpr
 appendGroupByExpr (GroupByExpr a) (GroupByExpr b) =
   GroupByExpr (a <> RawSql.commaSpace <> b)
 
-groupByExpr :: RawSql.RawSql -> GroupByExpr
-groupByExpr sql =
-  GroupByExpr $ sql
+{- | Create a 'GroupByExpr' from some 'RawSql'. Note that it is up to the caller to ensure that the
+  given value can actually be used for a 'GroupByExpr'
 
+@since 0.10.0.0
+-}
+groupByExpr :: RawSql.RawSql -> GroupByExpr
+groupByExpr =
+  GroupByExpr
+
+{- | Create a 'GroupByExpr' from the given 'ColumnName's.
+
+@since 0.10.0.0
+-}
 groupByColumnsExpr :: NonEmpty ColumnName -> GroupByExpr
 groupByColumnsExpr =
   GroupByExpr . RawSql.intercalate RawSql.commaSpace

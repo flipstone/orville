@@ -3,6 +3,8 @@
 {- |
 Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.DataType
   ( DataType
@@ -52,22 +54,58 @@ newtype DataType
       RawSql.SqlExpression
     )
 
+{- | A 'DataType' that represents the PostgreSQL "TIMESTAMP with time zone" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-datetime.html) for
+more information.
+
+@since 0.10.0.0
+-}
 timestampWithZone :: DataType
 timestampWithZone =
   DataType (RawSql.fromString "TIMESTAMP with time zone")
 
+{- | A 'DataType' that represents the PostgreSQL "TIMESTAMP without time zone" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-datetime.html) for
+more information.
+
+@since 0.10.0.0
+-}
 timestampWithoutZone :: DataType
 timestampWithoutZone =
   DataType (RawSql.fromString "TIMESTAMP without time zone")
 
+{- | A 'DataType' that represents the PostgreSQL "DATE" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-datetime.html) for
+more information.
+
+@since 0.10.0.0
+-}
 date :: DataType
 date =
   DataType (RawSql.fromString "DATE")
 
+{- | A 'DataType' that represents the PostgreSQL "TSVECTOR" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-textsearch.html#DATATYPE-TSVECTOR)
+for more information.
+
+@since 0.10.0.0
+-}
 tsvector :: DataType
 tsvector =
   DataType (RawSql.fromString "TSVECTOR")
 
+{- | A 'DataType' that represents the PostgreSQL "VARCHAR(n)" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-character.html) for
+more information.
+
+@since 0.10.0.0
+-}
 varchar :: Int32 -> DataType
 varchar len =
   -- postgresql won't let us pass the field length as a parameter.
@@ -79,6 +117,13 @@ varchar len =
       <> RawSql.int32DecLiteral len
       <> RawSql.fromString ")"
 
+{- | A 'DataType' that represents the PostgreSQL "CHAR(n)" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-character.html) for
+more information.
+
+@since 0.10.0.0
+-}
 char :: Int32 -> DataType
 char len =
   -- postgresql won't let us pass the field length as a parameter.
@@ -90,38 +135,107 @@ char len =
       <> RawSql.int32DecLiteral len
       <> RawSql.fromString ")"
 
+{- | A 'DataType' that represents the PostgreSQL "TEXT" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-character.html) for
+more information.
+
+@since 0.10.0.0
+-}
 text :: DataType
 text =
   DataType (RawSql.fromString "TEXT")
 
+{- | A 'DataType' that represents the PostgreSQL "UUID" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-uuid.html) for more
+information.
+
+@since 0.10.0.0
+-}
 uuid :: DataType
 uuid =
   DataType (RawSql.fromString "UUID")
 
+{- | A 'DataType' that represents the PostgreSQL "BOOLEAN" data type.
+
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-boolean.html) for
+more information.
+
+@since 0.10.0.0
+-}
 boolean :: DataType
 boolean =
   DataType (RawSql.fromString "BOOLEAN")
 
+{- | A 'DataType' that represents the PostgreSQL "DOUBLE PRECISION" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-FLOAT) for
+more information.
+
+@since 0.10.0.0
+-}
 doublePrecision :: DataType
 doublePrecision =
   DataType (RawSql.fromString "DOUBLE PRECISION")
 
+{- | A 'DataType' that represents the PostgreSQL "BIGSERIAL" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-SERIAL) for
+more information.
+
+@since 0.10.0.0
+-}
 bigSerial :: DataType
 bigSerial =
   DataType (RawSql.fromString "BIGSERIAL")
 
+{- | A 'DataType' that represents the PostgreSQL "BIGINT" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-INT) for
+more information.
+
+@since 0.10.0.0
+-}
 bigInt :: DataType
 bigInt =
   DataType (RawSql.fromString "BIGINT")
 
+{- | A 'DataType' that represents the PostgreSQL "SERIAL" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-SERIAL) for
+more information.
+
+@since 0.10.0.0
+-}
 serial :: DataType
 serial =
   DataType (RawSql.fromString "SERIAL")
 
+{- | A 'DataType' that represents the PostgreSQL "INT" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-INT) for
+more information.
+
+@since 0.10.0.0
+-}
 int :: DataType
 int =
   DataType (RawSql.fromString "INT")
 
+{- | A 'DataType' that represents the PostgreSQL "SMALLINT" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-INT) for
+more information.
+
+@since 0.10.0.0
+-}
 smallint :: DataType
 smallint =
   DataType (RawSql.fromString "SMALLINT")
@@ -129,12 +243,23 @@ smallint =
 {- |
   A 'DataType' that represents the PostgreSQL "JSONB" data type.
 
+See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-json.html) for more
+information.
+
 @since 0.10.0.1
 -}
 jsonb :: DataType
 jsonb =
   DataType (RawSql.fromString "JSONB")
 
+{- | A 'DataType' that represents the PostgreSQL "OID" data type.
+
+See [postgresql
+documentation](https://www.postgresql.org/docs/current/datatype-oid.html) for
+more information.
+
+@since 0.10.0.0
+-}
 oid :: DataType
 oid =
   DataType (RawSql.fromString "OID")
