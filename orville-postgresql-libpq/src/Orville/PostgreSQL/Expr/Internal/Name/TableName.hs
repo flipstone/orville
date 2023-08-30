@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.TableName
   ( TableName
@@ -38,6 +41,11 @@ newtype TableName
       IdentifierExpression
     )
 
+{- |
+Construct a 'TableName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 tableName :: String -> TableName
 tableName =
   TableName . identifier

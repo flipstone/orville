@@ -38,6 +38,11 @@ newtype LimitExpr
       RawSql.SqlExpression
     )
 
+{- | Create a 'LimitExpr' for the given 'Int'. This ensures that the input value is used
+as parameters in the generated SQL.
+
+@since 0.10.0.0
+-}
 limitExpr :: Int -> LimitExpr
 limitExpr limitValue =
   LimitExpr $

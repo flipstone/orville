@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.ColumnName
   ( ColumnName
@@ -38,5 +41,10 @@ newtype ColumnName
       IdentifierExpression
     )
 
+{- |
+Construct a 'ColumnName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 columnName :: String -> ColumnName
 columnName = ColumnName . identifier

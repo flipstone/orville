@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2022
+Copyright : Flipstone Technology Partners 2022-2023
 License   : MIT
+Stability: Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.CursorName
   ( CursorName
@@ -39,6 +42,11 @@ newtype CursorName
       IdentifierExpression
     )
 
+{- |
+Construct a 'CursorName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 cursorName :: String -> CursorName
 cursorName =
   CursorName . identifier

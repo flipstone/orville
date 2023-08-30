@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability: Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.Identifier
   ( Identifier
@@ -38,18 +41,37 @@ newtype Identifier
       RawSql.SqlExpression
     )
 
+{- |
+Construct an 'Identifier' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 identifier :: String -> Identifier
 identifier =
   identifierFromBytes . B8.pack
 
+{- |
+Construct an 'Identifier' from a 'B8.ByteString' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 identifierFromBytes :: B8.ByteString -> Identifier
 identifierFromBytes =
   Identifier . RawSql.identifier
 
+{- |
+
+
+@since 0.10.0.0
+-}
 class IdentifierExpression name where
   toIdentifier :: name -> Identifier
   fromIdentifier :: Identifier -> name
 
+{- |
+
+@since 0.10.0.0
+-}
 instance IdentifierExpression Identifier where
   toIdentifier = id
   fromIdentifier = id

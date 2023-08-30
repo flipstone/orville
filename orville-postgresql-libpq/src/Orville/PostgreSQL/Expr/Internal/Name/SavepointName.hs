@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.SavepointName
   ( SavepointName
@@ -38,5 +41,10 @@ newtype SavepointName
       IdentifierExpression
     )
 
+{- |
+Construct a 'SavepointName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 savepointName :: String -> SavepointName
 savepointName = SavepointName . identifier

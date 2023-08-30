@@ -1,8 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2021
+Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
+Stability : Stable
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.IndexName
   ( IndexName
@@ -38,5 +39,10 @@ newtype IndexName
       IdentifierExpression
     )
 
+{- |
+Construct a 'IndexName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 indexName :: String -> IndexName
 indexName = IndexName . identifier

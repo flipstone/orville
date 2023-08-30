@@ -3,7 +3,7 @@
 {- |
 Copyright : Flipstone Technology Partners 2016-2023
 License   : MIT
-Stability: Stable
+Stability : Stable
 
 @since 0.10.0.0
 -}
@@ -61,7 +61,7 @@ required but not already included. The exension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write a group by expression by hand and use it in a
-place that expected a 'GroupByExpr, that could be done as
+place that expected a 'GroupByExpr', that could be done as
 
  > RawSql.unsafeSqlExpression "<my unusual group by>"
 

@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Expr.OffsetExpr
   ( OffsetExpr
   , offsetExpr
@@ -31,6 +38,11 @@ newtype OffsetExpr
       RawSql.SqlExpression
     )
 
+{- | Create an 'OffsetExpr' for the given 'Int'. This ensures that the input value is used
+as parameters in the generated SQL.
+
+@since 0.10.0.0
+-}
 offsetExpr :: Int -> OffsetExpr
 offsetExpr offsetValue =
   OffsetExpr $

@@ -113,7 +113,7 @@ updateToTableReturning =
 
 {- |
   Builds an 'Update' that will apply the specified column set clauses to rows
-  the specified table without returning the data as seen by the database.
+  within the specified table without returning the data as seen by the database.
 
 @since 0.10.0.0
 -}
@@ -127,7 +127,7 @@ updateToTableFields =
 
 {- |
   Builds an 'Update' that will apply the specified column set clauses to rows
-  the specified table and return the updated version of any rows affected by
+  within the specified table and return the updated version of any rows affected by
   the update state by using a @RETURNING@ clause.
 
 @since 0.10.0.0

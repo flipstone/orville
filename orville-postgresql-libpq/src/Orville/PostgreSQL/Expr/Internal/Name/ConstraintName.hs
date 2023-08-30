@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2021
+Copyright : Flipstone Technology Partners 2021-2023
 License   : MIT
+Stability: Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
   ( ConstraintName
@@ -39,5 +42,10 @@ newtype ConstraintName
       IdentifierExpression
     )
 
+{- |
+Construct a 'ConstraintName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 0.10.0.0
+-}
 constraintName :: String -> ConstraintName
 constraintName = ConstraintName . identifier
