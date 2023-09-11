@@ -24,7 +24,7 @@ Type to represent a SQL identifier. 'Identifier' values constructed via the
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write a raw (unescaped) identifier by hand and
@@ -59,13 +59,16 @@ identifierFromBytes :: B8.ByteString -> Identifier
 identifierFromBytes =
   Identifier . RawSql.identifier
 
-{- |
-
+{- | This class aids in giving additional polymorphism and so that many different identifiers can be
+created without being forced to only use the `Identifier` type.
 
 @since 0.10.0.0
 -}
 class IdentifierExpression name where
+  -- | @since 0.10.0.0
   toIdentifier :: name -> Identifier
+
+  -- | @since 0.10.0.0
   fromIdentifier :: Identifier -> name
 
 {- |

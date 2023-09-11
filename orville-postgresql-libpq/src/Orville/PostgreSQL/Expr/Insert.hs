@@ -31,7 +31,7 @@ Type to represent a SQL "INSERT" statement
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write an insert by hand and use it in a place that
@@ -77,7 +77,7 @@ Type to represent the SQL columns list for an insert statement
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write insert columns by hand and use them in a
@@ -112,7 +112,7 @@ a @VALUES@ clause).
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write an insert source by hand and use
@@ -155,7 +155,7 @@ inside a @VALUES@ clause).
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write a row by hand and use it in a place that

@@ -56,7 +56,7 @@ documentation](https://www.postgresql.org/docs/current/sql-declare.html) for mor
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to have a cusor named FOO, with a query of select * from BAR, that could
@@ -107,7 +107,7 @@ documentation](https://www.postgresql.org/docs/current/sql-declare.html) for mor
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to allow only sequential fetches, that could be done as
@@ -148,7 +148,7 @@ more information.
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to have a cursor available after the transaction creating it commits,
@@ -190,7 +190,7 @@ more information.
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to close all cursors, that could be done as
@@ -228,7 +228,7 @@ more information.
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, this could be done as
@@ -262,7 +262,7 @@ more information.
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to use a cusor named FOO, to get the next row, that could
@@ -306,7 +306,7 @@ documentation](https://www.postgresql.org/docs/current/sql-move.html) for more i
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to use a cusor named FOO, and position on next row, that could
@@ -349,7 +349,7 @@ more information.
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The exension mechanism provided does require care in use as no guarantees are
+already included. The extension mechanism provided does require care in use as no guarantees are
 provided for correctness in usage.
 
 For example, if one wanted to specify a backwards direction for use in a 'FetchExpr' or 'MoveExpr',

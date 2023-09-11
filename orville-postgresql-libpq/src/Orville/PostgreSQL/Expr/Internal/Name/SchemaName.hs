@@ -22,7 +22,7 @@ Type to represent a SQL schema name. 'SchemaName' values constructed via the
 
 There is an low level escape hatch included here, by means of the instance of
 'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The exension mechanism provided does require
+required but not already included. The extension mechanism provided does require
 care in use as no guarantees are provided for correctness in usage.
 
 For example, if one wanted to write a raw (unescaped) schema name by hand and
