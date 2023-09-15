@@ -366,9 +366,17 @@ planMany =
   PlanMany
 
 {- |
-  'planList' lifts a plan so both its param and result become lists.
-  This saves you from having to fmap in 'Many.elems' when all you want back
-  from a 'Many' is the list of results inside it.
+  'planList' lifts a plan so both its param and result become lists. This saves
+  you from having to fmap in 'Many.elems' when all you want back from a 'Many'
+  is the list of results inside it.
+
+  There will always be the same number of elements in the @[result]@ list as
+  there are in the @[param]@ list, even if there are duplicate values in the
+  input parameters. This may be counter-intuitive in the trivial case where
+  plan that queries a single table is passed to 'planList' but cannot be
+  avoided due to more complicated situations where the original plan executes
+  queries against multiple tables the query results must be correlated based on
+  the input parameters to build each @result@ value.
 -}
 planList ::
   (forall scope. Plan scope param result) ->
