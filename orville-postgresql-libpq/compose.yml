@@ -11,6 +11,7 @@ services:
       - testdb-${PG_VERSION:-pg11}
     environment:
       TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg11}"
+      STACK_ROOT: /stack-root
     command:
       - ./scripts/test-loop
       - ${STACK_YAML_FILE:-stack.yml}
