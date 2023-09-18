@@ -36,9 +36,9 @@ import qualified Data.Set as Set
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
-import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
-import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, ConstraintMigrationKey, constraintMigrationKey, constraintSqlExpr)
+import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
@@ -61,7 +61,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , i_tablePrimaryKey :: TablePrimaryKey key
   , i_tableMarshaller :: AnnotatedSqlMarshaller writeEntity readEntity
   , i_tableColumnsToDrop :: Set.Set String
-  , i_tableConstraints :: Map.Map ConstraintMigrationKey ConstraintDefinition
+  , i_tableConstraintsFromTable :: TableConstraints
   , i_tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
   }
 
@@ -92,7 +92,7 @@ mkTableDefinition name primaryKey marshaller =
     , i_tablePrimaryKey = TableHasKey primaryKey
     , i_tableMarshaller = annotateSqlMarshaller (toList $ primaryKeyFieldNames primaryKey) marshaller
     , i_tableColumnsToDrop = Set.empty
-    , i_tableConstraints = Map.empty
+    , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
     }
 
@@ -115,7 +115,7 @@ mkTableDefinitionWithoutKey name marshaller =
     , i_tablePrimaryKey = TableHasNoKey
     , i_tableMarshaller = annotateSqlMarshallerEmptyAnnotation marshaller
     , i_tableColumnsToDrop = Set.empty
-    , i_tableConstraints = Map.empty
+    , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
     }
 
@@ -180,17 +180,48 @@ setTableSchema schemaName tableDef =
     }
 
 {- |
-  Retrieves all the table constraints that have been added to the table via
-  'addTableConstraints'.
+  Retrieves all the table constraints that have been added to the table either
+  via 'addTableConstraints' or that are found on 'FieldDefinition's included
+  with this table's 'SqlMarshaller'.
 -}
 tableConstraints ::
   TableDefinition key writeEntity readEntity ->
-  Map.Map ConstraintMigrationKey ConstraintDefinition
+  TableConstraints
 tableConstraints =
-  i_tableConstraints
+  tableConstraintsFromMarshaller
+    <> tableConstraintsFromTable
 
 {- |
-  Adds the given table constraints to the table definition.
+  Retrieves all the table constraints that have been added to the table via
+  'addTableConstraints'. This does NOT include any table constraints from the
+  table's 'SqlMarshaller'
+-}
+tableConstraintsFromTable ::
+  TableDefinition key writeEntity readEntity ->
+  TableConstraints
+tableConstraintsFromTable =
+  i_tableConstraintsFromTable
+
+{- |
+  Retrieves all the table constraints that were included in the table's
+  'SqlMarsheller' when it was created. This does NOT include any table
+  constraints add via 'addTableConstraints'.
+-}
+tableConstraintsFromMarshaller ::
+  TableDefinition key writeEntity readEntity ->
+  TableConstraints
+tableConstraintsFromMarshaller =
+  marshallerTableConstraints
+    . unannotatedSqlMarshaller
+    . i_tableMarshaller
+
+{- |
+  Adds the given table constraints to the table definition. It's also possible
+  to add constraints that apply to only one column adding them to
+  the 'FieldDefinition's that are included in the table's 'SqlMarshaller'.
+
+  If you wish to constrain multiple columns with a single constraint (e.g. a
+  multi-column unique constraint), you must use 'addTableConstraints'.
 
   Note: If multiple constraints are added with the same
   'ConstraintMigrationKey', only the last one that is added will be part of the
@@ -202,13 +233,13 @@ addTableConstraints ::
   TableDefinition key writeEntity readEntity ->
   TableDefinition key writeEntity readEntity
 addTableConstraints constraintDefs tableDef =
-  let
-    addConstraint constraint constraintMap =
-      Map.insert (constraintMigrationKey constraint) constraint constraintMap
-  in
-    tableDef
-      { i_tableConstraints = foldr addConstraint (i_tableConstraints tableDef) constraintDefs
-      }
+  tableDef
+    { i_tableConstraintsFromTable =
+        foldr
+          addConstraint
+          (i_tableConstraintsFromTable tableDef)
+          constraintDefs
+    }
 
 {- |
   Retrieves all the table indexes that have been added to the table via
@@ -276,7 +307,7 @@ mkCreateTableExpr tableDef =
     (tableName tableDef)
     (mkTableColumnDefinitions tableDef)
     (mkTablePrimaryKeyExpr tableDef)
-    (map constraintSqlExpr . Map.elems . i_tableConstraints $ tableDef)
+    (map constraintSqlExpr . tableConstraintDefinitions . tableConstraints $ tableDef)
 
 {- |
   Builds the 'Expr.ColumnDefinitions' for all the fields described by the

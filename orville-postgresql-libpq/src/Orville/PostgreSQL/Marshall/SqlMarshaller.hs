@@ -30,6 +30,7 @@ module Orville.PostgreSQL.Marshall.SqlMarshaller
   , marshallEntityToSetClauses
   , foldMarshallerFields
   , marshallerDerivedColumns
+  , marshallerTableConstraints
   , mkRowSource
   , RowSource
   , mapRowSource
@@ -49,10 +50,11 @@ import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldValueFromSqlValue, nullableField, prefixField, setField)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
+import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 
 {- |
   An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
@@ -166,6 +168,29 @@ marshallerDerivedColumns marshaller =
             : columns
   in
     foldMarshallerFields marshaller [] collectDerivedColumn
+
+{- |
+  Returns the table constraints for all the 'FieldDefinition's used in the
+  'SqlMarshaller'.
+-}
+marshallerTableConstraints ::
+  SqlMarshaller writeEntity readEntity ->
+  ConstraintDefinition.TableConstraints
+marshallerTableConstraints marshaller =
+  let
+    collectTableConstraints ::
+      MarshallerField writeEntity ->
+      ConstraintDefinition.TableConstraints ->
+      ConstraintDefinition.TableConstraints
+    collectTableConstraints entry constraints =
+      case entry of
+        Natural fieldDef _ -> constraints <> fieldTableConstraints fieldDef
+        Synthetic _synthField -> constraints
+  in
+    foldMarshallerFields
+      marshaller
+      ConstraintDefinition.emptyTableConstraints
+      collectTableConstraints
 
 {- |
   Represents a primitive entry in a 'SqlMarshaller'. This type is used with

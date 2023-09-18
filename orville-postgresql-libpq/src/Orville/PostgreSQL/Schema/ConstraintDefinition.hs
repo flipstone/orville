@@ -1,9 +1,15 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+{- |
+Copyright : Flipstone Technology Partners 2016-2021
+License   : MIT
+-}
 module Orville.PostgreSQL.Schema.ConstraintDefinition
   ( ConstraintDefinition
   , uniqueConstraint
   , foreignKeyConstraint
   , foreignKeyConstraintWithOptions
-  , ForeignReference (localFieldName, foreignFieldName)
+  , ForeignReference (ForeignReference, localFieldName, foreignFieldName)
   , foreignReference
   , ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction)
   , ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint)
@@ -12,15 +18,67 @@ module Orville.PostgreSQL.Schema.ConstraintDefinition
   , ForeignKeyAction (..)
   , ForeignKeyOptions (foreignKeyOptionsOnDelete, foreignKeyOptionsOnUpdate)
   , defaultForeignKeyOptions
+  , TableConstraints
+  , emptyTableConstraints
+  , addConstraint
+  , tableConstraintDefinitions
+  , tableConstraintKeys
   )
 where
 
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NEL
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
+import qualified Orville.PostgreSQL.Internal.FieldName as FieldName
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
+
+{- |
+  A collection of constraints to be able to a table. This collection is indexed
+  by 'ConstraintMigrationKey'. If multiple constraints with the same
+  'ConstraintMigrationKey' are added the most recently added one will be kept
+  and the previous one dropped.
+-}
+newtype TableConstraints
+  = TableConstraints (Map.Map ConstraintMigrationKey ConstraintDefinition)
+  deriving (Semigroup, Monoid)
+
+{- |
+  Constructs an empty 'TableConstraints'
+-}
+emptyTableConstraints :: TableConstraints
+emptyTableConstraints = TableConstraints Map.empty
+
+{- |
+  Adds a 'ConstraintDefinition' to an existing 'TableConstraints'. If a
+  constraint already exists with the same 'ConstraintMigrationKey' it is
+  replaced with the new constraint.
+-}
+addConstraint :: ConstraintDefinition -> TableConstraints -> TableConstraints
+addConstraint constraint (TableConstraints constraintMap) =
+  TableConstraints $
+    Map.insert
+      (constraintMigrationKey constraint)
+      constraint
+      constraintMap
+
+{- |
+  Gets the list of 'ConstraintDefinition's that have been added to the
+  'TableConstraints'
+-}
+tableConstraintKeys :: TableConstraints -> Set.Set ConstraintMigrationKey
+tableConstraintKeys (TableConstraints constraints) =
+  Map.keysSet constraints
+
+{- |
+  Gets the list of 'ConstraintDefinition's that have been added to the
+  'TableConstraints'
+-}
+tableConstraintDefinitions :: TableConstraints -> [ConstraintDefinition]
+tableConstraintDefinitions (TableConstraints constraints) =
+  Map.elems constraints
 
 {- |
   Defines a constraint that can be added to a
@@ -43,9 +101,9 @@ data ConstraintDefinition = ConstraintDefinition
 -}
 data ConstraintMigrationKey = ConstraintMigrationKey
   { constraintKeyType :: ConstraintKeyType
-  , constraintKeyColumns :: Maybe [FieldDefinition.FieldName]
+  , constraintKeyColumns :: Maybe [FieldName.FieldName]
   , constraintKeyForeignTable :: Maybe TableIdentifier.TableIdentifier
-  , constraintKeyForeignColumns :: Maybe [FieldDefinition.FieldName]
+  , constraintKeyForeignColumns :: Maybe [FieldName.FieldName]
   , constraintKeyForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
   , constraintKeyForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
   }
@@ -75,11 +133,11 @@ constraintSqlExpr = _constraintSqlExpr
   Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
   columns.
 -}
-uniqueConstraint :: NonEmpty FieldDefinition.FieldName -> ConstraintDefinition
+uniqueConstraint :: NonEmpty FieldName.FieldName -> ConstraintDefinition
 uniqueConstraint fieldNames =
   let
     expr =
-      Expr.uniqueConstraint . fmap FieldDefinition.fieldNameToColumnName $ fieldNames
+      Expr.uniqueConstraint . fmap FieldName.fieldNameToColumnName $ fieldNames
 
     migrationKey =
       ConstraintMigrationKey
@@ -102,8 +160,8 @@ uniqueConstraint fieldNames =
   column in the key and which column it references in the foreign table.
 -}
 data ForeignReference = ForeignReference
-  { localFieldName :: FieldDefinition.FieldName
-  , foreignFieldName :: FieldDefinition.FieldName
+  { localFieldName :: FieldName.FieldName
+  , foreignFieldName :: FieldName.FieldName
   }
 
 {- |
@@ -111,9 +169,9 @@ data ForeignReference = ForeignReference
 -}
 foreignReference ::
   -- | The name of the field in the table with the constraint
-  FieldDefinition.FieldName ->
+  FieldName.FieldName ->
   -- | The name of the field in the foreign table that the local field references
-  FieldDefinition.FieldName ->
+  FieldName.FieldName ->
   ForeignReference
 foreignReference localName foreignName =
   ForeignReference
@@ -204,9 +262,9 @@ foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
 
     expr =
       Expr.foreignKeyConstraint
-        (fmap FieldDefinition.fieldNameToColumnName localFieldNames)
+        (fmap FieldName.fieldNameToColumnName localFieldNames)
         (TableIdentifier.tableIdQualifiedName foreignTableId)
-        (fmap FieldDefinition.fieldNameToColumnName foreignFieldNames)
+        (fmap FieldName.fieldNameToColumnName foreignFieldNames)
         onUpdateExpr
         onDeleteExpr
 

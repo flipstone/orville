@@ -41,6 +41,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.MigrationLock as MigrationLock
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
   A 'SchemaItem' represents a single item in a database schema such as a table,
@@ -342,7 +343,7 @@ mkCreateTableSteps currentNamespace tableDef =
     addConstraintActions =
       concatMap
         (mkAddConstraintActions currentNamespace Set.empty)
-        (Orville.tableConstraints tableDef)
+        (Schema.tableConstraintDefinitions $ Orville.tableConstraints tableDef)
 
     addIndexSteps =
       concatMap
@@ -390,14 +391,14 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
 
     constraintsToKeep =
       Set.map (setDefaultSchemaNameOnConstraintKey currentNamespace)
-        . Map.keysSet
+        . Schema.tableConstraintKeys
         . Orville.tableConstraints
         $ tableDef
 
     addConstraintActions =
       concatMap
         (mkAddConstraintActions currentNamespace existingConstraints)
-        (Orville.tableConstraints tableDef)
+        (Schema.tableConstraintDefinitions $ Orville.tableConstraints tableDef)
 
     dropConstraintActions =
       concatMap

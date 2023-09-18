@@ -99,7 +99,7 @@ module Orville.PostgreSQL
   , ConstraintDefinition.foreignKeyOptionsOnUpdate
   , ConstraintDefinition.defaultForeignKeyOptions
   , ConstraintDefinition.ForeignKeyAction (..)
-  , ConstraintDefinition.ForeignReference (localFieldName, foreignFieldName)
+  , ConstraintDefinition.ForeignReference (ForeignReference, localFieldName, foreignFieldName)
   , ConstraintDefinition.foreignReference
   , ConstraintDefinition.ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction)
   , ConstraintDefinition.ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint)
@@ -175,6 +175,8 @@ module Orville.PostgreSQL
   , FieldDefinition.fieldName
   , FieldDefinition.fieldDescription
   , FieldDefinition.setFieldDescription
+  , FieldDefinition.addUniqueConstraint
+  , FieldDefinition.addForeignKeyConstraint
   , FieldDefinition.FieldName
   , FieldDefinition.stringToFieldName
   , FieldDefinition.fieldNameToString

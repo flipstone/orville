@@ -8,6 +8,7 @@ import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Pool as Pool
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -17,6 +18,7 @@ import qualified Orville.PostgreSQL.Execution.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Bar as Bar
@@ -32,6 +34,7 @@ tableDefinitionTests pool =
     , prop_readOnlyFields pool
     , prop_primaryKey pool
     , prop_uniqueConstraint pool
+    , prop_fieldConstraints
     ]
 
 prop_roundTrip :: Property.NamedDBProperty
@@ -135,3 +138,48 @@ prop_uniqueConstraint =
         HH.failure
       Left err ->
         Conn.sqlExecutionErrorSqlState err === Just (B8.pack "23505")
+
+prop_fieldConstraints :: Property.NamedProperty
+prop_fieldConstraints =
+  Property.singletonNamedProperty "Includes field constraints in table constraints" $ do
+    let
+      foreignTableId =
+        Orville.unqualifiedNameToTableId "foreign_table"
+
+      foreignFieldName =
+        Orville.stringToFieldName "foreign_field"
+
+      fieldWithoutConstraints =
+        Orville.integerField "foo"
+
+      fieldWithConstraints =
+        Orville.addForeignKeyConstraint foreignTableId foreignFieldName
+          . Orville.addUniqueConstraint
+          $ fieldWithoutConstraints
+
+      tableWithFieldConstraints =
+        Orville.mkTableDefinitionWithoutKey
+          "test_table"
+          (Orville.marshallField id fieldWithConstraints)
+
+      fieldName =
+        Orville.fieldName fieldWithoutConstraints
+
+      tableWithTableConstraints =
+        Orville.addTableConstraints
+          [ Orville.foreignKeyConstraint
+              foreignTableId
+              (Orville.foreignReference fieldName foreignFieldName :| [])
+          , Orville.uniqueConstraint (fieldName :| [])
+          ]
+          $ Orville.mkTableDefinitionWithoutKey
+            "test_table"
+            (Orville.marshallField id fieldWithoutConstraints)
+
+      tableConstraintKeys ::
+        Orville.TableDefinition hasKey writeEntity readEntity ->
+        Set.Set Orville.ConstraintMigrationKey
+      tableConstraintKeys =
+        ConstraintDefinition.tableConstraintKeys . Orville.tableConstraints
+
+    tableConstraintKeys tableWithFieldConstraints === tableConstraintKeys tableWithTableConstraints

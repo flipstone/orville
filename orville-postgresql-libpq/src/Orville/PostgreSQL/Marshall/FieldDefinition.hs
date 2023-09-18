@@ -14,6 +14,11 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , fieldIsNotNullable
   , fieldDefaultValue
   , fieldNullability
+  , fieldTableConstraints
+  , addFieldTableConstraints
+  , addForeignKeyConstraint
+  , addForeignKeyConstraintWithOptions
+  , addUniqueConstraint
   , fieldEquals
   , (.==)
   , fieldNotEquals
@@ -91,32 +96,12 @@ import qualified Data.Time as Time
 import qualified Data.UUID as UUID
 
 import qualified Orville.PostgreSQL.Expr as Expr
+import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, fieldNameToString, stringToFieldName)
 import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
-newtype FieldName
-  = FieldName B8.ByteString
-  deriving (Eq, Ord, Show)
-
-fieldNameToColumnName :: FieldName -> Expr.ColumnName
-fieldNameToColumnName (FieldName name) =
-  Expr.fromIdentifier (Expr.identifierFromBytes name)
-
-stringToFieldName :: String -> FieldName
-stringToFieldName =
-  FieldName . B8.pack
-
-fieldNameToString :: FieldName -> String
-fieldNameToString =
-  B8.unpack . fieldNameToByteString
-
-fieldNameToByteString :: FieldName -> B8.ByteString
-fieldNameToByteString (FieldName name) =
-  name
-
-byteStringToFieldName :: B8.ByteString -> FieldName
-byteStringToFieldName = FieldName
+import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
+import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- |
   'FieldDefinition' determines the SQL constsruction of a column in the
@@ -131,6 +116,7 @@ data FieldDefinition nullability a = FieldDefinition
   , i_fieldNullability :: NullabilityGADT nullability
   , i_fieldDefaultValue :: Maybe (DefaultValue.DefaultValue a)
   , i_fieldDescription :: Maybe String
+  , i_fieldTableConstraints :: [FieldName -> ConstraintDefinition.ConstraintDefinition]
   }
 
 {- |
@@ -201,6 +187,109 @@ fieldIsNotNullable field =
   case i_fieldNullability field of
     NullableGADT -> False
     NotNullGADT -> True
+
+{- |
+  A list a table constraints that will be included on any table that uses this
+  field definition.
+-}
+fieldTableConstraints ::
+  FieldDefinition nullability a ->
+  ConstraintDefinition.TableConstraints
+fieldTableConstraints fieldDef =
+  let
+    name =
+      fieldName fieldDef
+
+    constructedConstraints =
+      fmap ($ name) (i_fieldTableConstraints fieldDef)
+  in
+    foldr
+      ConstraintDefinition.addConstraint
+      ConstraintDefinition.emptyTableConstraints
+      constructedConstraints
+
+{- |
+  Adds the given table constraints to the field definition. These constraints
+  will then be included on any table where the field is used. The constraints
+  are passed a functions that will take the name of the field definition an
+  construct the constraints. This allows the 'ConstraintDefinition's to use the
+  correct name of the field in the case where 'setFieldName' is used after
+  constraints are added.
+
+  Note: If multiple constraints are added with the same
+  'ConstraintMigrationKey', only the last one that is added will be part of the
+  'TableDefinition'. Any previously added constraint with the same key is
+  replaced by the new one.
+-}
+addFieldTableConstraints ::
+  [FieldName -> ConstraintDefinition.ConstraintDefinition] ->
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+addFieldTableConstraints constraintDefs fieldDef =
+  fieldDef
+    { i_fieldTableConstraints =
+        constraintDefs <> i_fieldTableConstraints fieldDef
+    }
+
+{- |
+  Adds a @FOREIGN KEY@ constraint to the 'FieldDefinition' (using
+  'addFieldTableConstraints'). This constraint will be included on any table
+  that uses the field definition.
+-}
+addForeignKeyConstraint ::
+  -- | Identifier of the table referenced by the foreign key
+  TableIdentifier.TableIdentifier ->
+  -- | The field name that this field definition references in the foreign table
+  FieldName ->
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+addForeignKeyConstraint foreignTableId foreignFieldName =
+  addForeignKeyConstraintWithOptions
+    foreignTableId
+    foreignFieldName
+    ConstraintDefinition.defaultForeignKeyOptions
+
+{- |
+  Adds a @FOREIGN KEY@ constraint to the 'FieldDefinition'. This constraint
+  will be included on any table that uses the field definition.
+-}
+addForeignKeyConstraintWithOptions ::
+  -- | Identifier of the table referenced by the foreign key
+  TableIdentifier.TableIdentifier ->
+  -- | The field name that this field definition references in the foreign table
+  FieldName ->
+  ConstraintDefinition.ForeignKeyOptions ->
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+addForeignKeyConstraintWithOptions foreignTableId foreignFieldName options fieldDef =
+  let
+    mkReference name =
+      ConstraintDefinition.ForeignReference
+        { ConstraintDefinition.localFieldName = name
+        , ConstraintDefinition.foreignFieldName = foreignFieldName
+        }
+
+    constraintToAdd name =
+      ConstraintDefinition.foreignKeyConstraintWithOptions
+        foreignTableId
+        (mkReference name :| [])
+        options
+  in
+    addFieldTableConstraints [constraintToAdd] fieldDef
+
+{- |
+  Adds a @UNIQUE@ constraint to the 'FieldDefinition'. This constraint
+  will be included on any table that uses the field definition.
+-}
+addUniqueConstraint ::
+  FieldDefinition nullability a ->
+  FieldDefinition nullability a
+addUniqueConstraint fieldDef =
+  let
+    constraintToAdd name =
+      ConstraintDefinition.uniqueConstraint (name :| [])
+  in
+    addFieldTableConstraints [constraintToAdd] fieldDef
 
 {- |
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
@@ -485,6 +574,7 @@ fieldOfType sqlType name =
     , i_fieldNullability = NotNullGADT
     , i_fieldDefaultValue = Nothing
     , i_fieldDescription = Nothing
+    , i_fieldTableConstraints = mempty
     }
 
 {- |
@@ -513,6 +603,7 @@ nullableField field =
       , i_fieldNullability = NullableGADT
       , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
       , i_fieldDescription = fieldDescription field
+      , i_fieldTableConstraints = i_fieldTableConstraints field
       }
 
 {- |
@@ -543,6 +634,7 @@ asymmetricNullableField field =
       , i_fieldNullability = NullableGADT
       , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
       , i_fieldDescription = fieldDescription field
+      , i_fieldTableConstraints = i_fieldTableConstraints field
       }
 
 {- |
@@ -613,7 +705,7 @@ prefixField ::
   FieldDefinition nullability a
 prefixField prefix fieldDef =
   fieldDef
-    { i_fieldName = FieldName (B8.pack prefix <> "_" <> fieldNameToByteString (fieldName fieldDef))
+    { i_fieldName = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (fieldName fieldDef))
     }
 
 {- |
