@@ -372,11 +372,12 @@ planMany =
 
   There will always be the same number of elements in the @[result]@ list as
   there are in the @[param]@ list, even if there are duplicate values in the
-  input parameters. This may be counter-intuitive in the trivial case where
+  input parameters. This may be counter-intuitive in the trivial case where a
   plan that queries a single table is passed to 'planList' but cannot be
   avoided due to more complicated situations where the original plan executes
-  queries against multiple tables the query results must be correlated based on
-  the input parameters to build each @result@ value.
+  queries against multiple tables. When a plan that queries multiple table is
+  passed, the query results must be correlated based on the input parameters to
+  build each @result@ value.
 -}
 planList ::
   (forall scope. Plan scope param result) ->
