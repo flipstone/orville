@@ -2,11 +2,15 @@
 Module    : Database.Orville.PostgreSQL.Core
 Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
+
+Migration Guide: Although not all exports are identical, most of the items in
+this module can now be import from @Orville.PostgreSQL@.
+
 -}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Database.Orville.PostgreSQL.Core
-  ( TableDefinition(..)
+  ( TableDefinition(..) -- migration guide added
   , PrimaryKey
   , primaryKeyIn
   , primaryKeyEquals
@@ -15,7 +19,7 @@ module Database.Orville.PostgreSQL.Core
   , primaryKey
   , compositePrimaryKey
   , primaryKeyPart
-  , mkTableDefinition
+  , mkTableDefinition -- migration guide added
   , SqlType(..)
   , serial
   , bigserial
@@ -31,17 +35,17 @@ module Database.Orville.PostgreSQL.Core
   , textSearchVector
   , convertSqlType
   , maybeConvertSqlType
-  , TableParams(..)
-  , RelationalMap
-  , fields
-  , mapAttr
-  , mapField
-  , attrField
-  , maybeMapper
-  , prefixMap
-  , partialMap
-  , readOnlyMap
-  , readOnlyField
+  , TableParams(..) -- migration guide added
+  , RelationalMap -- migration guide added
+  , fields -- migration guide added
+  , mapAttr -- migration guide added
+  , mapField -- migration guide added
+  , attrField -- migration guide added
+  , maybeMapper -- migration guide added
+  , prefixMap -- migration guide added
+  , partialMap -- migration guide added
+  , readOnlyMap -- migration guide added
+  , readOnlyField -- migration guide added
   , OrvilleEnv
   , newOrvilleEnv
   , setStartTransactionSQL
@@ -168,18 +172,18 @@ module Database.Orville.PostgreSQL.Core
   , migrationPlanItems
   , Pagination(..)
   , buildPagination
-  , selectAll
-  , selectFirst
-  , deleteRecord
-  , deleteWhere
-  , findRecord
-  , findRecords
-  , findRecordsBy
-  , insertRecord
-  , insertRecordMany
-  , insertRecordManyReturning
-  , updateFields
-  , updateRecord
+  , selectAll -- migration guide added
+  , selectFirst -- migraiton guide added
+  , deleteRecord -- migration guide added
+  , deleteWhere -- migration guide added
+  , findRecord -- migration guide added
+  , findRecords -- migration guide added
+  , findRecordsBy -- migration guide added
+  , insertRecord -- migration guide added
+  , insertRecordMany -- migration guide added
+  , insertRecordManyReturning -- migration guide added
+  , updateFields -- migration guide added
+  , updateRecord -- migration guide added
   , sequenceNextVal
   , sequenceSetVal
   , sequenceCurrVal
@@ -231,6 +235,9 @@ getField f = do
   sqlValues <- get
   put (convert value : sqlValues)
 
+{- |
+  Migration Guide: @selectAll@ has been renamed to @findEntitiesBy@
+-}
 selectAll ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -238,6 +245,10 @@ selectAll ::
   -> m [readEntity]
 selectAll tableDef = runSelect . selectQueryTable tableDef
 
+
+{- |
+  Migration Guide: @selectFirst@ has been renamed to @findFirstEntityBy@
+-}
 selectFirst ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -259,6 +270,10 @@ deleteWhereBuild tableDef conds = do
   withConnection $ \conn -> do
     executingSql DeleteQuery querySql $ do run conn querySql values
 
+{- |
+  Migration Guide: @deleteWhere@ has been renamed to @deleteEntities@. It
+  now takes a @Maybe BooleanExpr@ rather than @[WhereCondition]@
+-}
 deleteWhere ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -266,6 +281,11 @@ deleteWhere ::
   -> m Integer
 deleteWhere tableDef = deleteWhereBuild tableDef
 
+{- |
+  Migration Guide: @findRecords@ has been renamed to @findEntities@. It now
+  requires a @NonEmpty key@ rather than simply @[key]@ and returns a
+  @[readEntity]@ instead of a @Map@.
+-}
 findRecords ::
      (Ord key, MonadOrville conn m)
   => TableDefinition readEntity writeEntity key
@@ -278,6 +298,11 @@ findRecords tableDef keys = do
   recordList <- selectAll tableDef (where_ $ primaryKeyIn keyDef keys)
   pure $ Map.fromList (map mkEntry recordList)
 
+{- |
+  Migration Guide: @findRecordsBy@ has been renamed to @findEntitiesBy@. It
+  no longer takes a @FieldDefinition@ to group by. Instead it simply returns
+  a @[readEntity]@
+-}
 findRecordsBy ::
      (Ord fieldValue, MonadOrville conn m)
   => TableDefinition readEntity writeEntity key
@@ -289,6 +314,9 @@ findRecordsBy tableDef field opts = do
       query = selectQuery builder (fromClauseTable tableDef) opts
   Map.groupBy' id <$> runSelect query
 
+{- |
+  Migration Guide: @findRecord@ has been renamed to @findEntity@
+-}
 findRecord ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -298,6 +326,15 @@ findRecord tableDef key =
   let keyDef = tablePrimaryKey tableDef
    in selectFirst tableDef (where_ $ primaryKeyEquals keyDef key)
 
+{- |
+  Migration Guide: @updateFields@ has been renamed to
+  @updateFieldsAndReturnRowCount@, but now takes a @NonEmpty SetClause@ instead
+  of a @[Field Update]@ and a @Maybe BooleanExpr@ instead of a
+  @[WhereCondition]@.
+
+  @updateFields@ still exists a variant of this function, but returns @()@
+  rather than @Int@. @updateFieldsAndReturnEntities@ is now available as well.
+-}
 updateFields ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -313,6 +350,11 @@ updateFields tableDef updates conds =
     updateNames = map fieldUpdateName updates
     updateClause = mkUpdateClause (tableName tableDef) updateNames
 
+{- |
+  Migration Guide: @updateRecord@ has been renamed to @updateEntity. Note that
+  there are also new variant functions @updateAndReturnEntity@ and
+  @updateEntityAndReturnRowCount@.
+-}
 updateRecord ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -327,6 +369,11 @@ updateRecord tableDef key record = do
       updates = zipWith FieldUpdate fields (runToSql builder record)
   void $ updateFields tableDef updates conds
 
+{- |
+  Migration Guide: @insertRecord@ has been renamed to @insertAndReturnEntity@.
+  Note there are is are also new variant functions @insertEntity@ and
+  @insertEntityAndReturnRowCount@ that return @()@ and @Int@ respectively.
+-}
 insertRecord ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -339,6 +386,10 @@ insertRecord tableDef newRecord = do
     [] -> error "Didn't get a record back from the database!"
     _ -> error "Got more than one record back from the database!"
 
+{- |
+  Migration Guide: @insertRecordManyReturning@ has been renamed to
+  @insertAndReturnEntities@.
+-}
 insertRecordManyReturning ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -365,6 +416,12 @@ insertRecordManyReturning tableDef newRecords = do
         fetchAllRowsAL' insert
   decodeSqlRows builder rows
 
+{- |
+  Migration Guide: @insertRecordMany@ has been renamed to @insertEntities@. It
+  now requires a @NonEmpty writeEntity@ rather than @[writeEntity]@. Note that
+  there are also new variant functions @insertAndReturnEntities@ and
+  @insertEntitiesAndReturnRowCount@.
+-}
 insertRecordMany ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
@@ -383,6 +440,12 @@ insertRecordMany tableDef newRecords = do
         insert <- prepare conn insertSql
         void $ execute insert (concatMap (runToSql builder) newRecords)
 
+{- |
+  Migration Guide: @deleteRecord@ has been renamed to @deleteEntity@. Note
+  that there are also new variant function @deleteAndReturnEntity@ and
+  @deleteEntityAndReturnRowCount@ that return @Maybe readEntity@ and @Int@
+  respectively.
+-}
 deleteRecord ::
      MonadOrville conn m
   => TableDefinition readEntity writeEntity key
