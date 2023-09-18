@@ -16,14 +16,14 @@ import Database.Orville.PostgreSQL.Internal.Types
 
 {- |
   Migration Guide: @textField@ has been renamed to @boundedTextField@. It now
-  takes an @Int32@ rather than in @Int@
+  takes an @Int32@ rather than an @Int@
 -}
 textField :: String -> Int -> FieldDefinition NotNull Text
 textField name len = fieldOfType (varText len) name
 
 {- |
   Migration Guide: @fixedTextField@ retains the same name. It now
-  takes an @Int32@ rather than in @Int@
+  takes an @Int32@ rather than an @Int@
 -}
 fixedTextField :: String -> Int -> FieldDefinition NotNull Text
 fixedTextField name len = fieldOfType (text len) name
@@ -141,7 +141,7 @@ asymmetricNullableField field =
 
 {- |
   Migration Guide: @isFieldNullable@ has been replaced with
-  @fieldIsNotNullable@, which has the same signture by the @Bool@ returned is
+  @fieldIsNotNullable@, which has the same signture but the @Bool@ returned is
   the opposite.
 -}
 isFieldNullable :: FieldDefinition nullability a -> Bool
@@ -213,7 +213,7 @@ isAssignedByDatabaseField field = any isAssignedByDatabase $ fieldFlags field
 
 {- |
   Migration Guide: @withPrefix@ has been replaced by @prefixField@ whose
-  arguments are are flipped relative to @withPrefix@
+  arguments are flipped relative to @withPrefix@
 -}
 withPrefix :: FieldDefinition nullability a -> String -> FieldDefinition nullability a
 withPrefix field prefix = field `withName` (prefix ++ "_" ++ fieldName field)

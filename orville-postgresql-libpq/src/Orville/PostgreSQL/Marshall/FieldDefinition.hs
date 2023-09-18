@@ -497,12 +497,12 @@ fixedTextField ::
 fixedTextField name len = fieldOfType (SqlType.fixedText len) name
 
 {- |
-  Builds a @FieldDefinition@ that stores PostgreSQL text seach vector values.
-  The values are represent as Haskell 'T.Text' values, but are interpreted as
+  Builds a @FieldDefinition@ that stores PostgreSQL text search vector values.
+  The values are represented as Haskell 'T.Text' values, but are interpreted as
   text search vector values by PostgreSQL when passed to it.
 
   See https://www.postgresql.org/docs/current/datatype-textsearch.html for
-  information about PostgreSQL creates @tsvector@ values from strings.
+  information about how PostgreSQL creates @tsvector@ values from strings.
 -}
 textSearchVectorField :: String -> FieldDefinition NotNull T.Text
 textSearchVectorField = fieldOfType SqlType.textSearchVector

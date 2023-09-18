@@ -32,7 +32,7 @@ col :: (ColumnSpecifier col, Convertible SqlValue a) => col -> FromSql a
 col spec = joinFromSqlError (convertFromSql <$> getColumn (selectForm spec))
 
 {- |
-  Migration Guide: @fieldFromSql@ has been replace with @fieldValueFromSqlValue@
+  Migration Guide: @fieldFromSql@ has been replaced with @fieldValueFromSqlValue@
 -}
 fieldFromSql :: FieldDefinition nullability a -> FromSql a
 fieldFromSql field =

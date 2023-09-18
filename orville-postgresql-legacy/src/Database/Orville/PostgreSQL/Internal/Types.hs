@@ -37,7 +37,7 @@ type OccurredAt = Time.UTCTime
 
 {- |
   Migration Guide: @ColumnFlag@ has been removed. Depending on flag constructor
-  there may or may not be a replacment.
+  there may or may not be a replacement.
 
   @ColumnDefault@ - replaced by the @setDefaultValue@ function in new orville
   @Unique@ - replaced by the @addUniqueConstraint@ function in new orville
