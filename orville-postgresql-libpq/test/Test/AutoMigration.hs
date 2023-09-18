@@ -177,6 +177,11 @@ prop_columnsWithSystemNameConflictsRaiseError =
         HH.annotate "Expected migration to fail, but it did not"
         HH.failure
 
+{- |
+  Migration Guide: @SomeField@ has been removed. @foldMarshallerFields@ can be
+  used to collect data from the fields in a @SqlMarshaller@ while converting
+  the results to whatever type you desire.
+-}
 data SomeField where
   SomeField :: Orville.FieldDefinition nullability a -> SomeField
 

@@ -35,6 +35,17 @@ type UpdatedAt = Time.UTCTime
 
 type OccurredAt = Time.UTCTime
 
+{- |
+  Migration Guide: @ColumnFlag@ has been removed. Depending on flag constructor
+  there may or may not be a replacment.
+
+  @ColumnDefault@ - replaced by the @setDefaultValue@ function in new orville
+  @Unique@ - replaced by the @addUniqueConstraint@ function in new orville
+  @References@ - replaced by the @addForeignKeyConstraint@ function in new orville
+  @ColumnDescription@ - removed
+  @AssignedByDatabase@ - removed, though many cases are handled by @marshallReadOnlyField@
+
+-}
 data ColumnFlag
   = forall a. ColumnDefault a => Default a
   | Unique
@@ -100,11 +111,16 @@ checkNullability field =
     Nullable -> NullableField field
     NotNull  -> NotNullField field
 
+{- |
+  Migration Guide: The signature of the @FieldDefinition@ type has not changed,
+  but many of the constructors and accessors have. See the migration guides
+  on individual functions for more info.
+-}
 data FieldDefinition nullability a =
   FieldDefinition
     { fieldName        :: String
     , fieldType        :: SqlType a
-    , fieldFlags       :: [ColumnFlag]
+    , fieldFlags       :: [ColumnFlag] -- ^ @fieldFlags@ has been removed. See the new @fieldDefaultValue@ and @fieldTableConstraints@ functions
     , fieldNullability :: Nullability nullability
     }
 

@@ -497,8 +497,12 @@ fixedTextField ::
 fixedTextField name len = fieldOfType (SqlType.fixedText len) name
 
 {- |
-  TODO: write meaningful docs for this when we build a better Haskell
-  definition for representing text search vectors.
+  Builds a @FieldDefinition@ that stores PostgreSQL text seach vector values.
+  The values are represent as Haskell 'T.Text' values, but are interpreted as
+  text search vector values by PostgreSQL when passed to it.
+
+  See https://www.postgresql.org/docs/current/datatype-textsearch.html for
+  information about PostgreSQL creates @tsvector@ values from strings.
 -}
 textSearchVectorField :: String -> FieldDefinition NotNull T.Text
 textSearchVectorField = fieldOfType SqlType.textSearchVector
@@ -525,7 +529,7 @@ dateField ::
 dateField = fieldOfType SqlType.date
 
 {- |
-  Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime values as the
+  Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP with time zone" type.
 -}
 utcTimestampField ::
@@ -535,7 +539,7 @@ utcTimestampField ::
 utcTimestampField = fieldOfType SqlType.timestamp
 
 {- |
-  Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime values as the
+  Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP without time zone" type.
 -}
 localTimestampField ::

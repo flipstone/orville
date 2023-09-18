@@ -262,6 +262,10 @@ foreignRefType sqlType =
     Just refDDL -> sqlType {sqlTypeDDL = refDDL, sqlTypeReferenceDDL = Nothing}
 
 {-|
+  Migration Guide: @maybeConvertSqlType@ has been replaced with
+  @tryConvertSqlType@, which allows an error message to be returned when
+  conversion fails.
+
   'maybeConvertSqlType' changes the Haskell type used by a 'SqlType' without
   changing the column type that will be used in the database schema. The
   functions given will be used to convert the now Haskell type to and from the
@@ -290,6 +294,8 @@ eitherConvertSqlType bToA aToB sqlType =
     }
 
 {-|
+  Migration Guide: @convertSqlType@ retains the same name
+
   'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
   as 'maybeConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
   -}

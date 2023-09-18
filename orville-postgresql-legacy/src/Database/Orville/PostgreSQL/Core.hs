@@ -33,8 +33,8 @@ module Database.Orville.PostgreSQL.Core
   , date
   , timestamp
   , textSearchVector
-  , convertSqlType
-  , maybeConvertSqlType
+  , convertSqlType -- migration guide added
+  , maybeConvertSqlType -- migration guide added
   , TableParams(..) -- migration guide added
   , RelationalMap -- migration guide added
   , fields -- migration guide added
@@ -66,38 +66,38 @@ module Database.Orville.PostgreSQL.Core
   , QueryType(..)
   , withCachedConnection
   , withTransaction
-  , ColumnFlag(..)
+  , ColumnFlag(..) -- migration guide added
   , ColumnDefault(toColumnDefaultSql)
   , Now(..)
-  , FieldDefinition
+  , FieldDefinition -- migration guide added
   , Nullable
   , NotNull
   , Nullability(..)
-  , isFieldNullable
-  , fieldOfType
-  , textField
-  , fixedTextField
-  , unboundedTextField
-  , dayField
-  , utcTimeField
-  , int32Field
-  , int64Field
-  , doubleField
-  , boolField
-  , automaticIdField
-  , searchVectorField
-  , nullableField
-  , foreignKeyField
-  , withFlag
-  , withName
-  , withConversion
-  , fieldFromSql
-  , fieldToSqlValue
-  , SomeField(..)
-  , withPrefix
+  , isFieldNullable -- migration guide added
+  , fieldOfType -- migration guide added
+  , textField -- migration guide added
+  , fixedTextField -- migration guide added
+  , unboundedTextField -- migration guide added
+  , dayField -- migration guide added
+  , utcTimeField -- migration guide added
+  , int32Field -- migration guide added
+  , int64Field -- migration guide added
+  , doubleField -- migration guide added
+  , boolField -- migration guide added
+  , automaticIdField -- migration guide added
+  , searchVectorField -- migration guide added
+  , nullableField -- migration guide added
+  , foreignKeyField -- migration guided added
+  , withFlag -- migration guide added
+  , withName -- migration guide added
+  , withConversion -- migration guide added
+  , fieldFromSql -- migration guide added
+  , fieldToSqlValue -- migration guide added
+  , SomeField(..) -- migration guide added
+  , withPrefix -- migration guide added
   , fieldName
   , fieldType
-  , fieldFlags
+  , fieldFlags -- migration guide added
   , IndexDefinition(..)
   , uniqueIndex
   , simpleIndex
