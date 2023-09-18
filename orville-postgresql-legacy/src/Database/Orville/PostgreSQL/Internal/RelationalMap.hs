@@ -32,6 +32,9 @@ import Database.Orville.PostgreSQL.Internal.FromSql
 import Database.Orville.PostgreSQL.Internal.Types
 
 {-|
+ MigrationGuide: @TableParams@ no longer exists. See the migration guide
+ for 'mkTableDefinition'
+
  'TableParams' is the simplest way to make a 'TableDefinition'. You
  can use 'mkTableDefinition' to make a definition from the simplified
  params. Where 'TableDefinition' requires the 'tableFields', 'tableFromSql',
@@ -61,6 +64,13 @@ data TableParams readEntity writeEntity key = TableParams
   }
 
 {-|
+  Migration Guide: This function has in the new orville to take the table name,
+  primary key definition and a @SqlMarshaller@ (formerly @RelationalMap@).
+  Other options such as constraints, indexes, and columns to drop can be added
+  to the @TableDefinition@ after the initial instantiation. The @TableParams@
+  type has been dropped for the new orville.
+
+
  'mkTableDefinition' converts a 'TableParams' to 'TableDefinition'. Usually
  this is used directly on a record literal of the 'TableParams'. For
  example:
@@ -95,6 +105,12 @@ mkTableDefinition (TableParams {..}) =
     , tableComments = tblComments
     }
 
+{- |
+  Migration guide: This type has been replaced with the @SqlMarshaller@ type in
+  the new orville. The interface is similar, though the names of the functions
+  have been updated in many cases. See the migration guides for those functions
+  to find their new names.
+-}
 data RelationalMap a b where
   RM_Field :: FieldDefinition nullability a -> RelationalMap a a
   RM_Nest :: (a -> b) -> RelationalMap b c -> RelationalMap a c
@@ -117,24 +133,46 @@ instance Profunctor RelationalMap where
   rmap = fmap
   lmap = mapAttr
 
+{- |
+  Migration Guide: @mapAttr@ has been renamed to @marshallNested@
+-}
 mapAttr :: (a -> b) -> RelationalMap b c -> RelationalMap a c
 mapAttr = RM_Nest
 
+{- |
+  Migration Guide: @mapField@ has been removed, though its functional
+  equivalent is @marshallReadOnlyField@
+-}
 mapField :: FieldDefinition nullability a -> RelationalMap a a
 mapField = RM_Field
 
+{- |
+  Migration Guide: @partialMap@ has been renamed to @marshallPartial@
+-}
 partialMap :: RelationalMap a (Either String a) -> RelationalMap a a
 partialMap = RM_Partial
 
+{- |
+  Migration Guide: @readOnlyMap@ has been renamed to @marshallReadOnly@
+-}
 readOnlyMap :: RelationalMap a b -> RelationalMap c b
 readOnlyMap = RM_ReadOnly
 
+{- |
+  Migration Guide: @attrField@ has been renamed to @marshallField@
+-}
 attrField :: (a -> b) -> FieldDefinition nullability b -> RelationalMap a b
 attrField get = mapAttr get . mapField
 
+{- |
+  Migration Guide: @readOnlyField@ has been renamed to @marshallReadOnlyField@
+-}
 readOnlyField :: FieldDefinition nullability a -> RelationalMap b a
 readOnlyField = readOnlyMap . mapField
 
+{- |
+  Migration Guide: @prefixMap@ has been renamed to @prefixMarshaller@
+-}
 prefixMap :: String -> RelationalMap a b -> RelationalMap a b
 prefixMap prefix (RM_Nest f rm) = RM_Nest f (prefixMap prefix rm)
 prefixMap prefix (RM_Field f) = RM_Field (f `withPrefix` prefix)
@@ -145,6 +183,9 @@ prefixMap prefix (RM_ReadOnly rm) = RM_ReadOnly (prefixMap prefix rm)
 prefixMap prefix (RM_MaybeTag rm) = RM_MaybeTag (prefixMap prefix rm)
 prefixMap _ rm@(RM_Pure _) = rm
 
+{- |
+  Migration Guide: @maybeMapper@ has been renamed to @marshallMaybe@
+-}
 maybeMapper :: RelationalMap a b -> RelationalMap (Maybe a) (Maybe b)
 maybeMapper
     -- rewrite the mapper to handle null fields, then tag
@@ -178,6 +219,13 @@ maybeMapper
     go (RM_ReadOnly rm) = RM_ReadOnly (go rm)
     go rm@(RM_MaybeTag _) = fmap Just $ mapAttr join $ rm
 
+{- |
+  Migration Guide: The fields in new orville's @SqlMarshaller@ are somewhat
+  more sophisticated than those of a @RelationalMap@. The 'fields' function is
+  no longer offered with this simple interface as a result, but the
+  @foldMarshallerFields@ function can be used in combination with the
+  @collectFromField@ helper to collect the desired information from each field.
+-}
 fields :: RelationalMap a b -> [SomeField]
 fields (RM_Field field) = [SomeField field]
 fields (RM_Apply rm1 rm2) = fields rm1 ++ fields rm2
