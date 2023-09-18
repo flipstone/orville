@@ -297,10 +297,10 @@ getComponent getComp (ToSql serializer) =
 
 {-|
  Migration Guide: 'TableDefinition' can now be imported from
- 'Orville.PostgreSQL'. The ordered of the type parameter has changed from
+ 'Orville.PostgreSQL'. The order of the type parameters has changed from
  @TableDefinition readEnity writeEntity key@ to @TableDefinition key
  writeEntity readEntity@. In the new Orville tables without primary keys are
- supported, so the @key@ parameter must now be instatiated as either @HasKey
+ supported, so the @key@ parameter must now be instantiated as either @HasKey
  keyType@ or @NoKey@.
 
  A 'TableDefinition' is the center of the Orville universe. A 'TableDefinition'

@@ -4,7 +4,7 @@ Copyright : Flipstone Technology Partners 2016-2018
 License   : MIT
 
 Migration Guide: Although not all exports are identical, most of the items in
-this module can now be import from @Orville.PostgreSQL@.
+this module can now be imported from @Orville.PostgreSQL@.
 
 -}
 {-# LANGUAGE FlexibleContexts #-}
@@ -332,7 +332,7 @@ findRecord tableDef key =
   of a @[Field Update]@ and a @Maybe BooleanExpr@ instead of a
   @[WhereCondition]@.
 
-  @updateFields@ still exists a variant of this function, but returns @()@
+  @updateFields@ still exists as a variant of this function, but returns @()@
   rather than @Int@. @updateFieldsAndReturnEntities@ is now available as well.
 -}
 updateFields ::
@@ -371,7 +371,7 @@ updateRecord tableDef key record = do
 
 {- |
   Migration Guide: @insertRecord@ has been renamed to @insertAndReturnEntity@.
-  Note there are is are also new variant functions @insertEntity@ and
+  Note there are also new variant functions @insertEntity@ and
   @insertEntityAndReturnRowCount@ that return @()@ and @Int@ respectively.
 -}
 insertRecord ::
@@ -442,7 +442,7 @@ insertRecordMany tableDef newRecords = do
 
 {- |
   Migration Guide: @deleteRecord@ has been renamed to @deleteEntity@. Note
-  that there are also new variant function @deleteAndReturnEntity@ and
+  that there are also new variant functions @deleteAndReturnEntity@ and
   @deleteEntityAndReturnRowCount@ that return @Maybe readEntity@ and @Int@
   respectively.
 -}

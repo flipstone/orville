@@ -67,7 +67,7 @@ data TableParams readEntity writeEntity key = TableParams
   Migration Guide: This function has in the new orville to take the table name,
   primary key definition and a @SqlMarshaller@ (formerly @RelationalMap@).
   Other options such as constraints, indexes, and columns to drop can be added
-  to the @TableDefinition@ after the initial instatiation. The @TableParams@
+  to the @TableDefinition@ after the initial instantiation. The @TableParams@
   type has been dropped for the new orville.
 
 
