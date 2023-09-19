@@ -16,7 +16,6 @@ import qualified Test.AutoMigration as AutoMigration
 import qualified Test.Connection as Connection
 import qualified Test.Cursor as Cursor
 import qualified Test.EntityOperations as EntityOperations
-import qualified Test.EntityTrace as EntityTrace
 import qualified Test.Execution as Execution
 import qualified Test.Expr.Count as ExprCount
 import qualified Test.Expr.Cursor as ExprCursor
@@ -80,7 +79,6 @@ main = do
       , Plan.planTests pool
       , PgCatalog.pgCatalogTests pool
       , AutoMigration.autoMigrationTests pool
-      , EntityTrace.entityTraceTests pool
       , Cursor.cursorTests pool
       , SqlCommenter.sqlCommenterTests pool
       , PgTime.pgTimeTests pool
