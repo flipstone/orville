@@ -24,7 +24,6 @@ library:
   exposed-modules:
     - Orville.PostgreSQL
     - Orville.PostgreSQL.AutoMigration
-    - Orville.PostgreSQL.EntityTrace
     - Orville.PostgreSQL.Execution
     - Orville.PostgreSQL.Execution.Cursor
     - Orville.PostgreSQL.Execution.Delete

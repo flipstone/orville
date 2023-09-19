@@ -32,7 +32,6 @@ library
   exposed-modules:
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
-      Orville.PostgreSQL.EntityTrace
       Orville.PostgreSQL.Execution
       Orville.PostgreSQL.Execution.Cursor
       Orville.PostgreSQL.Execution.Delete
@@ -173,7 +172,6 @@ test-suite spec
       Test.Entities.FooChild
       Test.Entities.User
       Test.EntityOperations
-      Test.EntityTrace
       Test.Execution
       Test.Expr.Count
       Test.Expr.Cursor
