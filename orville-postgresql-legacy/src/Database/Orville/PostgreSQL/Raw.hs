@@ -45,14 +45,21 @@ updateSql sql values =
 startTransaction :: ConnectionEnv conn -> ConnectionEnv conn
 startTransaction c = c {ormTransactionOpen = True}
 
--- | Runs an action with a cached connection.
---   Without using this, or wrapping calls in a transaction using `withTransaction`, successive
---   calls to functions like `insertRecord` and `updateRecord` are *not* guaranteed to occur on the
---   same connection.
+{-|
+  Migration Guide: @withCachedConnection@ has been renamed to @withConnection_@
+
+  Runs an action with a cached connection.
+  Without using this, or wrapping calls in a transaction using `withTransaction`, successive
+  calls to functions like `insertRecord` and `updateRecord` are *not* guaranteed to occur on the
+  same connection.
+-}
 withCachedConnection :: MonadOrville conn m => m a -> m a
 withCachedConnection action =
   withConnectionEnv (const action)
 
+{-|
+  Migration Guide: @withTransaction@ retains the same name.
+-}
 withTransaction :: MonadOrville conn m => m a -> m a
 withTransaction action =
   withConnectionEnv $ \connected ->

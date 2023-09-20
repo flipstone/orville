@@ -15,6 +15,19 @@ import Data.List (intercalate)
 import Database.Orville.PostgreSQL.Internal.FieldDefinition
 import Database.Orville.PostgreSQL.Internal.Types
 
+{- |
+  Migration Guide: @uniqueIndex@ no longer requires a name to be specified.
+  Migration will be done automatically be inspecting the structure of the
+  indexes that exist in the database. It also no longer accepts a
+  @TableDefinition@ at the time of creating the @IndexDefinition@. Instead you
+  should use @addTableIndexes@ to add the @IndexDefinition@ to the
+  @TableDefinition@ for the table that you wish to index.
+
+  If you wish to specify the index name explicitly, you can use
+  @uniqueNamedIndex@ instead. If you do so, index migration will be managed by
+  comparing to the names of existing indexes rather than checking that the
+  index structure matches the Haskell definition.
+-}
 uniqueIndex ::
      String
   -> TableDefinition readEntity writeEntity key
@@ -23,6 +36,20 @@ uniqueIndex ::
 uniqueIndex name tableDef fields =
   mkIndexDefinition True name tableDef fields []
 
+{- |
+  Migration Guide: @simpleIndex@ has been renamed to @nonUniqueIndex@. It no
+  longer requires a name to be specified. Migration will be done automatically
+  be inspecting the structure of the indexes that exist in the database. It
+  also no longer accepts a @TableDefinition@ at the time of creating the
+  @IndexDefinition@. Instead you should use @addTableIndexes@ to add the
+  @IndexDefinition@ to the @TableDefinition@ for the table that you wish to
+  index.
+
+  If you wish to specify the index name explicitly, you can use
+  @nonUniqueNamedIndex@ instead. If you do so, index migration will be managed
+  by comparing to the names of existing indexes rather than checking that the
+  index structure matches the Haskell definition.
+-}
 simpleIndex ::
      String
   -> TableDefinition readEntity writeEntity key

@@ -98,6 +98,8 @@ withLockedTransaction action = do
             pure Nothing
 
 {-|
+   Migration Guide: @migrateSchema@ has been renamed to @autoMigrateSchema@
+
    migrateSchema will attempt to make changes to the actual database schema
    that it it matches the provided SchemaDefinition. Unsafe migrations such as
    dropping tables or columns are never attempted unless the SchemaDefinition
@@ -115,6 +117,9 @@ migrateSchema schemaDef =
           nonTransactionallyExecuteMigrationPlan conn somethingToDo
 
 {-|
+   Migration Guide: @generateMigrationPlan@ has been renamed to
+   @generateMigrationSteps@
+
    generateMigrationPlan inspects the state of the actual database schema and
    constructs a plan describing what changes would be made to make it match the
    provided SchemaDefinition. If the actual schema already matches the
