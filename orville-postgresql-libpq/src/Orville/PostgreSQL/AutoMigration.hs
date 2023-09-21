@@ -14,12 +14,16 @@ See 'autoMigrateSchema' as a primary, high level entry point.
 -}
 module Orville.PostgreSQL.AutoMigration
   ( autoMigrateSchema
-  , generateMigrationSteps
-  , executeMigrationSteps
   , SchemaItem (..)
   , schemaItemSummary
+  , MigrationPlan
+  , generateMigrationPlan
+  , migrationPlanSteps
+  , executeMigrationPlan
   , MigrationStep
   , MigrationDataError
+  , MigrationLock.withMigrationLock
+  , MigrationLock.MigrationLockError
   )
 where
 
@@ -97,8 +101,51 @@ schemaItemSummary item =
       "Drop sequence " <> Orville.sequenceIdToString sequenceId
 
 {- |
+A 'MigrationPlan' contains an ordered list of migration steps. Each one is a
+single DDL statement to make a specific database change. The steps are ordered
+such that dependencies from earlier steps will be in place before a later step
+is executed (e.g. new columns are added before foreign keys referring to them).
+
+While most steps are executed together in a single transaction this is not
+possible for indexes being created concurrently. Any such steps are executed
+last after the transaction for the rest of the schema changes has been
+successfully committed.
+
+@since 0.10.0.0
+-}
+data MigrationPlan = MigrationPlan
+  { i_transactionalSteps :: [MigrationStep]
+  , i_asynchronusSteps :: [MigrationStep]
+  }
+
+{- |
+  Returns all the 'MigrationStep's found in a 'MigrationPlan' together in a
+  single list. This is useful if you merely want to examine the steps of a plan
+  rather than execute them. You should always use 'executeMigrationPlan' to
+  execute a migration plan to ensure that the transactional steps are done
+  within a transaction while the asynchronous steps are done afterward outside
+  of it.
+-}
+migrationPlanSteps :: MigrationPlan -> [MigrationStep]
+migrationPlanSteps plan =
+  i_transactionalSteps plan <> i_asynchronusSteps plan
+
+mkMigrationPlan :: [MigrationStepWithType] -> MigrationPlan
+mkMigrationPlan steps =
+  let
+    (transactionalSteps, asynchronousSteps) =
+      List.partition isMigrationStepTransactional
+        . List.sortOn migrationStepType
+        $ steps
+  in
+    MigrationPlan
+      { i_transactionalSteps = map migrationStep transactionalSteps
+      , i_asynchronusSteps = map migrationStep asynchronousSteps
+      }
+
+{- |
   A single SQL statement that will be executed in order to migrate the database
-  to the desired result. You can use 'generateMigrationSteps' to get a list
+  to the desired result. You can use 'generateMigrationPlan' to get a list
   of these yourself for inspection and debugging.
 
 @since 0.10.0.0
@@ -132,6 +179,18 @@ mkMigrationStepWithType stepType sql =
     , migrationStep = MigrationStep (RawSql.toRawSql sql)
     }
 
+isMigrationStepTransactional :: MigrationStepWithType -> Bool
+isMigrationStepTransactional stepWithType =
+  case migrationStepType stepWithType of
+    DropForeignKeys -> True
+    DropUniqueConstraints -> True
+    DropIndexes -> True
+    AddRemoveTablesAndColumns -> True
+    AddIndexesTransactionally -> True
+    AddUniqueConstraints -> True
+    AddForeignKeys -> True
+    AddIndexesAsynchronously -> False
+
 {- |
   Indicates the kind of operation being performed by a 'MigrationStep' so
   that the steps can be ordered in a sequence that is guaranteed to succeed.
@@ -145,9 +204,10 @@ data StepType
   | DropUniqueConstraints
   | DropIndexes
   | AddRemoveTablesAndColumns
-  | AddIndexes
+  | AddIndexesTransactionally
   | AddUniqueConstraints
   | AddForeignKeys
+  | AddIndexesAsynchronously
   deriving
     ( -- | @since 0.10.0.0
       Eq
@@ -176,59 +236,90 @@ instance Exception MigrationDataError
   This function compares the list of 'SchemaItem's provided against the current
   schema found in the database to determine whether any migration are
   necessary.  If any changes need to be made, this function executes. You can
-  call 'generateMigrationSteps' and 'executeMigrationSteps' yourself if you
-  want to have more control over the process.
+  call 'generateMigrationPlan' and 'executeMigrationPlan' yourself if you want
+  to have more control over the process, but must then take care to ensure that
+  the schema has not changed between the two calls. This function uses an
+  PostgreSQL advisory lock to ensure that no other calls to 'autoMigrateSchema'
+  (potentially on other processes) attempt to modify the schema at the same
+  time.
 
 @since 0.10.0.0
 -}
 autoMigrateSchema :: Orville.MonadOrville m => [SchemaItem] -> m ()
-autoMigrateSchema schemaItems = do
-  MigrationLock.withLockedTransaction $ do
-    steps <- generateMigrationStepsWithoutTransaction schemaItems
-    executeMigrationStepsWithoutTransaction steps
+autoMigrateSchema schemaItems =
+  MigrationLock.withMigrationLock $ do
+    plan <- generateMigrationPlanWithoutLock schemaItems
+    executeMigrationPlanWithoutLock plan
 
 {- |
-  Compares the list of 'SchemaItem's provided against the current schema
-  found in the database and returns a list of 'MigrationStep's that could be
-  executed to make the database schema match the items given.
+  Compares the list of 'SchemaItem's provided against the current schema found
+  in the database and returns a 'MigrationPlan' that could be executed to make
+  the database schema match the items given.
 
-  You can execute the 'MigrationStep's yourself using 'Orville.executeVoid',
-  or use the 'executeMigrationSteps' convenience function.
+  You can execute the 'MigrationPlan' yourself using 'executeMigrationPlan'
+  convenience function, though 'autoMigrateSchema' is usually a better option
+  because it uses a database lock to ensure that no other processes are also
+  using 'autoMigrateSchema' to apply migrations at the same time. If you use
+  'generateMigrationPlan' and 'executeMigrationPlan' separately you are
+  responsible for ensuring that the schema has no changed between the time the
+  plan is generated and executed yourself.
 
 @since 0.10.0.0
 -}
-generateMigrationSteps :: Orville.MonadOrville m => [SchemaItem] -> m [MigrationStep]
-generateMigrationSteps =
-  MigrationLock.withLockedTransaction . generateMigrationStepsWithoutTransaction
+generateMigrationPlan :: Orville.MonadOrville m => [SchemaItem] -> m MigrationPlan
+generateMigrationPlan =
+  MigrationLock.withMigrationLock . generateMigrationPlanWithoutLock
 
-generateMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [SchemaItem] -> m [MigrationStep]
-generateMigrationStepsWithoutTransaction schemaItems = do
-  currentNamespace <- findCurrentNamespace
+generateMigrationPlanWithoutLock :: Orville.MonadOrville m => [SchemaItem] -> m MigrationPlan
+generateMigrationPlanWithoutLock schemaItems =
+  Orville.withTransaction $ do
+    currentNamespace <- findCurrentNamespace
 
-  let
-    pgCatalogRelations = fmap (schemaItemPgCatalogRelation currentNamespace) schemaItems
+    let
+      pgCatalogRelations = fmap (schemaItemPgCatalogRelation currentNamespace) schemaItems
 
-  dbDesc <- PgCatalog.describeDatabaseRelations pgCatalogRelations
+    dbDesc <- PgCatalog.describeDatabaseRelations pgCatalogRelations
 
-  case traverse (calculateMigrationSteps currentNamespace dbDesc) schemaItems of
-    Left err ->
-      liftIO . throwIO $ err
-    Right migrationSteps ->
-      pure
-        . map migrationStep
-        . List.sortOn migrationStepType
-        . concat
-        $ migrationSteps
+    case traverse (calculateMigrationSteps currentNamespace dbDesc) schemaItems of
+      Left err ->
+        liftIO . throwIO $ err
+      Right migrationSteps ->
+        pure . mkMigrationPlan . concat $ migrationSteps
 
 {- |
-  A convenience function for executing a list of 'MigrationStep's that has
-  be previously devised via 'generateMigrationSteps'.
+  Executes a 'MigrationPlan' that has be previously devised via
+  'generateMigrationPlan'. Normally all the steps in a migration plan are
+  executed in a transaction so that they will all be applied together
+  successfully or all rolled-back if one of them fails. Any indexes using the
+  'Orville.Asynchronous' creation strategy cannot be created this way, however,
+  because PostgreSQL does not allow @CREATE INDEX CONCURRENTLY@ to be used from
+  inside a transaction. If a 'MigrationPlan' includes any indexes whose
+  creation strategy is set to 'Orville.Asynchronous', Orville will begin the
+  creation of those indexes after the rest of the migration steps have been
+  committed successfully. This function will return before PostgreSQL has
+  fineshed creating those indexes. You should check on the status of indexes
+  created this way manually to ensure they were created successfully. If they
+  could not be, you can drop them and Orville will re-attempt creating them the
+  next time migration is performed.
 
 @since 0.10.0.0
 -}
-executeMigrationSteps :: Orville.MonadOrville m => [MigrationStep] -> m ()
-executeMigrationSteps =
-  MigrationLock.withLockedTransaction . executeMigrationStepsWithoutTransaction
+executeMigrationPlan ::
+  Orville.MonadOrville m =>
+  MigrationPlan ->
+  m ()
+executeMigrationPlan =
+  MigrationLock.withMigrationLock . executeMigrationPlanWithoutLock
+
+executeMigrationPlanWithoutLock ::
+  Orville.MonadOrville m =>
+  MigrationPlan ->
+  m ()
+executeMigrationPlanWithoutLock plan = do
+  Orville.withTransaction $
+    executeMigrationStepsWithoutTransaction (i_transactionalSteps plan)
+
+  executeMigrationStepsWithoutTransaction (i_asynchronusSteps plan)
 
 executeMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [MigrationStep] -> m ()
 executeMigrationStepsWithoutTransaction =
@@ -784,10 +875,15 @@ mkAddIndexSteps existingIndexes tableName indexDef =
   let
     indexKey =
       Orville.indexMigrationKey indexDef
+
+    indexStep =
+      case Orville.indexCreationStrategy indexDef of
+        Orville.Transactional -> AddIndexesTransactionally
+        Orville.Asynchronous -> AddIndexesAsynchronously
   in
     if Set.member indexKey existingIndexes
       then []
-      else [mkMigrationStepWithType AddIndexes (Orville.indexCreateExpr indexDef tableName)]
+      else [mkMigrationStepWithType indexStep (Orville.indexCreateExpr indexDef tableName)]
 
 {- |
   Builds migration steps to drop an index if it should not exist.

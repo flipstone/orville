@@ -117,8 +117,11 @@ migrateSchema schemaDef =
           nonTransactionallyExecuteMigrationPlan conn somethingToDo
 
 {-|
-   Migration Guide: @generateMigrationPlan@ has been renamed to
-   @generateMigrationSteps@
+   Migration Guide: @generateMigrationPlan@ retains the same name. It has
+   changed to always return a @MigrationPlan@. You can use check whether
+   @migrationPlanSteps@ is as empty list if you wish to determine whether any
+   migrations will be performed by the plan.
+
 
    generateMigrationPlan inspects the state of the actual database schema and
    constructs a plan describing what changes would be made to make it match the
@@ -165,6 +168,9 @@ buildMigrationPlan schemaDef schemaState = foldMap mkPlan schemaDef
           dropSequencePlan name schemaState
 
 {-|
+   Migration Plan: @createIndexesConcurrently@ has been removed. You should now
+   use @setIndexCreationStrategy Asynchronous@ instead.
+
    createIndexesConcurrently will create the given indexes, if they do not exist using the
     PostgreSQL concurrently feature. However, this does *not* mean the the function happens
     concurrently. This will wait for PostgreSQL to return, but other operations to the table will be
@@ -208,6 +214,8 @@ createIndexConcurrently conn indexDef =
 
 
 {-|
+   Migration Guide: @dropIndexesConcurrently@ has been removed.
+
    dropIndexesConcurrently will drop each of the given indexes with the CONCURRENTLY keyword,
    allowing for other table operations to continue while the index is dropped. However there are
    several caveats that come with this as noted at

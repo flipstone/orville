@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.AutoMigration
   ( autoMigrationTests
@@ -39,7 +40,9 @@ autoMigrationTests :: Orville.Pool Orville.Connection -> Property.Group
 autoMigrationTests pool =
   Property.group
     "AutoMigration"
-    [ prop_createsMissingTables pool
+    [ prop_raisesErrorIfMigrationLockIsLocked pool
+    , prop_releasesMigrationLockOnError pool
+    , prop_createsMissingTables pool
     , prop_dropsRequestedTables pool
     , prop_addsAndRemovesColumns pool
     , prop_columnsWithSystemNameConflictsRaiseError pool
@@ -57,6 +60,50 @@ autoMigrationTests pool =
     , prop_arbitrarySchemaInitialMigration pool
     ]
 
+prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
+prop_raisesErrorIfMigrationLockIsLocked =
+  Property.singletonNamedDBProperty "Raises an error when the migration lock is hold" $ \pool -> do
+    errOrSuccess <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.withMigrationLock $
+            MIO.liftIO $
+              ExSafe.try $
+                Orville.runOrville pool $
+                  AutoMigration.withMigrationLock (pure ())
+
+    case errOrSuccess of
+      Left (_err :: AutoMigration.MigrationLockError) -> pure ()
+      Right () -> do
+        HH.annotate "Expected MigrationLockError error to be thrown, but it was not"
+        HH.failure
+
+prop_releasesMigrationLockOnError :: Property.NamedDBProperty
+prop_releasesMigrationLockOnError =
+  Property.singletonNamedDBProperty "Releases the migration lock on error" $ \pool -> do
+    HH.evalIO $
+      Orville.runOrville pool $
+        -- Acquire a connection before running a second orville context to
+        -- ensure that each context will get a separate connection from the
+        -- pool. Both connections must be open simultaneously for this test
+        -- to be valid since the lock we are testing is held at a session
+        -- level.
+        Orville.withConnection_ $ do
+          MIO.liftIO $
+            Orville.runOrville pool $
+              ExSafe.handle (\SimulatedError -> pure ()) $
+                AutoMigration.withMigrationLock (ExSafe.throwM SimulatedError)
+
+          -- If the lock is not released by the previous 'withMigrationLock'
+          -- this second call will fail to acquire the lock and the test will
+          -- fail
+          AutoMigration.withMigrationLock (pure ())
+
+data SimulatedError = SimulatedError
+  deriving (Show)
+
+instance ExSafe.Exception SimulatedError
+
 prop_createsMissingTables :: Property.NamedDBProperty
 prop_createsMissingTables =
   Property.singletonNamedDBProperty "Creates missing tables" $ \pool -> do
@@ -64,24 +111,24 @@ prop_createsMissingTables =
       fooTableId =
         Orville.tableIdentifier Foo.table
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable Foo.table]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable Foo.table]
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable Foo.table]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable Foo.table]
 
-    length (firstTimeSteps) === 1
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     _ <-
       PgAssert.assertTableExists
         pool
         (Orville.tableIdUnqualifiedNameString fooTableId)
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
 
 prop_dropsRequestedTables :: Property.NamedDBProperty
 prop_dropsRequestedTables =
@@ -90,22 +137,22 @@ prop_dropsRequestedTables =
       fooTableId =
         Orville.tableIdentifier Foo.table
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
           Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateTableExpr Foo.table
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropTable fooTableId]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaDropTable fooTableId]
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropTable fooTableId]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaDropTable fooTableId]
 
-    length (firstTimeSteps) === 1
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     PgAssert.assertTableDoesNotExist pool (Orville.tableIdUnqualifiedNameString fooTableId)
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
 
 prop_addsAndRemovesColumns :: Property.NamedDBProperty
 prop_addsAndRemovesColumns =
@@ -128,20 +175,20 @@ prop_addsAndRemovesColumns =
         Orville.dropColumns columnsToDrop $
           mkIntListTable "migration_test" newColumns
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnNamesEqual tableDesc newColumns
 
@@ -239,20 +286,20 @@ prop_altersColumnDataType =
       newSqlType =
         Orville.fieldType newField
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
     attr <- PgAssert.assertColumnExists newTableDesc "column"
     PgCatalog.pgAttributeTypeOid attr === Orville.sqlTypeOid newSqlType
@@ -337,25 +384,25 @@ prop_respectsImplicitDefaultOnSerialFields =
           "migration_test"
           (Orville.marshallField id fieldDef)
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableDef
           Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr tableDef
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable tableDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable tableDef]
 
     originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnDefaultExists originalTableDesc "column"
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable tableDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable tableDef]
 
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnDefaultExists newTableDesc "column"
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
 
 assertDefaultValuesMigrateProperly ::
   Orville.Pool Orville.Connection ->
@@ -376,25 +423,25 @@ assertDefaultValuesMigrateProperly pool genSomeField = do
         "migration_test"
         (Orville.marshallField id newField)
 
-  firstTimeSteps <-
+  firstTimePlan <-
     HH.evalIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
         Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
-        AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+        AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
   originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
   PgAssert.assertColumnDefaultMatches originalTableDesc "column" (Orville.fieldDefaultValue originalField)
 
-  secondTimeSteps <-
+  secondTimePlan <-
     HH.evalIO $
       Orville.runOrville pool $ do
-        AutoMigration.executeMigrationSteps firstTimeSteps
-        AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+        AutoMigration.executeMigrationPlan firstTimePlan
+        AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
   newTableDesc <- PgAssert.assertTableExists pool "migration_test"
   PgAssert.assertColumnDefaultMatches newTableDesc "column" (Orville.fieldDefaultValue newField)
-  map RawSql.toExampleBytes secondTimeSteps === []
+  migrationPlanStepStrings secondTimePlan === []
 
 prop_addAndRemovesUniqueConstraints :: Property.NamedDBProperty
 prop_addAndRemovesUniqueConstraints =
@@ -437,22 +484,22 @@ prop_addAndRemovesUniqueConstraints =
     HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newConstraintColumns \\ originalConstraintColumns))
     HH.cover 5 (String.fromString "Dropping Constraints") (not $ null (originalConstraintColumns \\ newConstraintColumns))
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable originalTableDef]
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
+    HH.annotate ("First time migration steps: " <> show (migrationPlanStepStrings firstTimePlan))
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
 
     Fold.traverse_ (PgAssert.assertUniqueConstraintExists tableDesc) newConstraintColumns
@@ -547,25 +594,25 @@ prop_addAndRemovesForeignKeyConstraints =
     HH.cover 5 (String.fromString "Adding Constraints") (not $ null (newForeignKeyInfos \\ originalForeignKeyInfos))
     HH.cover 5 (String.fromString "Dropping Constraints") (not $ null (originalForeignKeyInfos \\ newForeignKeyInfos))
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalLocalTableDef
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalForeignTableDef
           AutoMigration.autoMigrateSchema originalSchema
-          AutoMigration.generateMigrationSteps newSchema
+          AutoMigration.generateMigrationPlan newSchema
 
-    HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
+    HH.annotate ("First time migration steps: " <> show (migrationPlanStepStrings firstTimePlan))
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps newSchema
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan newSchema
 
-    HH.annotate ("Second time migration steps: " <> show (map RawSql.toExampleBytes secondTimeSteps))
+    HH.annotate ("Second time migration steps: " <> show (migrationPlanStepStrings secondTimePlan))
 
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newForeignKeyInfos
     length (PgCatalog.relationConstraints tableDesc) === length (List.nub newForeignKeyInfos)
@@ -603,28 +650,35 @@ prop_addsAndRemovesMixedIndexes =
 
     HH.cover 5 (String.fromString "Adding Indexes") (not $ null (newTestIndexes \\ originalTestIndexes))
     HH.cover 5 (String.fromString "Dropping Indexes") (not $ null (originalTestIndexes \\ newTestIndexes))
+    HH.cover
+      5
+      (String.fromString "Concurrent Indexes")
+      ( any
+          (\i -> testIndexCreationStrategy i == Orville.Asynchronous)
+          (originalTestIndexes <> newTestIndexes)
+      )
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable originalTableDef]
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    HH.annotate ("First time migration steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
+    HH.annotate ("First time migration steps: " <> show (migrationPlanStepStrings firstTimePlan))
 
     originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
     Fold.traverse_
       (PgAssert.assertIndexExists originalTableDesc <$> testIndexUniqueness <*> testIndexColumns)
       originalTestIndexes
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaTable newTableDef]
 
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
 
     Fold.traverse_
@@ -641,24 +695,24 @@ prop_createsMissingSequences =
       sequenceId =
         Orville.sequenceIdentifier sequenceDef
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence sequenceDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaSequence sequenceDef]
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence sequenceDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaSequence sequenceDef]
 
-    length (firstTimeSteps) === 1
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     _ <-
       PgAssert.assertSequenceExists
         pool
         (Orville.sequenceIdUnqualifiedNameString sequenceId)
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
 
 prop_dropsRequestedSequences :: Property.NamedDBProperty
 prop_dropsRequestedSequences =
@@ -669,22 +723,22 @@ prop_dropsRequestedSequences =
       sequenceId =
         Orville.sequenceIdentifier sequenceDef
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
           Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateSequenceExpr sequenceDef
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropSequence sequenceId]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaDropSequence sequenceId]
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaDropSequence sequenceId]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaDropSequence sequenceId]
 
-    length (firstTimeSteps) === 1
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     PgAssert.assertSequenceDoesNotExist pool (Orville.sequenceIdUnqualifiedNameString sequenceId)
-    map RawSql.toExampleBytes secondTimeSteps === []
+    migrationPlanStepStrings secondTimePlan === []
 
 prop_altersModifiedSequences :: Property.NamedDBProperty
 prop_altersModifiedSequences =
@@ -741,32 +795,32 @@ prop_altersModifiedSequences =
         . maybe id Orville.setSequenceCycle mbNewCycleFlag
         $ originalSequenceDef
 
-    firstTimeSteps <-
+    firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName originalSequenceDef)
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence originalSequenceDef]
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaSequence originalSequenceDef]
 
-    HH.annotate ("First time steps: " <> show (map RawSql.toExampleBytes firstTimeSteps))
-    length (firstTimeSteps) === 1
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
 
-    secondTimeSteps <-
+    secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps firstTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence newSequenceDef]
+          AutoMigration.executeMigrationPlan firstTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaSequence newSequenceDef]
 
-    HH.annotate ("Second time steps: " <> show (map RawSql.toExampleBytes secondTimeSteps))
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
     assertSequenceExistsMatching pool originalSequenceDef
 
-    thirdTimeSteps <-
+    thirdTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps secondTimeSteps
-          AutoMigration.generateMigrationSteps [AutoMigration.SchemaSequence newSequenceDef]
+          AutoMigration.executeMigrationPlan secondTimePlan
+          AutoMigration.generateMigrationPlan [AutoMigration.SchemaSequence newSequenceDef]
 
     assertSequenceExistsMatching pool newSequenceDef
-    map RawSql.toExampleBytes thirdTimeSteps === []
+    migrationPlanStepStrings thirdTimePlan === []
 
 assertSequenceExistsMatching ::
   (HH.MonadTest m, MIO.MonadIO m) =>
@@ -801,22 +855,22 @@ prop_arbitrarySchemaInitialMigration =
       testSchema =
         map testTableSchemaItem testTables
 
-    initialMigrationSteps <-
+    initialMigrationPlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP SCHEMA IF EXISTS orville_migration_test CASCADE"
           Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE SCHEMA orville_migration_test"
-          AutoMigration.generateMigrationSteps testSchema
+          AutoMigration.generateMigrationPlan testSchema
 
-    HH.annotate ("Initial migration steps: " <> show (map RawSql.toExampleBytes initialMigrationSteps))
+    HH.annotate ("Initial migration steps: " <> show (migrationPlanStepStrings initialMigrationPlan))
 
-    migrationStepsAfterMigration <-
+    migrationPlanAfterMigration <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          AutoMigration.executeMigrationSteps initialMigrationSteps
-          AutoMigration.generateMigrationSteps testSchema
+          AutoMigration.executeMigrationPlan initialMigrationPlan
+          AutoMigration.generateMigrationPlan testSchema
 
-    map RawSql.toExampleBytes migrationStepsAfterMigration === []
+    migrationPlanStepStrings migrationPlanAfterMigration === []
     Fold.traverse_ (assertTableStructure pool) testTables
 
 assertTableStructure ::
@@ -864,6 +918,7 @@ data TestTable = TestTable
 data TestIndex = TestIndex
   { testIndexName :: Maybe String
   , testIndexUniqueness :: Orville.IndexUniqueness
+  , testIndexCreationStrategy :: Orville.IndexCreationStrategy
   , testIndexColumns :: NEL.NonEmpty String
   }
   deriving (Show, Eq)
@@ -890,25 +945,34 @@ testTableForeignKeyTargets testTable =
 
 mkIndexDefinition :: TestIndex -> Orville.IndexDefinition
 mkIndexDefinition testIndex =
-  case testIndexName testIndex of
-    Just name ->
-      -- If the test index has a name, use it to test Orville's support for
-      -- customed, named indexes
-      let
-        indexColumns =
-          RawSql.intercalate RawSql.comma $
-            fmap Expr.columnName (testIndexColumns testIndex)
-      in
-        Orville.mkNamedIndexDefinition
-          (testIndexUniqueness testIndex)
-          name
-          (RawSql.leftParen <> indexColumns <> RawSql.rightParen)
-    Nothing ->
-      -- If the test index has no name, use it to test Orville's support for
-      -- unnamed indexes
-      Orville.mkIndexDefinition
-        (testIndexUniqueness testIndex)
-        (Orville.stringToFieldName <$> testIndexColumns testIndex)
+  let
+    strategy =
+      testIndexCreationStrategy testIndex
+
+    baseIndex =
+      case testIndexName testIndex of
+        Just name ->
+          -- If the test index has a name, use it to test Orville's support for
+          -- custome named indexes
+          let
+            indexBody =
+              Expr.indexBodyColumns
+                . fmap Expr.columnName
+                . testIndexColumns
+                $ testIndex
+          in
+            Orville.mkNamedIndexDefinition
+              (testIndexUniqueness testIndex)
+              name
+              indexBody
+        Nothing ->
+          -- If the test index has no name, use it to test Orville's support for
+          -- unnamed indexes
+          Orville.mkIndexDefinition
+            (testIndexUniqueness testIndex)
+            (Orville.stringToFieldName <$> testIndexColumns testIndex)
+  in
+    Orville.setIndexCreationStrategy strategy baseIndex
 
 generateTestTable :: HH.Gen TestTable
 generateTestTable = do
@@ -1004,7 +1068,12 @@ generateTestIndexes columns tableName = do
       subcolumns <- Gen.subsequence columns
       maybeNonEmptyColumns <- NEL.nonEmpty <$> Gen.shuffle subcolumns
       uniqueness <- Gen.element [Orville.UniqueIndex, Orville.NonUniqueIndex]
-      pure $ fmap (TestIndex indexName uniqueness) maybeNonEmptyColumns
+      strategy <-
+        Gen.frequency
+          [ (10, pure Orville.Transactional)
+          , (1, pure Orville.Asynchronous)
+          ]
+      pure $ fmap (TestIndex indexName uniqueness strategy) maybeNonEmptyColumns
 
   pure $ (List.nubBy (Function.on (==) testIndexColumns)) testIndices
 
@@ -1117,3 +1186,7 @@ mkForeignKeyConstraint foreignTableName foreignKeyInfo =
           , Orville.foreignKeyOptionsOnDelete = PgAssert.foreignKeyInfoOnDelete foreignKeyInfo
           }
       )
+
+migrationPlanStepStrings :: AutoMigration.MigrationPlan -> [B8.ByteString]
+migrationPlanStepStrings =
+  fmap RawSql.toExampleBytes . AutoMigration.migrationPlanSteps

@@ -169,7 +169,7 @@ module Database.Orville.PostgreSQL.Core
   , generateMigrationPlan -- migration guide added
   , MigrationPlan -- migration guide added
   , MigrationItem(..) -- migration guide added
-  , migrationPlanItems
+  , migrationPlanItems -- migration guide added
   , Pagination(..)
   , buildPagination
   , selectAll -- migration guide added
@@ -187,8 +187,8 @@ module Database.Orville.PostgreSQL.Core
   , sequenceNextVal
   , sequenceSetVal
   , sequenceCurrVal
-  , createIndexesConcurrently
-  , dropIndexesConcurrently
+  , createIndexesConcurrently -- migration guide added
+  , dropIndexesConcurrently -- migration guide added
   ) where
 
 import Control.Monad (void, when)

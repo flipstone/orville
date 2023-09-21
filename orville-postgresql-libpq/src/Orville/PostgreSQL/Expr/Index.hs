@@ -11,6 +11,10 @@ module Orville.PostgreSQL.Expr.Index
   ( CreateIndexExpr
   , createIndexExpr
   , IndexUniqueness (UniqueIndex, NonUniqueIndex)
+  , IndexBodyExpr
+  , indexBodyColumns
+  , ConcurrentlyExpr
+  , concurrently
   , DropIndexExpr
   , dropIndexExpr
   , createNamedIndexExpr
@@ -45,48 +49,103 @@ newtype CreateIndexExpr
     )
 
 {- |
-Construct a SQL CREATE INDEX from an indicator of if the index should be unique, a table, and
-corresponding collection of 'ColumnName's.  .
+Construct a SQL CREATE INDEX from an indicator of if the index should be
+unique, a table, and corresponding collection of 'ColumnName's.
 
 @since 0.10.0.0
 -}
 createIndexExpr ::
   IndexUniqueness ->
+  Maybe ConcurrentlyExpr ->
   Qualified TableName ->
   NonEmpty ColumnName ->
   CreateIndexExpr
-createIndexExpr uniqueness tableName columns =
+createIndexExpr uniqueness mbConcurrently tableName columns =
   CreateIndexExpr $
     RawSql.fromString "CREATE "
       <> uniquenessToSql uniqueness
-      <> RawSql.fromString "INDEX ON "
+      <> RawSql.fromString "INDEX "
+      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbConcurrently)
+      <> RawSql.fromString "ON "
       <> RawSql.toRawSql tableName
       <> RawSql.space
-      <> RawSql.leftParen
-      <> RawSql.intercalate RawSql.comma columns
-      <> RawSql.rightParen
+      <> RawSql.toRawSql (indexBodyColumns columns)
 
-{- | Construct a SQL CREATE INDEX from an indicator of if the index should be unique, a table, a name
-for the index, and some sql representing the rest of the index creation.
+{- |
+Construct a SQL CREATE INDEX from an indicator of if the index should be
+unique, a table, a name for the index, and some sql representing the rest of
+the index creation.
 
 @since 0.10.0.0
 -}
 createNamedIndexExpr ::
   IndexUniqueness ->
+  Maybe ConcurrentlyExpr ->
   Qualified TableName ->
   IndexName ->
-  RawSql.RawSql ->
+  IndexBodyExpr ->
   CreateIndexExpr
-createNamedIndexExpr uniqueness tableName indexName indexSql =
+createNamedIndexExpr uniqueness mbConcurrently tableName indexName bodyExpr =
   CreateIndexExpr $
     RawSql.fromString "CREATE "
       <> uniquenessToSql uniqueness
       <> RawSql.fromString "INDEX "
+      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbConcurrently)
       <> RawSql.toRawSql indexName
       <> RawSql.fromString " ON "
       <> RawSql.toRawSql tableName
       <> RawSql.space
-      <> indexSql
+      <> RawSql.toRawSql bodyExpr
+
+{- |
+Type to represent the concurrently keyword for index creation
+
+@since 0.10.0.0
+-}
+newtype ConcurrentlyExpr
+  = ConcurrentlyExpr RawSql.RawSql
+  deriving
+    ( -- | @since 0.10.0.0
+      RawSql.SqlExpression
+    )
+
+{- |
+The @CONCURRENTLY@ keyword indicates to PostgreSQL that an index should be
+create concurrently.
+
+@since 0.10.0.0
+-}
+concurrently :: ConcurrentlyExpr
+concurrently =
+  RawSql.unsafeSqlExpression "CONCURRENTLY"
+
+{- |
+Type to represent if the body of an index definition (i.e. @<body>@ in
+after @CREATE some_index ON some_table <body>@).
+
+@since 0.10.0.0
+-}
+newtype IndexBodyExpr
+  = IndexBodyExpr RawSql.RawSql
+  deriving
+    ( -- | @since 0.10.0.0
+      RawSql.SqlExpression
+    )
+
+{- |
+Creates an 'IndexBodyExpr' for the given column names. The resulting
+SQL looks like @(column1, column2, ...)@.
+
+@since 0.10.0.0
+-}
+indexBodyColumns ::
+  NonEmpty ColumnName ->
+  IndexBodyExpr
+indexBodyColumns columns =
+  IndexBodyExpr $
+    RawSql.leftParen
+      <> RawSql.intercalate RawSql.comma columns
+      <> RawSql.rightParen
 
 {- |
 Type to represent if an index should be unique.
