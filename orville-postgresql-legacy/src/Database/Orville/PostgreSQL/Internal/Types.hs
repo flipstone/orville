@@ -28,7 +28,7 @@ import Database.Orville.PostgreSQL.Internal.QueryKey
 import Database.Orville.PostgreSQL.Internal.SqlType
 
 {- |
-  Migration Guide: @Record@ has been removed. It's recommended that you use
+  Migration Guide: @Record@ has been removed. It's recommended that you
   create a separate record key type for each of your entities instead.
 -}
 type Record = Int

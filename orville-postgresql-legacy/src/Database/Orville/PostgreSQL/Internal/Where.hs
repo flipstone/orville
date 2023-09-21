@@ -173,7 +173,7 @@ whereOr :: [WhereCondition] -> WhereCondition
 whereOr = Or
 
 {- |
-  Migration Guide: @whereIn@ has renamed to @fieldIn@. It now takes a
+  Migration Guide: @whereIn@ has been renamed to @fieldIn@. It now takes a
   @NonEmpty@ list of values to reflect this is a requirement in SQL.
 -}
 whereIn :: FieldDefinition nullability a -> [a] -> WhereCondition
@@ -182,7 +182,7 @@ whereIn fieldDef values =
   E.whereIn (fieldToNameForm fieldDef) (map (fieldToSqlValue fieldDef) values)
 
 {- |
-  Migration Guide: @whereLike@ has renamed to @fieldLike@. It now takes a
+  Migration Guide: @whereLike@ has been renamed to @fieldLike@. It now takes a
   @T.Text@ value rather than a @String@.
 -}
 whereLike :: FieldDefinition nullability a -> String -> WhereCondition
@@ -191,7 +191,7 @@ whereLike fieldDef raw =
   E.whereLike (fieldToNameForm fieldDef) (toSql raw)
 
 {- |
-  Migration Guide: @whereLikeInsensitive@ has renamed to
+  Migration Guide: @whereLikeInsensitive@ has been renamed to
   @fieldLikeInsensitive@. It now takes a @T.Text@ value rather than a @String@.
 -}
 whereLikeInsensitive :: FieldDefinition nullability a -> String -> WhereCondition
@@ -200,7 +200,7 @@ whereLikeInsensitive fieldDef raw =
   E.whereLikeInsensitive (fieldToNameForm fieldDef) (toSql raw)
 
 {- |
-  Migration Guide: @whereNotIn@ has renamed to @fieldNotIn@. It now takes a
+  Migration Guide: @whereNotIn@ has been renamed to @fieldNotIn@. It now takes a
   @NonEmpty@ list of values to reflect this is a requirement in SQL.
 -}
 whereNotIn :: FieldDefinition nullability a -> [a] -> WhereCondition
@@ -214,9 +214,9 @@ whereNotIn fieldDef values =
   Migration Guide: @whereQualified@ has been removed. If you need qualified
   column references you can use the SQL building functions found in
   @Orville.PostgreSQL.Expr@ to build them. The @qualifyColumn@ function can be
-  use to qualified column references in that context. @BooleanExpr@ values
-  built directly this way can be easily used in conjuction with other helpers
-  such as @fieldEquals@ which also build @BooleanExpr@ values themselves.
+  used to qualify column references in that context. @BooleanExpr@ values built
+  directly this way can be easily used in conjuction with other helpers such as
+  @fieldEquals@ which also build @BooleanExpr@ values themselves.
 -}
 whereQualified :: TableDefinition a b c -> WhereCondition -> WhereCondition
 whereQualified tableDef cond = Qualified tableDef cond
@@ -250,7 +250,7 @@ whereValues = List.concatMap whereConditionValues
 
 {- |
   Migration Guide: @whereToSql@ has been removed. It is replaced by the more
-  generate @toBytesAndParams@ function in @Orville.PostgreSQL.Raw.RawSql@.
+  general @toBytesAndParams@ function in @Orville.PostgreSQL.Raw.RawSql@.
 -}
 whereToSql :: [WhereCondition] -> (String, [SqlValue])
 whereToSql conds = (whereClause conds, whereValues conds)
