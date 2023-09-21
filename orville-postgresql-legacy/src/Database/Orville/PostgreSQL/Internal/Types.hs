@@ -27,6 +27,10 @@ import Database.Orville.PostgreSQL.Internal.Expr
 import Database.Orville.PostgreSQL.Internal.QueryKey
 import Database.Orville.PostgreSQL.Internal.SqlType
 
+{- |
+  Migration Guide: @Record@ has been removed. It's recommended that you
+  create a separate record key type for each of your entities instead.
+-}
 type Record = Int
 
 type CreatedAt = Time.UTCTime
@@ -362,6 +366,17 @@ data PrimaryKeyPart key =
 instance QueryKeyable (TableDefinition readEntity writeEntity key) where
   queryKey = QKTable . tableName
 
+{- |
+  Migration Guide: @SchemaItem@ retains the same name. The @Index@,
+  @DropIndex@, @Constraint@ and @DropConstraint@ constructors have been
+  removed. These items are now added to the @TableDefinition@ via
+  @addTableConstraints@ and @addTableIndexes@. The remaining constructors have
+  been prefixed with the word @Schema@ (e.g. @Table@ has been renamed to
+  @SchemaTable@). There is no explicit replacement for @DropIndex@ and
+  @DropConstraint@. Orville will automatically drop indexes and constraints
+  that are no longer mentioned on the @TableDefinition@ for any tables that it
+  migrates.
+-}
 data SchemaItem
   = forall readEntity writeEntity key. Table (TableDefinition readEntity writeEntity key)
   | DropTable String
@@ -384,6 +399,10 @@ instance Show SchemaItem where
   show (Sequence name) = "Sequence " ++ show name
   show (DropSequence name) = "DropSequence " ++ show name
 
+{- |
+  Migration Guide: @SchemaDefinition@ has been removed. Use @[SchemaItem]@
+  instead.
+-}
 type SchemaDefinition = [SchemaItem]
 
 data IndexDefinition = IndexDefinition

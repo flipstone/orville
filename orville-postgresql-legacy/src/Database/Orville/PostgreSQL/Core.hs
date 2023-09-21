@@ -46,26 +46,26 @@ module Database.Orville.PostgreSQL.Core
   , partialMap -- migration guide added
   , readOnlyMap -- migration guide added
   , readOnlyField -- migration guide added
-  , OrvilleEnv
-  , newOrvilleEnv
-  , setStartTransactionSQL
-  , aroundRunningQuery
-  , addTransactionCallBack
+  , OrvilleEnv -- migration guide added
+  , newOrvilleEnv -- migration guide added
+  , setStartTransactionSQL -- migration guide added
+  , aroundRunningQuery -- migration guide added
+  , addTransactionCallBack -- migration guide added
   , ormEnvPool
   , TransactionEvent(..)
-  , OrvilleT
+  , OrvilleT -- migration guide added
   , unOrvilleT
   , SqlValue
-  , HasOrvilleContext(..)
-  , MonadOrville
-  , runOrville
-  , mapOrvilleT
-  , MonadOrvilleControl(..)
-  , defaultLiftWithConnection
-  , defaultLiftFinally
+  , HasOrvilleContext(..) -- migration guide added
+  , MonadOrville -- migration guide added
+  , runOrville -- migration guide added
+  , mapOrvilleT -- migration guide added
+  , MonadOrvilleControl(..) -- migration guide added
+  , defaultLiftWithConnection -- migration guide added
+  , defaultLiftFinally -- migration guide added
   , QueryType(..)
-  , withCachedConnection
-  , withTransaction
+  , withCachedConnection -- migration guide added
+  , withTransaction -- migration guide added
   , ColumnFlag(..) -- migration guide added
   , ColumnDefault(toColumnDefaultSql)
   , Now(..)
@@ -99,14 +99,14 @@ module Database.Orville.PostgreSQL.Core
   , fieldType
   , fieldFlags -- migration guide added
   , IndexDefinition(..)
-  , uniqueIndex
-  , simpleIndex
+  , uniqueIndex -- migration guide added
+  , simpleIndex -- migration guide added
   , simplePartialIndex
   , uniquePartialIndex
   , ConstraintDefinition(..)
   , SequenceDefinition(..)
-  , uniqueConstraint
-  , dropConstraint
+  , uniqueConstraint -- migration guide added
+  , dropConstraint -- migration guide added
   , FromSql
   , FromSqlError(..)
   , RowDataErrorDetails(..)
@@ -121,27 +121,27 @@ module Database.Orville.PostgreSQL.Core
   , ToSql
   , getField
   , getComponent
-  , SchemaItem(..)
-  , SchemaDefinition
-  , Record
+  , SchemaItem(..) -- migration guide added
+  , SchemaDefinition -- migration guide added
+  , Record -- migration guide added
   , CreatedAt
   , UpdatedAt
   , OccurredAt
   , TableComments
   , noComments
   , say
-  , WhereCondition
-  , whereAnd
-  , whereOr
-  , whereIn
-  , whereLike
-  , whereLikeInsensitive
-  , whereNotIn
-  , whereQualified
-  , whereRaw
-  , whereToSql
-  , isNull
-  , isNotNull
+  , WhereCondition -- migration guide added
+  , whereAnd -- migration guide added
+  , whereOr -- migration guide added
+  , whereIn -- migration guide added
+  , whereLike -- migration guide added
+  , whereLikeInsensitive -- migration guide added
+  , whereNotIn -- migration guide added
+  , whereQualified -- migration guide added
+  , whereRaw -- migration guide added
+  , whereToSql -- migration guide added
+  , isNull -- migration guide added
+  , isNotNull -- migration guide added
   , (.==)
   , (.<>)
   , (.<-)
@@ -164,11 +164,11 @@ module Database.Orville.PostgreSQL.Core
   , (.:=)
   , OrderByClause(..)
   , SortDirection(..)
-  , migrateSchema
+  , migrateSchema -- migration guide added
   , MigrationError(..)
-  , generateMigrationPlan
-  , MigrationPlan
-  , MigrationItem(..)
+  , generateMigrationPlan -- migration guide added
+  , MigrationPlan -- migration guide added
+  , MigrationItem(..) -- migration guide added
   , migrationPlanItems
   , Pagination(..)
   , buildPagination

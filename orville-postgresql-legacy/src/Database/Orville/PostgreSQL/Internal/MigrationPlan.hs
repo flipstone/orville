@@ -19,11 +19,20 @@ import Database.Orville.PostgreSQL.Internal.Types (SchemaItem)
 
 type DDL = String
 
+{- |
+  Migration Guide: @MigrationItem@ has been renamed to @MigrationStep@, which
+  is now a simple @RawSql@ wrapper. You can use @RawSql.toExampleBytes@ if you
+  wish to render it to a bytestring for display purposes.
+-}
 data MigrationItem = MigrationItem
   { migrationItemSchemaItem :: SchemaItem
   , migrationItemDDL :: DDL
   }
 
+{- |
+  Migration Guide: @MigrationPlan@ has been removed. Use @[MigrationStep]@
+  instead.
+-}
 data MigrationPlan =
   MigrationPlan MigrationItem
                 (DList.DList MigrationItem)

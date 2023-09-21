@@ -67,15 +67,15 @@ indexCreateExpr :: IndexDefinition -> Expr.Qualified Expr.TableName -> Expr.Crea
 indexCreateExpr = _indexCreateExpr
 
 {- |
-  Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given
-  columns.
+  Constructs an 'IndexDefinition' for a non-unique index on the given
+  columns
 -}
 nonUniqueIndex :: NonEmpty FieldDefinition.FieldName -> IndexDefinition
 nonUniqueIndex =
   mkIndexDefinition Expr.NonUniqueIndex
 
 {- |
-  Constructs an 'IndexDefinition' for a @UNIQUE@ index with given SQL and
+  Constructs an 'IndexDefinition' for a non-unique index with given SQL and
   index name
 -}
 nonUniqueNamedIndex :: String -> RawSql.RawSql -> IndexDefinition

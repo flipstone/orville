@@ -41,6 +41,10 @@ data QueryType
   deriving (Ord, Eq, Enum, Show, Read)
 
 {-|
+  Migration Guide: @OrvilleEnv@ has been renamed to @OrvilleState@. It no
+  longer has any type paremeters. The connection type is fixed and cannot be
+  changed.
+
  'OrvilleEnv' tracks all the environment information required for an
  'OrvilleT conn m' Monad to operate. Use 'newOrvilleEnv' to construct
  one.
@@ -62,6 +66,9 @@ data TransactionEvent
 defaultStartTransactionSQL :: String
 defaultStartTransactionSQL = "START TRANSACTION"
 
+{- |
+  Migration Guide: @setStartTransactionSQL@ has been renamed to @setBeginTransactionExpr@
+-}
 setStartTransactionSQL :: String -> OrvilleEnv conn -> OrvilleEnv conn
 setStartTransactionSQL sql env = env {ormEnvStartTransactionSQL = sql}
 
@@ -71,6 +78,9 @@ defaultRunningQuery _ _ action = action
 defaultTransactionCallback :: TransactionEvent -> IO ()
 defaultTransactionCallback = const (pure ())
 
+{- |
+  Migration Guide: @aroundRunningQuery@ has been renamed to @addSqlExecutionCallback@
+-}
 aroundRunningQuery ::
      (forall a. QueryType -> String -> IO a -> IO a)
   -> OrvilleEnv conn
@@ -82,6 +92,9 @@ aroundRunningQuery outside env = env {ormEnvRunningQuery = layeredAround}
       outside queryType sql (inside queryType sql action)
     inside = ormEnvRunningQuery env
 
+{- |
+  Migration Guide: @addTransactionCallBack@ retains the same name
+-}
 addTransactionCallBack ::
      (TransactionEvent -> IO ()) -> OrvilleEnv conn -> OrvilleEnv conn
 addTransactionCallBack callback env =
@@ -92,6 +105,10 @@ addTransactionCallBack callback env =
       callback event
 
 {-|
+  Migration Guide: @newOrvilleEnv@ has been renamed to @newOrvilleState@. The
+  new function requires a parameter to be passed before the connection pool to
+  specify the level of detail to be used when Orville reports errors.
+
  'newOrvilleEnv' initialized an 'OrvilleEnv' for service. The connection
  pool provided will be used to obtain connections to the database ase
  required. You can use the 'Database.Orville.PostgreSQL.Connection.createConnectionPool'
@@ -108,6 +125,14 @@ newOrvilleEnv =
 setConnectionEnv :: ConnectionEnv conn -> OrvilleEnv conn -> OrvilleEnv conn
 setConnectionEnv c ormEnv = ormEnv {ormEnvConnectionEnv = Just c}
 
+{- |
+  Migration Guide: @OrvilleT@ has been removed. In its place you can simply use
+  a @ReaderT OrvilleState@. If you have another @ReaderT@ layer in your monad
+  stack you can add the @OrvilleState@ to the reader context for that layer
+  instead, which is more efficient than having multiple @ReaderT@ layers. If
+  you have a simple case of @OrvilleT conn IO@ the new Orville offers a simpler
+  @Orville@ monad (not a transformer) to get you started.
+-}
 newtype OrvilleT conn m a = OrvilleT
   { unOrvilleT :: ReaderT (OrvilleEnv conn) m a
   } deriving ( Functor
@@ -124,10 +149,21 @@ newtype OrvilleT conn m a = OrvilleT
 #endif
              )
 
+{- |
+  Migration Guide: @mapOrvilleT@ has been removed because @OrvilleT@ has been
+  removed. If you're replacing @OrvilleT@ with @ReaderT@ then @mapOrvilleT@
+  should be replaced with @mapReaderT@.
+-}
 mapOrvilleT ::
      Monad n => (m a -> n b) -> OrvilleT conn m a -> OrvilleT conn n b
 mapOrvilleT f (OrvilleT action) = OrvilleT $ mapReaderT f action
 
+{- |
+  Migration Guide: @runOrville@ now operates on the concrete @Orville@ monad
+  becase @OrvilleT@ has been removed. Assuming you are replacing usages of
+  @OrvilleT@ with @ReaderT@ you will want to replace usages of @runOrville@
+  with @runReaderT@.
+-}
 runOrville :: OrvilleT conn m a -> OrvilleEnv conn -> m a
 runOrville = runReaderT . unOrvilleT
 
@@ -160,6 +196,10 @@ instance MonadBase b m => MonadBase b (OrvilleT conn m) where
   liftBase = lift . liftBase
 
 {-|
+  Migration Guide: @HasOrvilleContext@ has been renamed to @HasOrvilleState@.
+  @getOrvilleEnv@ and @localOrvilleEnv@ have been renamed to @askOrvilleState@
+  and @localOrvilleState@.
+
   'HasOrvilleContext' defines the operations that must be available in your own
   monad for managing the connection pool that Orville functions will use to
   access the database and manage transaction state. In most cases you can
@@ -183,6 +223,13 @@ class IConnection conn =>
   -- from the 'Reader' monad.
 
 {-|
+   Migration Guide: @MonadOrvilleControl@ retains the same name. The
+   @liftFinally@ member has been removed. There are new @liftCatch@ and
+   @liftMask@ members that must be implemented, however. Instances of the new
+   @MonadOrvilleControl@ are provided for @IO@ and @ReaderT@. Helper functions
+   for implmenting the members via @UnliftIO@ can be found in
+   @Orville.PostgreSQL.UnliftIO@.
+
    'MonadOrvilleControl' provides an interface for the kinds of IO operations
    that Orville functions need to lift into the Monad providing the
    'MonadOrville' instance. This typeclass allows users to provide their
@@ -212,6 +259,10 @@ class MonadOrvilleControl m where
   liftFinally :: (forall a b. IO a -> IO b -> IO a) -> m c -> m d -> m c
 
 {-|
+  Migration Guide: @MonadOrville@ retains the same name, but the @conn@
+  parameter has been removed. @MonadFail@ and @MonadThrow@ have been removed as
+  superclass constraints.
+
   'MonadOrville' does not have any methods of its own. Instead it brings all
   the typeclass constraints required by Orville functions that need to access
   the database into a single typeclass. In some cases you can include
@@ -242,6 +293,10 @@ instance MonadOrvilleControl IO where
   liftFinally ioFinally = ioFinally
 
 {-|
+   Migration Guide: @defaultLiftWithConnection@ has been removed. In its
+   place you can use either the @ReaderT@ instance of @MonadOrvilleControl@
+   or the helpers in @Orville.PostgreSQL.UnliftIO@.
+
    defaultLiftWithConnection provides a simple definition of
    'liftWithConnection' for 'MonadOrvilleControl' instances when the Monad in
    question is a wrapper around a type that already implements
@@ -258,6 +313,9 @@ defaultLiftWithConnection wrapT unWrapT ioWithConn action =
   wrapT $ liftWithConnection ioWithConn (unWrapT . action)
 
 {-|
+   Migration Guide: @defaultLiftWithConnection@ has been removed (along with
+   @liftFinally@)
+
    defaultLiftFinally provides a simple definition of
    'liftWithConnection' for 'MonadOrvilleControl' instances when the Monad in
    question is a wrapper around a type that already implements
