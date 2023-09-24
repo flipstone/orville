@@ -8,9 +8,9 @@ services:
       - stack-root:/stack-root
     working_dir: /orville-postgresql
     depends_on:
-      - testdb-${PG_VERSION:-pg11}
+      - testdb-${PG_VERSION:-pg12}
     environment:
-      TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg11}"
+      TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg12}"
       STACK_ROOT: /stack-root
     command:
       - ./scripts/test-loop
@@ -19,12 +19,6 @@ services:
     # stack test. stdin_open would be sufficient, but
     # allocating a tty provides colorful test output :)
     tty: true
-
-  testdb-pg11:
-    image: postgres:11.17-alpine
-    environment:
-      POSTGRES_USER: orville_test
-      POSTGRES_PASSWORD: orville
 
   testdb-pg12:
     image: postgres:12.12-alpine
@@ -45,7 +39,13 @@ services:
       POSTGRES_PASSWORD: orville
 
   testdb-pg15:
-    image: postgres:15.0-alpine
+    image: postgres:15.4-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg16:
+    image: postgres:16.0-alpine
     environment:
       POSTGRES_USER: orville_test
       POSTGRES_PASSWORD: orville
