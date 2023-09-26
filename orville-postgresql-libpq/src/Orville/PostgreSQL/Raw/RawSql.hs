@@ -91,6 +91,20 @@ instance Semigroup RawSql where
 instance Monoid RawSql where
   mempty = SqlSection mempty
 
+{- |
+ 'SqlExpression' provides a common interface for converting types to and from
+ 'RawSql', either via 'toRawSql' and 'unsafeFromRawSql', or the convenience
+ function 'unsafeSqlExpression'. Orville defines a large number of types that
+ represent various fragments of SQL statements as well as functions to help
+ construct the safely. These funtions can be found in the
+ 'Orville.PostgreSQL.Expr'. These types all provide 'SqlExpression' instances
+ as an escape hatch to allow you to pass any SQL you wish in place of what
+ Orville directly supports. This should be use with great care as Orville
+ cannot guarantee that the SQL you pass can be used to generate valid SQL in
+ conjuction with the rest of the 'Orville.PostgreSQL.Expr' API.
+
+@since 0.10.0.0
+-}
 class SqlExpression a where
   toRawSql :: a -> RawSql
   unsafeFromRawSql :: RawSql -> a
@@ -99,9 +113,20 @@ instance SqlExpression RawSql where
   toRawSql = id
   unsafeFromRawSql = id
 
-{- | A conveinence function for creating an arbitrary 'SqlExpression' from a 'String'. Great care
-   should be exercised in use of this function as it cannot provide any sort of correctness
-   guarantee.
+{- |
+  A conveinence function for creating an arbitrary 'SqlExpression' from a
+  'String'. Great care should be exercised in use of this function as it cannot
+  provide any sort of guarantee that the string passed is usable to generate
+  valid SQL via the rest of Orville's 'Orville.PostgreSQL.Expr' API as the
+  whatever 'SqlExpression' type is returned.
+
+  For example, if one wanted build a boolean expression not support by Orville,
+  you can do it like so
+
+   > import qualified Orville.PostgreSQL.Expr as Expr
+   >
+   > a :: Expr.BooleanExpr
+   > a RawSql.unsafeSqlExpression "foo BETWEEN 1  AND 3"
 
 @since 0.10.0.2
 -}

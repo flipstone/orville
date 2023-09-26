@@ -98,7 +98,10 @@ createNamedIndexExpr uniqueness mbConcurrently tableName indexName bodyExpr =
       <> RawSql.toRawSql bodyExpr
 
 {- |
-Type to represent the concurrently keyword for index creation
+Type to represent the @CONCURRENTLY@ keyword for index creation
+
+'ConcurrentlyExpr' provides a 'RawSql.SqlExpression' instance. See
+'unsafeSqlExpression' for how to construct a value with your own custom SQL.
 
 @since 0.10.0.0
 -}
@@ -122,6 +125,9 @@ concurrently =
 {- |
 Type to represent if the body of an index definition (i.e. @<body>@ in
 after @CREATE some_index ON some_table <body>@).
+
+'IndexBodyExpr' provides a 'RawSql.SqlExpression' instance. See
+'unsafeSqlExpression' for how to construct a value with your own custom SQL.
 
 @since 0.10.0.0
 -}
