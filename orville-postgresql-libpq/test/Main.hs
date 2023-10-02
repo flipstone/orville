@@ -89,7 +89,8 @@ main = do
 createTestConnectionPool :: IO (Orville.Pool Orville.Connection)
 createTestConnectionPool = do
   connStr <- lookupConnStr
-  Orville.createConnectionPool Orville.DisableNoticeReporting 1 10 1 connStr
+  -- Some tests use more than one connection, so the pool size must be greater
+  Orville.createConnectionPool Orville.DisableNoticeReporting 1 10 2 connStr
 
 recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
 recheckDBProperty size seed namedProperty = do

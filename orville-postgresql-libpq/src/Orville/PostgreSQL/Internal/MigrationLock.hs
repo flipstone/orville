@@ -1,7 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Orville.PostgreSQL.Internal.MigrationLock
-  ( withLockedTransaction
+  ( withMigrationLock
+  , MigrationLockError
   )
 where
 
@@ -12,51 +13,59 @@ import qualified Control.Monad.IO.Class as MIO
 import Data.Int (Int32)
 
 import qualified Orville.PostgreSQL.Execution as Exec
+import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-withLockedTransaction :: forall m a. Monad.MonadOrville m => m a -> m a
-withLockedTransaction action = do
-  go 0
- where
-  go :: Int -> m a
-  go attempts = do
-    result <- runWithTransaction
-    case result of
-      Just a -> pure a
-      Nothing -> do
-        MIO.liftIO $ do
-          Monad.when (attempts >= 25) $ do
-            throwIO $
-              MigrationLockError
-                "Giving up after 25 attempts to aquire the migration lock."
-          threadDelay 10000
+{- |
+  Executes an Orville action with a PostgreSQL advisory lock held that
+  indicates to other Orville processes that a database migration is being done
+  an no others should be performed concurrently.
+-}
+withMigrationLock :: Monad.MonadOrville m => m a -> m a
+withMigrationLock action =
+  Monad.withConnection_ $
+    Bracket.bracketWithResult
+      accquireTransactionLock
+      (\() _bracketResult -> releaseTransactionLock)
+      (\() -> action)
 
-        go $ attempts + 1
-  runWithTransaction =
-    Exec.withTransaction $ do
+accquireTransactionLock :: forall m. Monad.MonadOrville m => m ()
+accquireTransactionLock =
+  let
+    go :: Int -> m ()
+    go attempts = do
+      locked <- attemptLockAcquisition
+      if locked
+        then pure ()
+        else do
+          MIO.liftIO $ do
+            Monad.when (attempts >= 25) $ do
+              throwIO $
+                MigrationLockError
+                  "Giving up after 25 attempts to aquire the migration lock."
+            threadDelay 10000
+
+          go $ attempts + 1
+
+    attemptLockAcquisition = do
       tryLockResults <-
         Exec.executeAndDecode Exec.OtherQuery tryLockExpr lockedMarshaller
 
       case tryLockResults of
-        [True] ->
-          -- If we were able to acquire the lock then we can go ahead and
-          -- execute the action.
-          Just <$> action
-        [False] -> do
-          -- If we were not able to acquire the lock, wait for the lock to
-          -- become available. However, the state of the database schema may
-          -- have changed while we were waiting (for instance, another
-          -- Orville process migrating the same schema). We must exit the
-          -- current transaction and enter a new one, acquiring the lock
-          -- again in that new transaction.
-          Exec.executeVoid Exec.OtherQuery waitForLockExpr
-          pure Nothing
+        [locked] ->
+          pure locked
         rows ->
           MIO.liftIO . throwIO . MigrationLockError $
             "Expected exactly one row from attempt to acquire migration lock, but got " <> show (length rows)
+  in
+    go 0
+
+releaseTransactionLock :: Monad.MonadOrville m => m ()
+releaseTransactionLock =
+  Exec.executeVoid Exec.OtherQuery releaseLockExpr
 
 orvilleLockScope :: Int32
 orvilleLockScope = 17772
@@ -71,7 +80,7 @@ lockedMarshaller =
 
 tryLockExpr :: RawSql.RawSql
 tryLockExpr =
-  RawSql.fromString "SELECT pg_try_advisory_xact_lock"
+  RawSql.fromString "SELECT pg_try_advisory_lock"
     <> RawSql.leftParen
     <> RawSql.parameter (SqlValue.fromInt32 orvilleLockScope)
     <> RawSql.comma
@@ -79,15 +88,19 @@ tryLockExpr =
     <> RawSql.rightParen
     <> RawSql.fromString " as locked"
 
-waitForLockExpr :: RawSql.RawSql
-waitForLockExpr =
-  RawSql.fromString "SELECT pg_advisory_xact_lock"
+releaseLockExpr :: RawSql.RawSql
+releaseLockExpr =
+  RawSql.fromString "SELECT pg_advisory_unlock"
     <> RawSql.leftParen
     <> RawSql.parameter (SqlValue.fromInt32 orvilleLockScope)
     <> RawSql.comma
     <> RawSql.parameter (SqlValue.fromInt32 migrationLockId)
     <> RawSql.rightParen
 
+{- |
+  Raised if 'withMigrationLock' cannot acquire the migration lock in a
+  timely manner.
+-}
 newtype MigrationLockError
   = MigrationLockError String
   deriving (Show)

@@ -30,8 +30,7 @@ data MigrationItem = MigrationItem
   }
 
 {- |
-  Migration Guide: @MigrationPlan@ has been removed. Use @[MigrationStep]@
-  instead.
+  Migration Guide: @MigrationPlan@ retains the same name.
 -}
 data MigrationPlan =
   MigrationPlan MigrationItem
@@ -45,6 +44,10 @@ append :: MigrationPlan -> MigrationPlan -> MigrationPlan
 append (MigrationPlan itemA restA) (MigrationPlan itemB restB) =
   MigrationPlan itemA $ DList.append restA $ DList.cons itemB restB
 
+{- |
+  Migration Guide: @migrationPlanItems@ has been renamed to
+  @migrationPlanSteps@
+-}
 migrationPlanItems :: MigrationPlan -> [MigrationItem]
 migrationPlanItems (MigrationPlan item rest) =
   DList.toList $ DList.cons item rest
