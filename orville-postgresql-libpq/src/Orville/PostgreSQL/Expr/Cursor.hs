@@ -49,20 +49,19 @@ import Orville.PostgreSQL.Expr.Name (CursorName)
 import Orville.PostgreSQL.Expr.Query (QueryExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- | 'DeclareExpr' corresponds to the SQL DECLARE statement, for declaring and opening cursors.
+{- |
+'DeclareExpr' corresponds to the SQL DECLARE statement, for declaring and
+opening cursors. E.G.
+
+> DECLARE FOO CURSOR FOR SELECT * FROM BAR
 
 See PostgreSQL [cursor declare
-documentation](https://www.postgresql.org/docs/current/sql-declare.html) for more information.
+documentation](https://www.postgresql.org/docs/current/sql-declare.html) for
+more information.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
-
-For example, if one wanted to have a cusor named FOO, with a query of select * from BAR, that could
-be done as
-
- > RawSql.unsafeSqlExpression "DECLARE FOO CURSOR FOR SELECT * FROM BAR"
+'DeclareExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -97,24 +96,22 @@ declare cursorName maybeScrollExpr maybeHoldExpr queryExpr =
         , Just $ RawSql.toRawSql queryExpr
         ]
 
-{- | 'ScrollExpr' is used to determine if a cursor should be able to fetch nonsequentially.
+{- |
+'ScrollExpr' is used to determine if a cursor should be able to fetch
+nonsequentially. E.G.
 
-Note that the default in at least PostgreSQL versions 11-15 is to allow nonsequential fetches under
-some, but not all, circumstances.
+> NO SCROLL
+
+Note that the default in at least PostgreSQL versions 11-15 is to allow
+nonsequential fetches under some, but not all, circumstances.
 
 See PostgreSQL [cursor declare
 documentation](https://www.postgresql.org/docs/current/sql-declare.html) for more information.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
+'ScrollExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
-For example, if one wanted to allow only sequential fetches, that could be done as
-
- > RawSql.unsafeSqlExpression "NO SCROLL"
-
-The above is provided as a built-in, 'noScroll'.
 @since 0.10.0.0
 -}
 newtype ScrollExpr
@@ -140,23 +137,18 @@ noScroll :: ScrollExpr
 noScroll =
   ScrollExpr . RawSql.fromString $ "NO SCROLL"
 
-{- | 'HoldExpr' is used to determine if a cursor should be available for use after the transaction
-   that created it has been comitted.
+{- |
+'HoldExpr' is used to determine if a cursor should be available for use after
+the transaction that created it has been comitted. E.G.
+
+> WITH HOLD
 
 See PostgreSQL [cursor documentation](https://www.postgresql.org/docs/current/sql-declare.html) for
 more information.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
-
-For example, if one wanted to have a cursor available after the transaction creating it commits,
-that could be done as
-
- > RawSql.unsafeSqlExpression "WITH HOLD"
-
-The above is provided as a built-in, 'withHold'.
+'HoldExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -183,23 +175,17 @@ withoutHold :: HoldExpr
 withoutHold =
   HoldExpr . RawSql.fromString $ "WITHOUT HOLD"
 
-{- | 'CloseExpr' corresponds to the SQL CLOSE statement.
+{- |
+'CloseExpr' corresponds to the SQL CLOSE statement. E.G.
+
+> CLOSE ALL
 
 See PostgreSQL [close documentation](https://www.postgresql.org/docs/current/sql-close.html) for
 more information.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
-
-For example, if one wanted to close all cursors, that could be done as
-
-> RawSql.unsafeSqlExpression "CLOSE ALL"
-
-The above is available via built-ins as,
-
-> close (Left allCursors)
+'HoldExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -221,21 +207,14 @@ close allOrCursorName =
     RawSql.fromString "CLOSE "
       <> either RawSql.toRawSql RawSql.toRawSql allOrCursorName
 
-{- | 'AllCursors' corresponds to the ALL keyword in a CLOSE statement.
+{- |
+'AllCursors' corresponds to the ALL keyword in a CLOSE statement. E.G.
 
-See PostgreSQL [close documentation](https://www.postgresql.org/docs/current/sql-close.html) for
-more information.
+> ALL
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
-
-For example, this could be done as
-
-> RawSql.unsafeSqlExpression "ALL"
-
-The above is available as a built-in, 'allCursors'
+'AllCursors' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -254,26 +233,19 @@ allCursors :: AllCursors
 allCursors =
   AllCursors . RawSql.fromString $ "ALL"
 
-{- | 'FetchExpr' corresponds to the SQL FETCH statement, for retrieving rows from a previously created
-   cursor.
+{- |
+'FetchExpr' corresponds to the SQL FETCH statement, for retrieving rows from a
+previously created cursor. E.G.
 
-See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
-more information.
+> FETCH NEXT FOO
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
+See PostgreSQL [fetch
+documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for more
+information.
 
-For example, if one wanted to use a cusor named FOO, to get the next row, that could
-be done as
-
- > RawSql.unsafeSqlExpression "FETCH NEXT FOO"
-
-The above is available via built-ins, given you have previously created the cursor and named it foo
-as,
-
-> fetch (Just next) foo
+'FetchExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -298,26 +270,15 @@ fetch maybeDirection cursorName =
         , Just $ RawSql.toRawSql cursorName
         ]
 
-{- | 'MoveExpr' corresponds to the SQL MOVE statement, for positioning a previously created cursor,
-   /without/ retrieving any rows.
+{- |
+'MoveExpr' corresponds to the SQL MOVE statement, for positioning a previously
+created cursor, /without/ retrieving any rows. E.G.
 
-See PostgreSQL [move
-documentation](https://www.postgresql.org/docs/current/sql-move.html) for more information.
+> MOVE NEXT FOO
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
-
-For example, if one wanted to use a cusor named FOO, and position on next row, that could
-be done as
-
- > RawSql.unsafeSqlExpression "MOVE NEXT FOO"
-
-The above is available via built-ins, given you have previously created the cursor and named it foo
-as,
-
-> move (Just next) foo
+'MoveExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -342,22 +303,18 @@ move maybeDirection cursorName =
       , Just $ RawSql.toRawSql cursorName
       ]
 
-{- | 'CursorDirection' corresponds to the direction argument to the SQL FETCH and MOVE statements.
+{- |
+'CursorDirection' corresponds to the direction argument to the SQL FETCH and
+MOVE statements. E.G.
+
+> BACKWARD
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
-
-For example, if one wanted to specify a backwards direction for use in a 'FetchExpr' or 'MoveExpr',
-this could be done as
-
-> RawSql.unsafeSqlExpression "BACKWARD"
-
-The above is available as a built-in, 'backward'
+'CursorDirection' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

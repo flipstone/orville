@@ -17,18 +17,15 @@ import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierE
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a SQL sequence name. 'SequenceName' values constructed via the
-'sequenceName' function will be properly escaped as part of the generated SQL.
+Type to represent a SQL sequence name. 'SequenceName' values constructed via
+the 'sequenceName' function will be properly escaped as part of the generated
+SQL. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> "some_sequence_name"
 
-For example, if one wanted to write a raw (unescaped) sequence name by hand and
-use it in a place that expected a 'SequenceName', that could be done as
-
- > RawSql.unsafeSqlExpression "my_sequence_name"
+'SequenceName' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

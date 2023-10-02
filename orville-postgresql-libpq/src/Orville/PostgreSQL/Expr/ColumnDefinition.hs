@@ -25,16 +25,14 @@ import Orville.PostgreSQL.Expr.Name (ColumnName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- | Represent a complete definition of a column.
+{- |
+Represent a complete definition of a column. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
+> foo INTEGER
 
-For example, if one wanted to have a column named FOO of type INT, that could be done as
-
- > RawSql.unsafeSqlExpression "FOO INT"
+'ColumnDefinition' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -69,16 +67,14 @@ columnDefinition columnName dataType maybeColumnConstraint maybeColumnDefault =
       , fmap RawSql.toRawSql maybeColumnDefault
       ]
 
-{- | Represent constraints, such as nullability, on a column.
+{- |
+Represent constraints, such as nullability, on a column. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
+> NOT NULL
 
-For example, if one wanted to have a constraint of NOT NULL, that could be done as
-
- > RawSql.unsafeSqlExpression "NOT NULL"
+'ColumnConstraint' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -105,16 +101,14 @@ nullConstraint :: ColumnConstraint
 nullConstraint =
   ColumnConstraint (RawSql.fromString "NULL")
 
-{- | Represent the default value of a column.
+{- |
+Represents the default value of a column. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is required but not
-already included. The extension mechanism provided does require care in use as no guarantees are
-provided for correctness in usage.
+> now()
 
-For example, if one wanted to have a default of FOO, that could be done as
-
- > RawSql.unsafeSqlExpression "FOO"
+'ColumnDefault' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

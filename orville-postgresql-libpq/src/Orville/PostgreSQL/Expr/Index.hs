@@ -27,17 +27,13 @@ import Orville.PostgreSQL.Expr.Name (ColumnName, IndexName, Qualified, TableName
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a SQL "CREATE INDEX" statement
+Type to represent a SQL "CREATE INDEX" statement. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> CREATE INDEX ON table (foo, bar, baz)
 
-For example, if one wanted to write a create index by hand and use it in a place that
-expected a 'CreateIndexExpr', that could be done as
-
- > RawSql.unsafeSqlExpression "CREATE INDEX <some unusual index creation>"
+'CreateIndexExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -98,10 +94,13 @@ createNamedIndexExpr uniqueness mbConcurrently tableName indexName bodyExpr =
       <> RawSql.toRawSql bodyExpr
 
 {- |
-Type to represent the @CONCURRENTLY@ keyword for index creation
+Type to represent the @CONCURRENTLY@ keyword for index creation. E.G.
+
+> CONCURRENTLY
 
 'ConcurrentlyExpr' provides a 'RawSql.SqlExpression' instance. See
-'unsafeSqlExpression' for how to construct a value with your own custom SQL.
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -123,11 +122,17 @@ concurrently =
   RawSql.unsafeSqlExpression "CONCURRENTLY"
 
 {- |
-Type to represent if the body of an index definition (i.e. @<body>@ in
-after @CREATE some_index ON some_table <body>@).
+Type to represent if the body of an index definition E.G.
+
+> (foo, bar)
+
+in
+
+> CREATE some_index ON some_table (foo, bar)
 
 'IndexBodyExpr' provides a 'RawSql.SqlExpression' instance. See
-'unsafeSqlExpression' for how to construct a value with your own custom SQL.
+'Rawsql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -178,17 +183,13 @@ uniquenessToSql uniqueness =
     NonUniqueIndex -> mempty
 
 {- |
-Type to represent a SQL "DROP INDEX" statement
+Type to represent a SQL "DROP INDEX" statement. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> DROP INDEX foo
 
-For example, if one wanted to write a drop index by hand and use it in a place that
-expected a 'DropIndexExpr', that could be done as
-
- > RawSql.unsafeSqlExpression "DROP INDEX <some unusual index drop>"
+'DropIndexExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

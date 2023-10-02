@@ -33,17 +33,13 @@ import Data.Int (Int32)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent any SQL data type expression.
+Type to represent any SQL data type expression. E.G.
 
-There is a low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> INTEGER
 
-For example, if one wanted to have a data type corresponding to the fictional
-SQL operator MY_DATA_TYPE, that could be done as
-
- > RawSql.unsafeSqlExpression "MY_DATA_TYPE"
+'DataType' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
