@@ -114,19 +114,19 @@ instance SqlExpression RawSql where
   unsafeFromRawSql = id
 
 {- |
-  A conveinence function for creating an arbitrary 'SqlExpression' from a
-  'String'. Great care should be exercised in use of this function as it cannot
-  provide any sort of guarantee that the string passed is usable to generate
-  valid SQL via the rest of Orville's 'Orville.PostgreSQL.Expr' API as the
-  whatever 'SqlExpression' type is returned.
+A conveinence function for creating an arbitrary 'SqlExpression' from a
+'String'. Great care should be exercised in use of this function as it cannot
+provide any sort of guarantee that the string passed is usable to generate
+valid SQL via the rest of Orville's 'Orville.PostgreSQL.Expr' API as the
+whatever 'SqlExpression' type is returned.
 
-  For example, if one wanted build a boolean expression not support by Orville,
-  you can do it like so
+For example, if one wanted build a boolean expression not support by Orville,
+you can do it like so
 
-   > import qualified Orville.PostgreSQL.Expr as Expr
-   >
-   > a :: Expr.BooleanExpr
-   > a RawSql.unsafeSqlExpression "foo BETWEEN 1  AND 3"
+> import qualified Orville.PostgreSQL.Expr as Expr
+>
+> a :: Expr.BooleanExpr
+> a RawSql.unsafeSqlExpression "foo BETWEEN 1  AND 3"
 
 @since 0.10.0.2
 -}

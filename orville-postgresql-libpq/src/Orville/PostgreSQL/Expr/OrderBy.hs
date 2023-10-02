@@ -30,17 +30,13 @@ import Orville.PostgreSQL.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a SQL order by clause.
+Type to represent a SQL order by clause. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> ORDER BY foo, bar
 
-For example, if one wanted to write a order by clause by hand and use it in a
-place that expected a 'OrderByClause', that could be done as
-
- > RawSql.unsafeSqlExpression "ORDER BY <my unusual order by>"
+'OrderByClause' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -53,17 +49,13 @@ orderByClause expr = OrderByClause (RawSql.fromString "ORDER BY " <> RawSql.toRa
 
 {- |
 Type to represent a SQL order by expression (the part that follows the @ORDER
-BY@ in sql).
+BY@ in sql). E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> foo, bar
 
-For example, if one wanted to write a order by expression by hand and use it in a
-place that expected a 'OrderByExpr, that could be done as
-
- > RawSql.unsafeSqlExpression "<my unusual order by>"
+'OrderByExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -119,17 +111,13 @@ orderByColumnName =
   orderByExpr . RawSql.toRawSql
 
 {- |
-Type to represent a SQL order by direction expression.
+Type to represent a SQL order by direction expression. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> ASC
 
-For example, if one wanted to write a order by direction by hand and use it in a
-place that expected a 'OrderByDirection', that could be done as
-
- > RawSql.unsafeSqlExpression "<my unusual order by direction>"
+'OrderByDirection' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

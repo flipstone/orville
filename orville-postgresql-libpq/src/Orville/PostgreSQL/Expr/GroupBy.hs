@@ -23,17 +23,13 @@ import Orville.PostgreSQL.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a SQL group by clause.
+Type to represent a SQL group by clause. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> GROUP BY team_name
 
-For example, if one wanted to write a group by clause by hand and use it in a
-place that expected a 'GroupByClause', that could be done as
-
- > RawSql.unsafeSqlExpression "GROUP BY <my unusual group by>"
+'GroupByClause' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
@@ -53,17 +49,13 @@ groupByClause expr = GroupByClause (RawSql.fromString "GROUP BY " <> RawSql.toRa
 
 {- |
 Type to represent a SQL group by expression (the part that follows the @GROUP
-BY@ in sql).
+BY@ in sql). E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> team_name
 
-For example, if one wanted to write a group by expression by hand and use it in a
-place that expected a 'GroupByExpr', that could be done as
-
- > RawSql.unsafeSqlExpression "<my unusual group by>"
+'GroupByExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

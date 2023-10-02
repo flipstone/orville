@@ -23,17 +23,13 @@ import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a qualified SQL name.
+Type to represent a qualified SQL name. E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> "some_schema_name"."some_table_name"
 
-For example, if one wanted to write a raw (unescaped) qualified name by hand
-and use it in a place that expected a 'Qualified a', that could be done as
-
- > RawSql.unsafeSqlExpression "my.qualified_name"
+'Qualified' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}

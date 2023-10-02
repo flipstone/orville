@@ -19,16 +19,13 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 {- |
 Type to represent a SQL table name. 'TableName' values constructed via the
 'tableName' function will be properly escaped as part of the generated SQL.
+E.G.
 
-There is an low level escape hatch included here, by means of the instance of
-'RawSql.SqlExpression'. This is intended to be used when some functionality is
-required but not already included. The extension mechanism provided does require
-care in use as no guarantees are provided for correctness in usage.
+> "some_table_name"
 
-For example, if one wanted to write a raw (unescaped) table name by hand and
-use it in a place that expected a 'TableName', that could be done as
-
- > RawSql.unsafeSqlExpression "my_table_name"
+'TableName' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
 
 @since 0.10.0.0
 -}
