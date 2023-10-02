@@ -6,6 +6,142 @@ License   : MIT
 Migration Guide: Although not all exports are identical, most of the items in
 this module can now be imported from @Orville.PostgreSQL@.
 
+Please note that the new LibPQ-based version of orville represents a complete
+re-write of Orville from the ground up. As such many of the APIs have been
+re-thought with the goal of providing stability and better experience long
+term.
+
+Major changes:
+
+* The library no longer allows the connection type to vary. It is intended only
+  to be used with PostgreSQL. Thus 'MonadOrville' and other types that used to
+  have a @conn@ type parameter no longer have that parameter.
+
+* 'OrvilleT' has been removed in favor of simply using @ReaderT@. For trivial
+  cases (i.e. @ReaderT@ over @IO@) a pre-packaged @Orville@ monad is provided.
+
+* In 'TableDefinition', the order of the type parameters has changed from
+  @TableDefinition readEnity writeEntity key@ to @TableDefinition key
+  writeEntity readEntity@. This make it more consistent with the order of these
+  arguments in other types. 'TableParams' has been removed in favor of building
+  a basic table definition with the require parameters first and adding or
+  setting other optional items after initial construction.
+
+* 'RelationalMap' has been replaced by @SqlMarshaller@. Many functions have
+  been renamed, but most functions have a direct or nearly direct translation
+  from the old ones. See the docs on the individual functions such as
+  'attrField' to see what has changed.
+
+* The auto-migration system is significantly improved. Standard indexes no
+  longer need to be given explicit names. Indexes and constraints are now
+  attached to 'TableDefinition' rather than being their own schema items.
+  Indexes and constraints are no longer dropped explicitly -- they are dropped
+  automatically by Orville when they have been removed from the table
+  definiton.
+
+* A number of places that previously accepted @[]@ now require @NonEmpty@
+  instead. This is done in places where an empty list would not be valid SQL.
+  For examples of this change see 'insertRecordMany' and 'updateFields'.
+
+* 'whereAnd' and 'whereOr' (which took lists) have been replaced
+  with binary boolean logic functions @andExpr@ and @orExpr@. These functions
+  also have operator aliases (@(.&&)@, @(.||)@).
+
+The following items exported from this module have migration guide notes
+available in their documentation:
+
+* 'TableDefinition'
+* 'mkTableDefinition'
+* 'TableParams'
+* 'RelationalMap'
+* 'fields'
+* 'mapAttr'
+* 'mapField'
+* 'attrField'
+* 'maybeMapper'
+* 'prefixMap'
+* 'partialMap'
+* 'readOnlyMap'
+* 'readOnlyField'
+* 'OrvilleEnv'
+* 'newOrvilleEnv'
+* 'setStartTransactionSQL'
+* 'aroundRunningQuery'
+* 'addTransactionCallBack'
+* 'OrvilleT'
+* 'HasOrvilleContext'
+* 'MonadOrville'
+* 'runOrville'
+* 'mapOrvilleT'
+* 'MonadOrvilleControl'
+* 'defaultLiftWithConnection'
+* 'defaultLiftFinally'
+* 'withCachedConnection'
+* 'withTransaction'
+* 'ColumnFlag'
+* 'FieldDefinition'
+* 'isFieldNullable'
+* 'fieldOfType'
+* 'textField'
+* 'fixedTextField'
+* 'unboundedTextField'
+* 'dayField'
+* 'utcTimeField'
+* 'int32Field'
+* 'int64Field'
+* 'doubleField'
+* 'boolField'
+* 'automaticIdField'
+* 'searchVectorField'
+* 'nullableField'
+* 'foreignKeyField'
+* 'withFlag'
+* 'withName'
+* 'withConversion'
+* 'fieldFromSql'
+* 'fieldToSqlValue'
+* 'SomeField'
+* 'withPrefix'
+* 'fieldFlags'
+* 'uniqueIndex'
+* 'simpleIndex'
+* 'uniqueConstraint'
+* 'dropConstraint'
+* 'SchemaItem'
+* 'SchemaDefinition'
+* 'Record'
+* 'WhereCondition'
+* 'whereAnd'
+* 'whereOr'
+* 'whereIn'
+* 'whereLike'
+* 'whereLikeInsensitive'
+* 'whereNotIn'
+* 'whereQualified'
+* 'whereRaw'
+* 'whereToSql'
+* 'isNull'
+* 'isNotNull'
+* 'migrateSchema'
+* 'generateMigrationPlan'
+* 'MigrationPlan'
+* 'MigrationItem'
+* 'migrationPlanItems'
+* 'selectAll'
+* 'selectFirst'
+* 'deleteRecord'
+* 'deleteWhere'
+* 'findRecord'
+* 'findRecords'
+* 'findRecordsBy'
+* 'insertRecord'
+* 'insertRecordMany'
+* 'insertRecordManyReturning'
+* 'updateFields'
+* 'updateRecord'
+* 'createIndexesConcurrently'
+* 'dropIndexesConcurrently'
+
 -}
 {-# LANGUAGE FlexibleContexts #-}
 
