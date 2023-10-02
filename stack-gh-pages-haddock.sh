@@ -60,7 +60,7 @@ push_to_pages_branch() {
   echo "  git push -f -u origin gh-pages:gh-pages"
 }
 
-mkdocs orville-postgresql-libpq stack-lts-17.0.yml
+mkdocs orville-postgresql-libpq stack-lts-18.28-ghc-8.10.7.yml
 mkdocs orville-postgresql-legacy stack-lts-14.0.yml
 
 mkindex
