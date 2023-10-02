@@ -9,7 +9,7 @@ maintainer: development@flipstone.com
 license: MIT
 license-file: LICENSE
 git: git@github.com:flipstone/orville.git
-tested-with: GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.5, GHC == 9.6.2
+tested-with: GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.7, GHC == 9.6.3
 extra-source-files:
   - README.md
 
@@ -152,7 +152,7 @@ tests:
       - base >=4.8 && <5
       - bytestring >=0.10 && <0.13
       - containers >= 0.6 && < 0.7
-      - hedgehog >= 1.0.5 && <1.4
+      - hedgehog >= 1.0.5 && <1.5
       - postgresql-libpq >= 0.9.4.2 && <0.10
       - orville-postgresql-libpq
       - resource-pool <0.3 || (>= 0.4  && <0.5)
