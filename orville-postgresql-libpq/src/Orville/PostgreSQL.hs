@@ -105,6 +105,8 @@ module Orville.PostgreSQL
   , ConstraintDefinition.ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint)
   , ConstraintDefinition.constraintMigrationKey
   , ConstraintDefinition.constraintSqlExpr
+  , ConstraintDefinition.tableConstraintDefinitions
+  , ConstraintDefinition.tableConstraintKeys
   , IndexDefinition.IndexDefinition
   , IndexDefinition.uniqueIndex
   , IndexDefinition.nonUniqueIndex
