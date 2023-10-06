@@ -5,8 +5,8 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-Provides a type representing SQL operators with exactly two arguments. As well as values of that
-type for many common operators.
+Provides a type representing sql operators with exactly two arguments, as well
+as values of that type for many common operators.
 
 @since 0.10.0.0
 -}

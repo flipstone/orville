@@ -3,6 +3,8 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+Low-level functions for executing 'RawSql.SqlExpression' values directly.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Execute

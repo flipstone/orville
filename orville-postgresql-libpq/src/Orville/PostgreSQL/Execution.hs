@@ -5,6 +5,12 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+You can import "Orville.PostgreSQL.Execution" to get access to all the
+execution-related functions and types exported by the modules below. This
+includes a number of lowel-level items not exported by "Orville.PostgreSQL"
+that give you more control (and therefore responsibility) over how the SQL is
+executed.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution

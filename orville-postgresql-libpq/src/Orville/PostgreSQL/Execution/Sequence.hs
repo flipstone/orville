@@ -3,8 +3,9 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-Interactions to work with database sequence values on the Haskell side. Including inspection of the
-current and next values in the sequence as well as updating a sequence to a given value.
+Interactions to work with database sequence values on the Haskell side.
+Including inspection of the current and next values in the sequence as well as
+updating a sequence to a given value.
 
 @since 0.10.0.0
 -}

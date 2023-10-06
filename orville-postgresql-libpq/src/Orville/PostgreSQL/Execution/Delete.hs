@@ -5,6 +5,15 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+Functions for working with executable @DELETE@ statements. The 'Delete' type is
+a value that can be passed around and executed later. The 'Delete' is directly
+associated with the presence of a returning clause and how to decode any rows
+returned by that clause. This means it can be safely executed via
+'executeDelete' or 'executeDeleteReturning' as appropriate. It is a lower-level
+API than the entity delete functions in
+"Orville.PostgreSQL.Execution.EntityOperations", but not as primitive as
+"Orville.PostgreSQL.Expr.Delete".
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Delete

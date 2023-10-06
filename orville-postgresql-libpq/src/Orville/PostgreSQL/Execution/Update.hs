@@ -5,7 +5,14 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-Facilities for creation and execution of SQL @UPDATE@ statements.
+Functions for working with executable @UPDATE@ statements. The 'Update' type is
+a value that can be passed around and executed later. The 'Update' is directly
+associated with the presence of a returning clause and how to decode any rows
+returned by that clause. This means it can be safely executed via
+'executeUpdate' or 'executeUpdateReturnEntities' as appropriate. It is a
+lower-level API than the entity update functions in
+"Orville.PostgreSQL.Execution.EntityOperations", but not as primitive as
+"Orville.PostgreSQL.Expr.Update".
 
 @since 0.10.0.0
 -}

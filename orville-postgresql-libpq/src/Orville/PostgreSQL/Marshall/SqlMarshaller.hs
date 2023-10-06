@@ -6,6 +6,14 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+This module provides functions for constructing a mapping between Haskell data
+types and SQL column schemas. The 'SqlMarshaller' that represents this mapping
+can be used to serialize Haskell values both to and from SQL column sets. In
+most cases you construct a 'SqlMarshaller' as part of building you
+'Orville.PostgreSQL.Schema.TableDefinition' and Orville handles the rest. In
+other cases you might use a 'SqlMarshaller' with a lower-level Orville
+function. For instance, to decode the result set of a custom SQL query.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Marshall.SqlMarshaller

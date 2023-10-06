@@ -6,6 +6,14 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+Functions for working with executable @SELECT@ statements. The 'Select' type is
+a value that can be passed around and executed later. The 'Select' is directly
+associated with how to decode the rows returned by the query . This means it
+can be safely executed via 'executeInsert' and decode the rows.. It is a
+lower-level API than the entity select functions in
+"Orville.PostgreSQL.Execution.EntityOperations", but not as primitive as
+"Orville.PostgreSQL.Expr.Query".
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Select

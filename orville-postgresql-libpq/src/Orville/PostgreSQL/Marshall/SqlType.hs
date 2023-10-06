@@ -3,6 +3,13 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+This module provides functions and types for describing a single-column data
+type that exists in PostgreSQL so that Orville can determine how to serialize
+Haskell values to and from the SQL type. If you need to use a SQL type that
+Orville does not provide support for here, you can construct your own 'SqlType'
+value and use 'Orville.PostgreSQL.Marshall.fieldOfType' to build the required
+'Orville.PostgreSQL.Marshall.FieldDefinition'.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Marshall.SqlType

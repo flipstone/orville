@@ -3,8 +3,8 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-This module provides the functionality to work with SQL transactions, notably to ensure some Haskell
-action occurs within a database transaction.
+This module provides the functionality to work with SQL transactions, notably
+to ensure some Haskell action occurs within a database transaction.
 
 @since 0.10.0.0
 -}

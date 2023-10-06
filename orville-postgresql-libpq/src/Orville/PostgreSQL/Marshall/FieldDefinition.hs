@@ -6,6 +6,12 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+This module provides functions for working with Orville 'FieldDefinition'
+values. 'FieldDefinition' is use to determine the column name and data type
+that a Haskell field is mapped to via a
+'Orville.PostgreSQL.Marhall.SqlMarshaller'. It is also used for constructing
+boolean conditions for matching rows in queries.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Marshall.FieldDefinition
