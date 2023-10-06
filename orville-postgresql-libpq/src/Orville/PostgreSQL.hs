@@ -308,14 +308,14 @@ module Orville.PostgreSQL
   , SequenceIdentifier.sequenceIdSchemaNameString
   , SequenceIdentifier.sequenceIdToString
 
-    -- * numeric types
+    -- * Numeric types
   , SqlType.integer
   , SqlType.serial
   , SqlType.bigInteger
   , SqlType.bigSerial
   , SqlType.double
 
-    -- * textual-ish types
+    -- * Textual-ish types
   , SqlType.boolean
   , SqlType.unboundedText
   , SqlType.fixedText
@@ -323,14 +323,14 @@ module Orville.PostgreSQL
   , SqlType.textSearchVector
   , SqlType.uuid
 
-    -- * date types
+    -- * Date types
   , SqlType.date
   , SqlType.timestamp
 
-    -- * json type
+    -- * Json type
   , SqlType.jsonb
 
-    -- * type conversions
+    -- * Type conversions
   , SqlType.foreignRefType
   , SqlType.convertSqlType
   , SqlType.tryConvertSqlType
@@ -350,7 +350,7 @@ module Orville.PostgreSQL
   , Execute.executeVoid
   , QueryType.QueryType (SelectQuery, InsertQuery, UpdateQuery, DeleteQuery, DDLQuery, OtherQuery)
 
-    -- * [sqlcommenter](https://google.github.io/sqlcommenter/) support
+    -- * [SqlCommenter](https://google.github.io/sqlcommenter/) support
   , SqlCommenter.SqlCommenterAttributes
   )
 where
