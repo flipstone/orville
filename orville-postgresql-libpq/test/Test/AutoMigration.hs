@@ -228,6 +228,8 @@ prop_columnsWithSystemNameConflictsRaiseError =
   Migration Guide: @SomeField@ has been removed. @foldMarshallerFields@ can be
   used to collect data from the fields in a @SqlMarshaller@ while converting
   the results to whatever type you desire.
+
+@since 0.10.0.0
 -}
 data SomeField where
   SomeField :: Orville.FieldDefinition nullability a -> SomeField

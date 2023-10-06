@@ -36,6 +36,8 @@ marshallErrorTests pool =
 {- |
   Shared example used to test error detail level rendering of decoding errors
   below.
+
+@since 0.10.0.0
 -}
 exampleDecodingError :: MarshallError.MarshallError
 exampleDecodingError =
@@ -135,6 +137,8 @@ prop_renderDecodingErrorWithoutErrorMessage =
 {- |
   Shared example used to test error detail level rendering of missing column
   errors below.
+
+@since 0.10.0.0
 -}
 exampleMissingColumnError :: MarshallError.MarshallError
 exampleMissingColumnError =

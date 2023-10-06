@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.PgCatalog.PgAttribute
   ( PgAttribute (..)
   , pgAttributeMaxLength
@@ -38,6 +45,8 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
   of other items from the @pg_class@ table.
 
   See also 'Orville.PostgreSQL.PgCatalog.PgClass'.
+
+@since 0.10.0.0
 -}
 data PgAttribute = PgAttribute
   { pgAttributeRelationOid :: LibPQ.Oid
@@ -64,6 +73,8 @@ data PgAttribute = PgAttribute
 {- |
   Returns the maximum length for an attribute with a variable length type,
   or 'Nothing' if the length if the type is not variable.
+
+@since 0.10.0.0
 -}
 pgAttributeMaxLength :: PgAttribute -> Maybe Int32
 pgAttributeMaxLength attr =
@@ -99,6 +110,8 @@ pgAttributeMaxLength attr =
   Determines whether the attribute represents a system column by inspecting
   the attribute\'s 'AttributeNumber'. Ordinary columns have attribute numbers
   starting at 1.
+
+@since 0.10.0.0
 -}
 isOrdinaryColumn :: PgAttribute -> Bool
 isOrdinaryColumn attr =
@@ -106,6 +119,8 @@ isOrdinaryColumn attr =
 
 {- |
   A Haskell type for the name of the attribute represented by a 'PgAttribute'
+
+@since 0.10.0.0
 -}
 newtype AttributeName
   = AttributeName T.Text
@@ -113,6 +128,8 @@ newtype AttributeName
 
 {- |
   Converts an 'AttributeName' to a plain old string
+
+@since 0.10.0.0
 -}
 attributeNameToString :: AttributeName -> String
 attributeNameToString (AttributeName txt) =
@@ -120,6 +137,8 @@ attributeNameToString (AttributeName txt) =
 
 {- |
   A Haskell type for the number of the attribute represented by a 'PgAttribute'
+
+@since 0.10.0.0
 -}
 newtype AttributeNumber
   = AttributeNumber Int16
@@ -139,6 +158,8 @@ attributeNumberFromInt16 = AttributeNumber
 
 {- |
   Attoparsec parser for 'AttributeNumber'
+
+@since 0.10.0.0
 -}
 attributeNumberParser :: AttoText.Parser AttributeNumber
 attributeNumberParser =
@@ -146,6 +167,8 @@ attributeNumberParser =
 
 {- |
   Encodes an 'AttributeNumber' to lazy text as a builder
+
+@since 0.10.0.0
 -}
 attributeNumberTextBuilder :: AttributeNumber -> LTB.Builder
 attributeNumberTextBuilder =
@@ -154,6 +177,8 @@ attributeNumberTextBuilder =
 {- |
   An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 pgAttributeTable :: Orville.TableDefinition Orville.NoKey PgAttribute PgAttribute
 pgAttributeTable =
@@ -176,6 +201,8 @@ pgAttributeMarshaller =
 
 {- |
   The @attrelid@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 attributeRelationOidField =
@@ -183,6 +210,8 @@ attributeRelationOidField =
 
 {- |
   The @attname@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeNameField :: Orville.FieldDefinition Orville.NotNull AttributeName
 attributeNameField =
@@ -191,6 +220,8 @@ attributeNameField =
 
 {- |
   The @attnum@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeNumberField :: Orville.FieldDefinition Orville.NotNull AttributeNumber
 attributeNumberField =
@@ -198,6 +229,8 @@ attributeNumberField =
 
 {- |
   Builds a 'Orville.FieldDefinition' for a field with type 'AttributeNumber'
+
+@since 0.10.0.0
 -}
 attributeNumberTypeField :: String -> Orville.FieldDefinition Orville.NotNull AttributeNumber
 attributeNumberTypeField =
@@ -205,6 +238,8 @@ attributeNumberTypeField =
 
 {- |
   The @atttypid@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeTypeOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 attributeTypeOidField =
@@ -212,6 +247,8 @@ attributeTypeOidField =
 
 {- |
   The @attlen@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeLengthField :: Orville.FieldDefinition Orville.NotNull Int16
 attributeLengthField =
@@ -219,6 +256,8 @@ attributeLengthField =
 
 {- |
   The @atttypmod@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeTypeModifierField :: Orville.FieldDefinition Orville.NotNull Int32
 attributeTypeModifierField =
@@ -226,6 +265,8 @@ attributeTypeModifierField =
 
 {- |
   The @attisdropped@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeIsDroppedField :: Orville.FieldDefinition Orville.NotNull Bool
 attributeIsDroppedField =
@@ -233,6 +274,8 @@ attributeIsDroppedField =
 
 {- |
   The @attnotnull@ column of the @pg_catalog.pg_attribute@ table
+
+@since 0.10.0.0
 -}
 attributeIsNotNullField :: Orville.FieldDefinition Orville.NotNull Bool
 attributeIsNotNullField =

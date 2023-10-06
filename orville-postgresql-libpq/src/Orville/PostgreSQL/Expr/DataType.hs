@@ -1,8 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
 
 @since 0.10.0.0
 -}
@@ -35,7 +36,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 {- |
 Type to represent any SQL data type expression. E.G.
 
-> INTEGER
+  > INTEGER
 
 'DataType' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
@@ -242,7 +243,7 @@ smallint =
 See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-json.html) for more
 information.
 
-@since 0.10.0.1
+@since 0.10.0.0
 -}
 jsonb :: DataType
 jsonb =

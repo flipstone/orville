@@ -2,8 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Marshall.FieldDefinition
   ( FieldDefinition
@@ -109,6 +112,8 @@ import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
   A 'FieldDefinition' is matched to a particular Haskell type, which it knows
   how to marshall to and from the database representation of SQL type for
   the field.
+
+@since 0.10.0.0
 -}
 data FieldDefinition nullability a = FieldDefinition
   { i_fieldName :: FieldName
@@ -121,12 +126,16 @@ data FieldDefinition nullability a = FieldDefinition
 
 {- |
   The name used in database queries to reference the field.
+
+@since 0.10.0.0
 -}
 fieldName :: FieldDefinition nullability a -> FieldName
 fieldName = i_fieldName
 
 {- |
   Returns the description that was passed to 'setFieldDescription', if any.
+
+@since 0.10.0.0
 -}
 fieldDescription :: FieldDefinition nullability a -> Maybe String
 fieldDescription = i_fieldDescription
@@ -135,6 +144,8 @@ fieldDescription = i_fieldDescription
   Sets the description for the field. This description not currently used
   anywhere by Orville itself, but users can retrieve the description via
   'fieldDescription' for their own purposes (e.g. generating documentation).
+
+@since 0.10.0.0
 -}
 setFieldDescription :: String -> FieldDefinition nullability a -> FieldDefinition nullability a
 setFieldDescription description fieldDef =
@@ -146,12 +157,16 @@ setFieldDescription description fieldDef =
   The 'SqlType' for the 'FieldDefinition' determines the PostgreSQL data type
   used to define the field as well as how to mashall Haskell values to and
   from the database.
+
+@since 0.10.0.0
 -}
 fieldType :: FieldDefinition nullability a -> SqlType.SqlType a
 fieldType = i_fieldType
 
 {- |
   Returns the default value definition for the field, if any has been set.
+
+@since 0.10.0.0
 -}
 fieldDefaultValue :: FieldDefinition nullability a -> Maybe (DefaultValue.DefaultValue a)
 fieldDefaultValue = i_fieldDefaultValue
@@ -162,6 +177,8 @@ fieldDefaultValue = i_fieldDefaultValue
  but needs to deal with each type of field separately. It adds wrapper
  constructors around the 'FieldDefinition' that you can pattern match on to
  then work with a concrete 'Nullable' or 'NotNull' field.
+
+@since 0.10.0.0
 -}
 data FieldNullability a
   = NullableField (FieldDefinition Nullable a)
@@ -172,6 +189,8 @@ data FieldNullability a
  via the 'FieldNullability' type. You can pattern match on this type to then
  extract the either 'Nullable' or 'NotNull' not field for cases where you
  may require different logic based on the nullability of a field.
+
+@since 0.10.0.0
 -}
 fieldNullability :: FieldDefinition nullability a -> FieldNullability a
 fieldNullability field =
@@ -181,6 +200,8 @@ fieldNullability field =
 
 {- |
   Indicates whether a field is nullable.
+
+@since 0.10.0.0
 -}
 fieldIsNotNullable :: FieldDefinition nullability a -> Bool
 fieldIsNotNullable field =
@@ -191,6 +212,8 @@ fieldIsNotNullable field =
 {- |
   A list a table constraints that will be included on any table that uses this
   field definition.
+
+@since 0.10.0.0
 -}
 fieldTableConstraints ::
   FieldDefinition nullability a ->
@@ -220,6 +243,8 @@ fieldTableConstraints fieldDef =
   'ConstraintMigrationKey', only the last one that is added will be part of the
   'TableDefinition'. Any previously added constraint with the same key is
   replaced by the new one.
+
+@since 0.10.0.0
 -}
 addFieldTableConstraints ::
   [FieldName -> ConstraintDefinition.ConstraintDefinition] ->
@@ -235,6 +260,8 @@ addFieldTableConstraints constraintDefs fieldDef =
   Adds a @FOREIGN KEY@ constraint to the 'FieldDefinition' (using
   'addFieldTableConstraints'). This constraint will be included on any table
   that uses the field definition.
+
+@since 0.10.0.0
 -}
 addForeignKeyConstraint ::
   -- | Identifier of the table referenced by the foreign key
@@ -252,6 +279,8 @@ addForeignKeyConstraint foreignTableId foreignFieldName =
 {- |
   Adds a @FOREIGN KEY@ constraint to the 'FieldDefinition'. This constraint
   will be included on any table that uses the field definition.
+
+@since 0.10.0.0
 -}
 addForeignKeyConstraintWithOptions ::
   -- | Identifier of the table referenced by the foreign key
@@ -280,6 +309,8 @@ addForeignKeyConstraintWithOptions foreignTableId foreignFieldName options field
 {- |
   Adds a @UNIQUE@ constraint to the 'FieldDefinition'. This constraint
   will be included on any table that uses the field definition.
+
+@since 0.10.0.0
 -}
 addUniqueConstraint ::
   FieldDefinition nullability a ->
@@ -295,6 +326,8 @@ addUniqueConstraint fieldDef =
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
   representation and packages the resul as a 'Expr.ValueExression' so that
   it can be easily used with other @Expr@ functions.
+
+@since 0.10.0.0
 -}
 fieldValueToExpression :: FieldDefinition nullability a -> a -> Expr.ValueExpression
 fieldValueToExpression field =
@@ -303,6 +336,8 @@ fieldValueToExpression field =
 {- |
   Mashalls a Haskell value to be stored in the field to its 'SqlValue'
   representation.
+
+@since 0.10.0.0
 -}
 fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue.SqlValue
 fieldValueToSqlValue =
@@ -311,6 +346,8 @@ fieldValueToSqlValue =
 {- |
   Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
   This may fail, in which case a 'Left' is returned with an error message.
+
+@since 0.10.0.0
 -}
 fieldValueFromSqlValue :: FieldDefinition nullability a -> SqlValue.SqlValue -> Either String a
 fieldValueFromSqlValue =
@@ -319,6 +356,8 @@ fieldValueFromSqlValue =
 {- |
   Constructs the 'Expr.ColumnName' for a field for use in SQL expressions
   from the 'Expr' module.
+
+@since 0.10.0.0
 -}
 fieldColumnName :: FieldDefinition nullability a -> Expr.ColumnName
 fieldColumnName =
@@ -327,6 +366,8 @@ fieldColumnName =
 {- |
   Constructs the 'Expr.ValueExpression for a field for use in SQL expressions
   from the 'Expr' module.
+
+@since 0.10.0.0
 -}
 fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReference =
@@ -335,6 +376,8 @@ fieldColumnReference =
 {- |
   Constructions the equivalant 'Expr.FieldDefinition' as a SQL expression,
   generally for use in DDL for creating column in a table.
+
+@since 0.10.0.0
 -}
 fieldColumnDefinition :: FieldDefinition nullability a -> Expr.ColumnDefinition
 fieldColumnDefinition fieldDef =
@@ -348,6 +391,8 @@ fieldColumnDefinition fieldDef =
   INTERNAL - Builds the appropriate ColumnConstraint for a field. Currently
   this only handles nullability, but if we add support for more constraints
   directly on columns it may end up handling those as well.
+
+@since 0.10.0.0
 -}
 fieldColumnConstraint :: FieldDefinition nullabily a -> Expr.ColumnConstraint
 fieldColumnConstraint fieldDef =
@@ -358,6 +403,7 @@ fieldColumnConstraint fieldDef =
       Expr.nullConstraint
 
 {- |
+
   The type in considered internal because it requires GADTs to make use of
   it meaningfully. The 'FieldNullability' type is used as the public interface
   to surface this information to users outside the module.
@@ -367,15 +413,20 @@ fieldColumnConstraint fieldDef =
   constructors can be used to record this knowledge in the type system as well.
   This allows functions that work only on 'Nullable' or 'NotNull' fields to
   indicate this in their type signatures as appropriate.
+
+@since 0.10.0.0
 -}
 data NullabilityGADT nullability where
   NullableGADT :: NullabilityGADT Nullable
   NotNullGADT :: NullabilityGADT NotNull
 
 {- |
+
   'NotNull' is a values-less type used to track that a 'FieldDefinition'
   represents a field that is marked not-null in the database schema.  See the
   'Nullability' type for the value-level representation of field nullability.
+
+@since 0.10.0.0
 -}
 data NotNull
 
@@ -383,12 +434,16 @@ data NotNull
   'Nullable' is a values-less type used to track that a 'FieldDefinition'
   represents a field that is marked nullable in the database schema. See the
   'Nullability' type for the value-level representation of field nullability.
+
+@since 0.10.0.0
 -}
 data Nullable
 
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Int32' values as the
   PostgreSQL "INT" type.
+
+@since 0.10.0.0
 -}
 integerField ::
   -- | Name of the field in the database
@@ -399,6 +454,8 @@ integerField = fieldOfType SqlType.integer
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Int16' values as the
   PostgreSQL "SMALLINT" type.
+
+@since 0.10.0.0
 -}
 smallIntegerField ::
   -- | Name of the field in the database
@@ -409,6 +466,8 @@ smallIntegerField = fieldOfType SqlType.smallInteger
 {- |
   Builds a 'FieldDefinition' that stores an 'Int32' value as the "SERIAL"
   type. This can be used to create auto-incrementing columns.
+
+@since 0.10.0.0
 -}
 serialField ::
   -- | Name of the field in the database
@@ -419,6 +478,8 @@ serialField = fieldOfType SqlType.serial
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Int64' values as the
   PostgreSQL "BIGINT" type.
+
+@since 0.10.0.0
 -}
 bigIntegerField ::
   -- | Name of the field in the database
@@ -429,6 +490,8 @@ bigIntegerField = fieldOfType SqlType.bigInteger
 {- |
   Builds a 'FieldDefinition' that stores an 'Int64' value as the "BIGSERIAL"
   type. This can be used to create auto-incrementing columns.
+
+@since 0.10.0.0
 -}
 bigSerialField ::
   -- | Name of the field in the database
@@ -441,6 +504,8 @@ bigSerialField = fieldOfType SqlType.bigSerial
   PRECISION" type. Note: PostgreSQL's "DOUBLE PRECISION" type only allows for
   up to 15 digits of precision, so some rounding may occur when values are
   stored in the database.
+
+@since 0.10.0.0
 -}
 doubleField ::
   -- | Name of the field in the database
@@ -451,6 +516,8 @@ doubleField = fieldOfType SqlType.double
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Bool' values as the
   PostgreSQL "BOOLEAN" type.
+
+@since 0.10.0.0
 -}
 booleanField ::
   -- | Name of the field in the database
@@ -462,6 +529,8 @@ booleanField = fieldOfType SqlType.boolean
   Builds a 'FieldDefinition' that stores Haskell 'T.Text' values as the
   PostgreSQL "TEXT" type. Note that this PostgreSQL has no particular
   limit on the length of text stored.
+
+@since 0.10.0.0
 -}
 unboundedTextField ::
   -- | Name of the field in the database
@@ -473,6 +542,8 @@ unboundedTextField = fieldOfType SqlType.unboundedText
   Builds a 'FieldDefinition' that stores Haskell 'T.Text' values as the
   PostgreSQL "VARCHAR" type. Attempting to store a value beyond the length
   specified will cause an error.
+
+@since 0.10.0.0
 -}
 boundedTextField ::
   -- | Name of the field in the database
@@ -487,6 +558,8 @@ boundedTextField name len = fieldOfType (SqlType.boundedText len) name
   PostgreSQL "CHAR" type. Attempting to store a value beyond the length
   specified will cause an error. Storing a value that is not the full
   length of the field will result in padding by the database.
+
+@since 0.10.0.0
 -}
 fixedTextField ::
   -- | Name of the field in the database
@@ -503,6 +576,8 @@ fixedTextField name len = fieldOfType (SqlType.fixedText len) name
 
   See https://www.postgresql.org/docs/current/datatype-textsearch.html for
   information about how PostgreSQL creates @tsvector@ values from strings.
+
+@since 0.10.0.0
 -}
 textSearchVectorField :: String -> FieldDefinition NotNull T.Text
 textSearchVectorField = fieldOfType SqlType.textSearchVector
@@ -511,7 +586,7 @@ textSearchVectorField = fieldOfType SqlType.textSearchVector
   Builds a 'FieldDefinition' that stores Haskell 'T.Text' values as the
   PostgreSQL "JSONB" type.
 
-@since 0.10.0.1
+@since 0.10.0.0
 -}
 jsonbField ::
   String ->
@@ -521,6 +596,8 @@ jsonbField = fieldOfType SqlType.jsonb
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Time.Day' values as the
   PostgreSQL "DATE" type.
+
+@since 0.10.0.0
 -}
 dateField ::
   -- | Name of the field in the database
@@ -531,6 +608,8 @@ dateField = fieldOfType SqlType.date
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP with time zone" type.
+
+@since 0.10.0.0
 -}
 utcTimestampField ::
   -- | Name of the field in the database
@@ -541,6 +620,8 @@ utcTimestampField = fieldOfType SqlType.timestamp
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP without time zone" type.
+
+@since 0.10.0.0
 -}
 localTimestampField ::
   -- | Name of the field in the database
@@ -551,6 +632,8 @@ localTimestampField = fieldOfType SqlType.timestampWithoutZone
 {- |
   Builds a 'FieldDefinition' that stores Haskell 'UUID.UUID' values as the
   PostgreSQL "UUID" type.
+
+@since 0.10.0.0
 -}
 uuidField ::
   -- | Name of the field in the database
@@ -564,6 +647,8 @@ uuidField = fieldOfType SqlType.uuid
   'SqlType', you can use this function to construct a helper like the
   other functions in this module for creating 'FieldDefinition's for your
   custom type.
+
+@since 0.10.0.0
 -}
 fieldOfType ::
   -- | 'SqlType' that represents the PostgreSQL data type for the field.
@@ -586,6 +671,8 @@ fieldOfType sqlType name =
   in 'Maybe'. The field will be marked as 'NULL' in the database schema and
   the value 'Nothing' will be used to represent 'NULL' values when converting
   to and from sql.
+
+@since 0.10.0.0
 -}
 nullableField :: FieldDefinition NotNull a -> FieldDefinition Nullable (Maybe a)
 nullableField field =
@@ -621,6 +708,8 @@ nullableField field =
   value. This is useful for building high level combinators that might need to
   make fields 'Nullable' but need the value to be decoded in its underlying
   type when reading back (e.g. 'maybeMapper' from 'SqlMarshaller').
+
+@since 0.10.0.0
 -}
 asymmetricNullableField :: FieldDefinition Nullable a -> FieldDefinition Nullable (Maybe a)
 asymmetricNullableField field =
@@ -648,6 +737,8 @@ asymmetricNullableField field =
 
   See 'SqlType.convertSqlType' and 'SqlType.tryConvertSqlType' for functions
   to create the conversion needed as the first argument to 'convertField'.
+
+@since 0.10.0.0
 -}
 convertField ::
   (SqlType.SqlType a -> SqlType.SqlType b) ->
@@ -663,6 +754,8 @@ convertField conversion fieldDef =
   A specialization of 'convertField' that can be used with types that implement
   'Coere.Coercible'. This is particularly useful for newtype wrappers around
   primitive types.
+
+@since 0.10.0.0
 -}
 coerceField ::
   (Coerce.Coercible a b, Coerce.Coercible b a) =>
@@ -678,6 +771,8 @@ coerceField =
   ultimately provided by the database this can be used to add a not-null column
   to safely to an existing table as long as a reasonable default value is
   available to use.
+
+@since 0.10.0.0
 -}
 setDefaultValue ::
   DefaultValue.DefaultValue a ->
@@ -691,6 +786,8 @@ setDefaultValue defaultValue fieldDef =
 {- |
   Removes any default value that may have been set on a field via
   @setDefaultValue@.
+
+@since 0.10.0.0
 -}
 removeDefaultValue ::
   FieldDefinition nullability a ->
@@ -702,6 +799,8 @@ removeDefaultValue fieldDef =
 
 {- |
   Adds a prefix, followed by an underscore, to a field's name.
+
+@since 0.10.0.0
 -}
 prefixField ::
   String ->
@@ -716,6 +815,8 @@ prefixField prefix fieldDef =
   Constructs a 'Expr.SetClause' that will set the column named in the
   field definition to the given value. The value is be converted to SQL
   value using 'fieldValueToSqlValue'
+
+@since 0.10.0.0
 -}
 setField :: FieldDefinition nullability a -> a -> Expr.SetClause
 setField fieldDef value =
@@ -725,12 +826,16 @@ setField fieldDef value =
 
 {- |
   Operator alias for 'setField'
+
+@since 0.10.0.0
 -}
 (.:=) :: FieldDefinition nullability a -> a -> Expr.SetClause
 (.:=) = setField
 
 {- |
   Checks that the value in a field equals a particular value.
+
+@since 0.10.0.0
 -}
 fieldEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldEquals =
@@ -738,6 +843,8 @@ fieldEquals =
 
 {- |
   Operator alias for 'fieldEquals'
+
+@since 0.10.0.0
 -}
 (.==) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 (.==) = fieldEquals
@@ -746,6 +853,8 @@ infixl 9 .==
 
 {- |
   Checks that the value in a field does not equal a particular value.
+
+@since 0.10.0.0
 -}
 fieldNotEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldNotEquals =
@@ -753,6 +862,8 @@ fieldNotEquals =
 
 {- |
   Operator alias for 'fieldNotEquals'
+
+@since 0.10.0.0
 -}
 (./=) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 (./=) = fieldNotEquals
@@ -761,6 +872,8 @@ infixl 9 ./=
 
 {- |
   Checks that the value in a field is greater than a particular value.
+
+@since 0.10.0.0
 -}
 fieldGreaterThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldGreaterThan =
@@ -768,6 +881,8 @@ fieldGreaterThan =
 
 {- |
   Operator alias for 'fieldGreaterThan'
+
+@since 0.10.0.0
 -}
 (.>) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 (.>) = fieldGreaterThan
@@ -776,6 +891,8 @@ infixl 9 .>
 
 {- |
   Checks that the value in a field is less than a particular value.
+
+@since 0.10.0.0
 -}
 fieldLessThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldLessThan =
@@ -783,6 +900,8 @@ fieldLessThan =
 
 {- |
   Operator alias for 'fieldLessThan'
+
+@since 0.10.0.0
 -}
 (.<) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 (.<) = fieldLessThan
@@ -791,6 +910,8 @@ infixl 9 .<
 
 {- |
   Checks that the value in a field is greater than or equal to a particular value.
+
+@since 0.10.0.0
 -}
 fieldGreaterThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldGreaterThanOrEqualTo =
@@ -798,6 +919,8 @@ fieldGreaterThanOrEqualTo =
 
 {- |
   Operator alias for 'fieldGreaterThanOrEqualTo'
+
+@since 0.10.0.0
 -}
 (.>=) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 (.>=) = fieldGreaterThanOrEqualTo
@@ -806,6 +929,8 @@ infixl 9 .>=
 
 {- |
   Checks that the value in a field is less than or equal to a particular value.
+
+@since 0.10.0.0
 -}
 fieldLessThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldLessThanOrEqualTo =
@@ -813,6 +938,8 @@ fieldLessThanOrEqualTo =
 
 {- |
   Operator alias for 'fieldLessThanOrEqualTo'
+
+@since 0.10.0.0
 -}
 (.<=) :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 (.<=) = fieldLessThanOrEqualTo
@@ -821,6 +948,8 @@ infixl 9 .<=
 
 {- |
   Checks that the value in a field matches a like pattern
+
+@since 0.10.0.0
 -}
 fieldLike :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
 fieldLike fieldDef likePattern =
@@ -830,6 +959,8 @@ fieldLike fieldDef likePattern =
 
 {- |
   Checks that the value in a field matches a like pattern case insensitively
+
+@since 0.10.0.0
 -}
 fieldLikeInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
 fieldLikeInsensitive fieldDef likePattern =
@@ -839,6 +970,8 @@ fieldLikeInsensitive fieldDef likePattern =
 
 {- |
   Checks that the value in a field is null.
+
+@since 0.10.0.0
 -}
 fieldIsNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
 fieldIsNull =
@@ -846,6 +979,8 @@ fieldIsNull =
 
 {- |
   Checks that the value in a field is not null.
+
+@since 0.10.0.0
 -}
 fieldIsNotNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
 fieldIsNotNull =
@@ -853,6 +988,8 @@ fieldIsNotNull =
 
 {- |
   Checks that a field matches a list of values
+
+@since 0.10.0.0
 -}
 fieldIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
 fieldIn fieldDef values =
@@ -862,6 +999,8 @@ fieldIn fieldDef values =
 
 {- |
   Operator alias for 'fieldIn'
+
+@since 0.10.0.0
 -}
 (.<-) :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
 (.<-) = fieldIn
@@ -870,6 +1009,8 @@ infixl 9 .<-
 
 {- |
   Checks that a field does not match a list of values
+
+@since 0.10.0.0
 -}
 fieldNotIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
 fieldNotIn fieldDef values =
@@ -879,6 +1020,8 @@ fieldNotIn fieldDef values =
 
 {- |
   Operator alias for 'fieldNotIn'
+
+@since 0.10.0.0
 -}
 (.</-) :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
 (.</-) = fieldNotIn
@@ -887,6 +1030,8 @@ infixl 9 .</-
 
 {- |
   Checks that a tuple of two fields is in the list of specified tuplies
+
+@since 0.10.0.0
 -}
 fieldTupleIn ::
   FieldDefinition nullabilityA a ->
@@ -900,6 +1045,8 @@ fieldTupleIn fieldDefA fieldDefB values =
 
 {- |
   Checks that a tuple of two fields is not in the list of specified tuplies
+
+@since 0.10.0.0
 -}
 fieldTupleNotIn ::
   FieldDefinition nullabilityA a ->
@@ -913,6 +1060,8 @@ fieldTupleNotIn fieldDefA fieldDefB values =
 
 {- |
   Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two fields
+
+@since 0.10.0.0
 -}
 toSqlValueTuple ::
   FieldDefinition nullabilityA a ->
@@ -926,6 +1075,8 @@ toSqlValueTuple fieldDefA fieldDefB (a, b) =
 {- |
   Constructs a field-based 'Expr.BooleanExpr' using a function that
   builds a 'Expr.BooleanExpr'
+
+@since 0.10.0.0
 -}
 whereColumnComparison ::
   (Expr.ValueExpression -> Expr.ValueExpression -> Expr.BooleanExpr) ->

@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.PgCatalog.PgClass
   ( PgClass (..)
   , RelationName
@@ -23,6 +30,8 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
   The Haskell representation of data read from the @pg_catalog.pg_class@
   table. Rows in this table correspond to tables, indexes, sequences, views,
   materialized views, composite types and TOAST tables.
+
+@since 0.10.0.0
 -}
 data PgClass = PgClass
   { pgClassOid :: LibPQ.Oid
@@ -38,6 +47,8 @@ data PgClass = PgClass
 
 {- |
   A Haskell type for the name of the relation represented by a 'PgClass'
+
+@since 0.10.0.0
 -}
 newtype RelationName
   = RelationName T.Text
@@ -45,6 +56,8 @@ newtype RelationName
 
 {- |
   Convert a 'RelationName' to a plain 'String'
+
+@since 0.10.0.0
 -}
 relationNameToString :: RelationName -> String
 relationNameToString (RelationName text) =
@@ -53,6 +66,8 @@ relationNameToString (RelationName text) =
 {- |
   The kind of relation represented by a 'PgClass', as described at
   https://www.postgresql.org/docs/13/catalog-pg-class.html.
+
+@since 0.10.0.0
 -}
 data RelationKind
   = OrdinaryTable
@@ -70,6 +85,8 @@ data RelationKind
 {- |
   An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_class@ table
+
+@since 0.10.0.0
 -}
 pgClassTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgClass PgClass
 pgClassTable =
@@ -89,6 +106,8 @@ pgClassMarshaller =
 
 {- |
   The @relnamespace@ column of the @pg_catalog.pg_class@ table
+
+@since 0.10.0.0
 -}
 namespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 namespaceOidField =
@@ -96,6 +115,8 @@ namespaceOidField =
 
 {- |
   The @relname@ column of the @pg_catalog.pg_class@ table
+
+@since 0.10.0.0
 -}
 relationNameField :: Orville.FieldDefinition Orville.NotNull RelationName
 relationNameField =
@@ -104,6 +125,8 @@ relationNameField =
 
 {- |
   The @relkind@ column of the @pg_catalog.pg_class@ table
+
+@since 0.10.0.0
 -}
 relationKindField :: Orville.FieldDefinition Orville.NotNull RelationKind
 relationKindField =
@@ -116,6 +139,8 @@ relationKindField =
   representation used by PostgreSQL.
 
   See also 'pgTextToRelationKind'
+
+@since 0.10.0.0
 -}
 relationKindToPgText :: RelationKind -> T.Text
 relationKindToPgText kind =
@@ -137,6 +162,8 @@ relationKindToPgText kind =
   'RelationKind'
 
   See also 'relationKindToPgText'
+
+@since 0.10.0.0
 -}
 pgTextToRelationKind :: T.Text -> Either String RelationKind
 pgTextToRelationKind text =

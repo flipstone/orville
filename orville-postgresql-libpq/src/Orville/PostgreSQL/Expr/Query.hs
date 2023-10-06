@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Expr.Query
   ( QueryExpr
@@ -54,6 +57,8 @@ newtype QueryExpr
   'TableExpr'. The resulting 'QueryExpr' is suitable execution via the SQL
   execution functions in "Orville.PostgreSQL.Execution" and
   "Orville.PostgreSQL.Raw.RawSql".
+
+@since 0.10.0.0
 -}
 queryExpr :: SelectClause -> SelectList -> Maybe TableExpr -> QueryExpr
 queryExpr querySelectClause selectList maybeTableExpr =

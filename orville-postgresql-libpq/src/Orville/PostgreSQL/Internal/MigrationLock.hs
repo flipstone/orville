@@ -1,5 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Internal.MigrationLock
   ( withMigrationLock
   , MigrationLockError
@@ -23,6 +30,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   Executes an Orville action with a PostgreSQL advisory lock held that
   indicates to other Orville processes that a database migration is being done
   an no others should be performed concurrently.
+
+@since 0.10.0.0
 -}
 withMigrationLock :: Monad.MonadOrville m => m a -> m a
 withMigrationLock action =
@@ -100,6 +109,8 @@ releaseLockExpr =
 {- |
   Raised if 'withMigrationLock' cannot acquire the migration lock in a
   timely manner.
+
+@since 0.10.0.0
 -}
 newtype MigrationLockError
   = MigrationLockError String

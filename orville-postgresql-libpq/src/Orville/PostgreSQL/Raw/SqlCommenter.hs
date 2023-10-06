@@ -1,12 +1,13 @@
 {- |
 
-Copyright : Flipstone Technology Partners 2016-2022
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
-
-Stability : unstable
+Stability : Stable
 
 This module provides the very basics for [sqlcommenter](https://google.github.io/sqlcommenter)
 support.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Raw.SqlCommenter
   ( SqlCommenterAttributes
@@ -26,7 +27,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   metrics. See [sqlcommenter](https://google.github.io/sqlcommenter) for details of the
   specification.
 
-  @since 0.10.0
+@since 0.10.0.0
 -}
 type SqlCommenterAttributes = Map.Map T.Text T.Text
 
@@ -35,7 +36,7 @@ type SqlCommenterAttributes = Map.Map T.Text T.Text
   automatically added here, so any that you may wish to add can be freely set without a name clash
   of any kind from this function itself.
 
-  @since 0.10.0
+@since 0.10.0.0
 -}
 addSqlCommenterAttributes :: RawSql.SqlExpression a => SqlCommenterAttributes -> a -> a
 addSqlCommenterAttributes commenter a =
@@ -50,6 +51,8 @@ keyValueSerializationToRawSql =
 {- | Perform the sqlcommenter serialization on for the whole 'SqlCommenter' map of key/value pairs.
      The spec can be found
      [here](https://google.github.io/sqlcommenter/spec/#key-value-serialization)
+
+@since 0.10.0.0
 -}
 keyValueSerialization :: SqlCommenterAttributes -> T.Text
 keyValueSerialization =

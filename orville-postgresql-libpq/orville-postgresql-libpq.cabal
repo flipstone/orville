@@ -123,7 +123,9 @@ library
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
+      Orville.PostgreSQL.Internal.IndexDefinition
       Orville.PostgreSQL.Internal.MigrationLock
+      Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.RowCountExpectation
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField

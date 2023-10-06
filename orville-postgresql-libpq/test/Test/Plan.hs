@@ -497,6 +497,8 @@ prop_explain =
 {- |
   Generates a list of Foos that along with FooName that could plausibly be
   found in the list zero, one or more times.
+
+@since 0.10.0.0
 -}
 generateSearchTargetAndSubjects :: HH.Gen (Foo.FooName, [Foo.Foo])
 generateSearchTargetAndSubjects = do
@@ -515,6 +517,8 @@ generateSearchTargetAndSubjects = do
 {- |
   Generates a list of Foos that along with FooName that could plausibly be
   found in the list zero, one or more times.
+
+@since 0.10.0.0
 -}
 generateSearchTargetListAndSubjects :: HH.Gen ([Foo.FooName], [Foo.Foo])
 generateSearchTargetListAndSubjects = do
@@ -532,6 +536,8 @@ generateSearchTargetListAndSubjects = do
   for tests that are conducting a search. The predicate given should indicate
   whether the item would be expected to match the search being tested. The
   list of items should be the list that will be searced against.
+
+@since 0.10.0.0
 -}
 coverSearchResultCases :: HH.MonadTest m => (a -> Bool) -> [a] -> m ()
 coverSearchResultCases predicate subjects = do
@@ -545,6 +551,8 @@ coverSearchResultCases predicate subjects = do
   doesn't care which particular item from the list was found, as long as it the
   result matches the predicate and it is one from the list, or that nothing in
   the list matches if the 'Nothing' was found.
+
+@since 0.10.0.0
 -}
 assertMatchIsFromPredicate ::
   (HH.MonadTest m, Eq entity) =>
@@ -562,6 +570,8 @@ assertMatchIsFromPredicate maybeEntity predicate subjects =
 {- |
   Asserts that the found items are all of those from the list that match the
   predicate, but without caring about order.
+
+@since 0.10.0.0
 -}
 assertAllMatchesFound ::
   (HH.MonadTest m, Ord key, Eq entity, Show entity) =>
@@ -580,6 +590,8 @@ assertAllMatchesFound keyAttr foundEntities predicate allEntities =
 {- |
   Applies the given assertion for every key in the list. If any of the key
   is not found in the provided 'Many.Many' value, this assertion will fail.
+
+@since 0.10.0.0
 -}
 assertEachManyResult ::
   (Show key, HH.MonadTest m) =>

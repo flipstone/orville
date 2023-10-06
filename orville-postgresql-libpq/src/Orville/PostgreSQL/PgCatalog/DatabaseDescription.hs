@@ -1,5 +1,12 @@
 {-# LANGUAGE CPP #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   ( DatabaseDescription (..)
   , RelationDescription (..)
@@ -39,6 +46,8 @@ import qualified Orville.PostgreSQL.Plan.Operation as Op
   A description of selected items from a single PostgreSQL database.
   'describeDatabaseRelations' can be used to load the descriptions of request
   items.
+
+@since 0.10.0.0
 -}
 data DatabaseDescription = DatabaseDescription
   { databaseRelations :: Map.Map (NamespaceName, RelationName) RelationDescription
@@ -46,6 +55,8 @@ data DatabaseDescription = DatabaseDescription
 
 {- |
   Lookup a relation by its qualified name in the @pg_catalog@ schema.
+
+@since 0.10.0.0
 -}
 lookupRelation ::
   (NamespaceName, RelationName) ->
@@ -57,6 +68,8 @@ lookupRelation key =
 {- |
   Lookup a relation by its qualified name in the @pg_catalog@ schema. If the
   relation is not of the expected kind, 'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 lookupRelationOfKind ::
   RelationKind ->
@@ -75,6 +88,8 @@ lookupRelationOfKind kind key dbDesc =
 {- |
   A description of a particular relation in the PostgreSQL database, including
   the attributes of the relation.
+
+@since 0.10.0.0
 -}
 data RelationDescription = RelationDescription
   { relationRecord :: PgClass
@@ -87,6 +102,8 @@ data RelationDescription = RelationDescription
 
 {- |
   Find an attribute by name from the 'RelationDescription'
+
+@since 0.10.0.0
 -}
 lookupAttribute ::
   AttributeName ->
@@ -97,6 +114,8 @@ lookupAttribute key =
 
 {- |
   Find an attribute default from the 'RelationDescription'
+
+@since 0.10.0.0
 -}
 lookupAttributeDefault ::
   PgAttribute ->
@@ -108,6 +127,8 @@ lookupAttributeDefault attr =
 {- |
   A description of a particular constraint in the PostgreSQL database, including
   the attributes and relations that it references.
+
+@since 0.10.0.0
 -}
 data ConstraintDescription = ConstraintDescription
   { constraintRecord :: PgConstraint
@@ -119,6 +140,8 @@ data ConstraintDescription = ConstraintDescription
 {- |
   A description of a relation in the PostgreSQL database that is referenced by
   a foreign key constraint, including the namespace that the relation belongs to.
+
+@since 0.10.0.0
 -}
 data ForeignRelationDescription = ForeignRelationDescription
   { foreignRelationClass :: PgClass
@@ -129,6 +152,8 @@ data ForeignRelationDescription = ForeignRelationDescription
   A description of an index in the PostgreSQL database, including the names of
   the attributes included in the index and the 'PgClass' record of the index
   itself (NOT the 'PgClass' of the table that the index is for).
+
+@since 0.10.0.0
 -}
 data IndexDescription = IndexDescription
   { indexRecord :: PgIndex
@@ -140,6 +165,8 @@ data IndexDescription = IndexDescription
   A description of an index member in the PostgreSQL database. If they member
   is a simple attribute, the 'PgAttribute' for that is provided. If it is an
   index over an expression, no further description is currently provided.
+
+@since 0.10.0.0
 -}
 data IndexMember
   = IndexAttribute PgAttribute
@@ -152,6 +179,8 @@ data IndexMember
 
   Each 'RelationDescription' will contain all the attributes that currently
   exist for that relation, according to the @pg_catalog@ tables.
+
+@since 0.10.0.0
 -}
 describeDatabaseRelations ::
   Orville.MonadOrville m =>

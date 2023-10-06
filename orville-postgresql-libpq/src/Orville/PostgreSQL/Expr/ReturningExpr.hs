@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Expr.ReturningExpr
   ( ReturningExpr
   , returningExpr
@@ -27,6 +34,8 @@ newtype ReturningExpr
 {- |
   Constructs a 'ReturningExpr' that returns the items given in the
   'SelectList'. Essentialy this retults @RETURNING <SelectList items>@
+
+@since 0.10.0.0
 -}
 returningExpr :: SelectList -> ReturningExpr
 returningExpr selectList =

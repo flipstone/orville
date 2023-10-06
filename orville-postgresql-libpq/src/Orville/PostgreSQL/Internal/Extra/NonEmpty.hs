@@ -1,6 +1,9 @@
 {- |
-  An orville internal helper module that should not be exposed
-  via the orville public interface.
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Internal.Extra.NonEmpty
   ( foldl1'

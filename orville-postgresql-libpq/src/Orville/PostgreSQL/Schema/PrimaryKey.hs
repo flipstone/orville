@@ -1,6 +1,13 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Schema.PrimaryKey
   ( PrimaryKey
   , primaryKeyDescription
@@ -29,6 +36,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   A Haskell description of the 'FieldDefinition's that make up the primary
   key of a SQL table. This type supports composite primary keys as well
   as singular ones.
+
+@since 0.10.0.0
 -}
 data PrimaryKey key
   = PrimaryKey (PrimaryKeyPart key) [PrimaryKeyPart key]
@@ -37,6 +46,8 @@ data PrimaryKey key
   A 'PrimaryKeyPart' describes one field of a composite primary key. Values
   are built using 'primaryKeyPart' and then used with 'compositePrimaryKey'
   to build a 'PrimaryKey'
+
+@since 0.10.0.0
 -}
 data PrimaryKeyPart key
   = forall part. PrimaryKeyPart (key -> part) (FieldDefinition NotNull part)
@@ -45,6 +56,8 @@ data PrimaryKeyPart key
   'primaryKeyDescription' builds a user-readable representation of the
   primary key for use in error messages and such. It is a comma-delimited
   list of the names of the fields that make up the primary key.
+
+@since 0.10.0.0
 -}
 primaryKeyDescription :: PrimaryKey key -> String
 primaryKeyDescription =
@@ -55,6 +68,8 @@ primaryKeyDescription =
 
 {- |
   Retrieves the names of the fields that are part of the primary key.
+
+@since 0.10.0.0
 -}
 primaryKeyFieldNames :: PrimaryKey key -> NonEmpty FieldName
 primaryKeyFieldNames =
@@ -69,6 +84,8 @@ primaryKeyFieldNames =
   'primaryKeyToSql' converts a Haskell value for a primary key into the
   (possibly multiple) sql values that represent the primary key in the
   database.
+
+@since 0.10.0.0
 -}
 primaryKeyToSql :: PrimaryKey key -> key -> NonEmpty SqlValue.SqlValue
 primaryKeyToSql keyDef key =
@@ -77,6 +94,8 @@ primaryKeyToSql keyDef key =
 {- |
   'partSqlValue' is an internal helper function that builds the 'SqlValue'
   for one part of a (possible composite) primary key.
+
+@since 0.10.0.0
 -}
 partSqlValue :: key -> (key -> part) -> FieldDefinition NotNull part -> SqlValue.SqlValue
 partSqlValue key getPart partField =
@@ -86,6 +105,8 @@ partSqlValue key getPart partField =
   'primaryKey' constructs a single-field primary key from the 'FieldDefinition'
   that corresponds to the primary key's column. This is generally used while
   building a 'TableDefinition'.
+
+@since 0.10.0.0
 -}
 primaryKey :: FieldDefinition NotNull key -> PrimaryKey key
 primaryKey fieldDef =
@@ -99,6 +120,8 @@ primaryKey fieldDef =
   to be passed as parameters. Note: there is no special significance to the
   first argument other than requiring that there is at least one field in the
   primary key.
+
+@since 0.10.0.0
 -}
 compositePrimaryKey ::
   PrimaryKeyPart key ->
@@ -113,6 +136,8 @@ compositePrimaryKey =
   that field from the Haskell 'key' type that represents the overall composite
   key.  'PrimaryKeyPart' values built using this function are usually then
   passed in a list to 'compositePrimaryKey' to build a 'PrimaryKey'.
+
+@since 0.10.0.0
 -}
 primaryKeyPart ::
   (key -> part) ->
@@ -128,6 +153,8 @@ primaryKeyPart =
   Note that single-field and multi-field primary keys are treated the same by
   this function, with the single-field case simply behaving as composite key
   with just one part.
+
+@since 0.10.0.0
 -}
 mapPrimaryKeyParts ::
   ( forall part.
@@ -147,6 +174,8 @@ mapPrimaryKeyParts f (PrimaryKey first rest) =
 {- |
   Builds a 'Expr.PrimaryKeyExpr' that is suitable to be used when creating
   a table to define the primary key on the table.
+
+@since 0.10.0.0
 -}
 mkPrimaryKeyExpr :: PrimaryKey key -> Expr.PrimaryKeyExpr
 mkPrimaryKeyExpr keyDef =
@@ -161,6 +190,8 @@ mkPrimaryKeyExpr keyDef =
   the primary key is equal to the given value. For single-field primary keys
   this is equivalent to 'fieldEquals', but 'primaryKeyEquals' also handles composite
   primary keys.
+
+@since 0.10.0.0
 -}
 primaryKeyEquals :: PrimaryKey key -> key -> Expr.BooleanExpr
 primaryKeyEquals keyDef key =
@@ -173,6 +204,8 @@ primaryKeyEquals keyDef key =
   the primary key is contained the given list. For single-field primary keys
   this is equivalent to 'fieldIn', but 'primaryKeyIn' also handles composite
   primary keys.
+
+@since 0.10.0.0
 -}
 primaryKeyIn :: PrimaryKey key -> NonEmpty key -> Expr.BooleanExpr
 primaryKeyIn keyDef keys =
@@ -186,6 +219,8 @@ primaryKeyIn keyDef keys =
 
 {- |
   INTERNAL: builds the where condition for a single part of the key
+
+@since 0.10.0.0
 -}
 partEquals :: key -> (key -> a) -> FieldDefinition nullability a -> Expr.BooleanExpr
 partEquals key getPart partField =

@@ -4,7 +4,7 @@
   qualified do in the example code.
 -}
 {- |
-Copyright : Flipstone Technology Partners 2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
 
 This module exports the 'Plan.bind' function as '>>=' so that it can be used in
@@ -35,8 +35,16 @@ findFooFamily = PlanSyntax.do $
     <*> Plan.use fooPets
 @
 
+@since 0.10.0.0
 -}
 {- ORMOLU_ENABLE -}
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Plan.Syntax
   ( (>>=)
   )
@@ -48,6 +56,8 @@ import qualified Orville.PostgreSQL.Plan as Plan
 
 {- |
   An operator alias of 'Plan.bind' so that it can be used with @QualifiedDo@.
+
+@since 0.10.0.0
 -}
 (>>=) ::
   Plan.Plan scope param a ->

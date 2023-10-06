@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Schema.TableIdentifier
   ( TableIdentifier
   , unqualifiedNameToTableId
@@ -16,6 +23,8 @@ import qualified Orville.PostgreSQL.Expr as Expr
 {- |
   An identifier used by Orville to identify a particular table in a particular
   schema.
+
+@since 0.10.0.0
 -}
 data TableIdentifier = TableIdentifier
   { i_tableIdName :: String
@@ -26,6 +35,8 @@ data TableIdentifier = TableIdentifier
 {- |
   Constructs a 'TableIdentifier' where the table's name will not be qualified
   by a particular schema.
+
+@since 0.10.0.0
 -}
 unqualifiedNameToTableId :: String -> TableIdentifier
 unqualifiedNameToTableId name =
@@ -37,6 +48,8 @@ unqualifiedNameToTableId name =
 {- |
   Sets the schema of the 'TableIdentifier'. Wherever applicable, references to
   the table will be qualified by the given scheme name.
+
+@since 0.10.0.0
 -}
 setTableIdSchema :: String -> TableIdentifier -> TableIdentifier
 setTableIdSchema schema tableId =
@@ -47,6 +60,8 @@ setTableIdSchema schema tableId =
 {- |
   Returns the 'Expr.Qualified Expr.TableName' that should be used to refer to the
   table in SQL queries.
+
+@since 0.10.0.0
 -}
 tableIdQualifiedName :: TableIdentifier -> Expr.Qualified Expr.TableName
 tableIdQualifiedName tableId =
@@ -57,6 +72,8 @@ tableIdQualifiedName tableId =
 {- |
   Returns the unqualified 'Expr.TableName' that should be used to refer to the
   table in SQL queries where an unqualified reference is appropriate.
+
+@since 0.10.0.0
 -}
 tableIdUnqualifiedName :: TableIdentifier -> Expr.TableName
 tableIdUnqualifiedName =
@@ -65,6 +82,8 @@ tableIdUnqualifiedName =
 {- |
   Returns the 'Expr.SchemaName' (if any) that should be used to qualify
   references to the table in SQL queries.
+
+@since 0.10.0.0
 -}
 tableIdSchemaName :: TableIdentifier -> Maybe Expr.SchemaName
 tableIdSchemaName =
@@ -72,6 +91,8 @@ tableIdSchemaName =
 
 {- |
   Retrieves the unqualified name of the table as a string.
+
+@since 0.10.0.0
 -}
 tableIdUnqualifiedNameString :: TableIdentifier -> String
 tableIdUnqualifiedNameString =
@@ -79,6 +100,8 @@ tableIdUnqualifiedNameString =
 
 {- |
   Retrieves the schema name of the table as a string
+
+@since 0.10.0.0
 -}
 tableIdSchemaNameString :: TableIdentifier -> Maybe String
 tableIdSchemaNameString =
@@ -90,6 +113,8 @@ tableIdSchemaNameString =
 
   Note: You should not use this function for building SQL expressions. Use
   'tableIdQualifiedName' instead for that.
+
+@since 0.10.0.0
 -}
 tableIdToString :: TableIdentifier -> String
 tableIdToString tableId =

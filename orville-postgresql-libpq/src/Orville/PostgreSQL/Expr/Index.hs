@@ -3,7 +3,7 @@
 {- |
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
-Stability: Stable
+Stability : Stable
 
 @since 0.10.0.0
 -}

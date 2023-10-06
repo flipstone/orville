@@ -1,6 +1,13 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Plan
   ( Plan
   , Planned
@@ -87,6 +94,8 @@ import qualified Orville.PostgreSQL.Schema as Schema
   should never specified as a concrete type in user code, but must be exposed
   as a variable to ensure that execute scope is tracked correctly through
   usages of 'bind'.
+
+@since 0.10.0.0
 -}
 data Plan scope param result where
   PlanOp :: Op.Operation param result -> Plan scope param result
@@ -122,6 +131,8 @@ instance Applicative (Plan scope param) where
 {- |
   'Execute' is a tag type used by as the 'scope' variable for
   'Plan' values when executing them via the 'execute' function.
+
+@since 0.10.0.0
 -}
 data Execute
 
@@ -129,6 +140,8 @@ data Execute
   'ExecuteMany' is an internal tag type used by as the 'scope' variable for
   'Plan' values when executing them against multiple inputs via the
   'executeMany' internal function.
+
+@since 0.10.0.0
 -}
 data ExecuteMany
 
@@ -147,6 +160,8 @@ data ExecuteMany
   If you need to build a value from several 'Planned' values using
   'Applicative', you should call 'use' on each of the values and use the
   'Applicative' instance for 'Plan'.
+
+@since 0.10.0.0
 -}
 data Planned scope param a where
   PlannedOne :: a -> Planned Execute param a
@@ -160,6 +175,8 @@ instance Functor (Planned scope param) where
   'mapPlanned' applies a function to what value or values have been produced by
   the plan. This function can also be called as 'fmap' or '<$>' thorugh the
   'Functor' instance for 'Planned'.
+
+@since 0.10.0.0
 -}
 mapPlanned :: (a -> b) -> Planned scope param a -> Planned scope param b
 mapPlanned f planned =
@@ -174,6 +191,8 @@ mapPlanned f planned =
 {- |
   'resolveOne' resolves a 'Planned' value that is known to be in the 'One'
   scope to its single wrapped value.
+
+@since 0.10.0.0
 -}
 resolveOne :: Planned Execute param a -> a
 resolveOne (PlannedOne a) = a
@@ -181,6 +200,8 @@ resolveOne (PlannedOne a) = a
 {- |
   'resolveMany resolves a 'Planned' value that is known to be in the 'Many'
   scope to the 'Many' value wrapped inside it.
+
+@since 0.10.0.0
 -}
 resolveMany :: Planned ExecuteMany k a -> Many k a
 resolveMany (PlannedMany as) = as
@@ -189,6 +210,8 @@ resolveMany (PlannedMany as) = as
   'planOperation' allows any primitive 'Op.Operation' to be used as an atomic step
   in a plan. When the plan is executed, the appropriate 'Op.Operation' functions
   will be used depending on the execution context.
+
+@since 0.10.0.0
 -}
 planOperation ::
   Op.Operation param result ->
@@ -201,6 +224,8 @@ planOperation =
   plan. Note that the 'Select' cannot depend on the plan's input parameters in
   this case. If the plan is executed with multiple inputs the same set of all
   the results will be used as the results for each of the input parameters.
+
+@since 0.10.0.0
 -}
 planSelect :: Select row -> Plan scope () [row]
 planSelect select =
@@ -210,6 +235,8 @@ planSelect select =
   'askParam' allows the input parameter for the plan to be retrieved as the
   result of the plan. Together with 'bind' you can use this to get access to
   the input parameter as a 'Planned' value.
+
+@since 0.10.0.0
 -}
 askParam :: Plan scope param param
 askParam =
@@ -219,6 +246,8 @@ askParam =
   'findMaybeOne' constructs a 'Plan' that will find at most one row from
   the given table where the plan's input value matches the given database
   field.
+
+@since 0.10.0.0
 -}
 findMaybeOne ::
   Ord fieldValue =>
@@ -232,6 +261,8 @@ findMaybeOne tableDef fieldDef =
   'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a
   'WhereCondition' to be specified to restrict which rows are matched by the
   database query.
+
+@since 0.10.0.0
 -}
 findMaybeOneWhere ::
   Ord fieldValue =>
@@ -248,6 +279,8 @@ findMaybeOneWhere tableDef fieldDef cond =
   'Op.AssertionFailed' exception will be thrown. This is a useful convenience
   when looking up foreign-key associations that are expected to be enforced
   by the database itself.
+
+@since 0.10.0.0
 -}
 findOneShowVia ::
   Ord fieldValue =>
@@ -264,6 +297,8 @@ findOneShowVia showParam tableDef fieldDef =
   'findOne' is an alias to 'findOneShowVia' that uses the 'Show' instance of
   'fieldValue' when producing a failure message in the result the entity cannot
   be found.
+
+@since 0.10.0.0
 -}
 findOne ::
   (Show fieldValue, Ord fieldValue) =>
@@ -275,6 +310,8 @@ findOne = findOneShowVia show
 {- |
   'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a 'WhereCondition' to be
   specified to restrict which rows are matched by the database query.
+
+@since 0.10.0.0
 -}
 findOneWhereShowVia ::
   Ord fieldValue =>
@@ -292,6 +329,8 @@ findOneWhereShowVia showParam tableDef fieldDef cond =
   'findOneWhere' is an alias to 'findOneWhereShowVia' that uses the 'Show' instance of
   'fieldValue' when producing a failure message in the result the entity cannot
   be found.
+
+@since 0.10.0.0
 -}
 findOneWhere ::
   (Show fieldValue, Ord fieldValue) =>
@@ -304,6 +343,8 @@ findOneWhere = findOneWhereShowVia show
 {- |
   'assertFound' is an internal helper that checks that row was found where
   one was expected.
+
+@since 0.10.0.0
 -}
 assertFound ::
   (fieldValue -> String) ->
@@ -330,6 +371,8 @@ assertFound showParam tableDef fieldDef param maybeRecord =
 {- |
   'findAll' constructs a 'Plan' that will find all the rows from the given
   table there the plan's input value matches the given database field.
+
+@since 0.10.0.0
 -}
 findAll ::
   Ord fieldValue =>
@@ -342,6 +385,8 @@ findAll tableDef fieldDef =
 {- |
   'findAllWhere' is similar to 'findAll', but allows a 'WhereCondition' to be
   specified to restrict which rows are matched by the database query.
+
+@since 0.10.0.0
 -}
 findAllWhere ::
   Ord fieldValue =>
@@ -358,6 +403,8 @@ findAllWhere tableDef fieldDef cond =
   execute in the same basic order, but with adjusted conditions to find all the
   rows for all inputs at once rather than running the planned queries once for
   each input.
+
+@since 0.10.0.0
 -}
 planMany ::
   (forall manyScope. Plan manyScope param result) ->
@@ -378,6 +425,8 @@ planMany =
   queries against multiple tables. When a plan that queries multiple table is
   passed, the query results must be correlated based on the input parameters to
   build each @result@ value.
+
+@since 0.10.0.0
 -}
 planList ::
   (forall scope. Plan scope param result) ->
@@ -391,6 +440,8 @@ planList plan =
   structure, and a plan that only needs a part of that structure as input. The
   function argument can access part of the structure for the plan argument to use,
   so the final returned plan can take the entire structure as input.
+
+@since 0.10.0.0
 -}
 focusParam ::
   (a -> b) ->
@@ -406,6 +457,8 @@ focusParam focuser plan =
   input parameter. When used on multiple input parameters, each of the two
   plans will be executed only once with all the 'Left' and 'Right' values
   provided as input parameters respectively.
+
+@since 0.10.0.0
 -}
 planEither ::
   Plan scope leftParam leftResult ->
@@ -418,6 +471,8 @@ planEither =
   'planMaybe' lifts a plan so both its param and result become 'Maybe's. This is
   useful when modifying an existing plan to deal with optionality. Writing just
   one plan can then easily produce both the required and optional versions.
+
+@since 0.10.0.0
 -}
 planMaybe :: Plan scope a b -> Plan scope (Maybe a) (Maybe b)
 planMaybe plan =
@@ -441,6 +496,8 @@ planMaybe plan =
   multiple times.
 
   Also see 'use' for how to lift a 'Planned' value back into a 'Plan'.
+
+@since 0.10.0.0
 -}
 bind ::
   Plan scope param a ->
@@ -452,6 +509,8 @@ bind =
 {- |
   'use' constructs a 'Plan' that always produces the 'Planned' value
   as its result, regardless of the parameter given as input to the plan.
+
+@since 0.10.0.0
 -}
 use :: Planned scope param a -> Plan scope param a
 use =
@@ -461,6 +520,8 @@ use =
   'using' uses a 'Planned' value in the input to another 'Plan'. The
   resulting plan will ignore its input and use the 'Planned' value as
   the input to produce its result instead.
+
+@since 0.10.0.0
 -}
 using ::
   Planned scope param a ->
@@ -473,6 +534,8 @@ using planned plan =
   'apply' applies a function produced by a plan to the value produced
   by another plan. This is usually used via the '<*>' operator through
   the 'Applicative' instance for 'Plan'.
+
+@since 0.10.0.0
 -}
 apply ::
   Plan scope param (a -> b) ->
@@ -484,6 +547,8 @@ apply =
 {- |
   'chain' connects the output of one plan to the input of another to form a
   larger plan that will execute the first followed by the second.
+
+@since 0.10.0.0
 -}
 chain ::
   Plan scope a b ->
@@ -497,7 +562,7 @@ chain =
   If the first plan yields no result, the second is skipped.
   See also 'chain'.
 
-  @since 0.10.0.1
+@since 0.10.0.0
 -}
 chainMaybe ::
   Plan scope a (Maybe b) ->
@@ -519,6 +584,8 @@ chainMaybe a b =
   false. The first parameter is the assertion function, which should return
   either an error message to be given in the exception or the value to be used
   as the plan's result.
+
+@since 0.10.0.0
 -}
 assert ::
   (param -> a -> Either String b) ->
@@ -541,6 +608,8 @@ assert assertion aPlan =
   If you have a plan that takes one input and want to provide a list of
   input, use 'planMany' to adapt it to a multple-input plan before calling
   'execute'.
+
+@since 0.10.0.0
 -}
 execute ::
   Monad.MonadOrville m =>
@@ -553,6 +622,8 @@ execute plan param =
 {- |
   'executeOne' is an internal helper that executes a 'Plan' with a concrete
   'scope' type to ensure all 'Planned' values are built with 'PlannedOne'.
+
+@since 0.10.0.0
 -}
 executeOne ::
   Monad.MonadOrville m =>
@@ -595,6 +666,8 @@ executeOne plan param =
 {- |
   'executeMany' is an internal helper that executes a 'Plan' with a concrete
   @scope@ type to ensure all 'Planned' values are built with 'PlannedMany'.
+
+@since 0.10.0.0
 -}
 executeMany ::
   Monad.MonadOrville m =>
@@ -664,6 +737,8 @@ executeMany plan params =
 {- |
   'Explain' is an tag type used as the 'scope' variable when explaining a
   'Plan' via the 'explain' function.
+
+@since 0.10.0.0
 -}
 data Explain
   = ExplainOne
@@ -674,6 +749,8 @@ data Explain
   a 'Plan' -- in most cases example SQL queries. If you want to see
   the explanation of how the plan will run with multiple input parameters,
   you can use 'planMany' to adapt it before calling 'explain'.
+
+@since 0.10.0.0
 -}
 explain :: Plan Explain param result -> [String]
 explain plan =
@@ -684,6 +761,8 @@ explain plan =
   'explainPlan' is an internal helper to executes a plan with the
   'scope' type fixed to 'Explain' to ensure that all 'Planned'
   values are constructed with the 'PlannedExplain' constructor.
+
+@since 0.10.0.0
 -}
 explainPlan ::
   Explain ->

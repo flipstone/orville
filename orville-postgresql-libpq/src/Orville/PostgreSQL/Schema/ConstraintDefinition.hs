@@ -1,8 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Schema.ConstraintDefinition
   ( ConstraintDefinition
@@ -40,6 +43,8 @@ import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
   by 'ConstraintMigrationKey'. If multiple constraints with the same
   'ConstraintMigrationKey' are added the most recently added one will be kept
   and the previous one dropped.
+
+@since 0.10.0.0
 -}
 newtype TableConstraints
   = TableConstraints (Map.Map ConstraintMigrationKey ConstraintDefinition)
@@ -47,6 +52,8 @@ newtype TableConstraints
 
 {- |
   Constructs an empty 'TableConstraints'
+
+@since 0.10.0.0
 -}
 emptyTableConstraints :: TableConstraints
 emptyTableConstraints = TableConstraints Map.empty
@@ -55,6 +62,8 @@ emptyTableConstraints = TableConstraints Map.empty
   Adds a 'ConstraintDefinition' to an existing 'TableConstraints'. If a
   constraint already exists with the same 'ConstraintMigrationKey' it is
   replaced with the new constraint.
+
+@since 0.10.0.0
 -}
 addConstraint :: ConstraintDefinition -> TableConstraints -> TableConstraints
 addConstraint constraint (TableConstraints constraintMap) =
@@ -67,6 +76,8 @@ addConstraint constraint (TableConstraints constraintMap) =
 {- |
   Gets the list of 'ConstraintDefinition's that have been added to the
   'TableConstraints'
+
+@since 0.10.0.0
 -}
 tableConstraintKeys :: TableConstraints -> Set.Set ConstraintMigrationKey
 tableConstraintKeys (TableConstraints constraints) =
@@ -75,6 +86,8 @@ tableConstraintKeys (TableConstraints constraints) =
 {- |
   Gets the list of 'ConstraintDefinition's that have been added to the
   'TableConstraints'
+
+@since 0.10.0.0
 -}
 tableConstraintDefinitions :: TableConstraints -> [ConstraintDefinition]
 tableConstraintDefinitions (TableConstraints constraints) =
@@ -87,6 +100,8 @@ tableConstraintDefinitions (TableConstraints constraints) =
   wish to have and then use 'Orville.PostgreSQL.addTableConstraints'. to add
   them to your table definition. Orville will then add the constraint next time
   you run auto-migrations.
+
+@since 0.10.0.0
 -}
 data ConstraintDefinition = ConstraintDefinition
   { _constraintSqlExpr :: Expr.TableConstraint
@@ -98,6 +113,8 @@ data ConstraintDefinition = ConstraintDefinition
   a table when performing auto migrations. For most use cases the constructor
   functions that build a 'ConstraintDefinition' will create this automatically
   for you.
+
+@since 0.10.0.0
 -}
 data ConstraintMigrationKey = ConstraintMigrationKey
   { constraintKeyType :: ConstraintKeyType
@@ -111,6 +128,8 @@ data ConstraintMigrationKey = ConstraintMigrationKey
 
 {- |
   The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g. unique, foreign key).
+
+@since 0.10.0.0
 -}
 data ConstraintKeyType
   = UniqueConstraint
@@ -119,12 +138,16 @@ data ConstraintKeyType
 
 {- |
   Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'
+
+@since 0.10.0.0
 -}
 constraintMigrationKey :: ConstraintDefinition -> ConstraintMigrationKey
 constraintMigrationKey = _constraintMigrationKey
 
 {- |
   Gets the SQL expression that will be used to add the constraint to the table.
+
+@since 0.10.0.0
 -}
 constraintSqlExpr :: ConstraintDefinition -> Expr.TableConstraint
 constraintSqlExpr = _constraintSqlExpr
@@ -132,6 +155,8 @@ constraintSqlExpr = _constraintSqlExpr
 {- |
   Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
   columns.
+
+@since 0.10.0.0
 -}
 uniqueConstraint :: NonEmpty FieldName.FieldName -> ConstraintDefinition
 uniqueConstraint fieldNames =
@@ -158,6 +183,8 @@ uniqueConstraint fieldNames =
   A 'ForeignReference' represents one part of a foreign key. The entire foreign
   key may comprise multiple columns. The 'ForeignReference' defines a single
   column in the key and which column it references in the foreign table.
+
+@since 0.10.0.0
 -}
 data ForeignReference = ForeignReference
   { localFieldName :: FieldName.FieldName
@@ -166,6 +193,8 @@ data ForeignReference = ForeignReference
 
 {- |
   Constructs a 'ForeignReference'
+
+@since 0.10.0.0
 -}
 foreignReference ::
   -- | The name of the field in the table with the constraint
@@ -183,6 +212,8 @@ foreignReference localName foreignName =
   Defines the options for a foreign key constraint.
   To construct 'ForeignKeyOptions', perform a record update on
   'defaultForeignKeyOptions'.
+
+@since 0.10.0.0
 -}
 data ForeignKeyOptions = ForeignKeyOptions
   { foreignKeyOptionsOnUpdate :: ForeignKeyAction
@@ -194,6 +225,8 @@ data ForeignKeyOptions = ForeignKeyOptions
 {- |
   The default 'ForeignKeyOptions', containing 'NoAction' for both
   'foreignKeyOptionsOnUpdate' and 'foreignKeyOptionsOnDelete'.
+
+@since 0.10.0.0
 -}
 defaultForeignKeyOptions :: ForeignKeyOptions
 defaultForeignKeyOptions =
@@ -204,6 +237,8 @@ defaultForeignKeyOptions =
 
 {- |
   The actions that can be set on 'ForeignKeyOptions'.
+
+@since 0.10.0.0
 -}
 data ForeignKeyAction
   = NoAction
@@ -223,6 +258,8 @@ foreignKeyActionToExpr action = case action of
 
 {- |
   Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint.
+
+@since 0.10.0.0
 -}
 foreignKeyConstraint ::
   -- | Identifier of the table referenced by the foreign key
@@ -236,6 +273,8 @@ foreignKeyConstraint foreignTableId foreignReferences =
 {- |
   Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with ON UPDATE and
   ON DELETE actions.
+
+@since 0.10.0.0
 -}
 foreignKeyConstraintWithOptions ::
   -- | Identifier of the table referenced by the foreign key

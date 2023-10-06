@@ -180,6 +180,8 @@ move direction (Cursor _ cursorName) =
   Cursor names only need to be unique among the currently open cursors on the
   current connection, so using POSIX time plus a 32 bit random tag should be
   more than sufficient to ensure conflicts are not seen in practice.
+
+@since 0.10.0.0
 -}
 newCursorName :: MonadIO m => m Expr.CursorName
 newCursorName =

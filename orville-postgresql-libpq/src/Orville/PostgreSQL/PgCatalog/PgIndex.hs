@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.PgCatalog.PgIndex
   ( PgIndex (..)
   , pgIndexTable
@@ -21,6 +28,8 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
   The Haskell representation of data read from the @pg_catalog.pg_index@ tale.
   Rows in this table contain extended information about indices. Information
   about indices is also contained in the @pg_catalog.pg_class@ table as well.
+
+@since 0.10.0.0
 -}
 data PgIndex = PgIndex
   { pgIndexPgClassOid :: LibPQ.Oid
@@ -48,6 +57,8 @@ data PgIndex = PgIndex
 {- |
   An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_index@ table
+
+@since 0.10.0.0
 -}
 pgIndexTable :: Orville.TableDefinition Orville.NoKey PgIndex PgIndex
 pgIndexTable =
@@ -68,6 +79,8 @@ pgIndexMarshaller =
 
 {- |
   The @indexrelid@ column of the @pg_index@ table
+
+@since 0.10.0.0
 -}
 indexPgClassOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 indexPgClassOidField =
@@ -75,6 +88,8 @@ indexPgClassOidField =
 
 {- |
   The @indrelid@ column of the @pg_index@ table
+
+@since 0.10.0.0
 -}
 indexRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 indexRelationOidField =
@@ -82,6 +97,8 @@ indexRelationOidField =
 
 {- |
   The @indkey@ column of the @pg_index@ table
+
+@since 0.10.0.0
 -}
 indexAttributeNumbersField :: Orville.FieldDefinition Orville.NotNull [AttributeNumber]
 indexAttributeNumbersField =
@@ -91,6 +108,8 @@ indexAttributeNumbersField =
 
 {- |
   The @indisunique@ column of the @pg_index@ table
+
+@since 0.10.0.0
 -}
 indexIsUniqueField :: Orville.FieldDefinition Orville.NotNull Bool
 indexIsUniqueField =
@@ -98,6 +117,8 @@ indexIsUniqueField =
 
 {- |
   The @indisprimary@ column of the @pg_index@ table
+
+@since 0.10.0.0
 -}
 indexIsPrimaryField :: Orville.FieldDefinition Orville.NotNull Bool
 indexIsPrimaryField =
@@ -105,6 +126,8 @@ indexIsPrimaryField =
 
 {- |
   The @indislive@ column of the @pg_index@ table
+
+@since 0.10.0.0
 -}
 indexIsLiveField :: Orville.FieldDefinition Orville.NotNull Bool
 indexIsLiveField =

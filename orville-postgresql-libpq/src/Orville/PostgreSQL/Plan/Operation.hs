@@ -1,6 +1,13 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Plan.Operation
   ( Operation (..)
   , AssertionFailed
@@ -52,6 +59,8 @@ import qualified Orville.PostgreSQL.Schema as Schema
   You can build your own custom 'Operation' values either directly, or using
   the function and types in this module, such as 'WherePlanner' (via 'findAll',
   etc), or 'SelectOperation' (via 'selectOperation').
+
+@since 0.10.0.0
 -}
 data Operation param result = Operation
   { executeOperationOne ::
@@ -88,6 +97,8 @@ data Operation param result = Operation
   plan execution the error is thrown as an exception using the
   'Control.Monad.Catch.MonadThrow' instance for whatever monad the plan is
   executing in.
+
+@since 0.10.0.0
 -}
 newtype AssertionFailed
   = AssertionFailed String
@@ -95,6 +106,8 @@ newtype AssertionFailed
 
 {- |
   'mkAssertionFailed' builds an 'AssertionFailed' error from an error message.
+
+@since 0.10.0.0
 -}
 mkAssertionFailed :: String -> AssertionFailed
 mkAssertionFailed =
@@ -104,6 +117,8 @@ instance Exception AssertionFailed
 
 {- |
   'askParam' simply returns the paremeter given from the plan.
+
+@since 0.10.0.0
 -}
 askParam :: Operation param param
 askParam =
@@ -118,6 +133,8 @@ askParam =
   'assertRight' returns the value on the 'Right' side of an 'Either'. If
   the 'Either' is a 'Left', it raises 'AssertionFailed' with the message
   from the left side of the either.
+
+@since 0.10.0.0
 -}
 assertRight :: Operation (Either String a) a
 assertRight =
@@ -164,6 +181,8 @@ assertRight =
   If you need to execute a custom query that cannot be build by providing
   custom where clause via 'WherePlanner', you may want to use more
   direct 'selectOperation' function.
+
+@since 0.10.0.0
 -}
 data WherePlanner param = WherePlanner
   { paramMarshaller :: forall entity. (entity -> param) -> Marshall.SqlMarshaller entity param
@@ -194,6 +213,8 @@ data WherePlanner param = WherePlanner
   Builds a 'WherePlanner' that will match on a single
   'FieldDefinition.FieldDefinition'.  The resulting 'WherePlanner' can be used
   with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
+
+@since 0.10.0.0
 -}
 byField ::
   Ord fieldValue =>
@@ -216,6 +237,8 @@ byField fieldDef =
   Builds a 'WherePlanner' that will match on a 2-tuple of
   'FieldDefinition.FieldDefinition's.  The resulting 'WherePlanner' can be used
   with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
+
+@since 0.10.0.0
 -}
 byFieldTuple ::
   forall nullabilityA fieldValueA nullabilityB fieldValueB.
@@ -275,6 +298,8 @@ dedupeFieldValues (first :| rest) =
   the plan's input parameter. When executed on multiple parameters it fetches
   all rows where the field matches the inputs and arbitrarily picks at most one
   of those rows to use as the result for each input.
+
+@since 0.10.0.0
 -}
 findOne ::
   Ord param =>
@@ -288,6 +313,8 @@ findOne tableDef wherePlanner =
   'findOneWhere' is similar to 'findOne' but allows a 'WhereCondition' to be
   specified that is added to the database query to restrict which rows are
   returned.
+
+@since 0.10.0.0
 -}
 findOneWhere ::
   Ord param =>
@@ -300,6 +327,8 @@ findOneWhere tableDef wherePlanner cond =
 
 {- |
   'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'
+
+@since 0.10.0.0
 -}
 findOneWithOpts ::
   Ord param =>
@@ -344,6 +373,8 @@ findOneWithOpts tableDef wherePlanner opts =
   plan's input parameter. Where executed on multiple parameters all rows
   are fetch in a single query and then associated with their respective
   inputs after being fetched.
+
+@since 0.10.0.0
 -}
 findAll ::
   Ord param =>
@@ -357,6 +388,8 @@ findAll tableDef wherePlanner =
   'findAllWhere' is similar to 'findAll' but allows a 'WhereCondition' to be
   specified that is added to the database query to restrict which rows are
   returned.
+
+@since 0.10.0.0
 -}
 findAllWhere ::
   Ord param =>
@@ -369,6 +402,8 @@ findAllWhere tableDef wherePlanner cond =
 
 {- |
   'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'
+
+@since 0.10.0.0
 -}
 findAllWithOpts ::
   Ord param =>
@@ -413,6 +448,8 @@ findAllWithOpts tableDef wherePlanner opts =
   'WhereCondition' clauses used to generate sql when explaining how a plan
   will be executed. Relabeling the type as 'T.Text' allows us to use text
   values as example inputs in the queries when for explaining plans.
+
+@since 0.10.0.0
 -}
 stringifyField ::
   Marshall.FieldDefinition nullability a ->
@@ -433,6 +470,8 @@ stringifyField =
 
   If you cannot respresent your custom operation using 'SelectOperation' then
   you need build the 'Operation' value directly yourself.
+
+@since 0.10.0.0
 -}
 data SelectOperation param row result = SelectOperation
   { selectOne :: param -> Exec.Select row
@@ -475,6 +514,8 @@ data SelectOperation param row result = SelectOperation
   given by a 'SelectOperation'. If you are implementing a custom operation that
   runs a select statement, it is probably easier to use this function rather
   than building the 'Operation' functions directly.
+
+@since 0.10.0.0
 -}
 selectOperation ::
   Ord param =>
@@ -495,6 +536,8 @@ explainSelect =
 {- |
   'runSelectOne' is an internal helper function that executes a
   'SelectOperation' on a single input parameter.
+
+@since 0.10.0.0
 -}
 executeSelectOne ::
   Monad.MonadOrville m =>
@@ -508,6 +551,8 @@ executeSelectOne selectOp param =
 {- |
   'executeSelectMany' is an internal helper function that executes a
   'SelectOperation' on multiple input parameters.
+
+@since 0.10.0.0
 -}
 executeSelectMany ::
   forall param row result m.
@@ -561,6 +606,8 @@ executeSelectMany selectOp params = do
   'executeOperationMany' function of the resulting 'Operation' will run the
   query once and use the entire result set as the result each of the input
   parameters in turn.
+
+@since 0.10.0.0
 -}
 findSelect :: forall param row. Exec.Select row -> Operation param [row]
 findSelect select =

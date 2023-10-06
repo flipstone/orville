@@ -1,10 +1,13 @@
 {- |
 
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
 
 The funtions in this module are named with the intent that it is imported
 qualified as 'SqlValue'.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Raw.SqlValue
   ( SqlValue
@@ -65,6 +68,14 @@ import Orville.PostgreSQL.Raw.PgTextFormatValue (PgTextFormatValue)
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
 
+{- |
+  'SqlValue' represents a value that is in encoded format for use with LibPQ.
+  It is used both for values passed to LibPQ and values parse from LibPQ. The
+  conversions functions in "Orville.PostgreSQL.Raw.SqlValue" can be used
+  to convert to and from the value.
+
+@since 0.10.0.0
+-}
 data SqlValue
   = SqlValue PgTextFormatValue
   | SqlNull
@@ -72,6 +83,8 @@ data SqlValue
 
 {- |
   Checks whether the 'SqlValue' represents a sql NULL value in the database.
+
+@since 0.10.0.0
 -}
 isSqlNull :: SqlValue -> Bool
 isSqlNull sqlValue =
@@ -82,6 +95,8 @@ isSqlNull sqlValue =
 {- |
   A value of 'SqlValue' that will be interpreted as a sql NULL value when
   pasesed to the database.
+
+@since 0.10.0.0
 -}
 sqlNull :: SqlValue
 sqlNull =
@@ -92,6 +107,8 @@ sqlNull =
   when sent to the database. The output should be recognizable as similar to
   to values you would write in query. If the value represents a sql NULL
   value, 'Nothing' is returned
+
+@since 0.10.0.0
 -}
 toPgValue :: SqlValue -> Maybe PgTextFormatValue
 toPgValue sqlValue =
@@ -110,6 +127,8 @@ toPgValue sqlValue =
   Note: A value to represent a sql NULL cannot be constructed using this
   function. See 'fromRawBytesNullable' for how to represent a nullable
   raw value.
+
+@since 0.10.0.0
 -}
 fromRawBytes :: BS.ByteString -> SqlValue
 fromRawBytes =
@@ -119,6 +138,8 @@ fromRawBytes =
   Creates a 'SqlValue' from a raw byte string. If 'Nothing' is specified as the
   input parameter then the resulting 'SqlValue' will represent a NULL value in
   sql. Otherwise the bytes given are used in the same way as 'fromRawBytes'
+
+@since 0.10.0.0
 -}
 fromRawBytesNullable :: Maybe BS.ByteString -> SqlValue
 fromRawBytesNullable =
@@ -126,6 +147,8 @@ fromRawBytesNullable =
 
 {- |
   Encodes an 'Int8' value for usage with database
+
+@since 0.10.0.0
 -}
 fromInt8 :: Int8 -> SqlValue
 fromInt8 =
@@ -134,6 +157,8 @@ fromInt8 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Int8' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toInt8 :: SqlValue -> Either String Int8
 toInt8 =
@@ -141,6 +166,8 @@ toInt8 =
 
 {- |
   Encodes an 'Int16' value for usage with database
+
+@since 0.10.0.0
 -}
 fromInt16 :: Int16 -> SqlValue
 fromInt16 =
@@ -149,6 +176,8 @@ fromInt16 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Int16' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toInt16 :: SqlValue -> Either String Int16
 toInt16 =
@@ -156,6 +185,8 @@ toInt16 =
 
 {- |
   Encodes an 'Int32' value for usage with database
+
+@since 0.10.0.0
 -}
 fromInt32 :: Int32 -> SqlValue
 fromInt32 =
@@ -164,6 +195,8 @@ fromInt32 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Int32' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toInt32 :: SqlValue -> Either String Int32
 toInt32 =
@@ -171,6 +204,8 @@ toInt32 =
 
 {- |
   Encodes an 'Int64' value for usage with database
+
+@since 0.10.0.0
 -}
 fromInt64 :: Int64 -> SqlValue
 fromInt64 =
@@ -179,6 +214,8 @@ fromInt64 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toInt64 :: SqlValue -> Either String Int64
 toInt64 =
@@ -186,6 +223,8 @@ toInt64 =
 
 {- |
   Encodes an 'Int' value for usage with database
+
+@since 0.10.0.0
 -}
 fromInt :: Int -> SqlValue
 fromInt =
@@ -194,6 +233,8 @@ fromInt =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toInt :: SqlValue -> Either String Int
 toInt =
@@ -201,6 +242,8 @@ toInt =
 
 {- |
   Encodes an 'Word8' value for usage with database
+
+@since 0.10.0.0
 -}
 fromWord8 :: Word8 -> SqlValue
 fromWord8 =
@@ -209,6 +252,8 @@ fromWord8 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Word8' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toWord8 :: SqlValue -> Either String Word8
 toWord8 =
@@ -216,6 +261,8 @@ toWord8 =
 
 {- |
   Encodes an 'Word16' value for usage with database
+
+@since 0.10.0.0
 -}
 fromWord16 :: Word16 -> SqlValue
 fromWord16 =
@@ -224,6 +271,8 @@ fromWord16 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Word16' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toWord16 :: SqlValue -> Either String Word16
 toWord16 =
@@ -231,6 +280,8 @@ toWord16 =
 
 {- |
   Encodes an 'Word32' value for usage with database
+
+@since 0.10.0.0
 -}
 fromWord32 :: Word32 -> SqlValue
 fromWord32 =
@@ -239,6 +290,8 @@ fromWord32 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Word32' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toWord32 :: SqlValue -> Either String Word32
 toWord32 =
@@ -246,6 +299,8 @@ toWord32 =
 
 {- |
   Encodes an 'Word64' value for usage with database
+
+@since 0.10.0.0
 -}
 fromWord64 :: Word64 -> SqlValue
 fromWord64 =
@@ -254,6 +309,8 @@ fromWord64 =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Word64' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toWord64 :: SqlValue -> Either String Word64
 toWord64 =
@@ -261,6 +318,8 @@ toWord64 =
 
 {- |
   Encodes an 'Word' value for usage with database
+
+@since 0.10.0.0
 -}
 fromWord :: Word -> SqlValue
 fromWord =
@@ -269,6 +328,8 @@ fromWord =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Word' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toWord :: SqlValue -> Either String Word
 toWord =
@@ -276,6 +337,8 @@ toWord =
 
 {- |
   Encodes a 'Double' value for usage with database
+
+@since 0.10.0.0
 -}
 fromDouble :: Double -> SqlValue
 fromDouble =
@@ -284,6 +347,8 @@ fromDouble =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Double' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toDouble :: SqlValue -> Either String Double
 toDouble =
@@ -291,6 +356,8 @@ toDouble =
 
 {- |
   Encodes a 'Bool' value for usage with database
+
+@since 0.10.0.0
 -}
 fromBool :: Bool -> SqlValue
 fromBool =
@@ -302,6 +369,8 @@ fromBool =
 {- |
   Attempts to decode a 'SqlValue' as a Haskell 'Bool' value. If decoding fails
   'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toBool :: SqlValue -> Either String Bool
 toBool =
@@ -314,6 +383,8 @@ toBool =
 
 {- |
   Encodes a 'T.Text' value as utf8 so that it can be used with the database.
+
+@since 0.10.0.0
 -}
 fromText :: T.Text -> SqlValue
 fromText =
@@ -325,6 +396,8 @@ fromText =
 
   Note: This decoding _only_ fails if the bytes returned from the database
   are not a value UTF-8 sequence of bytes. Otherwise it always succeeds.
+
+@since 0.10.0.0
 -}
 toText :: SqlValue -> Either String T.Text
 toText =
@@ -336,6 +409,8 @@ toText =
 {- |
   Encodes a 'Time.Day' value as text in YYYY-MM-DD format so that it can be
   used with the database.
+
+@since 0.10.0.0
 -}
 fromDay :: Time.Day -> SqlValue
 fromDay =
@@ -344,6 +419,8 @@ fromDay =
 {- |
   Attempts to decode a 'SqlValue' as into a 'Time.Day' value by parsing it
   from YYYY-MM-DD format. If the decoding fails 'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toDay :: SqlValue -> Either String Time.Day
 toDay =
@@ -351,6 +428,8 @@ toDay =
 
 {- |
   Encodes a 'Time.UTCTime' in ISO 8601 format for usage with the database.
+
+@since 0.10.0.0
 -}
 fromUTCTime :: Time.UTCTime -> SqlValue
 fromUTCTime =
@@ -360,6 +439,8 @@ fromUTCTime =
 
 {- |
   Encodes a 'Time.LocalTime' in ISO 8601 format for usage with the database.
+
+@since 0.10.0.0
 -}
 fromLocalTime :: Time.LocalTime -> SqlValue
 fromLocalTime =
@@ -370,6 +451,8 @@ fromLocalTime =
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.LocalTime' formatted in iso8601
   format in the default Local. If the decoding fails, 'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toLocalTime :: SqlValue -> Either String Time.LocalTime
 toLocalTime =
@@ -378,6 +461,8 @@ toLocalTime =
 {- |
   Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
   format with time zone. If the decoding fails, 'Nothing' is returned.
+
+@since 0.10.0.0
 -}
 toUTCTime :: SqlValue -> Either String Time.UTCTime
 toUTCTime =
@@ -385,6 +470,8 @@ toUTCTime =
 
 {- |
   A internal helper function that constructs a 'SqlValue' via a byte string builder
+
+@since 0.10.0.0
 -}
 fromBSBuilderWithNoNULs :: (a -> BSB.Builder) -> a -> SqlValue
 fromBSBuilderWithNoNULs builder =
@@ -396,6 +483,8 @@ fromBSBuilderWithNoNULs builder =
 
 {- |
   A internal helper function that parses 'SqlValue' via an Attoparsec parser.
+
+@since 0.10.0.0
 -}
 toParsedValue ::
   Typeable.Typeable a =>
@@ -410,6 +499,8 @@ toParsedValue parser =
   given parsing function. If the 'SqlValue' is NULL, this function returns an
   error an a 'Left' value. If the parsing function fails (by returning 'Left'),
   the error it returns in returned by this function.
+
+@since 0.10.0.0
 -}
 toBytesValue ::
   Typeable.Typeable a =>

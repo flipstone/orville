@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Monad.Orville
   ( Orville
   , runOrville
@@ -25,6 +32,8 @@ import Orville.PostgreSQL.Raw.Connection (Connection)
 
   If you want add Orville capabilities to your own monad, take a look at
   'MonadOrville' to learn what needs to be done.
+
+@since 0.10.0.0
 -}
 newtype Orville a = Orville
   { unwrapOrville :: ReaderT OrvilleState.OrvilleState IO a
@@ -49,6 +58,8 @@ newtype Orville a = Orville
   default. If want to run with a different detail level, you can use
   'OrvilleState.newOrvilleState' to create a state with the desired detail
   level and then use 'runOrvilleWithState'.
+
+@since 0.10.0.0
 -}
 runOrville :: Pool Connection -> Orville a -> IO a
 runOrville =
@@ -67,6 +78,8 @@ runOrville =
 
   On the other hand, if you know that you want to pass the existing connection
   state from another monad into the 'Orville' monad, this is how you do it.
+
+@since 0.10.0.0
 -}
 runOrvilleWithState :: OrvilleState.OrvilleState -> Orville a -> IO a
 runOrvilleWithState state orville =

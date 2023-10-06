@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Raw.PgTextFormatValue
   ( PgTextFormatValue
   , NULByteFoundError (NULByteFoundError)
@@ -27,6 +34,8 @@ import qualified Data.ByteString as BS
   'unsafeFromByteString', the value passed to the database will be truncated at
   the '\NUL' byte because it will be interpreted as the end of the C String by
   libpq.
+
+@since 0.10.0.0
 -}
 data PgTextFormatValue
   = NoAssumptionsMade BS.ByteString
@@ -52,6 +61,8 @@ instance Exception NULByteFoundError
   This function is only safe to use when you have generated the bytestring
   in a way that guarantees no '\NUL' bytes are present, such as when serializing
   an integer value to its decimal representation.
+
+@since 0.10.0.0
 -}
 unsafeFromByteString :: BS.ByteString -> PgTextFormatValue
 unsafeFromByteString =
@@ -61,6 +72,8 @@ unsafeFromByteString =
   Constructs a 'PgTextFormatValue' from the given bytes, which will be checked
   to ensure none of them are '\NUL' before being passed to libpq. If a '\NUL'
   byte is found an error will be raised.
+
+@since 0.10.0.0
 -}
 fromByteString :: BS.ByteString -> PgTextFormatValue
 fromByteString =
@@ -70,6 +83,8 @@ fromByteString =
   Converts the 'PgTextFormatValue' to bytes intended to be passed to libpq.
   If any '\NUL' bytes are found, 'NULByteErrorFound' will be returned (unless
   'unsafeFromByteString' was used to construct the value).
+
+@since 0.10.0.0
 -}
 toBytesForLibPQ :: PgTextFormatValue -> Either NULByteFoundError BS.ByteString
 toBytesForLibPQ value =
@@ -85,6 +100,8 @@ toBytesForLibPQ value =
   Convents the 'PgTextFormatValue' back to the bytes that were used to
   construct it, losing the information about whether it would be checked
   for '\NUL' bytes or not.
+
+@since 0.10.0.0
 -}
 toByteString :: PgTextFormatValue -> BS.ByteString
 toByteString value =

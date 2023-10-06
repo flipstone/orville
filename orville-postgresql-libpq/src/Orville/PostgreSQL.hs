@@ -1,7 +1,26 @@
 {- |
-Copyright : Flipstone Technology Partners 2020-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+"Orville.PostgreSQL" is the module you will most often want to import for using
+Orville. It re-exports most of the functions you need for everyday basic
+operations on table entities. If you cannot find the function you need exported here,
+you may be able to find it one of the modules that re-exports more functional
+for a specific area:
+
+* "Orville.PostgreSQL.AutoMigration"
+* "Orville.PostgreSQL.Execution"
+* "Orville.PostgreSQL.Expr"
+* "Orville.PostgreSQL.Marshall"
+* "Orville.PostgreSQL.Monad"
+* "Orville.PostgreSQL.OrvilleState"
+* "Orville.PostgreSQL.Schema"
+
+Of course, you can always use the table of contents for the package to see
+all the exports Orville offers.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL
   ( -- * Basic operations on entities in tables
@@ -111,9 +130,6 @@ module Orville.PostgreSQL
   , IndexDefinition.mkIndexDefinition
   , IndexDefinition.mkNamedIndexDefinition
   , IndexDefinition.IndexUniqueness (UniqueIndex, NonUniqueIndex)
-  , IndexDefinition.IndexMigrationKey (AttributeBasedIndexKey, NamedIndexKey)
-  , IndexDefinition.AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns)
-  , IndexDefinition.indexMigrationKey
   , IndexDefinition.indexCreateExpr
   , IndexDefinition.IndexCreationStrategy (Transactional, Asynchronous)
   , IndexDefinition.setIndexCreationStrategy

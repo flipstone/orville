@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.PgCatalog.PgAttributeDefault
   ( PgAttributeDefault (..)
   , pgAttributeDefaultTable
@@ -17,6 +24,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 {- |
   The Haskell representation of data read from the @pg_catalog.pg_attrdef@
   table.
+
+@since 0.10.0.0
 -}
 data PgAttributeDefault = PgAttributeDefault
   { pgAttributeDefaultOid :: LibPQ.Oid
@@ -35,6 +44,8 @@ data PgAttributeDefault = PgAttributeDefault
 {- |
   An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_attrdef@ table
+
+@since 0.10.0.0
 -}
 pgAttributeDefaultTable :: Orville.TableDefinition Orville.NoKey PgAttributeDefault PgAttributeDefault
 pgAttributeDefaultTable =
@@ -53,6 +64,8 @@ pgAttributeDefaultMarshaller =
 
 {- |
   The @adrelid@ column of the @pg_catalog.pg_attrdef@ table
+
+@since 0.10.0.0
 -}
 attributeDefaultRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 attributeDefaultRelationOidField =
@@ -60,6 +73,8 @@ attributeDefaultRelationOidField =
 
 {- |
   The @adnum@ column of the @pg_catalog.pg_attrdef@ table
+
+@since 0.10.0.0
 -}
 attributeDefaultAttributeNumberField :: Orville.FieldDefinition Orville.NotNull AttributeNumber
 attributeDefaultAttributeNumberField =
@@ -70,6 +85,8 @@ attributeDefaultAttributeNumberField =
   @adbin@ column of the @pg_catalog.pg_attrdef@ table. The @pg_node_tree@ found
   in the column is decompiled by selecting the expression
   @pg_get_expr(adbin,adrelid)@.
+
+@since 0.10.0.0
 -}
 attributeDefaultExpressionField :: Orville.SyntheticField T.Text
 attributeDefaultExpressionField =

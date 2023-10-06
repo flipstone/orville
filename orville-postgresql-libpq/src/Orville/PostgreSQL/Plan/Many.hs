@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Plan.Many
   ( Many
   , NotAKey (NotAKey)
@@ -22,6 +29,8 @@ import qualified Data.Maybe as Maybe
   'NotAKey' is returned from various 'Many' related functions when presented
   with an input parameter that was not one of the original inputs that the
   'Many' was constructed with.
+
+@since 0.10.0.0
 -}
 data NotAKey
   = NotAKey
@@ -33,6 +42,8 @@ data NotAKey
   with a particular input parameter, you can use 'lookup' to find it. If you
   don't care about the association with particular inputs, you can simply
   use 'elems' to get a list of all the results.
+
+@since 0.10.0.0
 -}
 data Many k a
   = Many [k] (k -> Either NotAKey a)
@@ -49,6 +60,8 @@ instance Functor (Many k) where
   input list provided to 'fromKeys'), the values should be wrapped in an
   appropriate type such as 'Maybe' so that an empty or default value can be
   returned.
+
+@since 0.10.0.0
 -}
 fromKeys :: [k] -> (k -> Either NotAKey a) -> Many k a
 fromKeys =
@@ -56,6 +69,8 @@ fromKeys =
 
 {- |
    'map' calls a function on all the values found in a 'Many' collection.
+
+@since 0.10.0.0
 -}
 map :: (a -> b) -> Many k a -> Many k b
 map f (Many ks keyToValue) =
@@ -69,6 +84,8 @@ map f (Many ks keyToValue) =
    (If you're looking for 'pure' or an 'Applicative' instance for 'Many', this
    is as good as it gets. 'Many' cannot be an 'Applicative' because there is no
    correct implementation of 'pure' that we can reasonably provide).
+
+@since 0.10.0.0
 -}
 apply ::
   (Many param (a -> b)) ->
@@ -83,6 +100,8 @@ apply manyFs manyAs =
 {- |
   'compose' uses the values of a 'Many' value as keys to a second 'Many' to
   create a 'Many' mapping from the original keys to the final values.
+
+@since 0.10.0.0
 -}
 compose :: Many b c -> Many a b -> Many a c
 compose manyBC manyAB =
@@ -96,6 +115,8 @@ compose manyBC manyAB =
   'keys' fetches the list of keys from a 'Many'. Note that is a list and not
   a set. 'Many' preserves the order and duplication of any key values that were
   in the key list at the time of construction.
+
+@since 0.10.0.0
 -}
 keys :: Many k a -> [k]
 keys (Many ks _) =
@@ -106,6 +127,8 @@ keys (Many ks _) =
   values will be returned in the same order that the keys were present at the
   time of creation, though if you truly care about this it's probably better to
   use 'lookup' to make that correspondence explicit.
+
+@since 0.10.0.0
 -}
 elems :: Many k a -> [a]
 elems (Many ks keyToValue) =
@@ -114,6 +137,8 @@ elems (Many ks keyToValue) =
 {- |
   'toMap' converts the 'Many' into a 'Map' value. If all you wanted to do was
   find the value for a specific key, you should probably use 'lookup' instead.
+
+@since 0.10.0.0
 -}
 toMap :: Ord k => Many k a -> Map.Map k a
 toMap (Many ks keyToValue) =
@@ -132,6 +157,8 @@ toMap (Many ks keyToValue) =
   the mapping function given at the contructor will determine what value to
   return. Often this will be whatever a reasonable empty or default value for
   the type @a@ is.
+
+@since 0.10.0.0
 -}
 lookup :: k -> Many k a -> Either NotAKey a
 lookup k (Many _ keyToValue) =
