@@ -15,19 +15,19 @@ tutorials.
 mkdir orville-migration
 cd orville-migration
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql-libpq, resource-pool, text,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, resource-pool, text,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 3e5ad212dfd777690baa4fef29cd103ddff9ec9b
-  subdir: orville-postgresql-libpq
+  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  subdir: orville-postgresql
 EOF
 cat << 'EOF' > app/Main.hs
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import           Control.Monad.IO.Class (MonadIO(liftIO))
 import qualified Data.Int as Int
@@ -136,7 +136,7 @@ EOF
 
 # Conclusion
 
-This concludes this tutorial. The expected output is visible just about the EOF:
+This concludes this tutorial. The expected output is visible just above the EOF:
 
 ```shell
 cabal build

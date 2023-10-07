@@ -16,30 +16,30 @@ dependencies like Aeson have been added. Aeson is a JSON library for Haskell.
 mkdir orville-json
 cd orville-json
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql-libpq, aeson, bytestring, postgresql-libpq, resource-pool, text, vector,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, aeson, bytestring, postgresql-libpq, resource-pool, text, vector,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 3e5ad212dfd777690baa4fef29cd103ddff9ec9b
-  subdir: orville-postgresql-libpq
+  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  subdir: orville-postgresql
 EOF
 cat << 'EOF' > app/Main.hs
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
-import qualified Orville.PostgreSQL.Internal.RawSql as RawSql
-import qualified Orville.PostgreSQL.Internal.SqlMarshaller as SqlMarshaller
-import qualified Orville.PostgreSQL.Internal.SqlValue as O
+import qualified Orville.PostgreSQL.Marshall as Marshall
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import           Control.Monad.IO.Class (MonadIO(liftIO))
-import           Database.PostgreSQL.LibPQ (Oid(..))
-import           Data.Aeson (FromJSON, ToJSON, Value, eitherDecodeStrict', encode)
+import           Data.Aeson (Value, eitherDecodeStrict')
+import           Data.Aeson.Text (encodeToLazyText)
 import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Int as Int
 import           Data.String (IsString(fromString))
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
+import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector as Vector
 EOF
 ```
@@ -71,40 +71,29 @@ fooIdField =
 
 fooTagsField :: O.FieldDefinition O.NotNull Value
 fooTagsField =
-  O.fieldOfType jsonb "tags"
+  aesonValueField "tags"
 EOF
 ```
 
 Before we can define the corresponding `SqlMarshaller`, we'll need to define the
-JSONB data type. This is done using the `SqlType` record.
-
-The OID is the Object Identifier, and you can consult
-[pg_type.dat](https://github.com/postgres/postgres/blob/728560db7d868b3ded9a8675742083ab89bcff7c/src/include/catalog/pg_type.dat#L444)
-in the PostgreSQL repository for the OIDs for built-in types.
-
-See the Haddocks for more details on the record fields of `SqlType`.
+`aesonValueField` helper function. This is done `tryConvertSqlType` along with
+`jsonb` field to apply Aeson encoding and decode.
 
 ```shell
 cat << 'EOF' >> app/Main.hs
-jsonb :: (ToJSON a, FromJSON a) => O.SqlType a
-jsonb =
-  O.SqlType
-    { O.sqlTypeExpr = RawSql.unsafeFromRawSql (RawSql.fromString "JSONB")
-    , O.sqlTypeReferenceExpr = Nothing
-    , O.sqlTypeOid = Oid 3802
-    , O.sqlTypeMaximumLength = Nothing
-    , O.sqlTypeToSql = jsonToSql
-    , O.sqlTypeFromSql = jsonFromSql
-    , O.sqlTypeDontDropImplicitDefaultDuringMigrate = False
-    }
-  where
-    jsonToSql :: ToJSON a => a -> O.SqlValue
-    jsonToSql = O.fromRawBytes . BSL.toStrict . encode
-    jsonFromSql :: FromJSON a => O.SqlValue -> Either String a
-    jsonFromSql sqlValue = do
-      txt <- O.toText sqlValue
-      let bs = Enc.encodeUtf8 txt
-      eitherDecodeStrict' bs
+aesonValueField :: String -> O.FieldDefinition O.NotNull Value
+aesonValueField name =
+  O.convertField
+    (O.tryConvertSqlType encodeJSON decodeJSON)
+    (O.jsonbField name)
+
+decodeJSON :: T.Text -> Either String Value
+decodeJSON =
+  eitherDecodeStrict' . Enc.encodeUtf8
+
+encodeJSON :: Value -> T.Text
+encodeJSON =
+  LazyText.toStrict . encodeToLazyText
 EOF
 ```
 
@@ -179,18 +168,18 @@ cat << 'EOF' >> app/Main.hs
       marshaller :: O.SqlMarshaller w (Int.Int32, Value)
       marshaller =
         (,) <$> O.marshallReadOnlyField fooIdField
-            <*> O.marshallReadOnlyField (O.fieldOfType jsonb "tag")
+            <*> O.marshallReadOnlyField (aesonValueField "tag")
     readEntities <-
       O.executeAndDecode
         O.SelectQuery
         (RawSql.fromString "SELECT id, jsonb_array_elements(tags) AS tag FROM json_demo")
-        (SqlMarshaller.annotateSqlMarshallerEmptyAnnotation marshaller)
+        (Marshall.annotateSqlMarshallerEmptyAnnotation marshaller)
     liftIO $ print readEntities
 EOF
 ```
 # Program output and test
 
-This concludes this tutorial. The expected output is visible just about the EOF:
+This concludes this tutorial. The expected output is visible just above the EOF:
 
 ```shell
 cabal build

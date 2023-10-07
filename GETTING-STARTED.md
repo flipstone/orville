@@ -15,7 +15,7 @@ cabal init -n --exe
 Make it depend on Orville (the LibPQ variant, which is preferred!), resource-pool and bytestring, which Orville integrates with:
 
 ```shell
-sed -i -re 's/build-depends:/build-depends: orville-postgresql-libpq, bytestring, resource-pool,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, bytestring, resource-pool,/' *.cabal
 ```
 
 Here is a minimal program that simply computes 1+1 on the database:
@@ -23,9 +23,9 @@ Here is a minimal program that simply computes 1+1 on the database:
 ```shell
 cat <<EOF > app/Main.hs
 import qualified Orville.PostgreSQL as O
-import qualified Orville.PostgreSQL.Internal.ExecutionResult as O
-import qualified Orville.PostgreSQL.Internal.RawSql as O
-import qualified Orville.PostgreSQL.Internal.SqlValue as O
+import qualified Orville.PostgreSQL.Execution as Execution
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Data.Pool as Pool
 import           Data.String (IsString(fromString))
@@ -34,9 +34,9 @@ main :: IO ()
 main = do
   pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
   Pool.withResource pool $ \connection -> do
-    result <- O.execute connection (O.fromString "SELECT 1+1")
-    [[(_, sqlValue)]] <- O.readRows result
-    print (O.toInt sqlValue)
+    result <- RawSql.execute connection (RawSql.fromString "SELECT 1+1")
+    [[(_, sqlValue)]] <- Execution.readRows result
+    print (SqlValue.toInt sqlValue)
 EOF
 ```
 
@@ -48,8 +48,8 @@ packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 3e5ad212dfd777690baa4fef29cd103ddff9ec9b
-  subdir: orville-postgresql-libpq
+  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  subdir: orville-postgresql
 EOF
 ```
 
