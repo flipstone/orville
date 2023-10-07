@@ -35,7 +35,7 @@ jobs:
         env:
           cache-version: build-v2
         with:
-          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql-libpq/stack*.yml') }}-${{ hashFiles('orville-postgresql-libpq/package.yaml') }}
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
             ${{ env.cache-version }}-
           path: |
@@ -44,20 +44,20 @@ jobs:
       - name: Build dev environment
         run: |
           set -e
-          cd orville-postgresql-libpq
+          cd orville-postgresql
           docker-compose build -q
 
       - name: Run Tests
         run: |
           set -e
-          cd orville-postgresql-libpq
+          cd orville-postgresql
           PG_VERSION=${{ matrix.pg-version }}
           cp compose.override.github.yml compose.override.yml
           docker-compose run \
             --rm \
             dev \
             stack --stack-yaml ${{ matrix.stack-yaml }} test \
-            --ghc-options=-j --flag orville-postgresql-libpq:ci
+            --ghc-options=-j --flag orville-postgresql:ci
 
   formatting-check:
     name: Formatting Check
@@ -71,7 +71,7 @@ jobs:
         env:
           cache-version: format-v1
         with:
-          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql-libpq/stack*.yml') }}-${{ hashFiles('orville-postgresql-libpq/package.yaml') }}
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
             ${{ env.cache-version }}-
           path: |
@@ -80,14 +80,14 @@ jobs:
       - name: Build dev environment
         run: |
           set -e
-          cd orville-postgresql-libpq
+          cd orville-postgresql
           docker-compose build -q
 
       - name: Format and Check for Diff
         run: |
           set -e
 
-          cd orville-postgresql-libpq
+          cd orville-postgresql
           cp compose.override.github.yml compose.override.yml
           docker-compose run \
             --rm \
@@ -108,7 +108,7 @@ jobs:
         env:
           cache-version: format-v1
         with:
-          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql-libpq/stack*.yml') }}-${{ hashFiles('orville-postgresql-libpq/package.yaml') }}
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
             ${{ env.cache-version }}-
           path: |
@@ -117,14 +117,14 @@ jobs:
       - name: Build dev environment
         run: |
           set -e
-          cd orville-postgresql-libpq
+          cd orville-postgresql
           docker-compose build -q
 
       - name: Format and Check for Diff
         run: |
           set -e
 
-          cd orville-postgresql-libpq
+          cd orville-postgresql
           cp compose.override.github.yml compose.override.yml
           docker-compose run \
             --rm \

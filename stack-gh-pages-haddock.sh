@@ -38,7 +38,7 @@ cat << END > index.html
   <body>
     <h1>Documentation for yet-to-be released Orville packages</h1>
     <ul>
-      <li><a href="orville-postgresql-libpq-docs">orville-postgresql-libpq</a></li>
+      <li><a href="orville-postgresql-docs">orville-postgresql</a></li>
       <li><a href="orville-postgresql-legacy-docs">orville-postgresql-legacy</a></li>
     </ul>
   </body>
@@ -60,7 +60,7 @@ push_to_pages_branch() {
   echo "  git push -f -u origin gh-pages:gh-pages"
 }
 
-mkdocs orville-postgresql-libpq stack.yml
+mkdocs orville-postgresql stack.yml
 mkdocs orville-postgresql-legacy stack-lts-14.0.yml
 
 mkindex
