@@ -9,13 +9,13 @@ import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, findAllFooBars, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
-import qualified Test.ReadRows as ReadRows
 
 insertUpdateDeleteTests :: Orville.Pool Orville.Connection -> Property.Group
 insertUpdateDeleteTests pool =
@@ -47,7 +47,7 @@ prop_insertExpr =
 
           result <- RawSql.execute connection findAllFooBars
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows fooBars
 
@@ -70,7 +70,7 @@ prop_insertExprWithReturning =
                 (insertFooBarSource fooBars)
                 (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows fooBars
 
@@ -100,7 +100,7 @@ prop_updateExpr =
 
           result <- RawSql.execute connection findAllFooBars
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows newFooBars
 
@@ -130,7 +130,7 @@ prop_updateExprWithWhere =
 
           result <- RawSql.execute connection findAllFooBars
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows newFooBars
 
@@ -158,7 +158,7 @@ prop_updateExprWithReturning =
 
           result <- RawSql.execute connection setBarToFerret
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows newFooBars
 
@@ -186,7 +186,7 @@ prop_deleteExpr =
 
           result <- RawSql.execute connection findAllFooBars
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows []
 
@@ -215,7 +215,7 @@ prop_deleteExprWithWhere =
 
           result <- RawSql.execute connection findAllFooBars
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows newFooBars
 
@@ -241,6 +241,6 @@ prop_deleteExprWithReturning =
 
           result <- RawSql.execute connection deleteDogs
 
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows rows oldFooBars

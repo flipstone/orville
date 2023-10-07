@@ -11,13 +11,13 @@ import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualSqlRows)
 import qualified Test.Property as Property
-import qualified Test.ReadRows as ReadRows
 
 data FooBar = FooBar
   { foo :: Int.Int32
@@ -99,7 +99,7 @@ groupByTest testName test =
             (Expr.selectColumns [fooColumn, barColumn])
             (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing (groupByClause test) Nothing Nothing Nothing)
 
-      ReadRows.readRows result
+      Execution.readRows result
 
     rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
 

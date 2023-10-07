@@ -16,6 +16,7 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
@@ -25,7 +26,6 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
-import qualified Test.ReadRows as ReadRows
 
 fieldDefinitionTests :: Orville.Pool Orville.Connection -> Property.Group
 fieldDefinitionTests pool =
@@ -259,7 +259,7 @@ runRoundTripTest pool testCase = do
           (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
           (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
-    ReadRows.readRows result
+    Execution.readRows result
 
   let
     roundTripResult =
@@ -303,7 +303,7 @@ runNullableRoundTripTest pool testCase = do
           (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
           (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
-    ReadRows.readRows result
+    Execution.readRows result
 
   let
     roundTripResult =
@@ -371,7 +371,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
           (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
           (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
-    ReadRows.readRows result
+    Execution.readRows result
 
   let
     roundTripResult =

@@ -12,6 +12,7 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -19,7 +20,6 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (FooBar, assertEqualFooBarRows, findAllFooBars, mkFooBar, withFooBarData)
 import qualified Test.Property as Property
-import qualified Test.ReadRows as ReadRows
 
 cursorTests :: Orville.Pool Orville.Connection -> Property.Group
 cursorTests pool =
@@ -52,7 +52,7 @@ prop_cursorInTransaction =
         withTestTransaction connection $
           withTestCursor connection Nothing Nothing findAllFooBars $ \cursorName -> do
             result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
-            ReadRows.readRows result
+            Execution.readRows result
 
     assertEqualFooBarRows result [row 1]
 
@@ -63,7 +63,7 @@ prop_cursorOutsideTransactionWithHold =
       withFooBarData pool [row 1, row 2] $ \connection ->
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
           result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows result [row 1]
 
@@ -94,7 +94,7 @@ prop_cursorMove =
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
           RawSql.executeVoid connection $ Expr.move (Just $ Expr.rowCount 2) cursorName
           result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
-          ReadRows.readRows result
+          Execution.readRows result
 
     assertEqualFooBarRows result [row 3]
 
@@ -288,7 +288,7 @@ runFetchDirectionsOnData pool scroll fooBars directions =
       let
         runDirection direction = do
           result <- RawSql.execute connection $ Expr.fetch (Just direction) cursorName
-          ReadRows.readRows result
+          Execution.readRows result
       in
         traverse runDirection directions
 

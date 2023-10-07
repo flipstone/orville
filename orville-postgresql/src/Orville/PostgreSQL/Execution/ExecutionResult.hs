@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Execution.ExecutionResult
   ( ExecutionResult (..)
   , Column (..)
   , Row (..)
+  , readRows
   , FakeLibPQResult
   , mkFakeLibPQResult
   )
@@ -38,6 +39,8 @@ newtype Column
       Ord
     , -- | @since 1.0.0.0
       Enum
+    , -- | @since 1.0.0.0
+      Num
     )
 
 {- |
@@ -54,15 +57,16 @@ newtype Row
       Ord
     , -- | @since 1.0.0.0
       Enum
+    , -- | @since 1.0.0.0
+      Num
     )
 
 {- |
-  `ExecutionResult` is a common interface for types that represent a result
-  set returned from the database. For real, live database interactions this
-  the concrete type will be a `LibPQ.Result`, but the `FakeLibPQResult`
-  may be useful as well if you are writing custom code for decoding result
-  sets and want to test aspects of the decoding that don't require a real
-  database.
+  'ExecutionResult' is a common interface for types that represent a result set
+  returned from the database. For real, live database interactions this the
+  concrete type will be a 'LibPQ.Result', but the 'FakeLibPQResult' may be
+  useful as well if you are writing custom code for decoding result sets and
+  want to test aspects of the decoding that don't require a real database.
 
 @since 1.0.0.0
 -}
@@ -71,6 +75,44 @@ class ExecutionResult result where
   maxColumnNumber :: result -> IO (Maybe Column)
   columnName :: result -> Column -> IO (Maybe BS.ByteString)
   getValue :: result -> Row -> Column -> IO SqlValue
+
+{- |
+  Read the rows of an 'ExecutionResult' a list of column name, 'SqlValue'
+  pairs. You're almost always better off using a
+  'Orville.PostgreSQL.SqlMarshaller' instead, but this function is provided for
+  cases where you really want to decode the rows yourself but don't want to use
+  the 'ExecutionResult' api to read each row of each column directly.
+
+@since 1.0.0.0
+-}
+readRows ::
+  ExecutionResult result =>
+  result ->
+  IO [[(Maybe BS.ByteString, SqlValue)]]
+readRows res = do
+  mbMaxRow <- maxRowNumber res
+  mbMaxColumn <- maxColumnNumber res
+
+  let
+    rowIndices =
+      case mbMaxRow of
+        Nothing -> []
+        Just maxRow -> [0 .. maxRow]
+
+    columnIndices =
+      case mbMaxColumn of
+        Nothing -> []
+        Just maxColumn -> [0 .. maxColumn]
+
+    readValue rowIndex columnIndex = do
+      name <- columnName res columnIndex
+      value <- getValue res rowIndex columnIndex
+      pure $ (name, value)
+
+    readRow rowIndex =
+      traverse (readValue rowIndex) columnIndices
+
+  traverse readRow rowIndices
 
 -- | @since 1.0.0.0
 instance ExecutionResult LibPQ.Result where
@@ -92,6 +134,9 @@ instance ExecutionResult LibPQ.Result where
     LibPQ.fname result . LibPQ.toColumn . fromEnum
 
   getValue result (Row row) (Column column) =
+    -- N.B. the usage of `getvalue'` here is important as this version returns a
+    -- _copy_ of the data in the 'Result' rather than a _reference_.
+    -- This allows the 'Result' to be garbage collected instead of being held onto indefinitely.
     SqlValue.fromRawBytesNullable
       <$> LibPQ.getvalue' result (LibPQ.toRow row) (LibPQ.toColumn column)
 
