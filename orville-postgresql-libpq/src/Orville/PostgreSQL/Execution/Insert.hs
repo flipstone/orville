@@ -2,9 +2,18 @@
 
 {- |
 
-Copyright : Flipstone Technology Partners 2021-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+Functions for working with executable @INSERT@ statements. The 'Insert' type is
+a value that can be passed around and executed later. The 'Insert' is directly
+associated with the presence of a returning clause and how to decode any rows
+returned by that clause. This means it can be safely executed via
+'executeInsert' or 'executeInsertReturnEntities' as appropriate. It is a
+lower-level API than the entity insert functions in
+"Orville.PostgreSQL.Execution.EntityOperations", but not as primitive as
+"Orville.PostgreSQL.Expr.Insert".
 
 @since 0.10.0.0
 -}

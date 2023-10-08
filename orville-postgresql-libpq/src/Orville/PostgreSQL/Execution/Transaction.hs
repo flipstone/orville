@@ -3,8 +3,8 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-This module provides the functionality to work with SQL transactions, notably to ensure some Haskell
-action occurs within a database transaction.
+This module provides the functionality to work with SQL transactions, notably
+to ensure some Haskell action occurs within a database transaction.
 
 @since 0.10.0.0
 -}
@@ -19,8 +19,8 @@ import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
+import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Monad as Monad
-import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -117,6 +117,8 @@ transactionEventSql state event =
   savepoint rather than shadow it. This function constructs savepoint names
   that will work on any database that implements savepoints accordings to the
   SQL standard even though Orville only supports PostgreSQL currently.
+
+@since 0.10.0.0
 -}
 savepointName :: OrvilleState.Savepoint -> Expr.SavepointName
 savepointName savepoint =

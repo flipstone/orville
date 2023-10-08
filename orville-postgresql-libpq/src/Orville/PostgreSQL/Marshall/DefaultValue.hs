@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Marshall.DefaultValue
   ( DefaultValue
   , integerDefault
@@ -45,6 +52,8 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   make the new column nullable. Default values can also be used to create
   database-assigned values such as using 'now()' to set a 'created_at' column
   on a row automatically in the database.
+
+@since 0.10.0.0
 -}
 newtype DefaultValue a
   = DefaultValue Expr.ValueExpression
@@ -52,6 +61,8 @@ newtype DefaultValue a
 {- |
   Builds a default value for any 'Integral' type @n@ by converting it an
   'Integer'.
+
+@since 0.10.0.0
 -}
 integralDefault :: Integral n => n -> DefaultValue n
 integralDefault n =
@@ -74,6 +85,8 @@ integralDefault n =
   Builds a default value from an 'Int16' for use with small integer fields.
 
   This is a specialization of 'integerDefault'.
+
+@since 0.10.0.0
 -}
 smallIntegerDefault :: Int16 -> DefaultValue Int16
 smallIntegerDefault = integralDefault
@@ -82,6 +95,8 @@ smallIntegerDefault = integralDefault
   Builds a default value from an 'Int32' for use with integer fields.
 
   This is a specialization of 'integerDefault'.
+
+@since 0.10.0.0
 -}
 integerDefault :: Int32 -> DefaultValue Int32
 integerDefault = integralDefault
@@ -90,12 +105,16 @@ integerDefault = integralDefault
   Builds a default value from an 'Int16' for use with big integer fields.
 
   This is a specialization of 'integerDefault'.
+
+@since 0.10.0.0
 -}
 bigIntegerDefault :: Int64 -> DefaultValue Int64
 bigIntegerDefault = integralDefault
 
 {- |
   Builds a default value from a 'Double' field with double fields.
+
+@since 0.10.0.0
 -}
 doubleDefault :: Double -> DefaultValue Double
 doubleDefault d =
@@ -115,6 +134,8 @@ doubleDefault d =
 
 {- |
   Builds a default value from a 'Bool', for use with boolean fields.
+
+@since 0.10.0.0
 -}
 booleanDefault :: Bool -> DefaultValue Bool
 booleanDefault bool =
@@ -129,6 +150,8 @@ booleanDefault bool =
 {- |
   Builds a default value from a 'T.Text', for use with unbounded, bounded
   and fixed-length text fields.
+
+@since 0.10.0.0
 -}
 textDefault :: T.Text -> DefaultValue T.Text
 textDefault text =
@@ -138,6 +161,8 @@ textDefault text =
 
 {- |
   Builds a default value from a 'Time.Day' for use with date fields.
+
+@since 0.10.0.0
 -}
 dateDefault :: Time.Day -> DefaultValue Time.Day
 dateDefault day =
@@ -154,6 +179,8 @@ dateDefault day =
   date at which the database populates the default value on a given row).
 
   For use with date fields.
+
+@since 0.10.0.0
 -}
 currentDateDefault :: DefaultValue Time.Day
 currentDateDefault =
@@ -164,6 +191,8 @@ currentDateDefault =
 
 {- |
   Builds a default value from a 'Time.UTCTime' for use with utc timestamp fields.
+
+@since 0.10.0.0
 -}
 utcTimestampDefault :: Time.UTCTime -> DefaultValue Time.UTCTime
 utcTimestampDefault utcTime =
@@ -180,6 +209,8 @@ utcTimestampDefault utcTime =
   time at which the database populates the default value on a given row).
 
   For use with utc timestamp fields.
+
+@since 0.10.0.0
 -}
 currentUTCTimestampDefault :: DefaultValue Time.UTCTime
 currentUTCTimestampDefault =
@@ -187,6 +218,8 @@ currentUTCTimestampDefault =
 
 {- |
   Builds a default value from a 'Time.LocalTime' for use with local timestamp fields.
+
+@since 0.10.0.0
 -}
 localTimestampDefault :: Time.LocalTime -> DefaultValue Time.LocalTime
 localTimestampDefault localTime =
@@ -207,6 +240,8 @@ localTimestampDefault localTime =
   whatever timezone offset has been configured in its settings.
 
   For use with local timestamp fields.
+
+@since 0.10.0.0
 -}
 currentLocalTimestampDefault :: DefaultValue Time.LocalTime
 currentLocalTimestampDefault =
@@ -218,6 +253,8 @@ currentLocalTimestampDefault =
   far as Haskell itself it concerned. As long as the 'DefaultValue' is used
   with a column whose database type is the same as the one the 'DefaultValue'
   was originally intended for, everything will work as expected.
+
+@since 0.10.0.0
 -}
 coerceDefaultValue :: DefaultValue a -> DefaultValue b
 coerceDefaultValue (DefaultValue expression) =
@@ -225,6 +262,8 @@ coerceDefaultValue (DefaultValue expression) =
 
 {- |
   Returns database value expression for the default value
+
+@since 0.10.0.0
 -}
 defaultValueExpression :: DefaultValue a -> Expr.ValueExpression
 defaultValueExpression (DefaultValue expression) =
@@ -245,6 +284,8 @@ defaultValueExpression (DefaultValue expression) =
   'DefaultValue' is logically equivalent but does not match the decompiled
   form, auto migration will continue to execute SQL statements to update the
   schema even when it does not need to.
+
+@since 0.10.0.0
 -}
 rawSqlDefault :: Expr.ValueExpression -> DefaultValue a
 rawSqlDefault =

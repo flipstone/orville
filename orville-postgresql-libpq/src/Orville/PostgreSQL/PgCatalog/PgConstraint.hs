@@ -1,5 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.PgCatalog.PgConstraint
   ( PgConstraint (..)
   , ConstraintType (..)
@@ -26,6 +33,8 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
   The Haskell representation of data read from the @pg_catalog.pg_constraint@
   tale. Rows in this table correspond to check, primary key, unique, foreign
   key and exclusion constraints on tables.
+
+@since 0.10.0.0
 -}
 data PgConstraint = PgConstraint
   { pgConstraintOid :: LibPQ.Oid
@@ -59,6 +68,8 @@ data PgConstraint = PgConstraint
 
 {- |
   A Haskell type for the name of the constraint represented by a 'PgConstraint'
+
+@since 0.10.0.0
 -}
 newtype ConstraintName
   = ConstraintName T.Text
@@ -66,6 +77,8 @@ newtype ConstraintName
 
 {- |
   Converts an 'ConstraintName' to a plain old string
+
+@since 0.10.0.0
 -}
 constraintNameToString :: ConstraintName -> String
 constraintNameToString (ConstraintName txt) =
@@ -74,6 +87,8 @@ constraintNameToString (ConstraintName txt) =
 {- |
   The type of constraint that a 'PgConstraint' represents, as described at
   https://www.postgresql.org/docs/13/catalog-pg-constraint.html
+
+@since 0.10.0.0
 -}
 data ConstraintType
   = CheckConstraint
@@ -89,6 +104,8 @@ data ConstraintType
   representation used by PostgreSQL.
 
   See also 'pgTextToConstraintType'
+
+@since 0.10.0.0
 -}
 constraintTypeToPgText :: ConstraintType -> T.Text
 constraintTypeToPgText conType =
@@ -106,6 +123,8 @@ constraintTypeToPgText conType =
   'ConstraintType'
 
   See also 'constraintTypeToPgText'
+
+@since 0.10.0.0
 -}
 pgTextToConstraintType :: T.Text -> Either String ConstraintType
 pgTextToConstraintType text =
@@ -123,6 +142,8 @@ pgTextToConstraintType text =
   text representation used by PostgreSQL.
 
   See also 'pgTextToForeignKeyAction'
+
+@since 0.10.0.0
 -}
 foreignKeyActionToPgText :: Maybe Orville.ForeignKeyAction -> T.Text
 foreignKeyActionToPgText mbfkAction =
@@ -140,6 +161,8 @@ foreignKeyActionToPgText mbfkAction =
   'Maybe Orville.ForeignKeyAction'
 
   See also 'foreignKeyActionToPgText'
+
+@since 0.10.0.0
 -}
 pgTextToForeignKeyAction :: T.Text -> Either String (Maybe Orville.ForeignKeyAction)
 pgTextToForeignKeyAction text =
@@ -155,6 +178,8 @@ pgTextToForeignKeyAction text =
 {- |
   An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_constraint@ table
+
+@since 0.10.0.0
 -}
 pgConstraintTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgConstraint PgConstraint
 pgConstraintTable =
@@ -181,6 +206,8 @@ pgConstraintMarshaller =
 
 {- |
   The @conname@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintNameField :: Orville.FieldDefinition Orville.NotNull ConstraintName
 constraintNameField =
@@ -189,6 +216,8 @@ constraintNameField =
 
 {- |
   The @connamespace@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintNamespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintNamespaceOidField =
@@ -196,6 +225,8 @@ constraintNamespaceOidField =
 
 {- |
   The @contype@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintTypeField :: Orville.FieldDefinition Orville.NotNull ConstraintType
 constraintTypeField =
@@ -205,6 +236,8 @@ constraintTypeField =
 
 {- |
   The @conrelid@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintRelationOidField =
@@ -212,6 +245,8 @@ constraintRelationOidField =
 
 {- |
   The @conindid@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintIndexOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintIndexOidField =
@@ -219,6 +254,8 @@ constraintIndexOidField =
 
 {- |
   The @conkey@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintKeyField :: Orville.FieldDefinition Orville.Nullable (Maybe [AttributeNumber])
 constraintKeyField =
@@ -229,6 +266,8 @@ constraintKeyField =
 
 {- |
   The @confrelid@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintForeignRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintForeignRelationOidField =
@@ -236,6 +275,8 @@ constraintForeignRelationOidField =
 
 {- |
   The @confkey@ column of the @pg_constraint@ table
+
+@since 0.10.0.0
 -}
 constraintForeignKeyField :: Orville.FieldDefinition Orville.Nullable (Maybe [AttributeNumber])
 constraintForeignKeyField =

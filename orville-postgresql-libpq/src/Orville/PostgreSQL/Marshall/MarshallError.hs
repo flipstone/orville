@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Marshall.MarshallError
   ( MarshallError (MarshallError, marshallErrorDetailLevel, marshallErrorRowIdentifier, marshallErrorDetails)
   , renderMarshallError
@@ -23,6 +30,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   A 'MarshallError' may be returned from 'marshallResultFromSql' when a row being
   decoded from the database doesn't meet the expectations of the
   'SqlMarshaller' that is decoding it.
+
+@since 0.10.0.0
 -}
 data MarshallError = MarshallError
   { marshallErrorDetailLevel :: ErrorDetailLevel
@@ -57,6 +66,8 @@ instance Exception MarshallError
   of 'MarhallError' in case an exception is handled in a more visible section
   of code that return information more publicly (e.g. a request handler for a
   public endpoint).
+
+@since 0.10.0.0
 -}
 renderMarshallError :: ErrorDetailLevel -> MarshallError -> String
 renderMarshallError detailLevel marshallError =
@@ -78,6 +89,8 @@ renderMarshallError detailLevel marshallError =
   message. The redacter function is passed as an argument here so that this
   function can be used to present either ID values or general values as
   required by the context of the caller.
+
+@since 0.10.0.0
 -}
 presentSqlColumnValue ::
   ErrorDetailLevel ->
@@ -102,6 +115,8 @@ presentSqlColumnValue detailLevel redacter (columnName, sqlValue) =
   A 'MarshallErrorDetails' may be returned from 'marshallFromSql' if the result set
   being decoded from the database doesn't meet the expectations of the
   'SqlMarshaller' that is decoding it.
+
+@since 0.10.0.0
 -}
 data MarshallErrorDetails
   = -- | Indicates that a one ore more values in a columns could not be decoded,
@@ -113,6 +128,8 @@ data MarshallErrorDetails
 {- |
   Renders a 'MarshallErrorDetails' to a 'String' with a specified
   'ErrorDetailLevel'.
+
+@since 0.10.0.0
 -}
 renderMarshallErrorDetails :: ErrorDetailLevel -> MarshallErrorDetails -> String
 renderMarshallErrorDetails detailLevel err =
@@ -123,6 +140,8 @@ renderMarshallErrorDetails detailLevel err =
 {- |
   Details about an error that occurred while decoding values found a SQL
   result set.
+
+@since 0.10.0.0
 -}
 data DecodingErrorDetails = DecodingErrorDetails
   { decodingErrorValues :: [(B8.ByteString, SqlValue.SqlValue)]
@@ -132,6 +151,8 @@ data DecodingErrorDetails = DecodingErrorDetails
 {- |
   Renders a 'DecodingErrorDetails to a 'String' with a specified
   'ErrorDetailLevel'.
+
+@since 0.10.0.0
 -}
 renderDecodingErrorDetails :: ErrorDetailLevel -> DecodingErrorDetails -> String
 renderDecodingErrorDetails detailLevel details =
@@ -152,6 +173,8 @@ renderDecodingErrorDetails detailLevel details =
 {- |
   Details about an column that was found to be missing in a SQL result set
   during decoding.
+
+@since 0.10.0.0
 -}
 data MissingColumnErrorDetails = MissingColumnErrorDetails
   { missingColumnName :: B8.ByteString
@@ -161,6 +184,8 @@ data MissingColumnErrorDetails = MissingColumnErrorDetails
 {- |
   Renders a 'MissingColumnErrorDetails' to a 'String' with a specified
   'ErrorDetailLevel'.
+
+@since 0.10.0.0
 -}
 renderMissingColumnErrorDetails :: ErrorDetailLevel -> MissingColumnErrorDetails -> String
 renderMissingColumnErrorDetails detailLevel details =

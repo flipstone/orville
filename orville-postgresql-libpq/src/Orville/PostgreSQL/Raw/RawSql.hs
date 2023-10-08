@@ -1,10 +1,13 @@
 {- |
 
-Copyright : Flipstone Technology Partners 2016-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
 
 The funtions in this module are named with the intent that it is imported
 qualified as 'RawSql'.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Raw.RawSql
   ( RawSql
@@ -127,8 +130,7 @@ you can do it like so
 >
 > a :: Expr.BooleanExpr
 > a RawSql.unsafeSqlExpression "foo BETWEEN 1  AND 3"
-
-@since 0.10.0.2
+@since 0.10.0.0
 -}
 unsafeSqlExpression :: SqlExpression a => String -> a
 unsafeSqlExpression =
@@ -141,6 +143,8 @@ unsafeSqlExpression =
   'IO' monad.
 
   See 'connectionQuoting' and 'exampleQuoting'.
+
+@since 0.10.0.0
 -}
 data Quoting m = Quoting
   { quoteStringLiteral :: BS.ByteString -> m BSB.Builder
@@ -152,6 +156,8 @@ data Quoting m = Quoting
   but is not guaranteed to be sufficient for all database connections. For
   quoting that is based on the actual connection to the database, see
   'connectionQuoting'.
+
+@since 0.10.0.0
 -}
 exampleQuoting :: Quoting Identity
 exampleQuoting =
@@ -190,6 +196,8 @@ exampleQuoteString quoteChar =
 
   If you don't have a connection available and are only planning on using
   the SQL for explanatory or example purposes, see 'exampleQuoting'.
+
+@since 0.10.0.0
 -}
 connectionQuoting :: Conn.Connection -> Quoting IO
 connectionQuoting connection =
@@ -203,6 +211,8 @@ connectionQuoting connection =
   passed to the database to execute a 'RawSql' query. Any string
   literals thar are included in the SQL expression will be quoting
   using the given quoting directive.
+
+@since 0.10.0.0
 -}
 toBytesAndParams ::
   (SqlExpression sql, Monad m) =>
@@ -221,6 +231,8 @@ toBytesAndParams quoting sql = do
   Builds the bytes that represent the raw sql. These bytes may not be executable
   on their own, because they may contain placeholders that must be filled in,
   but can be useful for inspecting sql queries.
+
+@since 0.10.0.0
 -}
 toExampleBytes :: SqlExpression sql => sql -> BS.ByteString
 toExampleBytes =
@@ -230,6 +242,8 @@ toExampleBytes =
   This is an internal datatype used during the sql building process to track
   how many params have been seen so that placeholder indices (e.g. '$1', etc)
   can be generated to include in the sql.
+
+@since 0.10.0.0
 -}
 data ParamsProgress = ParamsProgress
   { paramCount :: Int
@@ -239,6 +253,8 @@ data ParamsProgress = ParamsProgress
 {- |
   An initial value for 'ParamsProgress' that indicates no params have been been
   encountered yet.
+
+@since 0.10.0.0
 -}
 startingProgress :: ParamsProgress
 startingProgress =
@@ -250,6 +266,8 @@ startingProgress =
 {- |
   Adds a parameter value to the end of the params list, tracking the count
   of parameters as it does so.
+
+@since 0.10.0.0
 -}
 snocParam :: ParamsProgress -> Maybe PgTextFormatValue -> ParamsProgress
 snocParam (ParamsProgress count values) newValue =
@@ -263,6 +281,8 @@ snocParam (ParamsProgress count values) newValue =
   section of 'RawSql'. This function takes and returns a 'ParamsProgress' so
   that placeholder indices (e.g. '$1') and their corresponding parameter values
   can be tracked across multiple sections of raw sql.
+
+@since 0.10.0.0
 -}
 buildSqlWithProgress ::
   Monad m =>
@@ -297,6 +317,8 @@ buildSqlWithProgress quoting progress rawSql =
   Note that because the string is treated as raw sql it completely up to the
   caller to protected againt sql-injections attacks when using this function.
   Never use this function with input read from an untrusted source.
+
+@since 0.10.0.0
 -}
 fromString :: String -> RawSql
 fromString =
@@ -308,6 +330,8 @@ fromString =
   Note that because the text is treated as raw sql it completely up to the
   caller to protected againt sql-injections attacks when using this function.
   Never use this function with input read from an untrusted source.
+
+@since 0.10.0.0
 -}
 fromText :: T.Text -> RawSql
 fromText =
@@ -320,6 +344,8 @@ fromText =
   Note that because the string is treated as raw sql it completely up to the
   caller to protected againt sql-injections attacks when using this function.
   Never use this function with input read from an untrusted source.
+
+@since 0.10.0.0
 -}
 fromBytes :: BS.ByteString -> RawSql
 fromBytes =
@@ -332,6 +358,8 @@ fromBytes =
   part of a 'RawSql' query. The parameter must be formatted in a textual
   representation, which the database will interpret. The database type for the
   value will be inferred by the database based on its usage in the query.
+
+@since 0.10.0.0
 -}
 parameter :: SqlValue -> RawSql
 parameter =
@@ -346,6 +374,8 @@ parameter =
   values to be used as input to a SQL statement. There are some situations
   where PostgreSQL does not allow this, however (for instance, in some DDL
   statements). This function is provided for those situations.
+
+@since 0.10.0.0
 -}
 stringLiteral :: BS.ByteString -> RawSql
 stringLiteral =
@@ -355,6 +385,8 @@ stringLiteral =
   Includes a bytestring value as an identifier in the SQL statement. The
   identifier will be quoted and escaped for you, the value provided should not
   include surrounding quotes or quote special characters.
+
+@since 0.10.0.0
 -}
 identifier :: BS.ByteString -> RawSql
 identifier =
@@ -363,6 +395,8 @@ identifier =
 {- |
   Concatenates a list of 'RawSql' values using another 'RawSql' value as
   the a separator between the items.
+
+@since 0.10.0.0
 -}
 intercalate :: (SqlExpression sql, Foldable f) => RawSql -> f sql -> RawSql
 intercalate separator =
@@ -378,6 +412,8 @@ intercalate separator =
 
   Note that because this is done in 'IO' no callback functions are available to
   be called.
+
+@since 0.10.0.0
 -}
 execute :: SqlExpression sql => Conn.Connection -> sql -> IO LibPQ.Result
 execute connection sql = do
@@ -391,6 +427,8 @@ execute connection sql = do
 
   Note that because this is done in 'IO' no callback functions are available to
   be called.
+
+@since 0.10.0.0
 -}
 executeVoid :: SqlExpression sql => Conn.Connection -> sql -> IO ()
 executeVoid connection sql = do
@@ -432,6 +470,8 @@ doubleColon = fromString "::"
   Constructs a 'RawSql' from an 'Int.Int8' value. The integral value is included
   directly in the SQL string, not passed as a parameter. When dealing with user
   input it is better to use 'parameter' rather whenever possible.
+
+@since 0.10.0.0
 -}
 int8DecLiteral :: Int.Int8 -> RawSql
 int8DecLiteral =
@@ -441,6 +481,8 @@ int8DecLiteral =
   Constructs a 'RawSql' from an 'Int.Int16' value. The integral value is included
   directly in the SQL string, not passed as a parameter. When dealing with user
   input it is better to use 'parameter' rather whenever possible.
+
+@since 0.10.0.0
 -}
 int16DecLiteral :: Int.Int16 -> RawSql
 int16DecLiteral =
@@ -450,6 +492,8 @@ int16DecLiteral =
   Constructs a 'RawSql' from an 'Int.Int32' value. The integral value is included
   directly in the SQL string, not passed as a parameter. When dealing with user
   input it is better to use 'parameter' rather whenever possible.
+
+@since 0.10.0.0
 -}
 int32DecLiteral :: Int.Int32 -> RawSql
 int32DecLiteral =
@@ -459,6 +503,8 @@ int32DecLiteral =
   Constructs a 'RawSql' from an 'Int.Int64' value. The integral value is included
   directly in the SQL string, not passed as a parameter. When dealing with user
   input it is better to use 'parameter' rather whenever possible.
+
+@since 0.10.0.0
 -}
 int64DecLiteral :: Int.Int64 -> RawSql
 int64DecLiteral =
@@ -468,6 +514,8 @@ int64DecLiteral =
   Constructs a 'RawSql' from an 'Int' value. The integral value is included
   directly in the SQL string, not passed as a parameter. When dealing with user
   input it is better to use 'parameter' rather whenever possible.
+
+@since 0.10.0.0
 -}
 intDecLiteral :: Int -> RawSql
 intDecLiteral =
@@ -477,6 +525,8 @@ intDecLiteral =
   Constructs a 'RawSql' by putting parentheses around an arbitrary expression.
   The result is returned as a 'RawSql'. It is up to the caller to decide whether
   it should be wrapped in a more specific expression type.
+
+@since 0.10.0.0
 -}
 parenthesized :: SqlExpression sql => sql -> RawSql
 parenthesized expr =

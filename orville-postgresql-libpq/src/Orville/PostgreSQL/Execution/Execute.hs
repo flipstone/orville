@@ -1,7 +1,9 @@
 {- |
-Copyright : Flipstone Technology Partners 2021-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+Low-level functions for executing 'RawSql.SqlExpression' values directly.
 
 @since 0.10.0.0
 -}

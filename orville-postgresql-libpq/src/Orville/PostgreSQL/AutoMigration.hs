@@ -42,6 +42,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Internal.MigrationLock as MigrationLock
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -58,23 +59,27 @@ import qualified Orville.PostgreSQL.Schema as Schema
 data SchemaItem where
   -- |
   --    Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
+  -- @since 0.10.0.0
   SchemaTable ::
     Orville.TableDefinition key writeEntity readEntity ->
     SchemaItem
   -- |
   --    Constructs a 'SchemaItem' that will drop the specified table if it is
   --    found in the database.
+  -- @since 0.10.0.0
   SchemaDropTable ::
     Orville.TableIdentifier ->
     SchemaItem
   -- |
   --    Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
+  -- @since 0.10.0.0
   SchemaSequence ::
     Orville.SequenceDefinition ->
     SchemaItem
   -- |
   --    Constructs a 'SchemaItem' that will drop the specified table if it is
   --    found in the database.
+  -- @since 0.10.0.0
   SchemaDropSequence ::
     Orville.SequenceIdentifier ->
     SchemaItem
@@ -125,6 +130,8 @@ data MigrationPlan = MigrationPlan
   execute a migration plan to ensure that the transactional steps are done
   within a transaction while the asynchronous steps are done afterward outside
   of it.
+
+@since 0.10.0.0
 -}
 migrationPlanSteps :: MigrationPlan -> [MigrationStep]
 migrationPlanSteps plan =
@@ -867,14 +874,14 @@ pgConstraintMigrationKey constraintDesc =
 @since 0.10.0.0
 -}
 mkAddIndexSteps ::
-  Set.Set Orville.IndexMigrationKey ->
+  Set.Set IndexDefinition.IndexMigrationKey ->
   Expr.Qualified Expr.TableName ->
   Orville.IndexDefinition ->
   [MigrationStepWithType]
 mkAddIndexSteps existingIndexes tableName indexDef =
   let
     indexKey =
-      Orville.indexMigrationKey indexDef
+      IndexDefinition.indexMigrationKey indexDef
 
     indexStep =
       case Orville.indexCreationStrategy indexDef of
@@ -891,7 +898,7 @@ mkAddIndexSteps existingIndexes tableName indexDef =
 @since 0.10.0.0
 -}
 mkDropIndexSteps ::
-  Set.Set Orville.IndexMigrationKey ->
+  Set.Set IndexDefinition.IndexMigrationKey ->
   Set.Set LibPQ.Oid ->
   PgCatalog.IndexDescription ->
   [MigrationStepWithType]
@@ -957,11 +964,11 @@ pgConstraintImpliedIndexOid pgConstraint =
 -}
 pgIndexMigrationKeys ::
   PgCatalog.IndexDescription ->
-  [Orville.IndexMigrationKey]
+  [IndexDefinition.IndexMigrationKey]
 pgIndexMigrationKeys indexDesc =
   let
     mkNamedIndexKey =
-      Orville.NamedIndexKey
+      IndexDefinition.NamedIndexKey
         . PgCatalog.relationNameToString
         . PgCatalog.pgClassRelationName
         . PgCatalog.indexPgClass
@@ -969,7 +976,7 @@ pgIndexMigrationKeys indexDesc =
     mkAttributeBasedIndexKey =
       case pgAttributeBasedIndexMigrationKey indexDesc of
         Just standardKey ->
-          [Orville.AttributeBasedIndexKey standardKey]
+          [IndexDefinition.AttributeBasedIndexKey standardKey]
         Nothing ->
           []
   in
@@ -977,7 +984,7 @@ pgIndexMigrationKeys indexDesc =
 
 pgAttributeBasedIndexMigrationKey ::
   PgCatalog.IndexDescription ->
-  Maybe Orville.AttributeBasedIndexMigrationKey
+  Maybe IndexDefinition.AttributeBasedIndexMigrationKey
 pgAttributeBasedIndexMigrationKey indexDesc = do
   let
     indexMemberToFieldName member =
@@ -994,9 +1001,9 @@ pgAttributeBasedIndexMigrationKey indexDesc = do
 
   fieldNames <- traverse indexMemberToFieldName (PgCatalog.indexMembers indexDesc)
   pure $
-    Orville.AttributeBasedIndexMigrationKey
-      { Orville.indexKeyUniqueness = uniqueness
-      , Orville.indexKeyColumns = fieldNames
+    IndexDefinition.AttributeBasedIndexMigrationKey
+      { IndexDefinition.indexKeyUniqueness = uniqueness
+      , IndexDefinition.indexKeyColumns = fieldNames
       }
 
 schemaItemPgCatalogRelation ::

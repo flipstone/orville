@@ -2,6 +2,8 @@
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Internal.Bracket
   ( bracketWithResult
@@ -24,6 +26,8 @@ data BracketResult
   implemented here directly in terms of IO's 'mask' and 'catch' to guarantee
   our exception handling semantics without forcing the Orville user's choice of
   library for lifting and unlift IO actions (e.g. UnliftIO).
+
+@since 0.10.0.0
 -}
 bracketWithResult ::
   (MonadIO m, MonadOrvilleControl m) =>
@@ -49,6 +53,8 @@ bracketWithResult acquire release action = do
   INTERNAL: Catch any exception, run the given handler, and rethrow the
   exception. This is mostly useful to force the exception being caught to be of
   the type 'SomeException'.
+
+@since 0.10.0.0
 -}
 handleAndRethrow ::
   MonadIO m =>

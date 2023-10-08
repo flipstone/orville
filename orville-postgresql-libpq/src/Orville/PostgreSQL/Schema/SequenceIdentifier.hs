@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Schema.SequenceIdentifier
   ( SequenceIdentifier
   , unqualifiedNameToSequenceId
@@ -16,6 +23,8 @@ import qualified Orville.PostgreSQL.Expr as Expr
 {- |
   An identifier used by Orville to identify a particular sequence in a particular
   schema.
+
+@since 0.10.0.0
 -}
 data SequenceIdentifier = SequenceIdentifier
   { i_sequenceIdName :: String
@@ -26,6 +35,8 @@ data SequenceIdentifier = SequenceIdentifier
 {- |
   Constructs a 'SequenceIdentifier' where the sequence's name will not be qualified
   by a particular schema.
+
+@since 0.10.0.0
 -}
 unqualifiedNameToSequenceId :: String -> SequenceIdentifier
 unqualifiedNameToSequenceId name =
@@ -37,6 +48,8 @@ unqualifiedNameToSequenceId name =
 {- |
   Sets the schema of the 'SequenceIdentifier'. Wherever applicable, references to
   the sequence will be qualified by the given scheme name.
+
+@since 0.10.0.0
 -}
 setSequenceIdSchema :: String -> SequenceIdentifier -> SequenceIdentifier
 setSequenceIdSchema schema sequenceId =
@@ -47,6 +60,8 @@ setSequenceIdSchema schema sequenceId =
 {- |
   Returns the 'Expr.Qualified Expr.SequenceName' that should be used to refer to the
   sequence in SQL queries.
+
+@since 0.10.0.0
 -}
 sequenceIdQualifiedName :: SequenceIdentifier -> Expr.Qualified Expr.SequenceName
 sequenceIdQualifiedName sequenceId =
@@ -57,6 +72,8 @@ sequenceIdQualifiedName sequenceId =
 {- |
   Returns the unqualified 'Expr.SequenceName' that should be used to refer to the
   sequence in SQL queries where an unqualified reference is appropriate.
+
+@since 0.10.0.0
 -}
 sequenceIdUnqualifiedName :: SequenceIdentifier -> Expr.SequenceName
 sequenceIdUnqualifiedName =
@@ -65,6 +82,8 @@ sequenceIdUnqualifiedName =
 {- |
   Returns the 'Expr.SchemaName' (if any) that should be used to qualify
   references to the sequence in SQL queries.
+
+@since 0.10.0.0
 -}
 sequenceIdSchemaName :: SequenceIdentifier -> Maybe Expr.SchemaName
 sequenceIdSchemaName =
@@ -72,6 +91,8 @@ sequenceIdSchemaName =
 
 {- |
   Retrieves the unqualified name of the sequence as a string.
+
+@since 0.10.0.0
 -}
 sequenceIdUnqualifiedNameString :: SequenceIdentifier -> String
 sequenceIdUnqualifiedNameString =
@@ -79,6 +100,8 @@ sequenceIdUnqualifiedNameString =
 
 {- |
   Retrieves the schema name of the sequence as a string
+
+@since 0.10.0.0
 -}
 sequenceIdSchemaNameString :: SequenceIdentifier -> Maybe String
 sequenceIdSchemaNameString =
@@ -90,6 +113,8 @@ sequenceIdSchemaNameString =
 
   Note: You should not use this function for building SQL expressions. Use
   'sequenceIdQualifiedName' instead for that.
+
+@since 0.10.0.0
 -}
 sequenceIdToString :: SequenceIdentifier -> String
 sequenceIdToString sequenceId =

@@ -2,20 +2,26 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Raw.Connection
-  ( Connection
-  , Pool
-  , ConnectionUsedAfterCloseError
-  , ConnectionError
-  , SqlExecutionError (..)
-  , NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
+  ( -- * Orville definitions
+    Connection
   , createConnectionPool
+  , NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
   , executeRaw
   , quoteStringLiteral
   , quoteIdentifier
+  , ConnectionUsedAfterCloseError
+  , ConnectionError
+  , SqlExecutionError (..)
+
+    -- * Re-exports from "Data.Pool" for convenience
+  , Pool
   )
 where
 
@@ -42,6 +48,8 @@ import Orville.PostgreSQL.Raw.PgTextFormatValue (NULByteFoundError (NULByteFound
 {- |
   An option for 'createConnectionPool' than indicates whether the LibPQ should
   print notice reports for warnings to the console
+
+@since 0.10.0.0
 -}
 data NoticeReporting
   = EnableNoticeReporting
@@ -49,6 +57,8 @@ data NoticeReporting
 
 {- |
  'createConnectionPool' allocates a pool of connections to a PosgreSQL server.
+
+@since 0.10.0.0
 -}
 createConnectionPool ::
   -- | Whether or not notice reporting from LibPQ should be enabled
@@ -82,6 +92,8 @@ createConnectionPool noticeReporting stripes linger maxRes connectionString =
  potentially leaves connections open much longer than one would expect if all
  of the results are not iterated through immediately *and* the data copied.
  Use with caution.
+
+@since 0.10.0.0
 -}
 executeRaw ::
   Connection ->
@@ -96,7 +108,9 @@ executeRaw connection bs params =
       underlyingExecute bs paramBytes connection
 
 {- |
- The basic connection interface.
+  An Orville handle for a LibPQ connection.
+
+@since 0.10.0.0
 -}
 newtype Connection = Connection (MVar LibPQ.Connection)
 
@@ -107,6 +121,8 @@ newtype Connection = Connection (MVar LibPQ.Connection)
 
  Note that handling the libpq connection with the polling is described at
  <https://hackage.haskell.org/package/postgresql-libpq-0.9.4.2/docs/Database-PostgreSQL-LibPQ.html>.
+
+@since 0.10.0.0
 -}
 connect :: NoticeReporting -> BS.ByteString -> IO Connection
 connect noticeReporting connectionString =
@@ -154,6 +170,8 @@ connect noticeReporting connectionString =
   both the non-blocking semantics to protect from async exceptions with 'mask'
   _and_ should never truly return an empty unless two threads were racing to
   close the connection, in which case.. one of them will close the connection.
+
+@since 0.10.0.0
 -}
 close :: Connection -> IO ()
 close (Connection handle') =
@@ -175,6 +193,8 @@ close (Connection handle') =
   module, so unless a connection has been closed it *should* never be empty.
   And a connection should be closed upon removal from a resource pool (in which
   case it can't be used for this  function in the first place).
+
+@since 0.10.0.0
 -}
 underlyingExecute ::
   BS.ByteString ->
@@ -208,6 +228,8 @@ underlyingExecute bs params connection = do
   a builder being constructed for the surrounding SQL command without making
   an additional copy of the `BS.Bytestring` returned by LibPQ for the sake of
   adding the surrounding quotes.
+
+@since 0.10.0.0
 -}
 quoteStringLiteral :: Connection -> BS.ByteString -> IO BSB.Builder
 quoteStringLiteral connection unquotedString = do
@@ -233,6 +255,8 @@ quoteStringLiteral connection unquotedString = do
   Although this function does not need to copy the `BS.ByteString` returned by
   LibPQ to add the quotes (since LibPQ already added them), it returns a
   `BSB.Builder` nonetheless to maintain symmetry with `quoteStringLiteral`.
+
+@since 0.10.0.0
 -}
 quoteIdentifier :: Connection -> BS.ByteString -> IO BSB.Builder
 quoteIdentifier connection unquotedString = do
@@ -316,6 +340,8 @@ isRowReadableStatus status =
   as text that the database can use) as a parameter for executing a query.
   This uses Oid 0 to cause the database to infer the type of the paremeter and
   explicitly marks the parameter as being in Text format.
+
+@since 0.10.0.0
 -}
 mkInferredTextParam :: Maybe BS.ByteString -> Maybe (LibPQ.Oid, BS.ByteString, LibPQ.Format)
 mkInferredTextParam mbValue =
@@ -325,6 +351,15 @@ mkInferredTextParam mbValue =
     Just value ->
       Just (LibPQ.Oid 0, value, LibPQ.Text)
 
+{- |
+  Orville throws a 'ConnectionError' on an error reported by the underlying
+  LibPQ connection that does not come directly from executing SQL. This could
+  could represent an inability to open a new database connection, but could
+  also represent other errors such as an error while quoting a database
+  identifier.
+
+@since 0.10.0.0
+-}
 data ConnectionError = ConnectionError
   { connectionErrorMessage :: String
   , connectionErrorLibPQMessage :: Maybe BS.ByteString
@@ -348,16 +383,36 @@ instance Show ConnectionError where
 
 instance Exception ConnectionError
 
+{- |
+  Orville throws a 'SqlExecutionError' when an error is reported by the
+  underlying LibPQ connection during an attempt to execute SQL.
+
+@since 0.10.0.0
+-}
 data SqlExecutionError = SqlExecutionError
   { sqlExecutionErrorExecStatus :: Maybe LibPQ.ExecStatus
+  -- ^ The underlying LibPQ execution status
   , sqlExecutionErrorMessage :: BS.ByteString
+  -- ^ Error message reported by PostgreSQL
   , sqlExecutionErrorSqlState :: Maybe BS.ByteString
+  -- ^ Any SQL state value reported by PostgreSQL. This can be used to
+  -- programming determine what kind of error happening without needing to
+  -- parse the error message. See
+  -- https://www.postgresql.org/docs/current/errcodes-appendix.html
   , sqlExecutionErrorSqlQuery :: BS.ByteString
+  -- ^ The SQL query that was being run when the error occurred.
   }
   deriving (Show)
 
 instance Exception SqlExecutionError
 
+{- |
+  Orville throws as 'ConnectionUsedAfterCloseError' if it attempts to use a
+  'Connection' value after it has already been closed. If this occurs, it is a
+  bug in Orville.
+
+@since 0.10.0.0
+-}
 data ConnectionUsedAfterCloseError
   = ConnectionUsedAfterCloseError
   deriving (Show)

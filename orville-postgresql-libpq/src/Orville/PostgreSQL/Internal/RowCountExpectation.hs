@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Internal.RowCountExpectation
   ( expectExactlyOneRow
   , expectAtMostOneRow
@@ -11,6 +18,8 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
   INTERNAL: This should really never get thrown in the real world. It would be
   thrown if the returning clause from an insert statement for a single record
   returned 0 records or more than 1 record.
+
+@since 0.10.0.0
 -}
 newtype RowCountExpectationError
   = RowCountExpectationError String

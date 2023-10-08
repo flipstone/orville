@@ -1,7 +1,11 @@
 {- |
-Copyright : Flipstone Technology Partners 2021-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+Entry-level functions for executing based CRUD operations on entity tables.
+This are the functions that you will use most often for interacting with
+tables.
 
 @since 0.10.0.0
 -}

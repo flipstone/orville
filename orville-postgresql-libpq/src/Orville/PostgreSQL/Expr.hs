@@ -1,9 +1,36 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2021-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
+
+This module provides access to functions and types intended to help build SQL
+statements directly in a relatively safe manner while also always providing a
+way to write exactly the SQL you need. The SQL construction functions all
+require specific types as their arguments to communicate what particular
+fragment of SQL they expect to take as an argument. These types generally
+provide a 'Orville.PostgreSQL.Raw.RawSql.SqlExpression' instance, however,
+meaning that if Orville does not support constructing the exact SQL fragment
+you want to pass for that argument directly you can always use
+'Orville.PostgreSQL.Raw.RawSql.unsafeSqlExpression' to construct a value of the
+required type. This means you can use as many of the "safe" construction
+functions provided here as possible while substituting in hand-written SQL at
+only the exact points you need.
+
+For instance, the following code snippet shows how you could construct a @BEGIN
+TRANSACTION ISOLATION LEVEL SOME NEW ISOLATION LEVEL@ statement if PostgreSQL
+added @SOME NEW ISOLATION LEVEL@ and Orville did not yet support it.
+
+@
+  import qualified Orville.PostgreSQL.Expr as Expr
+  import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+
+  customerBeginTransaction :: Expr.BeginTransactionExpr
+  customerBeginTransaction =
+    Expr.beginTransaction
+      (Just (Expr.isolationLevel (RawSql.unsafeSqlExpression "SOME NEW ISOLATION LEVEL")))
+@
 
 @since 0.10.0.0
 -}

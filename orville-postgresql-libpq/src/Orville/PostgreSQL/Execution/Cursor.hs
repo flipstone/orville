@@ -5,6 +5,10 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
+Funtions and types for working with PostgreSQL cursors. You can use cursors to
+execute a query and consume rows from the result set incrementally. Rows that
+you do not consume will never be sent from the database to the client.
+
 @since 0.10.0.0
 -}
 module Orville.PostgreSQL.Execution.Cursor
@@ -180,6 +184,8 @@ move direction (Cursor _ cursorName) =
   Cursor names only need to be unique among the currently open cursors on the
   current connection, so using POSIX time plus a 32 bit random tag should be
   more than sufficient to ensure conflicts are not seen in practice.
+
+@since 0.10.0.0
 -}
 newCursorName :: MonadIO m => m Expr.CursorName
 newCursorName =

@@ -1,6 +1,16 @@
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+This module provides functions and types for describing a single-column data
+type that exists in PostgreSQL so that Orville can determine how to serialize
+Haskell values to and from the SQL type. If you need to use a SQL type that
+Orville does not provide support for here, you can construct your own 'SqlType'
+value and use 'Orville.PostgreSQL.Marshall.fieldOfType' to build the required
+'Orville.PostgreSQL.Marshall.FieldDefinition'.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Marshall.SqlType
   ( SqlType
@@ -58,6 +68,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   database. This includes both how to convert the type to and from the raw values
   read from the database as well as the schema information required to create
   and migrate columns using the type.
+
+@since 0.10.0.0
 -}
 data SqlType a = SqlType
   { sqlTypeExpr :: Expr.DataType
@@ -91,6 +103,8 @@ data SqlType a = SqlType
 
 {- |
   'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
+
+@since 0.10.0.0
 -}
 integer :: SqlType Int32
 integer =
@@ -107,6 +121,8 @@ integer =
 {- |
   'serial' defines a 32-bit auto-incrementing column type. This corresponds to
   the "SERIAL" type in PostgreSQL.
+
+@since 0.10.0.0
 -}
 serial :: SqlType Int32
 serial =
@@ -123,6 +139,8 @@ serial =
 {- |
   'bigInteger' defines a 64-bit integer type. This corresponds to the "BIGINT"
   type in SQL.
+
+@since 0.10.0.0
 -}
 bigInteger :: SqlType Int64
 bigInteger =
@@ -139,6 +157,8 @@ bigInteger =
 {- |
   'bigSerial' defines a 64-bit auto-incrementing column type. This corresponds to
   the "BIGSERIAL" type in PostgresSQL.
+
+@since 0.10.0.0
 -}
 bigSerial :: SqlType Int64
 bigSerial =
@@ -154,6 +174,8 @@ bigSerial =
 
 {- |
   'smallInteger' defines a 16-bit integer type. This corresponds to the "SMALLINT" type in SQL.
+
+@since 0.10.0.0
 -}
 smallInteger :: SqlType Int16
 smallInteger =
@@ -170,6 +192,8 @@ smallInteger =
 {- |
   'double' defines a floating point numeric type. This corresponds to the "DOUBLE
   PRECISION" type in SQL.
+
+@since 0.10.0.0
 -}
 double :: SqlType Double
 double =
@@ -186,6 +210,8 @@ double =
 {- |
   'boolean' defines a True/False boolean type. This corresponds to the "BOOLEAN"
   type in SQL.
+
+@since 0.10.0.0
 -}
 boolean :: SqlType Bool
 boolean =
@@ -202,6 +228,8 @@ boolean =
 {- |
   'unboundedText' defines a unbounded length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
+
+@since 0.10.0.0
 -}
 unboundedText :: SqlType Text
 unboundedText =
@@ -218,6 +246,8 @@ unboundedText =
 {- |
   'fixedText' defines a fixed length text field type. This corresponds to a
   "CHAR(len)" type in PostgreSQL.
+
+@since 0.10.0.0
 -}
 fixedText :: Int32 -> SqlType Text
 fixedText len =
@@ -234,6 +264,8 @@ fixedText len =
 {- |
   'boundedText' defines a variable length text field type. This corresponds to a
   "VARCHAR(len)" type in PostgreSQL.
+
+@since 0.10.0.0
 -}
 boundedText :: Int32 -> SqlType Text
 boundedText len =
@@ -250,6 +282,8 @@ boundedText len =
 {- |
   'textSearchVector' defines a type for indexed text searching. It corresponds to the
   "TSVECTOR" type in PostgreSQL.
+
+@since 0.10.0.0
 -}
 textSearchVector :: SqlType Text
 textSearchVector =
@@ -265,6 +299,8 @@ textSearchVector =
 
 {- |
   'uuid' defines a UUID type. It corresponds to the "UUID" type in PostgreSQL.
+
+@since 0.10.0.0
 -}
 uuid :: SqlType UUID.UUID
 uuid =
@@ -287,6 +323,8 @@ uuid =
 {- |
   'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
+
+@since 0.10.0.0
 -}
 date :: SqlType Time.Day
 date =
@@ -309,6 +347,8 @@ date =
   any actual time zone information. For an excellent explanation of the complexities
   involving this type, please see Chris Clark's blog post about it:
   http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
+
+@since 0.10.0.0
 -}
 timestamp :: SqlType Time.UTCTime
 timestamp =
@@ -327,6 +367,8 @@ timestamp =
   It corresponds to the "TIMESTAMP without time zone" type in SQL.
 
   http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
+
+@since 0.10.0.0
 -}
 timestampWithoutZone :: SqlType Time.LocalTime
 timestampWithoutZone =
@@ -344,7 +386,7 @@ timestampWithoutZone =
    'jsonb' represents any type that can be converted To and From JSON. This corresponds
    to the "JSONB" type in PostgreSQL.
 
-@since 0.10.0.1
+@since 0.10.0.0
 -}
 jsonb :: SqlType Text
 jsonb =
@@ -361,6 +403,8 @@ jsonb =
 {- |
   'oid' corresponds to the type used in PostgreSQL for identifying system
   objects
+
+@since 0.10.0.0
 -}
 oid :: SqlType LibPQ.Oid
 oid =
@@ -382,6 +426,8 @@ oid =
   have regular underlying sql type. Each 'SqlType' definition must specify any
   special handling required when creating foreign reference types by setting
   the 'sqlTypeReferenceExpr' field to an appropriate value.
+
+@since 0.10.0.0
 -}
 foreignRefType :: SqlType a -> SqlType a
 foreignRefType sqlType =
@@ -396,6 +442,8 @@ foreignRefType sqlType =
   original type when reading and writing values from the database. When reading
   an 'a' value from the database, the conversion function should produce 'Left
   with an error message if the value cannot be successfully converted to a 'b'
+
+@since 0.10.0.0
 -}
 tryConvertSqlType :: (b -> a) -> (a -> Either String b) -> SqlType a -> SqlType b
 tryConvertSqlType bToA aToB sqlType =
@@ -409,6 +457,8 @@ tryConvertSqlType bToA aToB sqlType =
 {- |
   'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
   as 'tryConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
+
+@since 0.10.0.0
 -}
 convertSqlType :: (b -> a) -> (a -> b) -> SqlType a -> SqlType b
 convertSqlType bToA aToB =

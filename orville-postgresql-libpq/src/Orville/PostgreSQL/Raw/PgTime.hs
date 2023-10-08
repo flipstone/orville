@@ -1,3 +1,10 @@
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Raw.PgTime
   ( dayToPostgreSQL
   , day
@@ -19,6 +26,8 @@ import qualified Data.Word as Word
 
 {- |
   Renders a 'Time.Day' value to a textual representation for PostgreSQL
+
+@since 0.10.0.0
 -}
 dayToPostgreSQL :: Time.Day -> B8.ByteString
 dayToPostgreSQL =
@@ -27,6 +36,8 @@ dayToPostgreSQL =
 {- |
   An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
   fails if given an invalid day.
+
+@since 0.10.0.0
 -}
 day :: AttoB8.Parser Time.Day
 day = do
@@ -40,6 +51,8 @@ day = do
 
 {- |
   An Attoparsec parser for parsing 2 digit integral numbers.
+
+@since 0.10.0.0
 -}
 twoDigits :: Integral a => AttoB8.Parser a
 twoDigits = do
@@ -52,6 +65,8 @@ fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 
 {- |
   Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL
+
+@since 0.10.0.0
 -}
 utcTimeToPostgreSQL :: Time.UTCTime -> B8.ByteString
 utcTimeToPostgreSQL =
@@ -61,6 +76,8 @@ utcTimeToPostgreSQL =
   An Attoparsec parser for parsing 'Time.UTCTime' from an ISO 8601 style
   datetime and timezone with a few postgresql specific exceptions. See
   localTime for more details
+
+@since 0.10.0.0
 -}
 utcTime :: AttoB8.Parser Time.UTCTime
 utcTime = do
@@ -82,6 +99,8 @@ utcTime = do
 
 {- |
   Renders a 'Time.LocalTime value to a textual representation for PostgreSQL
+
+@since 0.10.0.0
 -}
 localTimeToPostgreSQL :: Time.LocalTime -> B8.ByteString
 localTimeToPostgreSQL =
@@ -91,6 +110,8 @@ localTimeToPostgreSQL =
   An Attoparsec parser for parsing 'Time.LocalTime' from an ISO 8601 style
   datetime with a few exceptions. The seperator between the date and time
   is always ' ' and never 'T'.
+
+@since 0.10.0.0
 -}
 localTime :: AttoB8.Parser Time.LocalTime
 localTime = do
@@ -98,6 +119,8 @@ localTime = do
 
 {- |
   An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO 8601 style time.
+
+@since 0.10.0.0
 -}
 timeOfDay :: AttoB8.Parser Time.TimeOfDay
 timeOfDay = do
@@ -109,6 +132,8 @@ timeOfDay = do
 {- |
   An Attoparsec parser for parsing a base 10 number and returns the number of
   digits consumed. Based off of AttoB8.decimal.
+
+@since 0.10.0.0
 -}
 decimalWithCount :: Integral a => AttoB8.Parser (a, a)
 decimalWithCount = do
@@ -122,6 +147,8 @@ appendDigit a w = a * 10 + fromIntegral (w - 48)
   An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
   handle more resolution than postgres uses, and will truncate the seconds
   fraction if more than 12 digits are present.
+
+@since 0.10.0.0
 -}
 seconds :: AttoB8.Parser Fixed.Pico
 seconds = do

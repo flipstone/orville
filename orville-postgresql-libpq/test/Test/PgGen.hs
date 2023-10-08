@@ -37,6 +37,8 @@ pgInt32 =
   more than 15 digits of precisio, so we use 'encodeFloat' to directly ensure
   the precision of large numbers is within PostgreSQL's limit. Precision of
   small numbers is enforced by rounding excess digits off.
+
+@since 0.10.0.0
 -}
 pgDouble :: HH.Gen Double
 pgDouble = do
@@ -89,6 +91,8 @@ pgIdentifier =
   relations such as tables and indexes. The min length value allows the
   caller to length of the random strings that will be appended to prefix,
   which case be useful to avoid conflicts.
+
+@since 0.10.0.0
 -}
 pgIdentifierWithPrefix :: String -> Int -> HH.Gen String
 pgIdentifierWithPrefix prefix minLength =
@@ -101,6 +105,8 @@ pgIdentifierWithPrefix prefix minLength =
   A list of characters to include in identifiers when testing. Not all of these
   are valid in unquoted identifiers -- this helps ensure that Orville is
   properly quoting ids.
+
+@since 0.10.0.0
 -}
 pgIdentifierChars :: [Char]
 pgIdentifierChars =

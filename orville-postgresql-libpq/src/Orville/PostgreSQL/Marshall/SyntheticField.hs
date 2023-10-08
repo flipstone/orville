@@ -1,5 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Marshall.SyntheticField
   ( SyntheticField
   , syntheticFieldExpression
@@ -20,6 +27,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
   A 'SyntheticField' can be used to evaluate a SQL expression based on the
   columns of a table when records are selected from the database. Synthetic
   fields are inherently read-only.
+
+@since 0.10.0.0
 -}
 data SyntheticField a = SyntheticField
   { _syntheticFieldExpression :: Expr.ValueExpression
@@ -30,6 +39,8 @@ data SyntheticField a = SyntheticField
 {- |
   Returns the SQL expression that should be in with select statements to
   calculated the sythetic field.
+
+@since 0.10.0.0
 -}
 syntheticFieldExpression :: SyntheticField a -> Expr.ValueExpression
 syntheticFieldExpression =
@@ -38,6 +49,8 @@ syntheticFieldExpression =
 {- |
   Returns the alias that should be used in select statements to name the
   the synthetic field.
+
+@since 0.10.0.0
 -}
 syntheticFieldAlias :: SyntheticField a -> FieldName
 syntheticFieldAlias =
@@ -46,6 +59,8 @@ syntheticFieldAlias =
 {- |
   Decodes a calculated value selected from the database to its expected
   Haskell type. Returns a 'Left' with an error message if the decoding fails.
+
+@since 0.10.0.0
 -}
 syntheticFieldValueFromSqlValue :: SyntheticField a -> SqlValue.SqlValue -> Either String a
 syntheticFieldValueFromSqlValue =
@@ -54,6 +69,8 @@ syntheticFieldValueFromSqlValue =
 {- |
   Constructs a 'SyntheticField' that will select a SQL expression using
   the given alias.
+
+@since 0.10.0.0
 -}
 syntheticField ::
   -- | The SQL expression to be selected
@@ -72,6 +89,8 @@ syntheticField expression alias fromSqlValue =
 
 {- |
   Modifies a 'SyntheticField' to allow it to decode @NULL@ values.
+
+@since 0.10.0.0
 -}
 nullableSyntheticField :: SyntheticField a -> SyntheticField (Maybe a)
 nullableSyntheticField synthField =
@@ -85,6 +104,8 @@ nullableSyntheticField synthField =
 {- |
   Adds a prefix, followed by an underscore, to the alias used to name the
   synthetic field.
+
+@since 0.10.0.0
 -}
 prefixSyntheticField ::
   String ->

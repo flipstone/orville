@@ -1,9 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2023
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
-Stability: Stable
+Stability : Stable
 
 @since 0.10.0.0
 -}

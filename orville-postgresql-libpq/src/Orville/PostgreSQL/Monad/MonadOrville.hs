@@ -1,6 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Monad.MonadOrville
   ( MonadOrville
   , MonadOrvilleControl (liftWithConnection, liftCatch, liftMask)
@@ -15,8 +22,7 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Reader (ReaderT (ReaderT), mapReaderT, runReaderT)
 import Data.Pool (withResource)
 
-import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
-import Orville.PostgreSQL.OrvilleState
+import Orville.PostgreSQL.Internal.OrvilleState
   ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction)
   , ConnectionState (Connected, NotConnected)
   , OrvilleState
@@ -24,6 +30,7 @@ import Orville.PostgreSQL.OrvilleState
   , orvilleConnectionPool
   , orvilleConnectionState
   )
+import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
 import Orville.PostgreSQL.Raw.Connection (Connection)
 
 {- |
@@ -41,6 +48,8 @@ import Orville.PostgreSQL.Raw.Connection (Connection)
 
   to your module and then let the compiler tell you what instances you
   are missing from the superclasses.
+
+@since 0.10.0.0
 -}
 class
   ( HasOrvilleState m
@@ -65,19 +74,23 @@ class
   See 'Orville.PostgreSQL.UnliftIO' for functions that can be used as the
   implementation of the methods below for monads that implement
   'MonadUnliftIO'.
+
+@since 0.10.0.0
 -}
 class MonadOrvilleControl m where
-  {-
-    Orville will use this function to lift the acquisition of connections
-    from the resource pool into the application monad.
-  -}
+  -- |
+  --     Orville will use this function to lift the acquisition of connections
+  --     from the resource pool into the application monad.
+  --
+  -- @since 0.10.0.0
   liftWithConnection ::
     (forall a. (Connection -> IO a) -> IO a) -> (Connection -> m b) -> m b
 
-  {-
-    Orville will use this function to lift exception catches into the
-    application monad.
-  -}
+  -- |
+  --     Orville will use this function to lift exception catches into the
+  --     application monad.
+  --
+  -- @since 0.10.0.0
   liftCatch ::
     Exception e =>
     (forall a. IO a -> (e -> IO a) -> IO a) ->
@@ -85,11 +98,12 @@ class MonadOrvilleControl m where
     (e -> m b) ->
     m b
 
-  {-
-    Orville will use this function to lift `mask` calls into the application
-    monad to guarantee resource cleanup is executed even when asynchrouns
-    exceptions are thrown.
-  -}
+  -- |
+  --     Orville will use this function to lift `mask` calls into the application
+  --     monad to guarantee resource cleanup is executed even when asynchrouns
+  --     exceptions are thrown.
+  --
+  -- @since 0.10.0.0
   liftMask ::
     (forall b. ((forall a. IO a -> IO a) -> IO b) -> IO b) ->
     ((forall a. m a -> m a) -> m c) ->
@@ -134,6 +148,8 @@ instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleStat
   will be returned to the pool. If 'm a' throws an exception the pool's
   exception handling will take effect, generally destroying the connection in
   case it was the source of the error.
+
+@since 0.10.0.0
 -}
 withConnection :: MonadOrville m => (Connection -> m a) -> m a
 withConnection connectedAction = do
@@ -147,6 +163,8 @@ withConnection connectedAction = do
   Orville uses connection pooling, so unless you use either 'withConnection' or
   'withTransaction' each database operation may be performed on a different
   connection.
+
+@since 0.10.0.0
 -}
 withConnection_ :: MonadOrville m => m a -> m a
 withConnection_ =
@@ -155,6 +173,8 @@ withConnection_ =
 {- |
   INTERNAL: This in an internal version of 'withConnection' that gives access to
   the entire 'ConnectedState' value to allow for transaction management.
+
+@since 0.10.0.0
 -}
 withConnectedState :: MonadOrville m => (ConnectedState -> m a) -> m a
 withConnectedState connectedAction = do

@@ -2,8 +2,19 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2016-2021
+Copyright : Flipstone Technology Partners 2023
 License   : MIT
+Stability : Stable
+
+This module provides functions for constructing a mapping between Haskell data
+types and SQL column schemas. The 'SqlMarshaller' that represents this mapping
+can be used to serialize Haskell values both to and from SQL column sets. In
+most cases you construct a 'SqlMarshaller' as part of building you
+'Orville.PostgreSQL.Schema.TableDefinition' and Orville handles the rest. In
+other cases you might use a 'SqlMarshaller' with a lower-level Orville
+function. For instance, to decode the result set of a custom SQL query.
+
+@since 0.10.0.0
 -}
 module Orville.PostgreSQL.Marshall.SqlMarshaller
   ( SqlMarshaller
@@ -68,6 +79,8 @@ import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDef
   executing custom queries directly, you may need to annotate a raw
   'SqlMarshaller' yourself so that rows can be identified. See
   'annotateSqlMarshaller' and 'annotateSqlMarshallerEmptyAnnotation'.
+
+@since 0.10.0.0
 -}
 data AnnotatedSqlMarshaller writeEntity readEntity = AnnotatedSqlMarshaller
   { rowIdFieldNames :: [FieldName]
@@ -79,6 +92,8 @@ data AnnotatedSqlMarshaller writeEntity readEntity = AnnotatedSqlMarshaller
   to identify rows in error messages when decoding fails. Any column names
   in the list that are not present in the result set will simply be omitted
   from the error message.
+
+@since 0.10.0.0
 -}
 annotateSqlMarshaller ::
   [FieldName] ->
@@ -90,6 +105,8 @@ annotateSqlMarshaller =
 {- |
   Creates an 'AnnotatedSqlMarshaller' that will identify rows in decoding
   errors by any columns. This is the equivalent of @annotateSqlMarshaller []@.
+
+@since 0.10.0.0
 -}
 annotateSqlMarshallerEmptyAnnotation ::
   SqlMarshaller writeEntity readEntity ->
@@ -100,6 +117,8 @@ annotateSqlMarshallerEmptyAnnotation =
 {- |
   Applies the provided function to a 'SqlMarshaller' that has been annotated,
   preserving the annotations.
+
+@since 0.10.0.0
 -}
 mapSqlMarshaller ::
   (SqlMarshaller readEntityA writeEntityA -> SqlMarshaller readEntityB writeEntityB) ->
@@ -114,6 +133,8 @@ mapSqlMarshaller f (AnnotatedSqlMarshaller rowIdFields marshaller) =
   This is a flexible abstraction that allows us to ultimately model SQL tables
   and work with them as potentially nested Haskell records. We can then
   "marshall" the data as we want to model it in sql and Haskell.
+
+@since 0.10.0.0
 -}
 data SqlMarshaller a b where
   -- | Our representation of 'pure' in the 'Applicative' sense
@@ -146,6 +167,8 @@ instance Applicative (SqlMarshaller a) where
   Returns a list of 'Expr.DerivedColumn' expressions that can be used in a
   select statement to select values from the database for the 'SqlMarshaller'
   decode.
+
+@since 0.10.0.0
 -}
 marshallerDerivedColumns ::
   SqlMarshaller writeEntity readEntity ->
@@ -172,6 +195,8 @@ marshallerDerivedColumns marshaller =
 {- |
   Returns the table constraints for all the 'FieldDefinition's used in the
   'SqlMarshaller'.
+
+@since 0.10.0.0
 -}
 marshallerTableConstraints ::
   SqlMarshaller writeEntity readEntity ->
@@ -196,6 +221,8 @@ marshallerTableConstraints marshaller =
   Represents a primitive entry in a 'SqlMarshaller'. This type is used with
   'foldMarshallerFields' to provided the entry from the mashaller to the
   folding function to be incorporate in the result of the fold.
+
+@since 0.10.0.0
 -}
 data MarshallerField writeEntity where
   Natural :: FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
@@ -209,6 +236,8 @@ data MarshallerField writeEntity where
   Note: Folds executed with 'collectFromField' ignore 'Synthetic' entries in
   the marshaller. You should only use 'collectFromField' in situations where
   you only care about the actual columns referenced by the marshaller.
+
+@since 0.10.0.0
 -}
 collectFromField ::
   ReadOnlyColumnOption ->
@@ -231,6 +260,8 @@ collectFromField readOnlyColumnOption fromField entry results =
   Uses the field defintions in the marshaller to construct SQL expressions
   that will set columns of the field defintions to their corresponding value
   found in the Haskell @writeEntity@  value.
+
+@since 0.10.0.0
 -}
 marshallEntityToSetClauses ::
   SqlMarshaller writeEntity readEntity ->
@@ -245,6 +276,8 @@ marshallEntityToSetClauses marshaller writeEntity =
 {- |
   An internal helper function that collects the 'Expr.SetClause's to
   update all the fields contained in a 'SqlMarshaller'
+
+@since 0.10.0.0
 -}
 collectSetClauses ::
   entity ->
@@ -263,6 +296,8 @@ collectSetClauses entity entry clauses =
 {- |
   Specifies whether read-only fields should be included when using functions
   such as 'collectFromField' and 'marshallerColumnNames'.
+
+@since 0.10.0.0
 -}
 data ReadOnlyColumnOption
   = IncludeReadOnlyColumns
@@ -273,6 +308,8 @@ data ReadOnlyColumnOption
   are contained within the 'SqlMarshaller' to process them however is
   required. This can be used to collect the names of all the fields, encode
   them to 'SqlValue', etc.
+
+@since 0.10.0.0
 -}
 foldMarshallerFields ::
   SqlMarshaller writeEntity readEntity ->
@@ -287,6 +324,8 @@ foldMarshallerFields marshaller =
   It takes with it a function that extracts the current nesting entity from
   the overall 'writeEntity' that the 'SqlMarshaller' is build on. 'MarshallNest'
   adds more nesting by composing its accessor with the one given here.
+
+@since 0.10.0.0
 -}
 foldMarshallerFieldsPart ::
   SqlMarshaller entityPart readEntity ->
@@ -324,6 +363,8 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
 
   Note that this function loads are decoded rows into memory at once, so it
   should only be used with result sets that you know will fit into memory.
+
+@since 0.10.0.0
 -}
 marshallResultFromSql ::
   ExecutionResult result =>
@@ -347,6 +388,8 @@ marshallResultFromSql errorDetailLevel marshallerWithMeta result =
 
   Note that this function loads are decoded rows into memory at once, so it
   should only be used with result sets that you know will fit into memory.
+
+@since 0.10.0.0
 -}
 marshallResultFromSqlUsingRowIdExtractor ::
   ExecutionResult result =>
@@ -390,6 +433,8 @@ traverseSequence f =
   Attempts to decode a result set row that has already been fetched from the
   database server into a Haskell value. If the decoding fails, a 'MarshallError'
   will be returned.
+
+@since 0.10.0.0
 -}
 decodeRow ::
   ErrorDetailLevel ->
@@ -423,6 +468,8 @@ decodeRow errorDetailLevel (RowSource source) (RowIdentityExtractor getRowId) ro
   client waiting to be decoded until the 'RowSource' is garbage collected.
   As such, you can't use 'RowSource' (alone) to achieve any form of streaming
   or pagination of rows between the database server and the client.
+
+@since 0.10.0.0
 -}
 newtype RowSource readEntity
   = RowSource (Row -> IO (Either MarshallError.MarshallErrorDetails readEntity))
@@ -437,6 +484,8 @@ instance Applicative RowSource where
 {- |
   Adds a function to the decoding proocess to transform the value returned
   by a 'RowSource'.
+
+@since 0.10.0.0
 -}
 mapRowSource :: (a -> b) -> RowSource a -> RowSource b
 mapRowSource f (RowSource decodeA) =
@@ -445,6 +494,8 @@ mapRowSource f (RowSource decodeA) =
 {- |
   Creates a 'RowSource' that always returns the value given, rather than
   attempting to access the result set and decoding anything.
+
+@since 0.10.0.0
 -}
 constRowSource :: readEntity -> RowSource readEntity
 constRowSource =
@@ -453,6 +504,8 @@ constRowSource =
 {- |
   Applies a function that will be decoded from the result set to another
   value decode from the result set.
+
+@since 0.10.0.0
 -}
 applyRowSource :: RowSource (a -> b) -> RowSource a -> RowSource b
 applyRowSource (RowSource decodeAtoB) (RowSource decodeA) =
@@ -472,6 +525,8 @@ applyRowSource (RowSource decodeAtoB) (RowSource decodeA) =
   be provided but it is already known at run time that decoding is impossible.
   For instance, this is used internally when a 'FieldDefinition' references
   a column that does not exist in the result set.
+
+@since 0.10.0.0
 -}
 failRowSource :: MarshallError.MarshallErrorDetails -> RowSource a
 failRowSource =
@@ -483,6 +538,8 @@ failRowSource =
   decode rows as desired by the user. Note that the entire result set is
   held in memory for potential decoding until the 'RowSource' is garbage
   collected.
+
+@since 0.10.0.0
 -}
 mkRowSource ::
   ExecutionResult result =>
@@ -574,6 +631,8 @@ partialRowSource fieldNames columnMap result (RowSource f) =
 {- |
   Builds a 'RowSource' that will retrieve and decode the name field from
   the result.
+
+@since 0.10.0.0
 -}
 mkFieldNameSource ::
   ExecutionResult result =>
@@ -596,6 +655,8 @@ mkFieldNameSource sourceFieldName fromSqlValue columnMap result =
 {- |
   An internal helper function that finds all the column names in a result set
   and associates them with the respective column numbers for easier lookup.
+
+@since 0.10.0.0
 -}
 prepareColumnMap ::
   ExecutionResult result =>
@@ -625,6 +686,8 @@ prepareColumnMap result = do
 {- |
   A internal helper function for to build a 'RowSource' that retrieves and
   decodes a single column value form the result set.
+
+@since 0.10.0.0
 -}
 mkColumnRowSource ::
   ExecutionResult result =>
@@ -659,6 +722,8 @@ mkColumnRowSource sourceFieldName fromSqlValue result column =
   When possible, it's easier to annotate a 'SqlMarshaller' with the field names
   you would like rows to be identified by and then use 'marshallResultFromSql'
   instead.
+
+@since 0.10.0.0
 -}
 newtype RowIdentityExtractor
   = RowIdentityExtractor (Row -> IO [(B8.ByteString, SqlValue.SqlValue)])
@@ -668,6 +733,8 @@ newtype RowIdentityExtractor
   fields from the result set to indentify rows in decoding errors. Any of the
   named fields that are missing from the result set not be included in the
   extracted row identity.
+
+@since 0.10.0.0
 -}
 mkRowIdentityExtractor ::
   ExecutionResult result =>
@@ -719,6 +786,8 @@ mkRowIdentityExtractor fields result =
       <*> marshallField baz (unboundedTextField "baz")
 
   @
+
+@since 0.10.0.0
 -}
 marshallField ::
   (writeEntity -> fieldValue) ->
@@ -752,6 +821,8 @@ marshallField accessor fieldDef =
       , syntheticFieldValueFromSqlValue = SqlValue.toBool
       }
   @
+
+@since 0.10.0.0
 -}
 marshallSyntheticField ::
   SyntheticField fieldValue ->
@@ -791,6 +862,8 @@ marshallSyntheticField =
       <$> marshallField firstName firstNameField
       <*> marshallField lastName lastNameField
   @
+
+@since 0.10.0.0
 -}
 marshallNested ::
   (parentEntity -> nestedWriteEntity) ->
@@ -802,6 +875,8 @@ marshallNested =
 {- |
   Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
   and applies a tag to avoid double mapping.
+
+@since 0.10.0.0
 -}
 marshallMaybe :: SqlMarshaller a b -> SqlMarshaller (Maybe a) (Maybe b)
 marshallMaybe =
@@ -835,6 +910,8 @@ marshallMaybe =
 {- |
   Builds a 'SqlMarshaller' that will raise a decoding error when the value
   produced is a 'Left'.
+
+@since 0.10.0.0
 -}
 marshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
 marshallPartial = MarshallPartial
@@ -842,6 +919,8 @@ marshallPartial = MarshallPartial
 {- |
   Adds a prefix, followed by an underscore, to the names of all of the fields
   and synthetic fields in a 'SqlMarshaller'.
+
+@since 0.10.0.0
 -}
 prefixMarshaller ::
   String ->
@@ -868,6 +947,8 @@ prefixMarshaller prefix = go
   Marks a 'SqlMarshaller' as ready only so that it will not attempt to
   read any values from the @writeEntity@. You should use this if you have
   a group of fields which are populated by database rather than the application.
+
+@since 0.10.0.0
 -}
 marshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
 marshallReadOnly = MarshallReadOnly
@@ -877,6 +958,8 @@ marshallReadOnly = MarshallReadOnly
   read only field. You will usually use this in conjuction with a
   'FieldDefinition' like @serialField@ where the valuue is populated by the
   database.
+
+@since 0.10.0.0
 -}
 marshallReadOnlyField ::
   FieldDefinition nullability fieldValue ->

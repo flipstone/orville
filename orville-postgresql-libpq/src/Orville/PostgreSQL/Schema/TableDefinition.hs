@@ -1,6 +1,13 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
+{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 0.10.0.0
+-}
 module Orville.PostgreSQL.Schema.TableDefinition
   ( TableDefinition
   , HasKey
@@ -35,11 +42,11 @@ import qualified Data.Set as Set
 
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
+import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
-import Orville.PostgreSQL.Schema.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 
@@ -47,14 +54,17 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSch
   Contains the definition of a SQL table for Orville to use for generating
   queries and marshalling Haskell values to and from the database.
 
-  * 'key' is the Haskell type used to store values of the primary
-    key for the table.
+  * 'key' is a Haskell type used to indicate whether the table has a primary
+    key and what the type of the key is if so. See 'HasKey' and 'NoKey' for
+    values to be used in this parameter.
 
   * 'writeEntity' is the Haskell type for values that Orville will write
     to the database for you (i.e. both inserts and updates)
 
   * 'readEntity' is the Haskell type for values that Orville will decode
     from the result set when entities are queried from this table.
+
+@since 0.10.0.0
 -}
 data TableDefinition key writeEntity readEntity = TableDefinition
   { i_tableIdentifier :: TableIdentifier
@@ -65,11 +75,33 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , i_tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
   }
 
+{- |
+  'HasKey' is a type with no constructors. It is used only at the type level
+  as the @key@ parameter to the 'TableDefinition' type to indicate that the
+  the table has a primary key and what the Haskell type of the primary key is.
+
+@since 0.10.0.0
+-}
 data HasKey key
+
+{- |
+  'NoKey' is a type with no constructors. It is used only at the type level
+  as the @key@ parameter to the 'TableDefinition' type to indicate that the
+  the table does not have a primary key.
+
+@since 0.10.0.0
+-}
 data NoKey
 
-data TablePrimaryKey tag where
-  TableHasKey :: PrimaryKey key -> TablePrimaryKey (HasKey key)
+{- |
+  INTERNAL: Use at the value level to track whether the 'TableDefinition' has a
+  primary key. The @key@ parameter matches the @key@ parameter of
+  'TableDefinition'
+
+@since 0.10.0.0
+-}
+data TablePrimaryKey key where
+  TableHasKey :: PrimaryKey keyType -> TablePrimaryKey (HasKey keyType)
   TableHasNoKey :: TablePrimaryKey NoKey
 
 {- |
@@ -77,6 +109,8 @@ data TablePrimaryKey tag where
   operation. For convenience, this function accepts a 'PrimaryKey' even though
   this is not required for all Orville operations to work. If you need to
   create a table without any primary key, see 'mkTableDefinitionWithoutKey'.
+
+@since 0.10.0.0
 -}
 mkTableDefinition ::
   -- | The name of the table
@@ -102,6 +136,8 @@ mkTableDefinition name primaryKey marshaller =
   key. Certain Orville functions required a primary key. Attempting to call
   functions requiring a primary key will fail to compile when using a table
   that has no key.
+
+@since 0.10.0.0
 -}
 mkTableDefinitionWithoutKey ::
   -- | The name of the table
@@ -130,6 +166,8 @@ mkTableDefinitionWithoutKey name marshaller =
   useful if you're not sure you want to lose the data in the column, or if you
   have zero down-time deployments, which requires the column not be referenced
   by deployed code before it can be dropped.
+
+@since 0.10.0.0
 -}
 dropColumns ::
   -- | Columns that should be dropped from the table
@@ -143,6 +181,8 @@ dropColumns columns tableDef =
 
 {- |
   Returns the set of columns that have be marked be dropped by 'dropColumns'
+
+@since 0.10.0.0
 -}
 columnsToDrop :: TableDefinition key writeEntity readEntity -> Set.Set String
 columnsToDrop =
@@ -150,6 +190,8 @@ columnsToDrop =
 
 {- |
   Returns the table's 'TableIdentifier'
+
+@since 0.10.0.0
 -}
 tableIdentifier :: TableDefinition key writeEntity readEntity -> TableIdentifier
 tableIdentifier =
@@ -159,6 +201,8 @@ tableIdentifier =
   Returns the table's name as an expression that can be used to build SQL
   statements. If the table has a schema name set, the name will be qualified
   with it.
+
+@since 0.10.0.0
 -}
 tableName :: TableDefinition key writeEntity readEntity -> Expr.Qualified Expr.TableName
 tableName =
@@ -169,6 +213,8 @@ tableName =
   treated as a SQL identifier. If a table has a schema name set, it will be
   included as a qualified on the table name for all queries involving the
   table.
+
+@since 0.10.0.0
 -}
 setTableSchema ::
   String ->
@@ -183,6 +229,8 @@ setTableSchema schemaName tableDef =
   Retrieves all the table constraints that have been added to the table either
   via 'addTableConstraints' or that are found on 'FieldDefinition's included
   with this table's 'SqlMarshaller'.
+
+@since 0.10.0.0
 -}
 tableConstraints ::
   TableDefinition key writeEntity readEntity ->
@@ -195,6 +243,8 @@ tableConstraints =
   Retrieves all the table constraints that have been added to the table via
   'addTableConstraints'. This does NOT include any table constraints from the
   table's 'SqlMarshaller'
+
+@since 0.10.0.0
 -}
 tableConstraintsFromTable ::
   TableDefinition key writeEntity readEntity ->
@@ -206,6 +256,8 @@ tableConstraintsFromTable =
   Retrieves all the table constraints that were included in the table's
   'SqlMarsheller' when it was created. This does NOT include any table
   constraints add via 'addTableConstraints'.
+
+@since 0.10.0.0
 -}
 tableConstraintsFromMarshaller ::
   TableDefinition key writeEntity readEntity ->
@@ -227,6 +279,8 @@ tableConstraintsFromMarshaller =
   'ConstraintMigrationKey', only the last one that is added will be part of the
   'TableDefinition'. Any previously added constraint with the same key is
   replaced by the new one.
+
+@since 0.10.0.0
 -}
 addTableConstraints ::
   [ConstraintDefinition] ->
@@ -244,6 +298,8 @@ addTableConstraints constraintDefs tableDef =
 {- |
   Retrieves all the table indexes that have been added to the table via
   'addTableIndexes'.
+
+@since 0.10.0.0
 -}
 tableIndexes ::
   TableDefinition key writeEntity readEntity ->
@@ -257,6 +313,8 @@ tableIndexes =
   Note: If multiple indexes are added with the same 'IndexMigrationKey', only
   the last one that is added will be part of the 'TableDefinition'. Any
   previously added index with the same key is replaced by the new one.
+
+@since 0.10.0.0
 -}
 addTableIndexes ::
   [IndexDefinition] ->
@@ -273,6 +331,8 @@ addTableIndexes indexDefs tableDef =
 
 {- |
   Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
+
+@since 0.10.0.0
 -}
 tablePrimaryKey :: TableDefinition (HasKey key) writeEntity readEntity -> PrimaryKey key
 tablePrimaryKey def =
@@ -281,12 +341,16 @@ tablePrimaryKey def =
 
 {- |
   Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
+
+@since 0.10.0.0
 -}
 tableMarshaller :: TableDefinition key writeEntity readEntity -> AnnotatedSqlMarshaller writeEntity readEntity
 tableMarshaller = i_tableMarshaller
 
 {- |
   Applies the provided function to the underlying 'SqlMarshaller' of the 'TableDefinition'
+
+@since 0.10.0.0
 -}
 mapTableMarshaller ::
   (SqlMarshaller readEntityA writeEntityA -> SqlMarshaller readEntityB writeEntityB) ->
@@ -298,6 +362,8 @@ mapTableMarshaller f tableDef =
 {- |
   Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the
   given 'TableDefinition' when it is executed.
+
+@since 0.10.0.0
 -}
 mkCreateTableExpr ::
   TableDefinition key writeEntity readEntity ->
@@ -312,6 +378,8 @@ mkCreateTableExpr tableDef =
 {- |
   Builds the 'Expr.ColumnDefinitions' for all the fields described by the
   table definition's 'SqlMarshaller'.
+
+@since 0.10.0.0
 -}
 mkTableColumnDefinitions ::
   TableDefinition key writeEntity readEntity ->
@@ -325,6 +393,8 @@ mkTableColumnDefinitions tableDef =
 {- |
   Builds the 'Expr.PrimaryKeyExpr' for this table, or none of this table has no
   primary key.
+
+@since 0.10.0.0
 -}
 mkTablePrimaryKeyExpr ::
   TableDefinition key writeEntity readEntity ->
@@ -339,6 +409,8 @@ mkTablePrimaryKeyExpr tableDef =
 {- |
   When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
   return all the columns in the given table definition.
+
+@since 0.10.0.0
 -}
 mkTableReturningClause ::
   ReturningOption returningClause ->
@@ -361,6 +433,8 @@ mkTableReturningClause returningOption tableDef =
   Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
   table when it is executed. A @RETURNING@ clause with either be included to
   return the insert rows or not, depending on the 'ReturnOption' given.
+
+@since 0.10.0.0
 -}
 mkInsertExpr ::
   ReturningOption returningClause ->
@@ -391,6 +465,8 @@ mkInsertExpr returningOption tableDef entities =
   In normal circumstances you will want to build the complete insert statement
   via 'mkInsertExpr', but this is exported in case you are a composing SQL
   yourself and need the column list of an insert as a fragment.
+
+@since 0.10.0.0
 -}
 mkInsertColumnList ::
   SqlMarshaller writeEntity readEntity ->
@@ -408,6 +484,8 @@ mkInsertColumnList marshaller =
   In normal circumstances you will want to build the complete insert statement
   via 'mkInsertExpr', but this is exported in case you are a composing SQL
   yourself and need the column list of an insert as a fragment.
+
+@since 0.10.0.0
 -}
 mkInsertSource ::
   SqlMarshaller writeEntity readEntity ->
@@ -424,6 +502,8 @@ mkInsertSource marshaller entities =
   An internal helper function that collects the 'SqlValue' encoded value for a
   field from a Haskell entity, adding it a list of 'SqlValue's that is being
   built.
+
+@since 0.10.0.0
 -}
 collectSqlValue ::
   MarshallerField entity ->
