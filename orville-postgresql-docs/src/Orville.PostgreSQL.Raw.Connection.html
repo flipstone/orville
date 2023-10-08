@@ -1,0 +1,860 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Raw.Connection</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Orville definitions</span></span><span>
+</span><span id="line-13"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier">Connection</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#createConnectionPool"><span class="hs-identifier">createConnectionPool</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#NoticeReporting"><span class="hs-identifier">NoticeReporting</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#EnableNoticeReporting"><span class="hs-identifier">EnableNoticeReporting</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#DisableNoticeReporting"><span class="hs-identifier">DisableNoticeReporting</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#executeRaw"><span class="hs-identifier">executeRaw</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#quoteStringLiteral"><span class="hs-identifier">quoteStringLiteral</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#quoteIdentifier"><span class="hs-identifier">quoteIdentifier</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionUsedAfterCloseError"><span class="hs-identifier">ConnectionUsedAfterCloseError</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionError"><span class="hs-identifier">ConnectionError</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#SqlExecutionError"><span class="hs-identifier">SqlExecutionError</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Re-exports from &quot;Data.Pool&quot; for convenience</span></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Pool</span></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">threadWaitRead</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">threadWaitWrite</span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent.MVar</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MVar</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">newMVar</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">tryReadMVar</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">tryTakeMVar</span></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">mask</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throwIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">void</span></span><span class="hs-special">)</span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BS</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Builder</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BSB</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B8</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fromMaybe</span></span><span class="hs-special">)</span><span class="hs-cpp">
+#if MIN_VERSION_resource_pool(0,4,0)
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Pool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Pool</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">newPool</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">defaultPoolConfig</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">setNumStripes</span></span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data.Pool</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">Pool</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">createPool</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Enc</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NominalDiffTime</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.PgTextFormatValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#NULByteFoundError"><span class="hs-identifier">NULByteFoundError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#NULByteFoundError"><span class="hs-identifier">NULByteFoundError</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#PgTextFormatValue"><span class="hs-identifier">PgTextFormatValue</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#toBytesForLibPQ"><span class="hs-identifier">toBytesForLibPQ</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">{- |
+  An option for 'createConnectionPool' than indicates whether the LibPQ should
+  print notice reports for warnings to the console
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">data</span><span> </span><span id="NoticeReporting"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#NoticeReporting"><span class="hs-identifier hs-var">NoticeReporting</span></a></span></span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="EnableNoticeReporting"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#EnableNoticeReporting"><span class="hs-identifier hs-var">EnableNoticeReporting</span></a></span></span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="DisableNoticeReporting"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#DisableNoticeReporting"><span class="hs-identifier hs-var">DisableNoticeReporting</span></a></span></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><span class="hs-comment">{- |
+ 'createConnectionPool' allocates a pool of connections to a PostgreSQL server.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#createConnectionPool"><span class="hs-identifier hs-type">createConnectionPool</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Whether or not notice reporting from LibPQ should be enabled</span></span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#NoticeReporting"><span class="hs-identifier hs-type">NoticeReporting</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Number of stripes in the connection pool</span></span><span>
+</span><span id="line-67"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Linger time before closing an idle connection</span></span><span>
+</span><span id="line-69"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NominalDiffTime</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-70"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Max number of connections to allocate per stripe</span></span><span>
+</span><span id="line-71"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A PostgreSQL connection string</span></span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Pool</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
+#if MIN_VERSION_resource_pool(0,4,0)
+</span><span id="createConnectionPool"><span class="annot"><span class="annottext">createConnectionPool :: NoticeReporting
+-&gt; Int
+-&gt; NominalDiffTime
+-&gt; Int
+-&gt; ByteString
+-&gt; IO (Pool Connection)
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#createConnectionPool"><span class="hs-identifier hs-var hs-var">createConnectionPool</span></a></span></span><span> </span><span id="local-6989586621679126956"><span class="annot"><span class="annottext">NoticeReporting
+</span><a href="#local-6989586621679126956"><span class="hs-identifier hs-var">noticeReporting</span></a></span></span><span> </span><span id="local-6989586621679126957"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679126957"><span class="hs-identifier hs-var">stripes</span></a></span></span><span> </span><span id="local-6989586621679126958"><span class="annot"><span class="annottext">NominalDiffTime
+</span><a href="#local-6989586621679126958"><span class="hs-identifier hs-var">linger</span></a></span></span><span> </span><span id="local-6989586621679126959"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679126959"><span class="hs-identifier hs-var">maxRes</span></a></span></span><span> </span><span id="local-6989586621679126960"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679126960"><span class="hs-identifier hs-var">connectionString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><span class="annottext">PoolConfig Connection -&gt; IO (Pool Connection)
+forall a. PoolConfig a -&gt; IO (Pool a)
+</span><span class="hs-identifier hs-var">newPool</span></span><span> </span><span class="annot"><span class="annottext">(PoolConfig Connection -&gt; IO (Pool Connection))
+-&gt; (PoolConfig Connection -&gt; PoolConfig Connection)
+-&gt; PoolConfig Connection
+-&gt; IO (Pool Connection)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Maybe Int -&gt; PoolConfig Connection -&gt; PoolConfig Connection
+forall a. Maybe Int -&gt; PoolConfig a -&gt; PoolConfig a
+</span><span class="hs-identifier hs-var">setNumStripes</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Maybe Int
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679126957"><span class="hs-identifier hs-var">stripes</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(PoolConfig Connection -&gt; IO (Pool Connection))
+-&gt; PoolConfig Connection -&gt; IO (Pool Connection)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><span class="annottext">IO Connection
+-&gt; (Connection -&gt; IO ()) -&gt; Double -&gt; Int -&gt; PoolConfig Connection
+forall a. IO a -&gt; (a -&gt; IO ()) -&gt; Double -&gt; Int -&gt; PoolConfig a
+</span><span class="hs-identifier hs-var">defaultPoolConfig</span></span><span>
+</span><span id="line-79"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NoticeReporting -&gt; ByteString -&gt; IO Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connect"><span class="hs-identifier hs-var">connect</span></a></span><span> </span><span class="annot"><span class="annottext">NoticeReporting
+</span><a href="#local-6989586621679126956"><span class="hs-identifier hs-var">noticeReporting</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679126960"><span class="hs-identifier hs-var">connectionString</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>      </span><span class="annot"><span class="annottext">Connection -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#close"><span class="hs-identifier hs-var">close</span></a></span><span>
+</span><span id="line-81"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NominalDiffTime -&gt; Double
+forall a b. (Real a, Fractional b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">realToFrac</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
+</span><a href="#local-6989586621679126958"><span class="hs-identifier hs-var">linger</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679126957"><span class="hs-identifier hs-var">stripes</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679126959"><span class="hs-identifier hs-var">maxRes</span></a></span><span class="hs-special">)</span><span class="hs-cpp">
+#else
+</span><span class="hs-identifier">createConnectionPool</span><span> </span><span class="hs-identifier">noticeReporting</span><span> </span><span class="hs-identifier">stripes</span><span> </span><span class="hs-identifier">linger</span><span> </span><span class="hs-identifier">maxRes</span><span> </span><span class="hs-identifier">connectionString</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-identifier">createPool</span><span> </span><span class="hs-special">(</span><span class="hs-identifier">connect</span><span> </span><span class="hs-identifier">noticeReporting</span><span> </span><span class="hs-identifier">connectionString</span><span class="hs-special">)</span><span> </span><span class="hs-identifier">close</span><span> </span><span class="hs-identifier">stripes</span><span> </span><span class="hs-identifier">linger</span><span> </span><span class="hs-identifier">maxRes</span><span class="hs-cpp">
+#endif
+</span><span>
+</span><span id="line-88"></span><span class="annot"><span class="hs-comment">{- |
+ 'executeRaw' runs a given SQL statement returning the raw underlying result.
+
+ All handling of stepping through the result set is left to the caller.  This
+ potentially leaves connections open much longer than one would expect if all
+ of the results are not iterated through immediately *and* the data copied.
+ Use with caution.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#executeRaw"><span class="hs-identifier hs-type">executeRaw</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-99"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-100"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#PgTextFormatValue"><span class="hs-identifier hs-type">PgTextFormatValue</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-102"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Result</span></span><span>
+</span><span id="line-103"></span><span id="executeRaw"><span class="annot"><span class="annottext">executeRaw :: Connection -&gt; ByteString -&gt; [Maybe PgTextFormatValue] -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#executeRaw"><span class="hs-identifier hs-var hs-var">executeRaw</span></a></span></span><span> </span><span id="local-6989586621679126965"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126965"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span id="local-6989586621679126966"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679126966"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span id="local-6989586621679126967"><span class="annot"><span class="annottext">[Maybe PgTextFormatValue]
+</span><a href="#local-6989586621679126967"><span class="hs-identifier hs-var">params</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-104"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">(Maybe PgTextFormatValue
+ -&gt; Either NULByteFoundError (Maybe ByteString))
+-&gt; [Maybe PgTextFormatValue]
+-&gt; Either NULByteFoundError [Maybe ByteString]
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; [a] -&gt; f [b]
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(PgTextFormatValue -&gt; Either NULByteFoundError ByteString)
+-&gt; Maybe PgTextFormatValue
+-&gt; Either NULByteFoundError (Maybe ByteString)
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Maybe a -&gt; f (Maybe b)
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="annot"><span class="annottext">PgTextFormatValue -&gt; Either NULByteFoundError ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#toBytesForLibPQ"><span class="hs-identifier hs-var">toBytesForLibPQ</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Maybe PgTextFormatValue]
+</span><a href="#local-6989586621679126967"><span class="hs-identifier hs-var">params</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-105"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="annot"><span class="annottext">NULByteFoundError
+</span><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#NULByteFoundError"><span class="hs-identifier hs-var">NULByteFoundError</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-106"></span><span>      </span><span class="annot"><span class="annottext">NULByteFoundError -&gt; IO Result
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">NULByteFoundError
+</span><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#NULByteFoundError"><span class="hs-identifier hs-var">NULByteFoundError</span></a></span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679126969"><span class="annot"><span class="annottext">[Maybe ByteString]
+</span><a href="#local-6989586621679126969"><span class="hs-identifier hs-var">paramBytes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>      </span><span class="annot"><span class="annottext">ByteString -&gt; [Maybe ByteString] -&gt; Connection -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#underlyingExecute"><span class="hs-identifier hs-var">underlyingExecute</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679126966"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="annot"><span class="annottext">[Maybe ByteString]
+</span><a href="#local-6989586621679126969"><span class="hs-identifier hs-var">paramBytes</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126965"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><span class="hs-comment">{- |
+  An Orville handle for a LibPQ connection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-115"></span><span class="hs-keyword">newtype</span><span> </span><span id="Connection"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-var">Connection</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Connection"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-var">Connection</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MVar</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Connection</span></span><span class="hs-special">)</span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="annot"><span class="hs-comment">{- |
+ 'connect' is the internal, primitive connection function.
+
+ This should not be exposed to end users, but instead wrapped in something to create a pool.
+
+ Note that handling the libpq connection with the polling is described at
+ &lt;https://hackage.haskell.org/package/postgresql-libpq-0.9.4.2/docs/Database-PostgreSQL-LibPQ.html&gt;.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-127"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#connect"><span class="hs-identifier hs-type">connect</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#NoticeReporting"><span class="hs-identifier hs-type">NoticeReporting</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span>
+</span><span id="line-128"></span><span id="connect"><span class="annot"><span class="annottext">connect :: NoticeReporting -&gt; ByteString -&gt; IO Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connect"><span class="hs-identifier hs-var hs-var">connect</span></a></span></span><span> </span><span id="local-6989586621679126972"><span class="annot"><span class="annottext">NoticeReporting
+</span><a href="#local-6989586621679126972"><span class="hs-identifier hs-var">noticeReporting</span></a></span></span><span> </span><span id="local-6989586621679126973"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679126973"><span class="hs-identifier hs-var">connectionString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-129"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-130"></span><span>    </span><span id="local-6989586621679126979"><span class="annot"><span class="annottext">checkSocketAndThreadWait :: Connection -&gt; (Fd -&gt; IO ()) -&gt; IO Connection
+</span><a href="#local-6989586621679126979"><span class="hs-identifier hs-var hs-var">checkSocketAndThreadWait</span></a></span></span><span> </span><span id="local-6989586621679126980"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126980"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span id="local-6989586621679126981"><span class="annot"><span class="annottext">Fd -&gt; IO ()
+</span><a href="#local-6989586621679126981"><span class="hs-identifier hs-var">threadWaitFn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-131"></span><span>      </span><span id="local-6989586621679126982"><span class="annot"><span class="annottext">Maybe Fd
+</span><a href="#local-6989586621679126982"><span class="hs-identifier hs-var">fd</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO (Maybe Fd)
+</span><span class="hs-identifier hs-var">LibPQ.socket</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126980"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-132"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe Fd
+</span><a href="#local-6989586621679126982"><span class="hs-identifier hs-var">fd</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-133"></span><span>        </span><span class="annot"><span class="annottext">Maybe Fd
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-134"></span><span>          </span><span class="annot"><span class="annottext">String -&gt; Connection -&gt; IO Connection
+forall a. String -&gt; Connection -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwConnectionError"><span class="hs-identifier hs-var">throwConnectionError</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;connect: failed to get file descriptor for socket&quot;</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126980"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-135"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679126985"><span class="annot"><span class="annottext">Fd
+</span><a href="#local-6989586621679126985"><span class="hs-identifier hs-var">fd'</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-136"></span><span>          </span><span class="annot"><span class="annottext">Fd -&gt; IO ()
+</span><a href="#local-6989586621679126981"><span class="hs-identifier hs-var">threadWaitFn</span></a></span><span> </span><span class="annot"><span class="annottext">Fd
+</span><a href="#local-6989586621679126985"><span class="hs-identifier hs-var">fd'</span></a></span><span>
+</span><span id="line-137"></span><span>          </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+</span><a href="#local-6989586621679126986"><span class="hs-identifier hs-var">poll</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126980"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span>    </span><span id="local-6989586621679126986"><span class="annot"><span class="annottext">poll :: Connection -&gt; IO Connection
+</span><a href="#local-6989586621679126986"><span class="hs-identifier hs-var hs-var">poll</span></a></span></span><span> </span><span id="local-6989586621679126987"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126987"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-140"></span><span>      </span><span id="local-6989586621679126988"><span class="annot"><span class="annottext">PollingStatus
+</span><a href="#local-6989586621679126988"><span class="hs-identifier hs-var">pollStatus</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO PollingStatus
+</span><span class="hs-identifier hs-var">LibPQ.connectPoll</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126987"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-141"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">PollingStatus
+</span><a href="#local-6989586621679126988"><span class="hs-identifier hs-var">pollStatus</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-142"></span><span>        </span><span class="annot"><span class="annottext">PollingStatus
+</span><span class="hs-identifier hs-var">LibPQ.PollingFailed</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-143"></span><span>          </span><span class="annot"><span class="annottext">String -&gt; Connection -&gt; IO Connection
+forall a. String -&gt; Connection -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwConnectionError"><span class="hs-identifier hs-var">throwConnectionError</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;connect: polling failed while connecting to database server&quot;</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126987"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-144"></span><span>        </span><span class="annot"><span class="annottext">PollingStatus
+</span><span class="hs-identifier hs-var">LibPQ.PollingReading</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-145"></span><span>          </span><span class="annot"><span class="annottext">Connection -&gt; (Fd -&gt; IO ()) -&gt; IO Connection
+</span><a href="#local-6989586621679126979"><span class="hs-identifier hs-var">checkSocketAndThreadWait</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126987"><span class="hs-identifier hs-var">conn</span></a></span><span> </span><span class="annot"><span class="annottext">Fd -&gt; IO ()
+</span><span class="hs-identifier hs-var">threadWaitRead</span></span><span>
+</span><span id="line-146"></span><span>        </span><span class="annot"><span class="annottext">PollingStatus
+</span><span class="hs-identifier hs-var">LibPQ.PollingWriting</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-147"></span><span>          </span><span class="annot"><span class="annottext">Connection -&gt; (Fd -&gt; IO ()) -&gt; IO Connection
+</span><a href="#local-6989586621679126979"><span class="hs-identifier hs-var">checkSocketAndThreadWait</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126987"><span class="hs-identifier hs-var">conn</span></a></span><span> </span><span class="annot"><span class="annottext">Fd -&gt; IO ()
+</span><span class="hs-identifier hs-var">threadWaitWrite</span></span><span>
+</span><span id="line-148"></span><span>        </span><span class="annot"><span class="annottext">PollingStatus
+</span><span class="hs-identifier hs-var">LibPQ.PollingOk</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-149"></span><span>          </span><span id="local-6989586621679126994"><span class="annot"><span class="annottext">MVar Connection
+</span><a href="#local-6989586621679126994"><span class="hs-identifier hs-var">connectionHandle</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO (MVar Connection)
+forall a. a -&gt; IO (MVar a)
+</span><span class="hs-identifier hs-var">newMVar</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126987"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-150"></span><span>          </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MVar Connection -&gt; Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-var">Connection</span></a></span><span> </span><span class="annot"><span class="annottext">MVar Connection
+</span><a href="#local-6989586621679126994"><span class="hs-identifier hs-var">connectionHandle</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-151"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-152"></span><span>    </span><span class="hs-keyword">do</span><span>
+</span><span id="line-153"></span><span>      </span><span id="local-6989586621679126995"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126995"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; IO Connection
+</span><span class="hs-identifier hs-var">LibPQ.connectStart</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679126973"><span class="hs-identifier hs-var">connectionString</span></a></span><span>
+</span><span id="line-154"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">NoticeReporting
+</span><a href="#local-6989586621679126972"><span class="hs-identifier hs-var">noticeReporting</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-155"></span><span>        </span><span class="annot"><span class="annottext">NoticeReporting
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#DisableNoticeReporting"><span class="hs-identifier hs-var">DisableNoticeReporting</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO ()
+</span><span class="hs-identifier hs-var">LibPQ.disableNoticeReporting</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126995"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-156"></span><span>        </span><span class="annot"><span class="annottext">NoticeReporting
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#EnableNoticeReporting"><span class="hs-identifier hs-var">EnableNoticeReporting</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO ()
+</span><span class="hs-identifier hs-var">LibPQ.enableNoticeReporting</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126995"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-157"></span><span>      </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+</span><a href="#local-6989586621679126986"><span class="hs-identifier hs-var">poll</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679126995"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-158"></span><span>
+</span><span id="line-159"></span><span class="annot"><span class="hs-comment">{- |
+  'close' has many subtleties to it.
+
+  First note that async exceptions are masked.  'mask' though, only works for
+  things that are not interruptible
+  &lt;https://www.stackage.org/haddock/lts-16.15/base-4.13.0.0/Control-Exception.html#g:13&gt;
+
+  From the previous link, 'tryTakeMVar' is not interruptible, where 'takeMVar'
+  *is*.  So by using 'tryTakeMVar' along with 'mask', we should be safe from
+  async exceptions causing us to not finish an underlying connection.  Notice
+  that the only place the MVar is ever taken is here so 'tryTakeMVar' gives us
+  both the non-blocking semantics to protect from async exceptions with 'mask'
+  _and_ should never truly return an empty unless two threads were racing to
+  close the connection, in which case.. one of them will close the connection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-176"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#close"><span class="hs-identifier hs-type">close</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-177"></span><span id="close"><span class="annot"><span class="annottext">close :: Connection -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#close"><span class="hs-identifier hs-var hs-var">close</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span id="local-6989586621679126999"><span class="annot"><span class="annottext">MVar Connection
+</span><a href="#local-6989586621679126999"><span class="hs-identifier hs-var">handle'</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-178"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><a href="#local-6989586621679127000"><span class="hs-identifier hs-type">underlyingFinish</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679126865"><span class="annot"><a href="#local-6989586621679126865"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679126865"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679126865"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span>    </span><span id="local-6989586621679127000"><span class="annot"><span class="annottext">underlyingFinish :: (forall a. IO a -&gt; IO a) -&gt; IO (Maybe ())
+</span><a href="#local-6989586621679127000"><span class="hs-identifier hs-var hs-var">underlyingFinish</span></a></span></span><span> </span><span id="local-6989586621679127001"><span class="annot"><span class="annottext">forall a. IO a -&gt; IO a
+</span><a href="#local-6989586621679127001"><span class="hs-identifier hs-var">restore</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-181"></span><span>      </span><span id="local-6989586621679127002"><span class="annot"><span class="annottext">Maybe Connection
+</span><a href="#local-6989586621679127002"><span class="hs-identifier hs-var">underlyingConnection</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">MVar Connection -&gt; IO (Maybe Connection)
+forall a. MVar a -&gt; IO (Maybe a)
+</span><span class="hs-identifier hs-var">tryTakeMVar</span></span><span> </span><span class="annot"><span class="annottext">MVar Connection
+</span><a href="#local-6989586621679126999"><span class="hs-identifier hs-var">handle'</span></a></span><span>
+</span><span id="line-182"></span><span>      </span><span class="annot"><span class="annottext">IO (Maybe ()) -&gt; IO (Maybe ())
+forall a. IO a -&gt; IO a
+</span><a href="#local-6989586621679127001"><span class="hs-identifier hs-var">restore</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Connection -&gt; IO ()) -&gt; Maybe Connection -&gt; IO (Maybe ())
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; Maybe a -&gt; f (Maybe b)
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO ()
+</span><span class="hs-identifier hs-var">LibPQ.finish</span></span><span> </span><span class="annot"><span class="annottext">Maybe Connection
+</span><a href="#local-6989586621679127002"><span class="hs-identifier hs-var">underlyingConnection</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-183"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-184"></span><span>    </span><span class="annot"><span class="annottext">IO (Maybe ()) -&gt; IO ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">(IO (Maybe ()) -&gt; IO ()) -&gt; IO (Maybe ()) -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">((forall a. IO a -&gt; IO a) -&gt; IO (Maybe ())) -&gt; IO (Maybe ())
+forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><span class="hs-identifier hs-var">mask</span></span><span> </span><span class="annot"><span class="annottext">(forall a. IO a -&gt; IO a) -&gt; IO (Maybe ())
+</span><a href="#local-6989586621679127000"><span class="hs-identifier hs-var">underlyingFinish</span></a></span><span>
+</span><span id="line-185"></span><span>
+</span><span id="line-186"></span><span class="annot"><span class="hs-comment">{- |
+ 'underlyingExecute' is the internal, primitive execute function.
+
+  This is not intended to be directly exposed to end users, but instead wrapped
+  in something using a pool.  Note there are potential dragons here in that
+  this calls `tryReadMvar` and then returns an error if the MVar is not full.
+  The intent is to never expose the ability to empty the `MVar` outside of this
+  module, so unless a connection has been closed it *should* never be empty.
+  And a connection should be closed upon removal from a resource pool (in which
+  case it can't be used for this  function in the first place).
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-199"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#underlyingExecute"><span class="hs-identifier hs-type">underlyingExecute</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-200"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-201"></span><span>  </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-202"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-203"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Result</span></span><span>
+</span><span id="line-204"></span><span id="underlyingExecute"><span class="annot"><span class="annottext">underlyingExecute :: ByteString -&gt; [Maybe ByteString] -&gt; Connection -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#underlyingExecute"><span class="hs-identifier hs-var hs-var">underlyingExecute</span></a></span></span><span> </span><span id="local-6989586621679127004"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127004"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span id="local-6989586621679127005"><span class="annot"><span class="annottext">[Maybe ByteString]
+</span><a href="#local-6989586621679127005"><span class="hs-identifier hs-var">params</span></a></span></span><span> </span><span id="local-6989586621679127006"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127006"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-205"></span><span>  </span><span id="local-6989586621679127007"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127007"><span class="hs-identifier hs-var">libPQConn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#readLibPQConnectionOrFailIfClosed"><span class="hs-identifier hs-var">readLibPQConnectionOrFailIfClosed</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127006"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-206"></span><span>  </span><span id="local-6989586621679127009"><span class="annot"><span class="annottext">Maybe Result
+</span><a href="#local-6989586621679127009"><span class="hs-identifier hs-var">mbResult</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-207"></span><span>    </span><span class="annot"><span class="annottext">Connection
+-&gt; ByteString
+-&gt; [Maybe (Oid, ByteString, Format)]
+-&gt; Format
+-&gt; IO (Maybe Result)
+</span><span class="hs-identifier hs-var">LibPQ.execParams</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127007"><span class="hs-identifier hs-var">libPQConn</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127004"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe ByteString -&gt; Maybe (Oid, ByteString, Format))
+-&gt; [Maybe ByteString] -&gt; [Maybe (Oid, ByteString, Format)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">Maybe ByteString -&gt; Maybe (Oid, ByteString, Format)
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#mkInferredTextParam"><span class="hs-identifier hs-var">mkInferredTextParam</span></a></span><span> </span><span class="annot"><span class="annottext">[Maybe ByteString]
+</span><a href="#local-6989586621679127005"><span class="hs-identifier hs-var">params</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Format
+</span><span class="hs-identifier hs-var">LibPQ.Text</span></span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe Result
+</span><a href="#local-6989586621679127009"><span class="hs-identifier hs-var">mbResult</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-210"></span><span>    </span><span class="annot"><span class="annottext">Maybe Result
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-211"></span><span>      </span><span class="annot"><span class="annottext">Connection -&gt; ByteString -&gt; IO Result
+forall a. Connection -&gt; ByteString -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwExecutionErrorWithoutResult"><span class="hs-identifier hs-var">throwExecutionErrorWithoutResult</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127007"><span class="hs-identifier hs-var">libPQConn</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127004"><span class="hs-identifier hs-var">bs</span></a></span><span>
+</span><span id="line-212"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679127014"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127014"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-213"></span><span>      </span><span id="local-6989586621679127015"><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127015"><span class="hs-identifier hs-var">execStatus</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Result -&gt; IO ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.resultStatus</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127014"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-214"></span><span>
+</span><span id="line-215"></span><span>      </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">ExecStatus -&gt; Bool
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#isRowReadableStatus"><span class="hs-identifier hs-var">isRowReadableStatus</span></a></span><span> </span><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127015"><span class="hs-identifier hs-var">execStatus</span></a></span><span>
+</span><span id="line-216"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Result -&gt; IO Result
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127014"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-217"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Result -&gt; ExecStatus -&gt; ByteString -&gt; IO Result
+forall a. Result -&gt; ExecStatus -&gt; ByteString -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwExecutionErrorWithResult"><span class="hs-identifier hs-var">throwExecutionErrorWithResult</span></a></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127014"><span class="hs-identifier hs-var">result</span></a></span><span> </span><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127015"><span class="hs-identifier hs-var">execStatus</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127004"><span class="hs-identifier hs-var">bs</span></a></span><span>
+</span><span id="line-218"></span><span>
+</span><span id="line-219"></span><span class="annot"><span class="hs-comment">{- |
+  Escapes and quotes a string for use as a literal within a SQL command that
+  will be execute on the given connection. This uses the @PQescapeStringConn@
+  function from libpq, which takes the character encoding of the connection
+  into account. Not that while @PQescapeStringConn@ does not surround the
+  literal with quotes, this function does for the sake of symmetry with
+  'quoteIdentifier'.
+
+  This function returns a `BSB.Buider` so that the result can be included in
+  a builder being constructed for the surrounding SQL command without making
+  an additional copy of the `BS.Bytestring` returned by LibPQ for the sake of
+  adding the surrounding quotes.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-234"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#quoteStringLiteral"><span class="hs-identifier hs-type">quoteStringLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span>
+</span><span id="line-235"></span><span id="quoteStringLiteral"><span class="annot"><span class="annottext">quoteStringLiteral :: Connection -&gt; ByteString -&gt; IO Builder
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#quoteStringLiteral"><span class="hs-identifier hs-var hs-var">quoteStringLiteral</span></a></span></span><span> </span><span id="local-6989586621679127019"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127019"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span id="local-6989586621679127020"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127020"><span class="hs-identifier hs-var">unquotedString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-236"></span><span>  </span><span id="local-6989586621679127021"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127021"><span class="hs-identifier hs-var">libPQConn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#readLibPQConnectionOrFailIfClosed"><span class="hs-identifier hs-var">readLibPQConnectionOrFailIfClosed</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127019"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-237"></span><span>  </span><span id="local-6989586621679127022"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127022"><span class="hs-identifier hs-var">mbEscapedString</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; ByteString -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.escapeStringConn</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127021"><span class="hs-identifier hs-var">libPQConn</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127020"><span class="hs-identifier hs-var">unquotedString</span></a></span><span>
+</span><span id="line-238"></span><span>
+</span><span id="line-239"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127022"><span class="hs-identifier hs-var">mbEscapedString</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-240"></span><span>    </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-241"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; Connection -&gt; IO Builder
+forall a. String -&gt; Connection -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwConnectionError"><span class="hs-identifier hs-var">throwConnectionError</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Error while escaping string literal&quot;</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127021"><span class="hs-identifier hs-var">libPQConn</span></a></span><span>
+</span><span id="line-242"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679127024"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127024"><span class="hs-identifier hs-var">escapedString</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-243"></span><span>      </span><span class="hs-keyword">let</span><span>
+</span><span id="line-244"></span><span>        </span><span id="local-6989586621679127025"><span class="annot"><span class="annottext">singleQuote :: Builder
+</span><a href="#local-6989586621679127025"><span class="hs-identifier hs-var hs-var">singleQuote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-245"></span><span>          </span><span class="annot"><span class="annottext">Char -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.char8</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'\''</span></span><span>
+</span><span id="line-246"></span><span>      </span><span class="hs-keyword">in</span><span>
+</span><span id="line-247"></span><span>        </span><span class="annot"><span class="annottext">Builder -&gt; IO Builder
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127025"><span class="hs-identifier hs-var">singleQuote</span></a></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.byteString</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127024"><span class="hs-identifier hs-var">escapedString</span></a></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127025"><span class="hs-identifier hs-var">singleQuote</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-248"></span><span>
+</span><span id="line-249"></span><span class="annot"><span class="hs-comment">{- |
+  Escapes and quotes a string for use as an identifier within a SQL command
+  that will be execute on the given connection. This uses the
+  @PQescapeIdentifier@ function from libpq, which takes the character encoding
+  of the connection into account and also applies the quotes.
+
+  Although this function does not need to copy the `BS.ByteString` returned by
+  LibPQ to add the quotes (since LibPQ already added them), it returns a
+  `BSB.Builder` nonetheless to maintain symmetry with `quoteStringLiteral`.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-261"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#quoteIdentifier"><span class="hs-identifier hs-type">quoteIdentifier</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span>
+</span><span id="line-262"></span><span id="quoteIdentifier"><span class="annot"><span class="annottext">quoteIdentifier :: Connection -&gt; ByteString -&gt; IO Builder
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#quoteIdentifier"><span class="hs-identifier hs-var hs-var">quoteIdentifier</span></a></span></span><span> </span><span id="local-6989586621679127028"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127028"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span id="local-6989586621679127029"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127029"><span class="hs-identifier hs-var">unquotedString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-263"></span><span>  </span><span id="local-6989586621679127030"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127030"><span class="hs-identifier hs-var">libPQConn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#readLibPQConnectionOrFailIfClosed"><span class="hs-identifier hs-var">readLibPQConnectionOrFailIfClosed</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127028"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-264"></span><span>  </span><span id="local-6989586621679127031"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127031"><span class="hs-identifier hs-var">mbEscapedString</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; ByteString -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.escapeIdentifier</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127030"><span class="hs-identifier hs-var">libPQConn</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127029"><span class="hs-identifier hs-var">unquotedString</span></a></span><span>
+</span><span id="line-265"></span><span>
+</span><span id="line-266"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127031"><span class="hs-identifier hs-var">mbEscapedString</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-267"></span><span>    </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-268"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; Connection -&gt; IO Builder
+forall a. String -&gt; Connection -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwConnectionError"><span class="hs-identifier hs-var">throwConnectionError</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Error while escaping identifier&quot;</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127030"><span class="hs-identifier hs-var">libPQConn</span></a></span><span>
+</span><span id="line-269"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679127033"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127033"><span class="hs-identifier hs-var">quotedString</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-270"></span><span>      </span><span class="annot"><span class="annottext">Builder -&gt; IO Builder
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.byteString</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127033"><span class="hs-identifier hs-var">quotedString</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-271"></span><span>
+</span><span id="line-272"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#readLibPQConnectionOrFailIfClosed"><span class="hs-identifier hs-type">readLibPQConnectionOrFailIfClosed</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Connection</span></span><span>
+</span><span id="line-273"></span><span id="readLibPQConnectionOrFailIfClosed"><span class="annot"><span class="annottext">readLibPQConnectionOrFailIfClosed :: Connection -&gt; IO Connection
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#readLibPQConnectionOrFailIfClosed"><span class="hs-identifier hs-var hs-var">readLibPQConnectionOrFailIfClosed</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span id="local-6989586621679127034"><span class="annot"><span class="annottext">MVar Connection
+</span><a href="#local-6989586621679127034"><span class="hs-identifier hs-var">handle</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-274"></span><span>  </span><span id="local-6989586621679127035"><span class="annot"><span class="annottext">Maybe Connection
+</span><a href="#local-6989586621679127035"><span class="hs-identifier hs-var">mbConn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">MVar Connection -&gt; IO (Maybe Connection)
+forall a. MVar a -&gt; IO (Maybe a)
+</span><span class="hs-identifier hs-var">tryReadMVar</span></span><span> </span><span class="annot"><span class="annottext">MVar Connection
+</span><a href="#local-6989586621679127034"><span class="hs-identifier hs-var">handle</span></a></span><span>
+</span><span id="line-275"></span><span>
+</span><span id="line-276"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe Connection
+</span><a href="#local-6989586621679127035"><span class="hs-identifier hs-var">mbConn</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-277"></span><span>    </span><span class="annot"><span class="annottext">Maybe Connection
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-278"></span><span>      </span><span class="annot"><span class="annottext">ConnectionUsedAfterCloseError -&gt; IO Connection
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">ConnectionUsedAfterCloseError
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionUsedAfterCloseError"><span class="hs-identifier hs-var">ConnectionUsedAfterCloseError</span></a></span><span>
+</span><span id="line-279"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679127037"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127037"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-280"></span><span>      </span><span class="annot"><span class="annottext">Connection -&gt; IO Connection
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127037"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-281"></span><span>
+</span><span id="line-282"></span><span id="local-6989586621679126859"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#throwConnectionError"><span class="hs-identifier hs-type">throwConnectionError</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Connection</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679126859"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-283"></span><span id="throwConnectionError"><span class="annot"><span class="annottext">throwConnectionError :: forall a. String -&gt; Connection -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwConnectionError"><span class="hs-identifier hs-var hs-var">throwConnectionError</span></a></span></span><span> </span><span id="local-6989586621679127041"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679127041"><span class="hs-identifier hs-var">message</span></a></span></span><span> </span><span id="local-6989586621679127042"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127042"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-284"></span><span>  </span><span id="local-6989586621679127043"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127043"><span class="hs-identifier hs-var">mbLibPQError</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.errorMessage</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127042"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-285"></span><span>
+</span><span id="line-286"></span><span>  </span><span class="annot"><span class="annottext">ConnectionError -&gt; IO a
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(ConnectionError -&gt; IO a) -&gt; ConnectionError -&gt; IO a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-287"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionError"><span class="hs-identifier hs-type">ConnectionError</span></a></span><span>
+</span><span id="line-288"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">connectionErrorMessage :: String
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connectionErrorMessage"><span class="hs-identifier hs-var">connectionErrorMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679127041"><span class="hs-identifier hs-var">message</span></a></span><span>
+</span><span id="line-289"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">connectionErrorLibPQMessage :: Maybe ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connectionErrorLibPQMessage"><span class="hs-identifier hs-var">connectionErrorLibPQMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127043"><span class="hs-identifier hs-var">mbLibPQError</span></a></span><span>
+</span><span id="line-290"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-291"></span><span>
+</span><span id="line-292"></span><span id="local-6989586621679126874"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#throwExecutionErrorWithoutResult"><span class="hs-identifier hs-type">throwExecutionErrorWithoutResult</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-293"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Connection</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-294"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-295"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679126874"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-296"></span><span id="throwExecutionErrorWithoutResult"><span class="annot"><span class="annottext">throwExecutionErrorWithoutResult :: forall a. Connection -&gt; ByteString -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwExecutionErrorWithoutResult"><span class="hs-identifier hs-var hs-var">throwExecutionErrorWithoutResult</span></a></span></span><span> </span><span id="local-6989586621679127051"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127051"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span id="local-6989586621679127052"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127052"><span class="hs-identifier hs-var">queryBS</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-297"></span><span>  </span><span id="local-6989586621679127053"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127053"><span class="hs-identifier hs-var">mbLibPQError</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.errorMessage</span></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127051"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-298"></span><span>
+</span><span id="line-299"></span><span>  </span><span class="annot"><span class="annottext">SqlExecutionError -&gt; IO a
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(SqlExecutionError -&gt; IO a) -&gt; SqlExecutionError -&gt; IO a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-300"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#SqlExecutionError"><span class="hs-identifier hs-type">SqlExecutionError</span></a></span><span>
+</span><span id="line-301"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorExecStatus :: Maybe ExecStatus
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorExecStatus"><span class="hs-identifier hs-var">sqlExecutionErrorExecStatus</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ExecStatus
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-302"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorMessage :: ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorMessage"><span class="hs-identifier hs-var">sqlExecutionErrorMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Maybe ByteString -&gt; ByteString
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;No error message available from LibPQ&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127053"><span class="hs-identifier hs-var">mbLibPQError</span></a></span><span>
+</span><span id="line-303"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorSqlState :: Maybe ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorSqlState"><span class="hs-identifier hs-var">sqlExecutionErrorSqlState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-304"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorSqlQuery :: ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorSqlQuery"><span class="hs-identifier hs-var">sqlExecutionErrorSqlQuery</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127052"><span class="hs-identifier hs-var">queryBS</span></a></span><span>
+</span><span id="line-305"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-306"></span><span>
+</span><span id="line-307"></span><span id="local-6989586621679126876"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#throwExecutionErrorWithResult"><span class="hs-identifier hs-type">throwExecutionErrorWithResult</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-308"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Result</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-309"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.ExecStatus</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-310"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-311"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679126876"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-312"></span><span id="throwExecutionErrorWithResult"><span class="annot"><span class="annottext">throwExecutionErrorWithResult :: forall a. Result -&gt; ExecStatus -&gt; ByteString -&gt; IO a
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#throwExecutionErrorWithResult"><span class="hs-identifier hs-var hs-var">throwExecutionErrorWithResult</span></a></span></span><span> </span><span id="local-6989586621679127063"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127063"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span id="local-6989586621679127064"><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127064"><span class="hs-identifier hs-var">execStatus</span></a></span></span><span> </span><span id="local-6989586621679127065"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127065"><span class="hs-identifier hs-var">queryBS</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-313"></span><span>  </span><span id="local-6989586621679127066"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127066"><span class="hs-identifier hs-var">mbLibPQError</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Result -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.resultErrorMessage</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127063"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-314"></span><span>  </span><span id="local-6989586621679127068"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127068"><span class="hs-identifier hs-var">mbSqlState</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Result -&gt; FieldCode -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.resultErrorField</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679127063"><span class="hs-identifier hs-var">result</span></a></span><span> </span><span class="annot"><span class="annottext">FieldCode
+</span><span class="hs-identifier hs-var">LibPQ.DiagSqlstate</span></span><span>
+</span><span id="line-315"></span><span>
+</span><span id="line-316"></span><span>  </span><span class="annot"><span class="annottext">SqlExecutionError -&gt; IO a
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(SqlExecutionError -&gt; IO a) -&gt; SqlExecutionError -&gt; IO a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-317"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#SqlExecutionError"><span class="hs-identifier hs-type">SqlExecutionError</span></a></span><span>
+</span><span id="line-318"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorExecStatus :: Maybe ExecStatus
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorExecStatus"><span class="hs-identifier hs-var">sqlExecutionErrorExecStatus</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ExecStatus -&gt; Maybe ExecStatus
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127064"><span class="hs-identifier hs-var">execStatus</span></a></span><span>
+</span><span id="line-319"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorMessage :: ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorMessage"><span class="hs-identifier hs-var">sqlExecutionErrorMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Maybe ByteString -&gt; ByteString
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">fromMaybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;No error message available from LibPQ&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127066"><span class="hs-identifier hs-var">mbLibPQError</span></a></span><span>
+</span><span id="line-320"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorSqlState :: Maybe ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorSqlState"><span class="hs-identifier hs-var">sqlExecutionErrorSqlState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127068"><span class="hs-identifier hs-var">mbSqlState</span></a></span><span>
+</span><span id="line-321"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlExecutionErrorSqlQuery :: ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorSqlQuery"><span class="hs-identifier hs-var">sqlExecutionErrorSqlQuery</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127065"><span class="hs-identifier hs-var">queryBS</span></a></span><span>
+</span><span id="line-322"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-323"></span><span>
+</span><span id="line-324"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#isRowReadableStatus"><span class="hs-identifier hs-type">isRowReadableStatus</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.ExecStatus</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-325"></span><span id="isRowReadableStatus"><span class="annot"><span class="annottext">isRowReadableStatus :: ExecStatus -&gt; Bool
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#isRowReadableStatus"><span class="hs-identifier hs-var hs-var">isRowReadableStatus</span></a></span></span><span> </span><span id="local-6989586621679127071"><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127071"><span class="hs-identifier hs-var">status</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-326"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ExecStatus
+</span><a href="#local-6989586621679127071"><span class="hs-identifier hs-var">status</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-327"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.CommandOk</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-comment">-- ??</span><span>
+</span><span id="line-328"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.TuplesOk</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-comment">-- Returned on successful query, even if there are 0 rows.</span><span>
+</span><span id="line-329"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.SingleTuple</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-comment">-- Only returned when a query is executed is single row mode</span><span>
+</span><span id="line-330"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.EmptyQuery</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-331"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.CopyOut</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-332"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.CopyIn</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-333"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.CopyBoth</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="hs-comment">-- CopyBoth is only used for streaming replication, so should not occur in ordinary applications</span><span>
+</span><span id="line-334"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.BadResponse</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-335"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.NonfatalError</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="hs-comment">-- NonfatalError never returned from LibPQ query execution functions. It passes them to the notice processor instead.</span><span>
+</span><span id="line-336"></span><span>    </span><span class="annot"><span class="annottext">ExecStatus
+</span><span class="hs-identifier hs-var">LibPQ.FatalError</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-337"></span><span>
+</span><span id="line-338"></span><span class="annot"><span class="hs-comment">{- |
+  Packages a bytestring parameter value (which is assumed to be a value encoded
+  as text that the database can use) as a parameter for executing a query.
+  This uses Oid 0 to cause the database to infer the type of the paremeter and
+  explicitly marks the parameter as being in Text format.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-346"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#mkInferredTextParam"><span class="hs-identifier hs-type">mkInferredTextParam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Format</span></span><span class="hs-special">)</span><span>
+</span><span id="line-347"></span><span id="mkInferredTextParam"><span class="annot"><span class="annottext">mkInferredTextParam :: Maybe ByteString -&gt; Maybe (Oid, ByteString, Format)
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#mkInferredTextParam"><span class="hs-identifier hs-var hs-var">mkInferredTextParam</span></a></span></span><span> </span><span id="local-6989586621679127082"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127082"><span class="hs-identifier hs-var">mbValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-348"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679127082"><span class="hs-identifier hs-var">mbValue</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-349"></span><span>    </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-350"></span><span>      </span><span class="annot"><span class="annottext">Maybe (Oid, ByteString, Format)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-351"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679127083"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127083"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-352"></span><span>      </span><span class="annot"><span class="annottext">(Oid, ByteString, Format) -&gt; Maybe (Oid, ByteString, Format)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">0</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127083"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Format
+</span><span class="hs-identifier hs-var">LibPQ.Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-353"></span><span>
+</span><span id="line-354"></span><span class="annot"><span class="hs-comment">{- |
+  Orville throws a 'ConnectionError' on an error reported by the underlying
+  LibPQ connection that does not come directly from executing SQL. This could
+  could represent an inability to open a new database connection, but could
+  also represent other errors such as an error while quoting a database
+  identifier.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-363"></span><span class="hs-keyword">data</span><span> </span><span id="ConnectionError"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionError"><span class="hs-identifier hs-var">ConnectionError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConnectionError"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionError"><span class="hs-identifier hs-var">ConnectionError</span></a></span></span><span>
+</span><span id="line-364"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="connectionErrorMessage"><span class="annot"><span class="annottext">ConnectionError -&gt; String
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connectionErrorMessage"><span class="hs-identifier hs-var hs-var">connectionErrorMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-365"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="connectionErrorLibPQMessage"><span class="annot"><span class="annottext">ConnectionError -&gt; Maybe ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connectionErrorLibPQMessage"><span class="hs-identifier hs-var hs-var">connectionErrorLibPQMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-366"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-367"></span><span>
+</span><span id="line-368"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679127086"><span id="local-6989586621679127091"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionError"><span class="hs-identifier hs-type">ConnectionError</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-369"></span><span>  </span><span id="local-6989586621679127097"><span class="annot"><span class="annottext">show :: ConnectionError -&gt; String
+</span><a href="#local-6989586621679127097"><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></a></span></span><span> </span><span id="local-6989586621679127099"><span class="annot"><span class="annottext">ConnectionError
+</span><a href="#local-6989586621679127099"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-370"></span><span>    </span><span class="hs-keyword">let</span><span>
+</span><span id="line-371"></span><span>      </span><span id="local-6989586621679127103"><span class="annot"><span class="annottext">libPQErrorMsg :: String
+</span><a href="#local-6989586621679127103"><span class="hs-identifier hs-var hs-var">libPQErrorMsg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-372"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ConnectionError -&gt; Maybe ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connectionErrorLibPQMessage"><span class="hs-identifier hs-var">connectionErrorLibPQMessage</span></a></span><span> </span><span class="annot"><span class="annottext">ConnectionError
+</span><a href="#local-6989586621679127099"><span class="hs-identifier hs-var">err</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-373"></span><span>          </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-374"></span><span>            </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;no underying error available&gt;&quot;</span></span><span>
+</span><span id="line-375"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679127104"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127104"><span class="hs-identifier hs-var">libPQMsg</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-376"></span><span>            </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either UnicodeException Text
+</span><span class="hs-identifier hs-var">Enc.decodeUtf8'</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127104"><span class="hs-identifier hs-var">libPQMsg</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-377"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679127106"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679127106"><span class="hs-identifier hs-var">decoded</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-378"></span><span>                </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679127106"><span class="hs-identifier hs-var">decoded</span></a></span><span>
+</span><span id="line-379"></span><span>              </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679127108"><span class="annot"><span class="annottext">UnicodeException
+</span><a href="#local-6989586621679127108"><span class="hs-identifier hs-var">decodingErr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-380"></span><span>                </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Error decoding libPQ messages as utf8: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">UnicodeException -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="annot"><span class="annottext">UnicodeException
+</span><a href="#local-6989586621679127108"><span class="hs-identifier hs-var">decodingErr</span></a></span><span>
+</span><span id="line-381"></span><span>    </span><span class="hs-keyword">in</span><span>
+</span><span id="line-382"></span><span>      </span><span class="annot"><span class="annottext">ConnectionError -&gt; String
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#connectionErrorMessage"><span class="hs-identifier hs-var">connectionErrorMessage</span></a></span><span> </span><span class="annot"><span class="annottext">ConnectionError
+</span><a href="#local-6989586621679127099"><span class="hs-identifier hs-var">err</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679127103"><span class="hs-identifier hs-var">libPQErrorMsg</span></a></span><span>
+</span><span id="line-383"></span><span>
+</span><span id="line-384"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679127114"><span id="local-6989586621679127117"><span id="local-6989586621679127120"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionError"><span class="hs-identifier hs-type">ConnectionError</span></a></span></span></span></span><span>
+</span><span id="line-385"></span><span>
+</span><span id="line-386"></span><span class="annot"><span class="hs-comment">{- |
+  Orville throws a 'SqlExecutionError' when an error is reported by the
+  underlying LibPQ connection during an attempt to execute SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-392"></span><span class="hs-keyword">data</span><span> </span><span id="SqlExecutionError"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#SqlExecutionError"><span class="hs-identifier hs-var">SqlExecutionError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SqlExecutionError"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#SqlExecutionError"><span class="hs-identifier hs-var">SqlExecutionError</span></a></span></span><span>
+</span><span id="line-393"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="sqlExecutionErrorExecStatus"><span class="annot"><span class="annottext">SqlExecutionError -&gt; Maybe ExecStatus
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorExecStatus"><span class="hs-identifier hs-var hs-var">sqlExecutionErrorExecStatus</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.ExecStatus</span></span><span>
+</span><span id="line-394"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The underlying LibPQ execution status</span></span><span>
+</span><span id="line-395"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlExecutionErrorMessage"><span class="annot"><span class="annottext">SqlExecutionError -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorMessage"><span class="hs-identifier hs-var hs-var">sqlExecutionErrorMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-396"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ Error message reported by PostgreSQL</span></span><span>
+</span><span id="line-397"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlExecutionErrorSqlState"><span class="annot"><span class="annottext">SqlExecutionError -&gt; Maybe ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorSqlState"><span class="hs-identifier hs-var hs-var">sqlExecutionErrorSqlState</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-398"></span><span>  </span><span class="hs-comment">-- ^ Any SQL state value reported by PostgreSQL. This can be used to</span><span>
+</span><span id="line-399"></span><span>  </span><span class="hs-comment">-- programming determine what kind of error happening without needing to</span><span>
+</span><span id="line-400"></span><span>  </span><span class="hs-comment">-- parse the error message. See</span><span>
+</span><span id="line-401"></span><span>  </span><span class="hs-comment">-- https://www.postgresql.org/docs/current/errcodes-appendix.html</span><span>
+</span><span id="line-402"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlExecutionErrorSqlQuery"><span class="annot"><span class="annottext">SqlExecutionError -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#sqlExecutionErrorSqlQuery"><span class="hs-identifier hs-var hs-var">sqlExecutionErrorSqlQuery</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-403"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The SQL query that was being run when the error occurred.</span></span><span>
+</span><span id="line-404"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-405"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679127124"><span id="local-6989586621679127135"><span id="local-6989586621679127139"><span class="annot"><span class="annottext">Int -&gt; SqlExecutionError -&gt; ShowS
+[SqlExecutionError] -&gt; ShowS
+SqlExecutionError -&gt; String
+(Int -&gt; SqlExecutionError -&gt; ShowS)
+-&gt; (SqlExecutionError -&gt; String)
+-&gt; ([SqlExecutionError] -&gt; ShowS)
+-&gt; Show SqlExecutionError
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; SqlExecutionError -&gt; ShowS
+showsPrec :: Int -&gt; SqlExecutionError -&gt; ShowS
+$cshow :: SqlExecutionError -&gt; String
+show :: SqlExecutionError -&gt; String
+$cshowList :: [SqlExecutionError] -&gt; ShowS
+showList :: [SqlExecutionError] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-406"></span><span>
+</span><span id="line-407"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679127147"><span id="local-6989586621679127150"><span id="local-6989586621679127153"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#SqlExecutionError"><span class="hs-identifier hs-type">SqlExecutionError</span></a></span></span></span></span><span>
+</span><span id="line-408"></span><span>
+</span><span id="line-409"></span><span class="annot"><span class="hs-comment">{- |
+  Orville throws as 'ConnectionUsedAfterCloseError' if it attempts to use a
+  'Connection' value after it has already been closed. If this occurs, it is a
+  bug in Orville.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-416"></span><span class="hs-keyword">data</span><span> </span><span id="ConnectionUsedAfterCloseError"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionUsedAfterCloseError"><span class="hs-identifier hs-var">ConnectionUsedAfterCloseError</span></a></span></span><span>
+</span><span id="line-417"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ConnectionUsedAfterCloseError"><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionUsedAfterCloseError"><span class="hs-identifier hs-var">ConnectionUsedAfterCloseError</span></a></span></span><span>
+</span><span id="line-418"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679127156"><span id="local-6989586621679127158"><span id="local-6989586621679127162"><span class="annot"><span class="annottext">Int -&gt; ConnectionUsedAfterCloseError -&gt; ShowS
+[ConnectionUsedAfterCloseError] -&gt; ShowS
+ConnectionUsedAfterCloseError -&gt; String
+(Int -&gt; ConnectionUsedAfterCloseError -&gt; ShowS)
+-&gt; (ConnectionUsedAfterCloseError -&gt; String)
+-&gt; ([ConnectionUsedAfterCloseError] -&gt; ShowS)
+-&gt; Show ConnectionUsedAfterCloseError
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ConnectionUsedAfterCloseError -&gt; ShowS
+showsPrec :: Int -&gt; ConnectionUsedAfterCloseError -&gt; ShowS
+$cshow :: ConnectionUsedAfterCloseError -&gt; String
+show :: ConnectionUsedAfterCloseError -&gt; String
+$cshowList :: [ConnectionUsedAfterCloseError] -&gt; ShowS
+showList :: [ConnectionUsedAfterCloseError] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-419"></span><span>
+</span><span id="line-420"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679127169"><span id="local-6989586621679127172"><span id="local-6989586621679127175"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#ConnectionUsedAfterCloseError"><span class="hs-identifier hs-type">ConnectionUsedAfterCloseError</span></a></span></span></span></span><span>
+</span><span id="line-421"></span></pre></body></html>

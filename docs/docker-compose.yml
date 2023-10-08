@@ -1,0 +1,18 @@
+version: "3"
+services:
+  pg:
+    image: postgres:15.0-alpine
+    environment:
+      POSTGRES_USER: orville_docs
+      POSTGRES_PASSWORD: orville
+  docs:
+    build: .
+    volumes:
+      - cabal:/root/.cabal
+      - ..:/orville-root
+    depends_on:
+      - pg
+    tty: true
+    working_dir: /docs
+volumes:
+  cabal:

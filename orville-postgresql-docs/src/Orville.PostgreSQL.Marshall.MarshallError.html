@@ -1,0 +1,348 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Marshall.MarshallError</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier">MarshallError</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier">MarshallError</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorDetailLevel"><span class="hs-identifier">marshallErrorDetailLevel</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorRowIdentifier"><span class="hs-identifier">marshallErrorRowIdentifier</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorDetails"><span class="hs-identifier">marshallErrorDetails</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallError"><span class="hs-identifier">renderMarshallError</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallErrorDetails"><span class="hs-identifier">MarshallErrorDetails</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingError"><span class="hs-identifier">DecodingError</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnError"><span class="hs-identifier">MissingColumnError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallErrorDetails"><span class="hs-identifier">renderMarshallErrorDetails</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingErrorDetails"><span class="hs-identifier">DecodingErrorDetails</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingErrorDetails"><span class="hs-identifier">DecodingErrorDetails</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#decodingErrorValues"><span class="hs-identifier">decodingErrorValues</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#decodingErrorMessage"><span class="hs-identifier">decodingErrorMessage</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderDecodingErrorDetails"><span class="hs-identifier">renderDecodingErrorDetails</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnErrorDetails"><span class="hs-identifier">MissingColumnErrorDetails</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnErrorDetails"><span class="hs-identifier">MissingColumnErrorDetails</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#missingColumnName"><span class="hs-identifier">missingColumnName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#actualColumnNames"><span class="hs-identifier">actualColumnNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMissingColumnErrorDetails"><span class="hs-identifier">renderMissingColumnErrorDetails</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B8</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">List</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html"><span class="hs-identifier">Orville.PostgreSQL.ErrorDetailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier">ErrorDetailLevel</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactErrorMessage"><span class="hs-identifier">redactErrorMessage</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactIdentifierValue"><span class="hs-identifier">redactIdentifierValue</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactNonIdentifierValue"><span class="hs-identifier">redactNonIdentifierValue</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier">redactSchemaName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.PgTextFormatValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">PgTextFormatValue</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+  A 'MarshallError' may be returned from 'marshallResultFromSql' when a row being
+  decoded from the database doesn't meet the expectations of the
+  'SqlMarshaller' that is decoding it.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">data</span><span> </span><span id="MarshallError"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier hs-var">MarshallError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="MarshallError"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier hs-var">MarshallError</span></a></span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="marshallErrorDetailLevel"><span class="annot"><span class="annottext">MarshallError -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorDetailLevel"><span class="hs-identifier hs-var hs-var">marshallErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-comment">-- ^ The level of details that will be used to render this error as a</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-comment">-- message if 'show' is called</span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="marshallErrorRowIdentifier"><span class="annot"><span class="annottext">MarshallError -&gt; [(ByteString, SqlValue)]
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorRowIdentifier"><span class="hs-identifier hs-var hs-var">marshallErrorRowIdentifier</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue.SqlValue</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-comment">-- ^ The identifier of the row that caused the error. This is a list</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-comment">-- of pairs of column name and value in their raw form from the database</span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-comment">-- to avoid further possible decoding errors when reading the values</span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="marshallErrorDetails"><span class="annot"><span class="annottext">MarshallError -&gt; MarshallErrorDetails
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorDetails"><span class="hs-identifier hs-var hs-var">marshallErrorDetails</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallErrorDetails"><span class="hs-identifier hs-type">MarshallErrorDetails</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-comment">-- ^ The detailed information about the error that occurred during</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-comment">-- decoding</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679129475"><span id="local-6989586621679129480"><span class="annot"><span class="hs-identifier hs-type">Show</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier hs-type">MarshallError</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-50"></span><span>  </span><span id="local-6989586621679129483"><span class="annot"><span class="annottext">show :: MarshallError -&gt; String
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">show</span></span></span><span> </span><span id="local-6989586621679129484"><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679129484"><span class="hs-identifier hs-var">decodingError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-51"></span><span>    </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; MarshallError -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallError"><span class="hs-identifier hs-var">renderMarshallError</span></a></span><span>
+</span><span id="line-52"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MarshallError -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorDetailLevel"><span class="hs-identifier hs-var">marshallErrorDetailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679129484"><span class="hs-identifier hs-var">decodingError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span>      </span><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679129484"><span class="hs-identifier hs-var">decodingError</span></a></span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679129490"><span id="local-6989586621679129494"><span id="local-6989586621679129497"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier hs-type">MarshallError</span></a></span></span></span></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'MarshallError' to a string using the specified 'ErrorDetailLevel'.
+
+  This ingores any 'ErrorDetailLevel' that was captured by default from
+  the Orville context and uses the specified level of detail instead.
+
+  You may want to use this function to render certain with a higher level of
+  detail that you consider safe for (for example) you application logs while
+  using a lower default error detail level to be used with the 'Show' instance
+  of 'MarhallError' in case an exception is handled in a more visible section
+  of code that return information more publicly (e.g. a request handler for a
+  public endpoint).
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-72"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallError"><span class="hs-identifier hs-type">renderMarshallError</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallError"><span class="hs-identifier hs-type">MarshallError</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-73"></span><span id="renderMarshallError"><span class="annot"><span class="annottext">renderMarshallError :: ErrorDetailLevel -&gt; MarshallError -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallError"><span class="hs-identifier hs-var hs-var">renderMarshallError</span></a></span></span><span> </span><span id="local-6989586621679129500"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129500"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679129501"><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679129501"><span class="hs-identifier hs-var">marshallError</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-75"></span><span>    </span><span id="local-6989586621679129502"><span class="annot"><span class="annottext">presentableRowId :: [String]
+</span><a href="#local-6989586621679129502"><span class="hs-identifier hs-var hs-var">presentableRowId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-76"></span><span>      </span><span class="annot"><span class="annottext">((ByteString, SqlValue) -&gt; String)
+-&gt; [(ByteString, SqlValue)] -&gt; [String]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span>
+</span><span id="line-77"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ErrorDetailLevel
+-&gt; (ErrorDetailLevel -&gt; ShowS) -&gt; (ByteString, SqlValue) -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#presentSqlColumnValue"><span class="hs-identifier hs-var">presentSqlColumnValue</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129500"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactIdentifierValue"><span class="hs-identifier hs-var">redactIdentifierValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MarshallError -&gt; [(ByteString, SqlValue)]
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorRowIdentifier"><span class="hs-identifier hs-var">marshallErrorRowIdentifier</span></a></span><span> </span><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679129501"><span class="hs-identifier hs-var">marshallError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-80"></span><span>    </span><span class="annot"><span class="annottext">[String] -&gt; String
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span>
+</span><span id="line-81"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unable to decode row with identifier [&quot;</span></span><span>
+</span><span id="line-82"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
+forall a. [a] -&gt; [[a]] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.intercalate</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679129502"><span class="hs-identifier hs-var">presentableRowId</span></a></span><span>
+</span><span id="line-83"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;]: &quot;</span></span><span>
+</span><span id="line-84"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; MarshallErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallErrorDetails"><span class="hs-identifier hs-var">renderMarshallErrorDetails</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129500"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">MarshallError -&gt; MarshallErrorDetails
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#marshallErrorDetails"><span class="hs-identifier hs-var">marshallErrorDetails</span></a></span><span> </span><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679129501"><span class="hs-identifier hs-var">marshallError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><span class="hs-comment">{- |
+  A internal helper to present a redacted column name and sql value in an error
+  message. The redacter function is passed as an argument here so that this
+  function can be used to present either ID values or general values as
+  required by the context of the caller.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-95"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#presentSqlColumnValue"><span class="hs-identifier hs-type">presentSqlColumnValue</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-96"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue.SqlValue</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-99"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-100"></span><span id="presentSqlColumnValue"><span class="annot"><span class="annottext">presentSqlColumnValue :: ErrorDetailLevel
+-&gt; (ErrorDetailLevel -&gt; ShowS) -&gt; (ByteString, SqlValue) -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#presentSqlColumnValue"><span class="hs-identifier hs-var hs-var">presentSqlColumnValue</span></a></span></span><span> </span><span id="local-6989586621679129506"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129506"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679129507"><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="#local-6989586621679129507"><span class="hs-identifier hs-var">redacter</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679129508"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679129508"><span class="hs-identifier hs-var">columnName</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679129509"><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679129509"><span class="hs-identifier hs-var">sqlValue</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-102"></span><span>    </span><span id="local-6989586621679129510"><span class="annot"><span class="annottext">sqlValueString :: String
+</span><a href="#local-6989586621679129510"><span class="hs-identifier hs-var hs-var">sqlValueString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-103"></span><span>      </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="#local-6989586621679129507"><span class="hs-identifier hs-var">redacter</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129506"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; ShowS
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-104"></span><span>        </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Maybe PgTextFormatValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toPgValue"><span class="hs-identifier hs-var">SqlValue.toPgValue</span></a></span><span> </span><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679129509"><span class="hs-identifier hs-var">sqlValue</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-105"></span><span>          </span><span class="annot"><span class="annottext">Maybe PgTextFormatValue
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-106"></span><span>            </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NULL&quot;</span></span><span>
+</span><span id="line-107"></span><span>          </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679129512"><span class="annot"><span class="annottext">PgTextFormatValue
+</span><a href="#local-6989586621679129512"><span class="hs-identifier hs-var">pgValue</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>            </span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">B8.unpack</span></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; String)
+-&gt; (PgTextFormatValue -&gt; ByteString) -&gt; PgTextFormatValue -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">PgTextFormatValue -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#toByteString"><span class="hs-identifier hs-var">PgTextFormatValue.toByteString</span></a></span><span> </span><span class="annot"><span class="annottext">(PgTextFormatValue -&gt; String) -&gt; PgTextFormatValue -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PgTextFormatValue
+</span><a href="#local-6989586621679129512"><span class="hs-identifier hs-var">pgValue</span></a></span><span>
+</span><span id="line-109"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier hs-var">redactSchemaName</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129506"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">B8.unpack</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679129508"><span class="hs-identifier hs-var">columnName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; = &quot;</span></span><span>
+</span><span id="line-112"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679129510"><span class="hs-identifier hs-var">sqlValueString</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">{- |
+  A 'MarshallErrorDetails' may be returned from 'marshallFromSql' if the result set
+  being decoded from the database doesn't meet the expectations of the
+  'SqlMarshaller' that is decoding it.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-121"></span><span class="hs-keyword">data</span><span> </span><span id="MarshallErrorDetails"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallErrorDetails"><span class="hs-identifier hs-var">MarshallErrorDetails</span></a></span></span><span>
+</span><span id="line-122"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-comment">-- | Indicates that a one ore more values in a columns could not be decoded,</span><span>
+</span><span id="line-123"></span><span>    </span><span class="hs-comment">-- either individually or as a group</span><span>
+</span><span id="line-124"></span><span>    </span><span id="DecodingError"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingError"><span class="hs-identifier hs-var">DecodingError</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingErrorDetails"><span class="hs-identifier hs-type">DecodingErrorDetails</span></a></span><span>
+</span><span id="line-125"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Indicates that an expected column was not found in the result set</span></span><span>
+</span><span id="line-126"></span><span>    </span><span id="MissingColumnError"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnError"><span class="hs-identifier hs-var">MissingColumnError</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnErrorDetails"><span class="hs-identifier hs-type">MissingColumnErrorDetails</span></a></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'MarshallErrorDetails' to a 'String' with a specified
+  'ErrorDetailLevel'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallErrorDetails"><span class="hs-identifier hs-type">renderMarshallErrorDetails</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MarshallErrorDetails"><span class="hs-identifier hs-type">MarshallErrorDetails</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-135"></span><span id="renderMarshallErrorDetails"><span class="annot"><span class="annottext">renderMarshallErrorDetails :: ErrorDetailLevel -&gt; MarshallErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMarshallErrorDetails"><span class="hs-identifier hs-var hs-var">renderMarshallErrorDetails</span></a></span></span><span> </span><span id="local-6989586621679129516"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129516"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679129517"><span class="annot"><span class="annottext">MarshallErrorDetails
+</span><a href="#local-6989586621679129517"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-136"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">MarshallErrorDetails
+</span><a href="#local-6989586621679129517"><span class="hs-identifier hs-var">err</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingError"><span class="hs-identifier hs-type">DecodingError</span></a></span><span> </span><span id="local-6989586621679129518"><span class="annot"><span class="annottext">DecodingErrorDetails
+</span><a href="#local-6989586621679129518"><span class="hs-identifier hs-var">details</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; DecodingErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderDecodingErrorDetails"><span class="hs-identifier hs-var">renderDecodingErrorDetails</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129516"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">DecodingErrorDetails
+</span><a href="#local-6989586621679129518"><span class="hs-identifier hs-var">details</span></a></span><span>
+</span><span id="line-138"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnError"><span class="hs-identifier hs-type">MissingColumnError</span></a></span><span> </span><span id="local-6989586621679129519"><span class="annot"><span class="annottext">MissingColumnErrorDetails
+</span><a href="#local-6989586621679129519"><span class="hs-identifier hs-var">details</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; MissingColumnErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMissingColumnErrorDetails"><span class="hs-identifier hs-var">renderMissingColumnErrorDetails</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129516"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">MissingColumnErrorDetails
+</span><a href="#local-6989586621679129519"><span class="hs-identifier hs-var">details</span></a></span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="annot"><span class="hs-comment">{- |
+  Details about an error that occurred while decoding values found a SQL
+  result set.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-146"></span><span class="hs-keyword">data</span><span> </span><span id="DecodingErrorDetails"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingErrorDetails"><span class="hs-identifier hs-var">DecodingErrorDetails</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="DecodingErrorDetails"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingErrorDetails"><span class="hs-identifier hs-var">DecodingErrorDetails</span></a></span></span><span>
+</span><span id="line-147"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="decodingErrorValues"><span class="annot"><span class="annottext">DecodingErrorDetails -&gt; [(ByteString, SqlValue)]
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#decodingErrorValues"><span class="hs-identifier hs-var hs-var">decodingErrorValues</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue.SqlValue</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-148"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="decodingErrorMessage"><span class="annot"><span class="annottext">DecodingErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#decodingErrorMessage"><span class="hs-identifier hs-var hs-var">decodingErrorMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-150"></span><span>
+</span><span id="line-151"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'DecodingErrorDetails to a 'String' with a specified
+  'ErrorDetailLevel'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-157"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderDecodingErrorDetails"><span class="hs-identifier hs-type">renderDecodingErrorDetails</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#DecodingErrorDetails"><span class="hs-identifier hs-type">DecodingErrorDetails</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-158"></span><span id="renderDecodingErrorDetails"><span class="annot"><span class="annottext">renderDecodingErrorDetails :: ErrorDetailLevel -&gt; DecodingErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderDecodingErrorDetails"><span class="hs-identifier hs-var hs-var">renderDecodingErrorDetails</span></a></span></span><span> </span><span id="local-6989586621679129520"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129520"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679129521"><span class="annot"><span class="annottext">DecodingErrorDetails
+</span><a href="#local-6989586621679129521"><span class="hs-identifier hs-var">details</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-159"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-160"></span><span>    </span><span id="local-6989586621679129522"><span class="annot"><span class="annottext">presentableErrorValues :: [String]
+</span><a href="#local-6989586621679129522"><span class="hs-identifier hs-var hs-var">presentableErrorValues</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-161"></span><span>      </span><span class="annot"><span class="annottext">((ByteString, SqlValue) -&gt; String)
+-&gt; [(ByteString, SqlValue)] -&gt; [String]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span>
+</span><span id="line-162"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ErrorDetailLevel
+-&gt; (ErrorDetailLevel -&gt; ShowS) -&gt; (ByteString, SqlValue) -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#presentSqlColumnValue"><span class="hs-identifier hs-var">presentSqlColumnValue</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129520"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactNonIdentifierValue"><span class="hs-identifier hs-var">redactNonIdentifierValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DecodingErrorDetails -&gt; [(ByteString, SqlValue)]
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#decodingErrorValues"><span class="hs-identifier hs-var">decodingErrorValues</span></a></span><span> </span><span class="annot"><span class="annottext">DecodingErrorDetails
+</span><a href="#local-6989586621679129521"><span class="hs-identifier hs-var">details</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-164"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-165"></span><span>    </span><span class="annot"><span class="annottext">[String] -&gt; String
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span>
+</span><span id="line-166"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unable to decode columns from result set: &quot;</span></span><span>
+</span><span id="line-167"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactErrorMessage"><span class="hs-identifier hs-var">redactErrorMessage</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129520"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">DecodingErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#decodingErrorMessage"><span class="hs-identifier hs-var">decodingErrorMessage</span></a></span><span> </span><span class="annot"><span class="annottext">DecodingErrorDetails
+</span><a href="#local-6989586621679129521"><span class="hs-identifier hs-var">details</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-168"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;. Value(s) that failed to decode: [&quot;</span></span><span>
+</span><span id="line-169"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
+forall a. [a] -&gt; [[a]] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.intercalate</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679129522"><span class="hs-identifier hs-var">presentableErrorValues</span></a></span><span>
+</span><span id="line-170"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;]&quot;</span></span><span>
+</span><span id="line-171"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-172"></span><span>
+</span><span id="line-173"></span><span class="annot"><span class="hs-comment">{- |
+  Details about an column that was found to be missing in a SQL result set
+  during decoding.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-179"></span><span class="hs-keyword">data</span><span> </span><span id="MissingColumnErrorDetails"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnErrorDetails"><span class="hs-identifier hs-var">MissingColumnErrorDetails</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="MissingColumnErrorDetails"><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnErrorDetails"><span class="hs-identifier hs-var">MissingColumnErrorDetails</span></a></span></span><span>
+</span><span id="line-180"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="missingColumnName"><span class="annot"><span class="annottext">MissingColumnErrorDetails -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#missingColumnName"><span class="hs-identifier hs-var hs-var">missingColumnName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span>
+</span><span id="line-181"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="actualColumnNames"><span class="annot"><span class="annottext">MissingColumnErrorDetails -&gt; Set ByteString
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#actualColumnNames"><span class="hs-identifier hs-var hs-var">actualColumnNames</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Set.Set</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-182"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'MissingColumnErrorDetails' to a 'String' with a specified
+  'ErrorDetailLevel'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-190"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMissingColumnErrorDetails"><span class="hs-identifier hs-type">renderMissingColumnErrorDetails</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.MarshallError.html#MissingColumnErrorDetails"><span class="hs-identifier hs-type">MissingColumnErrorDetails</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-191"></span><span id="renderMissingColumnErrorDetails"><span class="annot"><span class="annottext">renderMissingColumnErrorDetails :: ErrorDetailLevel -&gt; MissingColumnErrorDetails -&gt; String
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#renderMissingColumnErrorDetails"><span class="hs-identifier hs-var hs-var">renderMissingColumnErrorDetails</span></a></span></span><span> </span><span id="local-6989586621679129523"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129523"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679129524"><span class="annot"><span class="annottext">MissingColumnErrorDetails
+</span><a href="#local-6989586621679129524"><span class="hs-identifier hs-var">details</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-192"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-193"></span><span>    </span><span id="local-6989586621679129525"><span class="annot"><span class="annottext">presentableActualNames :: [String]
+</span><a href="#local-6989586621679129525"><span class="hs-identifier hs-var hs-var">presentableActualNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-194"></span><span>      </span><span class="annot"><span class="annottext">(ByteString -&gt; String) -&gt; [ByteString] -&gt; [String]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span>
+</span><span id="line-195"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier hs-var">redactSchemaName</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129523"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">ShowS -&gt; (ByteString -&gt; String) -&gt; ByteString -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">B8.unpack</span></span><span class="hs-special">)</span><span>
+</span><span id="line-196"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Set ByteString -&gt; [ByteString]
+forall a. Set a -&gt; [a]
+</span><span class="hs-identifier hs-var">Set.toList</span></span><span> </span><span class="annot"><span class="annottext">(Set ByteString -&gt; [ByteString]) -&gt; Set ByteString -&gt; [ByteString]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MissingColumnErrorDetails -&gt; Set ByteString
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#actualColumnNames"><span class="hs-identifier hs-var">actualColumnNames</span></a></span><span> </span><span class="annot"><span class="annottext">MissingColumnErrorDetails
+</span><a href="#local-6989586621679129524"><span class="hs-identifier hs-var">details</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-197"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-198"></span><span>    </span><span class="annot"><span class="annottext">[String] -&gt; String
+forall (t :: * -&gt; *) a. Foldable t =&gt; t [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">concat</span></span><span>
+</span><span id="line-199"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Column &quot;</span></span><span>
+</span><span id="line-200"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier hs-var">redactSchemaName</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679129523"><span class="hs-identifier hs-var">detailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">B8.unpack</span></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; String) -&gt; ByteString -&gt; String
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">MissingColumnErrorDetails -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Marshall.MarshallError.html#missingColumnName"><span class="hs-identifier hs-var">missingColumnName</span></a></span><span> </span><span class="annot"><span class="annottext">MissingColumnErrorDetails
+</span><a href="#local-6989586621679129524"><span class="hs-identifier hs-var">details</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-201"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; not found in results set. Actual columns were [&quot;</span></span><span>
+</span><span id="line-202"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; String
+forall a. [a] -&gt; [[a]] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.intercalate</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;, &quot;</span></span><span> </span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679129525"><span class="hs-identifier hs-var">presentableActualNames</span></a></span><span>
+</span><span id="line-203"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;]&quot;</span></span><span>
+</span><span id="line-204"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-205"></span></pre></body></html>

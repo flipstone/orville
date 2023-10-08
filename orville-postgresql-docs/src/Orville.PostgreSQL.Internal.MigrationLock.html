@@ -1,0 +1,309 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE ScopedTypeVariables #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Internal.MigrationLock</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#withMigrationLock"><span class="hs-identifier">withMigrationLock</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#MigrationLockError"><span class="hs-identifier">MigrationLockError</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Concurrent</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">threadDelay</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throwIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">MIO</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.html"><span class="hs-identifier">Orville.PostgreSQL.Execution</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Exec</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html"><span class="hs-identifier">Orville.PostgreSQL.Internal.Bracket</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Bracket</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Marshall</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.html"><span class="hs-identifier">Orville.PostgreSQL.Monad</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+  Executes an Orville action with a PostgreSQL advisory lock held that
+  indicates to other Orville processes that a database migration is being done
+  an no others should be performed concurrently.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-36"></span><span id="local-6989586621679139897"><span id="local-6989586621679139899"><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#withMigrationLock"><span class="hs-identifier hs-type">withMigrationLock</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139897"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679139897"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139899"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679139897"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139899"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-37"></span><span id="withMigrationLock"><span class="annot"><span class="annottext">withMigrationLock :: forall (m :: * -&gt; *) a. MonadOrville m =&gt; m a -&gt; m a
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#withMigrationLock"><span class="hs-identifier hs-var hs-var">withMigrationLock</span></a></span></span><span> </span><span id="local-6989586621679139987"><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621679139987"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-38"></span><span>  </span><span class="annot"><span class="annottext">m a -&gt; m a
+forall (m :: * -&gt; *) a. MonadOrville m =&gt; m a -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection_"><span class="hs-identifier hs-var">Monad.withConnection_</span></a></span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; m a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="annot"><span class="annottext">m () -&gt; (() -&gt; BracketResult -&gt; m ()) -&gt; (() -&gt; m a) -&gt; m a
+forall (m :: * -&gt; *) a c b.
+(MonadIO m, MonadOrvilleControl m) =&gt;
+m a -&gt; (a -&gt; BracketResult -&gt; m c) -&gt; (a -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#bracketWithResult"><span class="hs-identifier hs-var">Bracket.bracketWithResult</span></a></span><span>
+</span><span id="line-40"></span><span>      </span><span class="annot"><span class="annottext">m ()
+forall (m :: * -&gt; *). MonadOrville m =&gt; m ()
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#accquireTransactionLock"><span class="hs-identifier hs-var">accquireTransactionLock</span></a></span><span>
+</span><span id="line-41"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span id="local-6989586621679139991"><span class="annot"><span class="annottext">BracketResult
+</span><a href="#local-6989586621679139991"><span class="hs-identifier hs-var">_bracketResult</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m ()
+forall (m :: * -&gt; *). MonadOrville m =&gt; m ()
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#releaseTransactionLock"><span class="hs-identifier hs-var">releaseTransactionLock</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621679139987"><span class="hs-identifier hs-var">action</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#accquireTransactionLock"><span class="hs-identifier hs-type">accquireTransactionLock</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679139913"><span class="annot"><a href="#local-6989586621679139913"><span class="hs-identifier hs-type">m</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139913"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679139913"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span id="accquireTransactionLock"><span class="annot"><span class="annottext">accquireTransactionLock :: forall (m :: * -&gt; *). MonadOrville m =&gt; m ()
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#accquireTransactionLock"><span class="hs-identifier hs-var hs-var">accquireTransactionLock</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="#local-6989586621679140020"><span class="hs-identifier hs-type">go</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679139913"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>    </span><span id="local-6989586621679140020"><span class="annot"><span class="annottext">go :: Int -&gt; m ()
+</span><a href="#local-6989586621679140020"><span class="hs-identifier hs-var hs-var">go</span></a></span></span><span> </span><span id="local-6989586621679140021"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679140021"><span class="hs-identifier hs-var">attempts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-49"></span><span>      </span><span id="local-6989586621679140022"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679140022"><span class="hs-identifier hs-var">locked</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m Bool
+</span><a href="#local-6989586621679140023"><span class="hs-identifier hs-var">attemptLockAcquisition</span></a></span><span>
+</span><span id="line-50"></span><span>      </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679140022"><span class="hs-identifier hs-var">locked</span></a></span><span>
+</span><span id="line-51"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">() -&gt; m ()
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-53"></span><span>          </span><span class="annot"><span class="annottext">IO () -&gt; m ()
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">MIO.liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; m ()) -&gt; IO () -&gt; m ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-54"></span><span>            </span><span class="annot"><span class="annottext">Bool -&gt; IO () -&gt; IO ()
+forall (f :: * -&gt; *). Applicative f =&gt; Bool -&gt; f () -&gt; f ()
+</span><span class="hs-identifier hs-var">Monad.when</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679140021"><span class="hs-identifier hs-var">attempts</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">25</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; IO ()) -&gt; IO () -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-55"></span><span>              </span><span class="annot"><span class="annottext">MigrationLockError -&gt; IO ()
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(MigrationLockError -&gt; IO ()) -&gt; MigrationLockError -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-56"></span><span>                </span><span class="annot"><span class="annottext">String -&gt; MigrationLockError
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#MigrationLockError"><span class="hs-identifier hs-var">MigrationLockError</span></a></span><span>
+</span><span id="line-57"></span><span>                  </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Giving up after 25 attempts to aquire the migration lock.&quot;</span></span><span>
+</span><span id="line-58"></span><span>            </span><span class="annot"><span class="annottext">Int -&gt; IO ()
+</span><span class="hs-identifier hs-var">threadDelay</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">10000</span></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span>          </span><span class="annot"><span class="annottext">Int -&gt; m ()
+</span><a href="#local-6989586621679140020"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; m ()) -&gt; Int -&gt; m ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679140021"><span class="hs-identifier hs-var">attempts</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span>    </span><span id="local-6989586621679140023"><span class="annot"><span class="annottext">attemptLockAcquisition :: m Bool
+</span><a href="#local-6989586621679140023"><span class="hs-identifier hs-var hs-var">attemptLockAcquisition</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-63"></span><span>      </span><span id="local-6989586621679140053"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679140053"><span class="hs-identifier hs-var">tryLockResults</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-64"></span><span>        </span><span class="annot"><span class="annottext">QueryType -&gt; RawSql -&gt; AnnotatedSqlMarshaller Bool Bool -&gt; m [Bool]
+forall (m :: * -&gt; *) sql writeEntity readEntity.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-var">Exec.executeAndDecode</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#OtherQuery"><span class="hs-identifier hs-var">Exec.OtherQuery</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#tryLockExpr"><span class="hs-identifier hs-var">tryLockExpr</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller Bool Bool
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#lockedMarshaller"><span class="hs-identifier hs-var">lockedMarshaller</span></a></span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679140053"><span class="hs-identifier hs-var">tryLockResults</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-67"></span><span>        </span><span class="hs-special">[</span><span id="local-6989586621679140058"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679140058"><span class="hs-identifier hs-var">locked</span></a></span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-68"></span><span>          </span><span class="annot"><span class="annottext">Bool -&gt; m Bool
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679140058"><span class="hs-identifier hs-var">locked</span></a></span><span>
+</span><span id="line-69"></span><span>        </span><span id="local-6989586621679140059"><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679140059"><span class="hs-identifier hs-var">rows</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-70"></span><span>          </span><span class="annot"><span class="annottext">IO Bool -&gt; m Bool
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">MIO.liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO Bool -&gt; m Bool) -&gt; (String -&gt; IO Bool) -&gt; String -&gt; m Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">MigrationLockError -&gt; IO Bool
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(MigrationLockError -&gt; IO Bool)
+-&gt; (String -&gt; MigrationLockError) -&gt; String -&gt; IO Bool
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; MigrationLockError
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#MigrationLockError"><span class="hs-identifier hs-var">MigrationLockError</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; m Bool) -&gt; String -&gt; m Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-71"></span><span>            </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Expected exactly one row from attempt to acquire migration lock, but got &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String -&gt; String
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; String
+forall a. Show a =&gt; a -&gt; String
+</span><span class="hs-identifier hs-var">show</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Bool] -&gt; Int
+forall a. [a] -&gt; Int
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; Int
+</span><span class="hs-identifier hs-var">length</span></span><span> </span><span class="annot"><span class="annottext">[Bool]
+</span><a href="#local-6989586621679140059"><span class="hs-identifier hs-var">rows</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; m ()
+</span><a href="#local-6989586621679140020"><span class="hs-identifier hs-var">go</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span id="local-6989586621679140063"><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#releaseTransactionLock"><span class="hs-identifier hs-type">releaseTransactionLock</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679140063"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679140063"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-76"></span><span id="releaseTransactionLock"><span class="annot"><span class="annottext">releaseTransactionLock :: forall (m :: * -&gt; *). MonadOrville m =&gt; m ()
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#releaseTransactionLock"><span class="hs-identifier hs-var hs-var">releaseTransactionLock</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><span class="annottext">QueryType -&gt; RawSql -&gt; m ()
+forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier hs-var">Exec.executeVoid</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#OtherQuery"><span class="hs-identifier hs-var">Exec.OtherQuery</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#releaseLockExpr"><span class="hs-identifier hs-var">releaseLockExpr</span></a></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#orvilleLockScope"><span class="hs-identifier hs-type">orvilleLockScope</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-80"></span><span id="orvilleLockScope"><span class="annot"><span class="annottext">orvilleLockScope :: Int32
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#orvilleLockScope"><span class="hs-identifier hs-var hs-var">orvilleLockScope</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32
+</span><span class="hs-number">17772</span></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#migrationLockId"><span class="hs-identifier hs-type">migrationLockId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-83"></span><span id="migrationLockId"><span class="annot"><span class="annottext">migrationLockId :: Int32
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#migrationLockId"><span class="hs-identifier hs-var hs-var">migrationLockId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32
+</span><span class="hs-number">7995632</span></span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#lockedMarshaller"><span class="hs-identifier hs-type">lockedMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">Marshall.AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-86"></span><span id="lockedMarshaller"><span class="annot"><span class="annottext">lockedMarshaller :: AnnotatedSqlMarshaller Bool Bool
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#lockedMarshaller"><span class="hs-identifier hs-var hs-var">lockedMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-87"></span><span>  </span><span class="annot"><span class="annottext">SqlMarshaller Bool Bool -&gt; AnnotatedSqlMarshaller Bool Bool
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#annotateSqlMarshallerEmptyAnnotation"><span class="hs-identifier hs-var">Marshall.annotateSqlMarshallerEmptyAnnotation</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlMarshaller Bool Bool -&gt; AnnotatedSqlMarshaller Bool Bool)
+-&gt; SqlMarshaller Bool Bool -&gt; AnnotatedSqlMarshaller Bool Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-88"></span><span>    </span><span class="annot"><span class="annottext">(Bool -&gt; Bool)
+-&gt; FieldDefinition NotNull Bool -&gt; SqlMarshaller Bool Bool
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Marshall.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#booleanField"><span class="hs-identifier hs-var">Marshall.booleanField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;locked&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#tryLockExpr"><span class="hs-identifier hs-type">tryLockExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-91"></span><span id="tryLockExpr"><span class="annot"><span class="annottext">tryLockExpr :: RawSql
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#tryLockExpr"><span class="hs-identifier hs-var hs-var">tryLockExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SELECT pg_try_advisory_lock&quot;</span></span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-var">RawSql.parameter</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt32"><span class="hs-identifier hs-var">SqlValue.fromInt32</span></a></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#orvilleLockScope"><span class="hs-identifier hs-var">orvilleLockScope</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-var">RawSql.parameter</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt32"><span class="hs-identifier hs-var">SqlValue.fromInt32</span></a></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#migrationLockId"><span class="hs-identifier hs-var">migrationLockId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; as locked&quot;</span></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#releaseLockExpr"><span class="hs-identifier hs-type">releaseLockExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-101"></span><span id="releaseLockExpr"><span class="annot"><span class="annottext">releaseLockExpr :: RawSql
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#releaseLockExpr"><span class="hs-identifier hs-var hs-var">releaseLockExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SELECT pg_advisory_unlock&quot;</span></span><span>
+</span><span id="line-103"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-104"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-var">RawSql.parameter</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt32"><span class="hs-identifier hs-var">SqlValue.fromInt32</span></a></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#orvilleLockScope"><span class="hs-identifier hs-var">orvilleLockScope</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-var">RawSql.parameter</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt32"><span class="hs-identifier hs-var">SqlValue.fromInt32</span></a></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="Orville.PostgreSQL.Internal.MigrationLock.html#migrationLockId"><span class="hs-identifier hs-var">migrationLockId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span class="annot"><span class="hs-comment">{- |
+  Raised if 'withMigrationLock' cannot acquire the migration lock in a
+  timely manner.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-115"></span><span class="hs-keyword">newtype</span><span> </span><span id="MigrationLockError"><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#MigrationLockError"><span class="hs-identifier hs-var">MigrationLockError</span></a></span></span><span>
+</span><span id="line-116"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="MigrationLockError"><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#MigrationLockError"><span class="hs-identifier hs-var">MigrationLockError</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-117"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679140082"><span id="local-6989586621679140088"><span id="local-6989586621679140092"><span class="annot"><span class="annottext">Int -&gt; MigrationLockError -&gt; String -&gt; String
+[MigrationLockError] -&gt; String -&gt; String
+MigrationLockError -&gt; String
+(Int -&gt; MigrationLockError -&gt; String -&gt; String)
+-&gt; (MigrationLockError -&gt; String)
+-&gt; ([MigrationLockError] -&gt; String -&gt; String)
+-&gt; Show MigrationLockError
+forall a.
+(Int -&gt; a -&gt; String -&gt; String)
+-&gt; (a -&gt; String) -&gt; ([a] -&gt; String -&gt; String) -&gt; Show a
+$cshowsPrec :: Int -&gt; MigrationLockError -&gt; String -&gt; String
+showsPrec :: Int -&gt; MigrationLockError -&gt; String -&gt; String
+$cshow :: MigrationLockError -&gt; String
+show :: MigrationLockError -&gt; String
+$cshowList :: [MigrationLockError] -&gt; String -&gt; String
+showList :: [MigrationLockError] -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679140101"><span id="local-6989586621679140104"><span id="local-6989586621679140107"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.MigrationLock.html#MigrationLockError"><span class="hs-identifier hs-type">MigrationLockError</span></a></span></span></span></span><span>
+</span><span id="line-120"></span></pre></body></html>

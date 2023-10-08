@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.ReturningOption</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier">ReturningOption</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier">ReturningClause</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier">NoReturningClause</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="annot"><span class="hs-comment">{- | A tag, used with 'ReturningOption' to indicate a SQL Returning clause.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">data</span><span> </span><span id="ReturningClause"><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier hs-var">ReturningClause</span></a></span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="annot"><span class="hs-comment">{- | A tag, used with 'ReturningOption' to indicate no SQL Returning clause.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">data</span><span> </span><span id="NoReturningClause"><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier hs-var">NoReturningClause</span></a></span></span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+  Specifies whether or not a @RETURNING@ clause should be included when a
+  query expression is built. This type is found as a parameter on a number
+  of the query building functions related to 'TableDefinition'.
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">data</span><span> </span><span id="ReturningOption"><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-var">ReturningOption</span></a></span></span><span> </span><span id="local-6989586621679126446"><span class="annot"><a href="#local-6989586621679126446"><span class="hs-identifier hs-type">clause</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-36"></span><span>  </span><span id="WithReturning"><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithReturning"><span class="hs-identifier hs-var">WithReturning</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-type">ReturningOption</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier hs-type">ReturningClause</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span id="WithoutReturning"><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithoutReturning"><span class="hs-identifier hs-var">WithoutReturning</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-type">ReturningOption</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier hs-type">NoReturningClause</span></a></span><span>
+</span><span id="line-38"></span></pre></body></html>

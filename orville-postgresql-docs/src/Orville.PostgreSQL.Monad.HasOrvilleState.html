@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Monad.HasOrvilleState</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier">HasOrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier">askOrvilleState</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier">localOrvilleState</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">lift</span></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Reader</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">ask</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">local</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">mapReaderT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.OrvilleState.html"><span class="hs-identifier">Orville.PostgreSQL.OrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier">OrvilleState</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="annot"><span class="hs-comment">{- |
+  'HasOrvilleState' is the typeclass that Orville uses to access and manange
+  the connection pool and state tracking when it is being executed inside an
+  unknown Monad. It is a specialized version of the Reader interface so that it
+  can easily implemented by application Monads that already have a Reader
+  context and want to simply add 'OrvilleState' as an attribute to that
+  context, like so
+
+  @
+    data MyApplicationState =
+      MyApplicationState
+        { appConfig :: MyAppConfig
+        , appOrvilleState :: OrvilleState
+        }
+
+    newtype MyApplicationMonad a =
+      MyApplicationMonad (ReaderT MyApplicationState IO) a
+
+    instance HasOrvilleState MyApplicationMonad where
+      askOrvilleState =
+        MyApplicationMonad (asks appOrvilleState)
+
+      localOrvilleState f (MyApplicationMonad reader) =
+        MyApplicationMonad $
+          local
+            (\state -&gt; state { appOrvilleState = f (appOrvilleState state))
+            reader
+  @
+
+  An instance for 'ReaderT OrvilleState m' is provided as a convenience in
+  the case that your application has no extra context to track.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">class</span><span> </span><span id="HasOrvilleState"><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier hs-var">HasOrvilleState</span></a></span></span><span> </span><span id="local-6989586621679132101"><span class="annot"><a href="#local-6989586621679132101"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-comment">-- |</span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-comment">--     Fetches the current 'OrvilleState' from the host Monad context. The</span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-comment">--     equivalent of 'ask' for 'ReaderT OrvilleState'</span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-comment">-- @since 1.0.0.0</span><span>
+</span><span id="line-61"></span><span>  </span><span id="askOrvilleState"><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-type">askOrvilleState</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679132101"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-comment">-- |</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-comment">--     Applies a modification to the 'OrvilleState' that is local to the given</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-comment">--     monad operation. Calls to 'askOrvilleState' made within the 'm a' provided</span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-comment">--     must return the modified state. The modified state must only apply to</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-comment">--     the given 'm a' and not persisted beyond it. The equivalent of 'local'</span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-comment">--     for 'ReaderT OrvilleState'</span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-comment">-- @since 1.0.0.0</span><span>
+</span><span id="line-71"></span><span>  </span><span id="localOrvilleState"><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier hs-type">localOrvilleState</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><span class="hs-comment">-- | The function to modify the 'OrvilleState'</span></span><span>
+</span><span id="line-73"></span><span>    </span><span id="local-6989586621679132099"><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>    </span><span class="annot"><span class="hs-comment">-- | The monad operation to execute with the modified state</span></span><span>
+</span><span id="line-75"></span><span>    </span><span class="annot"><a href="#local-6989586621679132101"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132099"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-76"></span><span>    </span><span class="annot"><a href="#local-6989586621679132101"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132099"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679132102"><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679132102"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier hs-type">HasOrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132102"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-79"></span><span>  </span><span id="local-6989586621679132136"><span class="annot"><span class="annottext">askOrvilleState :: ReaderT OrvilleState m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var hs-var hs-var hs-var">askOrvilleState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ReaderT OrvilleState m OrvilleState
+forall (m :: * -&gt; *) r. Monad m =&gt; ReaderT r m r
+</span><span class="hs-identifier hs-var">ask</span></span><span>
+</span><span id="line-80"></span><span>  </span><span id="local-6989586621679132137"><span class="annot"><span class="annottext">localOrvilleState :: forall a.
+(OrvilleState -&gt; OrvilleState)
+-&gt; ReaderT OrvilleState m a -&gt; ReaderT OrvilleState m a
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier hs-var hs-var hs-var hs-var">localOrvilleState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(OrvilleState -&gt; OrvilleState)
+-&gt; ReaderT OrvilleState m a -&gt; ReaderT OrvilleState m a
+forall r (m :: * -&gt; *) a.
+(r -&gt; r) -&gt; ReaderT r m a -&gt; ReaderT r m a
+</span><span class="hs-identifier hs-var">local</span></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="hs-keyword">instance</span><span> </span><span class="hs-pragma">{-# OVERLAPS</span><span> </span><span class="hs-pragma">#-}</span><span> </span><span id="local-6989586621679132111"><span id="local-6989586621679132112"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679132111"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier hs-type">HasOrvilleState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132111"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier hs-type">HasOrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="annot"><a href="#local-6989586621679132112"><span class="hs-identifier hs-type">r</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132111"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-83"></span><span>  </span><span id="local-6989586621679132147"><span class="annot"><span class="annottext">askOrvilleState :: ReaderT r m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var hs-var hs-var hs-var">askOrvilleState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">m OrvilleState -&gt; ReaderT r m OrvilleState
+forall (m :: * -&gt; *) a. Monad m =&gt; m a -&gt; ReaderT r m a
+forall (t :: (* -&gt; *) -&gt; * -&gt; *) (m :: * -&gt; *) a.
+(MonadTrans t, Monad m) =&gt;
+m a -&gt; t m a
+</span><span class="hs-identifier hs-var">lift</span></span><span> </span><span class="annot"><span class="annottext">m OrvilleState
+forall (m :: * -&gt; *). HasOrvilleState m =&gt; m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var">askOrvilleState</span></a></span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621679132149"><span class="annot"><span class="annottext">localOrvilleState :: forall a.
+(OrvilleState -&gt; OrvilleState) -&gt; ReaderT r m a -&gt; ReaderT r m a
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier hs-var hs-var hs-var hs-var">localOrvilleState</span></a></span></span><span> </span><span id="local-6989586621679132150"><span class="annot"><span class="annottext">OrvilleState -&gt; OrvilleState
+</span><a href="#local-6989586621679132150"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; ReaderT r m a -&gt; ReaderT r m a
+forall (m :: * -&gt; *) a (n :: * -&gt; *) b r.
+(m a -&gt; n b) -&gt; ReaderT r m a -&gt; ReaderT r n b
+</span><span class="hs-identifier hs-var">mapReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(OrvilleState -&gt; OrvilleState) -&gt; m a -&gt; m a
+forall a. (OrvilleState -&gt; OrvilleState) -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+HasOrvilleState m =&gt;
+(OrvilleState -&gt; OrvilleState) -&gt; m a -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier hs-var">localOrvilleState</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; OrvilleState
+</span><a href="#local-6989586621679132150"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span></pre></body></html>

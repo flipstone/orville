@@ -1,0 +1,790 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Schema.ConstraintDefinition</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier">ConstraintDefinition</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#uniqueConstraint"><span class="hs-identifier">uniqueConstraint</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraint"><span class="hs-identifier">foreignKeyConstraint</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraintWithOptions"><span class="hs-identifier">foreignKeyConstraintWithOptions</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier">ForeignReference</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier">ForeignReference</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#localFieldName"><span class="hs-identifier">localFieldName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignFieldName"><span class="hs-identifier">foreignFieldName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignReference"><span class="hs-identifier">foreignReference</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier">ConstraintMigrationKey</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier">ConstraintMigrationKey</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyType"><span class="hs-identifier">constraintKeyType</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyColumns"><span class="hs-identifier">constraintKeyColumns</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignTable"><span class="hs-identifier">constraintKeyForeignTable</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignColumns"><span class="hs-identifier">constraintKeyForeignColumns</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnUpdateAction"><span class="hs-identifier">constraintKeyForeignKeyOnUpdateAction</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnDeleteAction"><span class="hs-identifier">constraintKeyForeignKeyOnDeleteAction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintKeyType"><span class="hs-identifier">ConstraintKeyType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#UniqueConstraint"><span class="hs-identifier">UniqueConstraint</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyConstraint"><span class="hs-identifier">ForeignKeyConstraint</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintMigrationKey"><span class="hs-identifier">constraintMigrationKey</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintSqlExpr"><span class="hs-identifier">constraintSqlExpr</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier">ForeignKeyAction</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyOptions"><span class="hs-identifier">ForeignKeyOptions</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnDelete"><span class="hs-identifier">foreignKeyOptionsOnDelete</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnUpdate"><span class="hs-identifier">foreignKeyOptionsOnUpdate</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#defaultForeignKeyOptions"><span class="hs-identifier">defaultForeignKeyOptions</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier">TableConstraints</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#emptyTableConstraints"><span class="hs-identifier">emptyTableConstraints</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#addConstraint"><span class="hs-identifier">addConstraint</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintDefinitions"><span class="hs-identifier">tableConstraintDefinitions</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintKeys"><span class="hs-identifier">tableConstraintKeys</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NonEmpty</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">NEL</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html"><span class="hs-identifier">Orville.PostgreSQL.Internal.FieldName</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">FieldName</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.TableIdentifier</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">TableIdentifier</span></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><span class="hs-comment">{- |
+  A collection of constraints to be able to a table. This collection is indexed
+  by 'ConstraintMigrationKey'. If multiple constraints with the same
+  'ConstraintMigrationKey' are added the most recently added one will be kept
+  and the previous one dropped.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">newtype</span><span> </span><span id="TableConstraints"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-var">TableConstraints</span></a></span></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="TableConstraints"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-var">TableConstraints</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-type">ConstraintMigrationKey</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679133822"><span id="local-6989586621679133827"><span id="local-6989586621679133833"><span class="annot"><span class="annottext">NonEmpty TableConstraints -&gt; TableConstraints
+TableConstraints -&gt; TableConstraints -&gt; TableConstraints
+(TableConstraints -&gt; TableConstraints -&gt; TableConstraints)
+-&gt; (NonEmpty TableConstraints -&gt; TableConstraints)
+-&gt; (forall b.
+    Integral b =&gt;
+    b -&gt; TableConstraints -&gt; TableConstraints)
+-&gt; Semigroup TableConstraints
+forall b. Integral b =&gt; b -&gt; TableConstraints -&gt; TableConstraints
+forall a.
+(a -&gt; a -&gt; a)
+-&gt; (NonEmpty a -&gt; a)
+-&gt; (forall b. Integral b =&gt; b -&gt; a -&gt; a)
+-&gt; Semigroup a
+$c&lt;&gt; :: TableConstraints -&gt; TableConstraints -&gt; TableConstraints
+&lt;&gt; :: TableConstraints -&gt; TableConstraints -&gt; TableConstraints
+$csconcat :: NonEmpty TableConstraints -&gt; TableConstraints
+sconcat :: NonEmpty TableConstraints -&gt; TableConstraints
+$cstimes :: forall b. Integral b =&gt; b -&gt; TableConstraints -&gt; TableConstraints
+stimes :: forall b. Integral b =&gt; b -&gt; TableConstraints -&gt; TableConstraints
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Semigroup</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133843"><span id="local-6989586621679133848"><span id="local-6989586621679133852"><span class="annot"><span class="annottext">Semigroup TableConstraints
+TableConstraints
+Semigroup TableConstraints
+-&gt; TableConstraints
+-&gt; (TableConstraints -&gt; TableConstraints -&gt; TableConstraints)
+-&gt; ([TableConstraints] -&gt; TableConstraints)
+-&gt; Monoid TableConstraints
+[TableConstraints] -&gt; TableConstraints
+TableConstraints -&gt; TableConstraints -&gt; TableConstraints
+forall a.
+Semigroup a -&gt; a -&gt; (a -&gt; a -&gt; a) -&gt; ([a] -&gt; a) -&gt; Monoid a
+$cmempty :: TableConstraints
+mempty :: TableConstraints
+$cmappend :: TableConstraints -&gt; TableConstraints -&gt; TableConstraints
+mappend :: TableConstraints -&gt; TableConstraints -&gt; TableConstraints
+$cmconcat :: [TableConstraints] -&gt; TableConstraints
+mconcat :: [TableConstraints] -&gt; TableConstraints
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Monoid</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an empty 'TableConstraints'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-58"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#emptyTableConstraints"><span class="hs-identifier hs-type">emptyTableConstraints</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span>
+</span><span id="line-59"></span><span id="emptyTableConstraints"><span class="annot"><span class="annottext">emptyTableConstraints :: TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#emptyTableConstraints"><span class="hs-identifier hs-var hs-var">emptyTableConstraints</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-var">TableConstraints</span></a></span><span> </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+forall k a. Map k a
+</span><span class="hs-identifier hs-var">Map.empty</span></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="annot"><span class="hs-comment">{- |
+  Adds a 'ConstraintDefinition' to an existing 'TableConstraints'. If a
+  constraint already exists with the same 'ConstraintMigrationKey' it is
+  replaced with the new constraint.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-68"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#addConstraint"><span class="hs-identifier hs-type">addConstraint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span>
+</span><span id="line-69"></span><span id="addConstraint"><span class="annot"><span class="annottext">addConstraint :: ConstraintDefinition -&gt; TableConstraints -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#addConstraint"><span class="hs-identifier hs-var hs-var">addConstraint</span></a></span></span><span> </span><span id="local-6989586621679133859"><span class="annot"><span class="annottext">ConstraintDefinition
+</span><a href="#local-6989586621679133859"><span class="hs-identifier hs-var">constraint</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span> </span><span id="local-6989586621679133860"><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+</span><a href="#local-6989586621679133860"><span class="hs-identifier hs-var">constraintMap</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-70"></span><span>  </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-var">TableConstraints</span></a></span><span> </span><span class="annot"><span class="annottext">(Map ConstraintMigrationKey ConstraintDefinition
+ -&gt; TableConstraints)
+-&gt; Map ConstraintMigrationKey ConstraintDefinition
+-&gt; TableConstraints
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="annottext">ConstraintMigrationKey
+-&gt; ConstraintDefinition
+-&gt; Map ConstraintMigrationKey ConstraintDefinition
+-&gt; Map ConstraintMigrationKey ConstraintDefinition
+forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span>
+</span><span id="line-72"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConstraintDefinition -&gt; ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintMigrationKey"><span class="hs-identifier hs-var">constraintMigrationKey</span></a></span><span> </span><span class="annot"><span class="annottext">ConstraintDefinition
+</span><a href="#local-6989586621679133859"><span class="hs-identifier hs-var">constraint</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-73"></span><span>      </span><span class="annot"><span class="annottext">ConstraintDefinition
+</span><a href="#local-6989586621679133859"><span class="hs-identifier hs-var">constraint</span></a></span><span>
+</span><span id="line-74"></span><span>      </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+</span><a href="#local-6989586621679133860"><span class="hs-identifier hs-var">constraintMap</span></a></span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="annot"><span class="hs-comment">{- |
+  Gets the list of 'ConstraintDefinition's that have been added to the
+  'TableConstraints'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintKeys"><span class="hs-identifier hs-type">tableConstraintKeys</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Set.Set</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-type">ConstraintMigrationKey</span></a></span><span>
+</span><span id="line-83"></span><span id="tableConstraintKeys"><span class="annot"><span class="annottext">tableConstraintKeys :: TableConstraints -&gt; Set ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintKeys"><span class="hs-identifier hs-var hs-var">tableConstraintKeys</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span> </span><span id="local-6989586621679133862"><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+</span><a href="#local-6989586621679133862"><span class="hs-identifier hs-var">constraints</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-84"></span><span>  </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+-&gt; Set ConstraintMigrationKey
+forall k a. Map k a -&gt; Set k
+</span><span class="hs-identifier hs-var">Map.keysSet</span></span><span> </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+</span><a href="#local-6989586621679133862"><span class="hs-identifier hs-var">constraints</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">{- |
+  Gets the list of 'ConstraintDefinition's that have been added to the
+  'TableConstraints'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintDefinitions"><span class="hs-identifier hs-type">tableConstraintDefinitions</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-93"></span><span id="tableConstraintDefinitions"><span class="annot"><span class="annottext">tableConstraintDefinitions :: TableConstraints -&gt; [ConstraintDefinition]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintDefinitions"><span class="hs-identifier hs-var hs-var">tableConstraintDefinitions</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span> </span><span id="local-6989586621679133864"><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+</span><a href="#local-6989586621679133864"><span class="hs-identifier hs-var">constraints</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+-&gt; [ConstraintDefinition]
+forall k a. Map k a -&gt; [a]
+</span><span class="hs-identifier hs-var">Map.elems</span></span><span> </span><span class="annot"><span class="annottext">Map ConstraintMigrationKey ConstraintDefinition
+</span><a href="#local-6989586621679133864"><span class="hs-identifier hs-var">constraints</span></a></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">{- |
+  Defines a constraint that can be added to a
+  'Orville.PostgreSQL.TableDefinition'. Use one of the constructor functions
+  below (such as 'uniqueConstraint') to construct the constraint definition you
+  wish to have and then use 'Orville.PostgreSQL.addTableConstraints'. to add
+  them to your table definition. Orville will then add the constraint next time
+  you run auto-migrations.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span class="hs-keyword">data</span><span> </span><span id="ConstraintDefinition"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-var">ConstraintDefinition</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConstraintDefinition"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-var">ConstraintDefinition</span></a></span></span><span>
+</span><span id="line-107"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="_constraintSqlExpr"><span class="annot"><span class="annottext">ConstraintDefinition -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintSqlExpr"><span class="hs-identifier hs-var hs-var">_constraintSqlExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-type">Expr.TableConstraint</span></a></span><span>
+</span><span id="line-108"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_constraintMigrationKey"><span class="annot"><span class="annottext">ConstraintDefinition -&gt; ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintMigrationKey"><span class="hs-identifier hs-var hs-var">_constraintMigrationKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-type">ConstraintMigrationKey</span></a></span><span>
+</span><span id="line-109"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="annot"><span class="hs-comment">{- |
+  The key used by Orville to determine whether a constraint should be added to
+  a table when performing auto migrations. For most use cases the constructor
+  functions that build a 'ConstraintDefinition' will create this automatically
+  for you.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-119"></span><span class="hs-keyword">data</span><span> </span><span id="ConstraintMigrationKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-var">ConstraintMigrationKey</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConstraintMigrationKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-var">ConstraintMigrationKey</span></a></span></span><span>
+</span><span id="line-120"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="constraintKeyType"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; ConstraintKeyType
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyType"><span class="hs-identifier hs-var hs-var">constraintKeyType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintKeyType"><span class="hs-identifier hs-type">ConstraintKeyType</span></a></span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="constraintKeyColumns"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; Maybe [FieldName]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyColumns"><span class="hs-identifier hs-var hs-var">constraintKeyColumns</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-122"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="constraintKeyForeignTable"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; Maybe TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignTable"><span class="hs-identifier hs-var hs-var">constraintKeyForeignTable</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier.TableIdentifier</span></a></span><span>
+</span><span id="line-123"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="constraintKeyForeignColumns"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; Maybe [FieldName]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignColumns"><span class="hs-identifier hs-var hs-var">constraintKeyForeignColumns</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-124"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="constraintKeyForeignKeyOnUpdateAction"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnUpdateAction"><span class="hs-identifier hs-var hs-var">constraintKeyForeignKeyOnUpdateAction</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">ForeignKeyAction</span></a></span><span>
+</span><span id="line-125"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="constraintKeyForeignKeyOnDeleteAction"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnDeleteAction"><span class="hs-identifier hs-var hs-var">constraintKeyForeignKeyOnDeleteAction</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">ForeignKeyAction</span></a></span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679133869"><span id="local-6989586621679133882"><span class="annot"><span class="annottext">ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+(ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool)
+-&gt; (ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool)
+-&gt; Eq ConstraintMigrationKey
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+== :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+$c/= :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+/= :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133894"><span id="local-6989586621679133907"><span id="local-6989586621679133918"><span id="local-6989586621679133921"><span id="local-6989586621679133924"><span id="local-6989586621679133927"><span id="local-6989586621679133930"><span class="annot"><span class="annottext">Eq ConstraintMigrationKey
+Eq ConstraintMigrationKey
+-&gt; (ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Ordering)
+-&gt; (ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool)
+-&gt; (ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool)
+-&gt; (ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool)
+-&gt; (ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool)
+-&gt; (ConstraintMigrationKey
+    -&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey)
+-&gt; (ConstraintMigrationKey
+    -&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey)
+-&gt; Ord ConstraintMigrationKey
+ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Ordering
+ConstraintMigrationKey
+-&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Ordering
+compare :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Ordering
+$c&lt; :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+&lt; :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+$c&lt;= :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+&lt;= :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+$c&gt; :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+&gt; :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+$c&gt;= :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+&gt;= :: ConstraintMigrationKey -&gt; ConstraintMigrationKey -&gt; Bool
+$cmax :: ConstraintMigrationKey
+-&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey
+max :: ConstraintMigrationKey
+-&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey
+$cmin :: ConstraintMigrationKey
+-&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey
+min :: ConstraintMigrationKey
+-&gt; ConstraintMigrationKey -&gt; ConstraintMigrationKey
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133940"><span id="local-6989586621679133955"><span id="local-6989586621679133959"><span class="annot"><span class="annottext">Int -&gt; ConstraintMigrationKey -&gt; ShowS
+[ConstraintMigrationKey] -&gt; ShowS
+ConstraintMigrationKey -&gt; String
+(Int -&gt; ConstraintMigrationKey -&gt; ShowS)
+-&gt; (ConstraintMigrationKey -&gt; String)
+-&gt; ([ConstraintMigrationKey] -&gt; ShowS)
+-&gt; Show ConstraintMigrationKey
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ConstraintMigrationKey -&gt; ShowS
+showsPrec :: Int -&gt; ConstraintMigrationKey -&gt; ShowS
+$cshow :: ConstraintMigrationKey -&gt; String
+show :: ConstraintMigrationKey -&gt; String
+$cshowList :: [ConstraintMigrationKey] -&gt; ShowS
+showList :: [ConstraintMigrationKey] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="annot"><span class="hs-comment">{- |
+  The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g. unique, foreign key).
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-134"></span><span class="hs-keyword">data</span><span> </span><span id="ConstraintKeyType"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintKeyType"><span class="hs-identifier hs-var">ConstraintKeyType</span></a></span></span><span>
+</span><span id="line-135"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="UniqueConstraint"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#UniqueConstraint"><span class="hs-identifier hs-var">UniqueConstraint</span></a></span></span><span>
+</span><span id="line-136"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="ForeignKeyConstraint"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyConstraint"><span class="hs-identifier hs-var">ForeignKeyConstraint</span></a></span></span><span>
+</span><span id="line-137"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679133968"><span id="local-6989586621679133970"><span class="annot"><span class="annottext">ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+(ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool)
+-&gt; Eq ConstraintKeyType
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+== :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+$c/= :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+/= :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133975"><span id="local-6989586621679133977"><span id="local-6989586621679133979"><span id="local-6989586621679133982"><span id="local-6989586621679133985"><span id="local-6989586621679133988"><span id="local-6989586621679133991"><span class="annot"><span class="annottext">Eq ConstraintKeyType
+Eq ConstraintKeyType
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; Ordering)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType)
+-&gt; (ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType)
+-&gt; Ord ConstraintKeyType
+ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+ConstraintKeyType -&gt; ConstraintKeyType -&gt; Ordering
+ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Ordering
+compare :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Ordering
+$c&lt; :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+&lt; :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+$c&lt;= :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+&lt;= :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+$c&gt; :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+&gt; :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+$c&gt;= :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+&gt;= :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; Bool
+$cmax :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType
+max :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType
+$cmin :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType
+min :: ConstraintKeyType -&gt; ConstraintKeyType -&gt; ConstraintKeyType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133994"><span id="local-6989586621679133996"><span id="local-6989586621679133999"><span class="annot"><span class="annottext">Int -&gt; ConstraintKeyType -&gt; ShowS
+[ConstraintKeyType] -&gt; ShowS
+ConstraintKeyType -&gt; String
+(Int -&gt; ConstraintKeyType -&gt; ShowS)
+-&gt; (ConstraintKeyType -&gt; String)
+-&gt; ([ConstraintKeyType] -&gt; ShowS)
+-&gt; Show ConstraintKeyType
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ConstraintKeyType -&gt; ShowS
+showsPrec :: Int -&gt; ConstraintKeyType -&gt; ShowS
+$cshow :: ConstraintKeyType -&gt; String
+show :: ConstraintKeyType -&gt; String
+$cshowList :: [ConstraintKeyType] -&gt; ShowS
+showList :: [ConstraintKeyType] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span class="annot"><span class="hs-comment">{- |
+  Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-144"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintMigrationKey"><span class="hs-identifier hs-type">constraintMigrationKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-type">ConstraintMigrationKey</span></a></span><span>
+</span><span id="line-145"></span><span id="constraintMigrationKey"><span class="annot"><span class="annottext">constraintMigrationKey :: ConstraintDefinition -&gt; ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintMigrationKey"><span class="hs-identifier hs-var hs-var">constraintMigrationKey</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstraintDefinition -&gt; ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintMigrationKey"><span class="hs-identifier hs-var">_constraintMigrationKey</span></a></span><span>
+</span><span id="line-146"></span><span>
+</span><span id="line-147"></span><span class="annot"><span class="hs-comment">{- |
+  Gets the SQL expression that will be used to add the constraint to the table.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-152"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintSqlExpr"><span class="hs-identifier hs-type">constraintSqlExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-type">Expr.TableConstraint</span></a></span><span>
+</span><span id="line-153"></span><span id="constraintSqlExpr"><span class="annot"><span class="annottext">constraintSqlExpr :: ConstraintDefinition -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintSqlExpr"><span class="hs-identifier hs-var hs-var">constraintSqlExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstraintDefinition -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintSqlExpr"><span class="hs-identifier hs-var">_constraintSqlExpr</span></a></span><span>
+</span><span id="line-154"></span><span>
+</span><span id="line-155"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
+  columns.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-161"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#uniqueConstraint"><span class="hs-identifier hs-type">uniqueConstraint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span>
+</span><span id="line-162"></span><span id="uniqueConstraint"><span class="annot"><span class="annottext">uniqueConstraint :: NonEmpty FieldName -&gt; ConstraintDefinition
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#uniqueConstraint"><span class="hs-identifier hs-var hs-var">uniqueConstraint</span></a></span></span><span> </span><span id="local-6989586621679134001"><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134001"><span class="hs-identifier hs-var">fieldNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-163"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-164"></span><span>    </span><span id="local-6989586621679134004"><span class="annot"><span class="annottext">expr :: TableConstraint
+</span><a href="#local-6989586621679134004"><span class="hs-identifier hs-var hs-var">expr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-165"></span><span>      </span><span class="annot"><span class="annottext">NonEmpty ColumnName -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#uniqueConstraint"><span class="hs-identifier hs-var">Expr.uniqueConstraint</span></a></span><span> </span><span class="annot"><span class="annottext">(NonEmpty ColumnName -&gt; TableConstraint)
+-&gt; (NonEmpty FieldName -&gt; NonEmpty ColumnName)
+-&gt; NonEmpty FieldName
+-&gt; TableConstraint
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(FieldName -&gt; ColumnName)
+-&gt; NonEmpty FieldName -&gt; NonEmpty ColumnName
+forall a b. (a -&gt; b) -&gt; NonEmpty a -&gt; NonEmpty b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">FieldName -&gt; ColumnName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToColumnName"><span class="hs-identifier hs-var">FieldName.fieldNameToColumnName</span></a></span><span> </span><span class="annot"><span class="annottext">(NonEmpty FieldName -&gt; TableConstraint)
+-&gt; NonEmpty FieldName -&gt; TableConstraint
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134001"><span class="hs-identifier hs-var">fieldNames</span></a></span><span>
+</span><span id="line-166"></span><span>
+</span><span id="line-167"></span><span>    </span><span id="local-6989586621679134008"><span class="annot"><span class="annottext">migrationKey :: ConstraintMigrationKey
+</span><a href="#local-6989586621679134008"><span class="hs-identifier hs-var hs-var">migrationKey</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-168"></span><span>      </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-type">ConstraintMigrationKey</span></a></span><span>
+</span><span id="line-169"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">constraintKeyType :: ConstraintKeyType
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyType"><span class="hs-identifier hs-var">constraintKeyType</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstraintKeyType
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#UniqueConstraint"><span class="hs-identifier hs-var">UniqueConstraint</span></a></span><span>
+</span><span id="line-170"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyColumns :: Maybe [FieldName]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyColumns"><span class="hs-identifier hs-var">constraintKeyColumns</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FieldName] -&gt; Maybe [FieldName]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NonEmpty FieldName -&gt; [FieldName]
+forall a. NonEmpty a -&gt; [a]
+</span><span class="hs-identifier hs-var">NEL.toList</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134001"><span class="hs-identifier hs-var">fieldNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-171"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignTable :: Maybe TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignTable"><span class="hs-identifier hs-var">constraintKeyForeignTable</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe TableIdentifier
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-172"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignColumns :: Maybe [FieldName]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignColumns"><span class="hs-identifier hs-var">constraintKeyForeignColumns</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe [FieldName]
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-173"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnUpdateAction"><span class="hs-identifier hs-var">constraintKeyForeignKeyOnUpdateAction</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-174"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnDeleteAction"><span class="hs-identifier hs-var">constraintKeyForeignKeyOnDeleteAction</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-175"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-176"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-177"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span>
+</span><span id="line-178"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_constraintSqlExpr :: TableConstraint
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintSqlExpr"><span class="hs-identifier hs-var">_constraintSqlExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableConstraint
+</span><a href="#local-6989586621679134004"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-179"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_constraintMigrationKey :: ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintMigrationKey"><span class="hs-identifier hs-var">_constraintMigrationKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstraintMigrationKey
+</span><a href="#local-6989586621679134008"><span class="hs-identifier hs-var">migrationKey</span></a></span><span>
+</span><span id="line-180"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span class="annot"><span class="hs-comment">{- |
+  A 'ForeignReference' represents one part of a foreign key. The entire foreign
+  key may comprise multiple columns. The 'ForeignReference' defines a single
+  column in the key and which column it references in the foreign table.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-189"></span><span class="hs-keyword">data</span><span> </span><span id="ForeignReference"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier hs-var">ForeignReference</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ForeignReference"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier hs-var">ForeignReference</span></a></span></span><span>
+</span><span id="line-190"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="localFieldName"><span class="annot"><span class="annottext">ForeignReference -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#localFieldName"><span class="hs-identifier hs-var hs-var">localFieldName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span>
+</span><span id="line-191"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="foreignFieldName"><span class="annot"><span class="annottext">ForeignReference -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignFieldName"><span class="hs-identifier hs-var hs-var">foreignFieldName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span>
+</span><span id="line-192"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-193"></span><span>
+</span><span id="line-194"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ForeignReference'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-199"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignReference"><span class="hs-identifier hs-type">foreignReference</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-200"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The name of the field in the table with the constraint</span></span><span>
+</span><span id="line-201"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-202"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The name of the field in the foreign table that the local field references</span></span><span>
+</span><span id="line-203"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName.FieldName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-204"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier hs-type">ForeignReference</span></a></span><span>
+</span><span id="line-205"></span><span id="foreignReference"><span class="annot"><span class="annottext">foreignReference :: FieldName -&gt; FieldName -&gt; ForeignReference
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignReference"><span class="hs-identifier hs-var hs-var">foreignReference</span></a></span></span><span> </span><span id="local-6989586621679134010"><span class="annot"><span class="annottext">FieldName
+</span><a href="#local-6989586621679134010"><span class="hs-identifier hs-var">localName</span></a></span></span><span> </span><span id="local-6989586621679134011"><span class="annot"><span class="annottext">FieldName
+</span><a href="#local-6989586621679134011"><span class="hs-identifier hs-var">foreignName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-206"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier hs-type">ForeignReference</span></a></span><span>
+</span><span id="line-207"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">localFieldName :: FieldName
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#localFieldName"><span class="hs-identifier hs-var">localFieldName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FieldName
+</span><a href="#local-6989586621679134010"><span class="hs-identifier hs-var">localName</span></a></span><span>
+</span><span id="line-208"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">foreignFieldName :: FieldName
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignFieldName"><span class="hs-identifier hs-var">foreignFieldName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FieldName
+</span><a href="#local-6989586621679134011"><span class="hs-identifier hs-var">foreignName</span></a></span><span>
+</span><span id="line-209"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-210"></span><span>
+</span><span id="line-211"></span><span class="annot"><span class="hs-comment">{- |
+  Defines the options for a foreign key constraint.
+  To construct 'ForeignKeyOptions', perform a record update on
+  'defaultForeignKeyOptions'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-218"></span><span class="hs-keyword">data</span><span> </span><span id="ForeignKeyOptions"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyOptions"><span class="hs-identifier hs-var">ForeignKeyOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ForeignKeyOptions"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyOptions"><span class="hs-identifier hs-var">ForeignKeyOptions</span></a></span></span><span>
+</span><span id="line-219"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="foreignKeyOptionsOnUpdate"><span class="annot"><span class="annottext">ForeignKeyOptions -&gt; ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnUpdate"><span class="hs-identifier hs-var hs-var">foreignKeyOptionsOnUpdate</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">ForeignKeyAction</span></a></span><span>
+</span><span id="line-220"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The @ON UPDATE@ action for the foreign key</span></span><span>
+</span><span id="line-221"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="foreignKeyOptionsOnDelete"><span class="annot"><span class="annottext">ForeignKeyOptions -&gt; ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnDelete"><span class="hs-identifier hs-var hs-var">foreignKeyOptionsOnDelete</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">ForeignKeyAction</span></a></span><span>
+</span><span id="line-222"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The @ON DELETE@ action for the foreign key</span></span><span>
+</span><span id="line-223"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-224"></span><span>
+</span><span id="line-225"></span><span class="annot"><span class="hs-comment">{- |
+  The default 'ForeignKeyOptions', containing 'NoAction' for both
+  'foreignKeyOptionsOnUpdate' and 'foreignKeyOptionsOnDelete'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-231"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#defaultForeignKeyOptions"><span class="hs-identifier hs-type">defaultForeignKeyOptions</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyOptions"><span class="hs-identifier hs-type">ForeignKeyOptions</span></a></span><span>
+</span><span id="line-232"></span><span id="defaultForeignKeyOptions"><span class="annot"><span class="annottext">defaultForeignKeyOptions :: ForeignKeyOptions
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#defaultForeignKeyOptions"><span class="hs-identifier hs-var hs-var">defaultForeignKeyOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-233"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyOptions"><span class="hs-identifier hs-type">ForeignKeyOptions</span></a></span><span>
+</span><span id="line-234"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">foreignKeyOptionsOnUpdate :: ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnUpdate"><span class="hs-identifier hs-var">foreignKeyOptionsOnUpdate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#NoAction"><span class="hs-identifier hs-var">NoAction</span></a></span><span>
+</span><span id="line-235"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">foreignKeyOptionsOnDelete :: ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnDelete"><span class="hs-identifier hs-var">foreignKeyOptionsOnDelete</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#NoAction"><span class="hs-identifier hs-var">NoAction</span></a></span><span>
+</span><span id="line-236"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-237"></span><span>
+</span><span id="line-238"></span><span class="annot"><span class="hs-comment">{- |
+  The actions that can be set on 'ForeignKeyOptions'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-243"></span><span class="hs-keyword">data</span><span> </span><span id="ForeignKeyAction"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-var">ForeignKeyAction</span></a></span></span><span>
+</span><span id="line-244"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="NoAction"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#NoAction"><span class="hs-identifier hs-var">NoAction</span></a></span></span><span>
+</span><span id="line-245"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Restrict"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Restrict"><span class="hs-identifier hs-var">Restrict</span></a></span></span><span>
+</span><span id="line-246"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Cascade"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Cascade"><span class="hs-identifier hs-var">Cascade</span></a></span></span><span>
+</span><span id="line-247"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="SetNull"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetNull"><span class="hs-identifier hs-var">SetNull</span></a></span></span><span>
+</span><span id="line-248"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="SetDefault"><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetDefault"><span class="hs-identifier hs-var">SetDefault</span></a></span></span><span>
+</span><span id="line-249"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679134019"><span id="local-6989586621679134021"><span id="local-6989586621679134024"><span class="annot"><span class="annottext">Int -&gt; ForeignKeyAction -&gt; ShowS
+[ForeignKeyAction] -&gt; ShowS
+ForeignKeyAction -&gt; String
+(Int -&gt; ForeignKeyAction -&gt; ShowS)
+-&gt; (ForeignKeyAction -&gt; String)
+-&gt; ([ForeignKeyAction] -&gt; ShowS)
+-&gt; Show ForeignKeyAction
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ForeignKeyAction -&gt; ShowS
+showsPrec :: Int -&gt; ForeignKeyAction -&gt; ShowS
+$cshow :: ForeignKeyAction -&gt; String
+show :: ForeignKeyAction -&gt; String
+$cshowList :: [ForeignKeyAction] -&gt; ShowS
+showList :: [ForeignKeyAction] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679134027"><span id="local-6989586621679134029"><span class="annot"><span class="annottext">ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+(ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool)
+-&gt; Eq ForeignKeyAction
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+== :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+$c/= :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+/= :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679134034"><span id="local-6989586621679134036"><span id="local-6989586621679134038"><span id="local-6989586621679134041"><span id="local-6989586621679134044"><span id="local-6989586621679134047"><span id="local-6989586621679134050"><span class="annot"><span class="annottext">Eq ForeignKeyAction
+Eq ForeignKeyAction
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; Ordering)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction)
+-&gt; (ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction)
+-&gt; Ord ForeignKeyAction
+ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+ForeignKeyAction -&gt; ForeignKeyAction -&gt; Ordering
+ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Ordering
+compare :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Ordering
+$c&lt; :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+&lt; :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+$c&lt;= :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+&lt;= :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+$c&gt; :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+&gt; :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+$c&gt;= :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+&gt;= :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; Bool
+$cmax :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction
+max :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction
+$cmin :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction
+min :: ForeignKeyAction -&gt; ForeignKeyAction -&gt; ForeignKeyAction
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-250"></span><span>
+</span><span id="line-251"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyActionToExpr"><span class="hs-identifier hs-type">foreignKeyActionToExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">ForeignKeyAction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">Expr.ForeignKeyActionExpr</span></a></span><span>
+</span><span id="line-252"></span><span id="foreignKeyActionToExpr"><span class="annot"><span class="annottext">foreignKeyActionToExpr :: ForeignKeyAction -&gt; Maybe ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyActionToExpr"><span class="hs-identifier hs-var hs-var">foreignKeyActionToExpr</span></a></span></span><span> </span><span id="local-6989586621679134053"><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="#local-6989586621679134053"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="#local-6989586621679134053"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-253"></span><span>  </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#NoAction"><span class="hs-identifier hs-var">NoAction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyActionExpr
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-254"></span><span>  </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Restrict"><span class="hs-identifier hs-var">Restrict</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; Maybe ForeignKeyActionExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#restrictExpr"><span class="hs-identifier hs-var">Expr.restrictExpr</span></a></span><span>
+</span><span id="line-255"></span><span>  </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Cascade"><span class="hs-identifier hs-var">Cascade</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; Maybe ForeignKeyActionExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#cascadeExpr"><span class="hs-identifier hs-var">Expr.cascadeExpr</span></a></span><span>
+</span><span id="line-256"></span><span>  </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetNull"><span class="hs-identifier hs-var">SetNull</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; Maybe ForeignKeyActionExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setNullExpr"><span class="hs-identifier hs-var">Expr.setNullExpr</span></a></span><span>
+</span><span id="line-257"></span><span>  </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetDefault"><span class="hs-identifier hs-var">SetDefault</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; Maybe ForeignKeyActionExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setDefaultExpr"><span class="hs-identifier hs-var">Expr.setDefaultExpr</span></a></span><span>
+</span><span id="line-258"></span><span>
+</span><span id="line-259"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-264"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraint"><span class="hs-identifier hs-type">foreignKeyConstraint</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-265"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Identifier of the table referenced by the foreign key</span></span><span>
+</span><span id="line-266"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier.TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-267"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The columns constrained by the foreign key and those that they reference in the foreign table</span></span><span>
+</span><span id="line-268"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier hs-type">ForeignReference</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-269"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span>
+</span><span id="line-270"></span><span id="foreignKeyConstraint"><span class="annot"><span class="annottext">foreignKeyConstraint :: TableIdentifier
+-&gt; NonEmpty ForeignReference -&gt; ConstraintDefinition
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraint"><span class="hs-identifier hs-var hs-var">foreignKeyConstraint</span></a></span></span><span> </span><span id="local-6989586621679134058"><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679134058"><span class="hs-identifier hs-var">foreignTableId</span></a></span></span><span> </span><span id="local-6989586621679134059"><span class="annot"><span class="annottext">NonEmpty ForeignReference
+</span><a href="#local-6989586621679134059"><span class="hs-identifier hs-var">foreignReferences</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-271"></span><span>  </span><span class="annot"><span class="annottext">TableIdentifier
+-&gt; NonEmpty ForeignReference
+-&gt; ForeignKeyOptions
+-&gt; ConstraintDefinition
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraintWithOptions"><span class="hs-identifier hs-var">foreignKeyConstraintWithOptions</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679134058"><span class="hs-identifier hs-var">foreignTableId</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ForeignReference
+</span><a href="#local-6989586621679134059"><span class="hs-identifier hs-var">foreignReferences</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyOptions
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#defaultForeignKeyOptions"><span class="hs-identifier hs-var">defaultForeignKeyOptions</span></a></span><span>
+</span><span id="line-272"></span><span>
+</span><span id="line-273"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with ON UPDATE and
+  ON DELETE actions.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-279"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraintWithOptions"><span class="hs-identifier hs-type">foreignKeyConstraintWithOptions</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-280"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Identifier of the table referenced by the foreign key</span></span><span>
+</span><span id="line-281"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier.TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-282"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The columns constrained by the foreign key and those that they reference in the foreign table</span></span><span>
+</span><span id="line-283"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignReference"><span class="hs-identifier hs-type">ForeignReference</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-284"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyOptions"><span class="hs-identifier hs-type">ForeignKeyOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-285"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span>
+</span><span id="line-286"></span><span id="foreignKeyConstraintWithOptions"><span class="annot"><span class="annottext">foreignKeyConstraintWithOptions :: TableIdentifier
+-&gt; NonEmpty ForeignReference
+-&gt; ForeignKeyOptions
+-&gt; ConstraintDefinition
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyConstraintWithOptions"><span class="hs-identifier hs-var hs-var">foreignKeyConstraintWithOptions</span></a></span></span><span> </span><span id="local-6989586621679134060"><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679134060"><span class="hs-identifier hs-var">foreignTableId</span></a></span></span><span> </span><span id="local-6989586621679134061"><span class="annot"><span class="annottext">NonEmpty ForeignReference
+</span><a href="#local-6989586621679134061"><span class="hs-identifier hs-var">foreignReferences</span></a></span></span><span> </span><span id="local-6989586621679134062"><span class="annot"><span class="annottext">ForeignKeyOptions
+</span><a href="#local-6989586621679134062"><span class="hs-identifier hs-var">options</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-287"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-288"></span><span>    </span><span id="local-6989586621679134064"><span class="annot"><span class="annottext">localFieldNames :: NonEmpty FieldName
+</span><a href="#local-6989586621679134064"><span class="hs-identifier hs-var hs-var">localFieldNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-289"></span><span>      </span><span class="annot"><span class="annottext">ForeignReference -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#localFieldName"><span class="hs-identifier hs-var">localFieldName</span></a></span><span> </span><span class="annot"><span class="annottext">(ForeignReference -&gt; FieldName)
+-&gt; NonEmpty ForeignReference -&gt; NonEmpty FieldName
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty ForeignReference
+</span><a href="#local-6989586621679134061"><span class="hs-identifier hs-var">foreignReferences</span></a></span><span>
+</span><span id="line-290"></span><span>
+</span><span id="line-291"></span><span>    </span><span id="local-6989586621679134067"><span class="annot"><span class="annottext">foreignFieldNames :: NonEmpty FieldName
+</span><a href="#local-6989586621679134067"><span class="hs-identifier hs-var hs-var">foreignFieldNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-292"></span><span>      </span><span class="annot"><span class="annottext">ForeignReference -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignFieldName"><span class="hs-identifier hs-var">foreignFieldName</span></a></span><span> </span><span class="annot"><span class="annottext">(ForeignReference -&gt; FieldName)
+-&gt; NonEmpty ForeignReference -&gt; NonEmpty FieldName
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty ForeignReference
+</span><a href="#local-6989586621679134061"><span class="hs-identifier hs-var">foreignReferences</span></a></span><span>
+</span><span id="line-293"></span><span>
+</span><span id="line-294"></span><span>    </span><span id="local-6989586621679134068"><span class="annot"><span class="annottext">updateAction :: ForeignKeyAction
+</span><a href="#local-6989586621679134068"><span class="hs-identifier hs-var hs-var">updateAction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignKeyOptions -&gt; ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnUpdate"><span class="hs-identifier hs-var">foreignKeyOptionsOnUpdate</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyOptions
+</span><a href="#local-6989586621679134062"><span class="hs-identifier hs-var">options</span></a></span><span>
+</span><span id="line-295"></span><span>
+</span><span id="line-296"></span><span>    </span><span id="local-6989586621679134069"><span class="annot"><span class="annottext">deleteAction :: ForeignKeyAction
+</span><a href="#local-6989586621679134069"><span class="hs-identifier hs-var hs-var">deleteAction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignKeyOptions -&gt; ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyOptionsOnDelete"><span class="hs-identifier hs-var">foreignKeyOptionsOnDelete</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyOptions
+</span><a href="#local-6989586621679134062"><span class="hs-identifier hs-var">options</span></a></span><span>
+</span><span id="line-297"></span><span>
+</span><span id="line-298"></span><span>    </span><span id="local-6989586621679134072"><span class="annot"><span class="annottext">onUpdateExpr :: Maybe ForeignKeyUpdateActionExpr
+</span><a href="#local-6989586621679134072"><span class="hs-identifier hs-var hs-var">onUpdateExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ForeignKeyActionExpr -&gt; ForeignKeyUpdateActionExpr)
+-&gt; Maybe ForeignKeyActionExpr -&gt; Maybe ForeignKeyUpdateActionExpr
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; ForeignKeyUpdateActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyUpdateActionExpr"><span class="hs-identifier hs-var">Expr.foreignKeyUpdateActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyActionExpr -&gt; Maybe ForeignKeyUpdateActionExpr)
+-&gt; Maybe ForeignKeyActionExpr -&gt; Maybe ForeignKeyUpdateActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyActionToExpr"><span class="hs-identifier hs-var">foreignKeyActionToExpr</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="#local-6989586621679134068"><span class="hs-identifier hs-var">updateAction</span></a></span><span>
+</span><span id="line-299"></span><span>
+</span><span id="line-300"></span><span>    </span><span id="local-6989586621679134075"><span class="annot"><span class="annottext">onDeleteExpr :: Maybe ForeignKeyDeleteActionExpr
+</span><a href="#local-6989586621679134075"><span class="hs-identifier hs-var hs-var">onDeleteExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(ForeignKeyActionExpr -&gt; ForeignKeyDeleteActionExpr)
+-&gt; Maybe ForeignKeyActionExpr -&gt; Maybe ForeignKeyDeleteActionExpr
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; ForeignKeyDeleteActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyDeleteActionExpr"><span class="hs-identifier hs-var">Expr.foreignKeyDeleteActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyActionExpr -&gt; Maybe ForeignKeyDeleteActionExpr)
+-&gt; Maybe ForeignKeyActionExpr -&gt; Maybe ForeignKeyDeleteActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#foreignKeyActionToExpr"><span class="hs-identifier hs-var">foreignKeyActionToExpr</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="#local-6989586621679134069"><span class="hs-identifier hs-var">deleteAction</span></a></span><span>
+</span><span id="line-301"></span><span>
+</span><span id="line-302"></span><span>    </span><span id="local-6989586621679134079"><span class="annot"><span class="annottext">expr :: TableConstraint
+</span><a href="#local-6989586621679134079"><span class="hs-identifier hs-var hs-var">expr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-303"></span><span>      </span><span class="annot"><span class="annottext">NonEmpty ColumnName
+-&gt; Qualified TableName
+-&gt; NonEmpty ColumnName
+-&gt; Maybe ForeignKeyUpdateActionExpr
+-&gt; Maybe ForeignKeyDeleteActionExpr
+-&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyConstraint"><span class="hs-identifier hs-var">Expr.foreignKeyConstraint</span></a></span><span>
+</span><span id="line-304"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(FieldName -&gt; ColumnName)
+-&gt; NonEmpty FieldName -&gt; NonEmpty ColumnName
+forall a b. (a -&gt; b) -&gt; NonEmpty a -&gt; NonEmpty b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">FieldName -&gt; ColumnName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToColumnName"><span class="hs-identifier hs-var">FieldName.fieldNameToColumnName</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134064"><span class="hs-identifier hs-var">localFieldNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-305"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableIdentifier -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdQualifiedName"><span class="hs-identifier hs-var">TableIdentifier.tableIdQualifiedName</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679134060"><span class="hs-identifier hs-var">foreignTableId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-306"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(FieldName -&gt; ColumnName)
+-&gt; NonEmpty FieldName -&gt; NonEmpty ColumnName
+forall a b. (a -&gt; b) -&gt; NonEmpty a -&gt; NonEmpty b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">FieldName -&gt; ColumnName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToColumnName"><span class="hs-identifier hs-var">FieldName.fieldNameToColumnName</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134067"><span class="hs-identifier hs-var">foreignFieldNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-307"></span><span>        </span><span class="annot"><span class="annottext">Maybe ForeignKeyUpdateActionExpr
+</span><a href="#local-6989586621679134072"><span class="hs-identifier hs-var">onUpdateExpr</span></a></span><span>
+</span><span id="line-308"></span><span>        </span><span class="annot"><span class="annottext">Maybe ForeignKeyDeleteActionExpr
+</span><a href="#local-6989586621679134075"><span class="hs-identifier hs-var">onDeleteExpr</span></a></span><span>
+</span><span id="line-309"></span><span>
+</span><span id="line-310"></span><span>    </span><span id="local-6989586621679134082"><span class="annot"><span class="annottext">migrationKey :: ConstraintMigrationKey
+</span><a href="#local-6989586621679134082"><span class="hs-identifier hs-var hs-var">migrationKey</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-311"></span><span>      </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintMigrationKey"><span class="hs-identifier hs-type">ConstraintMigrationKey</span></a></span><span>
+</span><span id="line-312"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">constraintKeyType :: ConstraintKeyType
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyType"><span class="hs-identifier hs-var">constraintKeyType</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstraintKeyType
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyConstraint"><span class="hs-identifier hs-var">ForeignKeyConstraint</span></a></span><span>
+</span><span id="line-313"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyColumns :: Maybe [FieldName]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyColumns"><span class="hs-identifier hs-var">constraintKeyColumns</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FieldName] -&gt; Maybe [FieldName]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NonEmpty FieldName -&gt; [FieldName]
+forall a. NonEmpty a -&gt; [a]
+</span><span class="hs-identifier hs-var">NEL.toList</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134064"><span class="hs-identifier hs-var">localFieldNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-314"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignTable :: Maybe TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignTable"><span class="hs-identifier hs-var">constraintKeyForeignTable</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableIdentifier -&gt; Maybe TableIdentifier
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679134060"><span class="hs-identifier hs-var">foreignTableId</span></a></span><span>
+</span><span id="line-315"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignColumns :: Maybe [FieldName]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignColumns"><span class="hs-identifier hs-var">constraintKeyForeignColumns</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FieldName] -&gt; Maybe [FieldName]
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NonEmpty FieldName -&gt; [FieldName]
+forall a. NonEmpty a -&gt; [a]
+</span><span class="hs-identifier hs-var">NEL.toList</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty FieldName
+</span><a href="#local-6989586621679134067"><span class="hs-identifier hs-var">foreignFieldNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-316"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnUpdateAction"><span class="hs-identifier hs-var">constraintKeyForeignKeyOnUpdateAction</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="#local-6989586621679134068"><span class="hs-identifier hs-var">updateAction</span></a></span><span>
+</span><span id="line-317"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">constraintKeyForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintKeyForeignKeyOnDeleteAction"><span class="hs-identifier hs-var">constraintKeyForeignKeyOnDeleteAction</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="#local-6989586621679134069"><span class="hs-identifier hs-var">deleteAction</span></a></span><span>
+</span><span id="line-318"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-319"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-320"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span>
+</span><span id="line-321"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_constraintSqlExpr :: TableConstraint
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintSqlExpr"><span class="hs-identifier hs-var">_constraintSqlExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableConstraint
+</span><a href="#local-6989586621679134079"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-322"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_constraintMigrationKey :: ConstraintMigrationKey
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#_constraintMigrationKey"><span class="hs-identifier hs-var">_constraintMigrationKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConstraintMigrationKey
+</span><a href="#local-6989586621679134082"><span class="hs-identifier hs-var">migrationKey</span></a></span><span>
+</span><span id="line-323"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-324"></span></pre></body></html>

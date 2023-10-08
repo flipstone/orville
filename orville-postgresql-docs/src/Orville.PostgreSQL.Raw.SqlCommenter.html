@@ -1,0 +1,241 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+This module provides the very basics for [sqlcommenter](https://google.github.io/sqlcommenter)
+support.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlCommenter</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier">SqlCommenterAttributes</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addSqlCommenterAttributes"><span class="hs-identifier">addSqlCommenterAttributes</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">List</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Network.URI</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">URI</span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="annot"><span class="hs-comment">{- | The representation of 'T.Text' key/value pairs for supporting the sqlcommenter specification.
+  This allows you to attach key/values of 'T.Text' that supporting systems can use for advanced
+  metrics. See [sqlcommenter](https://google.github.io/sqlcommenter) for details of the
+  specification.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">type</span><span> </span><span id="SqlCommenterAttributes"><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-var">SqlCommenterAttributes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-33"></span><span>
+</span><span id="line-34"></span><span class="annot"><span class="hs-comment">{- | Adds a given 'SqlCommenter' set of key/value 'T.Text' pairs to a 'RawSql.SqlExpression'. This
+  performs all of the required serialization for the given values. Note that no values are
+  automatically added here, so any that you may wish to add can be freely set without a name clash
+  of any kind from this function itself.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-41"></span><span id="local-6989586621679127986"><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addSqlCommenterAttributes"><span class="hs-identifier hs-type">addSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127986"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127986"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127986"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-42"></span><span id="addSqlCommenterAttributes"><span class="annot"><span class="annottext">addSqlCommenterAttributes :: forall a. SqlExpression a =&gt; SqlCommenterAttributes -&gt; a -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addSqlCommenterAttributes"><span class="hs-identifier hs-var hs-var">addSqlCommenterAttributes</span></a></span></span><span> </span><span id="local-6989586621679128031"><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679128031"><span class="hs-identifier hs-var">commenter</span></a></span></span><span> </span><span id="local-6989586621679128032"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679128032"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; a
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; a) -&gt; RawSql -&gt; a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="annot"><span class="annottext">a -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679128032"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-45"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keyValueSerializationToRawSql"><span class="hs-identifier hs-var">keyValueSerializationToRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679128031"><span class="hs-identifier hs-var">commenter</span></a></span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keyValueSerializationToRawSql"><span class="hs-identifier hs-type">keyValueSerializationToRawSql</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-48"></span><span id="keyValueSerializationToRawSql"><span class="annot"><span class="annottext">keyValueSerializationToRawSql :: SqlCommenterAttributes -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keyValueSerializationToRawSql"><span class="hs-identifier hs-var hs-var">keyValueSerializationToRawSql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><span class="annottext">Text -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromText"><span class="hs-identifier hs-var">RawSql.fromText</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; RawSql)
+-&gt; (SqlCommenterAttributes -&gt; Text)
+-&gt; SqlCommenterAttributes
+-&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keyValueSerialization"><span class="hs-identifier hs-var">keyValueSerialization</span></a></span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="annot"><span class="hs-comment">{- | Perform the sqlcommenter serialization on for the whole 'SqlCommenter' map of key/value pairs.
+     The spec can be found
+     [here](https://google.github.io/sqlcommenter/spec/#key-value-serialization)
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-57"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keyValueSerialization"><span class="hs-identifier hs-type">keyValueSerialization</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-58"></span><span id="keyValueSerialization"><span class="annot"><span class="annottext">keyValueSerialization :: SqlCommenterAttributes -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keyValueSerialization"><span class="hs-identifier hs-var hs-var">keyValueSerialization</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>  </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#wrapInSqlComment"><span class="hs-identifier hs-var">wrapInSqlComment</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text)
+-&gt; (SqlCommenterAttributes -&gt; Text)
+-&gt; SqlCommenterAttributes
+-&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addCommasAndConcat"><span class="hs-identifier hs-var">addCommasAndConcat</span></a></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; Text)
+-&gt; (SqlCommenterAttributes -&gt; [Text])
+-&gt; SqlCommenterAttributes
+-&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; [Text]
+forall a. Ord a =&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.sort</span></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; [Text])
+-&gt; (SqlCommenterAttributes -&gt; [Text])
+-&gt; SqlCommenterAttributes
+-&gt; [Text]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">((Text, Text) -&gt; Text) -&gt; [(Text, Text)] -&gt; [Text]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">(Text, Text) -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#concatWithEquals"><span class="hs-identifier hs-var">concatWithEquals</span></a></span><span> </span><span class="annot"><span class="annottext">([(Text, Text)] -&gt; [Text])
+-&gt; (SqlCommenterAttributes -&gt; [(Text, Text)])
+-&gt; SqlCommenterAttributes
+-&gt; [Text]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; [(Text, Text)]
+forall k a. Map k a -&gt; [(k, a)]
+</span><span class="hs-identifier hs-var">Map.toList</span></span><span> </span><span class="annot"><span class="annottext">(SqlCommenterAttributes -&gt; [(Text, Text)])
+-&gt; (SqlCommenterAttributes -&gt; SqlCommenterAttributes)
+-&gt; SqlCommenterAttributes
+-&gt; [(Text, Text)]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#valueSerialization"><span class="hs-identifier hs-var">valueSerialization</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlCommenterAttributes -&gt; SqlCommenterAttributes)
+-&gt; (SqlCommenterAttributes -&gt; SqlCommenterAttributes)
+-&gt; SqlCommenterAttributes
+-&gt; SqlCommenterAttributes
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keySerialization"><span class="hs-identifier hs-var">keySerialization</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addCommasAndConcat"><span class="hs-identifier hs-type">addCommasAndConcat</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-62"></span><span id="addCommasAndConcat"><span class="annot"><span class="annottext">addCommasAndConcat :: [Text] -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addCommasAndConcat"><span class="hs-identifier hs-var hs-var">addCommasAndConcat</span></a></span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;''&quot;</span></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addCommasAndConcat"><span class="hs-identifier hs-var">addCommasAndConcat</span></a></span><span> </span><span id="local-6989586621679128047"><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679128047"><span class="hs-identifier hs-var">txts</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Text] -&gt; Text
+</span><span class="hs-identifier hs-var">T.concat</span></span><span> </span><span class="annot"><span class="annottext">([Text] -&gt; Text) -&gt; [Text] -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; [Text] -&gt; [Text]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.intersperse</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;,&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Text]
+</span><a href="#local-6989586621679128047"><span class="hs-identifier hs-var">txts</span></a></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#concatWithEquals"><span class="hs-identifier hs-type">concatWithEquals</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-66"></span><span id="concatWithEquals"><span class="annot"><span class="annottext">concatWithEquals :: (Text, Text) -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#concatWithEquals"><span class="hs-identifier hs-var hs-var">concatWithEquals</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128050"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128050"><span class="hs-identifier hs-var">k</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679128051"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128051"><span class="hs-identifier hs-var">v</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-67"></span><span>  </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128050"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;=&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128051"><span class="hs-identifier hs-var">v</span></a></span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">-- | The spec can be found [here](https://google.github.io/sqlcommenter/spec/#key-serialization)</span></span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keySerialization"><span class="hs-identifier hs-type">keySerialization</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span>
+</span><span id="line-71"></span><span id="keySerialization"><span class="annot"><span class="annottext">keySerialization :: SqlCommenterAttributes -&gt; SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#keySerialization"><span class="hs-identifier hs-var hs-var">keySerialization</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; SqlCommenterAttributes -&gt; SqlCommenterAttributes
+forall k2 k1 a. Ord k2 =&gt; (k1 -&gt; k2) -&gt; Map k1 a -&gt; Map k2 a
+</span><span class="hs-identifier hs-var">Map.mapKeys</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeText"><span class="hs-identifier hs-var">escapeText</span></a></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span class="annot"><span class="hs-comment">-- | The spec can be found [here](https://google.github.io/sqlcommenter/spec/#value-serialization)</span></span><span>
+</span><span id="line-75"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#valueSerialization"><span class="hs-identifier hs-type">valueSerialization</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenterAttributes</span></a></span><span>
+</span><span id="line-76"></span><span id="valueSerialization"><span class="annot"><span class="annottext">valueSerialization :: SqlCommenterAttributes -&gt; SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#valueSerialization"><span class="hs-identifier hs-var hs-var">valueSerialization</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; SqlCommenterAttributes -&gt; SqlCommenterAttributes
+forall a b. (a -&gt; b) -&gt; Map Text a -&gt; Map Text b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#wrapInSingleQuote"><span class="hs-identifier hs-var">wrapInSingleQuote</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; (Text -&gt; Text) -&gt; Text -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeQuote"><span class="hs-identifier hs-var">escapeQuote</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; (Text -&gt; Text) -&gt; Text -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeText"><span class="hs-identifier hs-var">escapeText</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="hs-comment">-- Here we ensure there is a space before the comment</span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#wrapInSqlComment"><span class="hs-identifier hs-type">wrapInSqlComment</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-81"></span><span id="wrapInSqlComment"><span class="annot"><span class="annottext">wrapInSqlComment :: Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#wrapInSqlComment"><span class="hs-identifier hs-var hs-var">wrapInSqlComment</span></a></span></span><span> </span><span id="local-6989586621679128056"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128056"><span class="hs-identifier hs-var">txt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; /*&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128056"><span class="hs-identifier hs-var">txt</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;*/&quot;</span></span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#wrapInSingleQuote"><span class="hs-identifier hs-type">wrapInSingleQuote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-85"></span><span id="wrapInSingleQuote"><span class="annot"><span class="annottext">wrapInSingleQuote :: Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#wrapInSingleQuote"><span class="hs-identifier hs-var hs-var">wrapInSingleQuote</span></a></span></span><span> </span><span id="local-6989586621679128057"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128057"><span class="hs-identifier hs-var">txt</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-86"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;'&quot;</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679128057"><span class="hs-identifier hs-var">txt</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Text -&gt; Text
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;'&quot;</span></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeQuote"><span class="hs-identifier hs-type">escapeQuote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-89"></span><span id="escapeQuote"><span class="annot"><span class="annottext">escapeQuote :: Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeQuote"><span class="hs-identifier hs-var hs-var">escapeQuote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="annottext">HasCallStack =&gt; Text -&gt; Text -&gt; Text -&gt; Text
+Text -&gt; Text -&gt; Text -&gt; Text
+</span><span class="hs-identifier hs-var">T.replace</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;'&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\'&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeText"><span class="hs-identifier hs-type">escapeText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-93"></span><span id="escapeText"><span class="annot"><span class="annottext">escapeText :: Text -&gt; Text
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeText"><span class="hs-identifier hs-var hs-var">escapeText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; (Text -&gt; String) -&gt; Text -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; String
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeStr"><span class="hs-identifier hs-var">escapeStr</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; String) -&gt; (Text -&gt; String) -&gt; Text -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeStr"><span class="hs-identifier hs-type">escapeStr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-97"></span><span id="escapeStr"><span class="annot"><span class="annottext">escapeStr :: String -&gt; String
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#escapeStr"><span class="hs-identifier hs-var hs-var">escapeStr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; String -&gt; String
+</span><span class="hs-identifier hs-var">URI.escapeURIString</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Bool
+</span><span class="hs-identifier hs-var">URI.isUnescapedInURIComponent</span></span><span>
+</span><span id="line-98"></span></pre></body></html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgClass</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier">PgClass</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier">RelationName</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameToString"><span class="hs-identifier">relationNameToString</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationKind"><span class="hs-identifier">RelationKind</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassTable"><span class="hs-identifier">pgClassTable</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameField"><span class="hs-identifier">relationNameField</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#namespaceOidField"><span class="hs-identifier">namespaceOidField</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindField"><span class="hs-identifier">relationKindField</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">String</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.html"><span class="hs-identifier">Orville.PostgreSQL</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Orville</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.OidField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier">oidField</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier">oidTypeField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+  The Haskell representation of data read from the @pg_catalog.pg_class@
+  table. Rows in this table correspond to tables, indexes, sequences, views,
+  materialized views, composite types and TOAST tables.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">data</span><span> </span><span id="PgClass"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-var">PgClass</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="PgClass"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-var">PgClass</span></a></span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="pgClassOid"><span class="annot"><span class="annottext">PgClass -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassOid"><span class="hs-identifier hs-var hs-var">pgClassOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-38"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The PostgreSQL @oid@ for the relation</span></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgClassNamespaceOid"><span class="annot"><span class="annottext">PgClass -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassNamespaceOid"><span class="hs-identifier hs-var hs-var">pgClassNamespaceOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-comment">-- References @pg_namespace.oid@.</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgClassRelationName"><span class="annot"><span class="annottext">PgClass -&gt; RelationName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassRelationName"><span class="hs-identifier hs-var hs-var">pgClassRelationName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier hs-type">RelationName</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The name of relation</span></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgClassRelationKind"><span class="annot"><span class="annottext">PgClass -&gt; RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassRelationKind"><span class="hs-identifier hs-var hs-var">pgClassRelationKind</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationKind"><span class="hs-identifier hs-type">RelationKind</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The kind of relation (table, view, etc)</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">{- |
+  A Haskell type for the name of the relation represented by a 'PgClass'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">newtype</span><span> </span><span id="RelationName"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier hs-var">RelationName</span></a></span></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="RelationName"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier hs-var">RelationName</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679140738"><span id="local-6989586621679140744"><span id="local-6989586621679140748"><span class="annot"><span class="annottext">Int -&gt; RelationName -&gt; ShowS
+[RelationName] -&gt; ShowS
+RelationName -&gt; String
+(Int -&gt; RelationName -&gt; ShowS)
+-&gt; (RelationName -&gt; String)
+-&gt; ([RelationName] -&gt; ShowS)
+-&gt; Show RelationName
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; RelationName -&gt; ShowS
+showsPrec :: Int -&gt; RelationName -&gt; ShowS
+$cshow :: RelationName -&gt; String
+show :: RelationName -&gt; String
+$cshowList :: [RelationName] -&gt; ShowS
+showList :: [RelationName] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679140752"><span id="local-6989586621679140757"><span class="annot"><span class="annottext">RelationName -&gt; RelationName -&gt; Bool
+(RelationName -&gt; RelationName -&gt; Bool)
+-&gt; (RelationName -&gt; RelationName -&gt; Bool) -&gt; Eq RelationName
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: RelationName -&gt; RelationName -&gt; Bool
+== :: RelationName -&gt; RelationName -&gt; Bool
+$c/= :: RelationName -&gt; RelationName -&gt; Bool
+/= :: RelationName -&gt; RelationName -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679140765"><span id="local-6989586621679140770"><span id="local-6989586621679140774"><span id="local-6989586621679140778"><span id="local-6989586621679140782"><span id="local-6989586621679140786"><span id="local-6989586621679140790"><span class="annot"><span class="annottext">Eq RelationName
+Eq RelationName
+-&gt; (RelationName -&gt; RelationName -&gt; Ordering)
+-&gt; (RelationName -&gt; RelationName -&gt; Bool)
+-&gt; (RelationName -&gt; RelationName -&gt; Bool)
+-&gt; (RelationName -&gt; RelationName -&gt; Bool)
+-&gt; (RelationName -&gt; RelationName -&gt; Bool)
+-&gt; (RelationName -&gt; RelationName -&gt; RelationName)
+-&gt; (RelationName -&gt; RelationName -&gt; RelationName)
+-&gt; Ord RelationName
+RelationName -&gt; RelationName -&gt; Bool
+RelationName -&gt; RelationName -&gt; Ordering
+RelationName -&gt; RelationName -&gt; RelationName
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: RelationName -&gt; RelationName -&gt; Ordering
+compare :: RelationName -&gt; RelationName -&gt; Ordering
+$c&lt; :: RelationName -&gt; RelationName -&gt; Bool
+&lt; :: RelationName -&gt; RelationName -&gt; Bool
+$c&lt;= :: RelationName -&gt; RelationName -&gt; Bool
+&lt;= :: RelationName -&gt; RelationName -&gt; Bool
+$c&gt; :: RelationName -&gt; RelationName -&gt; Bool
+&gt; :: RelationName -&gt; RelationName -&gt; Bool
+$c&gt;= :: RelationName -&gt; RelationName -&gt; Bool
+&gt;= :: RelationName -&gt; RelationName -&gt; Bool
+$cmax :: RelationName -&gt; RelationName -&gt; RelationName
+max :: RelationName -&gt; RelationName -&gt; RelationName
+$cmin :: RelationName -&gt; RelationName -&gt; RelationName
+min :: RelationName -&gt; RelationName -&gt; RelationName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679140796"><span class="annot"><span class="annottext">String -&gt; RelationName
+(String -&gt; RelationName) -&gt; IsString RelationName
+forall a. (String -&gt; a) -&gt; IsString a
+$cfromString :: String -&gt; RelationName
+fromString :: String -&gt; RelationName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">String.IsString</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">{- |
+  Convert a 'RelationName' to a plain 'String'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameToString"><span class="hs-identifier hs-type">relationNameToString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier hs-type">RelationName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-63"></span><span id="relationNameToString"><span class="annot"><span class="annottext">relationNameToString :: RelationName -&gt; String
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameToString"><span class="hs-identifier hs-var hs-var">relationNameToString</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier hs-type">RelationName</span></a></span><span> </span><span id="local-6989586621679140802"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679140802"><span class="hs-identifier hs-var">text</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679140802"><span class="hs-identifier hs-var">text</span></a></span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="annot"><span class="hs-comment">{- |
+  The kind of relation represented by a 'PgClass', as described at
+  https://www.postgresql.org/docs/13/catalog-pg-class.html.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-72"></span><span class="hs-keyword">data</span><span> </span><span id="RelationKind"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationKind"><span class="hs-identifier hs-var">RelationKind</span></a></span></span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="OrdinaryTable"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#OrdinaryTable"><span class="hs-identifier hs-var">OrdinaryTable</span></a></span></span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Index"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#Index"><span class="hs-identifier hs-var">Index</span></a></span></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Sequence"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#Sequence"><span class="hs-identifier hs-var">Sequence</span></a></span></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="ToastTable"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#ToastTable"><span class="hs-identifier hs-var">ToastTable</span></a></span></span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="View"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#View"><span class="hs-identifier hs-var">View</span></a></span></span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="MaterializedView"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#MaterializedView"><span class="hs-identifier hs-var">MaterializedView</span></a></span></span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="CompositeType"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#CompositeType"><span class="hs-identifier hs-var">CompositeType</span></a></span></span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="ForeignTable"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#ForeignTable"><span class="hs-identifier hs-var">ForeignTable</span></a></span></span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="PartitionedTable"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PartitionedTable"><span class="hs-identifier hs-var">PartitionedTable</span></a></span></span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="PartitionedIndex"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PartitionedIndex"><span class="hs-identifier hs-var">PartitionedIndex</span></a></span></span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679140815"><span id="local-6989586621679140817"><span id="local-6989586621679140821"><span class="annot"><span class="annottext">Int -&gt; RelationKind -&gt; ShowS
+[RelationKind] -&gt; ShowS
+RelationKind -&gt; String
+(Int -&gt; RelationKind -&gt; ShowS)
+-&gt; (RelationKind -&gt; String)
+-&gt; ([RelationKind] -&gt; ShowS)
+-&gt; Show RelationKind
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; RelationKind -&gt; ShowS
+showsPrec :: Int -&gt; RelationKind -&gt; ShowS
+$cshow :: RelationKind -&gt; String
+show :: RelationKind -&gt; String
+$cshowList :: [RelationKind] -&gt; ShowS
+showList :: [RelationKind] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679140824"><span id="local-6989586621679140826"><span class="annot"><span class="annottext">RelationKind -&gt; RelationKind -&gt; Bool
+(RelationKind -&gt; RelationKind -&gt; Bool)
+-&gt; (RelationKind -&gt; RelationKind -&gt; Bool) -&gt; Eq RelationKind
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: RelationKind -&gt; RelationKind -&gt; Bool
+== :: RelationKind -&gt; RelationKind -&gt; Bool
+$c/= :: RelationKind -&gt; RelationKind -&gt; Bool
+/= :: RelationKind -&gt; RelationKind -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><span class="hs-comment">{- |
+  An Orville 'Orville.TableDefinition' for querying the
+  @pg_catalog.pg_class@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassTable"><span class="hs-identifier hs-type">pgClassTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">Orville.TableDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-type">Orville.HasKey</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-type">PgClass</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-type">PgClass</span></a></span><span>
+</span><span id="line-92"></span><span id="pgClassTable"><span class="annot"><span class="annottext">pgClassTable :: TableDefinition (HasKey Oid) PgClass PgClass
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassTable"><span class="hs-identifier hs-var hs-var">pgClassTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><span class="annottext">String
+-&gt; TableDefinition (HasKey Oid) PgClass PgClass
+-&gt; TableDefinition (HasKey Oid) PgClass PgClass
+forall key writeEntity readEntity.
+String
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-var">Orville.setTableSchema</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_catalog&quot;</span></span><span> </span><span class="annot"><span class="annottext">(TableDefinition (HasKey Oid) PgClass PgClass
+ -&gt; TableDefinition (HasKey Oid) PgClass PgClass)
+-&gt; TableDefinition (HasKey Oid) PgClass PgClass
+-&gt; TableDefinition (HasKey Oid) PgClass PgClass
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">String
+-&gt; PrimaryKey Oid
+-&gt; SqlMarshaller PgClass PgClass
+-&gt; TableDefinition (HasKey Oid) PgClass PgClass
+forall key writeEntity readEntity.
+String
+-&gt; PrimaryKey key
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition (HasKey key) writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinition"><span class="hs-identifier hs-var">Orville.mkTableDefinition</span></a></span><span>
+</span><span id="line-95"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_class&quot;</span></span><span>
+</span><span id="line-96"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid -&gt; PrimaryKey Oid
+forall key. FieldDefinition NotNull key -&gt; PrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#primaryKey"><span class="hs-identifier hs-var">Orville.primaryKey</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var">oidField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller PgClass PgClass
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassMarshaller"><span class="hs-identifier hs-var">pgClassMarshaller</span></a></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassMarshaller"><span class="hs-identifier hs-type">pgClassMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">Orville.SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-type">PgClass</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-type">PgClass</span></a></span><span>
+</span><span id="line-100"></span><span id="pgClassMarshaller"><span class="annot"><span class="annottext">pgClassMarshaller :: SqlMarshaller PgClass PgClass
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassMarshaller"><span class="hs-identifier hs-var hs-var">pgClassMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-101"></span><span>  </span><span class="annot"><span class="annottext">Oid -&gt; Oid -&gt; RelationName -&gt; RelationKind -&gt; PgClass
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PgClass"><span class="hs-identifier hs-var">PgClass</span></a></span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><span class="annottext">(Oid -&gt; Oid -&gt; RelationName -&gt; RelationKind -&gt; PgClass)
+-&gt; SqlMarshaller PgClass Oid
+-&gt; SqlMarshaller
+     PgClass (Oid -&gt; RelationName -&gt; RelationKind -&gt; PgClass)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgClass -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgClass Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgClass -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassOid"><span class="hs-identifier hs-var">pgClassOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var">oidField</span></a></span><span>
+</span><span id="line-103"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgClass (Oid -&gt; RelationName -&gt; RelationKind -&gt; PgClass)
+-&gt; SqlMarshaller PgClass Oid
+-&gt; SqlMarshaller PgClass (RelationName -&gt; RelationKind -&gt; PgClass)
+forall a b.
+SqlMarshaller PgClass (a -&gt; b)
+-&gt; SqlMarshaller PgClass a -&gt; SqlMarshaller PgClass b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgClass -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgClass Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgClass -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassNamespaceOid"><span class="hs-identifier hs-var">pgClassNamespaceOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#namespaceOidField"><span class="hs-identifier hs-var">namespaceOidField</span></a></span><span>
+</span><span id="line-104"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgClass (RelationName -&gt; RelationKind -&gt; PgClass)
+-&gt; SqlMarshaller PgClass RelationName
+-&gt; SqlMarshaller PgClass (RelationKind -&gt; PgClass)
+forall a b.
+SqlMarshaller PgClass (a -&gt; b)
+-&gt; SqlMarshaller PgClass a -&gt; SqlMarshaller PgClass b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgClass -&gt; RelationName)
+-&gt; FieldDefinition NotNull RelationName
+-&gt; SqlMarshaller PgClass RelationName
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgClass -&gt; RelationName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassRelationName"><span class="hs-identifier hs-var">pgClassRelationName</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull RelationName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameField"><span class="hs-identifier hs-var">relationNameField</span></a></span><span>
+</span><span id="line-105"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgClass (RelationKind -&gt; PgClass)
+-&gt; SqlMarshaller PgClass RelationKind
+-&gt; SqlMarshaller PgClass PgClass
+forall a b.
+SqlMarshaller PgClass (a -&gt; b)
+-&gt; SqlMarshaller PgClass a -&gt; SqlMarshaller PgClass b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgClass -&gt; RelationKind)
+-&gt; FieldDefinition NotNull RelationKind
+-&gt; SqlMarshaller PgClass RelationKind
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgClass -&gt; RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgClassRelationKind"><span class="hs-identifier hs-var">pgClassRelationKind</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindField"><span class="hs-identifier hs-var">relationKindField</span></a></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="annot"><span class="hs-comment">{- |
+  The @relnamespace@ column of the @pg_catalog.pg_class@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-112"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#namespaceOidField"><span class="hs-identifier hs-type">namespaceOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-113"></span><span id="namespaceOidField"><span class="annot"><span class="annottext">namespaceOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#namespaceOidField"><span class="hs-identifier hs-var hs-var">namespaceOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;relnamespace&quot;</span></span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span class="annot"><span class="hs-comment">{- |
+  The @relname@ column of the @pg_catalog.pg_class@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-121"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameField"><span class="hs-identifier hs-type">relationNameField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationName"><span class="hs-identifier hs-type">RelationName</span></a></span><span>
+</span><span id="line-122"></span><span id="relationNameField"><span class="annot"><span class="annottext">relationNameField :: FieldDefinition NotNull RelationName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationNameField"><span class="hs-identifier hs-var hs-var">relationNameField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-123"></span><span>  </span><span class="annot"><span class="annottext">FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull RelationName
+forall a b nullability.
+(Coercible a b, Coercible b a) =&gt;
+FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#coerceField"><span class="hs-identifier hs-var">Orville.coerceField</span></a></span><span> </span><span class="annot"><span class="annottext">(FieldDefinition NotNull Text
+ -&gt; FieldDefinition NotNull RelationName)
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull RelationName
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-124"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;relname&quot;</span></span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span class="annot"><span class="hs-comment">{- |
+  The @relkind@ column of the @pg_catalog.pg_class@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-131"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindField"><span class="hs-identifier hs-type">relationKindField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationKind"><span class="hs-identifier hs-type">RelationKind</span></a></span><span>
+</span><span id="line-132"></span><span id="relationKindField"><span class="annot"><span class="annottext">relationKindField :: FieldDefinition NotNull RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindField"><span class="hs-identifier hs-var hs-var">relationKindField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-133"></span><span>  </span><span class="annot"><span class="annottext">(SqlType Text -&gt; SqlType RelationKind)
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull RelationKind
+forall a b nullability.
+(SqlType a -&gt; SqlType b)
+-&gt; FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#convertField"><span class="hs-identifier hs-var">Orville.convertField</span></a></span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(RelationKind -&gt; Text)
+-&gt; (Text -&gt; Either String RelationKind)
+-&gt; SqlType Text
+-&gt; SqlType RelationKind
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">Orville.tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindToPgText"><span class="hs-identifier hs-var">relationKindToPgText</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgTextToRelationKind"><span class="hs-identifier hs-var">pgTextToRelationKind</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-135"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;relkind&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'RelationKind' to the corresponding single character text
+  representation used by PostgreSQL.
+
+  See also 'pgTextToRelationKind'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-145"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindToPgText"><span class="hs-identifier hs-type">relationKindToPgText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationKind"><span class="hs-identifier hs-type">RelationKind</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-146"></span><span id="relationKindToPgText"><span class="annot"><span class="annottext">relationKindToPgText :: RelationKind -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#relationKindToPgText"><span class="hs-identifier hs-var hs-var">relationKindToPgText</span></a></span></span><span> </span><span id="local-6989586621679140841"><span class="annot"><span class="annottext">RelationKind
+</span><a href="#local-6989586621679140841"><span class="hs-identifier hs-var">kind</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-147"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="#local-6989586621679140841"><span class="hs-identifier hs-var">kind</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-149"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#OrdinaryTable"><span class="hs-identifier hs-var">OrdinaryTable</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;r&quot;</span></span><span>
+</span><span id="line-150"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#Index"><span class="hs-identifier hs-var">Index</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;i&quot;</span></span><span>
+</span><span id="line-151"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#Sequence"><span class="hs-identifier hs-var">Sequence</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;S&quot;</span></span><span>
+</span><span id="line-152"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#ToastTable"><span class="hs-identifier hs-var">ToastTable</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;t&quot;</span></span><span>
+</span><span id="line-153"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#View"><span class="hs-identifier hs-var">View</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;v&quot;</span></span><span>
+</span><span id="line-154"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#MaterializedView"><span class="hs-identifier hs-var">MaterializedView</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;m&quot;</span></span><span>
+</span><span id="line-155"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#CompositeType"><span class="hs-identifier hs-var">CompositeType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;c&quot;</span></span><span>
+</span><span id="line-156"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#ForeignTable"><span class="hs-identifier hs-var">ForeignTable</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;f&quot;</span></span><span>
+</span><span id="line-157"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PartitionedTable"><span class="hs-identifier hs-var">PartitionedTable</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;p&quot;</span></span><span>
+</span><span id="line-158"></span><span>      </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PartitionedIndex"><span class="hs-identifier hs-var">PartitionedIndex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;I&quot;</span></span><span>
+</span><span id="line-159"></span><span>
+</span><span id="line-160"></span><span class="annot"><span class="hs-comment">{- |
+  Attempts to parse a PostgreSQL single character textual value as a
+  'RelationKind'
+
+  See also 'relationKindToPgText'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-168"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgTextToRelationKind"><span class="hs-identifier hs-type">pgTextToRelationKind</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#RelationKind"><span class="hs-identifier hs-type">RelationKind</span></a></span><span>
+</span><span id="line-169"></span><span id="pgTextToRelationKind"><span class="annot"><span class="annottext">pgTextToRelationKind :: Text -&gt; Either String RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#pgTextToRelationKind"><span class="hs-identifier hs-var hs-var">pgTextToRelationKind</span></a></span></span><span> </span><span id="local-6989586621679140843"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679140843"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-170"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679140843"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-171"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;r&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#OrdinaryTable"><span class="hs-identifier hs-var">OrdinaryTable</span></a></span><span>
+</span><span id="line-172"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;i&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#Index"><span class="hs-identifier hs-var">Index</span></a></span><span>
+</span><span id="line-173"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;S&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#Sequence"><span class="hs-identifier hs-var">Sequence</span></a></span><span>
+</span><span id="line-174"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;t&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#ToastTable"><span class="hs-identifier hs-var">ToastTable</span></a></span><span>
+</span><span id="line-175"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;v&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#View"><span class="hs-identifier hs-var">View</span></a></span><span>
+</span><span id="line-176"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;m&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#MaterializedView"><span class="hs-identifier hs-var">MaterializedView</span></a></span><span>
+</span><span id="line-177"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;c&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#CompositeType"><span class="hs-identifier hs-var">CompositeType</span></a></span><span>
+</span><span id="line-178"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;f&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#ForeignTable"><span class="hs-identifier hs-var">ForeignTable</span></a></span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;p&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PartitionedTable"><span class="hs-identifier hs-var">PartitionedTable</span></a></span><span>
+</span><span id="line-180"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;I&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RelationKind -&gt; Either String RelationKind
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">RelationKind
+</span><a href="Orville.PostgreSQL.PgCatalog.PgClass.html#PartitionedIndex"><span class="hs-identifier hs-var">PartitionedIndex</span></a></span><span>
+</span><span id="line-181"></span><span>    </span><span id="local-6989586621679140844"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679140844"><span class="hs-identifier hs-var">kind</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String RelationKind
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unrecognized PostgreSQL relation kind: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679140844"><span class="hs-identifier hs-var">kind</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-182"></span></pre></body></html>

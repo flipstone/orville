@@ -1,0 +1,55 @@
+version: "3"
+services:
+  dev:
+    build: .
+    volumes:
+      - .:/orville-postgresql
+      - stack-work:/orville-postgresql/.stack-work
+      - stack-root:/stack-root
+    working_dir: /orville-postgresql
+    depends_on:
+      - testdb-${PG_VERSION:-pg12}
+    environment:
+      TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg12}"
+      STACK_ROOT: /stack-root
+    command:
+      - ./scripts/test-loop
+      - ${STACK_YAML_FILE:-stack.yml}
+    # A TTY is required for the test-loop script to use
+    # stack test. stdin_open would be sufficient, but
+    # allocating a tty provides colorful test output :)
+    tty: true
+
+  testdb-pg12:
+    image: postgres:12.12-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg13:
+    image: postgres:13.8-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg14:
+    image: postgres:14.5-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg15:
+    image: postgres:15.4-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg16:
+    image: postgres:16.0-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+volumes:
+  stack-root:
+  stack-work:

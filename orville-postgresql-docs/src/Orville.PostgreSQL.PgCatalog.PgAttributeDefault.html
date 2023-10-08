@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgAttributeDefault</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier">PgAttributeDefault</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultTable"><span class="hs-identifier">pgAttributeDefaultTable</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultRelationOidField"><span class="hs-identifier">attributeDefaultRelationOidField</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-14"></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.html"><span class="hs-identifier">Orville.PostgreSQL</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Orville</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.OidField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier">oidField</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier">oidTypeField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgAttribute</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier">AttributeNumber</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTypeField"><span class="hs-identifier">attributeNumberTypeField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="annot"><span class="hs-comment">{- |
+  The Haskell representation of data read from the @pg_catalog.pg_attrdef@
+  table.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">data</span><span> </span><span id="PgAttributeDefault"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-var">PgAttributeDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="PgAttributeDefault"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-var">PgAttributeDefault</span></a></span></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="pgAttributeDefaultOid"><span class="annot"><span class="annottext">PgAttributeDefault -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultOid"><span class="hs-identifier hs-var hs-var">pgAttributeDefaultOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The PostgreSQL @oid@ for the default value</span></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeDefaultRelationOid"><span class="annot"><span class="annottext">PgAttributeDefault -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultRelationOid"><span class="hs-identifier hs-var hs-var">pgAttributeDefaultRelationOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ for the relation that this</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-comment">-- attribute belongs to. References @pg_class.oid@</span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeDefaultAttributeNumber"><span class="annot"><span class="annottext">PgAttributeDefault -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultAttributeNumber"><span class="hs-identifier hs-var hs-var">pgAttributeDefaultAttributeNumber</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL attribute number for the column that this</span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-comment">-- default belongs to. References @pg_attribute.attnum@.</span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeDefaultExpression"><span class="annot"><span class="annottext">PgAttributeDefault -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultExpression"><span class="hs-identifier hs-var hs-var">pgAttributeDefaultExpression</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL default value expression, as decompiled from the</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-comment">-- @adbin@ column using the PostgreSQL @pg_get_expr@ function.</span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="annot"><span class="hs-comment">{- |
+  An Orville 'Orville.TableDefinition' for querying the
+  @pg_catalog.pg_attrdef@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-50"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultTable"><span class="hs-identifier hs-type">pgAttributeDefaultTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">Orville.TableDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#NoKey"><span class="hs-identifier hs-type">Orville.NoKey</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-type">PgAttributeDefault</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-type">PgAttributeDefault</span></a></span><span>
+</span><span id="line-51"></span><span id="pgAttributeDefaultTable"><span class="annot"><span class="annottext">pgAttributeDefaultTable :: TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultTable"><span class="hs-identifier hs-var hs-var">pgAttributeDefaultTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-52"></span><span>  </span><span class="annot"><span class="annottext">String
+-&gt; TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+-&gt; TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+forall key writeEntity readEntity.
+String
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-var">Orville.setTableSchema</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_catalog&quot;</span></span><span> </span><span class="annot"><span class="annottext">(TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+ -&gt; TableDefinition NoKey PgAttributeDefault PgAttributeDefault)
+-&gt; TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+-&gt; TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="annot"><span class="annottext">String
+-&gt; SqlMarshaller PgAttributeDefault PgAttributeDefault
+-&gt; TableDefinition NoKey PgAttributeDefault PgAttributeDefault
+forall writeEntity readEntity.
+String
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition NoKey writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinitionWithoutKey"><span class="hs-identifier hs-var">Orville.mkTableDefinitionWithoutKey</span></a></span><span>
+</span><span id="line-54"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_attrdef&quot;</span></span><span>
+</span><span id="line-55"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller PgAttributeDefault PgAttributeDefault
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultMarshaller"><span class="hs-identifier hs-var">pgAttributeDefaultMarshaller</span></a></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultMarshaller"><span class="hs-identifier hs-type">pgAttributeDefaultMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">Orville.SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-type">PgAttributeDefault</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-type">PgAttributeDefault</span></a></span><span>
+</span><span id="line-58"></span><span id="pgAttributeDefaultMarshaller"><span class="annot"><span class="annottext">pgAttributeDefaultMarshaller :: SqlMarshaller PgAttributeDefault PgAttributeDefault
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultMarshaller"><span class="hs-identifier hs-var hs-var">pgAttributeDefaultMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>  </span><span class="annot"><span class="annottext">Oid -&gt; Oid -&gt; AttributeNumber -&gt; Text -&gt; PgAttributeDefault
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#PgAttributeDefault"><span class="hs-identifier hs-var">PgAttributeDefault</span></a></span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><span class="annottext">(Oid -&gt; Oid -&gt; AttributeNumber -&gt; Text -&gt; PgAttributeDefault)
+-&gt; SqlMarshaller PgAttributeDefault Oid
+-&gt; SqlMarshaller
+     PgAttributeDefault
+     (Oid -&gt; AttributeNumber -&gt; Text -&gt; PgAttributeDefault)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttributeDefault -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid
+-&gt; SqlMarshaller PgAttributeDefault Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttributeDefault -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultOid"><span class="hs-identifier hs-var">pgAttributeDefaultOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var">oidField</span></a></span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgAttributeDefault
+  (Oid -&gt; AttributeNumber -&gt; Text -&gt; PgAttributeDefault)
+-&gt; SqlMarshaller PgAttributeDefault Oid
+-&gt; SqlMarshaller
+     PgAttributeDefault (AttributeNumber -&gt; Text -&gt; PgAttributeDefault)
+forall a b.
+SqlMarshaller PgAttributeDefault (a -&gt; b)
+-&gt; SqlMarshaller PgAttributeDefault a
+-&gt; SqlMarshaller PgAttributeDefault b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttributeDefault -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid
+-&gt; SqlMarshaller PgAttributeDefault Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttributeDefault -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultRelationOid"><span class="hs-identifier hs-var">pgAttributeDefaultRelationOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultRelationOidField"><span class="hs-identifier hs-var">attributeDefaultRelationOidField</span></a></span><span>
+</span><span id="line-62"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgAttributeDefault (AttributeNumber -&gt; Text -&gt; PgAttributeDefault)
+-&gt; SqlMarshaller PgAttributeDefault AttributeNumber
+-&gt; SqlMarshaller PgAttributeDefault (Text -&gt; PgAttributeDefault)
+forall a b.
+SqlMarshaller PgAttributeDefault (a -&gt; b)
+-&gt; SqlMarshaller PgAttributeDefault a
+-&gt; SqlMarshaller PgAttributeDefault b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttributeDefault -&gt; AttributeNumber)
+-&gt; FieldDefinition NotNull AttributeNumber
+-&gt; SqlMarshaller PgAttributeDefault AttributeNumber
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttributeDefault -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#pgAttributeDefaultAttributeNumber"><span class="hs-identifier hs-var">pgAttributeDefaultAttributeNumber</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultAttributeNumberField"><span class="hs-identifier hs-var">attributeDefaultAttributeNumberField</span></a></span><span>
+</span><span id="line-63"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgAttributeDefault (Text -&gt; PgAttributeDefault)
+-&gt; SqlMarshaller PgAttributeDefault Text
+-&gt; SqlMarshaller PgAttributeDefault PgAttributeDefault
+forall a b.
+SqlMarshaller PgAttributeDefault (a -&gt; b)
+-&gt; SqlMarshaller PgAttributeDefault a
+-&gt; SqlMarshaller PgAttributeDefault b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">SyntheticField Text -&gt; SqlMarshaller PgAttributeDefault Text
+forall fieldValue writeEntity.
+SyntheticField fieldValue -&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallSyntheticField"><span class="hs-identifier hs-var">Orville.marshallSyntheticField</span></a></span><span> </span><span class="annot"><span class="annottext">SyntheticField Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultExpressionField"><span class="hs-identifier hs-var">attributeDefaultExpressionField</span></a></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="annot"><span class="hs-comment">{- |
+  The @adrelid@ column of the @pg_catalog.pg_attrdef@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-70"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultRelationOidField"><span class="hs-identifier hs-type">attributeDefaultRelationOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-71"></span><span id="attributeDefaultRelationOidField"><span class="annot"><span class="annottext">attributeDefaultRelationOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultRelationOidField"><span class="hs-identifier hs-var hs-var">attributeDefaultRelationOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;adrelid&quot;</span></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span class="annot"><span class="hs-comment">{- |
+  The @adnum@ column of the @pg_catalog.pg_attrdef@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultAttributeNumberField"><span class="hs-identifier hs-type">attributeDefaultAttributeNumberField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-80"></span><span id="attributeDefaultAttributeNumberField"><span class="annot"><span class="annottext">attributeDefaultAttributeNumberField :: FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultAttributeNumberField"><span class="hs-identifier hs-var hs-var">attributeDefaultAttributeNumberField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTypeField"><span class="hs-identifier hs-var">attributeNumberTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;adnum&quot;</span></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="annot"><span class="hs-comment">{- |
+  A syntheticField for selecting the default expression by decompling the
+  @adbin@ column of the @pg_catalog.pg_attrdef@ table. The @pg_node_tree@ found
+  in the column is decompiled by selecting the expression
+  @pg_get_expr(adbin,adrelid)@.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultExpressionField"><span class="hs-identifier hs-type">attributeDefaultExpressionField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SyntheticField.html#SyntheticField"><span class="hs-identifier hs-type">Orville.SyntheticField</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-92"></span><span id="attributeDefaultExpressionField"><span class="annot"><span class="annottext">attributeDefaultExpressionField :: SyntheticField Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttributeDefault.html#attributeDefaultExpressionField"><span class="hs-identifier hs-var hs-var">attributeDefaultExpressionField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression
+-&gt; String
+-&gt; (SqlValue -&gt; Either String Text)
+-&gt; SyntheticField Text
+forall a.
+ValueExpression
+-&gt; String -&gt; (SqlValue -&gt; Either String a) -&gt; SyntheticField a
+</span><a href="Orville.PostgreSQL.Marshall.SyntheticField.html#syntheticField"><span class="hs-identifier hs-var">Orville.syntheticField</span></a></span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ValueExpression
+forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var">RawSql.unsafeSqlExpression</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_get_expr(adbin,adrelid)&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;expression&quot;</span></span><span>
+</span><span id="line-96"></span><span>    </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span>
+</span><span id="line-97"></span></pre></body></html>

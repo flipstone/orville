@@ -1,0 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.OidField</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier">oidField</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier">oidTypeField</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.html"><span class="hs-identifier">Orville.PostgreSQL</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Orville</span></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall.SqlType</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlType</span></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="annot"><span class="hs-comment">{- |
+  The @oid@ field found on many (but not all!) @pg_catalog@ tables
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-24"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-type">oidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-25"></span><span id="oidField"><span class="annot"><span class="annottext">oidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var hs-var">oidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-26"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;oid&quot;</span></span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Orville.FieldDefinition' with the given column name that stores
+  an @oid@ value.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-34"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-type">oidTypeField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-35"></span><span id="oidTypeField"><span class="annot"><span class="annottext">oidTypeField :: String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var hs-var">oidTypeField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-36"></span><span>  </span><span class="annot"><span class="annottext">SqlType Oid -&gt; String -&gt; FieldDefinition NotNull Oid
+forall a. SqlType a -&gt; String -&gt; FieldDefinition NotNull a
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldOfType"><span class="hs-identifier hs-var">Orville.fieldOfType</span></a></span><span> </span><span class="annot"><span class="annottext">SqlType Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#oid"><span class="hs-identifier hs-var">SqlType.oid</span></a></span><span>
+</span><span id="line-37"></span></pre></body></html>

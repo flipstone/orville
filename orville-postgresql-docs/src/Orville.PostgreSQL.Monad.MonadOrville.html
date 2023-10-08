@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE FlexibleInstances #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Monad.MonadOrville</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier">MonadOrville</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier">MonadOrvilleControl</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftWithConnection"><span class="hs-identifier">liftWithConnection</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier">liftCatch</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier">liftMask</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier">withConnection</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection_"><span class="hs-identifier">withConnection_</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnectedState"><span class="hs-identifier">withConnectedState</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.Trans.Reader</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">ReaderT</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">mapReaderT</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">runReaderT</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Pool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">withResource</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html"><span class="hs-identifier">Orville.PostgreSQL.Internal.OrvilleState</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier">ConnectedState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier">ConnectedState</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedConnection"><span class="hs-identifier">connectedConnection</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedTransaction"><span class="hs-identifier">connectedTransaction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectionState"><span class="hs-identifier">ConnectionState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Connected"><span class="hs-identifier">Connected</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NotConnected"><span class="hs-identifier">NotConnected</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier">OrvilleState</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectState"><span class="hs-identifier">connectState</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionPool"><span class="hs-identifier">orvilleConnectionPool</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionState"><span class="hs-identifier">orvilleConnectionState</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html"><span class="hs-identifier">Orville.PostgreSQL.Monad.HasOrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier">HasOrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier">askOrvilleState</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier">localOrvilleState</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.Connection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier">Connection</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="annot"><span class="hs-comment">{- |
+  'MonadOrville' is the typeclass that most Orville operations require to
+  do anything that connects to the database. 'MonadOrville' itself is empty,
+  but it lists all the required typeclasses as superclass contraints so that
+  it can be used instead of listing all the constraints on every function.
+
+  If you want to be able to run Orville operations directly in your own
+  application's Monad stack, a good starting place is to add
+
+  @
+    instance MonadOrville MyApplicationMonad
+  @
+
+  to your module and then let the compiler tell you what instances you
+  are missing from the superclasses.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">class</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#HasOrvilleState"><span class="hs-identifier hs-type">HasOrvilleState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132151"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-type">MonadOrvilleControl</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132151"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132151"><span class="hs-identifier hs-type">m</span></a></span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-59"></span><span>  </span><span id="MonadOrville"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-var">MonadOrville</span></a></span></span><span> </span><span id="local-6989586621679132151"><span class="annot"><a href="#local-6989586621679132151"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="annot"><span class="hs-comment">{- |
+  'MonadOrvilleControl' presents the interface that Orville will used to
+  lift low-level IO operations that cannot be lifted via 'liftIO' (i.e.
+  those where the IO parameter is contravriant rather than covariant).
+
+  For application monads built using only 'ReaderT' and 'IO', this can be
+  trivially implemented (or derived), using the 'ReaderT' instance that is
+  provided here. If you monad stack is sufficiently complicated, you may
+  need to use the 'unliftio' package as a stepping stone to implementing
+  'MonadOrvilleControl'. If your monad uses features that 'unliftio' cannot
+  support (e.g. the State monad or continuations), then you may need to
+  use 'monad-control' instead.
+
+  See 'Orville.PostgreSQL.UnliftIO' for functions that can be used as the
+  implementation of the methods below for monads that implement
+  'MonadUnliftIO'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-80"></span><span class="hs-keyword">class</span><span> </span><span id="MonadOrvilleControl"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-var">MonadOrvilleControl</span></a></span></span><span> </span><span id="local-6989586621679132166"><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-comment">-- |</span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-comment">--     Orville will use this function to lift the acquisition of connections</span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-comment">--     from the resource pool into the application monad.</span><span>
+</span><span id="line-84"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-comment">-- @since 1.0.0.0</span><span>
+</span><span id="line-86"></span><span>  </span><span id="liftWithConnection"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftWithConnection"><span class="hs-identifier hs-type">liftWithConnection</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-87"></span><span>    </span><span id="local-6989586621679132158"><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132157"><span class="annot"><a href="#local-6989586621679132157"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132157"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132157"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132158"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132158"><span class="hs-identifier hs-type">b</span></a></span></span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-comment">-- |</span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-comment">--     Orville will use this function to lift exception catches into the</span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-comment">--     application monad.</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-comment">-- @since 1.0.0.0</span><span>
+</span><span id="line-94"></span><span>  </span><span id="liftCatch"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier hs-type">liftCatch</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-95"></span><span>    </span><span id="local-6989586621679132159"><span id="local-6989586621679132162"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="#local-6989586621679132159"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132161"><span class="annot"><a href="#local-6989586621679132161"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132161"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679132159"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132161"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132161"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-97"></span><span>    </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132162"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-98"></span><span>    </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679132159"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132162"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-99"></span><span>    </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132162"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-comment">-- |</span><span>
+</span><span id="line-102"></span><span>  </span><span class="hs-comment">--     Orville will use this function to lift `mask` calls into the application</span><span>
+</span><span id="line-103"></span><span>  </span><span class="hs-comment">--     monad to guarantee resource cleanup is executed even when asynchrouns</span><span>
+</span><span id="line-104"></span><span>  </span><span class="hs-comment">--     exceptions are thrown.</span><span>
+</span><span id="line-105"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-106"></span><span>  </span><span class="hs-comment">-- @since 1.0.0.0</span><span>
+</span><span id="line-107"></span><span>  </span><span id="liftMask"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier hs-type">liftMask</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-108"></span><span>    </span><span id="local-6989586621679132165"><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132164"><span class="annot"><a href="#local-6989586621679132164"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132163"><span class="annot"><a href="#local-6989586621679132163"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132163"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132163"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132164"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132164"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-109"></span><span>    </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132167"><span class="annot"><a href="#local-6989586621679132167"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132167"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132167"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132165"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><a href="#local-6989586621679132166"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132165"><span class="hs-identifier hs-type">c</span></a></span></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-type">MonadOrvilleControl</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-113"></span><span>  </span><span id="local-6989586621679132265"><span class="annot"><span class="annottext">liftWithConnection :: forall b.
+(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; IO b) -&gt; IO b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftWithConnection"><span class="hs-identifier hs-var hs-var hs-var hs-var">liftWithConnection</span></a></span></span><span> </span><span id="local-6989586621679132266"><span class="annot"><span class="annottext">forall a. (Connection -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132266"><span class="hs-identifier hs-var">ioWithConn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-114"></span><span>    </span><span class="annot"><span class="annottext">(Connection -&gt; IO b) -&gt; IO b
+forall a. (Connection -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132266"><span class="hs-identifier hs-var">ioWithConn</span></a></span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621679132268"><span class="annot"><span class="annottext">liftCatch :: forall e b.
+Exception e =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a)
+-&gt; IO b -&gt; (e -&gt; IO b) -&gt; IO b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier hs-var hs-var hs-var hs-var">liftCatch</span></a></span></span><span> </span><span id="local-6989586621679132269"><span class="annot"><span class="annottext">forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132269"><span class="hs-identifier hs-var">ioCatch</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-117"></span><span>    </span><span class="annot"><span class="annottext">IO b -&gt; (e -&gt; IO b) -&gt; IO b
+forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132269"><span class="hs-identifier hs-var">ioCatch</span></a></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621679132270"><span class="annot"><span class="annottext">liftMask :: forall c.
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall a. IO a -&gt; IO a) -&gt; IO c) -&gt; IO c
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier hs-var hs-var hs-var hs-var">liftMask</span></a></span></span><span> </span><span id="local-6989586621679132271"><span class="annot"><span class="annottext">forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679132271"><span class="hs-identifier hs-var">ioMask</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-120"></span><span>    </span><span class="annot"><span class="annottext">((forall a. IO a -&gt; IO a) -&gt; IO c) -&gt; IO c
+forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679132271"><span class="hs-identifier hs-var">ioMask</span></a></span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679132175"><span id="local-6989586621679132176"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-type">MonadOrvilleControl</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132175"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-type">MonadOrvilleControl</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="annot"><a href="#local-6989586621679132176"><span class="hs-identifier hs-type">state</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132175"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-123"></span><span>  </span><span id="local-6989586621679132278"><span class="annot"><span class="annottext">liftWithConnection :: forall b.
+(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; ReaderT state m b) -&gt; ReaderT state m b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftWithConnection"><span class="hs-identifier hs-var hs-var hs-var hs-var">liftWithConnection</span></a></span></span><span> </span><span id="local-6989586621679132279"><span class="annot"><span class="annottext">forall a. (Connection -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132279"><span class="hs-identifier hs-var">ioWithConn</span></a></span></span><span> </span><span id="local-6989586621679132280"><span class="annot"><span class="annottext">Connection -&gt; ReaderT state m b
+</span><a href="#local-6989586621679132280"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-124"></span><span>    </span><span class="annot"><span class="annottext">(state -&gt; m b) -&gt; ReaderT state m b
+forall r (m :: * -&gt; *) a. (r -&gt; m a) -&gt; ReaderT r m a
+</span><span class="hs-identifier hs-var">ReaderT</span></span><span> </span><span class="annot"><span class="annottext">((state -&gt; m b) -&gt; ReaderT state m b)
+-&gt; (state -&gt; m b) -&gt; ReaderT state m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679132281"><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132281"><span class="hs-identifier hs-var">env</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-125"></span><span>      </span><span class="annot"><span class="annottext">(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; m b) -&gt; m b
+forall b.
+(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; m b) -&gt; m b
+forall (m :: * -&gt; *) b.
+MonadOrvilleControl m =&gt;
+(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftWithConnection"><span class="hs-identifier hs-var">liftWithConnection</span></a></span><span> </span><span class="annot"><span class="annottext">(Connection -&gt; IO a) -&gt; IO a
+forall a. (Connection -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132279"><span class="hs-identifier hs-var">ioWithConn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ReaderT state m b -&gt; state -&gt; m b)
+-&gt; state -&gt; ReaderT state m b -&gt; m b
+forall a b c. (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+</span><span class="hs-identifier hs-var">flip</span></span><span> </span><span class="annot"><span class="annottext">ReaderT state m b -&gt; state -&gt; m b
+forall r (m :: * -&gt; *) a. ReaderT r m a -&gt; r -&gt; m a
+</span><span class="hs-identifier hs-var">runReaderT</span></span><span> </span><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132281"><span class="hs-identifier hs-var">env</span></a></span><span> </span><span class="annot"><span class="annottext">(ReaderT state m b -&gt; m b)
+-&gt; (Connection -&gt; ReaderT state m b) -&gt; Connection -&gt; m b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Connection -&gt; ReaderT state m b
+</span><a href="#local-6989586621679132280"><span class="hs-identifier hs-var">action</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621679132287"><span class="annot"><span class="annottext">liftCatch :: forall e b.
+Exception e =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a)
+-&gt; ReaderT state m b
+-&gt; (e -&gt; ReaderT state m b)
+-&gt; ReaderT state m b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier hs-var hs-var hs-var hs-var">liftCatch</span></a></span></span><span> </span><span id="local-6989586621679132288"><span class="annot"><span class="annottext">forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132288"><span class="hs-identifier hs-var">ioCatch</span></a></span></span><span> </span><span id="local-6989586621679132289"><span class="annot"><span class="annottext">ReaderT state m b
+</span><a href="#local-6989586621679132289"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span id="local-6989586621679132290"><span class="annot"><span class="annottext">e -&gt; ReaderT state m b
+</span><a href="#local-6989586621679132290"><span class="hs-identifier hs-var">handler</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-128"></span><span>    </span><span class="annot"><span class="annottext">(state -&gt; m b) -&gt; ReaderT state m b
+forall r (m :: * -&gt; *) a. (r -&gt; m a) -&gt; ReaderT r m a
+</span><span class="hs-identifier hs-var">ReaderT</span></span><span> </span><span class="annot"><span class="annottext">((state -&gt; m b) -&gt; ReaderT state m b)
+-&gt; (state -&gt; m b) -&gt; ReaderT state m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679132291"><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132291"><span class="hs-identifier hs-var">env</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-129"></span><span>      </span><span class="annot"><span class="annottext">(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a) -&gt; m b -&gt; (e -&gt; m b) -&gt; m b
+forall e b.
+Exception e =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a) -&gt; m b -&gt; (e -&gt; m b) -&gt; m b
+forall (m :: * -&gt; *) e b.
+(MonadOrvilleControl m, Exception e) =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a) -&gt; m b -&gt; (e -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier hs-var">liftCatch</span></a></span><span>
+</span><span id="line-130"></span><span>        </span><span class="annot"><span class="annottext">IO a -&gt; (e -&gt; IO a) -&gt; IO a
+forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679132288"><span class="hs-identifier hs-var">ioCatch</span></a></span><span>
+</span><span id="line-131"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ReaderT state m b -&gt; state -&gt; m b
+forall r (m :: * -&gt; *) a. ReaderT r m a -&gt; r -&gt; m a
+</span><span class="hs-identifier hs-var">runReaderT</span></span><span> </span><span class="annot"><span class="annottext">ReaderT state m b
+</span><a href="#local-6989586621679132289"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132291"><span class="hs-identifier hs-var">env</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-132"></span><span>        </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679132292"><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679132292"><span class="hs-identifier hs-var">e</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ReaderT state m b -&gt; state -&gt; m b
+forall r (m :: * -&gt; *) a. ReaderT r m a -&gt; r -&gt; m a
+</span><span class="hs-identifier hs-var">runReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">e -&gt; ReaderT state m b
+</span><a href="#local-6989586621679132290"><span class="hs-identifier hs-var">handler</span></a></span><span> </span><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679132292"><span class="hs-identifier hs-var">e</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132291"><span class="hs-identifier hs-var">env</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-133"></span><span>
+</span><span id="line-134"></span><span>  </span><span id="local-6989586621679132294"><span class="annot"><span class="annottext">liftMask :: forall c.
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall a. ReaderT state m a -&gt; ReaderT state m a)
+    -&gt; ReaderT state m c)
+-&gt; ReaderT state m c
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier hs-var hs-var hs-var hs-var">liftMask</span></a></span></span><span> </span><span id="local-6989586621679132295"><span class="annot"><span class="annottext">forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679132295"><span class="hs-identifier hs-var">ioMask</span></a></span></span><span> </span><span id="local-6989586621679132296"><span class="annot"><span class="annottext">(forall a. ReaderT state m a -&gt; ReaderT state m a)
+-&gt; ReaderT state m c
+</span><a href="#local-6989586621679132296"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-135"></span><span>    </span><span class="annot"><span class="annottext">(state -&gt; m c) -&gt; ReaderT state m c
+forall r (m :: * -&gt; *) a. (r -&gt; m a) -&gt; ReaderT r m a
+</span><span class="hs-identifier hs-var">ReaderT</span></span><span> </span><span class="annot"><span class="annottext">((state -&gt; m c) -&gt; ReaderT state m c)
+-&gt; (state -&gt; m c) -&gt; ReaderT state m c
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679132297"><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132297"><span class="hs-identifier hs-var">env</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-136"></span><span>      </span><span class="annot"><span class="annottext">(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall {a}. m a -&gt; m a) -&gt; m c) -&gt; m c
+forall c.
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall {a}. m a -&gt; m a) -&gt; m c) -&gt; m c
+forall (m :: * -&gt; *) c.
+MonadOrvilleControl m =&gt;
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall a. m a -&gt; m a) -&gt; m c) -&gt; m c
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier hs-var">liftMask</span></a></span><span> </span><span class="annot"><span class="annottext">((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679132295"><span class="hs-identifier hs-var">ioMask</span></a></span><span> </span><span class="annot"><span class="annottext">(((forall {a}. m a -&gt; m a) -&gt; m c) -&gt; m c)
+-&gt; ((forall {a}. m a -&gt; m a) -&gt; m c) -&gt; m c
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679132298"><span class="annot"><span class="annottext">forall {a}. m a -&gt; m a
+</span><a href="#local-6989586621679132298"><span class="hs-identifier hs-var">restore</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-137"></span><span>        </span><span class="annot"><span class="annottext">ReaderT state m c -&gt; state -&gt; m c
+forall r (m :: * -&gt; *) a. ReaderT r m a -&gt; r -&gt; m a
+</span><span class="hs-identifier hs-var">runReaderT</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall a. ReaderT state m a -&gt; ReaderT state m a)
+-&gt; ReaderT state m c
+</span><a href="#local-6989586621679132296"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; ReaderT state m a -&gt; ReaderT state m a
+forall (m :: * -&gt; *) a (n :: * -&gt; *) b r.
+(m a -&gt; n b) -&gt; ReaderT r m a -&gt; ReaderT r n b
+</span><span class="hs-identifier hs-var">mapReaderT</span></span><span> </span><span class="annot"><span class="annottext">m a -&gt; m a
+forall {a}. m a -&gt; m a
+</span><a href="#local-6989586621679132298"><span class="hs-identifier hs-var">restore</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">state
+</span><a href="#local-6989586621679132297"><span class="hs-identifier hs-var">env</span></a></span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679132212"><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-type">MonadOrvilleControl</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132212"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132212"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">ReaderT</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132212"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-140"></span><span>
+</span><span id="line-141"></span><span class="annot"><span class="hs-comment">{- |
+  'withConnection' should be used to receive a 'Connection' handle for
+  executing queries against the database from within an application monad using
+  Orville.  For the &quot;outermost&quot; call of 'withConnection', a connection will be
+  acquired from the resource pool. Additional calls to 'withConnection' that
+  happen inside the 'm a' that uses the connection will return the same
+  'Connection' the same connection. When the 'm a' finishes the connection
+  will be returned to the pool. If 'm a' throws an exception the pool's
+  exception handling will take effect, generally destroying the connection in
+  case it was the source of the error.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-154"></span><span id="local-6989586621679132213"><span id="local-6989586621679132214"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier hs-type">withConnection</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132213"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132213"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132214"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132213"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132214"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-155"></span><span id="withConnection"><span class="annot"><span class="annottext">withConnection :: forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(Connection -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier hs-var hs-var">withConnection</span></a></span></span><span> </span><span id="local-6989586621679132315"><span class="annot"><span class="annottext">Connection -&gt; m a
+</span><a href="#local-6989586621679132315"><span class="hs-identifier hs-var">connectedAction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-156"></span><span>  </span><span class="annot"><span class="annottext">(ConnectedState -&gt; m a) -&gt; m a
+forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(ConnectedState -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnectedState"><span class="hs-identifier hs-var">withConnectedState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Connection -&gt; m a
+</span><a href="#local-6989586621679132315"><span class="hs-identifier hs-var">connectedAction</span></a></span><span> </span><span class="annot"><span class="annottext">(Connection -&gt; m a)
+-&gt; (ConnectedState -&gt; Connection) -&gt; ConnectedState -&gt; m a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ConnectedState -&gt; Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedConnection"><span class="hs-identifier hs-var">connectedConnection</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>
+</span><span id="line-158"></span><span class="annot"><span class="hs-comment">{- |
+  'withConnection_' is a convenience version of 'withConnection' for those that
+  don't need the actual connection handle. You might want to use this function
+  even without using the handle because it ensures that all the Orville
+  operations performed by the action passed to it occur on the same connection.
+  Orville uses connection pooling, so unless you use either 'withConnection' or
+  'withTransaction' each database operation may be performed on a different
+  connection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-169"></span><span id="local-6989586621679132220"><span id="local-6989586621679132221"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection_"><span class="hs-identifier hs-type">withConnection_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132220"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132220"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132221"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132220"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132221"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-170"></span><span id="withConnection_"><span class="annot"><span class="annottext">withConnection_ :: forall (m :: * -&gt; *) a. MonadOrville m =&gt; m a -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection_"><span class="hs-identifier hs-var hs-var">withConnection_</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><span class="annottext">(Connection -&gt; m a) -&gt; m a
+forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(Connection -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier hs-var">withConnection</span></a></span><span> </span><span class="annot"><span class="annottext">((Connection -&gt; m a) -&gt; m a)
+-&gt; (m a -&gt; Connection -&gt; m a) -&gt; m a -&gt; m a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">m a -&gt; Connection -&gt; m a
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span>
+</span><span id="line-172"></span><span>
+</span><span id="line-173"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: This in an internal version of 'withConnection' that gives access to
+  the entire 'ConnectedState' value to allow for transaction management.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-179"></span><span id="local-6989586621679132218"><span id="local-6989586621679132219"><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnectedState"><span class="hs-identifier hs-type">withConnectedState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132218"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier hs-type">ConnectedState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132218"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132219"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132218"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132219"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-180"></span><span id="withConnectedState"><span class="annot"><span class="annottext">withConnectedState :: forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(ConnectedState -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnectedState"><span class="hs-identifier hs-var hs-var">withConnectedState</span></a></span></span><span> </span><span id="local-6989586621679132328"><span class="annot"><span class="annottext">ConnectedState -&gt; m a
+</span><a href="#local-6989586621679132328"><span class="hs-identifier hs-var">connectedAction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-181"></span><span>  </span><span id="local-6989586621679132329"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132329"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m OrvilleState
+forall (m :: * -&gt; *). HasOrvilleState m =&gt; m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var">askOrvilleState</span></a></span><span>
+</span><span id="line-182"></span><span>
+</span><span id="line-183"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionState"><span class="hs-identifier hs-var">orvilleConnectionState</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132329"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-184"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Connected"><span class="hs-identifier hs-type">Connected</span></a></span><span> </span><span id="local-6989586621679132330"><span class="annot"><span class="annottext">ConnectedState
+</span><a href="#local-6989586621679132330"><span class="hs-identifier hs-var">connectedState</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-185"></span><span>      </span><span class="annot"><span class="annottext">ConnectedState -&gt; m a
+</span><a href="#local-6989586621679132328"><span class="hs-identifier hs-var">connectedAction</span></a></span><span> </span><span class="annot"><span class="annottext">ConnectedState
+</span><a href="#local-6989586621679132330"><span class="hs-identifier hs-var">connectedState</span></a></span><span>
+</span><span id="line-186"></span><span>    </span><span class="annot"><span class="annottext">ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NotConnected"><span class="hs-identifier hs-var">NotConnected</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-187"></span><span>      </span><span class="hs-keyword">let</span><span>
+</span><span id="line-188"></span><span>        </span><span id="local-6989586621679132331"><span class="annot"><span class="annottext">pool :: Pool Connection
+</span><a href="#local-6989586621679132331"><span class="hs-identifier hs-var hs-var">pool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; Pool Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionPool"><span class="hs-identifier hs-var">orvilleConnectionPool</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132329"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-189"></span><span>      </span><span class="hs-keyword">in</span><span>
+</span><span id="line-190"></span><span>        </span><span class="annot"><span class="annottext">(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; m a) -&gt; m a
+forall b.
+(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; m b) -&gt; m b
+forall (m :: * -&gt; *) b.
+MonadOrvilleControl m =&gt;
+(forall a. (Connection -&gt; IO a) -&gt; IO a)
+-&gt; (Connection -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftWithConnection"><span class="hs-identifier hs-var">liftWithConnection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Pool Connection -&gt; (Connection -&gt; IO a) -&gt; IO a
+forall a r. Pool a -&gt; (a -&gt; IO r) -&gt; IO r
+</span><span class="hs-identifier hs-var">withResource</span></span><span> </span><span class="annot"><span class="annottext">Pool Connection
+</span><a href="#local-6989586621679132331"><span class="hs-identifier hs-var">pool</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">((Connection -&gt; m a) -&gt; m a) -&gt; (Connection -&gt; m a) -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679132332"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679132332"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-191"></span><span>          </span><span class="hs-keyword">let</span><span>
+</span><span id="line-192"></span><span>            </span><span id="local-6989586621679132333"><span class="annot"><span class="annottext">connectedState :: ConnectedState
+</span><a href="#local-6989586621679132333"><span class="hs-identifier hs-var hs-var">connectedState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-193"></span><span>              </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier hs-type">ConnectedState</span></a></span><span>
+</span><span id="line-194"></span><span>                </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">connectedConnection :: Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedConnection"><span class="hs-identifier hs-var">connectedConnection</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679132332"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-195"></span><span>                </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">connectedTransaction :: Maybe TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedTransaction"><span class="hs-identifier hs-var">connectedTransaction</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe TransactionState
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-196"></span><span>                </span><span class="hs-special">}</span><span>
+</span><span id="line-197"></span><span>          </span><span class="hs-keyword">in</span><span>
+</span><span id="line-198"></span><span>            </span><span class="annot"><span class="annottext">(OrvilleState -&gt; OrvilleState) -&gt; m a -&gt; m a
+forall a. (OrvilleState -&gt; OrvilleState) -&gt; m a -&gt; m a
+forall (m :: * -&gt; *) a.
+HasOrvilleState m =&gt;
+(OrvilleState -&gt; OrvilleState) -&gt; m a -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#localOrvilleState"><span class="hs-identifier hs-var">localOrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ConnectedState -&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectState"><span class="hs-identifier hs-var">connectState</span></a></span><span> </span><span class="annot"><span class="annottext">ConnectedState
+</span><a href="#local-6989586621679132333"><span class="hs-identifier hs-var">connectedState</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(m a -&gt; m a) -&gt; m a -&gt; m a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-199"></span><span>              </span><span class="annot"><span class="annottext">ConnectedState -&gt; m a
+</span><a href="#local-6989586621679132328"><span class="hs-identifier hs-var">connectedAction</span></a></span><span> </span><span class="annot"><span class="annottext">ConnectedState
+</span><a href="#local-6989586621679132333"><span class="hs-identifier hs-var">connectedState</span></a></span><span>
+</span><span id="line-200"></span></pre></body></html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.ValueExpression</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier">ValueExpression</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#cast"><span class="hs-identifier">cast</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier">ParameterName</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#columnReference"><span class="hs-identifier">columnReference</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier">valueExpression</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#rowValueConstructor"><span class="hs-identifier">rowValueConstructor</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier">functionCall</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCallNamedParams"><span class="hs-identifier">functionCallNamedParams</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">NE</span></span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.DataType.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.DataType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.DataType.html#DataType"><span class="hs-identifier">DataType</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier">ColumnName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier">FunctionName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier">SqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent an arbitrary value in a SQL expression. This could be a
+constant value, a column reference or any arbitrary calculated expression.
+E.G.
+
+&gt; (foo + bar) &gt; 20
+
+'ValueExpression' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">newtype</span><span> </span><span id="ValueExpression"><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ValueExpression"><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679129598"><span id="local-6989586621679129602"><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+ValueExpression -&gt; RawSql
+(ValueExpression -&gt; RawSql)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; SqlExpression ValueExpression
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ValueExpression -&gt; RawSql
+toRawSql :: ValueExpression -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ValueExpression
+unsafeFromRawSql :: RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="annot"><span class="hs-comment">{- |
+Performs a SQL type cast to the specified type on the given 'ValueExpression'.
+E.G.
+
+&gt; foo :: integer
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-53"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#cast"><span class="hs-identifier hs-type">cast</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.DataType.html#DataType"><span class="hs-identifier hs-type">DataType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-54"></span><span id="cast"><span class="annot"><span class="annottext">cast :: ValueExpression -&gt; DataType -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#cast"><span class="hs-identifier hs-var hs-var">cast</span></a></span></span><span> </span><span id="local-6989586621679129606"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129606"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span id="local-6989586621679129607"><span class="annot"><span class="annottext">DataType
+</span><a href="#local-6989586621679129607"><span class="hs-identifier hs-var">dataType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-55"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="annot"><span class="annottext">ValueExpression -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129606"><span class="hs-identifier hs-var">value</span></a></span><span>
+</span><span id="line-57"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::&quot;</span></span><span>
+</span><span id="line-58"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">DataType -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="#local-6989586621679129607"><span class="hs-identifier hs-var">dataType</span></a></span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="annot"><span class="hs-comment">{- |
+Uses a 'ColumnName' to reference a column as a 'ValueExpression'. This
+is the equivalent of simply writing the column name as the expression. E.G.
+
+&gt; foo
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-68"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#columnReference"><span class="hs-identifier hs-type">columnReference</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-69"></span><span id="columnReference"><span class="annot"><span class="annottext">columnReference :: ColumnName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#columnReference"><span class="hs-identifier hs-var hs-var">columnReference</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression)
+-&gt; (ColumnName -&gt; RawSql) -&gt; ColumnName -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ColumnName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="annot"><span class="hs-comment">{- |
+  Uses the given 'SqlValue' as a constant expression. The value will be passed
+  as a statement parameter, not as a literal expression, so there is not need
+  to worry about escaping. However, there are a few places (usually in DDL)
+  where PostgreSQL does not support values passed as paremeters where this
+  cannot be used.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier hs-type">valueExpression</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-81"></span><span id="valueExpression"><span class="annot"><span class="annottext">valueExpression :: SqlValue -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier hs-var hs-var">valueExpression</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression)
+-&gt; (SqlValue -&gt; RawSql) -&gt; SqlValue -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-var">RawSql.parameter</span></a></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="annot"><span class="hs-comment">{- |
+Constructs a PostgreSQL row value expression from the given list of
+expressions. E.G.
+
+&gt; (foo, bar, now())
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#rowValueConstructor"><span class="hs-identifier hs-type">rowValueConstructor</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NE.NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-92"></span><span id="rowValueConstructor"><span class="annot"><span class="annottext">rowValueConstructor :: NonEmpty ValueExpression -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#rowValueConstructor"><span class="hs-identifier hs-var hs-var">rowValueConstructor</span></a></span></span><span> </span><span id="local-6989586621679129612"><span class="annot"><span class="annottext">NonEmpty ValueExpression
+</span><a href="#local-6989586621679129612"><span class="hs-identifier hs-var">elements</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-95"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; NonEmpty ValueExpression -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ValueExpression
+</span><a href="#local-6989586621679129612"><span class="hs-identifier hs-var">elements</span></a></span><span>
+</span><span id="line-96"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><span class="hs-comment">{- |
+Constructs a 'ValueExpression' that will call the specified PostgreSQL
+function with the given arguments passed as position parameters. E.G.
+
+&gt; nextval(sequence_name)
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-type">functionCall</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier hs-type">FunctionName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-107"></span><span id="functionCall"><span class="annot"><span class="annottext">functionCall :: FunctionName -&gt; [ValueExpression] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-var hs-var">functionCall</span></a></span></span><span> </span><span id="local-6989586621679129617"><span class="annot"><span class="annottext">FunctionName
+</span><a href="#local-6989586621679129617"><span class="hs-identifier hs-var">functionName</span></a></span></span><span> </span><span id="local-6989586621679129618"><span class="annot"><span class="annottext">[ValueExpression]
+</span><a href="#local-6989586621679129618"><span class="hs-identifier hs-var">parameters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-109"></span><span>    </span><span class="annot"><span class="annottext">FunctionName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">FunctionName
+</span><a href="#local-6989586621679129617"><span class="hs-identifier hs-var">functionName</span></a></span><span>
+</span><span id="line-110"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-111"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; [ValueExpression] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="annot"><span class="annottext">[ValueExpression]
+</span><a href="#local-6989586621679129618"><span class="hs-identifier hs-var">parameters</span></a></span><span>
+</span><span id="line-112"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the name of a name parameter in PostgreSQL function call.
+E.G.
+
+&gt; foo
+
+in
+
+&gt; some_func(foo =&gt; 1)
+
+'ParameterName' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-130"></span><span class="hs-keyword">newtype</span><span> </span><span id="ParameterName"><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier hs-var">ParameterName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ParameterName"><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier hs-var">ParameterName</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-131"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679129621"><span id="local-6989586621679129625"><span class="annot"><span class="annottext">RawSql -&gt; ParameterName
+ParameterName -&gt; RawSql
+(ParameterName -&gt; RawSql)
+-&gt; (RawSql -&gt; ParameterName) -&gt; SqlExpression ParameterName
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ParameterName -&gt; RawSql
+toRawSql :: ParameterName -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ParameterName
+unsafeFromRawSql :: RawSql -&gt; ParameterName
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="annot"><span class="hs-comment">{- |
+Constructs a 'ValueExpression' that will call the specified PostgreSQL
+function with the given arguments passed as named parameters. E.G.
+
+&gt; make_interval(years =&gt; 1)
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-141"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCallNamedParams"><span class="hs-identifier hs-type">functionCallNamedParams</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier hs-type">FunctionName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier hs-type">ParameterName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-142"></span><span id="functionCallNamedParams"><span class="annot"><span class="annottext">functionCallNamedParams :: FunctionName
+-&gt; [(ParameterName, ValueExpression)] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCallNamedParams"><span class="hs-identifier hs-var hs-var">functionCallNamedParams</span></a></span></span><span> </span><span id="local-6989586621679129628"><span class="annot"><span class="annottext">FunctionName
+</span><a href="#local-6989586621679129628"><span class="hs-identifier hs-var">functionName</span></a></span></span><span> </span><span id="local-6989586621679129629"><span class="annot"><span class="annottext">[(ParameterName, ValueExpression)]
+</span><a href="#local-6989586621679129629"><span class="hs-identifier hs-var">parameters</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-143"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-var">ValueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-144"></span><span>    </span><span class="annot"><span class="annottext">FunctionName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">FunctionName
+</span><a href="#local-6989586621679129628"><span class="hs-identifier hs-var">functionName</span></a></span><span>
+</span><span id="line-145"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-146"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((ParameterName, ValueExpression) -&gt; RawSql)
+-&gt; [(ParameterName, ValueExpression)] -&gt; [RawSql]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ParameterName -&gt; ValueExpression -&gt; RawSql)
+-&gt; (ParameterName, ValueExpression) -&gt; RawSql
+forall a b c. (a -&gt; b -&gt; c) -&gt; (a, b) -&gt; c
+</span><span class="hs-identifier hs-var">uncurry</span></span><span> </span><span class="annot"><span class="annottext">ParameterName -&gt; ValueExpression -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#namedParameterArgument"><span class="hs-identifier hs-var">namedParameterArgument</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(ParameterName, ValueExpression)]
+</span><a href="#local-6989586621679129629"><span class="hs-identifier hs-var">parameters</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-147"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-148"></span><span>
+</span><span id="line-149"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a sql fragment that will pass the given named argument with the
+  specified value.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-155"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#namedParameterArgument"><span class="hs-identifier hs-type">namedParameterArgument</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier hs-type">ParameterName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-156"></span><span id="namedParameterArgument"><span class="annot"><span class="annottext">namedParameterArgument :: ParameterName -&gt; ValueExpression -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#namedParameterArgument"><span class="hs-identifier hs-var hs-var">namedParameterArgument</span></a></span></span><span> </span><span id="local-6989586621679129632"><span class="annot"><span class="annottext">ParameterName
+</span><a href="#local-6989586621679129632"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span id="local-6989586621679129633"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129633"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-157"></span><span>  </span><span class="annot"><span class="annottext">ParameterName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ParameterName
+</span><a href="#local-6989586621679129632"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-158"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-159"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;=&gt;&quot;</span></span><span>
+</span><span id="line-160"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-161"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ValueExpression -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129633"><span class="hs-identifier hs-var">value</span></a></span><span>
+</span><span id="line-162"></span></pre></body></html>

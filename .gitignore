@@ -1,0 +1,29 @@
+dist
+.cabal-sandbox
+cabal.sandbox.config
+.DS_Store
+.stack-work/
+test-all-logs
+dist-newstyle
+
+# Ignore TAGS file produced by emacs and vim.
+TAGS
+session.vim
+.dir-locals.el
+
+# Ignore any local developer overrides to the docker-compose file
+docker-compose.override.yml
+compose.override.yml
+docker-compose.tools-override.yml
+compose.tools-override.yml
+
+# Ignore local stuff
+.local/
+local-docs
+
+#
+instantclient*
+
+# We use a ci compose file that keeps some extra bits locally to cache
+# They are ignored below to avoid them being included in various operations, locally and in ci
+.stack-root

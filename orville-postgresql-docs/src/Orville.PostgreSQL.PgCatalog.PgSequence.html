@@ -1,0 +1,355 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgSequence</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier">PgSequence</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceTable"><span class="hs-identifier">pgSequenceTable</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequencePgClassOidField"><span class="hs-identifier">sequencePgClassOidField</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.html"><span class="hs-identifier">Orville.PostgreSQL</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Orville</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.OidField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier">oidField</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier">oidTypeField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="annot"><span class="hs-comment">{- |
+  The Haskell representation of data read from the @pg_catalog.pg_sequence@
+  table. Rows in this table sequences in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">data</span><span> </span><span id="PgSequence"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-var">PgSequence</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="PgSequence"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-var">PgSequence</span></a></span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="pgSequenceClassOid"><span class="annot"><span class="annottext">PgSequence -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceClassOid"><span class="hs-identifier hs-var hs-var">pgSequenceClassOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-31"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The PostgreSQL @oid@ of the @pg_class@ for this sequence</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceTypeOid"><span class="annot"><span class="annottext">PgSequence -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceTypeOid"><span class="hs-identifier hs-var hs-var">pgSequenceTypeOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ of the data type  of the sequence. References</span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-comment">-- @pg_type.oid@</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceStart"><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceStart"><span class="hs-identifier hs-var hs-var">pgSequenceStart</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The start value of the sequence</span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceIncrement"><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceIncrement"><span class="hs-identifier hs-var hs-var">pgSequenceIncrement</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-38"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The increment value of the sequence</span></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceMax"><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMax"><span class="hs-identifier hs-var hs-var">pgSequenceMax</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-40"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The max value of the sequence</span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceMin"><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMin"><span class="hs-identifier hs-var hs-var">pgSequenceMin</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-42"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The max value of the sequence</span></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceCache"><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceCache"><span class="hs-identifier hs-var hs-var">pgSequenceCache</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-44"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The cache size of the sequence</span></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgSequenceCycle"><span class="annot"><span class="annottext">PgSequence -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceCycle"><span class="hs-identifier hs-var hs-var">pgSequenceCycle</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ Wether the sequence cycles</span></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">{- |
+  An Orville 'Orville.TableDefinition' for querying the
+  @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceTable"><span class="hs-identifier hs-type">pgSequenceTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">Orville.TableDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-type">Orville.HasKey</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-type">PgSequence</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-type">PgSequence</span></a></span><span>
+</span><span id="line-56"></span><span id="pgSequenceTable"><span class="annot"><span class="annottext">pgSequenceTable :: TableDefinition (HasKey Oid) PgSequence PgSequence
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceTable"><span class="hs-identifier hs-var hs-var">pgSequenceTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-57"></span><span>  </span><span class="annot"><span class="annottext">String
+-&gt; TableDefinition (HasKey Oid) PgSequence PgSequence
+-&gt; TableDefinition (HasKey Oid) PgSequence PgSequence
+forall key writeEntity readEntity.
+String
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-var">Orville.setTableSchema</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_catalog&quot;</span></span><span> </span><span class="annot"><span class="annottext">(TableDefinition (HasKey Oid) PgSequence PgSequence
+ -&gt; TableDefinition (HasKey Oid) PgSequence PgSequence)
+-&gt; TableDefinition (HasKey Oid) PgSequence PgSequence
+-&gt; TableDefinition (HasKey Oid) PgSequence PgSequence
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-58"></span><span>    </span><span class="annot"><span class="annottext">String
+-&gt; PrimaryKey Oid
+-&gt; SqlMarshaller PgSequence PgSequence
+-&gt; TableDefinition (HasKey Oid) PgSequence PgSequence
+forall key writeEntity readEntity.
+String
+-&gt; PrimaryKey key
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition (HasKey key) writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinition"><span class="hs-identifier hs-var">Orville.mkTableDefinition</span></a></span><span>
+</span><span id="line-59"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_sequence&quot;</span></span><span>
+</span><span id="line-60"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid -&gt; PrimaryKey Oid
+forall key. FieldDefinition NotNull key -&gt; PrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#primaryKey"><span class="hs-identifier hs-var">Orville.primaryKey</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var">oidField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller PgSequence PgSequence
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMarshaller"><span class="hs-identifier hs-var">pgSequenceMarshaller</span></a></span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMarshaller"><span class="hs-identifier hs-type">pgSequenceMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">Orville.SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-type">PgSequence</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-type">PgSequence</span></a></span><span>
+</span><span id="line-64"></span><span id="pgSequenceMarshaller"><span class="annot"><span class="annottext">pgSequenceMarshaller :: SqlMarshaller PgSequence PgSequence
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMarshaller"><span class="hs-identifier hs-var hs-var">pgSequenceMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><span class="annottext">Oid
+-&gt; Oid
+-&gt; Int64
+-&gt; Int64
+-&gt; Int64
+-&gt; Int64
+-&gt; Int64
+-&gt; Bool
+-&gt; PgSequence
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#PgSequence"><span class="hs-identifier hs-var">PgSequence</span></a></span><span>
+</span><span id="line-66"></span><span>    </span><span class="annot"><span class="annottext">(Oid
+ -&gt; Oid
+ -&gt; Int64
+ -&gt; Int64
+ -&gt; Int64
+ -&gt; Int64
+ -&gt; Int64
+ -&gt; Bool
+ -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Oid
+-&gt; SqlMarshaller
+     PgSequence
+     (Oid
+      -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgSequence Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceClassOid"><span class="hs-identifier hs-var">pgSequenceClassOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequencePgClassOidField"><span class="hs-identifier hs-var">sequencePgClassOidField</span></a></span><span>
+</span><span id="line-67"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgSequence
+  (Oid
+   -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Oid
+-&gt; SqlMarshaller
+     PgSequence
+     (Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgSequence Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceTypeOid"><span class="hs-identifier hs-var">pgSequenceTypeOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceTypeOidField"><span class="hs-identifier hs-var">sequenceTypeOidField</span></a></span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgSequence
+  (Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Int64
+-&gt; SqlMarshaller
+     PgSequence (Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Int64)
+-&gt; FieldDefinition NotNull Int64 -&gt; SqlMarshaller PgSequence Int64
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceStart"><span class="hs-identifier hs-var">pgSequenceStart</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceStartField"><span class="hs-identifier hs-var">sequenceStartField</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgSequence (Int64 -&gt; Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Int64
+-&gt; SqlMarshaller
+     PgSequence (Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Int64)
+-&gt; FieldDefinition NotNull Int64 -&gt; SqlMarshaller PgSequence Int64
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceIncrement"><span class="hs-identifier hs-var">pgSequenceIncrement</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceIncrementField"><span class="hs-identifier hs-var">sequenceIncrementField</span></a></span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgSequence (Int64 -&gt; Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Int64
+-&gt; SqlMarshaller PgSequence (Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Int64)
+-&gt; FieldDefinition NotNull Int64 -&gt; SqlMarshaller PgSequence Int64
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMax"><span class="hs-identifier hs-var">pgSequenceMax</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceMaxField"><span class="hs-identifier hs-var">sequenceMaxField</span></a></span><span>
+</span><span id="line-71"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgSequence (Int64 -&gt; Int64 -&gt; Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Int64
+-&gt; SqlMarshaller PgSequence (Int64 -&gt; Bool -&gt; PgSequence)
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Int64)
+-&gt; FieldDefinition NotNull Int64 -&gt; SqlMarshaller PgSequence Int64
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceMin"><span class="hs-identifier hs-var">pgSequenceMin</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceMinField"><span class="hs-identifier hs-var">sequenceMinField</span></a></span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgSequence (Int64 -&gt; Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Int64
+-&gt; SqlMarshaller PgSequence (Bool -&gt; PgSequence)
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Int64)
+-&gt; FieldDefinition NotNull Int64 -&gt; SqlMarshaller PgSequence Int64
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceCache"><span class="hs-identifier hs-var">pgSequenceCache</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceCacheField"><span class="hs-identifier hs-var">sequenceCacheField</span></a></span><span>
+</span><span id="line-73"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgSequence (Bool -&gt; PgSequence)
+-&gt; SqlMarshaller PgSequence Bool
+-&gt; SqlMarshaller PgSequence PgSequence
+forall a b.
+SqlMarshaller PgSequence (a -&gt; b)
+-&gt; SqlMarshaller PgSequence a -&gt; SqlMarshaller PgSequence b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgSequence -&gt; Bool)
+-&gt; FieldDefinition NotNull Bool -&gt; SqlMarshaller PgSequence Bool
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgSequence -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#pgSequenceCycle"><span class="hs-identifier hs-var">pgSequenceCycle</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceCycleField"><span class="hs-identifier hs-var">sequenceCycleField</span></a></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqrelid@ column of the @pg_cataglog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequencePgClassOidField"><span class="hs-identifier hs-type">sequencePgClassOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-81"></span><span id="sequencePgClassOidField"><span class="annot"><span class="annottext">sequencePgClassOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequencePgClassOidField"><span class="hs-identifier hs-var hs-var">sequencePgClassOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqrelid&quot;</span></span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqtypid@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-89"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceTypeOidField"><span class="hs-identifier hs-type">sequenceTypeOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-90"></span><span id="sequenceTypeOidField"><span class="annot"><span class="annottext">sequenceTypeOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceTypeOidField"><span class="hs-identifier hs-var hs-var">sequenceTypeOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqtypid&quot;</span></span><span>
+</span><span id="line-92"></span><span>
+</span><span id="line-93"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqstart@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceStartField"><span class="hs-identifier hs-type">sequenceStartField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-99"></span><span id="sequenceStartField"><span class="annot"><span class="annottext">sequenceStartField :: FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceStartField"><span class="hs-identifier hs-var hs-var">sequenceStartField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-100"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#bigIntegerField"><span class="hs-identifier hs-var">Orville.bigIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqstart&quot;</span></span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqincrement@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-107"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceIncrementField"><span class="hs-identifier hs-type">sequenceIncrementField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-108"></span><span id="sequenceIncrementField"><span class="annot"><span class="annottext">sequenceIncrementField :: FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceIncrementField"><span class="hs-identifier hs-var hs-var">sequenceIncrementField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-109"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#bigIntegerField"><span class="hs-identifier hs-var">Orville.bigIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqincrement&quot;</span></span><span>
+</span><span id="line-110"></span><span>
+</span><span id="line-111"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqmax@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-116"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceMaxField"><span class="hs-identifier hs-type">sequenceMaxField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-117"></span><span id="sequenceMaxField"><span class="annot"><span class="annottext">sequenceMaxField :: FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceMaxField"><span class="hs-identifier hs-var hs-var">sequenceMaxField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#bigIntegerField"><span class="hs-identifier hs-var">Orville.bigIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqmax&quot;</span></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqmin@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-125"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceMinField"><span class="hs-identifier hs-type">sequenceMinField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-126"></span><span id="sequenceMinField"><span class="annot"><span class="annottext">sequenceMinField :: FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceMinField"><span class="hs-identifier hs-var hs-var">sequenceMinField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-127"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#bigIntegerField"><span class="hs-identifier hs-var">Orville.bigIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqmin&quot;</span></span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqcache@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceCacheField"><span class="hs-identifier hs-type">sequenceCacheField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-135"></span><span id="sequenceCacheField"><span class="annot"><span class="annottext">sequenceCacheField :: FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceCacheField"><span class="hs-identifier hs-var hs-var">sequenceCacheField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-136"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#bigIntegerField"><span class="hs-identifier hs-var">Orville.bigIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqcache&quot;</span></span><span>
+</span><span id="line-137"></span><span>
+</span><span id="line-138"></span><span class="annot"><span class="hs-comment">{- |
+  The @seqcycle@ column of the @pg_catalog.pg_sequence@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-143"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceCycleField"><span class="hs-identifier hs-type">sequenceCycleField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-144"></span><span id="sequenceCycleField"><span class="annot"><span class="annottext">sequenceCycleField :: FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgSequence.html#sequenceCycleField"><span class="hs-identifier hs-var hs-var">sequenceCycleField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-145"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#booleanField"><span class="hs-identifier hs-var">Orville.booleanField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;seqcycle&quot;</span></span><span>
+</span><span id="line-146"></span></pre></body></html>

@@ -1,0 +1,795 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.ExecutionResult</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#ExecutionResult"><span class="hs-identifier">ExecutionResult</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier">Column</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier">Row</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#readRows"><span class="hs-identifier">readRows</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier">FakeLibPQResult</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#mkFakeLibPQResult"><span class="hs-identifier">mkFakeLibPQResult</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BS</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Maybe</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier">SqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="annot"><span class="hs-comment">{- |
+  A trivial wrapper for `Int` to help keep track of column vs row number
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">newtype</span><span> </span><span id="Column"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-var">Column</span></a></span></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Column"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-var">Column</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-37"></span><span>      </span><span id="local-6989586621679133012"><span id="local-6989586621679133017"><span class="annot"><span class="annottext">Column -&gt; Column -&gt; Bool
+(Column -&gt; Column -&gt; Bool)
+-&gt; (Column -&gt; Column -&gt; Bool) -&gt; Eq Column
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Column -&gt; Column -&gt; Bool
+== :: Column -&gt; Column -&gt; Bool
+$c/= :: Column -&gt; Column -&gt; Bool
+/= :: Column -&gt; Column -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-39"></span><span>      </span><span id="local-6989586621679133025"><span id="local-6989586621679133030"><span id="local-6989586621679133034"><span id="local-6989586621679133038"><span id="local-6989586621679133042"><span id="local-6989586621679133046"><span id="local-6989586621679133050"><span class="annot"><span class="annottext">Eq Column
+Eq Column
+-&gt; (Column -&gt; Column -&gt; Ordering)
+-&gt; (Column -&gt; Column -&gt; Bool)
+-&gt; (Column -&gt; Column -&gt; Bool)
+-&gt; (Column -&gt; Column -&gt; Bool)
+-&gt; (Column -&gt; Column -&gt; Bool)
+-&gt; (Column -&gt; Column -&gt; Column)
+-&gt; (Column -&gt; Column -&gt; Column)
+-&gt; Ord Column
+Column -&gt; Column -&gt; Bool
+Column -&gt; Column -&gt; Ordering
+Column -&gt; Column -&gt; Column
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Column -&gt; Column -&gt; Ordering
+compare :: Column -&gt; Column -&gt; Ordering
+$c&lt; :: Column -&gt; Column -&gt; Bool
+&lt; :: Column -&gt; Column -&gt; Bool
+$c&lt;= :: Column -&gt; Column -&gt; Bool
+&lt;= :: Column -&gt; Column -&gt; Bool
+$c&gt; :: Column -&gt; Column -&gt; Bool
+&gt; :: Column -&gt; Column -&gt; Bool
+$c&gt;= :: Column -&gt; Column -&gt; Bool
+&gt;= :: Column -&gt; Column -&gt; Bool
+$cmax :: Column -&gt; Column -&gt; Column
+max :: Column -&gt; Column -&gt; Column
+$cmin :: Column -&gt; Column -&gt; Column
+min :: Column -&gt; Column -&gt; Column
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-41"></span><span>      </span><span id="local-6989586621679133055"><span id="local-6989586621679133060"><span id="local-6989586621679133064"><span id="local-6989586621679133068"><span id="local-6989586621679133072"><span id="local-6989586621679133076"><span id="local-6989586621679133080"><span id="local-6989586621679133084"><span class="annot"><span class="annottext">Int -&gt; Column
+Column -&gt; Int
+Column -&gt; [Column]
+Column -&gt; Column
+Column -&gt; Column -&gt; [Column]
+Column -&gt; Column -&gt; Column -&gt; [Column]
+(Column -&gt; Column)
+-&gt; (Column -&gt; Column)
+-&gt; (Int -&gt; Column)
+-&gt; (Column -&gt; Int)
+-&gt; (Column -&gt; [Column])
+-&gt; (Column -&gt; Column -&gt; [Column])
+-&gt; (Column -&gt; Column -&gt; [Column])
+-&gt; (Column -&gt; Column -&gt; Column -&gt; [Column])
+-&gt; Enum Column
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+$csucc :: Column -&gt; Column
+succ :: Column -&gt; Column
+$cpred :: Column -&gt; Column
+pred :: Column -&gt; Column
+$ctoEnum :: Int -&gt; Column
+toEnum :: Int -&gt; Column
+$cfromEnum :: Column -&gt; Int
+fromEnum :: Column -&gt; Int
+$cenumFrom :: Column -&gt; [Column]
+enumFrom :: Column -&gt; [Column]
+$cenumFromThen :: Column -&gt; Column -&gt; [Column]
+enumFromThen :: Column -&gt; Column -&gt; [Column]
+$cenumFromTo :: Column -&gt; Column -&gt; [Column]
+enumFromTo :: Column -&gt; Column -&gt; [Column]
+$cenumFromThenTo :: Column -&gt; Column -&gt; Column -&gt; [Column]
+enumFromThenTo :: Column -&gt; Column -&gt; Column -&gt; [Column]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-43"></span><span>      </span><span id="local-6989586621679133089"><span id="local-6989586621679133094"><span id="local-6989586621679133098"><span id="local-6989586621679133102"><span id="local-6989586621679133106"><span id="local-6989586621679133110"><span id="local-6989586621679133114"><span class="annot"><span class="annottext">Integer -&gt; Column
+Column -&gt; Column
+Column -&gt; Column -&gt; Column
+(Column -&gt; Column -&gt; Column)
+-&gt; (Column -&gt; Column -&gt; Column)
+-&gt; (Column -&gt; Column -&gt; Column)
+-&gt; (Column -&gt; Column)
+-&gt; (Column -&gt; Column)
+-&gt; (Column -&gt; Column)
+-&gt; (Integer -&gt; Column)
+-&gt; Num Column
+forall a.
+(a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Integer -&gt; a)
+-&gt; Num a
+$c+ :: Column -&gt; Column -&gt; Column
++ :: Column -&gt; Column -&gt; Column
+$c- :: Column -&gt; Column -&gt; Column
+- :: Column -&gt; Column -&gt; Column
+$c* :: Column -&gt; Column -&gt; Column
+* :: Column -&gt; Column -&gt; Column
+$cnegate :: Column -&gt; Column
+negate :: Column -&gt; Column
+$cabs :: Column -&gt; Column
+abs :: Column -&gt; Column
+$csignum :: Column -&gt; Column
+signum :: Column -&gt; Column
+$cfromInteger :: Integer -&gt; Column
+fromInteger :: Integer -&gt; Column
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Num</span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="annot"><span class="hs-comment">{- |
+  A trivial wrapper for `Int` to help keep track of column vs row number
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">newtype</span><span> </span><span id="Row"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-var">Row</span></a></span></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Row"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-var">Row</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-55"></span><span>      </span><span id="local-6989586621679133121"><span id="local-6989586621679133125"><span class="annot"><span class="annottext">Row -&gt; Row -&gt; Bool
+(Row -&gt; Row -&gt; Bool) -&gt; (Row -&gt; Row -&gt; Bool) -&gt; Eq Row
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Row -&gt; Row -&gt; Bool
+== :: Row -&gt; Row -&gt; Bool
+$c/= :: Row -&gt; Row -&gt; Bool
+/= :: Row -&gt; Row -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-57"></span><span>      </span><span id="local-6989586621679133132"><span id="local-6989586621679133136"><span id="local-6989586621679133140"><span id="local-6989586621679133144"><span id="local-6989586621679133148"><span id="local-6989586621679133152"><span id="local-6989586621679133156"><span class="annot"><span class="annottext">Eq Row
+Eq Row
+-&gt; (Row -&gt; Row -&gt; Ordering)
+-&gt; (Row -&gt; Row -&gt; Bool)
+-&gt; (Row -&gt; Row -&gt; Bool)
+-&gt; (Row -&gt; Row -&gt; Bool)
+-&gt; (Row -&gt; Row -&gt; Bool)
+-&gt; (Row -&gt; Row -&gt; Row)
+-&gt; (Row -&gt; Row -&gt; Row)
+-&gt; Ord Row
+Row -&gt; Row -&gt; Bool
+Row -&gt; Row -&gt; Ordering
+Row -&gt; Row -&gt; Row
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: Row -&gt; Row -&gt; Ordering
+compare :: Row -&gt; Row -&gt; Ordering
+$c&lt; :: Row -&gt; Row -&gt; Bool
+&lt; :: Row -&gt; Row -&gt; Bool
+$c&lt;= :: Row -&gt; Row -&gt; Bool
+&lt;= :: Row -&gt; Row -&gt; Bool
+$c&gt; :: Row -&gt; Row -&gt; Bool
+&gt; :: Row -&gt; Row -&gt; Bool
+$c&gt;= :: Row -&gt; Row -&gt; Bool
+&gt;= :: Row -&gt; Row -&gt; Bool
+$cmax :: Row -&gt; Row -&gt; Row
+max :: Row -&gt; Row -&gt; Row
+$cmin :: Row -&gt; Row -&gt; Row
+min :: Row -&gt; Row -&gt; Row
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-59"></span><span>      </span><span id="local-6989586621679133160"><span id="local-6989586621679133164"><span id="local-6989586621679133168"><span id="local-6989586621679133172"><span id="local-6989586621679133176"><span id="local-6989586621679133180"><span id="local-6989586621679133184"><span id="local-6989586621679133188"><span class="annot"><span class="annottext">Int -&gt; Row
+Row -&gt; Int
+Row -&gt; [Row]
+Row -&gt; Row
+Row -&gt; Row -&gt; [Row]
+Row -&gt; Row -&gt; Row -&gt; [Row]
+(Row -&gt; Row)
+-&gt; (Row -&gt; Row)
+-&gt; (Int -&gt; Row)
+-&gt; (Row -&gt; Int)
+-&gt; (Row -&gt; [Row])
+-&gt; (Row -&gt; Row -&gt; [Row])
+-&gt; (Row -&gt; Row -&gt; [Row])
+-&gt; (Row -&gt; Row -&gt; Row -&gt; [Row])
+-&gt; Enum Row
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+$csucc :: Row -&gt; Row
+succ :: Row -&gt; Row
+$cpred :: Row -&gt; Row
+pred :: Row -&gt; Row
+$ctoEnum :: Int -&gt; Row
+toEnum :: Int -&gt; Row
+$cfromEnum :: Row -&gt; Int
+fromEnum :: Row -&gt; Int
+$cenumFrom :: Row -&gt; [Row]
+enumFrom :: Row -&gt; [Row]
+$cenumFromThen :: Row -&gt; Row -&gt; [Row]
+enumFromThen :: Row -&gt; Row -&gt; [Row]
+$cenumFromTo :: Row -&gt; Row -&gt; [Row]
+enumFromTo :: Row -&gt; Row -&gt; [Row]
+$cenumFromThenTo :: Row -&gt; Row -&gt; Row -&gt; [Row]
+enumFromThenTo :: Row -&gt; Row -&gt; Row -&gt; [Row]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-61"></span><span>      </span><span id="local-6989586621679133193"><span id="local-6989586621679133197"><span id="local-6989586621679133201"><span id="local-6989586621679133205"><span id="local-6989586621679133209"><span id="local-6989586621679133213"><span id="local-6989586621679133217"><span class="annot"><span class="annottext">Integer -&gt; Row
+Row -&gt; Row
+Row -&gt; Row -&gt; Row
+(Row -&gt; Row -&gt; Row)
+-&gt; (Row -&gt; Row -&gt; Row)
+-&gt; (Row -&gt; Row -&gt; Row)
+-&gt; (Row -&gt; Row)
+-&gt; (Row -&gt; Row)
+-&gt; (Row -&gt; Row)
+-&gt; (Integer -&gt; Row)
+-&gt; Num Row
+forall a.
+(a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Integer -&gt; a)
+-&gt; Num a
+$c+ :: Row -&gt; Row -&gt; Row
++ :: Row -&gt; Row -&gt; Row
+$c- :: Row -&gt; Row -&gt; Row
+- :: Row -&gt; Row -&gt; Row
+$c* :: Row -&gt; Row -&gt; Row
+* :: Row -&gt; Row -&gt; Row
+$cnegate :: Row -&gt; Row
+negate :: Row -&gt; Row
+$cabs :: Row -&gt; Row
+abs :: Row -&gt; Row
+$csignum :: Row -&gt; Row
+signum :: Row -&gt; Row
+$cfromInteger :: Integer -&gt; Row
+fromInteger :: Integer -&gt; Row
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Num</span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-62"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-63"></span><span>
+</span><span id="line-64"></span><span class="annot"><span class="hs-comment">{- |
+  'ExecutionResult' is a common interface for types that represent a result set
+  returned from the database. For real, live database interactions this the
+  concrete type will be a 'LibPQ.Result', but the 'FakeLibPQResult' may be
+  useful as well if you are writing custom code for decoding result sets and
+  want to test aspects of the decoding that don't require a real database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-73"></span><span class="hs-keyword">class</span><span> </span><span id="ExecutionResult"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#ExecutionResult"><span class="hs-identifier hs-var">ExecutionResult</span></a></span></span><span> </span><span id="local-6989586621679132946"><span class="annot"><a href="#local-6989586621679132946"><span class="hs-identifier hs-type">result</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-74"></span><span>  </span><span id="maxRowNumber"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxRowNumber"><span class="hs-identifier hs-type">maxRowNumber</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679132946"><span class="hs-identifier hs-type">result</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-type">Row</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>  </span><span id="maxColumnNumber"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxColumnNumber"><span class="hs-identifier hs-type">maxColumnNumber</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679132946"><span class="hs-identifier hs-type">result</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-76"></span><span>  </span><span id="columnName"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#columnName"><span class="hs-identifier hs-type">columnName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679132946"><span class="hs-identifier hs-type">result</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>  </span><span id="getValue"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#getValue"><span class="hs-identifier hs-type">getValue</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679132946"><span class="hs-identifier hs-type">result</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-type">Row</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><span class="hs-comment">{- |
+  Read the rows of an 'ExecutionResult' a list of column name, 'SqlValue'
+  pairs. You're almost always better off using a
+  'Orville.PostgreSQL.SqlMarshaller' instead, but this function is provided for
+  cases where you really want to decode the rows yourself but don't want to use
+  the 'ExecutionResult' api to read each row of each column directly.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-88"></span><span id="local-6989586621679132941"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#readRows"><span class="hs-identifier hs-type">readRows</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-89"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#ExecutionResult"><span class="hs-identifier hs-type">ExecutionResult</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132941"><span class="hs-identifier hs-type">result</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><a href="#local-6989586621679132941"><span class="hs-identifier hs-type">result</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span class="hs-special">]</span></span><span>
+</span><span id="line-92"></span><span id="readRows"><span class="annot"><span class="annottext">readRows :: forall result.
+ExecutionResult result =&gt;
+result -&gt; IO [[(Maybe ByteString, SqlValue)]]
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#readRows"><span class="hs-identifier hs-var hs-var">readRows</span></a></span></span><span> </span><span id="local-6989586621679133236"><span class="annot"><span class="annottext">result
+</span><a href="#local-6989586621679133236"><span class="hs-identifier hs-var">res</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-93"></span><span>  </span><span id="local-6989586621679133237"><span class="annot"><span class="annottext">Maybe Row
+</span><a href="#local-6989586621679133237"><span class="hs-identifier hs-var">mbMaxRow</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">result -&gt; IO (Maybe Row)
+forall result. ExecutionResult result =&gt; result -&gt; IO (Maybe Row)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxRowNumber"><span class="hs-identifier hs-var">maxRowNumber</span></a></span><span> </span><span class="annot"><span class="annottext">result
+</span><a href="#local-6989586621679133236"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><span id="line-94"></span><span>  </span><span id="local-6989586621679133238"><span class="annot"><span class="annottext">Maybe Column
+</span><a href="#local-6989586621679133238"><span class="hs-identifier hs-var">mbMaxColumn</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">result -&gt; IO (Maybe Column)
+forall result.
+ExecutionResult result =&gt;
+result -&gt; IO (Maybe Column)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxColumnNumber"><span class="hs-identifier hs-var">maxColumnNumber</span></a></span><span> </span><span class="annot"><span class="annottext">result
+</span><a href="#local-6989586621679133236"><span class="hs-identifier hs-var">res</span></a></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-97"></span><span>    </span><span id="local-6989586621679133241"><span class="annot"><span class="annottext">rowIndices :: [Row]
+</span><a href="#local-6989586621679133241"><span class="hs-identifier hs-var hs-var">rowIndices</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-98"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe Row
+</span><a href="#local-6989586621679133237"><span class="hs-identifier hs-var">mbMaxRow</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-99"></span><span>        </span><span class="annot"><span class="annottext">Maybe Row
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-100"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679133242"><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133242"><span class="hs-identifier hs-var">maxRow</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Row
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133242"><span class="hs-identifier hs-var">maxRow</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span>    </span><span id="local-6989586621679133245"><span class="annot"><span class="annottext">columnIndices :: [Column]
+</span><a href="#local-6989586621679133245"><span class="hs-identifier hs-var hs-var">columnIndices</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-103"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe Column
+</span><a href="#local-6989586621679133238"><span class="hs-identifier hs-var">mbMaxColumn</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-104"></span><span>        </span><span class="annot"><span class="annottext">Maybe Column
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-105"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679133246"><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133246"><span class="hs-identifier hs-var">maxColumn</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Column
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span> </span><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133246"><span class="hs-identifier hs-var">maxColumn</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span>    </span><span id="local-6989586621679133252"><span class="annot"><span class="annottext">readValue :: Row -&gt; Column -&gt; IO (Maybe ByteString, SqlValue)
+</span><a href="#local-6989586621679133252"><span class="hs-identifier hs-var hs-var">readValue</span></a></span></span><span> </span><span id="local-6989586621679133253"><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133253"><span class="hs-identifier hs-var">rowIndex</span></a></span></span><span> </span><span id="local-6989586621679133254"><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133254"><span class="hs-identifier hs-var">columnIndex</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-108"></span><span>      </span><span id="local-6989586621679133255"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679133255"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">result -&gt; Column -&gt; IO (Maybe ByteString)
+forall result.
+ExecutionResult result =&gt;
+result -&gt; Column -&gt; IO (Maybe ByteString)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#columnName"><span class="hs-identifier hs-var">columnName</span></a></span><span> </span><span class="annot"><span class="annottext">result
+</span><a href="#local-6989586621679133236"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133254"><span class="hs-identifier hs-var">columnIndex</span></a></span><span>
+</span><span id="line-109"></span><span>      </span><span id="local-6989586621679133256"><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679133256"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">result -&gt; Row -&gt; Column -&gt; IO SqlValue
+forall result.
+ExecutionResult result =&gt;
+result -&gt; Row -&gt; Column -&gt; IO SqlValue
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#getValue"><span class="hs-identifier hs-var">getValue</span></a></span><span> </span><span class="annot"><span class="annottext">result
+</span><a href="#local-6989586621679133236"><span class="hs-identifier hs-var">res</span></a></span><span> </span><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133253"><span class="hs-identifier hs-var">rowIndex</span></a></span><span> </span><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133254"><span class="hs-identifier hs-var">columnIndex</span></a></span><span>
+</span><span id="line-110"></span><span>      </span><span class="annot"><span class="annottext">(Maybe ByteString, SqlValue) -&gt; IO (Maybe ByteString, SqlValue)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">((Maybe ByteString, SqlValue) -&gt; IO (Maybe ByteString, SqlValue))
+-&gt; (Maybe ByteString, SqlValue) -&gt; IO (Maybe ByteString, SqlValue)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679133255"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679133256"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span>    </span><span id="local-6989586621679133259"><span class="annot"><span class="annottext">readRow :: Row -&gt; IO [(Maybe ByteString, SqlValue)]
+</span><a href="#local-6989586621679133259"><span class="hs-identifier hs-var hs-var">readRow</span></a></span></span><span> </span><span id="local-6989586621679133260"><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133260"><span class="hs-identifier hs-var">rowIndex</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-113"></span><span>      </span><span class="annot"><span class="annottext">(Column -&gt; IO (Maybe ByteString, SqlValue))
+-&gt; [Column] -&gt; IO [(Maybe ByteString, SqlValue)]
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; [a] -&gt; f [b]
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Row -&gt; Column -&gt; IO (Maybe ByteString, SqlValue)
+</span><a href="#local-6989586621679133252"><span class="hs-identifier hs-var">readValue</span></a></span><span> </span><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133260"><span class="hs-identifier hs-var">rowIndex</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Column]
+</span><a href="#local-6989586621679133245"><span class="hs-identifier hs-var">columnIndices</span></a></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span>  </span><span class="annot"><span class="annottext">(Row -&gt; IO [(Maybe ByteString, SqlValue)])
+-&gt; [Row] -&gt; IO [[(Maybe ByteString, SqlValue)]]
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+forall (f :: * -&gt; *) a b.
+Applicative f =&gt;
+(a -&gt; f b) -&gt; [a] -&gt; f [b]
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="annot"><span class="annottext">Row -&gt; IO [(Maybe ByteString, SqlValue)]
+</span><a href="#local-6989586621679133259"><span class="hs-identifier hs-var">readRow</span></a></span><span> </span><span class="annot"><span class="annottext">[Row]
+</span><a href="#local-6989586621679133241"><span class="hs-identifier hs-var">rowIndices</span></a></span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-118"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#ExecutionResult"><span class="hs-identifier hs-type">ExecutionResult</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Result</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621679133278"><span class="annot"><span class="annottext">maxRowNumber :: Result -&gt; IO (Maybe Row)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxRowNumber"><span class="hs-identifier hs-var hs-var hs-var hs-var">maxRowNumber</span></a></span></span><span> </span><span id="local-6989586621679133279"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133279"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-120"></span><span>    </span><span id="local-6989586621679133280"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133280"><span class="hs-identifier hs-var">rowCount</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Row -&gt; Int) -&gt; IO Row -&gt; IO Int
+forall a b. (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">Row -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Result -&gt; IO Row
+</span><span class="hs-identifier hs-var">LibPQ.ntuples</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133279"><span class="hs-identifier hs-var">result</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-121"></span><span>    </span><span class="annot"><span class="annottext">Maybe Row -&gt; IO (Maybe Row)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Row -&gt; IO (Maybe Row)) -&gt; Maybe Row -&gt; IO (Maybe Row)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-122"></span><span>      </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133280"><span class="hs-identifier hs-var">rowCount</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Row -&gt; Maybe Row
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Row -&gt; Maybe Row) -&gt; Row -&gt; Maybe Row
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Row
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-var">Row</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133280"><span class="hs-identifier hs-var">rowCount</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-124"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Maybe Row
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span>  </span><span id="local-6989586621679133293"><span class="annot"><span class="annottext">maxColumnNumber :: Result -&gt; IO (Maybe Column)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxColumnNumber"><span class="hs-identifier hs-var hs-var hs-var hs-var">maxColumnNumber</span></a></span></span><span> </span><span id="local-6989586621679133294"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133294"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-127"></span><span>    </span><span id="local-6989586621679133295"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133295"><span class="hs-identifier hs-var">columnCount</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Column -&gt; Int) -&gt; IO Column -&gt; IO Int
+forall a b. (a -&gt; b) -&gt; IO a -&gt; IO b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">Column -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Result -&gt; IO Column
+</span><span class="hs-identifier hs-var">LibPQ.nfields</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133294"><span class="hs-identifier hs-var">result</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>    </span><span class="annot"><span class="annottext">Maybe Column -&gt; IO (Maybe Column)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Column -&gt; IO (Maybe Column))
+-&gt; Maybe Column -&gt; IO (Maybe Column)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-129"></span><span>      </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133295"><span class="hs-identifier hs-var">columnCount</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-130"></span><span>        </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Column -&gt; Maybe Column
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(Column -&gt; Maybe Column) -&gt; Column -&gt; Maybe Column
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Column
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-var">Column</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133295"><span class="hs-identifier hs-var">columnCount</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-131"></span><span>        </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Maybe Column
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span>  </span><span id="local-6989586621679133300"><span class="annot"><span class="annottext">columnName :: Result -&gt; Column -&gt; IO (Maybe ByteString)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#columnName"><span class="hs-identifier hs-var hs-var hs-var hs-var">columnName</span></a></span></span><span> </span><span id="local-6989586621679133301"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133301"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-134"></span><span>    </span><span class="annot"><span class="annottext">Result -&gt; Column -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.fname</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133301"><span class="hs-identifier hs-var">result</span></a></span><span> </span><span class="annot"><span class="annottext">(Column -&gt; IO (Maybe ByteString))
+-&gt; (Column -&gt; Column) -&gt; Column -&gt; IO (Maybe ByteString)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Column
+forall a. Integral a =&gt; a -&gt; Column
+</span><span class="hs-identifier hs-var">LibPQ.toColumn</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; Column) -&gt; (Column -&gt; Int) -&gt; Column -&gt; Column
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Column -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span>  </span><span id="local-6989586621679133308"><span class="annot"><span class="annottext">getValue :: Result -&gt; Row -&gt; Column -&gt; IO SqlValue
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#getValue"><span class="hs-identifier hs-var hs-var hs-var hs-var">getValue</span></a></span></span><span> </span><span id="local-6989586621679133309"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133309"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-type">Row</span></a></span><span> </span><span id="local-6989586621679133310"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133310"><span class="hs-identifier hs-var">row</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span id="local-6989586621679133311"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133311"><span class="hs-identifier hs-var">column</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-comment">-- N.B. the usage of `getvalue'` here is important as this version returns a</span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-comment">-- _copy_ of the data in the 'Result' rather than a _reference_.</span><span>
+</span><span id="line-139"></span><span>    </span><span class="hs-comment">-- This allows the 'Result' to be garbage collected instead of being held onto indefinitely.</span><span>
+</span><span id="line-140"></span><span>    </span><span class="annot"><span class="annottext">Maybe ByteString -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromRawBytesNullable"><span class="hs-identifier hs-var">SqlValue.fromRawBytesNullable</span></a></span><span>
+</span><span id="line-141"></span><span>      </span><span class="annot"><span class="annottext">(Maybe ByteString -&gt; SqlValue)
+-&gt; IO (Maybe ByteString) -&gt; IO SqlValue
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Result -&gt; Row -&gt; Column -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.getvalue'</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679133309"><span class="hs-identifier hs-var">result</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Row
+forall a. Integral a =&gt; a -&gt; Row
+</span><span class="hs-identifier hs-var">LibPQ.toRow</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133310"><span class="hs-identifier hs-var">row</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int -&gt; Column
+forall a. Integral a =&gt; a -&gt; Column
+</span><span class="hs-identifier hs-var">LibPQ.toColumn</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679133311"><span class="hs-identifier hs-var">column</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span class="annot"><span class="hs-comment">{- |
+  `FakeLibPQResult` provides a fake, in memory implementation of
+  `ExecutionResult`.  This is mostly useful for writing automated tests that
+  can assume a result set has been loaded and just need to test decoding the
+  results.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-151"></span><span class="hs-keyword">data</span><span> </span><span id="FakeLibPQResult"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-var">FakeLibPQResult</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="FakeLibPQResult"><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-var">FakeLibPQResult</span></a></span></span><span>
+</span><span id="line-152"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="fakeLibPQColumns"><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Map Column ByteString
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQColumns"><span class="hs-identifier hs-var hs-var">fakeLibPQColumns</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-153"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="fakeLibPQRows"><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Map Row (Map Column SqlValue)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQRows"><span class="hs-identifier hs-var hs-var">fakeLibPQRows</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-type">Row</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-154"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-155"></span><span>
+</span><span id="line-156"></span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-157"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#ExecutionResult"><span class="hs-identifier hs-type">ExecutionResult</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-158"></span><span>  </span><span id="local-6989586621679133324"><span class="annot"><span class="annottext">maxRowNumber :: FakeLibPQResult -&gt; IO (Maybe Row)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxRowNumber"><span class="hs-identifier hs-var hs-var hs-var hs-var">maxRowNumber</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Row -&gt; IO (Maybe Row)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Row -&gt; IO (Maybe Row))
+-&gt; (FakeLibPQResult -&gt; Maybe Row)
+-&gt; FakeLibPQResult
+-&gt; IO (Maybe Row)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Maybe Row
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQMaxRow"><span class="hs-identifier hs-var">fakeLibPQMaxRow</span></a></span><span>
+</span><span id="line-159"></span><span>  </span><span id="local-6989586621679133327"><span class="annot"><span class="annottext">maxColumnNumber :: FakeLibPQResult -&gt; IO (Maybe Column)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#maxColumnNumber"><span class="hs-identifier hs-var hs-var hs-var hs-var">maxColumnNumber</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Column -&gt; IO (Maybe Column)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Column -&gt; IO (Maybe Column))
+-&gt; (FakeLibPQResult -&gt; Maybe Column)
+-&gt; FakeLibPQResult
+-&gt; IO (Maybe Column)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Maybe Column
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQMaxColumn"><span class="hs-identifier hs-var">fakeLibPQMaxColumn</span></a></span><span>
+</span><span id="line-160"></span><span>  </span><span id="local-6989586621679133330"><span class="annot"><span class="annottext">columnName :: FakeLibPQResult -&gt; Column -&gt; IO (Maybe ByteString)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#columnName"><span class="hs-identifier hs-var hs-var hs-var hs-var">columnName</span></a></span></span><span> </span><span id="local-6989586621679133331"><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133331"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString -&gt; IO (Maybe ByteString)
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe ByteString -&gt; IO (Maybe ByteString))
+-&gt; (Column -&gt; Maybe ByteString) -&gt; Column -&gt; IO (Maybe ByteString)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Column -&gt; Maybe ByteString
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQColumnName"><span class="hs-identifier hs-var">fakeLibPQColumnName</span></a></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133331"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-161"></span><span>  </span><span id="local-6989586621679133334"><span class="annot"><span class="annottext">getValue :: FakeLibPQResult -&gt; Row -&gt; Column -&gt; IO SqlValue
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#getValue"><span class="hs-identifier hs-var hs-var hs-var hs-var">getValue</span></a></span></span><span> </span><span id="local-6989586621679133335"><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133335"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span id="local-6989586621679133336"><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133336"><span class="hs-identifier hs-var">column</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; IO SqlValue
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(SqlValue -&gt; IO SqlValue)
+-&gt; (Column -&gt; SqlValue) -&gt; Column -&gt; IO SqlValue
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Row -&gt; Column -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQGetValue"><span class="hs-identifier hs-var">fakeLibPQGetValue</span></a></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133335"><span class="hs-identifier hs-var">result</span></a></span><span> </span><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133336"><span class="hs-identifier hs-var">column</span></a></span><span>
+</span><span id="line-162"></span><span>
+</span><span id="line-163"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a `FakeLibPQResult`. The column names given as associated with
+  the values for each row by their position in list. Any missing values (e.g.
+  because a row is shorter than the heeader list) are treated as a SQL Null
+  value.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-171"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#mkFakeLibPQResult"><span class="hs-identifier hs-type">mkFakeLibPQResult</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-172"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The column names for the result set</span></span><span>
+</span><span id="line-173"></span><span>  </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-174"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The row data for the result set</span></span><span>
+</span><span id="line-175"></span><span>  </span><span class="hs-special">[</span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span class="hs-special">]</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-176"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span>
+</span><span id="line-177"></span><span id="mkFakeLibPQResult"><span class="annot"><span class="annottext">mkFakeLibPQResult :: [ByteString] -&gt; [[SqlValue]] -&gt; FakeLibPQResult
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#mkFakeLibPQResult"><span class="hs-identifier hs-var hs-var">mkFakeLibPQResult</span></a></span></span><span> </span><span id="local-6989586621679133338"><span class="annot"><span class="annottext">[ByteString]
+</span><a href="#local-6989586621679133338"><span class="hs-identifier hs-var">columnList</span></a></span></span><span> </span><span id="local-6989586621679133339"><span class="annot"><span class="annottext">[[SqlValue]]
+</span><a href="#local-6989586621679133339"><span class="hs-identifier hs-var">valuesList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-178"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-179"></span><span>    </span><span id="local-6989586621679133346"><span class="annot"><span class="annottext">indexedRows :: [(Row, Map Column SqlValue)]
+</span><a href="#local-6989586621679133346"><span class="hs-identifier hs-var hs-var">indexedRows</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-180"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621679133347"><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133347"><span class="hs-identifier hs-var">rowNumber</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133348"><span class="annot"><span class="annottext">[SqlValue]
+</span><a href="#local-6989586621679133348"><span class="hs-identifier hs-var">row</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">[Row] -&gt; [[SqlValue]] -&gt; [(Row, [SqlValue])]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int -&gt; Row
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-var">Row</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[[SqlValue]]
+</span><a href="#local-6989586621679133339"><span class="hs-identifier hs-var">valuesList</span></a></span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span>      </span><span class="hs-keyword">let</span><span>
+</span><span id="line-183"></span><span>        </span><span id="local-6989586621679133350"><span class="annot"><span class="annottext">indexedColumns :: [(Column, SqlValue)]
+</span><a href="#local-6989586621679133350"><span class="hs-identifier hs-var hs-var">indexedColumns</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[Column] -&gt; [SqlValue] -&gt; [(Column, SqlValue)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int -&gt; Column
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-var">Column</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[SqlValue]
+</span><a href="#local-6989586621679133348"><span class="hs-identifier hs-var">row</span></a></span><span>
+</span><span id="line-184"></span><span>
+</span><span id="line-185"></span><span>      </span><span class="annot"><span class="annottext">(Row, Map Column SqlValue) -&gt; [(Row, Map Column SqlValue)]
+forall a. a -&gt; [a]
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133347"><span class="hs-identifier hs-var">rowNumber</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">[(Column, SqlValue)] -&gt; Map Column SqlValue
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="annot"><span class="annottext">[(Column, SqlValue)]
+</span><a href="#local-6989586621679133350"><span class="hs-identifier hs-var">indexedColumns</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-186"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-187"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span>
+</span><span id="line-188"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">fakeLibPQColumns :: Map Column ByteString
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQColumns"><span class="hs-identifier hs-var">fakeLibPQColumns</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Column, ByteString)] -&gt; Map Column ByteString
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Column] -&gt; [ByteString] -&gt; [(Column, ByteString)]
+forall a b. [a] -&gt; [b] -&gt; [(a, b)]
+</span><span class="hs-identifier hs-var">zip</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Int -&gt; Column
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-var">Column</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-glyph">..</span><span class="hs-special">]</span><span> </span><span class="annot"><span class="annottext">[ByteString]
+</span><a href="#local-6989586621679133338"><span class="hs-identifier hs-var">columnList</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-189"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">fakeLibPQRows :: Map Row (Map Column SqlValue)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQRows"><span class="hs-identifier hs-var">fakeLibPQRows</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[(Row, Map Column SqlValue)] -&gt; Map Row (Map Column SqlValue)
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="annot"><span class="annottext">[(Row, Map Column SqlValue)]
+</span><a href="#local-6989586621679133346"><span class="hs-identifier hs-var">indexedRows</span></a></span><span>
+</span><span id="line-190"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQMaxRow"><span class="hs-identifier hs-type">fakeLibPQMaxRow</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-type">Row</span></a></span><span>
+</span><span id="line-193"></span><span id="fakeLibPQMaxRow"><span class="annot"><span class="annottext">fakeLibPQMaxRow :: FakeLibPQResult -&gt; Maybe Row
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQMaxRow"><span class="hs-identifier hs-var hs-var">fakeLibPQMaxRow</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-194"></span><span>  </span><span class="annot"><span class="annottext">((Row, Map Column SqlValue) -&gt; Row)
+-&gt; Maybe (Row, Map Column SqlValue) -&gt; Maybe Row
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">(Row, Map Column SqlValue) -&gt; Row
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">(Maybe (Row, Map Column SqlValue) -&gt; Maybe Row)
+-&gt; (FakeLibPQResult -&gt; Maybe (Row, Map Column SqlValue))
+-&gt; FakeLibPQResult
+-&gt; Maybe Row
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Map Row (Map Column SqlValue) -&gt; Maybe (Row, Map Column SqlValue)
+forall k a. Map k a -&gt; Maybe (k, a)
+</span><span class="hs-identifier hs-var">Map.lookupMax</span></span><span> </span><span class="annot"><span class="annottext">(Map Row (Map Column SqlValue) -&gt; Maybe (Row, Map Column SqlValue))
+-&gt; (FakeLibPQResult -&gt; Map Row (Map Column SqlValue))
+-&gt; FakeLibPQResult
+-&gt; Maybe (Row, Map Column SqlValue)
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Map Row (Map Column SqlValue)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQRows"><span class="hs-identifier hs-var">fakeLibPQRows</span></a></span><span>
+</span><span id="line-195"></span><span>
+</span><span id="line-196"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQMaxColumn"><span class="hs-identifier hs-type">fakeLibPQMaxColumn</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span>
+</span><span id="line-197"></span><span id="fakeLibPQMaxColumn"><span class="annot"><span class="annottext">fakeLibPQMaxColumn :: FakeLibPQResult -&gt; Maybe Column
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQMaxColumn"><span class="hs-identifier hs-var hs-var">fakeLibPQMaxColumn</span></a></span></span><span> </span><span id="local-6989586621679133354"><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133354"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-199"></span><span>    </span><span id="local-6989586621679133355"><span class="annot"><span class="annottext">maxColumnsByRow :: [Column]
+</span><a href="#local-6989586621679133355"><span class="hs-identifier hs-var hs-var">maxColumnsByRow</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-200"></span><span>      </span><span class="annot"><span class="annottext">((Column, SqlValue) -&gt; Column) -&gt; [(Column, SqlValue)] -&gt; [Column]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">(Column, SqlValue) -&gt; Column
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span>
+</span><span id="line-201"></span><span>        </span><span class="annot"><span class="annottext">([(Column, SqlValue)] -&gt; [Column])
+-&gt; (FakeLibPQResult -&gt; [(Column, SqlValue)])
+-&gt; FakeLibPQResult
+-&gt; [Column]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Map Column SqlValue -&gt; Maybe (Column, SqlValue))
+-&gt; [Map Column SqlValue] -&gt; [(Column, SqlValue)]
+forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">Maybe.mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">Map Column SqlValue -&gt; Maybe (Column, SqlValue)
+forall k a. Map k a -&gt; Maybe (k, a)
+</span><span class="hs-identifier hs-var">Map.lookupMax</span></span><span>
+</span><span id="line-202"></span><span>        </span><span class="annot"><span class="annottext">([Map Column SqlValue] -&gt; [(Column, SqlValue)])
+-&gt; (FakeLibPQResult -&gt; [Map Column SqlValue])
+-&gt; FakeLibPQResult
+-&gt; [(Column, SqlValue)]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Map Row (Map Column SqlValue) -&gt; [Map Column SqlValue]
+forall k a. Map k a -&gt; [a]
+</span><span class="hs-identifier hs-var">Map.elems</span></span><span>
+</span><span id="line-203"></span><span>        </span><span class="annot"><span class="annottext">(Map Row (Map Column SqlValue) -&gt; [Map Column SqlValue])
+-&gt; (FakeLibPQResult -&gt; Map Row (Map Column SqlValue))
+-&gt; FakeLibPQResult
+-&gt; [Map Column SqlValue]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Map Row (Map Column SqlValue)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQRows"><span class="hs-identifier hs-var">fakeLibPQRows</span></a></span><span>
+</span><span id="line-204"></span><span>        </span><span class="annot"><span class="annottext">(FakeLibPQResult -&gt; [Column]) -&gt; FakeLibPQResult -&gt; [Column]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133354"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-205"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-206"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">[Column]
+</span><a href="#local-6989586621679133355"><span class="hs-identifier hs-var">maxColumnsByRow</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-207"></span><span>      </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-208"></span><span>        </span><span class="annot"><span class="annottext">Maybe Column
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-209"></span><span>      </span><span class="annot"><span class="annottext">[Column]
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-210"></span><span>        </span><span class="annot"><span class="annottext">Column -&gt; Maybe Column
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Column] -&gt; Column
+forall a. Ord a =&gt; [a] -&gt; a
+forall (t :: * -&gt; *) a. (Foldable t, Ord a) =&gt; t a -&gt; a
+</span><span class="hs-identifier hs-var">maximum</span></span><span> </span><span class="annot"><span class="annottext">[Column]
+</span><a href="#local-6989586621679133355"><span class="hs-identifier hs-var">maxColumnsByRow</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-211"></span><span>
+</span><span id="line-212"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQColumnName"><span class="hs-identifier hs-type">fakeLibPQColumnName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">)</span><span>
+</span><span id="line-213"></span><span id="fakeLibPQColumnName"><span class="annot"><span class="annottext">fakeLibPQColumnName :: FakeLibPQResult -&gt; Column -&gt; Maybe ByteString
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQColumnName"><span class="hs-identifier hs-var hs-var">fakeLibPQColumnName</span></a></span></span><span> </span><span id="local-6989586621679133359"><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133359"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span id="local-6989586621679133360"><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133360"><span class="hs-identifier hs-var">column</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-214"></span><span>  </span><span class="annot"><span class="annottext">Column -&gt; Map Column ByteString -&gt; Maybe ByteString
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133360"><span class="hs-identifier hs-var">column</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Map Column ByteString
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQColumns"><span class="hs-identifier hs-var">fakeLibPQColumns</span></a></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133359"><span class="hs-identifier hs-var">result</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-215"></span><span>
+</span><span id="line-216"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQGetValue"><span class="hs-identifier hs-type">fakeLibPQGetValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#FakeLibPQResult"><span class="hs-identifier hs-type">FakeLibPQResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Row"><span class="hs-identifier hs-type">Row</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#Column"><span class="hs-identifier hs-type">Column</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span>
+</span><span id="line-217"></span><span id="fakeLibPQGetValue"><span class="annot"><span class="annottext">fakeLibPQGetValue :: FakeLibPQResult -&gt; Row -&gt; Column -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQGetValue"><span class="hs-identifier hs-var hs-var">fakeLibPQGetValue</span></a></span></span><span> </span><span id="local-6989586621679133362"><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133362"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span id="local-6989586621679133363"><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133363"><span class="hs-identifier hs-var">rowNumber</span></a></span></span><span> </span><span id="local-6989586621679133364"><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133364"><span class="hs-identifier hs-var">columnNumber</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-218"></span><span>  </span><span class="annot"><span class="annottext">SqlValue -&gt; Maybe SqlValue -&gt; SqlValue
+forall a. a -&gt; Maybe a -&gt; a
+</span><span class="hs-identifier hs-var">Maybe.fromMaybe</span></span><span> </span><span class="annot"><span class="annottext">SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#sqlNull"><span class="hs-identifier hs-var">SqlValue.sqlNull</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe SqlValue -&gt; SqlValue) -&gt; Maybe SqlValue -&gt; SqlValue
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-219"></span><span>    </span><span id="local-6989586621679133367"><span class="annot"><span class="annottext">Map Column SqlValue
+</span><a href="#local-6989586621679133367"><span class="hs-identifier hs-var">row</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Row -&gt; Map Row (Map Column SqlValue) -&gt; Maybe (Map Column SqlValue)
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Row
+</span><a href="#local-6989586621679133363"><span class="hs-identifier hs-var">rowNumber</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FakeLibPQResult -&gt; Map Row (Map Column SqlValue)
+</span><a href="Orville.PostgreSQL.Execution.ExecutionResult.html#fakeLibPQRows"><span class="hs-identifier hs-var">fakeLibPQRows</span></a></span><span> </span><span class="annot"><span class="annottext">FakeLibPQResult
+</span><a href="#local-6989586621679133362"><span class="hs-identifier hs-var">result</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-220"></span><span>    </span><span class="annot"><span class="annottext">Column -&gt; Map Column SqlValue -&gt; Maybe SqlValue
+forall k a. Ord k =&gt; k -&gt; Map k a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Map.lookup</span></span><span> </span><span class="annot"><span class="annottext">Column
+</span><a href="#local-6989586621679133364"><span class="hs-identifier hs-var">columnNumber</span></a></span><span> </span><span class="annot"><span class="annottext">Map Column SqlValue
+</span><a href="#local-6989586621679133367"><span class="hs-identifier hs-var">row</span></a></span><span>
+</span><span id="line-221"></span></pre></body></html>

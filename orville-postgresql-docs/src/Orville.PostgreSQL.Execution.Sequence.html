@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Interactions to work with database sequence values on the Haskell side.
+Including inspection of the current and next values in the sequence as well as
+updating a sequence to a given value.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.Sequence</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceNextValue"><span class="hs-identifier">sequenceNextValue</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceCurrentValue"><span class="hs-identifier">sequenceCurrentValue</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceSetValue"><span class="hs-identifier">sequenceSetValue</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Execute</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">QueryType</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.RowCountExpectation.html"><span class="hs-identifier">Orville.PostgreSQL.Internal.RowCountExpectation</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RowCountExpectation</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Marshall</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.html"><span class="hs-identifier">Orville.PostgreSQL.Monad</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.html"><span class="hs-identifier">Orville.PostgreSQL.Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#SequenceDefinition"><span class="hs-identifier">SequenceDefinition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#sequenceName"><span class="hs-identifier">sequenceName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+  Fetches the next value from a sequence via the PostgreSQL @nextval@ function.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-34"></span><span id="local-6989586621679137150"><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceNextValue"><span class="hs-identifier hs-type">sequenceNextValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137150"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#SequenceDefinition"><span class="hs-identifier hs-type">SequenceDefinition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137150"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span></span><span>
+</span><span id="line-35"></span><span id="sequenceNextValue"><span class="annot"><span class="annottext">sequenceNextValue :: forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+SequenceDefinition -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceNextValue"><span class="hs-identifier hs-var hs-var">sequenceNextValue</span></a></span></span><span> </span><span id="local-6989586621679137204"><span class="annot"><span class="annottext">SequenceDefinition
+</span><a href="#local-6989586621679137204"><span class="hs-identifier hs-var">sequenceDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-36"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ValueExpression -&gt; m Int64
+forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+String -&gt; ValueExpression -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#selectInt64Value"><span class="hs-identifier hs-var">selectInt64Value</span></a></span><span>
+</span><span id="line-37"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;sequenceNextValue&quot;</span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextVal"><span class="hs-identifier hs-var">Expr.nextVal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SequenceDefinition -&gt; Qualified SequenceName
+</span><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#sequenceName"><span class="hs-identifier hs-var">sequenceName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceDefinition
+</span><a href="#local-6989586621679137204"><span class="hs-identifier hs-var">sequenceDef</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="annot"><span class="hs-comment">{- |
+  Fetches the current value from a sequence via the PostgreSQL @currval@ function.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-45"></span><span id="local-6989586621679137207"><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceCurrentValue"><span class="hs-identifier hs-type">sequenceCurrentValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137207"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#SequenceDefinition"><span class="hs-identifier hs-type">SequenceDefinition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137207"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span></span><span>
+</span><span id="line-46"></span><span id="sequenceCurrentValue"><span class="annot"><span class="annottext">sequenceCurrentValue :: forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+SequenceDefinition -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceCurrentValue"><span class="hs-identifier hs-var hs-var">sequenceCurrentValue</span></a></span></span><span> </span><span id="local-6989586621679137210"><span class="annot"><span class="annottext">SequenceDefinition
+</span><a href="#local-6989586621679137210"><span class="hs-identifier hs-var">sequenceDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ValueExpression -&gt; m Int64
+forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+String -&gt; ValueExpression -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#selectInt64Value"><span class="hs-identifier hs-var">selectInt64Value</span></a></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;sequenceCurrentValue&quot;</span></span><span>
+</span><span id="line-49"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currVal"><span class="hs-identifier hs-var">Expr.currVal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SequenceDefinition -&gt; Qualified SequenceName
+</span><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#sequenceName"><span class="hs-identifier hs-var">sequenceName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceDefinition
+</span><a href="#local-6989586621679137210"><span class="hs-identifier hs-var">sequenceDef</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="annot"><span class="hs-comment">{- |
+  Sets the current value from a sequence via the PostgreSQL @setval@ function.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-56"></span><span id="local-6989586621679137159"><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceSetValue"><span class="hs-identifier hs-type">sequenceSetValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137159"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#SequenceDefinition"><span class="hs-identifier hs-type">SequenceDefinition</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137159"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span></span><span>
+</span><span id="line-57"></span><span id="sequenceSetValue"><span class="annot"><span class="annottext">sequenceSetValue :: forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+SequenceDefinition -&gt; Int64 -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#sequenceSetValue"><span class="hs-identifier hs-var hs-var">sequenceSetValue</span></a></span></span><span> </span><span id="local-6989586621679137214"><span class="annot"><span class="annottext">SequenceDefinition
+</span><a href="#local-6989586621679137214"><span class="hs-identifier hs-var">sequenceDef</span></a></span></span><span> </span><span id="local-6989586621679137215"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679137215"><span class="hs-identifier hs-var">newValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-58"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ValueExpression -&gt; m Int64
+forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+String -&gt; ValueExpression -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#selectInt64Value"><span class="hs-identifier hs-var">selectInt64Value</span></a></span><span>
+</span><span id="line-59"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;sequenceSetValue&quot;</span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; Int64 -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setVal"><span class="hs-identifier hs-var">Expr.setVal</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SequenceDefinition -&gt; Qualified SequenceName
+</span><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html#sequenceName"><span class="hs-identifier hs-var">sequenceName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceDefinition
+</span><a href="#local-6989586621679137214"><span class="hs-identifier hs-var">sequenceDef</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679137215"><span class="hs-identifier hs-var">newValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span id="local-6989586621679137155"><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html#selectInt64Value"><span class="hs-identifier hs-type">selectInt64Value</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137155"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">Expr.ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137155"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span></span><span>
+</span><span id="line-63"></span><span id="selectInt64Value"><span class="annot"><span class="annottext">selectInt64Value :: forall (m :: * -&gt; *).
+MonadOrville m =&gt;
+String -&gt; ValueExpression -&gt; m Int64
+</span><a href="Orville.PostgreSQL.Execution.Sequence.html#selectInt64Value"><span class="hs-identifier hs-var hs-var">selectInt64Value</span></a></span></span><span> </span><span id="local-6989586621679137227"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679137227"><span class="hs-identifier hs-var">caller</span></a></span></span><span> </span><span id="local-6989586621679137228"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679137228"><span class="hs-identifier hs-var">valueExpression</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-65"></span><span>    </span><span id="local-6989586621679137229"><span class="annot"><span class="annottext">queryExpr :: QueryExpr
+</span><a href="#local-6989586621679137229"><span class="hs-identifier hs-var hs-var">queryExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>      </span><span class="annot"><span class="annottext">SelectClause -&gt; SelectList -&gt; Maybe TableExpr -&gt; QueryExpr
+</span><a href="Orville.PostgreSQL.Expr.Query.html#queryExpr"><span class="hs-identifier hs-var">Expr.queryExpr</span></a></span><span>
+</span><span id="line-67"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectExpr -&gt; SelectClause
+</span><a href="Orville.PostgreSQL.Expr.Select.html#selectClause"><span class="hs-identifier hs-var">Expr.selectClause</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe Distinct -&gt; SelectExpr
+</span><a href="Orville.PostgreSQL.Expr.Select.html#selectExpr"><span class="hs-identifier hs-var">Expr.selectExpr</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Distinct
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>        </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">[DerivedColumn] -&gt; SelectList
+</span><a href="Orville.PostgreSQL.Expr.Query.html#selectDerivedColumns"><span class="hs-identifier hs-var">Expr.selectDerivedColumns</span></a></span><span>
+</span><span id="line-69"></span><span>            </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ValueExpression -&gt; ColumnName -&gt; DerivedColumn
+</span><a href="Orville.PostgreSQL.Expr.Query.html#deriveColumnAs"><span class="hs-identifier hs-var">Expr.deriveColumnAs</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679137228"><span class="hs-identifier hs-var">valueExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; ColumnName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#columnName"><span class="hs-identifier hs-var">Expr.columnName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;result&quot;</span></span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><span id="line-70"></span><span>        </span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>        </span><span class="annot"><span class="annottext">Maybe TableExpr
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span>    </span><span id="local-6989586621679137236"><span class="annot"><span class="annottext">marshaller :: AnnotatedSqlMarshaller Int64 Int64
+</span><a href="#local-6989586621679137236"><span class="hs-identifier hs-var hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-74"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller Int64 Int64 -&gt; AnnotatedSqlMarshaller Int64 Int64
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#annotateSqlMarshallerEmptyAnnotation"><span class="hs-identifier hs-var">Marshall.annotateSqlMarshallerEmptyAnnotation</span></a></span><span>
+</span><span id="line-75"></span><span>        </span><span class="annot"><span class="annottext">(SqlMarshaller Int64 Int64 -&gt; AnnotatedSqlMarshaller Int64 Int64)
+-&gt; (FieldDefinition NotNull Int64 -&gt; SqlMarshaller Int64 Int64)
+-&gt; FieldDefinition NotNull Int64
+-&gt; AnnotatedSqlMarshaller Int64 Int64
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Int64 -&gt; Int64)
+-&gt; FieldDefinition NotNull Int64 -&gt; SqlMarshaller Int64 Int64
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Marshall.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; Int64
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-76"></span><span>        </span><span class="annot"><span class="annottext">(FieldDefinition NotNull Int64
+ -&gt; AnnotatedSqlMarshaller Int64 Int64)
+-&gt; FieldDefinition NotNull Int64
+-&gt; AnnotatedSqlMarshaller Int64 Int64
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int64
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#bigIntegerField"><span class="hs-identifier hs-var">Marshall.bigIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;result&quot;</span></span><span>
+</span><span id="line-77"></span><span>  </span><span id="local-6989586621679137242"><span class="annot"><span class="annottext">[Int64]
+</span><a href="#local-6989586621679137242"><span class="hs-identifier hs-var">values</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">QueryType
+-&gt; QueryExpr -&gt; AnnotatedSqlMarshaller Int64 Int64 -&gt; m [Int64]
+forall (m :: * -&gt; *) sql writeEntity readEntity.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-var">Execute.executeAndDecode</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#SelectQuery"><span class="hs-identifier hs-var">QueryType.SelectQuery</span></a></span><span> </span><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137229"><span class="hs-identifier hs-var">queryExpr</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller Int64 Int64
+</span><a href="#local-6989586621679137236"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; [Int64] -&gt; m Int64
+forall (m :: * -&gt; *) a. MonadIO m =&gt; String -&gt; [a] -&gt; m a
+</span><a href="Orville.PostgreSQL.Internal.RowCountExpectation.html#expectExactlyOneRow"><span class="hs-identifier hs-var">RowCountExpectation.expectExactlyOneRow</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679137227"><span class="hs-identifier hs-var">caller</span></a></span><span> </span><span class="annot"><span class="annottext">[Int64]
+</span><a href="#local-6989586621679137242"><span class="hs-identifier hs-var">values</span></a></span><span>
+</span><span id="line-79"></span></pre></body></html>

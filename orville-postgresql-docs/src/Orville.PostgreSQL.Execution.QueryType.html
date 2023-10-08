@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier">QueryType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#SelectQuery"><span class="hs-identifier">SelectQuery</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#InsertQuery"><span class="hs-identifier">InsertQuery</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#UpdateQuery"><span class="hs-identifier">UpdateQuery</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#DeleteQuery"><span class="hs-identifier">DeleteQuery</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#DDLQuery"><span class="hs-identifier">DDLQuery</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#CursorQuery"><span class="hs-identifier">CursorQuery</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#OtherQuery"><span class="hs-identifier">OtherQuery</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="annot"><span class="hs-comment">{- |
+  A simple categorization of SQL queries that is used to provide a hint to
+  user callbacks about what kind of query is being run.
+
+  See 'Orville.PostgreSQL.addSqlExecutionCallback'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">data</span><span> </span><span id="QueryType"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-var">QueryType</span></a></span></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="SelectQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#SelectQuery"><span class="hs-identifier hs-var">SelectQuery</span></a></span></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="InsertQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#InsertQuery"><span class="hs-identifier hs-var">InsertQuery</span></a></span></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UpdateQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#UpdateQuery"><span class="hs-identifier hs-var">UpdateQuery</span></a></span></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="DeleteQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#DeleteQuery"><span class="hs-identifier hs-var">DeleteQuery</span></a></span></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="DDLQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#DDLQuery"><span class="hs-identifier hs-var">DDLQuery</span></a></span></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="CursorQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#CursorQuery"><span class="hs-identifier hs-var">CursorQuery</span></a></span></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="OtherQuery"><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#OtherQuery"><span class="hs-identifier hs-var">OtherQuery</span></a></span></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-30"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-31"></span><span>      </span><span id="local-6989586621679126338"><span id="local-6989586621679126340"><span id="local-6989586621679126342"><span id="local-6989586621679126346"><span id="local-6989586621679126349"><span id="local-6989586621679126352"><span id="local-6989586621679126355"><span class="annot"><span class="annottext">Eq QueryType
+Eq QueryType
+-&gt; (QueryType -&gt; QueryType -&gt; Ordering)
+-&gt; (QueryType -&gt; QueryType -&gt; Bool)
+-&gt; (QueryType -&gt; QueryType -&gt; Bool)
+-&gt; (QueryType -&gt; QueryType -&gt; Bool)
+-&gt; (QueryType -&gt; QueryType -&gt; Bool)
+-&gt; (QueryType -&gt; QueryType -&gt; QueryType)
+-&gt; (QueryType -&gt; QueryType -&gt; QueryType)
+-&gt; Ord QueryType
+QueryType -&gt; QueryType -&gt; Bool
+QueryType -&gt; QueryType -&gt; Ordering
+QueryType -&gt; QueryType -&gt; QueryType
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: QueryType -&gt; QueryType -&gt; Ordering
+compare :: QueryType -&gt; QueryType -&gt; Ordering
+$c&lt; :: QueryType -&gt; QueryType -&gt; Bool
+&lt; :: QueryType -&gt; QueryType -&gt; Bool
+$c&lt;= :: QueryType -&gt; QueryType -&gt; Bool
+&lt;= :: QueryType -&gt; QueryType -&gt; Bool
+$c&gt; :: QueryType -&gt; QueryType -&gt; Bool
+&gt; :: QueryType -&gt; QueryType -&gt; Bool
+$c&gt;= :: QueryType -&gt; QueryType -&gt; Bool
+&gt;= :: QueryType -&gt; QueryType -&gt; Bool
+$cmax :: QueryType -&gt; QueryType -&gt; QueryType
+max :: QueryType -&gt; QueryType -&gt; QueryType
+$cmin :: QueryType -&gt; QueryType -&gt; QueryType
+min :: QueryType -&gt; QueryType -&gt; QueryType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-33"></span><span>      </span><span id="local-6989586621679126359"><span id="local-6989586621679126361"><span class="annot"><span class="annottext">QueryType -&gt; QueryType -&gt; Bool
+(QueryType -&gt; QueryType -&gt; Bool)
+-&gt; (QueryType -&gt; QueryType -&gt; Bool) -&gt; Eq QueryType
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: QueryType -&gt; QueryType -&gt; Bool
+== :: QueryType -&gt; QueryType -&gt; Bool
+$c/= :: QueryType -&gt; QueryType -&gt; Bool
+/= :: QueryType -&gt; QueryType -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-35"></span><span>      </span><span id="local-6989586621679126365"><span id="local-6989586621679126373"><span id="local-6989586621679126379"><span id="local-6989586621679126389"><span id="local-6989586621679126391"><span id="local-6989586621679126395"><span id="local-6989586621679126399"><span id="local-6989586621679126403"><span class="annot"><span class="annottext">Int -&gt; QueryType
+QueryType -&gt; Int
+QueryType -&gt; [QueryType]
+QueryType -&gt; QueryType
+QueryType -&gt; QueryType -&gt; [QueryType]
+QueryType -&gt; QueryType -&gt; QueryType -&gt; [QueryType]
+(QueryType -&gt; QueryType)
+-&gt; (QueryType -&gt; QueryType)
+-&gt; (Int -&gt; QueryType)
+-&gt; (QueryType -&gt; Int)
+-&gt; (QueryType -&gt; [QueryType])
+-&gt; (QueryType -&gt; QueryType -&gt; [QueryType])
+-&gt; (QueryType -&gt; QueryType -&gt; [QueryType])
+-&gt; (QueryType -&gt; QueryType -&gt; QueryType -&gt; [QueryType])
+-&gt; Enum QueryType
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+$csucc :: QueryType -&gt; QueryType
+succ :: QueryType -&gt; QueryType
+$cpred :: QueryType -&gt; QueryType
+pred :: QueryType -&gt; QueryType
+$ctoEnum :: Int -&gt; QueryType
+toEnum :: Int -&gt; QueryType
+$cfromEnum :: QueryType -&gt; Int
+fromEnum :: QueryType -&gt; Int
+$cenumFrom :: QueryType -&gt; [QueryType]
+enumFrom :: QueryType -&gt; [QueryType]
+$cenumFromThen :: QueryType -&gt; QueryType -&gt; [QueryType]
+enumFromThen :: QueryType -&gt; QueryType -&gt; [QueryType]
+$cenumFromTo :: QueryType -&gt; QueryType -&gt; [QueryType]
+enumFromTo :: QueryType -&gt; QueryType -&gt; [QueryType]
+$cenumFromThenTo :: QueryType -&gt; QueryType -&gt; QueryType -&gt; [QueryType]
+enumFromThenTo :: QueryType -&gt; QueryType -&gt; QueryType -&gt; [QueryType]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-36"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-37"></span><span>      </span><span id="local-6989586621679126407"><span id="local-6989586621679126409"><span class="annot"><span class="annottext">QueryType
+QueryType -&gt; QueryType -&gt; Bounded QueryType
+forall a. a -&gt; a -&gt; Bounded a
+$cminBound :: QueryType
+minBound :: QueryType
+$cmaxBound :: QueryType
+maxBound :: QueryType
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Bounded</span></span></span></span><span>
+</span><span id="line-38"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-39"></span><span>      </span><span id="local-6989586621679126413"><span id="local-6989586621679126415"><span id="local-6989586621679126419"><span class="annot"><span class="annottext">Int -&gt; QueryType -&gt; ShowS
+[QueryType] -&gt; ShowS
+QueryType -&gt; String
+(Int -&gt; QueryType -&gt; ShowS)
+-&gt; (QueryType -&gt; String)
+-&gt; ([QueryType] -&gt; ShowS)
+-&gt; Show QueryType
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; QueryType -&gt; ShowS
+showsPrec :: Int -&gt; QueryType -&gt; ShowS
+$cshow :: QueryType -&gt; String
+show :: QueryType -&gt; String
+$cshowList :: [QueryType] -&gt; ShowS
+showList :: [QueryType] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-40"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-41"></span><span>      </span><span id="local-6989586621679126423"><span id="local-6989586621679126427"><span id="local-6989586621679126430"><span id="local-6989586621679126440"><span class="annot"><span class="annottext">ReadPrec [QueryType]
+ReadPrec QueryType
+Int -&gt; ReadS QueryType
+ReadS [QueryType]
+(Int -&gt; ReadS QueryType)
+-&gt; ReadS [QueryType]
+-&gt; ReadPrec QueryType
+-&gt; ReadPrec [QueryType]
+-&gt; Read QueryType
+forall a.
+(Int -&gt; ReadS a)
+-&gt; ReadS [a] -&gt; ReadPrec a -&gt; ReadPrec [a] -&gt; Read a
+$creadsPrec :: Int -&gt; ReadS QueryType
+readsPrec :: Int -&gt; ReadS QueryType
+$creadList :: ReadS [QueryType]
+readList :: ReadS [QueryType]
+$creadPrec :: ReadPrec QueryType
+readPrec :: ReadPrec QueryType
+$creadListPrec :: ReadPrec [QueryType]
+readListPrec :: ReadPrec [QueryType]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Read</span></span></span></span></span></span><span>
+</span><span id="line-42"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span></pre></body></html>

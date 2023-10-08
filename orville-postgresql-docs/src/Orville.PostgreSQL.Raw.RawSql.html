@@ -1,0 +1,945 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+The funtions in this module are named with the intent that it is imported
+qualified as 'RawSql'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier">RawSql</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier">parameter</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier">fromString</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#fromText"><span class="hs-identifier">fromText</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#fromBytes"><span class="hs-identifier">fromBytes</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier">intercalate</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#execute"><span class="hs-identifier">execute</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#executeVoid"><span class="hs-identifier">executeVoid</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#connectionQuoting"><span class="hs-identifier">connectionQuoting</span></a></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Fragments provided for convenience</span></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier">space</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier">comma</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#commaSpace"><span class="hs-identifier">commaSpace</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier">leftParen</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier">rightParen</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#dot"><span class="hs-identifier">dot</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#doubleQuote"><span class="hs-identifier">doubleQuote</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#doubleColon"><span class="hs-identifier">doubleColon</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier">stringLiteral</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#identifier"><span class="hs-identifier">identifier</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#parenthesized"><span class="hs-identifier">parenthesized</span></a></span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Integer values as literals</span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier">intDecLiteral</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int8DecLiteral"><span class="hs-identifier">int8DecLiteral</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int16DecLiteral"><span class="hs-identifier">int16DecLiteral</span></a></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int32DecLiteral"><span class="hs-identifier">int32DecLiteral</span></a></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier">int64DecLiteral</span></a></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Generic interface for generating sql</span></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier">SqlExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier">toRawSql</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier">unsafeFromRawSql</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier">unsafeSqlExpression</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#toBytesAndParams"><span class="hs-identifier">toBytesAndParams</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#toExampleBytes"><span class="hs-identifier">toExampleBytes</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier">Quoting</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier">Quoting</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteStringLiteral"><span class="hs-identifier">quoteStringLiteral</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteIdentifier"><span class="hs-identifier">quoteIdentifier</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoting"><span class="hs-identifier">exampleQuoting</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">void</span></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BS</span></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Builder</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BSB</span></span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B8</span></span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LBS</span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.DList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">DList</span></span><span class="hs-special">)</span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.DList</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">DList</span></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Foldable</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Fold</span></span><span>
+</span><span id="line-61"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Functor.Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Identity</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Identity</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">runIdentity</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Int</span></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">List</span></span><span>
+</span><span id="line-64"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-65"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">TextEnc</span></span><span>
+</span><span id="line-66"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.Connection</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Conn</span></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.PgTextFormatValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#PgTextFormatValue"><span class="hs-identifier">PgTextFormatValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier">SqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="annot"><span class="hs-comment">{- |
+  'RawSql' provides a type for efficiently constructing raw sql statements
+  from smaller parts and then executing them. It also supports using placeholder
+  values to pass parameters with a query without having to interpolate them
+  as part of the actual sql state and being exposed to sql injection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-81"></span><span class="hs-keyword">data</span><span> </span><span id="RawSql"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-var">RawSql</span></a></span></span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="SqlSection"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Parameter"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Parameter"><span class="hs-identifier hs-var">Parameter</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span>
+</span><span id="line-84"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="StringLiteral"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#StringLiteral"><span class="hs-identifier hs-var">StringLiteral</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Identifier"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Identifier"><span class="hs-identifier hs-var">Identifier</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Append"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Append"><span class="hs-identifier hs-var">Append</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679127822"><span id="local-6989586621679127826"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-type">SqlSection</span></a></span><span> </span><span id="local-6989586621679127832"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127832"><span class="hs-identifier hs-var">builderA</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679127833"><span class="annot"><span class="annottext">&lt;&gt; :: RawSql -&gt; RawSql -&gt; RawSql
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">&lt;&gt;</span></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-type">SqlSection</span></a></span><span> </span><span id="local-6989586621679127834"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127834"><span class="hs-identifier hs-var">builderB</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-90"></span><span>    </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127832"><span class="hs-identifier hs-var">builderA</span></a></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127834"><span class="hs-identifier hs-var">builderB</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-91"></span><span>  </span><span id="local-6989586621679127835"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127835"><span class="hs-identifier hs-var">otherA</span></a></span></span><span> </span><span class="annot"><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span id="local-6989586621679127836"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127836"><span class="hs-identifier hs-var">otherB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#Append"><span class="hs-identifier hs-var">Append</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127835"><span class="hs-identifier hs-var">otherA</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127836"><span class="hs-identifier hs-var">otherB</span></a></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679127841"><span id="local-6989586621679127845"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-95"></span><span>  </span><span id="local-6989586621679127850"><span class="annot"><span class="annottext">mempty :: RawSql
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">mempty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">Builder
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-96"></span><span>
+</span><span id="line-97"></span><span class="annot"><span class="hs-comment">{- |
+ 'SqlExpression' provides a common interface for converting types to and from
+ 'RawSql', either via 'toRawSql' and 'unsafeFromRawSql', or the convenience
+ function 'unsafeSqlExpression'. Orville defines a large number of types that
+ represent various fragments of SQL statements as well as functions to help
+ construct the safely. These funtions can be found in the
+ 'Orville.PostgreSQL.Expr'. These types all provide 'SqlExpression' instances
+ as an escape hatch to allow you to pass any SQL you wish in place of what
+ Orville directly supports. This should be use with great care as Orville
+ cannot guarantee that the SQL you pass can be used to generate valid SQL in
+ conjuction with the rest of the 'Orville.PostgreSQL.Expr' API.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-111"></span><span class="hs-keyword">class</span><span> </span><span id="SqlExpression"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var">SqlExpression</span></a></span></span><span> </span><span id="local-6989586621679127709"><span class="annot"><a href="#local-6989586621679127709"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-112"></span><span>  </span><span id="toRawSql"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-type">toRawSql</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679127709"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-113"></span><span>  </span><span id="unsafeFromRawSql"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-type">unsafeFromRawSql</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127709"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621679127855"><span class="annot"><span class="annottext">toRawSql :: RawSql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var hs-var hs-var hs-var">toRawSql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-117"></span><span>  </span><span id="local-6989586621679127857"><span class="annot"><span class="annottext">unsafeFromRawSql :: RawSql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var hs-var hs-var hs-var">unsafeFromRawSql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="annot"><span class="hs-comment">{- |
+A conveinence function for creating an arbitrary 'SqlExpression' from a
+'String'. Great care should be exercised in use of this function as it cannot
+provide any sort of guarantee that the string passed is usable to generate
+valid SQL via the rest of Orville's 'Orville.PostgreSQL.Expr' API as the
+whatever 'SqlExpression' type is returned.
+
+For example, if one wanted build a boolean expression not support by Orville,
+you can do it like so
+
+&gt; import qualified Orville.PostgreSQL.Expr as Expr
+&gt;
+&gt; a :: Expr.BooleanExpr
+&gt; a RawSql.unsafeSqlExpression &quot;foo BETWEEN 1  AND 3&quot;
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-135"></span><span id="local-6989586621679127711"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-type">unsafeSqlExpression</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127711"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127711"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-136"></span><span id="unsafeSqlExpression"><span class="annot"><span class="annottext">unsafeSqlExpression :: forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var hs-var">unsafeSqlExpression</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-137"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; a
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; a) -&gt; (String -&gt; RawSql) -&gt; String -&gt; a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span class="annot"><span class="hs-comment">{- |
+  Provides procedures for quoting parts of a raw SQL query so that they can be
+  safely executed. Quoting may be done in some 'Monad' m, allowing for the use
+  of quoting operations provided by 'Conn.Connection', which operates in the
+  'IO' monad.
+
+  See 'connectionQuoting' and 'exampleQuoting'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-149"></span><span class="hs-keyword">data</span><span> </span><span id="Quoting"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-var">Quoting</span></a></span></span><span> </span><span id="local-6989586621679127716"><span class="annot"><a href="#local-6989586621679127716"><span class="hs-identifier hs-type">m</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="Quoting"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-var">Quoting</span></a></span></span><span>
+</span><span id="line-150"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="quoteStringLiteral"><span class="annot"><span class="annottext">forall (m :: * -&gt; *). Quoting m -&gt; ByteString -&gt; m Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteStringLiteral"><span class="hs-identifier hs-var hs-var">quoteStringLiteral</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127716"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span>
+</span><span id="line-151"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="quoteIdentifier"><span class="annot"><span class="annottext">forall (m :: * -&gt; *). Quoting m -&gt; ByteString -&gt; m Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteIdentifier"><span class="hs-identifier hs-var hs-var">quoteIdentifier</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127716"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span>
+</span><span id="line-152"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span class="annot"><span class="hs-comment">{- |
+  Quoting done in pure Haskell that is suitable for showing SQL examples,
+  but is not guaranteed to be sufficient for all database connections. For
+  quoting that is based on the actual connection to the database, see
+  'connectionQuoting'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-162"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoting"><span class="hs-identifier hs-type">exampleQuoting</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-type">Quoting</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Identity</span></span><span>
+</span><span id="line-163"></span><span id="exampleQuoting"><span class="annot"><span class="annottext">exampleQuoting :: Quoting Identity
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoting"><span class="hs-identifier hs-var hs-var">exampleQuoting</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-164"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-type">Quoting</span></a></span><span>
+</span><span id="line-165"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">quoteStringLiteral :: ByteString -&gt; Identity Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteStringLiteral"><span class="hs-identifier hs-var">quoteStringLiteral</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Identity Builder
+forall a. a -&gt; Identity a
+</span><span class="hs-identifier hs-var">Identity</span></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; Identity Builder)
+-&gt; (ByteString -&gt; Builder) -&gt; ByteString -&gt; Identity Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; ByteString -&gt; Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoteString"><span class="hs-identifier hs-var">exampleQuoteString</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'\''</span></span><span>
+</span><span id="line-166"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">quoteIdentifier :: ByteString -&gt; Identity Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteIdentifier"><span class="hs-identifier hs-var">quoteIdentifier</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Identity Builder
+forall a. a -&gt; Identity a
+</span><span class="hs-identifier hs-var">Identity</span></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; Identity Builder)
+-&gt; (ByteString -&gt; Builder) -&gt; ByteString -&gt; Identity Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; ByteString -&gt; Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoteString"><span class="hs-identifier hs-var">exampleQuoteString</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'&quot;'</span></span><span>
+</span><span id="line-167"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-168"></span><span>
+</span><span id="line-169"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoteString"><span class="hs-identifier hs-type">exampleQuoteString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span>
+</span><span id="line-170"></span><span id="exampleQuoteString"><span class="annot"><span class="annottext">exampleQuoteString :: Char -&gt; ByteString -&gt; Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoteString"><span class="hs-identifier hs-var hs-var">exampleQuoteString</span></a></span></span><span> </span><span id="local-6989586621679127862"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127862"><span class="hs-identifier hs-var">quoteChar</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-172"></span><span>    </span><span id="local-6989586621679127865"><span class="annot"><span class="annottext">quote :: Either (Char, ByteString) ByteString
+-&gt; Maybe (Char, Either (Char, ByteString) ByteString)
+</span><a href="#local-6989586621679127865"><span class="hs-identifier hs-var hs-var">quote</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679127866"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127866"><span class="hs-identifier hs-var">bs</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-173"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Maybe (Char, ByteString)
+</span><span class="hs-identifier hs-var">B8.uncons</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127866"><span class="hs-identifier hs-var">bs</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-174"></span><span>        </span><span class="annot"><span class="annottext">Maybe (Char, ByteString)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-175"></span><span>          </span><span class="annot"><span class="annottext">Maybe (Char, Either (Char, ByteString) ByteString)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-176"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679127868"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127868"><span class="hs-identifier hs-var">char</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127869"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127869"><span class="hs-identifier hs-var">rest</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-177"></span><span>          </span><span class="annot"><span class="annottext">(Char, Either (Char, ByteString) ByteString)
+-&gt; Maybe (Char, Either (Char, ByteString) ByteString)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">((Char, Either (Char, ByteString) ByteString)
+ -&gt; Maybe (Char, Either (Char, ByteString) ByteString))
+-&gt; (Char, Either (Char, ByteString) ByteString)
+-&gt; Maybe (Char, Either (Char, ByteString) ByteString)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-178"></span><span>            </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127868"><span class="hs-identifier hs-var">char</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127862"><span class="hs-identifier hs-var">quoteChar</span></a></span><span>
+</span><span id="line-179"></span><span>              </span><span class="hs-keyword">then</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127868"><span class="hs-identifier hs-var">char</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(Char, ByteString) -&gt; Either (Char, ByteString) ByteString
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127868"><span class="hs-identifier hs-var">char</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127869"><span class="hs-identifier hs-var">rest</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-180"></span><span>              </span><span class="hs-keyword">else</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127868"><span class="hs-identifier hs-var">char</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either (Char, ByteString) ByteString
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127869"><span class="hs-identifier hs-var">rest</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-181"></span><span>    </span><span class="annot"><a href="#local-6989586621679127865"><span class="hs-identifier hs-var">quote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621679127870"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127870"><span class="hs-identifier hs-var">char</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127871"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127871"><span class="hs-identifier hs-var">rest</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-182"></span><span>      </span><span class="annot"><span class="annottext">(Char, Either (Char, ByteString) ByteString)
+-&gt; Maybe (Char, Either (Char, ByteString) ByteString)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127870"><span class="hs-identifier hs-var">char</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Either (Char, ByteString) ByteString
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127871"><span class="hs-identifier hs-var">rest</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span>    </span><span id="local-6989586621679127872"><span class="annot"><span class="annottext">quoteBytes :: Builder
+</span><a href="#local-6989586621679127872"><span class="hs-identifier hs-var hs-var">quoteBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-185"></span><span>      </span><span class="annot"><span class="annottext">Char -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.char8</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127862"><span class="hs-identifier hs-var">quoteChar</span></a></span><span>
+</span><span id="line-186"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-187"></span><span>    </span><span class="hs-glyph">\</span><span id="local-6989586621679127874"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127874"><span class="hs-identifier hs-var">unquoted</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-188"></span><span>      </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127872"><span class="hs-identifier hs-var">quoteBytes</span></a></span><span>
+</span><span id="line-189"></span><span>        </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.byteString</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Either (Char, ByteString) ByteString
+ -&gt; Maybe (Char, Either (Char, ByteString) ByteString))
+-&gt; Either (Char, ByteString) ByteString -&gt; ByteString
+forall a. (a -&gt; Maybe (Char, a)) -&gt; a -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.unfoldr</span></span><span> </span><span class="annot"><span class="annottext">Either (Char, ByteString) ByteString
+-&gt; Maybe (Char, Either (Char, ByteString) ByteString)
+</span><a href="#local-6989586621679127865"><span class="hs-identifier hs-var">quote</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Either (Char, ByteString) ByteString
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127874"><span class="hs-identifier hs-var">unquoted</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-190"></span><span>        </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127872"><span class="hs-identifier hs-var">quoteBytes</span></a></span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><span class="hs-comment">{- |
+  Quoting done in IO based using the quoting functions provided by the
+  connection, which can apply quoting based on the specific connection
+  properties.
+
+  If you don't have a connection available and are only planning on using
+  the SQL for explanatory or example purposes, see 'exampleQuoting'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-202"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#connectionQuoting"><span class="hs-identifier hs-type">connectionQuoting</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Conn.Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-type">Quoting</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span>
+</span><span id="line-203"></span><span id="connectionQuoting"><span class="annot"><span class="annottext">connectionQuoting :: Connection -&gt; Quoting IO
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#connectionQuoting"><span class="hs-identifier hs-var hs-var">connectionQuoting</span></a></span></span><span> </span><span id="local-6989586621679127877"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127877"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-204"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-type">Quoting</span></a></span><span>
+</span><span id="line-205"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">quoteStringLiteral :: ByteString -&gt; IO Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteStringLiteral"><span class="hs-identifier hs-var">quoteStringLiteral</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; ByteString -&gt; IO Builder
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#quoteStringLiteral"><span class="hs-identifier hs-var">Conn.quoteStringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127877"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-206"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">quoteIdentifier :: ByteString -&gt; IO Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteIdentifier"><span class="hs-identifier hs-var">quoteIdentifier</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Connection -&gt; ByteString -&gt; IO Builder
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#quoteIdentifier"><span class="hs-identifier hs-var">Conn.quoteIdentifier</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127877"><span class="hs-identifier hs-var">connection</span></a></span><span>
+</span><span id="line-207"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs the actual SQL bytestring and parameter values that will be
+  passed to the database to execute a 'RawSql' query. Any string
+  literals thar are included in the SQL expression will be quoting
+  using the given quoting directive.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-217"></span><span id="local-6989586621679127732"><span id="local-6989586621679127733"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#toBytesAndParams"><span class="hs-identifier hs-type">toBytesAndParams</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-218"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127732"><span class="hs-identifier hs-type">sql</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679127733"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-219"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-type">Quoting</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127733"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-220"></span><span>  </span><span class="annot"><a href="#local-6989586621679127732"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-221"></span><span>  </span><span class="annot"><a href="#local-6989586621679127733"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span class="hs-special">,</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#PgTextFormatValue"><span class="hs-identifier hs-type">PgTextFormatValue</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-222"></span><span id="toBytesAndParams"><span class="annot"><span class="annottext">toBytesAndParams :: forall sql (m :: * -&gt; *).
+(SqlExpression sql, Monad m) =&gt;
+Quoting m -&gt; sql -&gt; m (ByteString, [Maybe PgTextFormatValue])
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toBytesAndParams"><span class="hs-identifier hs-var hs-var">toBytesAndParams</span></a></span></span><span> </span><span id="local-6989586621679127888"><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127888"><span class="hs-identifier hs-var">quoting</span></a></span></span><span> </span><span id="local-6989586621679127889"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127889"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-223"></span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679127890"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127890"><span class="hs-identifier hs-var">byteBuilder</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127891"><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127891"><span class="hs-identifier hs-var">finalProgress</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-224"></span><span>    </span><span class="annot"><span class="annottext">Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+forall (m :: * -&gt; *).
+Monad m =&gt;
+Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#buildSqlWithProgress"><span class="hs-identifier hs-var">buildSqlWithProgress</span></a></span><span> </span><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127888"><span class="hs-identifier hs-var">quoting</span></a></span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#startingProgress"><span class="hs-identifier hs-var">startingProgress</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">sql -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127889"><span class="hs-identifier hs-var">sql</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-225"></span><span>  </span><span class="annot"><span class="annottext">(ByteString, [Maybe PgTextFormatValue])
+-&gt; m (ByteString, [Maybe PgTextFormatValue])
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-226"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">LBS.toStrict</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder -&gt; ByteString
+</span><span class="hs-identifier hs-var">BSB.toLazyByteString</span></span><span> </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127890"><span class="hs-identifier hs-var">byteBuilder</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-227"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">DList (Maybe PgTextFormatValue) -&gt; [Maybe PgTextFormatValue]
+forall a. DList a -&gt; [a]
+</span><span class="hs-identifier hs-var">DList.toList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ParamsProgress -&gt; DList (Maybe PgTextFormatValue)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramValues"><span class="hs-identifier hs-var">paramValues</span></a></span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127891"><span class="hs-identifier hs-var">finalProgress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-228"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-229"></span><span>
+</span><span id="line-230"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the bytes that represent the raw sql. These bytes may not be executable
+  on their own, because they may contain placeholders that must be filled in,
+  but can be useful for inspecting sql queries.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-237"></span><span id="local-6989586621679127745"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#toExampleBytes"><span class="hs-identifier hs-type">toExampleBytes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127745"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127745"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span></span><span>
+</span><span id="line-238"></span><span id="toExampleBytes"><span class="annot"><span class="annottext">toExampleBytes :: forall sql. SqlExpression sql =&gt; sql -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toExampleBytes"><span class="hs-identifier hs-var hs-var">toExampleBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-239"></span><span>  </span><span class="annot"><span class="annottext">(ByteString, [Maybe PgTextFormatValue]) -&gt; ByteString
+forall a b. (a, b) -&gt; a
+</span><span class="hs-identifier hs-var">fst</span></span><span> </span><span class="annot"><span class="annottext">((ByteString, [Maybe PgTextFormatValue]) -&gt; ByteString)
+-&gt; (sql -&gt; (ByteString, [Maybe PgTextFormatValue]))
+-&gt; sql
+-&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Identity (ByteString, [Maybe PgTextFormatValue])
+-&gt; (ByteString, [Maybe PgTextFormatValue])
+forall a. Identity a -&gt; a
+</span><span class="hs-identifier hs-var">runIdentity</span></span><span> </span><span class="annot"><span class="annottext">(Identity (ByteString, [Maybe PgTextFormatValue])
+ -&gt; (ByteString, [Maybe PgTextFormatValue]))
+-&gt; (sql -&gt; Identity (ByteString, [Maybe PgTextFormatValue]))
+-&gt; sql
+-&gt; (ByteString, [Maybe PgTextFormatValue])
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Quoting Identity
+-&gt; sql -&gt; Identity (ByteString, [Maybe PgTextFormatValue])
+forall sql (m :: * -&gt; *).
+(SqlExpression sql, Monad m) =&gt;
+Quoting m -&gt; sql -&gt; m (ByteString, [Maybe PgTextFormatValue])
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toBytesAndParams"><span class="hs-identifier hs-var">toBytesAndParams</span></a></span><span> </span><span class="annot"><span class="annottext">Quoting Identity
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#exampleQuoting"><span class="hs-identifier hs-var">exampleQuoting</span></a></span><span>
+</span><span id="line-240"></span><span>
+</span><span id="line-241"></span><span class="annot"><span class="hs-comment">{- |
+  This is an internal datatype used during the sql building process to track
+  how many params have been seen so that placeholder indices (e.g. '$1', etc)
+  can be generated to include in the sql.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-248"></span><span class="hs-keyword">data</span><span> </span><span id="ParamsProgress"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-var">ParamsProgress</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ParamsProgress"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-var">ParamsProgress</span></a></span></span><span>
+</span><span id="line-249"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="paramCount"><span class="annot"><span class="annottext">ParamsProgress -&gt; Int
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramCount"><span class="hs-identifier hs-var hs-var">paramCount</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-250"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="paramValues"><span class="annot"><span class="annottext">ParamsProgress -&gt; DList (Maybe PgTextFormatValue)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramValues"><span class="hs-identifier hs-var hs-var">paramValues</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">DList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#PgTextFormatValue"><span class="hs-identifier hs-type">PgTextFormatValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-251"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-252"></span><span>
+</span><span id="line-253"></span><span class="annot"><span class="hs-comment">{- |
+  An initial value for 'ParamsProgress' that indicates no params have been been
+  encountered yet.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-259"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#startingProgress"><span class="hs-identifier hs-type">startingProgress</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span>
+</span><span id="line-260"></span><span id="startingProgress"><span class="annot"><span class="annottext">startingProgress :: ParamsProgress
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#startingProgress"><span class="hs-identifier hs-var hs-var">startingProgress</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-261"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span>
+</span><span id="line-262"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">paramCount :: Int
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramCount"><span class="hs-identifier hs-var">paramCount</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-263"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">paramValues :: DList (Maybe PgTextFormatValue)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramValues"><span class="hs-identifier hs-var">paramValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DList (Maybe PgTextFormatValue)
+forall a. DList a
+</span><span class="hs-identifier hs-var">DList.empty</span></span><span>
+</span><span id="line-264"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-265"></span><span>
+</span><span id="line-266"></span><span class="annot"><span class="hs-comment">{- |
+  Adds a parameter value to the end of the params list, tracking the count
+  of parameters as it does so.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-272"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#snocParam"><span class="hs-identifier hs-type">snocParam</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTextFormatValue.html#PgTextFormatValue"><span class="hs-identifier hs-type">PgTextFormatValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span>
+</span><span id="line-273"></span><span id="snocParam"><span class="annot"><span class="annottext">snocParam :: ParamsProgress -&gt; Maybe PgTextFormatValue -&gt; ParamsProgress
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#snocParam"><span class="hs-identifier hs-var hs-var">snocParam</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span> </span><span id="local-6989586621679127907"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127907"><span class="hs-identifier hs-var">count</span></a></span></span><span> </span><span id="local-6989586621679127908"><span class="annot"><span class="annottext">DList (Maybe PgTextFormatValue)
+</span><a href="#local-6989586621679127908"><span class="hs-identifier hs-var">values</span></a></span></span><span class="hs-special">)</span><span> </span><span id="local-6989586621679127909"><span class="annot"><span class="annottext">Maybe PgTextFormatValue
+</span><a href="#local-6989586621679127909"><span class="hs-identifier hs-var">newValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-274"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span>
+</span><span id="line-275"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">paramCount :: Int
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramCount"><span class="hs-identifier hs-var">paramCount</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127907"><span class="hs-identifier hs-var">count</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-276"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">paramValues :: DList (Maybe PgTextFormatValue)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramValues"><span class="hs-identifier hs-var">paramValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DList (Maybe PgTextFormatValue)
+-&gt; Maybe PgTextFormatValue -&gt; DList (Maybe PgTextFormatValue)
+forall a. DList a -&gt; a -&gt; DList a
+</span><span class="hs-identifier hs-var">DList.snoc</span></span><span> </span><span class="annot"><span class="annottext">DList (Maybe PgTextFormatValue)
+</span><a href="#local-6989586621679127908"><span class="hs-identifier hs-var">values</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe PgTextFormatValue
+</span><a href="#local-6989586621679127909"><span class="hs-identifier hs-var">newValue</span></a></span><span>
+</span><span id="line-277"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-278"></span><span>
+</span><span id="line-279"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a bytestring builder that can be executed to get the bytes for a
+  section of 'RawSql'. This function takes and returns a 'ParamsProgress' so
+  that placeholder indices (e.g. '$1') and their corresponding parameter values
+  can be tracked across multiple sections of raw sql.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-287"></span><span id="local-6989586621679127739"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#buildSqlWithProgress"><span class="hs-identifier hs-type">buildSqlWithProgress</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-288"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621679127739"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-289"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Quoting"><span class="hs-identifier hs-type">Quoting</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127739"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-290"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-291"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-292"></span><span>  </span><span class="annot"><a href="#local-6989586621679127739"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">BSB.Builder</span></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#ParamsProgress"><span class="hs-identifier hs-type">ParamsProgress</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-293"></span><span id="buildSqlWithProgress"><span class="annot"><span class="annottext">buildSqlWithProgress :: forall (m :: * -&gt; *).
+Monad m =&gt;
+Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#buildSqlWithProgress"><span class="hs-identifier hs-var hs-var">buildSqlWithProgress</span></a></span></span><span> </span><span id="local-6989586621679127926"><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127926"><span class="hs-identifier hs-var">quoting</span></a></span></span><span> </span><span id="local-6989586621679127927"><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127927"><span class="hs-identifier hs-var">progress</span></a></span></span><span> </span><span id="local-6989586621679127928"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127928"><span class="hs-identifier hs-var">rawSql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-294"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127928"><span class="hs-identifier hs-var">rawSql</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-295"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-type">SqlSection</span></a></span><span> </span><span id="local-6989586621679127929"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127929"><span class="hs-identifier hs-var">builder</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-296"></span><span>      </span><span class="annot"><span class="annottext">(Builder, ParamsProgress) -&gt; m (Builder, ParamsProgress)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127929"><span class="hs-identifier hs-var">builder</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127927"><span class="hs-identifier hs-var">progress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-297"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#StringLiteral"><span class="hs-identifier hs-type">StringLiteral</span></a></span><span> </span><span id="local-6989586621679127930"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127930"><span class="hs-identifier hs-var">unquotedString</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-298"></span><span>      </span><span id="local-6989586621679127931"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127931"><span class="hs-identifier hs-var">quotedString</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Quoting m -&gt; ByteString -&gt; m Builder
+forall (m :: * -&gt; *). Quoting m -&gt; ByteString -&gt; m Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteStringLiteral"><span class="hs-identifier hs-var">quoteStringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127926"><span class="hs-identifier hs-var">quoting</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127930"><span class="hs-identifier hs-var">unquotedString</span></a></span><span>
+</span><span id="line-299"></span><span>      </span><span class="annot"><span class="annottext">(Builder, ParamsProgress) -&gt; m (Builder, ParamsProgress)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127931"><span class="hs-identifier hs-var">quotedString</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127927"><span class="hs-identifier hs-var">progress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-300"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span> </span><span id="local-6989586621679127932"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127932"><span class="hs-identifier hs-var">unquotedIdentifier</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-301"></span><span>      </span><span id="local-6989586621679127933"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127933"><span class="hs-identifier hs-var">quotedIdentifier</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Quoting m -&gt; ByteString -&gt; m Builder
+forall (m :: * -&gt; *). Quoting m -&gt; ByteString -&gt; m Builder
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#quoteIdentifier"><span class="hs-identifier hs-var">quoteIdentifier</span></a></span><span> </span><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127926"><span class="hs-identifier hs-var">quoting</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127932"><span class="hs-identifier hs-var">unquotedIdentifier</span></a></span><span>
+</span><span id="line-302"></span><span>      </span><span class="annot"><span class="annottext">(Builder, ParamsProgress) -&gt; m (Builder, ParamsProgress)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127933"><span class="hs-identifier hs-var">quotedIdentifier</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127927"><span class="hs-identifier hs-var">progress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-303"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Parameter"><span class="hs-identifier hs-type">Parameter</span></a></span><span> </span><span id="local-6989586621679127934"><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679127934"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-304"></span><span>      </span><span class="hs-keyword">let</span><span>
+</span><span id="line-305"></span><span>        </span><span id="local-6989586621679127935"><span class="annot"><span class="annottext">newProgress :: ParamsProgress
+</span><a href="#local-6989586621679127935"><span class="hs-identifier hs-var hs-var">newProgress</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ParamsProgress -&gt; Maybe PgTextFormatValue -&gt; ParamsProgress
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#snocParam"><span class="hs-identifier hs-var">snocParam</span></a></span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127927"><span class="hs-identifier hs-var">progress</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SqlValue -&gt; Maybe PgTextFormatValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toPgValue"><span class="hs-identifier hs-var">SqlValue.toPgValue</span></a></span><span> </span><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679127934"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-306"></span><span>        </span><span id="local-6989586621679127938"><span class="annot"><span class="annottext">placeholder :: Builder
+</span><a href="#local-6989586621679127938"><span class="hs-identifier hs-var hs-var">placeholder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.stringUtf8</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;$&quot;</span></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.intDec</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ParamsProgress -&gt; Int
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#paramCount"><span class="hs-identifier hs-var">paramCount</span></a></span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127935"><span class="hs-identifier hs-var">newProgress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-307"></span><span>      </span><span class="hs-keyword">in</span><span>
+</span><span id="line-308"></span><span>        </span><span class="annot"><span class="annottext">(Builder, ParamsProgress) -&gt; m (Builder, ParamsProgress)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127938"><span class="hs-identifier hs-var">placeholder</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127935"><span class="hs-identifier hs-var">newProgress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-309"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#Append"><span class="hs-identifier hs-type">Append</span></a></span><span> </span><span id="local-6989586621679127941"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127941"><span class="hs-identifier hs-var">first</span></a></span></span><span> </span><span id="local-6989586621679127942"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127942"><span class="hs-identifier hs-var">second</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-310"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621679127943"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127943"><span class="hs-identifier hs-var">firstBuilder</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127944"><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127944"><span class="hs-identifier hs-var">nextProgress</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+forall (m :: * -&gt; *).
+Monad m =&gt;
+Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#buildSqlWithProgress"><span class="hs-identifier hs-var">buildSqlWithProgress</span></a></span><span> </span><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127926"><span class="hs-identifier hs-var">quoting</span></a></span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127927"><span class="hs-identifier hs-var">progress</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127941"><span class="hs-identifier hs-var">first</span></a></span><span>
+</span><span id="line-311"></span><span>      </span><span class="hs-special">(</span><span id="local-6989586621679127945"><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127945"><span class="hs-identifier hs-var">secondBuilder</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127946"><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127946"><span class="hs-identifier hs-var">finalProgress</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+forall (m :: * -&gt; *).
+Monad m =&gt;
+Quoting m
+-&gt; ParamsProgress -&gt; RawSql -&gt; m (Builder, ParamsProgress)
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#buildSqlWithProgress"><span class="hs-identifier hs-var">buildSqlWithProgress</span></a></span><span> </span><span class="annot"><span class="annottext">Quoting m
+</span><a href="#local-6989586621679127926"><span class="hs-identifier hs-var">quoting</span></a></span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127944"><span class="hs-identifier hs-var">nextProgress</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127942"><span class="hs-identifier hs-var">second</span></a></span><span>
+</span><span id="line-312"></span><span>      </span><span class="annot"><span class="annottext">(Builder, ParamsProgress) -&gt; m (Builder, ParamsProgress)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127943"><span class="hs-identifier hs-var">firstBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679127945"><span class="hs-identifier hs-var">secondBuilder</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ParamsProgress
+</span><a href="#local-6989586621679127946"><span class="hs-identifier hs-var">finalProgress</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-313"></span><span>
+</span><span id="line-314"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from a 'String' value using utf8 encoding.
+
+  Note that because the string is treated as raw sql it completely up to the
+  caller to protected againt sql-injections attacks when using this function.
+  Never use this function with input read from an untrusted source.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-323"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-type">fromString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-324"></span><span id="fromString"><span class="annot"><span class="annottext">fromString :: String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var hs-var">fromString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-325"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (String -&gt; Builder) -&gt; String -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.stringUtf8</span></span><span>
+</span><span id="line-326"></span><span>
+</span><span id="line-327"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from a 'Text' value using utf8 encoding.
+
+  Note that because the text is treated as raw sql it completely up to the
+  caller to protected againt sql-injections attacks when using this function.
+  Never use this function with input read from an untrusted source.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-336"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#fromText"><span class="hs-identifier hs-type">fromText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-337"></span><span id="fromText"><span class="annot"><span class="annottext">fromText :: Text -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromText"><span class="hs-identifier hs-var hs-var">fromText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-338"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (Text -&gt; Builder) -&gt; Text -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Builder
+</span><span class="hs-identifier hs-var">TextEnc.encodeUtf8Builder</span></span><span>
+</span><span id="line-339"></span><span>
+</span><span id="line-340"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from a 'ByteString' value, which is assumed to be
+  encoded sensibly for the database to handle.
+
+  Note that because the string is treated as raw sql it completely up to the
+  caller to protected againt sql-injections attacks when using this function.
+  Never use this function with input read from an untrusted source.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-350"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#fromBytes"><span class="hs-identifier hs-type">fromBytes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-351"></span><span id="fromBytes"><span class="annot"><span class="annottext">fromBytes :: ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromBytes"><span class="hs-identifier hs-var hs-var">fromBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-352"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql)
+-&gt; (ByteString -&gt; Builder) -&gt; ByteString -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.byteString</span></span><span>
+</span><span id="line-353"></span><span>
+</span><span id="line-354"></span><span class="annot"><span class="hs-comment">{- |
+  Includes an input parameter in the 'RawSql' statement that will be passed
+  using placeholders (e.g. '$1') rather than being included directly in the sql
+  statement. This is the correct way to include input from untrusted sources as
+  part of a 'RawSql' query. The parameter must be formatted in a textual
+  representation, which the database will interpret. The database type for the
+  value will be inferred by the database based on its usage in the query.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-364"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-type">parameter</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-365"></span><span id="parameter"><span class="annot"><span class="annottext">parameter :: SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parameter"><span class="hs-identifier hs-var hs-var">parameter</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-366"></span><span>  </span><span class="annot"><span class="annottext">SqlValue -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#Parameter"><span class="hs-identifier hs-var">Parameter</span></a></span><span>
+</span><span id="line-367"></span><span>
+</span><span id="line-368"></span><span class="annot"><span class="hs-comment">{- |
+  Includes a bytestring value as string literal in the SQL statement. The
+  string literal will be quoted and escaped for you, the value provided should
+  not include surrounding quotes or quote special characters.
+
+  Note: It's better to use the 'parameter' function where possible to pass
+  values to be used as input to a SQL statement. There are some situations
+  where PostgreSQL does not allow this, however (for instance, in some DDL
+  statements). This function is provided for those situations.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-380"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-type">stringLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-381"></span><span id="stringLiteral"><span class="annot"><span class="annottext">stringLiteral :: ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var hs-var">stringLiteral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-382"></span><span>  </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#StringLiteral"><span class="hs-identifier hs-var">StringLiteral</span></a></span><span>
+</span><span id="line-383"></span><span>
+</span><span id="line-384"></span><span class="annot"><span class="hs-comment">{- |
+  Includes a bytestring value as an identifier in the SQL statement. The
+  identifier will be quoted and escaped for you, the value provided should not
+  include surrounding quotes or quote special characters.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-391"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#identifier"><span class="hs-identifier hs-type">identifier</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">BS.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-392"></span><span id="identifier"><span class="annot"><span class="annottext">identifier :: ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#identifier"><span class="hs-identifier hs-var hs-var">identifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-393"></span><span>  </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#Identifier"><span class="hs-identifier hs-var">Identifier</span></a></span><span>
+</span><span id="line-394"></span><span>
+</span><span id="line-395"></span><span class="annot"><span class="hs-comment">{- |
+  Concatenates a list of 'RawSql' values using another 'RawSql' value as
+  the a separator between the items.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-401"></span><span id="local-6989586621679127756"><span id="local-6989586621679127757"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-type">intercalate</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127756"><span class="hs-identifier hs-type">sql</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621679127757"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127757"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127756"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span></span></span><span>
+</span><span id="line-402"></span><span id="intercalate"><span class="annot"><span class="annottext">intercalate :: forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var hs-var">intercalate</span></a></span></span><span> </span><span id="local-6989586621679127953"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127953"><span class="hs-identifier hs-var">separator</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-403"></span><span>  </span><span class="annot"><span class="annottext">[RawSql] -&gt; RawSql
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span>
+</span><span id="line-404"></span><span>    </span><span class="annot"><span class="annottext">([RawSql] -&gt; RawSql) -&gt; (f sql -&gt; [RawSql]) -&gt; f sql -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; [RawSql]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.intersperse</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679127953"><span class="hs-identifier hs-var">separator</span></a></span><span>
+</span><span id="line-405"></span><span>    </span><span class="annot"><span class="annottext">([RawSql] -&gt; [RawSql]) -&gt; (f sql -&gt; [RawSql]) -&gt; f sql -&gt; [RawSql]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(sql -&gt; RawSql) -&gt; [sql] -&gt; [RawSql]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">sql -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">toRawSql</span></a></span><span>
+</span><span id="line-406"></span><span>    </span><span class="annot"><span class="annottext">([sql] -&gt; [RawSql]) -&gt; (f sql -&gt; [sql]) -&gt; f sql -&gt; [RawSql]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">f sql -&gt; [sql]
+forall a. f a -&gt; [a]
+forall (t :: * -&gt; *) a. Foldable t =&gt; t a -&gt; [a]
+</span><span class="hs-identifier hs-var">Fold.toList</span></span><span>
+</span><span id="line-407"></span><span>
+</span><span id="line-408"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a 'RawSql' value using the 'Conn.executeRaw' function. Make sure
+  to read the documentation of 'Conn.executeRaw' for caveats and warnings.
+  Use with caution.
+
+  Note that because this is done in 'IO' no callback functions are available to
+  be called.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-418"></span><span id="local-6989586621679127765"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#execute"><span class="hs-identifier hs-type">execute</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127765"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Conn.Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127765"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Result</span></span></span><span>
+</span><span id="line-419"></span><span id="execute"><span class="annot"><span class="annottext">execute :: forall sql. SqlExpression sql =&gt; Connection -&gt; sql -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#execute"><span class="hs-identifier hs-var hs-var">execute</span></a></span></span><span> </span><span id="local-6989586621679127962"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127962"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span id="local-6989586621679127963"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127963"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-420"></span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679127964"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127964"><span class="hs-identifier hs-var">sqlBytes</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127965"><span class="annot"><span class="annottext">[Maybe PgTextFormatValue]
+</span><a href="#local-6989586621679127965"><span class="hs-identifier hs-var">params</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Quoting IO -&gt; sql -&gt; IO (ByteString, [Maybe PgTextFormatValue])
+forall sql (m :: * -&gt; *).
+(SqlExpression sql, Monad m) =&gt;
+Quoting m -&gt; sql -&gt; m (ByteString, [Maybe PgTextFormatValue])
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toBytesAndParams"><span class="hs-identifier hs-var">toBytesAndParams</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Connection -&gt; Quoting IO
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#connectionQuoting"><span class="hs-identifier hs-var">connectionQuoting</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127962"><span class="hs-identifier hs-var">connection</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127963"><span class="hs-identifier hs-var">sql</span></a></span><span>
+</span><span id="line-421"></span><span>  </span><span class="annot"><span class="annottext">Connection -&gt; ByteString -&gt; [Maybe PgTextFormatValue] -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.Connection.html#executeRaw"><span class="hs-identifier hs-var">Conn.executeRaw</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127962"><span class="hs-identifier hs-var">connection</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127964"><span class="hs-identifier hs-var">sqlBytes</span></a></span><span> </span><span class="annot"><span class="annottext">[Maybe PgTextFormatValue]
+</span><a href="#local-6989586621679127965"><span class="hs-identifier hs-var">params</span></a></span><span>
+</span><span id="line-422"></span><span>
+</span><span id="line-423"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a 'RawSql' value using the 'Conn.executeRawVoid' function. Make sure
+  to read the documentation of 'Conn.executeRawVoid' for caveats and warnings.
+  Use with caution.
+
+  Note that because this is done in 'IO' no callback functions are available to
+  be called.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-433"></span><span id="local-6989586621679127768"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#executeVoid"><span class="hs-identifier hs-type">executeVoid</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127768"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Conn.Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127768"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-434"></span><span id="executeVoid"><span class="annot"><span class="annottext">executeVoid :: forall sql. SqlExpression sql =&gt; Connection -&gt; sql -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#executeVoid"><span class="hs-identifier hs-var hs-var">executeVoid</span></a></span></span><span> </span><span id="local-6989586621679127970"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127970"><span class="hs-identifier hs-var">connection</span></a></span></span><span> </span><span id="local-6989586621679127971"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127971"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-435"></span><span>  </span><span class="annot"><span class="annottext">IO Result -&gt; IO ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">(IO Result -&gt; IO ()) -&gt; IO Result -&gt; IO ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Connection -&gt; sql -&gt; IO Result
+forall sql. SqlExpression sql =&gt; Connection -&gt; sql -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#execute"><span class="hs-identifier hs-var">execute</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679127970"><span class="hs-identifier hs-var">connection</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127971"><span class="hs-identifier hs-var">sql</span></a></span><span>
+</span><span id="line-436"></span><span>
+</span><span id="line-437"></span><span class="annot"><span class="hs-comment">-- | Just a plain old space, provided for convenience</span></span><span>
+</span><span id="line-438"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-type">space</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-439"></span><span id="space"><span class="annot"><span class="annottext">space :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var hs-var">space</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; &quot;</span></span><span>
+</span><span id="line-440"></span><span>
+</span><span id="line-441"></span><span class="annot"><span class="hs-comment">-- | Just a plain old comma, provided for convenience</span></span><span>
+</span><span id="line-442"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-type">comma</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-443"></span><span id="comma"><span class="annot"><span class="annottext">comma :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var hs-var">comma</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;,&quot;</span></span><span>
+</span><span id="line-444"></span><span>
+</span><span id="line-445"></span><span class="annot"><span class="hs-comment">-- | Comma space separator, provided for convenience</span></span><span>
+</span><span id="line-446"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#commaSpace"><span class="hs-identifier hs-type">commaSpace</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-447"></span><span id="commaSpace"><span class="annot"><span class="annottext">commaSpace :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#commaSpace"><span class="hs-identifier hs-var hs-var">commaSpace</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;, &quot;</span></span><span>
+</span><span id="line-448"></span><span>
+</span><span id="line-449"></span><span class="annot"><span class="hs-comment">-- | Just a plain old left paren, provided for convenience</span></span><span>
+</span><span id="line-450"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-type">leftParen</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-451"></span><span id="leftParen"><span class="annot"><span class="annottext">leftParen :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var hs-var">leftParen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;(&quot;</span></span><span>
+</span><span id="line-452"></span><span>
+</span><span id="line-453"></span><span class="annot"><span class="hs-comment">-- | Just a plain old right paren, provided for convenience</span></span><span>
+</span><span id="line-454"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-type">rightParen</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-455"></span><span id="rightParen"><span class="annot"><span class="annottext">rightParen :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var hs-var">rightParen</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;)&quot;</span></span><span>
+</span><span id="line-456"></span><span>
+</span><span id="line-457"></span><span class="annot"><span class="hs-comment">-- | Just a plain period, provided for convenience</span></span><span>
+</span><span id="line-458"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#dot"><span class="hs-identifier hs-type">dot</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-459"></span><span id="dot"><span class="annot"><span class="annottext">dot :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#dot"><span class="hs-identifier hs-var hs-var">dot</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;.&quot;</span></span><span>
+</span><span id="line-460"></span><span>
+</span><span id="line-461"></span><span class="annot"><span class="hs-comment">-- | Just a plain double quote, provided for convenience</span></span><span>
+</span><span id="line-462"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#doubleQuote"><span class="hs-identifier hs-type">doubleQuote</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-463"></span><span id="doubleQuote"><span class="annot"><span class="annottext">doubleQuote :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#doubleQuote"><span class="hs-identifier hs-var hs-var">doubleQuote</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;\&quot;&quot;</span></span><span>
+</span><span id="line-464"></span><span>
+</span><span id="line-465"></span><span class="annot"><span class="hs-comment">-- | Just two colons, provided for convenience</span></span><span>
+</span><span id="line-466"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#doubleColon"><span class="hs-identifier hs-type">doubleColon</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-467"></span><span id="doubleColon"><span class="annot"><span class="annottext">doubleColon :: RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#doubleColon"><span class="hs-identifier hs-var hs-var">doubleColon</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::&quot;</span></span><span>
+</span><span id="line-468"></span><span>
+</span><span id="line-469"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from an 'Int.Int8' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-476"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int8DecLiteral"><span class="hs-identifier hs-type">int8DecLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int.Int8</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-477"></span><span id="int8DecLiteral"><span class="annot"><span class="annottext">int8DecLiteral :: Int8 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int8DecLiteral"><span class="hs-identifier hs-var hs-var">int8DecLiteral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-478"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (Int8 -&gt; Builder) -&gt; Int8 -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int8 -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.int8Dec</span></span><span>
+</span><span id="line-479"></span><span>
+</span><span id="line-480"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from an 'Int.Int16' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-487"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int16DecLiteral"><span class="hs-identifier hs-type">int16DecLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int.Int16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-488"></span><span id="int16DecLiteral"><span class="annot"><span class="annottext">int16DecLiteral :: Int16 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int16DecLiteral"><span class="hs-identifier hs-var hs-var">int16DecLiteral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-489"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (Int16 -&gt; Builder) -&gt; Int16 -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int16 -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.int16Dec</span></span><span>
+</span><span id="line-490"></span><span>
+</span><span id="line-491"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from an 'Int.Int32' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-498"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int32DecLiteral"><span class="hs-identifier hs-type">int32DecLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int.Int32</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-499"></span><span id="int32DecLiteral"><span class="annot"><span class="annottext">int32DecLiteral :: Int32 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int32DecLiteral"><span class="hs-identifier hs-var hs-var">int32DecLiteral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-500"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (Int32 -&gt; Builder) -&gt; Int32 -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.int32Dec</span></span><span>
+</span><span id="line-501"></span><span>
+</span><span id="line-502"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from an 'Int.Int64' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-509"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-type">int64DecLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int.Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-510"></span><span id="int64DecLiteral"><span class="annot"><span class="annottext">int64DecLiteral :: Int64 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-var hs-var">int64DecLiteral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-511"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (Int64 -&gt; Builder) -&gt; Int64 -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.int64Dec</span></span><span>
+</span><span id="line-512"></span><span>
+</span><span id="line-513"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' from an 'Int' value. The integral value is included
+  directly in the SQL string, not passed as a parameter. When dealing with user
+  input it is better to use 'parameter' rather whenever possible.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-520"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-type">intDecLiteral</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span><span>
+</span><span id="line-521"></span><span id="intDecLiteral"><span class="annot"><span class="annottext">intDecLiteral :: Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var hs-var">intDecLiteral</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-522"></span><span>  </span><span class="annot"><span class="annottext">Builder -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlSection"><span class="hs-identifier hs-var">SqlSection</span></a></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; RawSql) -&gt; (Int -&gt; Builder) -&gt; Int -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.intDec</span></span><span>
+</span><span id="line-523"></span><span>
+</span><span id="line-524"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'RawSql' by putting parentheses around an arbitrary expression.
+  The result is returned as a 'RawSql'. It is up to the caller to decide whether
+  it should be wrapped in a more specific expression type.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-531"></span><span id="local-6989586621679127976"><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#parenthesized"><span class="hs-identifier hs-type">parenthesized</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679127976"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127976"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql</span></a></span></span><span>
+</span><span id="line-532"></span><span id="parenthesized"><span class="annot"><span class="annottext">parenthesized :: forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#parenthesized"><span class="hs-identifier hs-var hs-var">parenthesized</span></a></span></span><span> </span><span id="local-6989586621679127981"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127981"><span class="hs-identifier hs-var">expr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-533"></span><span>  </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">leftParen</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">sql -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679127981"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">rightParen</span></a></span><span>
+</span><span id="line-534"></span></pre></body></html>

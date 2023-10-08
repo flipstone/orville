@@ -1,0 +1,66 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Plan.Explanation</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier">Explanation</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#noExplanation"><span class="hs-identifier">noExplanation</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#explainStep"><span class="hs-identifier">explainStep</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#explanationSteps"><span class="hs-identifier">explanationSteps</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">newtype</span><span> </span><span id="Explanation"><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-var">Explanation</span></a></span></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Explanation"><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-var">Explanation</span></a></span></span><span> </span><span class="hs-special">(</span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679126582"><span id="local-6989586621679126586"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>  </span><span id="local-6989586621679126591"><span class="annot"><span class="annottext">&lt;&gt; :: Explanation -&gt; Explanation -&gt; Explanation
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;&gt;)</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Explanation -&gt; Explanation -&gt; Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#appendExplanation"><span class="hs-identifier hs-var">appendExplanation</span></a></span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679126597"><span id="local-6989586621679126601"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>  </span><span id="local-6989586621679126604"><span class="annot"><span class="annottext">mempty :: Explanation
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">mempty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#noExplanation"><span class="hs-identifier hs-var">noExplanation</span></a></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#appendExplanation"><span class="hs-identifier hs-type">appendExplanation</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span>
+</span><span id="line-26"></span><span id="appendExplanation"><span class="annot"><span class="annottext">appendExplanation :: Explanation -&gt; Explanation -&gt; Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#appendExplanation"><span class="hs-identifier hs-var hs-var">appendExplanation</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span> </span><span id="local-6989586621679126605"><span class="annot"><span class="annottext">[String] -&gt; [String]
+</span><a href="#local-6989586621679126605"><span class="hs-identifier hs-var">front</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span> </span><span id="local-6989586621679126606"><span class="annot"><span class="annottext">[String] -&gt; [String]
+</span><a href="#local-6989586621679126606"><span class="hs-identifier hs-var">back</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-27"></span><span>  </span><span class="annot"><span class="annottext">([String] -&gt; [String]) -&gt; Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-var">Explanation</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[String] -&gt; [String]
+</span><a href="#local-6989586621679126605"><span class="hs-identifier hs-var">front</span></a></span><span> </span><span class="annot"><span class="annottext">([String] -&gt; [String])
+-&gt; ([String] -&gt; [String]) -&gt; [String] -&gt; [String]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; [String]
+</span><a href="#local-6989586621679126606"><span class="hs-identifier hs-var">back</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#noExplanation"><span class="hs-identifier hs-type">noExplanation</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span>
+</span><span id="line-30"></span><span id="noExplanation"><span class="annot"><span class="annottext">noExplanation :: Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#noExplanation"><span class="hs-identifier hs-var hs-var">noExplanation</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-31"></span><span>  </span><span class="annot"><span class="annottext">([String] -&gt; [String]) -&gt; Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-var">Explanation</span></a></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; [String]
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-32"></span><span>
+</span><span id="line-33"></span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#explainStep"><span class="hs-identifier hs-type">explainStep</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span>
+</span><span id="line-34"></span><span id="explainStep"><span class="annot"><span class="annottext">explainStep :: String -&gt; Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#explainStep"><span class="hs-identifier hs-var hs-var">explainStep</span></a></span></span><span> </span><span id="local-6989586621679126609"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126609"><span class="hs-identifier hs-var">str</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-35"></span><span>  </span><span class="annot"><span class="annottext">([String] -&gt; [String]) -&gt; Explanation
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-var">Explanation</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126609"><span class="hs-identifier hs-var">str</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; [String] -&gt; [String]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span>
+</span><span id="line-37"></span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#explanationSteps"><span class="hs-identifier hs-type">explanationSteps</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span>
+</span><span id="line-38"></span><span id="explanationSteps"><span class="annot"><span class="annottext">explanationSteps :: Explanation -&gt; [String]
+</span><a href="Orville.PostgreSQL.Plan.Explanation.html#explanationSteps"><span class="hs-identifier hs-var hs-var">explanationSteps</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Explanation.html#Explanation"><span class="hs-identifier hs-type">Explanation</span></a></span><span> </span><span id="local-6989586621679126610"><span class="annot"><span class="annottext">[String] -&gt; [String]
+</span><a href="#local-6989586621679126610"><span class="hs-identifier hs-var">prependTo</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-39"></span><span>  </span><span class="annot"><span class="annottext">[String] -&gt; [String]
+</span><a href="#local-6989586621679126610"><span class="hs-identifier hs-var">prependTo</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-40"></span></pre></body></html>

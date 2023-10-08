@@ -1,0 +1,14 @@
+dist
+.cabal-sandbox
+cabal.sandbox.config
+.DS_Store
+.stack-work/
+test-all-logs
+
+# Ignore TAGS file produced by emacs and vim.
+/TAGS
+session.vim
+
+# Ignore any local developer overrides to the docker-compose file
+docker-compose.override.yml
+docker-compose.tools-override.yml

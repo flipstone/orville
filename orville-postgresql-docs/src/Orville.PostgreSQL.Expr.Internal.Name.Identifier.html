@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Internal.Name.Identifier</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier">Identifier</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier">identifier</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifierFromBytes"><span class="hs-identifier">identifierFromBytes</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier">IdentifierExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#toIdentifier"><span class="hs-identifier">toIdentifier</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#fromIdentifier"><span class="hs-identifier">fromIdentifier</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B8</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL identifier. 'Identifier' values constructed via the
+'identifier' function will be properly escaped as part of the generated SQL.
+E.G.
+
+&gt; &quot;some_identifier&quot;
+
+'Identifer' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">newtype</span><span> </span><span id="Identifier"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-var">Identifier</span></a></span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Identifier"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-var">Identifier</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-38"></span><span>      </span><span id="local-6989586621679128128"><span id="local-6989586621679128133"><span class="annot"><span class="annottext">RawSql -&gt; Identifier
+Identifier -&gt; RawSql
+(Identifier -&gt; RawSql)
+-&gt; (RawSql -&gt; Identifier) -&gt; SqlExpression Identifier
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: Identifier -&gt; RawSql
+toRawSql :: Identifier -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; Identifier
+unsafeFromRawSql :: RawSql -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><span class="hs-comment">{- |
+Construct an 'Identifier' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-46"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier hs-type">identifier</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span>
+</span><span id="line-47"></span><span id="identifier"><span class="annot"><span class="annottext">identifier :: String -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier hs-var hs-var">identifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-48"></span><span>  </span><span class="annot"><span class="annottext">ByteString -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifierFromBytes"><span class="hs-identifier hs-var">identifierFromBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; Identifier)
+-&gt; (String -&gt; ByteString) -&gt; String -&gt; Identifier
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="annot"><span class="hs-comment">{- |
+Construct an 'Identifier' from a 'B8.ByteString' with proper escaping as part of the generated SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-55"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifierFromBytes"><span class="hs-identifier hs-type">identifierFromBytes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span>
+</span><span id="line-56"></span><span id="identifierFromBytes"><span class="annot"><span class="annottext">identifierFromBytes :: ByteString -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifierFromBytes"><span class="hs-identifier hs-var hs-var">identifierFromBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-57"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-var">Identifier</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Identifier)
+-&gt; (ByteString -&gt; RawSql) -&gt; ByteString -&gt; Identifier
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#identifier"><span class="hs-identifier hs-var">RawSql.identifier</span></a></span><span>
+</span><span id="line-58"></span><span>
+</span><span id="line-59"></span><span class="annot"><span class="hs-comment">{- | This class aids in giving additional polymorphism and so that many different identifiers can be
+created without being forced to only use the `Identifier` type.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-64"></span><span class="hs-keyword">class</span><span> </span><span id="IdentifierExpression"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier hs-var">IdentifierExpression</span></a></span></span><span> </span><span id="local-6989586621679128119"><span class="annot"><a href="#local-6989586621679128119"><span class="hs-identifier hs-type">name</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-comment">-- | @since 1.0.0.0</span><span>
+</span><span id="line-66"></span><span>  </span><span id="toIdentifier"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#toIdentifier"><span class="hs-identifier hs-type">toIdentifier</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679128119"><span class="hs-identifier hs-type">name</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span>  </span><span class="hs-comment">-- | @since 1.0.0.0</span><span>
+</span><span id="line-69"></span><span>  </span><span id="fromIdentifier"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#fromIdentifier"><span class="hs-identifier hs-type">fromIdentifier</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679128119"><span class="hs-identifier hs-type">name</span></a></span><span>
+</span><span id="line-70"></span><span>
+</span><span id="line-71"></span><span class="annot"><span class="hs-comment">{- |
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-75"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier hs-type">IdentifierExpression</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-76"></span><span>  </span><span id="local-6989586621679128145"><span class="annot"><span class="annottext">toIdentifier :: Identifier -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#toIdentifier"><span class="hs-identifier hs-var hs-var hs-var hs-var">toIdentifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; Identifier
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-77"></span><span>  </span><span id="local-6989586621679128147"><span class="annot"><span class="annottext">fromIdentifier :: Identifier -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#fromIdentifier"><span class="hs-identifier hs-var hs-var hs-var hs-var">fromIdentifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; Identifier
+forall a. a -&gt; a
+</span><span class="hs-identifier hs-var">id</span></span><span>
+</span><span id="line-78"></span></pre></body></html>

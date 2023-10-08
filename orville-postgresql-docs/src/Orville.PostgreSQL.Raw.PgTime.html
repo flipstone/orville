@@ -1,0 +1,552 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Raw.PgTime</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#dayToPostgreSQL"><span class="hs-identifier">dayToPostgreSQL</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#day"><span class="hs-identifier">day</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTimeToPostgreSQL"><span class="hs-identifier">utcTimeToPostgreSQL</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTime"><span class="hs-identifier">utcTime</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#localTimeToPostgreSQL"><span class="hs-identifier">localTimeToPostgreSQL</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#localTime"><span class="hs-identifier">localTime</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-16"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Attoparsec.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">AttoBS</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Attoparsec.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">AttoB8</span></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BS</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B8</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Char</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Char</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Fixed</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Fixed</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Time</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Word</span></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'Time.Day' value to a textual representation for PostgreSQL
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#dayToPostgreSQL"><span class="hs-identifier hs-type">dayToPostgreSQL</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.Day</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span>
+</span><span id="line-33"></span><span id="dayToPostgreSQL"><span class="annot"><span class="annottext">dayToPostgreSQL :: Day -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#dayToPostgreSQL"><span class="hs-identifier hs-var hs-var">dayToPostgreSQL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-34"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString) -&gt; (Day -&gt; String) -&gt; Day -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Day -&gt; String
+</span><span class="hs-identifier hs-var">Time.showGregorian</span></span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
+  fails if given an invalid day.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-42"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#day"><span class="hs-identifier hs-type">day</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.Day</span></span><span>
+</span><span id="line-43"></span><span id="day"><span class="annot"><span class="annottext">day :: Parser Day
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#day"><span class="hs-identifier hs-var hs-var">day</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679127368"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127368"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127369"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127369"><span class="hs-identifier hs-var">yearCount</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser (Integer, Integer)
+forall a. Integral a =&gt; Parser (a, a)
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#decimalWithCount"><span class="hs-identifier hs-var">decimalWithCount</span></a></span><span> </span><span class="annot"><span class="annottext">Parser (Integer, Integer)
+-&gt; Parser ByteString Char -&gt; Parser (Integer, Integer)
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'-'</span></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127369"><span class="hs-identifier hs-var">yearCount</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">4</span></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String -&gt; Parser Day
+forall a. String -&gt; Parser ByteString a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;invalid date format&quot;</span></span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-48"></span><span>      </span><span id="local-6989586621679127374"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127374"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span> </span><span class="annot"><span class="annottext">Parser Int -&gt; Parser ByteString Char -&gt; Parser Int
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'-'</span></span><span>
+</span><span id="line-49"></span><span>      </span><span id="local-6989586621679127376"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127376"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span>
+</span><span id="line-50"></span><span>      </span><span class="annot"><span class="annottext">Parser Day -&gt; (Day -&gt; Parser Day) -&gt; Maybe Day -&gt; Parser Day
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Parser Day
+forall a. String -&gt; Parser ByteString a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;invalid date format&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Day -&gt; Parser Day
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Day -&gt; Parser Day) -&gt; Maybe Day -&gt; Parser Day
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Int -&gt; Int -&gt; Maybe Day
+</span><span class="hs-identifier hs-var">Time.fromGregorianValid</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127368"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127374"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127376"><span class="hs-identifier hs-var">d</span></a></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing 2 digit integral numbers.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-57"></span><span id="local-6989586621679127206"><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-type">twoDigits</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679127206"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="annot"><a href="#local-6989586621679127206"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-58"></span><span id="twoDigits"><span class="annot"><span class="annottext">twoDigits :: forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var hs-var">twoDigits</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-59"></span><span>  </span><span id="local-6989586621679127392"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127392"><span class="hs-identifier hs-var">tens</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.digit</span></span><span>
+</span><span id="line-60"></span><span>  </span><span id="local-6989586621679127394"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127394"><span class="hs-identifier hs-var">ones</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.digit</span></span><span>
+</span><span id="line-61"></span><span>  </span><span class="annot"><span class="annottext">a -&gt; Parser a
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(a -&gt; Parser a) -&gt; a -&gt; Parser a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; a
+forall a. Integral a =&gt; Char -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#fromChar"><span class="hs-identifier hs-var">fromChar</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127392"><span class="hs-identifier hs-var">tens</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; a
+forall a. Integral a =&gt; Char -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#fromChar"><span class="hs-identifier hs-var">fromChar</span></a></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127394"><span class="hs-identifier hs-var">ones</span></a></span><span>
+</span><span id="line-62"></span><span>
+</span><span id="line-63"></span><span id="local-6989586621679127216"><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#fromChar"><span class="hs-identifier hs-type">fromChar</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679127216"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127216"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-64"></span><span id="fromChar"><span class="annot"><span class="annottext">fromChar :: forall a. Integral a =&gt; Char -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#fromChar"><span class="hs-identifier hs-var hs-var">fromChar</span></a></span></span><span> </span><span id="local-6989586621679127404"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127404"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a) -&gt; Int -&gt; a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Int
+</span><span class="hs-identifier hs-var">Char.ord</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127404"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Int
+</span><span class="hs-identifier hs-var">Char.ord</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'0'</span></span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTimeToPostgreSQL"><span class="hs-identifier hs-type">utcTimeToPostgreSQL</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.UTCTime</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span>
+</span><span id="line-72"></span><span id="utcTimeToPostgreSQL"><span class="annot"><span class="annottext">utcTimeToPostgreSQL :: UTCTime -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTimeToPostgreSQL"><span class="hs-identifier hs-var hs-var">utcTimeToPostgreSQL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString)
+-&gt; (UTCTime -&gt; String) -&gt; UTCTime -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TimeLocale -&gt; String -&gt; UTCTime -&gt; String
+forall t. FormatTime t =&gt; TimeLocale -&gt; String -&gt; t -&gt; String
+</span><span class="hs-identifier hs-var">Time.formatTime</span></span><span> </span><span class="annot"><span class="annottext">TimeLocale
+</span><span class="hs-identifier hs-var">Time.defaultTimeLocale</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;%0Y-%m-%d %H:%M:%S%Q+00&quot;</span></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing 'Time.UTCTime' from an ISO 8601 style
+  datetime and timezone with a few postgresql specific exceptions. See
+  localTime for more details
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-82"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTime"><span class="hs-identifier hs-type">utcTime</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.UTCTime</span></span><span>
+</span><span id="line-83"></span><span id="utcTime"><span class="annot"><span class="annottext">utcTime :: Parser UTCTime
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTime"><span class="hs-identifier hs-var hs-var">utcTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-84"></span><span>  </span><span id="local-6989586621679127409"><span class="annot"><span class="annottext">LocalTime
+</span><a href="#local-6989586621679127409"><span class="hs-identifier hs-var">lt</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser LocalTime
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#localTime"><span class="hs-identifier hs-var">localTime</span></a></span><span>
+</span><span id="line-85"></span><span>  </span><span id="local-6989586621679127410"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127410"><span class="hs-identifier hs-var">sign</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Char -&gt; Bool) -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.satisfy</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679127412"><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127412"><span class="hs-identifier hs-var">char</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127412"><span class="hs-identifier hs-var">char</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'+'</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127412"><span class="hs-identifier hs-var">char</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'-'</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Bool -&gt; Bool
+</span><span class="hs-operator hs-var">||</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127412"><span class="hs-identifier hs-var">char</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'Z'</span></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127410"><span class="hs-identifier hs-var">sign</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'Z'</span></span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">UTCTime -&gt; Parser UTCTime
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(UTCTime -&gt; Parser UTCTime) -&gt; UTCTime -&gt; Parser UTCTime
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TimeZone -&gt; LocalTime -&gt; UTCTime
+</span><span class="hs-identifier hs-var">Time.localTimeToUTC</span></span><span> </span><span class="annot"><span class="annottext">TimeZone
+</span><span class="hs-identifier hs-var">Time.utc</span></span><span> </span><span class="annot"><span class="annottext">LocalTime
+</span><a href="#local-6989586621679127409"><span class="hs-identifier hs-var">lt</span></a></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-89"></span><span>      </span><span id="local-6989586621679127416"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127416"><span class="hs-identifier hs-var">hour</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span>
+</span><span id="line-90"></span><span>      </span><span id="local-6989586621679127417"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127417"><span class="hs-identifier hs-var">minute</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Parser Int -&gt; Parser Int
+forall (f :: * -&gt; *) a. Alternative f =&gt; a -&gt; f a -&gt; f a
+</span><span class="hs-identifier hs-var">AttoB8.option</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">(Parser Int -&gt; Parser Int) -&gt; Parser Int -&gt; Parser Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Parser Int] -&gt; Parser Int
+forall (f :: * -&gt; *) a. Alternative f =&gt; [f a] -&gt; f a
+</span><span class="hs-identifier hs-var">AttoB8.choice</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">':'</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString Char -&gt; Parser Int -&gt; Parser Int
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f b
+</span><span class="hs-operator hs-var">*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-91"></span><span>      </span><span id="local-6989586621679127420"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127420"><span class="hs-identifier hs-var">second</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Parser Int -&gt; Parser Int
+forall (f :: * -&gt; *) a. Alternative f =&gt; a -&gt; f a -&gt; f a
+</span><span class="hs-identifier hs-var">AttoB8.option</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">(Parser Int -&gt; Parser Int) -&gt; Parser Int -&gt; Parser Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">':'</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString Char -&gt; Parser Int -&gt; Parser Int
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f b
+</span><span class="hs-operator hs-var">*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span>
+</span><span id="line-92"></span><span>      </span><span class="hs-keyword">let</span><span>
+</span><span id="line-93"></span><span>        </span><span class="annot"><a href="#local-6989586621679127421"><span class="hs-identifier hs-type">offsetSeconds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-94"></span><span>        </span><span id="local-6989586621679127421"><span class="annot"><span class="annottext">offsetSeconds :: Int
+</span><a href="#local-6989586621679127421"><span class="hs-identifier hs-var hs-var">offsetSeconds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127420"><span class="hs-identifier hs-var">second</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127417"><span class="hs-identifier hs-var">minute</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">60</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127416"><span class="hs-identifier hs-var">hour</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">3600</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Char
+</span><a href="#local-6989586621679127410"><span class="hs-identifier hs-var">sign</span></a></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Char -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'+'</span></span><span> </span><span class="hs-keyword">then</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-95"></span><span>        </span><span id="local-6989586621679127425"><span class="annot"><span class="annottext">offsetNominalDiffTime :: NominalDiffTime
+</span><a href="#local-6989586621679127425"><span class="hs-identifier hs-var hs-var">offsetNominalDiffTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; NominalDiffTime
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127421"><span class="hs-identifier hs-var">offsetSeconds</span></a></span><span>
+</span><span id="line-96"></span><span>        </span><span id="local-6989586621679127426"><span class="annot"><span class="annottext">diffTime :: DiffTime
+</span><a href="#local-6989586621679127426"><span class="hs-identifier hs-var hs-var">diffTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TimeOfDay -&gt; DiffTime
+</span><span class="hs-identifier hs-var">Time.timeOfDayToTime</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">LocalTime -&gt; TimeOfDay
+</span><span class="hs-identifier hs-var">Time.localTimeOfDay</span></span><span> </span><span class="annot"><span class="annottext">LocalTime
+</span><a href="#local-6989586621679127409"><span class="hs-identifier hs-var">lt</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>        </span><span id="local-6989586621679127429"><span class="annot"><span class="annottext">utcTimeWithoutOffset :: UTCTime
+</span><a href="#local-6989586621679127429"><span class="hs-identifier hs-var hs-var">utcTimeWithoutOffset</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Day -&gt; DiffTime -&gt; UTCTime
+</span><span class="hs-identifier hs-var">Time.UTCTime</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">LocalTime -&gt; Day
+</span><span class="hs-identifier hs-var">Time.localDay</span></span><span> </span><span class="annot"><span class="annottext">LocalTime
+</span><a href="#local-6989586621679127409"><span class="hs-identifier hs-var">lt</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">DiffTime
+</span><a href="#local-6989586621679127426"><span class="hs-identifier hs-var">diffTime</span></a></span><span>
+</span><span id="line-98"></span><span>      </span><span class="annot"><span class="annottext">UTCTime -&gt; Parser UTCTime
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(UTCTime -&gt; Parser UTCTime) -&gt; UTCTime -&gt; Parser UTCTime
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime -&gt; UTCTime -&gt; UTCTime
+</span><span class="hs-identifier hs-var">Time.addUTCTime</span></span><span> </span><span class="annot"><span class="annottext">NominalDiffTime
+</span><a href="#local-6989586621679127425"><span class="hs-identifier hs-var">offsetNominalDiffTime</span></a></span><span> </span><span class="annot"><span class="annottext">UTCTime
+</span><a href="#local-6989586621679127429"><span class="hs-identifier hs-var">utcTimeWithoutOffset</span></a></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="annot"><span class="hs-comment">{- |
+  Renders a 'Time.LocalTime value to a textual representation for PostgreSQL
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-105"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#localTimeToPostgreSQL"><span class="hs-identifier hs-type">localTimeToPostgreSQL</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.LocalTime</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span>
+</span><span id="line-106"></span><span id="localTimeToPostgreSQL"><span class="annot"><span class="annottext">localTimeToPostgreSQL :: LocalTime -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#localTimeToPostgreSQL"><span class="hs-identifier hs-var hs-var">localTimeToPostgreSQL</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-107"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ByteString)
+-&gt; (LocalTime -&gt; String) -&gt; LocalTime -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TimeLocale -&gt; String -&gt; LocalTime -&gt; String
+forall t. FormatTime t =&gt; TimeLocale -&gt; String -&gt; t -&gt; String
+</span><span class="hs-identifier hs-var">Time.formatTime</span></span><span> </span><span class="annot"><span class="annottext">TimeLocale
+</span><span class="hs-identifier hs-var">Time.defaultTimeLocale</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;%0Y-%m-%d %H:%M:%S%Q&quot;</span></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing 'Time.LocalTime' from an ISO 8601 style
+  datetime with a few exceptions. The seperator between the date and time
+  is always ' ' and never 'T'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-116"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#localTime"><span class="hs-identifier hs-type">localTime</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.LocalTime</span></span><span>
+</span><span id="line-117"></span><span id="localTime"><span class="annot"><span class="annottext">localTime :: Parser LocalTime
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#localTime"><span class="hs-identifier hs-var hs-var">localTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">Day -&gt; TimeOfDay -&gt; LocalTime
+</span><span class="hs-identifier hs-var">Time.LocalTime</span></span><span> </span><span class="annot"><span class="annottext">(Day -&gt; TimeOfDay -&gt; LocalTime)
+-&gt; Parser Day -&gt; Parser ByteString (TimeOfDay -&gt; LocalTime)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser Day
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#day"><span class="hs-identifier hs-var">day</span></a></span><span> </span><span class="annot"><span class="annottext">Parser ByteString (TimeOfDay -&gt; LocalTime)
+-&gt; Parser ByteString Char
+-&gt; Parser ByteString (TimeOfDay -&gt; LocalTime)
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">' '</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString (TimeOfDay -&gt; LocalTime)
+-&gt; Parser ByteString TimeOfDay -&gt; Parser LocalTime
+forall a b.
+Parser ByteString (a -&gt; b)
+-&gt; Parser ByteString a -&gt; Parser ByteString b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString TimeOfDay
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#timeOfDay"><span class="hs-identifier hs-var">timeOfDay</span></a></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO 8601 style time.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-125"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#timeOfDay"><span class="hs-identifier hs-type">timeOfDay</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.TimeOfDay</span></span><span>
+</span><span id="line-126"></span><span id="timeOfDay"><span class="annot"><span class="annottext">timeOfDay :: Parser ByteString TimeOfDay
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#timeOfDay"><span class="hs-identifier hs-var hs-var">timeOfDay</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621679127436"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127436"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span> </span><span class="annot"><span class="annottext">Parser Int -&gt; Parser ByteString Char -&gt; Parser Int
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f a
+</span><span class="hs-operator hs-var">&lt;*</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">':'</span></span><span>
+</span><span id="line-128"></span><span>  </span><span id="local-6989586621679127437"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127437"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Int
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span>
+</span><span id="line-129"></span><span>  </span><span id="local-6989586621679127438"><span class="annot"><span class="annottext">Pico
+</span><a href="#local-6989586621679127438"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Pico -&gt; Parser ByteString Pico -&gt; Parser ByteString Pico
+forall (f :: * -&gt; *) a. Alternative f =&gt; a -&gt; f a -&gt; f a
+</span><span class="hs-identifier hs-var">AttoB8.option</span></span><span> </span><span class="annot"><span class="annottext">Pico
+</span><span class="hs-number">0</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">':'</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString Char
+-&gt; Parser ByteString Pico -&gt; Parser ByteString Pico
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f b
+</span><span class="hs-operator hs-var">*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString Pico
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#seconds"><span class="hs-identifier hs-var">seconds</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-130"></span><span>  </span><span class="annot"><span class="annottext">Parser ByteString TimeOfDay
+-&gt; (TimeOfDay -&gt; Parser ByteString TimeOfDay)
+-&gt; Maybe TimeOfDay
+-&gt; Parser ByteString TimeOfDay
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; Parser ByteString TimeOfDay
+forall a. String -&gt; Parser ByteString a
+forall (m :: * -&gt; *) a. MonadFail m =&gt; String -&gt; m a
+</span><span class="hs-identifier hs-var">fail</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;invalid time format&quot;</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">TimeOfDay -&gt; Parser ByteString TimeOfDay
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Maybe TimeOfDay -&gt; Parser ByteString TimeOfDay)
+-&gt; Maybe TimeOfDay -&gt; Parser ByteString TimeOfDay
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Pico -&gt; Maybe TimeOfDay
+</span><span class="hs-identifier hs-var">Time.makeTimeOfDayValid</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127436"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679127437"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="annot"><span class="annottext">Pico
+</span><a href="#local-6989586621679127438"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing a base 10 number and returns the number of
+  digits consumed. Based off of AttoB8.decimal.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-138"></span><span id="local-6989586621679127199"><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#decimalWithCount"><span class="hs-identifier hs-type">decimalWithCount</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679127199"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679127199"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679127199"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-139"></span><span id="decimalWithCount"><span class="annot"><span class="annottext">decimalWithCount :: forall a. Integral a =&gt; Parser (a, a)
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#decimalWithCount"><span class="hs-identifier hs-var hs-var">decimalWithCount</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-140"></span><span>  </span><span id="local-6989586621679127450"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127450"><span class="hs-identifier hs-var">wrds</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Word8 -&gt; Bool) -&gt; Parser ByteString
+</span><span class="hs-identifier hs-var">AttoBS.takeWhile1</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Bool
+</span><span class="hs-identifier hs-var">AttoB8.isDigit_w8</span></span><span>
+</span><span id="line-141"></span><span>  </span><span class="annot"><span class="annottext">(a, a) -&gt; Parser (a, a)
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; Word8 -&gt; a) -&gt; a -&gt; ByteString -&gt; a
+forall a. (a -&gt; Word8 -&gt; a) -&gt; a -&gt; ByteString -&gt; a
+</span><span class="hs-identifier hs-var">BS.foldl'</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; Word8 -&gt; a
+forall a. Integral a =&gt; a -&gt; Word8 -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#appendDigit"><span class="hs-identifier hs-var">appendDigit</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">0</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127450"><span class="hs-identifier hs-var">wrds</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Int -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; a) -&gt; Int -&gt; a
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; Int
+</span><span class="hs-identifier hs-var">BS.length</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679127450"><span class="hs-identifier hs-var">wrds</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span id="local-6989586621679127241"><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#appendDigit"><span class="hs-identifier hs-type">appendDigit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679127241"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127241"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word.Word8</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679127241"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-144"></span><span id="appendDigit"><span class="annot"><span class="annottext">appendDigit :: forall a. Integral a =&gt; a -&gt; Word8 -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#appendDigit"><span class="hs-identifier hs-var hs-var">appendDigit</span></a></span></span><span> </span><span id="local-6989586621679127468"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679127468"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621679127469"><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679127469"><span class="hs-identifier hs-var">w</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679127468"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; a
+forall a b. (Integral a, Num b) =&gt; a -&gt; b
+</span><span class="hs-identifier hs-var">fromIntegral</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word8
+</span><a href="#local-6989586621679127469"><span class="hs-identifier hs-var">w</span></a></span><span> </span><span class="annot"><span class="annottext">Word8 -&gt; Word8 -&gt; Word8
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Word8
+</span><span class="hs-number">48</span></span><span class="hs-special">)</span><span>
+</span><span id="line-145"></span><span>
+</span><span id="line-146"></span><span class="annot"><span class="hs-comment">{- |
+  An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
+  handle more resolution than postgres uses, and will truncate the seconds
+  fraction if more than 12 digits are present.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-153"></span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html#seconds"><span class="hs-identifier hs-type">seconds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoB8.Parser</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Fixed.Pico</span></span><span>
+</span><span id="line-154"></span><span id="seconds"><span class="annot"><span class="annottext">seconds :: Parser ByteString Pico
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#seconds"><span class="hs-identifier hs-var hs-var">seconds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-155"></span><span>  </span><span id="local-6989586621679127470"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127470"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Integer
+forall a. Integral a =&gt; Parser a
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#twoDigits"><span class="hs-identifier hs-var">twoDigits</span></a></span><span>
+</span><span id="line-156"></span><span>  </span><span class="hs-special">(</span><span id="local-6989586621679127471"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127471"><span class="hs-identifier hs-var">dec</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679127472"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127472"><span class="hs-identifier hs-var">charCount</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">(Integer, Integer)
+-&gt; Parser (Integer, Integer) -&gt; Parser (Integer, Integer)
+forall (f :: * -&gt; *) a. Alternative f =&gt; a -&gt; f a -&gt; f a
+</span><span class="hs-identifier hs-var">AttoB8.option</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">0</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Parser ByteString Char
+</span><span class="hs-identifier hs-var">AttoB8.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'.'</span></span><span> </span><span class="annot"><span class="annottext">Parser ByteString Char
+-&gt; Parser (Integer, Integer) -&gt; Parser (Integer, Integer)
+forall a b.
+Parser ByteString a -&gt; Parser ByteString b -&gt; Parser ByteString b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f a -&gt; f b -&gt; f b
+</span><span class="hs-operator hs-var">*&gt;</span></span><span> </span><span class="annot"><span class="annottext">Parser (Integer, Integer)
+forall a. Integral a =&gt; Parser (a, a)
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#decimalWithCount"><span class="hs-identifier hs-var">decimalWithCount</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127472"><span class="hs-identifier hs-var">charCount</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;=</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">12</span></span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Pico -&gt; Parser ByteString Pico
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Pico -&gt; Parser ByteString Pico) -&gt; Pico -&gt; Parser ByteString Pico
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Pico
+forall k (a :: k). Integer -&gt; Fixed a
+</span><span class="hs-identifier hs-var">Fixed.MkFixed</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Pico) -&gt; Integer -&gt; Pico
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127470"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Int -&gt; Integer
+forall a b. (Num a, Integral b) =&gt; a -&gt; b -&gt; a
+</span><span class="hs-operator hs-var">^</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">12</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127471"><span class="hs-identifier hs-var">dec</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Integral a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`div`</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a b. (Num a, Integral b) =&gt; a -&gt; b -&gt; a
+</span><span class="hs-operator hs-var">^</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127472"><span class="hs-identifier hs-var">charCount</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">12</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-159"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Pico -&gt; Parser ByteString Pico
+forall a. a -&gt; Parser ByteString a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(Pico -&gt; Parser ByteString Pico) -&gt; Pico -&gt; Parser ByteString Pico
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Pico
+forall k (a :: k). Integer -&gt; Fixed a
+</span><span class="hs-identifier hs-var">Fixed.MkFixed</span></span><span> </span><span class="annot"><span class="annottext">(Integer -&gt; Pico) -&gt; Integer -&gt; Pico
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127470"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Int -&gt; Integer
+forall a b. (Num a, Integral b) =&gt; a -&gt; b -&gt; a
+</span><span class="hs-operator hs-var">^</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">12</span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127471"><span class="hs-identifier hs-var">dec</span></a></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">*</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">10</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a b. (Num a, Integral b) =&gt; a -&gt; b -&gt; a
+</span><span class="hs-operator hs-var">^</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-number">12</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Integer -&gt; Integer
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621679127472"><span class="hs-identifier hs-var">charCount</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-160"></span></pre></body></html>

@@ -1,0 +1,1115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgConstraint</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier">PgConstraint</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintType"><span class="hs-identifier">ConstraintType</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier">ConstraintName</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNameToString"><span class="hs-identifier">constraintNameToString</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintTable"><span class="hs-identifier">pgConstraintTable</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintRelationOidField"><span class="hs-identifier">constraintRelationOidField</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Attoparsec.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">AttoText</span></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.List</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">List</span></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">String</span></span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LT</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Lazy.Builder</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LTB</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.html"><span class="hs-identifier">Orville.PostgreSQL</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Orville</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.OidField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier">oidField</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier">oidTypeField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgAttribute</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier">AttributeNumber</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberParser"><span class="hs-identifier">attributeNumberParser</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTextBuilder"><span class="hs-identifier">attributeNumberTextBuilder</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="annot"><span class="hs-comment">{- |
+  The Haskell representation of data read from the @pg_catalog.pg_constraint@
+  tale. Rows in this table correspond to check, primary key, unique, foreign
+  key and exclusion constraints on tables.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">data</span><span> </span><span id="PgConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-var">PgConstraint</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="PgConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-var">PgConstraint</span></a></span></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="pgConstraintOid"><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintOid"><span class="hs-identifier hs-var hs-var">pgConstraintOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The PostgreSQL @oid@ for the constraint</span></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintName"><span class="annot"><span class="annottext">PgConstraint -&gt; ConstraintName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintName"><span class="hs-identifier hs-var hs-var">pgConstraintName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier hs-type">ConstraintName</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The constraint name (which may not be unique)</span></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintNamespaceOid"><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintNamespaceOid"><span class="hs-identifier hs-var hs-var">pgConstraintNamespaceOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-45"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The oid of the namespace that contains the constraint</span></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintType"><span class="annot"><span class="annottext">PgConstraint -&gt; ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintType"><span class="hs-identifier hs-var hs-var">pgConstraintType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintType"><span class="hs-identifier hs-type">ConstraintType</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The type of constraint</span></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintRelationOid"><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintRelationOid"><span class="hs-identifier hs-var hs-var">pgConstraintRelationOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ of the table that the constraint is on</span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-comment">-- (or @0@ if not a table constraint)</span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintIndexOid"><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintIndexOid"><span class="hs-identifier hs-var hs-var">pgConstraintIndexOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a</span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-comment">-- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.</span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintKey"><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintKey"><span class="hs-identifier hs-var hs-var">pgConstraintKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-comment">-- ^ For table constraints, the attribute numbers of the constrained columns. These</span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-comment">-- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.</span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintForeignRelationOid"><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignRelationOid"><span class="hs-identifier hs-var hs-var">pgConstraintForeignRelationOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-58"></span><span>  </span><span class="hs-comment">-- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the</span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-comment">-- foreign key references</span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintForeignKey"><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignKey"><span class="hs-identifier hs-var hs-var">pgConstraintForeignKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-comment">-- ^ For foreignkey constraints, the attribute numbers of the referenced columns. These</span><span>
+</span><span id="line-62"></span><span>  </span><span class="hs-comment">-- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.</span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintForeignKeyOnUpdateType"><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignKeyOnUpdateType"><span class="hs-identifier hs-var hs-var">pgConstraintForeignKeyOnUpdateType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">Orville.ForeignKeyAction</span></a></span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ For foreignkey constraints, the on update action type</span></span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgConstraintForeignKeyOnDeleteType"><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignKeyOnDeleteType"><span class="hs-identifier hs-var hs-var">pgConstraintForeignKeyOnDeleteType</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">Orville.ForeignKeyAction</span></a></span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ For foreignkey constraints, the on delete action type</span></span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">{- |
+  A Haskell type for the name of the constraint represented by a 'PgConstraint'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-74"></span><span class="hs-keyword">newtype</span><span> </span><span id="ConstraintName"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier hs-var">ConstraintName</span></a></span></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ConstraintName"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier hs-var">ConstraintName</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679141466"><span id="local-6989586621679141472"><span id="local-6989586621679141476"><span class="annot"><span class="annottext">Int -&gt; ConstraintName -&gt; ShowS
+[ConstraintName] -&gt; ShowS
+ConstraintName -&gt; String
+(Int -&gt; ConstraintName -&gt; ShowS)
+-&gt; (ConstraintName -&gt; String)
+-&gt; ([ConstraintName] -&gt; ShowS)
+-&gt; Show ConstraintName
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ConstraintName -&gt; ShowS
+showsPrec :: Int -&gt; ConstraintName -&gt; ShowS
+$cshow :: ConstraintName -&gt; String
+show :: ConstraintName -&gt; String
+$cshowList :: [ConstraintName] -&gt; ShowS
+showList :: [ConstraintName] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141480"><span id="local-6989586621679141485"><span class="annot"><span class="annottext">ConstraintName -&gt; ConstraintName -&gt; Bool
+(ConstraintName -&gt; ConstraintName -&gt; Bool)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; Bool) -&gt; Eq ConstraintName
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ConstraintName -&gt; ConstraintName -&gt; Bool
+== :: ConstraintName -&gt; ConstraintName -&gt; Bool
+$c/= :: ConstraintName -&gt; ConstraintName -&gt; Bool
+/= :: ConstraintName -&gt; ConstraintName -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141493"><span id="local-6989586621679141498"><span id="local-6989586621679141502"><span id="local-6989586621679141506"><span id="local-6989586621679141510"><span id="local-6989586621679141514"><span id="local-6989586621679141518"><span class="annot"><span class="annottext">Eq ConstraintName
+Eq ConstraintName
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; Ordering)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; Bool)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; Bool)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; Bool)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; Bool)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; ConstraintName)
+-&gt; (ConstraintName -&gt; ConstraintName -&gt; ConstraintName)
+-&gt; Ord ConstraintName
+ConstraintName -&gt; ConstraintName -&gt; Bool
+ConstraintName -&gt; ConstraintName -&gt; Ordering
+ConstraintName -&gt; ConstraintName -&gt; ConstraintName
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: ConstraintName -&gt; ConstraintName -&gt; Ordering
+compare :: ConstraintName -&gt; ConstraintName -&gt; Ordering
+$c&lt; :: ConstraintName -&gt; ConstraintName -&gt; Bool
+&lt; :: ConstraintName -&gt; ConstraintName -&gt; Bool
+$c&lt;= :: ConstraintName -&gt; ConstraintName -&gt; Bool
+&lt;= :: ConstraintName -&gt; ConstraintName -&gt; Bool
+$c&gt; :: ConstraintName -&gt; ConstraintName -&gt; Bool
+&gt; :: ConstraintName -&gt; ConstraintName -&gt; Bool
+$c&gt;= :: ConstraintName -&gt; ConstraintName -&gt; Bool
+&gt;= :: ConstraintName -&gt; ConstraintName -&gt; Bool
+$cmax :: ConstraintName -&gt; ConstraintName -&gt; ConstraintName
+max :: ConstraintName -&gt; ConstraintName -&gt; ConstraintName
+$cmin :: ConstraintName -&gt; ConstraintName -&gt; ConstraintName
+min :: ConstraintName -&gt; ConstraintName -&gt; ConstraintName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141524"><span class="annot"><span class="annottext">String -&gt; ConstraintName
+(String -&gt; ConstraintName) -&gt; IsString ConstraintName
+forall a. (String -&gt; a) -&gt; IsString a
+$cfromString :: String -&gt; ConstraintName
+fromString :: String -&gt; ConstraintName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">String.IsString</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><span class="hs-comment">{- |
+  Converts an 'ConstraintName' to a plain old string
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-83"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNameToString"><span class="hs-identifier hs-type">constraintNameToString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier hs-type">ConstraintName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-84"></span><span id="constraintNameToString"><span class="annot"><span class="annottext">constraintNameToString :: ConstraintName -&gt; String
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNameToString"><span class="hs-identifier hs-var hs-var">constraintNameToString</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier hs-type">ConstraintName</span></a></span><span> </span><span id="local-6989586621679141530"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141530"><span class="hs-identifier hs-var">txt</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141530"><span class="hs-identifier hs-var">txt</span></a></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><span class="hs-comment">{- |
+  The type of constraint that a 'PgConstraint' represents, as described at
+  https://www.postgresql.org/docs/13/catalog-pg-constraint.html
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-93"></span><span class="hs-keyword">data</span><span> </span><span id="ConstraintType"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintType"><span class="hs-identifier hs-var">ConstraintType</span></a></span></span><span>
+</span><span id="line-94"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CheckConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#CheckConstraint"><span class="hs-identifier hs-var">CheckConstraint</span></a></span></span><span>
+</span><span id="line-95"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="ForeignKeyConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ForeignKeyConstraint"><span class="hs-identifier hs-var">ForeignKeyConstraint</span></a></span></span><span>
+</span><span id="line-96"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="PrimaryKeyConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PrimaryKeyConstraint"><span class="hs-identifier hs-var">PrimaryKeyConstraint</span></a></span></span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="UniqueConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#UniqueConstraint"><span class="hs-identifier hs-var">UniqueConstraint</span></a></span></span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="ConstraintTrigger"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintTrigger"><span class="hs-identifier hs-var">ConstraintTrigger</span></a></span></span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="ExclusionConstraint"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ExclusionConstraint"><span class="hs-identifier hs-var">ExclusionConstraint</span></a></span></span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679141539"><span id="local-6989586621679141541"><span id="local-6989586621679141545"><span class="annot"><span class="annottext">Int -&gt; ConstraintType -&gt; ShowS
+[ConstraintType] -&gt; ShowS
+ConstraintType -&gt; String
+(Int -&gt; ConstraintType -&gt; ShowS)
+-&gt; (ConstraintType -&gt; String)
+-&gt; ([ConstraintType] -&gt; ShowS)
+-&gt; Show ConstraintType
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ConstraintType -&gt; ShowS
+showsPrec :: Int -&gt; ConstraintType -&gt; ShowS
+$cshow :: ConstraintType -&gt; String
+show :: ConstraintType -&gt; String
+$cshowList :: [ConstraintType] -&gt; ShowS
+showList :: [ConstraintType] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141548"><span id="local-6989586621679141550"><span class="annot"><span class="annottext">ConstraintType -&gt; ConstraintType -&gt; Bool
+(ConstraintType -&gt; ConstraintType -&gt; Bool)
+-&gt; (ConstraintType -&gt; ConstraintType -&gt; Bool) -&gt; Eq ConstraintType
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: ConstraintType -&gt; ConstraintType -&gt; Bool
+== :: ConstraintType -&gt; ConstraintType -&gt; Bool
+$c/= :: ConstraintType -&gt; ConstraintType -&gt; Bool
+/= :: ConstraintType -&gt; ConstraintType -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'ConstraintType' to the corresponding single character text
+  representation used by PostgreSQL.
+
+  See also 'pgTextToConstraintType'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-110"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintTypeToPgText"><span class="hs-identifier hs-type">constraintTypeToPgText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintType"><span class="hs-identifier hs-type">ConstraintType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-111"></span><span id="constraintTypeToPgText"><span class="annot"><span class="annottext">constraintTypeToPgText :: ConstraintType -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintTypeToPgText"><span class="hs-identifier hs-var hs-var">constraintTypeToPgText</span></a></span></span><span> </span><span id="local-6989586621679141555"><span class="annot"><span class="annottext">ConstraintType
+</span><a href="#local-6989586621679141555"><span class="hs-identifier hs-var">conType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-112"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="#local-6989586621679141555"><span class="hs-identifier hs-var">conType</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-114"></span><span>      </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#CheckConstraint"><span class="hs-identifier hs-var">CheckConstraint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;c&quot;</span></span><span>
+</span><span id="line-115"></span><span>      </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ForeignKeyConstraint"><span class="hs-identifier hs-var">ForeignKeyConstraint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;f&quot;</span></span><span>
+</span><span id="line-116"></span><span>      </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PrimaryKeyConstraint"><span class="hs-identifier hs-var">PrimaryKeyConstraint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;p&quot;</span></span><span>
+</span><span id="line-117"></span><span>      </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#UniqueConstraint"><span class="hs-identifier hs-var">UniqueConstraint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;u&quot;</span></span><span>
+</span><span id="line-118"></span><span>      </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintTrigger"><span class="hs-identifier hs-var">ConstraintTrigger</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;t&quot;</span></span><span>
+</span><span id="line-119"></span><span>      </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ExclusionConstraint"><span class="hs-identifier hs-var">ExclusionConstraint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;x&quot;</span></span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="annot"><span class="hs-comment">{- |
+  Attempts to parse a PostgreSQL single character textual value as a
+  'ConstraintType'
+
+  See also 'constraintTypeToPgText'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-129"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToConstraintType"><span class="hs-identifier hs-type">pgTextToConstraintType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintType"><span class="hs-identifier hs-type">ConstraintType</span></a></span><span>
+</span><span id="line-130"></span><span id="pgTextToConstraintType"><span class="annot"><span class="annottext">pgTextToConstraintType :: Text -&gt; Either String ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToConstraintType"><span class="hs-identifier hs-var hs-var">pgTextToConstraintType</span></a></span></span><span> </span><span id="local-6989586621679141557"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141557"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-131"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141557"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-132"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;c&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Either String ConstraintType
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#CheckConstraint"><span class="hs-identifier hs-var">CheckConstraint</span></a></span><span>
+</span><span id="line-133"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;f&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Either String ConstraintType
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ForeignKeyConstraint"><span class="hs-identifier hs-var">ForeignKeyConstraint</span></a></span><span>
+</span><span id="line-134"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;p&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Either String ConstraintType
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PrimaryKeyConstraint"><span class="hs-identifier hs-var">PrimaryKeyConstraint</span></a></span><span>
+</span><span id="line-135"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;u&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Either String ConstraintType
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#UniqueConstraint"><span class="hs-identifier hs-var">UniqueConstraint</span></a></span><span>
+</span><span id="line-136"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;t&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Either String ConstraintType
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintTrigger"><span class="hs-identifier hs-var">ConstraintTrigger</span></a></span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;x&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Either String ConstraintType
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ExclusionConstraint"><span class="hs-identifier hs-var">ExclusionConstraint</span></a></span><span>
+</span><span id="line-138"></span><span>    </span><span id="local-6989586621679141558"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679141558"><span class="hs-identifier hs-var">typ</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String ConstraintType
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unrecognized PostgreSQL constraint type: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679141558"><span class="hs-identifier hs-var">typ</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'Maybe Orville.ForeignKeyAction' to the corresponding single character
+  text representation used by PostgreSQL.
+
+  See also 'pgTextToForeignKeyAction'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#foreignKeyActionToPgText"><span class="hs-identifier hs-type">foreignKeyActionToPgText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">Orville.ForeignKeyAction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-149"></span><span id="foreignKeyActionToPgText"><span class="annot"><span class="annottext">foreignKeyActionToPgText :: Maybe ForeignKeyAction -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#foreignKeyActionToPgText"><span class="hs-identifier hs-var hs-var">foreignKeyActionToPgText</span></a></span></span><span> </span><span id="local-6989586621679141561"><span class="annot"><span class="annottext">Maybe ForeignKeyAction
+</span><a href="#local-6989586621679141561"><span class="hs-identifier hs-var">mbfkAction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-150"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; Text
+</span><span class="hs-identifier hs-var">T.pack</span></span><span> </span><span class="annot"><span class="annottext">(String -&gt; Text) -&gt; String -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-151"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction
+</span><a href="#local-6989586621679141561"><span class="hs-identifier hs-var">mbfkAction</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-152"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#NoAction"><span class="hs-identifier hs-var">Orville.NoAction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;a&quot;</span></span><span>
+</span><span id="line-153"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Restrict"><span class="hs-identifier hs-var">Orville.Restrict</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;r&quot;</span></span><span>
+</span><span id="line-154"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Cascade"><span class="hs-identifier hs-var">Orville.Cascade</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;c&quot;</span></span><span>
+</span><span id="line-155"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetNull"><span class="hs-identifier hs-var">Orville.SetNull</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;n&quot;</span></span><span>
+</span><span id="line-156"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetDefault"><span class="hs-identifier hs-var">Orville.SetDefault</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;d&quot;</span></span><span>
+</span><span id="line-157"></span><span>      </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; &quot;</span></span><span>
+</span><span id="line-158"></span><span>
+</span><span id="line-159"></span><span class="annot"><span class="hs-comment">{- |
+  Attempts to parse a PostgreSQL single character textual value as a
+  'Maybe Orville.ForeignKeyAction'
+
+  See also 'foreignKeyActionToPgText'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-167"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToForeignKeyAction"><span class="hs-identifier hs-type">pgTextToForeignKeyAction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">Orville.ForeignKeyAction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-168"></span><span id="pgTextToForeignKeyAction"><span class="annot"><span class="annottext">pgTextToForeignKeyAction :: Text -&gt; Either String (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToForeignKeyAction"><span class="hs-identifier hs-var hs-var">pgTextToForeignKeyAction</span></a></span></span><span> </span><span id="local-6989586621679141567"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141567"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-169"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141567"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-170"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;a&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#NoAction"><span class="hs-identifier hs-var">Orville.NoAction</span></a></span><span>
+</span><span id="line-171"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;r&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Restrict"><span class="hs-identifier hs-var">Orville.Restrict</span></a></span><span>
+</span><span id="line-172"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;c&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#Cascade"><span class="hs-identifier hs-var">Orville.Cascade</span></a></span><span>
+</span><span id="line-173"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;n&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetNull"><span class="hs-identifier hs-var">Orville.SetNull</span></a></span><span>
+</span><span id="line-174"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;d&quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction -&gt; Maybe ForeignKeyAction
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyAction
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#SetDefault"><span class="hs-identifier hs-var">Orville.SetDefault</span></a></span><span>
+</span><span id="line-175"></span><span>    </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; &quot;</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-176"></span><span>    </span><span id="local-6989586621679141568"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679141568"><span class="hs-identifier hs-var">typ</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String (Maybe ForeignKeyAction)
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unrecognized PostgreSQL foreign key action type: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679141568"><span class="hs-identifier hs-var">typ</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-177"></span><span>
+</span><span id="line-178"></span><span class="annot"><span class="hs-comment">{- |
+  An Orville 'Orville.TableDefinition' for querying the
+  @pg_catalog.pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-184"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintTable"><span class="hs-identifier hs-type">pgConstraintTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">Orville.TableDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-type">Orville.HasKey</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-type">PgConstraint</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-type">PgConstraint</span></a></span><span>
+</span><span id="line-185"></span><span id="pgConstraintTable"><span class="annot"><span class="annottext">pgConstraintTable :: TableDefinition (HasKey Oid) PgConstraint PgConstraint
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintTable"><span class="hs-identifier hs-var hs-var">pgConstraintTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-186"></span><span>  </span><span class="annot"><span class="annottext">String
+-&gt; TableDefinition (HasKey Oid) PgConstraint PgConstraint
+-&gt; TableDefinition (HasKey Oid) PgConstraint PgConstraint
+forall key writeEntity readEntity.
+String
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-var">Orville.setTableSchema</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_catalog&quot;</span></span><span> </span><span class="annot"><span class="annottext">(TableDefinition (HasKey Oid) PgConstraint PgConstraint
+ -&gt; TableDefinition (HasKey Oid) PgConstraint PgConstraint)
+-&gt; TableDefinition (HasKey Oid) PgConstraint PgConstraint
+-&gt; TableDefinition (HasKey Oid) PgConstraint PgConstraint
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-187"></span><span>    </span><span class="annot"><span class="annottext">String
+-&gt; PrimaryKey Oid
+-&gt; SqlMarshaller PgConstraint PgConstraint
+-&gt; TableDefinition (HasKey Oid) PgConstraint PgConstraint
+forall key writeEntity readEntity.
+String
+-&gt; PrimaryKey key
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition (HasKey key) writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinition"><span class="hs-identifier hs-var">Orville.mkTableDefinition</span></a></span><span>
+</span><span id="line-188"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_constraint&quot;</span></span><span>
+</span><span id="line-189"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid -&gt; PrimaryKey Oid
+forall key. FieldDefinition NotNull key -&gt; PrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#primaryKey"><span class="hs-identifier hs-var">Orville.primaryKey</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var">oidField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-190"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller PgConstraint PgConstraint
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintMarshaller"><span class="hs-identifier hs-var">pgConstraintMarshaller</span></a></span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintMarshaller"><span class="hs-identifier hs-type">pgConstraintMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">Orville.SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-type">PgConstraint</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-type">PgConstraint</span></a></span><span>
+</span><span id="line-193"></span><span id="pgConstraintMarshaller"><span class="annot"><span class="annottext">pgConstraintMarshaller :: SqlMarshaller PgConstraint PgConstraint
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintMarshaller"><span class="hs-identifier hs-var hs-var">pgConstraintMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-194"></span><span>  </span><span class="annot"><span class="annottext">Oid
+-&gt; ConstraintName
+-&gt; Oid
+-&gt; ConstraintType
+-&gt; Oid
+-&gt; Oid
+-&gt; Maybe [AttributeNumber]
+-&gt; Oid
+-&gt; Maybe [AttributeNumber]
+-&gt; Maybe ForeignKeyAction
+-&gt; Maybe ForeignKeyAction
+-&gt; PgConstraint
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#PgConstraint"><span class="hs-identifier hs-var">PgConstraint</span></a></span><span>
+</span><span id="line-195"></span><span>    </span><span class="annot"><span class="annottext">(Oid
+ -&gt; ConstraintName
+ -&gt; Oid
+ -&gt; ConstraintType
+ -&gt; Oid
+ -&gt; Oid
+ -&gt; Maybe [AttributeNumber]
+ -&gt; Oid
+ -&gt; Maybe [AttributeNumber]
+ -&gt; Maybe ForeignKeyAction
+ -&gt; Maybe ForeignKeyAction
+ -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint Oid
+-&gt; SqlMarshaller
+     PgConstraint
+     (ConstraintName
+      -&gt; Oid
+      -&gt; ConstraintType
+      -&gt; Oid
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgConstraint Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintOid"><span class="hs-identifier hs-var">pgConstraintOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidField"><span class="hs-identifier hs-var">oidField</span></a></span><span>
+</span><span id="line-196"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (ConstraintName
+   -&gt; Oid
+   -&gt; ConstraintType
+   -&gt; Oid
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint ConstraintName
+-&gt; SqlMarshaller
+     PgConstraint
+     (Oid
+      -&gt; ConstraintType
+      -&gt; Oid
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; ConstraintName)
+-&gt; FieldDefinition NotNull ConstraintName
+-&gt; SqlMarshaller PgConstraint ConstraintName
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; ConstraintName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintName"><span class="hs-identifier hs-var">pgConstraintName</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull ConstraintName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNameField"><span class="hs-identifier hs-var">constraintNameField</span></a></span><span>
+</span><span id="line-197"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Oid
+   -&gt; ConstraintType
+   -&gt; Oid
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint Oid
+-&gt; SqlMarshaller
+     PgConstraint
+     (ConstraintType
+      -&gt; Oid
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgConstraint Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintNamespaceOid"><span class="hs-identifier hs-var">pgConstraintNamespaceOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNamespaceOidField"><span class="hs-identifier hs-var">constraintNamespaceOidField</span></a></span><span>
+</span><span id="line-198"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (ConstraintType
+   -&gt; Oid
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint ConstraintType
+-&gt; SqlMarshaller
+     PgConstraint
+     (Oid
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; ConstraintType)
+-&gt; FieldDefinition NotNull ConstraintType
+-&gt; SqlMarshaller PgConstraint ConstraintType
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintType"><span class="hs-identifier hs-var">pgConstraintType</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintTypeField"><span class="hs-identifier hs-var">constraintTypeField</span></a></span><span>
+</span><span id="line-199"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Oid
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint Oid
+-&gt; SqlMarshaller
+     PgConstraint
+     (Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgConstraint Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintRelationOid"><span class="hs-identifier hs-var">pgConstraintRelationOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintRelationOidField"><span class="hs-identifier hs-var">constraintRelationOidField</span></a></span><span>
+</span><span id="line-200"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint Oid
+-&gt; SqlMarshaller
+     PgConstraint
+     (Maybe [AttributeNumber]
+      -&gt; Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgConstraint Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintIndexOid"><span class="hs-identifier hs-var">pgConstraintIndexOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintIndexOidField"><span class="hs-identifier hs-var">constraintIndexOidField</span></a></span><span>
+</span><span id="line-201"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Maybe [AttributeNumber]
+   -&gt; Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint (Maybe [AttributeNumber])
+-&gt; SqlMarshaller
+     PgConstraint
+     (Oid
+      -&gt; Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Maybe [AttributeNumber])
+-&gt; FieldDefinition Nullable (Maybe [AttributeNumber])
+-&gt; SqlMarshaller PgConstraint (Maybe [AttributeNumber])
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintKey"><span class="hs-identifier hs-var">pgConstraintKey</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition Nullable (Maybe [AttributeNumber])
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintKeyField"><span class="hs-identifier hs-var">constraintKeyField</span></a></span><span>
+</span><span id="line-202"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Oid
+   -&gt; Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint Oid
+-&gt; SqlMarshaller
+     PgConstraint
+     (Maybe [AttributeNumber]
+      -&gt; Maybe ForeignKeyAction
+      -&gt; Maybe ForeignKeyAction
+      -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgConstraint Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignRelationOid"><span class="hs-identifier hs-var">pgConstraintForeignRelationOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignRelationOidField"><span class="hs-identifier hs-var">constraintForeignRelationOidField</span></a></span><span>
+</span><span id="line-203"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Maybe [AttributeNumber]
+   -&gt; Maybe ForeignKeyAction
+   -&gt; Maybe ForeignKeyAction
+   -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint (Maybe [AttributeNumber])
+-&gt; SqlMarshaller
+     PgConstraint
+     (Maybe ForeignKeyAction -&gt; Maybe ForeignKeyAction -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Maybe [AttributeNumber])
+-&gt; FieldDefinition Nullable (Maybe [AttributeNumber])
+-&gt; SqlMarshaller PgConstraint (Maybe [AttributeNumber])
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignKey"><span class="hs-identifier hs-var">pgConstraintForeignKey</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition Nullable (Maybe [AttributeNumber])
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyField"><span class="hs-identifier hs-var">constraintForeignKeyField</span></a></span><span>
+</span><span id="line-204"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgConstraint
+  (Maybe ForeignKeyAction -&gt; Maybe ForeignKeyAction -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint (Maybe ForeignKeyAction)
+-&gt; SqlMarshaller
+     PgConstraint (Maybe ForeignKeyAction -&gt; PgConstraint)
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Maybe ForeignKeyAction)
+-&gt; FieldDefinition NotNull (Maybe ForeignKeyAction)
+-&gt; SqlMarshaller PgConstraint (Maybe ForeignKeyAction)
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignKeyOnUpdateType"><span class="hs-identifier hs-var">pgConstraintForeignKeyOnUpdateType</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyOnUpdateTypeField"><span class="hs-identifier hs-var">constraintForeignKeyOnUpdateTypeField</span></a></span><span>
+</span><span id="line-205"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgConstraint (Maybe ForeignKeyAction -&gt; PgConstraint)
+-&gt; SqlMarshaller PgConstraint (Maybe ForeignKeyAction)
+-&gt; SqlMarshaller PgConstraint PgConstraint
+forall a b.
+SqlMarshaller PgConstraint (a -&gt; b)
+-&gt; SqlMarshaller PgConstraint a -&gt; SqlMarshaller PgConstraint b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgConstraint -&gt; Maybe ForeignKeyAction)
+-&gt; FieldDefinition NotNull (Maybe ForeignKeyAction)
+-&gt; SqlMarshaller PgConstraint (Maybe ForeignKeyAction)
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgConstraint -&gt; Maybe ForeignKeyAction
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgConstraintForeignKeyOnDeleteType"><span class="hs-identifier hs-var">pgConstraintForeignKeyOnDeleteType</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyOnDeleteTypeField"><span class="hs-identifier hs-var">constraintForeignKeyOnDeleteTypeField</span></a></span><span>
+</span><span id="line-206"></span><span>
+</span><span id="line-207"></span><span class="annot"><span class="hs-comment">{- |
+  The @conname@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-212"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNameField"><span class="hs-identifier hs-type">constraintNameField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintName"><span class="hs-identifier hs-type">ConstraintName</span></a></span><span>
+</span><span id="line-213"></span><span id="constraintNameField"><span class="annot"><span class="annottext">constraintNameField :: FieldDefinition NotNull ConstraintName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNameField"><span class="hs-identifier hs-var hs-var">constraintNameField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-214"></span><span>  </span><span class="annot"><span class="annottext">FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull ConstraintName
+forall a b nullability.
+(Coercible a b, Coercible b a) =&gt;
+FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#coerceField"><span class="hs-identifier hs-var">Orville.coerceField</span></a></span><span> </span><span class="annot"><span class="annottext">(FieldDefinition NotNull Text
+ -&gt; FieldDefinition NotNull ConstraintName)
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull ConstraintName
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-215"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;conname&quot;</span></span><span>
+</span><span id="line-216"></span><span>
+</span><span id="line-217"></span><span class="annot"><span class="hs-comment">{- |
+  The @connamespace@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-222"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNamespaceOidField"><span class="hs-identifier hs-type">constraintNamespaceOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-223"></span><span id="constraintNamespaceOidField"><span class="annot"><span class="annottext">constraintNamespaceOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintNamespaceOidField"><span class="hs-identifier hs-var hs-var">constraintNamespaceOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-224"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;connamespace&quot;</span></span><span>
+</span><span id="line-225"></span><span>
+</span><span id="line-226"></span><span class="annot"><span class="hs-comment">{- |
+  The @contype@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-231"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintTypeField"><span class="hs-identifier hs-type">constraintTypeField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#ConstraintType"><span class="hs-identifier hs-type">ConstraintType</span></a></span><span>
+</span><span id="line-232"></span><span id="constraintTypeField"><span class="annot"><span class="annottext">constraintTypeField :: FieldDefinition NotNull ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintTypeField"><span class="hs-identifier hs-var hs-var">constraintTypeField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-233"></span><span>  </span><span class="annot"><span class="annottext">(SqlType Text -&gt; SqlType ConstraintType)
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull ConstraintType
+forall a b nullability.
+(SqlType a -&gt; SqlType b)
+-&gt; FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#convertField"><span class="hs-identifier hs-var">Orville.convertField</span></a></span><span>
+</span><span id="line-234"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ConstraintType -&gt; Text)
+-&gt; (Text -&gt; Either String ConstraintType)
+-&gt; SqlType Text
+-&gt; SqlType ConstraintType
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">Orville.tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">ConstraintType -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintTypeToPgText"><span class="hs-identifier hs-var">constraintTypeToPgText</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String ConstraintType
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToConstraintType"><span class="hs-identifier hs-var">pgTextToConstraintType</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-235"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;contype&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-236"></span><span>
+</span><span id="line-237"></span><span class="annot"><span class="hs-comment">{- |
+  The @conrelid@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-242"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintRelationOidField"><span class="hs-identifier hs-type">constraintRelationOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-243"></span><span id="constraintRelationOidField"><span class="annot"><span class="annottext">constraintRelationOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintRelationOidField"><span class="hs-identifier hs-var hs-var">constraintRelationOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-244"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;conrelid&quot;</span></span><span>
+</span><span id="line-245"></span><span>
+</span><span id="line-246"></span><span class="annot"><span class="hs-comment">{- |
+  The @conindid@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-251"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintIndexOidField"><span class="hs-identifier hs-type">constraintIndexOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-252"></span><span id="constraintIndexOidField"><span class="annot"><span class="annottext">constraintIndexOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintIndexOidField"><span class="hs-identifier hs-var hs-var">constraintIndexOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-253"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;conindid&quot;</span></span><span>
+</span><span id="line-254"></span><span>
+</span><span id="line-255"></span><span class="annot"><span class="hs-comment">{- |
+  The @conkey@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-260"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintKeyField"><span class="hs-identifier hs-type">constraintKeyField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#Nullable"><span class="hs-identifier hs-type">Orville.Nullable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-261"></span><span id="constraintKeyField"><span class="annot"><span class="annottext">constraintKeyField :: FieldDefinition Nullable (Maybe [AttributeNumber])
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintKeyField"><span class="hs-identifier hs-var hs-var">constraintKeyField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-262"></span><span>  </span><span class="annot"><span class="annottext">FieldDefinition NotNull [AttributeNumber]
+-&gt; FieldDefinition Nullable (Maybe [AttributeNumber])
+forall a.
+FieldDefinition NotNull a -&gt; FieldDefinition Nullable (Maybe a)
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#nullableField"><span class="hs-identifier hs-var">Orville.nullableField</span></a></span><span> </span><span class="annot"><span class="annottext">(FieldDefinition NotNull [AttributeNumber]
+ -&gt; FieldDefinition Nullable (Maybe [AttributeNumber]))
+-&gt; FieldDefinition NotNull [AttributeNumber]
+-&gt; FieldDefinition Nullable (Maybe [AttributeNumber])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-263"></span><span>    </span><span class="annot"><span class="annottext">(SqlType Text -&gt; SqlType [AttributeNumber])
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull [AttributeNumber]
+forall a b nullability.
+(SqlType a -&gt; SqlType b)
+-&gt; FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#convertField"><span class="hs-identifier hs-var">Orville.convertField</span></a></span><span>
+</span><span id="line-264"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([AttributeNumber] -&gt; Text)
+-&gt; (Text -&gt; Either String [AttributeNumber])
+-&gt; SqlType Text
+-&gt; SqlType [AttributeNumber]
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">Orville.tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">[AttributeNumber] -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#attributeNumberListToPgArrayText"><span class="hs-identifier hs-var">attributeNumberListToPgArrayText</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgArrayTextToAttributeNumberList"><span class="hs-identifier hs-var">pgArrayTextToAttributeNumberList</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-265"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;conkey&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-266"></span><span>
+</span><span id="line-267"></span><span class="annot"><span class="hs-comment">{- |
+  The @confrelid@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-272"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignRelationOidField"><span class="hs-identifier hs-type">constraintForeignRelationOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-273"></span><span id="constraintForeignRelationOidField"><span class="annot"><span class="annottext">constraintForeignRelationOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignRelationOidField"><span class="hs-identifier hs-var hs-var">constraintForeignRelationOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-274"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;confrelid&quot;</span></span><span>
+</span><span id="line-275"></span><span>
+</span><span id="line-276"></span><span class="annot"><span class="hs-comment">{- |
+  The @confkey@ column of the @pg_constraint@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-281"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyField"><span class="hs-identifier hs-type">constraintForeignKeyField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#Nullable"><span class="hs-identifier hs-type">Orville.Nullable</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-282"></span><span id="constraintForeignKeyField"><span class="annot"><span class="annottext">constraintForeignKeyField :: FieldDefinition Nullable (Maybe [AttributeNumber])
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyField"><span class="hs-identifier hs-var hs-var">constraintForeignKeyField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-283"></span><span>  </span><span class="annot"><span class="annottext">FieldDefinition NotNull [AttributeNumber]
+-&gt; FieldDefinition Nullable (Maybe [AttributeNumber])
+forall a.
+FieldDefinition NotNull a -&gt; FieldDefinition Nullable (Maybe a)
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#nullableField"><span class="hs-identifier hs-var">Orville.nullableField</span></a></span><span> </span><span class="annot"><span class="annottext">(FieldDefinition NotNull [AttributeNumber]
+ -&gt; FieldDefinition Nullable (Maybe [AttributeNumber]))
+-&gt; FieldDefinition NotNull [AttributeNumber]
+-&gt; FieldDefinition Nullable (Maybe [AttributeNumber])
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-284"></span><span>    </span><span class="annot"><span class="annottext">(SqlType Text -&gt; SqlType [AttributeNumber])
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull [AttributeNumber]
+forall a b nullability.
+(SqlType a -&gt; SqlType b)
+-&gt; FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#convertField"><span class="hs-identifier hs-var">Orville.convertField</span></a></span><span>
+</span><span id="line-285"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">([AttributeNumber] -&gt; Text)
+-&gt; (Text -&gt; Either String [AttributeNumber])
+-&gt; SqlType Text
+-&gt; SqlType [AttributeNumber]
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">Orville.tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">[AttributeNumber] -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#attributeNumberListToPgArrayText"><span class="hs-identifier hs-var">attributeNumberListToPgArrayText</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgArrayTextToAttributeNumberList"><span class="hs-identifier hs-var">pgArrayTextToAttributeNumberList</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-286"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;confkey&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-287"></span><span>
+</span><span id="line-288"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyOnUpdateTypeField"><span class="hs-identifier hs-type">constraintForeignKeyOnUpdateTypeField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">Orville.ForeignKeyAction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-289"></span><span id="constraintForeignKeyOnUpdateTypeField"><span class="annot"><span class="annottext">constraintForeignKeyOnUpdateTypeField :: FieldDefinition NotNull (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyOnUpdateTypeField"><span class="hs-identifier hs-var hs-var">constraintForeignKeyOnUpdateTypeField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-290"></span><span>  </span><span class="annot"><span class="annottext">(SqlType Text -&gt; SqlType (Maybe ForeignKeyAction))
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull (Maybe ForeignKeyAction)
+forall a b nullability.
+(SqlType a -&gt; SqlType b)
+-&gt; FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#convertField"><span class="hs-identifier hs-var">Orville.convertField</span></a></span><span>
+</span><span id="line-291"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Text)
+-&gt; (Text -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; SqlType Text
+-&gt; SqlType (Maybe ForeignKeyAction)
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">Orville.tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#foreignKeyActionToPgText"><span class="hs-identifier hs-var">foreignKeyActionToPgText</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToForeignKeyAction"><span class="hs-identifier hs-var">pgTextToForeignKeyAction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-292"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;confupdtype&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-293"></span><span>
+</span><span id="line-294"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyOnDeleteTypeField"><span class="hs-identifier hs-type">constraintForeignKeyOnDeleteTypeField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ForeignKeyAction"><span class="hs-identifier hs-type">Orville.ForeignKeyAction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-295"></span><span id="constraintForeignKeyOnDeleteTypeField"><span class="annot"><span class="annottext">constraintForeignKeyOnDeleteTypeField :: FieldDefinition NotNull (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#constraintForeignKeyOnDeleteTypeField"><span class="hs-identifier hs-var hs-var">constraintForeignKeyOnDeleteTypeField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-296"></span><span>  </span><span class="annot"><span class="annottext">(SqlType Text -&gt; SqlType (Maybe ForeignKeyAction))
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull (Maybe ForeignKeyAction)
+forall a b nullability.
+(SqlType a -&gt; SqlType b)
+-&gt; FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#convertField"><span class="hs-identifier hs-var">Orville.convertField</span></a></span><span>
+</span><span id="line-297"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Maybe ForeignKeyAction -&gt; Text)
+-&gt; (Text -&gt; Either String (Maybe ForeignKeyAction))
+-&gt; SqlType Text
+-&gt; SqlType (Maybe ForeignKeyAction)
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">Orville.tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyAction -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#foreignKeyActionToPgText"><span class="hs-identifier hs-var">foreignKeyActionToPgText</span></a></span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String (Maybe ForeignKeyAction)
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgTextToForeignKeyAction"><span class="hs-identifier hs-var">pgTextToForeignKeyAction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-298"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;confdeltype&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-299"></span><span>
+</span><span id="line-300"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgArrayTextToAttributeNumberList"><span class="hs-identifier hs-type">pgArrayTextToAttributeNumberList</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-301"></span><span id="pgArrayTextToAttributeNumberList"><span class="annot"><span class="annottext">pgArrayTextToAttributeNumberList :: Text -&gt; Either String [AttributeNumber]
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#pgArrayTextToAttributeNumberList"><span class="hs-identifier hs-var hs-var">pgArrayTextToAttributeNumberList</span></a></span></span><span> </span><span id="local-6989586621679141591"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141591"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-302"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-303"></span><span>    </span><span id="local-6989586621679141603"><span class="annot"><span class="annottext">parser :: Parser Text [AttributeNumber]
+</span><a href="#local-6989586621679141603"><span class="hs-identifier hs-var hs-var">parser</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-304"></span><span>      </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser Char
+</span><span class="hs-identifier hs-var">AttoText.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'{'</span></span><span>
+</span><span id="line-305"></span><span>      </span><span id="local-6989586621679141605"><span class="annot"><span class="annottext">[AttributeNumber]
+</span><a href="#local-6989586621679141605"><span class="hs-identifier hs-var">attNums</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Parser Text AttributeNumber
+-&gt; Parser Char -&gt; Parser Text [AttributeNumber]
+forall (f :: * -&gt; *) a s. Alternative f =&gt; f a -&gt; f s -&gt; f [a]
+</span><span class="hs-identifier hs-var">AttoText.sepBy</span></span><span> </span><span class="annot"><span class="annottext">Parser Text AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberParser"><span class="hs-identifier hs-var">attributeNumberParser</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Parser Char
+</span><span class="hs-identifier hs-var">AttoText.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">','</span></span><span class="hs-special">)</span><span>
+</span><span id="line-306"></span><span>      </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Char -&gt; Parser Char
+</span><span class="hs-identifier hs-var">AttoText.char</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'}'</span></span><span>
+</span><span id="line-307"></span><span>      </span><span class="annot"><span class="annottext">Parser Text ()
+forall t. Chunk t =&gt; Parser t ()
+</span><span class="hs-identifier hs-var">AttoText.endOfInput</span></span><span>
+</span><span id="line-308"></span><span>      </span><span class="annot"><span class="annottext">[AttributeNumber] -&gt; Parser Text [AttributeNumber]
+forall a. a -&gt; Parser Text a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">[AttributeNumber]
+</span><a href="#local-6989586621679141605"><span class="hs-identifier hs-var">attNums</span></a></span><span>
+</span><span id="line-309"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-310"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Parser Text [AttributeNumber]
+-&gt; Text -&gt; Either String [AttributeNumber]
+forall a. Parser a -&gt; Text -&gt; Either String a
+</span><span class="hs-identifier hs-var">AttoText.parseOnly</span></span><span> </span><span class="annot"><span class="annottext">Parser Text [AttributeNumber]
+</span><a href="#local-6989586621679141603"><span class="hs-identifier hs-var">parser</span></a></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141591"><span class="hs-identifier hs-var">text</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-311"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679141609"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679141609"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String [AttributeNumber]
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Unable to decode PostgreSQL Array as AttributeNumber list: &quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679141609"><span class="hs-identifier hs-var">err</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-312"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679141610"><span class="annot"><span class="annottext">[AttributeNumber]
+</span><a href="#local-6989586621679141610"><span class="hs-identifier hs-var">nums</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">[AttributeNumber] -&gt; Either String [AttributeNumber]
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">[AttributeNumber]
+</span><a href="#local-6989586621679141610"><span class="hs-identifier hs-var">nums</span></a></span><span>
+</span><span id="line-313"></span><span>
+</span><span id="line-314"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#attributeNumberListToPgArrayText"><span class="hs-identifier hs-type">attributeNumberListToPgArrayText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-315"></span><span id="attributeNumberListToPgArrayText"><span class="annot"><span class="annottext">attributeNumberListToPgArrayText :: [AttributeNumber] -&gt; Text
+</span><a href="Orville.PostgreSQL.PgCatalog.PgConstraint.html#attributeNumberListToPgArrayText"><span class="hs-identifier hs-var hs-var">attributeNumberListToPgArrayText</span></a></span></span><span> </span><span id="local-6989586621679141611"><span class="annot"><span class="annottext">[AttributeNumber]
+</span><a href="#local-6989586621679141611"><span class="hs-identifier hs-var">attNums</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-316"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-317"></span><span>    </span><span id="local-6989586621679141614"><span class="annot"><span class="annottext">commaDelimitedAttributeNumbers :: Builder
+</span><a href="#local-6989586621679141614"><span class="hs-identifier hs-var hs-var">commaDelimitedAttributeNumbers</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-318"></span><span>      </span><span class="annot"><span class="annottext">[Builder] -&gt; Builder
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="annot"><span class="annottext">([Builder] -&gt; Builder) -&gt; [Builder] -&gt; Builder
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-319"></span><span>        </span><span class="annot"><span class="annottext">Builder -&gt; [Builder] -&gt; [Builder]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-identifier hs-var">List.intersperse</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Char -&gt; Builder
+</span><span class="hs-identifier hs-var">LTB.singleton</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">','</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(AttributeNumber -&gt; Builder) -&gt; [AttributeNumber] -&gt; [Builder]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">AttributeNumber -&gt; Builder
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTextBuilder"><span class="hs-identifier hs-var">attributeNumberTextBuilder</span></a></span><span> </span><span class="annot"><span class="annottext">[AttributeNumber]
+</span><a href="#local-6989586621679141611"><span class="hs-identifier hs-var">attNums</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-320"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-321"></span><span>    </span><span class="annot"><span class="annottext">Text -&gt; Text
+</span><span class="hs-identifier hs-var">LT.toStrict</span></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Text) -&gt; (Builder -&gt; Text) -&gt; Builder -&gt; Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Text
+</span><span class="hs-identifier hs-var">LTB.toLazyText</span></span><span> </span><span class="annot"><span class="annottext">(Builder -&gt; Text) -&gt; Builder -&gt; Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-322"></span><span>      </span><span class="annot"><span class="annottext">Char -&gt; Builder
+</span><span class="hs-identifier hs-var">LTB.singleton</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'{'</span></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Builder
+</span><a href="#local-6989586621679141614"><span class="hs-identifier hs-var">commaDelimitedAttributeNumbers</span></a></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; Builder -&gt; Builder
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Char -&gt; Builder
+</span><span class="hs-identifier hs-var">LTB.singleton</span></span><span> </span><span class="annot"><span class="annottext">Char
+</span><span class="hs-char">'}'</span></span><span>
+</span><span id="line-323"></span></pre></body></html>

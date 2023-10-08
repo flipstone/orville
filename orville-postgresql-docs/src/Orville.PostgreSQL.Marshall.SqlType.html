@@ -1,0 +1,870 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+This module provides functions and types for describing a single-column data
+type that exists in PostgreSQL so that Orville can determine how to serialize
+Haskell values to and from the SQL type. If you need to use a SQL type that
+Orville does not provide support for here, you can construct your own 'SqlType'
+value and use 'Orville.PostgreSQL.Marshall.fieldOfType' to build the required
+'Orville.PostgreSQL.Marshall.FieldDefinition'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Marshall.SqlType</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier">SqlType</span></a></span><span>
+</span><span id="line-17"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier">SqlType</span></a></span><span>
+</span><span id="line-18"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier">sqlTypeExpr</span></a></span><span>
+</span><span id="line-19"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier">sqlTypeReferenceExpr</span></a></span><span>
+</span><span id="line-20"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier">sqlTypeOid</span></a></span><span>
+</span><span id="line-21"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier">sqlTypeMaximumLength</span></a></span><span>
+</span><span id="line-22"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier">sqlTypeToSql</span></a></span><span>
+</span><span id="line-23"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier">sqlTypeFromSql</span></a></span><span>
+</span><span id="line-24"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span>
+</span><span id="line-25"></span><span>      </span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-comment">-- numeric types</span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#integer"><span class="hs-identifier">integer</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#serial"><span class="hs-identifier">serial</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#bigInteger"><span class="hs-identifier">bigInteger</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#bigSerial"><span class="hs-identifier">bigSerial</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#smallInteger"><span class="hs-identifier">smallInteger</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#double"><span class="hs-identifier">double</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-comment">-- textual-ish types</span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#boolean"><span class="hs-identifier">boolean</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#unboundedText"><span class="hs-identifier">unboundedText</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#fixedText"><span class="hs-identifier">fixedText</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#boundedText"><span class="hs-identifier">boundedText</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#textSearchVector"><span class="hs-identifier">textSearchVector</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#uuid"><span class="hs-identifier">uuid</span></a></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-comment">-- date types</span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#date"><span class="hs-identifier">date</span></a></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#timestamp"><span class="hs-identifier">timestamp</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#timestampWithoutZone"><span class="hs-identifier">timestampWithoutZone</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-comment">-- json types</span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#jsonb"><span class="hs-identifier">jsonb</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-comment">-- postgresql types</span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#oid"><span class="hs-identifier">oid</span></a></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-comment">-- type conversions</span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#foreignRefType"><span class="hs-identifier">foreignRefType</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#convertSqlType"><span class="hs-identifier">convertSqlType</span></a></span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier">tryConvertSqlType</span></a></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-56"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Text</span></span><span class="hs-special">)</span><span>
+</span><span id="line-57"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Time</span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.UUID</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">UUID</span></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Foreign.C.Types</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">CTypes</span></span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-63"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier">SqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-65"></span><span>
+</span><span id="line-66"></span><span class="annot"><span class="hs-comment">{- |
+  SqlType defines the mapping of a Haskell type (`a`) to a SQL column type in the
+  database. This includes both how to convert the type to and from the raw values
+  read from the database as well as the schema information required to create
+  and migrate columns using the type.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-74"></span><span class="hs-keyword">data</span><span> </span><span id="SqlType"><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-var">SqlType</span></a></span></span><span> </span><span id="local-6989586621679131585"><span class="annot"><a href="#local-6989586621679131585"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SqlType"><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-var">SqlType</span></a></span></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="sqlTypeExpr"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var hs-var">sqlTypeExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.DataType.html#DataType"><span class="hs-identifier hs-type">Expr.DataType</span></a></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-comment">-- ^ The sql data type expression to use when creating/migrating columns of</span><span>
+</span><span id="line-77"></span><span>  </span><span class="hs-comment">-- this type</span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlTypeReferenceExpr"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var hs-var">sqlTypeReferenceExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.DataType.html#DataType"><span class="hs-identifier hs-type">Expr.DataType</span></a></span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-comment">-- ^ The sql data type experession to use when creating/migrating columns</span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-comment">-- with foreign keys to this type. This is used foreignRefType to build a</span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-comment">-- new SqlType when making foreign key fields</span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlTypeOid"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var hs-var">sqlTypeOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-comment">-- ^ The Oid for the type in postgresql. This will be used during</span><span>
+</span><span id="line-84"></span><span>  </span><span class="hs-comment">-- migrations to determine whether the column type needs to be altered.</span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlTypeMaximumLength"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var hs-var">sqlTypeMaximumLength</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-comment">-- ^ The maximum length for lengths that take a type parameter (such as</span><span>
+</span><span id="line-87"></span><span>  </span><span class="hs-comment">-- @char@ and @varchar@).  This will be used during migration to determine</span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-comment">-- whether the column type needs to be altered.</span><span>
+</span><span id="line-89"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlTypeToSql"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; a -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var hs-var">sqlTypeToSql</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679131585"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span>
+</span><span id="line-90"></span><span>  </span><span class="hs-comment">-- ^ A function for converting Haskell values of this type into values to</span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-comment">-- be stored in the database.</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlTypeFromSql"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; SqlValue -&gt; Either String a
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var hs-var">sqlTypeFromSql</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="#local-6989586621679131585"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-comment">-- ^ A function for converting values of this are stored in the database</span><span>
+</span><span id="line-94"></span><span>  </span><span class="hs-comment">-- into Haskell values. This function should return 'Nothing' to indicate</span><span>
+</span><span id="line-95"></span><span>  </span><span class="hs-comment">-- an error if the conversion is impossible. Otherwise it should return</span><span>
+</span><span id="line-96"></span><span>  </span><span class="hs-comment">-- 'Just' the corresponding 'a' value.</span><span>
+</span><span id="line-97"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="annot"><span class="annottext">forall a. SqlType a -&gt; Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-comment">-- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that</span><span>
+</span><span id="line-99"></span><span>  </span><span class="hs-comment">-- create an implicit default value. This flag tells Orville's auto</span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-comment">-- migration logic to ignore the default value rather than drop it as it</span><span>
+</span><span id="line-101"></span><span>  </span><span class="hs-comment">-- normally would.</span><span>
+</span><span id="line-102"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><span class="hs-comment">{- |
+  'integer' defines a 32-bit integer type. This corresponds to the &quot;INTEGER&quot; type in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-109"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#integer"><span class="hs-identifier hs-type">integer</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-110"></span><span id="integer"><span class="annot"><span class="annottext">integer :: SqlType Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#integer"><span class="hs-identifier hs-var hs-var">integer</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-111"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#int"><span class="hs-identifier hs-var">Expr.int</span></a></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">23</span></span><span>
+</span><span id="line-115"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-116"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt32"><span class="hs-identifier hs-var">SqlValue.fromInt32</span></a></span><span>
+</span><span id="line-117"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Int32
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toInt32"><span class="hs-identifier hs-var">SqlValue.toInt32</span></a></span><span>
+</span><span id="line-118"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-119"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="annot"><span class="hs-comment">{- |
+  'serial' defines a 32-bit auto-incrementing column type. This corresponds to
+  the &quot;SERIAL&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-127"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#serial"><span class="hs-identifier hs-type">serial</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-128"></span><span id="serial"><span class="annot"><span class="annottext">serial :: SqlType Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#serial"><span class="hs-identifier hs-var hs-var">serial</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-129"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#serial"><span class="hs-identifier hs-var">Expr.serial</span></a></span><span>
+</span><span id="line-131"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType -&gt; Maybe DataType
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#int"><span class="hs-identifier hs-var">Expr.int</span></a></span><span>
+</span><span id="line-132"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">23</span></span><span>
+</span><span id="line-133"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-134"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt32"><span class="hs-identifier hs-var">SqlValue.fromInt32</span></a></span><span>
+</span><span id="line-135"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Int32
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toInt32"><span class="hs-identifier hs-var">SqlValue.toInt32</span></a></span><span>
+</span><span id="line-136"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-138"></span><span>
+</span><span id="line-139"></span><span class="annot"><span class="hs-comment">{- |
+  'bigInteger' defines a 64-bit integer type. This corresponds to the &quot;BIGINT&quot;
+  type in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-145"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#bigInteger"><span class="hs-identifier hs-type">bigInteger</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-146"></span><span id="bigInteger"><span class="annot"><span class="annottext">bigInteger :: SqlType Int64
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#bigInteger"><span class="hs-identifier hs-var hs-var">bigInteger</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-147"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#bigInt"><span class="hs-identifier hs-var">Expr.bigInt</span></a></span><span>
+</span><span id="line-149"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-150"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">20</span></span><span>
+</span><span id="line-151"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-152"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Int64 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt64"><span class="hs-identifier hs-var">SqlValue.fromInt64</span></a></span><span>
+</span><span id="line-153"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Int64
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Int64
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toInt64"><span class="hs-identifier hs-var">SqlValue.toInt64</span></a></span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-155"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span class="annot"><span class="hs-comment">{- |
+  'bigSerial' defines a 64-bit auto-incrementing column type. This corresponds to
+  the &quot;BIGSERIAL&quot; type in PostgresSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-163"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#bigSerial"><span class="hs-identifier hs-type">bigSerial</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-164"></span><span id="bigSerial"><span class="annot"><span class="annottext">bigSerial :: SqlType Int64
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#bigSerial"><span class="hs-identifier hs-var hs-var">bigSerial</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-165"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-166"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#bigSerial"><span class="hs-identifier hs-var">Expr.bigSerial</span></a></span><span>
+</span><span id="line-167"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType -&gt; Maybe DataType
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#bigInt"><span class="hs-identifier hs-var">Expr.bigInt</span></a></span><span>
+</span><span id="line-168"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">20</span></span><span>
+</span><span id="line-169"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-170"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Int64 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt64"><span class="hs-identifier hs-var">SqlValue.fromInt64</span></a></span><span>
+</span><span id="line-171"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Int64
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Int64
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toInt64"><span class="hs-identifier hs-var">SqlValue.toInt64</span></a></span><span>
+</span><span id="line-172"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-173"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-174"></span><span>
+</span><span id="line-175"></span><span class="annot"><span class="hs-comment">{- |
+  'smallInteger' defines a 16-bit integer type. This corresponds to the &quot;SMALLINT&quot; type in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-180"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#smallInteger"><span class="hs-identifier hs-type">smallInteger</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span>
+</span><span id="line-181"></span><span id="smallInteger"><span class="annot"><span class="annottext">smallInteger :: SqlType Int16
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#smallInteger"><span class="hs-identifier hs-var hs-var">smallInteger</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-182"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-183"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#smallint"><span class="hs-identifier hs-var">Expr.smallint</span></a></span><span>
+</span><span id="line-184"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-185"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">21</span></span><span>
+</span><span id="line-186"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-187"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Int16 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int16 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt16"><span class="hs-identifier hs-var">SqlValue.fromInt16</span></a></span><span>
+</span><span id="line-188"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Int16
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Int16
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toInt16"><span class="hs-identifier hs-var">SqlValue.toInt16</span></a></span><span>
+</span><span id="line-189"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-190"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><span class="hs-comment">{- |
+  'double' defines a floating point numeric type. This corresponds to the &quot;DOUBLE
+  PRECISION&quot; type in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-198"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#double"><span class="hs-identifier hs-type">double</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-199"></span><span id="double"><span class="annot"><span class="annottext">double :: SqlType Double
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#double"><span class="hs-identifier hs-var hs-var">double</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-200"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-201"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#doublePrecision"><span class="hs-identifier hs-var">Expr.doublePrecision</span></a></span><span>
+</span><span id="line-202"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-203"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">701</span></span><span>
+</span><span id="line-204"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-205"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Double -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Double -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromDouble"><span class="hs-identifier hs-var">SqlValue.fromDouble</span></a></span><span>
+</span><span id="line-206"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Double
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Double
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toDouble"><span class="hs-identifier hs-var">SqlValue.toDouble</span></a></span><span>
+</span><span id="line-207"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-208"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-209"></span><span>
+</span><span id="line-210"></span><span class="annot"><span class="hs-comment">{- |
+  'boolean' defines a True/False boolean type. This corresponds to the &quot;BOOLEAN&quot;
+  type in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-216"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#boolean"><span class="hs-identifier hs-type">boolean</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-217"></span><span id="boolean"><span class="annot"><span class="annottext">boolean :: SqlType Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#boolean"><span class="hs-identifier hs-var hs-var">boolean</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-218"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-219"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#boolean"><span class="hs-identifier hs-var">Expr.boolean</span></a></span><span>
+</span><span id="line-220"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-221"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">16</span></span><span>
+</span><span id="line-222"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-223"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Bool -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromBool"><span class="hs-identifier hs-var">SqlValue.fromBool</span></a></span><span>
+</span><span id="line-224"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Bool
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toBool"><span class="hs-identifier hs-var">SqlValue.toBool</span></a></span><span>
+</span><span id="line-225"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-226"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-227"></span><span>
+</span><span id="line-228"></span><span class="annot"><span class="hs-comment">{- |
+  'unboundedText' defines a unbounded length text field type. This corresponds to a
+  &quot;TEXT&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-234"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#unboundedText"><span class="hs-identifier hs-type">unboundedText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-235"></span><span id="unboundedText"><span class="annot"><span class="annottext">unboundedText :: SqlType Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#unboundedText"><span class="hs-identifier hs-var hs-var">unboundedText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-236"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-237"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#text"><span class="hs-identifier hs-var">Expr.text</span></a></span><span>
+</span><span id="line-238"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-239"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">25</span></span><span>
+</span><span id="line-240"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-241"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromText"><span class="hs-identifier hs-var">SqlValue.fromText</span></a></span><span>
+</span><span id="line-242"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span>
+</span><span id="line-243"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-244"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-245"></span><span>
+</span><span id="line-246"></span><span class="annot"><span class="hs-comment">{- |
+  'fixedText' defines a fixed length text field type. This corresponds to a
+  &quot;CHAR(len)&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-252"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#fixedText"><span class="hs-identifier hs-type">fixedText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-253"></span><span id="fixedText"><span class="annot"><span class="annottext">fixedText :: Int32 -&gt; SqlType Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#fixedText"><span class="hs-identifier hs-var hs-var">fixedText</span></a></span></span><span> </span><span id="local-6989586621679131695"><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679131695"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-254"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-255"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#char"><span class="hs-identifier hs-var">Expr.char</span></a></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679131695"><span class="hs-identifier hs-var">len</span></a></span><span>
+</span><span id="line-256"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-257"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1042</span></span><span>
+</span><span id="line-258"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Maybe Int32
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679131695"><span class="hs-identifier hs-var">len</span></a></span><span>
+</span><span id="line-259"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromText"><span class="hs-identifier hs-var">SqlValue.fromText</span></a></span><span>
+</span><span id="line-260"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span>
+</span><span id="line-261"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-262"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-263"></span><span>
+</span><span id="line-264"></span><span class="annot"><span class="hs-comment">{- |
+  'boundedText' defines a variable length text field type. This corresponds to a
+  &quot;VARCHAR(len)&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-270"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#boundedText"><span class="hs-identifier hs-type">boundedText</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-271"></span><span id="boundedText"><span class="annot"><span class="annottext">boundedText :: Int32 -&gt; SqlType Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#boundedText"><span class="hs-identifier hs-var hs-var">boundedText</span></a></span></span><span> </span><span id="local-6989586621679131697"><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679131697"><span class="hs-identifier hs-var">len</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-272"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-273"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#varchar"><span class="hs-identifier hs-var">Expr.varchar</span></a></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679131697"><span class="hs-identifier hs-var">len</span></a></span><span>
+</span><span id="line-274"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-275"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1043</span></span><span>
+</span><span id="line-276"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Maybe Int32
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679131697"><span class="hs-identifier hs-var">len</span></a></span><span>
+</span><span id="line-277"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromText"><span class="hs-identifier hs-var">SqlValue.fromText</span></a></span><span>
+</span><span id="line-278"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span>
+</span><span id="line-279"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-280"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-281"></span><span>
+</span><span id="line-282"></span><span class="annot"><span class="hs-comment">{- |
+  'textSearchVector' defines a type for indexed text searching. It corresponds to the
+  &quot;TSVECTOR&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-288"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#textSearchVector"><span class="hs-identifier hs-type">textSearchVector</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-289"></span><span id="textSearchVector"><span class="annot"><span class="annottext">textSearchVector :: SqlType Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#textSearchVector"><span class="hs-identifier hs-var hs-var">textSearchVector</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-290"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-291"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#tsvector"><span class="hs-identifier hs-var">Expr.tsvector</span></a></span><span>
+</span><span id="line-292"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-293"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">3614</span></span><span>
+</span><span id="line-294"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-295"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromText"><span class="hs-identifier hs-var">SqlValue.fromText</span></a></span><span>
+</span><span id="line-296"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span>
+</span><span id="line-297"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-298"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-299"></span><span>
+</span><span id="line-300"></span><span class="annot"><span class="hs-comment">{- |
+  'uuid' defines a UUID type. It corresponds to the &quot;UUID&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-305"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#uuid"><span class="hs-identifier hs-type">uuid</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">UUID.UUID</span></span><span>
+</span><span id="line-306"></span><span id="uuid"><span class="annot"><span class="annottext">uuid :: SqlType UUID
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#uuid"><span class="hs-identifier hs-var hs-var">uuid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-307"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-308"></span><span>    </span><span id="local-6989586621679131700"><span class="annot"><span class="annottext">uuidFromText :: Text -&gt; Either String UUID
+</span><a href="#local-6989586621679131700"><span class="hs-identifier hs-var hs-var">uuidFromText</span></a></span></span><span> </span><span id="local-6989586621679131701"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679131701"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-309"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Maybe UUID
+</span><span class="hs-identifier hs-var">UUID.fromText</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679131701"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-310"></span><span>        </span><span class="annot"><span class="annottext">Maybe UUID
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; Either String UUID
+forall a b. a -&gt; Either a b
+</span><span class="hs-identifier hs-var">Left</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;Invalid UUID value&quot;</span></span><span>
+</span><span id="line-311"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679131703"><span class="annot"><span class="annottext">UUID
+</span><a href="#local-6989586621679131703"><span class="hs-identifier hs-var">validUuid</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">UUID -&gt; Either String UUID
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">UUID
+</span><a href="#local-6989586621679131703"><span class="hs-identifier hs-var">validUuid</span></a></span><span>
+</span><span id="line-312"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-313"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-314"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#uuid"><span class="hs-identifier hs-var">Expr.uuid</span></a></span><span>
+</span><span id="line-315"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-316"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">2950</span></span><span>
+</span><span id="line-317"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-318"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: UUID -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromText"><span class="hs-identifier hs-var">SqlValue.fromText</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; SqlValue) -&gt; (UUID -&gt; Text) -&gt; UUID -&gt; SqlValue
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">UUID -&gt; Text
+</span><span class="hs-identifier hs-var">UUID.toText</span></span><span>
+</span><span id="line-319"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String UUID
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679131707"><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679131707"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Text -&gt; Either String UUID
+</span><a href="#local-6989586621679131700"><span class="hs-identifier hs-var">uuidFromText</span></a></span><span> </span><span class="annot"><span class="annottext">(Text -&gt; Either String UUID)
+-&gt; Either String Text -&gt; Either String UUID
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span> </span><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679131707"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-320"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-321"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-322"></span><span>
+</span><span id="line-323"></span><span class="annot"><span class="hs-comment">{- |
+  'date' defines a type representing a calendar date (without time zone). It corresponds
+  to the &quot;DATE&quot; type in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-329"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#date"><span class="hs-identifier hs-type">date</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.Day</span></span><span>
+</span><span id="line-330"></span><span id="date"><span class="annot"><span class="annottext">date :: SqlType Day
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#date"><span class="hs-identifier hs-var hs-var">date</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-331"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-332"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#date"><span class="hs-identifier hs-var">Expr.date</span></a></span><span>
+</span><span id="line-333"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-334"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1082</span></span><span>
+</span><span id="line-335"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-336"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Day -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Day -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromDay"><span class="hs-identifier hs-var">SqlValue.fromDay</span></a></span><span>
+</span><span id="line-337"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Day
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Day
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toDay"><span class="hs-identifier hs-var">SqlValue.toDay</span></a></span><span>
+</span><span id="line-338"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-339"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-340"></span><span>
+</span><span id="line-341"></span><span class="annot"><span class="hs-comment">{- |
+  'timestamp' defines a type representing a particular point in time without time zone information,
+  but can be constructed with a time zone offset.
+  It corresponds to the &quot;TIMESTAMP with time zone&quot; type in SQL.
+
+  Note: This is NOT a typo. The &quot;TIMESTAMP with time zone&quot; type in SQL does not include
+  any actual time zone information. For an excellent explanation of the complexities
+  involving this type, please see Chris Clark's blog post about it:
+  http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-353"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#timestamp"><span class="hs-identifier hs-type">timestamp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.UTCTime</span></span><span>
+</span><span id="line-354"></span><span id="timestamp"><span class="annot"><span class="annottext">timestamp :: SqlType UTCTime
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#timestamp"><span class="hs-identifier hs-var hs-var">timestamp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-355"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-356"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#timestampWithZone"><span class="hs-identifier hs-var">Expr.timestampWithZone</span></a></span><span>
+</span><span id="line-357"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-358"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1184</span></span><span>
+</span><span id="line-359"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-360"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: UTCTime -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">UTCTime -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromUTCTime"><span class="hs-identifier hs-var">SqlValue.fromUTCTime</span></a></span><span>
+</span><span id="line-361"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String UTCTime
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String UTCTime
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toUTCTime"><span class="hs-identifier hs-var">SqlValue.toUTCTime</span></a></span><span>
+</span><span id="line-362"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-363"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-364"></span><span>
+</span><span id="line-365"></span><span class="annot"><span class="hs-comment">{- |
+  'timestampWithoutZone' defines a type representing a particular point in time (without time zone).
+  It corresponds to the &quot;TIMESTAMP without time zone&quot; type in SQL.
+
+  http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-373"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#timestampWithoutZone"><span class="hs-identifier hs-type">timestampWithoutZone</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.LocalTime</span></span><span>
+</span><span id="line-374"></span><span id="timestampWithoutZone"><span class="annot"><span class="annottext">timestampWithoutZone :: SqlType LocalTime
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#timestampWithoutZone"><span class="hs-identifier hs-var hs-var">timestampWithoutZone</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-375"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-376"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#timestampWithoutZone"><span class="hs-identifier hs-var">Expr.timestampWithoutZone</span></a></span><span>
+</span><span id="line-377"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-378"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1114</span></span><span>
+</span><span id="line-379"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-380"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: LocalTime -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">LocalTime -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromLocalTime"><span class="hs-identifier hs-var">SqlValue.fromLocalTime</span></a></span><span>
+</span><span id="line-381"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String LocalTime
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String LocalTime
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toLocalTime"><span class="hs-identifier hs-var">SqlValue.toLocalTime</span></a></span><span>
+</span><span id="line-382"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-383"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-384"></span><span>
+</span><span id="line-385"></span><span class="annot"><span class="hs-comment">{- |
+   'jsonb' represents any type that can be converted To and From JSON. This corresponds
+   to the &quot;JSONB&quot; type in PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-391"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#jsonb"><span class="hs-identifier hs-type">jsonb</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Text</span></span><span>
+</span><span id="line-392"></span><span id="jsonb"><span class="annot"><span class="annottext">jsonb :: SqlType Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#jsonb"><span class="hs-identifier hs-var hs-var">jsonb</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-393"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-394"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#jsonb"><span class="hs-identifier hs-var">Expr.jsonb</span></a></span><span>
+</span><span id="line-395"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-396"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">3802</span></span><span>
+</span><span id="line-397"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-398"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Text -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromText"><span class="hs-identifier hs-var">SqlValue.fromText</span></a></span><span>
+</span><span id="line-399"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Text
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toText"><span class="hs-identifier hs-var">SqlValue.toText</span></a></span><span>
+</span><span id="line-400"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-401"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-402"></span><span>
+</span><span id="line-403"></span><span class="annot"><span class="hs-comment">{- |
+  'oid' corresponds to the type used in PostgreSQL for identifying system
+  objects
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-409"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#oid"><span class="hs-identifier hs-type">oid</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-410"></span><span id="oid"><span class="annot"><span class="annottext">oid :: SqlType Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#oid"><span class="hs-identifier hs-var hs-var">oid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-411"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span>
+</span><span id="line-412"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="Orville.PostgreSQL.Expr.DataType.html#oid"><span class="hs-identifier hs-var">Expr.oid</span></a></span><span>
+</span><span id="line-413"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-414"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeOid :: Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeOid"><span class="hs-identifier hs-var">sqlTypeOid</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">26</span></span><span>
+</span><span id="line-415"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeMaximumLength :: Maybe Int32
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeMaximumLength"><span class="hs-identifier hs-var">sqlTypeMaximumLength</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-416"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: Oid -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">CTypes.CUInt</span></span><span> </span><span id="local-6989586621679131721"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679131721"><span class="hs-identifier hs-var">word</span></a></span></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromWord32"><span class="hs-identifier hs-var">SqlValue.fromWord32</span></a></span><span> </span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679131721"><span class="hs-identifier hs-var">word</span></a></span><span>
+</span><span id="line-417"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String Oid
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Word32 -&gt; Oid) -&gt; Either String Word32 -&gt; Either String Oid
+forall a b. (a -&gt; b) -&gt; Either String a -&gt; Either String b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">(CUInt -&gt; Oid) -&gt; (Word32 -&gt; CUInt) -&gt; Word32 -&gt; Oid
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Word32 -&gt; CUInt
+</span><span class="hs-identifier hs-var">CTypes.CUInt</span></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(Either String Word32 -&gt; Either String Oid)
+-&gt; (SqlValue -&gt; Either String Word32)
+-&gt; SqlValue
+-&gt; Either String Oid
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Word32
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toWord32"><span class="hs-identifier hs-var">SqlValue.toWord32</span></a></span><span>
+</span><span id="line-418"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeDontDropImplicitDefaultDuringMigrate"><span class="hs-identifier hs-var">sqlTypeDontDropImplicitDefaultDuringMigrate</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-419"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-420"></span><span>
+</span><span id="line-421"></span><span class="annot"><span class="hs-comment">{- |
+  'foreignRefType' creates a 'SqlType' suitable for columns will be foreign
+  keys referencing a column of the given 'SqlType'. For most types the
+  underlying sql type with be identical, but for special types (such as
+  autoincrementing primary keys), the type construted by 'foreignRefType' with
+  have regular underlying sql type. Each 'SqlType' definition must specify any
+  special handling required when creating foreign reference types by setting
+  the 'sqlTypeReferenceExpr' field to an appropriate value.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-432"></span><span id="local-6989586621679131614"><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#foreignRefType"><span class="hs-identifier hs-type">foreignRefType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131614"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131614"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-433"></span><span id="foreignRefType"><span class="annot"><span class="annottext">foreignRefType :: forall a. SqlType a -&gt; SqlType a
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#foreignRefType"><span class="hs-identifier hs-var hs-var">foreignRefType</span></a></span></span><span> </span><span id="local-6989586621679131724"><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131724"><span class="hs-identifier hs-var">sqlType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-434"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SqlType a -&gt; Maybe DataType
+forall a. SqlType a -&gt; Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131724"><span class="hs-identifier hs-var">sqlType</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-435"></span><span>    </span><span class="annot"><span class="annottext">Maybe DataType
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131724"><span class="hs-identifier hs-var">sqlType</span></a></span><span>
+</span><span id="line-436"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679131725"><span class="annot"><span class="annottext">DataType
+</span><a href="#local-6989586621679131725"><span class="hs-identifier hs-var">refExpr</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131724"><span class="hs-identifier hs-var">sqlType</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">sqlTypeExpr :: DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeExpr"><span class="hs-identifier hs-var">sqlTypeExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DataType
+</span><a href="#local-6989586621679131725"><span class="hs-identifier hs-var">refExpr</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeReferenceExpr :: Maybe DataType
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeReferenceExpr"><span class="hs-identifier hs-var">sqlTypeReferenceExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe DataType
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">}</span><span>
+</span><span id="line-437"></span><span>
+</span><span id="line-438"></span><span class="annot"><span class="hs-comment">{- |
+  'tryConvertSqlType' changes the Haskell type used by a 'SqlType' which
+  changing the column type that will be used in the database schema. The
+  functions given will be used to convert the now Haskell type to and from the
+  original type when reading and writing values from the database. When reading
+  an 'a' value from the database, the conversion function should produce 'Left
+  with an error message if the value cannot be successfully converted to a 'b'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-448"></span><span id="local-6989586621679131616"><span id="local-6989586621679131617"><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-type">tryConvertSqlType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679131616"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679131617"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679131617"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="annot"><a href="#local-6989586621679131616"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131617"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131616"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-449"></span><span id="tryConvertSqlType"><span class="annot"><span class="annottext">tryConvertSqlType :: forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var hs-var">tryConvertSqlType</span></a></span></span><span> </span><span id="local-6989586621679131727"><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679131727"><span class="hs-identifier hs-var">bToA</span></a></span></span><span> </span><span id="local-6989586621679131728"><span class="annot"><span class="annottext">a -&gt; Either String b
+</span><a href="#local-6989586621679131728"><span class="hs-identifier hs-var">aToB</span></a></span></span><span> </span><span id="local-6989586621679131729"><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131729"><span class="hs-identifier hs-var">sqlType</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-450"></span><span>  </span><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131729"><span class="hs-identifier hs-var">sqlType</span></a></span><span>
+</span><span id="line-451"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">sqlTypeToSql :: b -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlType a -&gt; a -&gt; SqlValue
+forall a. SqlType a -&gt; a -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeToSql"><span class="hs-identifier hs-var">sqlTypeToSql</span></a></span><span> </span><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131729"><span class="hs-identifier hs-var">sqlType</span></a></span><span> </span><span class="annot"><span class="annottext">(a -&gt; SqlValue) -&gt; (b -&gt; a) -&gt; b -&gt; SqlValue
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679131727"><span class="hs-identifier hs-var">bToA</span></a></span><span>
+</span><span id="line-452"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">sqlTypeFromSql :: SqlValue -&gt; Either String b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679131730"><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679131730"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-453"></span><span>        </span><span id="local-6989586621679131731"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679131731"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">SqlType a -&gt; SqlValue -&gt; Either String a
+forall a. SqlType a -&gt; SqlValue -&gt; Either String a
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#sqlTypeFromSql"><span class="hs-identifier hs-var">sqlTypeFromSql</span></a></span><span> </span><span class="annot"><span class="annottext">SqlType a
+</span><a href="#local-6989586621679131729"><span class="hs-identifier hs-var">sqlType</span></a></span><span> </span><span class="annot"><span class="annottext">SqlValue
+</span><a href="#local-6989586621679131730"><span class="hs-identifier hs-var">sql</span></a></span><span>
+</span><span id="line-454"></span><span>        </span><span class="annot"><span class="annottext">a -&gt; Either String b
+</span><a href="#local-6989586621679131728"><span class="hs-identifier hs-var">aToB</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679131731"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-455"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-456"></span><span>
+</span><span id="line-457"></span><span class="annot"><span class="hs-comment">{- |
+  'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
+  as 'tryConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-463"></span><span id="local-6989586621679131620"><span id="local-6989586621679131621"><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#convertSqlType"><span class="hs-identifier hs-type">convertSqlType</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679131620"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679131621"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679131621"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679131620"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131621"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlType.html#SqlType"><span class="hs-identifier hs-type">SqlType</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131620"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-464"></span><span id="convertSqlType"><span class="annot"><span class="annottext">convertSqlType :: forall b a. (b -&gt; a) -&gt; (a -&gt; b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#convertSqlType"><span class="hs-identifier hs-var hs-var">convertSqlType</span></a></span></span><span> </span><span id="local-6989586621679131732"><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679131732"><span class="hs-identifier hs-var">bToA</span></a></span></span><span> </span><span id="local-6989586621679131733"><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679131733"><span class="hs-identifier hs-var">aToB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-465"></span><span>  </span><span class="annot"><span class="annottext">(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+forall b a.
+(b -&gt; a) -&gt; (a -&gt; Either String b) -&gt; SqlType a -&gt; SqlType b
+</span><a href="Orville.PostgreSQL.Marshall.SqlType.html#tryConvertSqlType"><span class="hs-identifier hs-var">tryConvertSqlType</span></a></span><span> </span><span class="annot"><span class="annottext">b -&gt; a
+</span><a href="#local-6989586621679131732"><span class="hs-identifier hs-var">bToA</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">b -&gt; Either String b
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span> </span><span class="annot"><span class="annottext">(b -&gt; Either String b) -&gt; (a -&gt; b) -&gt; a -&gt; Either String b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679131733"><span class="hs-identifier hs-var">aToB</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-466"></span></pre></body></html>

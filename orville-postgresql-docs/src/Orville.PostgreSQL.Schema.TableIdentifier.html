@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Schema.TableIdentifier</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier">TableIdentifier</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#unqualifiedNameToTableId"><span class="hs-identifier">unqualifiedNameToTableId</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#setTableIdSchema"><span class="hs-identifier">setTableIdSchema</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdQualifiedName"><span class="hs-identifier">tableIdQualifiedName</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedName"><span class="hs-identifier">tableIdUnqualifiedName</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaName"><span class="hs-identifier">tableIdSchemaName</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdToString"><span class="hs-identifier">tableIdToString</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedNameString"><span class="hs-identifier">tableIdUnqualifiedNameString</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaNameString"><span class="hs-identifier">tableIdSchemaNameString</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="annot"><span class="hs-comment">{- |
+  An identifier used by Orville to identify a particular table in a particular
+  schema.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">data</span><span> </span><span id="TableIdentifier"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-var">TableIdentifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TableIdentifier"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-var">TableIdentifier</span></a></span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="i_tableIdName"><span class="annot"><span class="annottext">TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdName"><span class="hs-identifier hs-var hs-var">i_tableIdName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_tableIdSchema"><span class="annot"><span class="annottext">TableIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdSchema"><span class="hs-identifier hs-var hs-var">i_tableIdSchema</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679133662"><span id="local-6989586621679133669"><span class="annot"><span class="annottext">TableIdentifier -&gt; TableIdentifier -&gt; Bool
+(TableIdentifier -&gt; TableIdentifier -&gt; Bool)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; Bool)
+-&gt; Eq TableIdentifier
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+== :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+$c/= :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+/= :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133677"><span id="local-6989586621679133684"><span id="local-6989586621679133689"><span id="local-6989586621679133693"><span id="local-6989586621679133696"><span id="local-6989586621679133699"><span id="local-6989586621679133702"><span class="annot"><span class="annottext">Eq TableIdentifier
+Eq TableIdentifier
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; Ordering)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; Bool)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; Bool)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; Bool)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; Bool)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier)
+-&gt; (TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier)
+-&gt; Ord TableIdentifier
+TableIdentifier -&gt; TableIdentifier -&gt; Bool
+TableIdentifier -&gt; TableIdentifier -&gt; Ordering
+TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: TableIdentifier -&gt; TableIdentifier -&gt; Ordering
+compare :: TableIdentifier -&gt; TableIdentifier -&gt; Ordering
+$c&lt; :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+&lt; :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+$c&lt;= :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+&lt;= :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+$c&gt; :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+&gt; :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+$c&gt;= :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+&gt;= :: TableIdentifier -&gt; TableIdentifier -&gt; Bool
+$cmax :: TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier
+max :: TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier
+$cmin :: TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier
+min :: TableIdentifier -&gt; TableIdentifier -&gt; TableIdentifier
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133707"><span id="local-6989586621679133716"><span id="local-6989586621679133720"><span class="annot"><span class="annottext">Int -&gt; TableIdentifier -&gt; ShowS
+[TableIdentifier] -&gt; ShowS
+TableIdentifier -&gt; String
+(Int -&gt; TableIdentifier -&gt; ShowS)
+-&gt; (TableIdentifier -&gt; String)
+-&gt; ([TableIdentifier] -&gt; ShowS)
+-&gt; Show TableIdentifier
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; TableIdentifier -&gt; ShowS
+showsPrec :: Int -&gt; TableIdentifier -&gt; ShowS
+$cshow :: TableIdentifier -&gt; String
+show :: TableIdentifier -&gt; String
+$cshowList :: [TableIdentifier] -&gt; ShowS
+showList :: [TableIdentifier] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'TableIdentifier' where the table's name will not be qualified
+  by a particular schema.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-41"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#unqualifiedNameToTableId"><span class="hs-identifier hs-type">unqualifiedNameToTableId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span>
+</span><span id="line-42"></span><span id="unqualifiedNameToTableId"><span class="annot"><span class="annottext">unqualifiedNameToTableId :: String -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#unqualifiedNameToTableId"><span class="hs-identifier hs-var hs-var">unqualifiedNameToTableId</span></a></span></span><span> </span><span id="local-6989586621679133724"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133724"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableIdName :: String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdName"><span class="hs-identifier hs-var">i_tableIdName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133724"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableIdSchema :: Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdSchema"><span class="hs-identifier hs-var">i_tableIdSchema</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe String
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">{- |
+  Sets the schema of the 'TableIdentifier'. Wherever applicable, references to
+  the table will be qualified by the given scheme name.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#setTableIdSchema"><span class="hs-identifier hs-type">setTableIdSchema</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span>
+</span><span id="line-55"></span><span id="setTableIdSchema"><span class="annot"><span class="annottext">setTableIdSchema :: String -&gt; TableIdentifier -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#setTableIdSchema"><span class="hs-identifier hs-var hs-var">setTableIdSchema</span></a></span></span><span> </span><span id="local-6989586621679133725"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133725"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span id="local-6989586621679133726"><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133726"><span class="hs-identifier hs-var">tableId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-56"></span><span>  </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133726"><span class="hs-identifier hs-var">tableId</span></a></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableIdSchema :: Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdSchema"><span class="hs-identifier hs-var">i_tableIdSchema</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe String
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133725"><span class="hs-identifier hs-var">schema</span></a></span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the 'Expr.Qualified Expr.TableName' that should be used to refer to the
+  table in SQL queries.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdQualifiedName"><span class="hs-identifier hs-type">tableIdQualifiedName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Expr.Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">Expr.TableName</span></a></span><span>
+</span><span id="line-67"></span><span id="tableIdQualifiedName"><span class="annot"><span class="annottext">tableIdQualifiedName :: TableIdentifier -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdQualifiedName"><span class="hs-identifier hs-var hs-var">tableIdQualifiedName</span></a></span></span><span> </span><span id="local-6989586621679133727"><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133727"><span class="hs-identifier hs-var">tableId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="annottext">Maybe SchemaName -&gt; TableName -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#qualifyTable"><span class="hs-identifier hs-var">Expr.qualifyTable</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableIdentifier -&gt; Maybe SchemaName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaName"><span class="hs-identifier hs-var">tableIdSchemaName</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133727"><span class="hs-identifier hs-var">tableId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableIdentifier -&gt; TableName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedName"><span class="hs-identifier hs-var">tableIdUnqualifiedName</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133727"><span class="hs-identifier hs-var">tableId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the unqualified 'Expr.TableName' that should be used to refer to the
+  table in SQL queries where an unqualified reference is appropriate.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-78"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedName"><span class="hs-identifier hs-type">tableIdUnqualifiedName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">Expr.TableName</span></a></span><span>
+</span><span id="line-79"></span><span id="tableIdUnqualifiedName"><span class="annot"><span class="annottext">tableIdUnqualifiedName :: TableIdentifier -&gt; TableName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedName"><span class="hs-identifier hs-var hs-var">tableIdUnqualifiedName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; TableName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#tableName"><span class="hs-identifier hs-var">Expr.tableName</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; TableName)
+-&gt; (TableIdentifier -&gt; String) -&gt; TableIdentifier -&gt; TableName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdName"><span class="hs-identifier hs-var">i_tableIdName</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the 'Expr.SchemaName' (if any) that should be used to qualify
+  references to the table in SQL queries.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaName"><span class="hs-identifier hs-type">tableIdSchemaName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SchemaName.html#SchemaName"><span class="hs-identifier hs-type">Expr.SchemaName</span></a></span><span>
+</span><span id="line-89"></span><span id="tableIdSchemaName"><span class="annot"><span class="annottext">tableIdSchemaName :: TableIdentifier -&gt; Maybe SchemaName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaName"><span class="hs-identifier hs-var hs-var">tableIdSchemaName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="annottext">(String -&gt; SchemaName) -&gt; Maybe String -&gt; Maybe SchemaName
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; SchemaName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.SchemaName.html#schemaName"><span class="hs-identifier hs-var">Expr.schemaName</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe String -&gt; Maybe SchemaName)
+-&gt; (TableIdentifier -&gt; Maybe String)
+-&gt; TableIdentifier
+-&gt; Maybe SchemaName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdSchema"><span class="hs-identifier hs-var">i_tableIdSchema</span></a></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves the unqualified name of the table as a string.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedNameString"><span class="hs-identifier hs-type">tableIdUnqualifiedNameString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-98"></span><span id="tableIdUnqualifiedNameString"><span class="annot"><span class="annottext">tableIdUnqualifiedNameString :: TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdUnqualifiedNameString"><span class="hs-identifier hs-var hs-var">tableIdUnqualifiedNameString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-99"></span><span>  </span><span class="annot"><span class="annottext">TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdName"><span class="hs-identifier hs-var">i_tableIdName</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves the schema name of the table as a string
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaNameString"><span class="hs-identifier hs-type">tableIdSchemaNameString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-107"></span><span id="tableIdSchemaNameString"><span class="annot"><span class="annottext">tableIdSchemaNameString :: TableIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdSchemaNameString"><span class="hs-identifier hs-var hs-var">tableIdSchemaNameString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="annottext">TableIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdSchema"><span class="hs-identifier hs-var">i_tableIdSchema</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'TableIdentifier' for a string for descriptive purposes. The
+  name will be qualified if a schema name has been set for the identifier.
+
+  Note: You should not use this function for building SQL expressions. Use
+  'tableIdQualifiedName' instead for that.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-119"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdToString"><span class="hs-identifier hs-type">tableIdToString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-120"></span><span id="tableIdToString"><span class="annot"><span class="annottext">tableIdToString :: TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdToString"><span class="hs-identifier hs-var hs-var">tableIdToString</span></a></span></span><span> </span><span id="local-6989586621679133732"><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133732"><span class="hs-identifier hs-var">tableId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TableIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdSchema"><span class="hs-identifier hs-var">i_tableIdSchema</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133732"><span class="hs-identifier hs-var">tableId</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-122"></span><span>    </span><span class="annot"><span class="annottext">Maybe String
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-123"></span><span>      </span><span class="annot"><span class="annottext">TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdName"><span class="hs-identifier hs-var">i_tableIdName</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133732"><span class="hs-identifier hs-var">tableId</span></a></span><span>
+</span><span id="line-124"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679133733"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133733"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-125"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133733"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">TableIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#i_tableIdName"><span class="hs-identifier hs-var">i_tableIdName</span></a></span><span> </span><span class="annot"><span class="annottext">TableIdentifier
+</span><a href="#local-6989586621679133732"><span class="hs-identifier hs-var">tableId</span></a></span><span>
+</span><span id="line-126"></span></pre></body></html>

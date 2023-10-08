@@ -1,0 +1,939 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.SequenceDefinition</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CreateSequenceExpr"><span class="hs-identifier">CreateSequenceExpr</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#createSequenceExpr"><span class="hs-identifier">createSequenceExpr</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#AlterSequenceExpr"><span class="hs-identifier">AlterSequenceExpr</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#alterSequenceExpr"><span class="hs-identifier">alterSequenceExpr</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier">IncrementByExpr</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#incrementBy"><span class="hs-identifier">incrementBy</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier">MinValueExpr</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#minValue"><span class="hs-identifier">minValue</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noMinValue"><span class="hs-identifier">noMinValue</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier">MaxValueExpr</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#maxValue"><span class="hs-identifier">maxValue</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noMaxValue"><span class="hs-identifier">noMaxValue</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier">StartWithExpr</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#startWith"><span class="hs-identifier">startWith</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier">CacheExpr</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cache"><span class="hs-identifier">cache</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier">CycleExpr</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycle"><span class="hs-identifier">cycle</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noCycle"><span class="hs-identifier">noCycle</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycleIfTrue"><span class="hs-identifier">cycleIfTrue</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#DropSequenceExpr"><span class="hs-identifier">DropSequenceExpr</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#dropSequenceExpr"><span class="hs-identifier">dropSequenceExpr</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextVal"><span class="hs-identifier">nextVal</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextValFunction"><span class="hs-identifier">nextValFunction</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currVal"><span class="hs-identifier">currVal</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currValFunction"><span class="hs-identifier">currValFunction</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setVal"><span class="hs-identifier">setVal</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setValFunction"><span class="hs-identifier">setValFunction</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-comment">-- to avoid conflict with cycle</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Bool</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Just</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">fmap</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">($)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&lt;&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">catMaybes</span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.IfExists</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier">IfExists</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier">FunctionName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier">Qualified</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier">SequenceName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier">functionName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.ValueExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier">ValueExpression</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier">functionCall</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier">valueExpression</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="hs-comment">{-
+   From https://www.postgresql.org/docs/15/sql-createsequence.html
+
+   @@
+   CREATE [ { TEMPORARY | TEMP } | UNLOGGED ] SEQUENCE [ IF NOT EXISTS ] name
+    [ AS data_type ]
+    [ INCREMENT [ BY ] increment ]
+    [ MINVALUE minvalue | NO MINVALUE ] [ MAXVALUE maxvalue | NO MAXVALUE ]
+    [ START [ WITH ] start ] [ CACHE cache ] [ [ NO ] CYCLE ]
+    [ OWNED BY { table_name.column_name | NONE } ]
+   @@
+-}</span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @CREATE SEQUENCE@ statement. E.G.
+
+&gt; CREATE SEQUENCE foo INCREMENT 2
+
+'CreateSequenceExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-78"></span><span class="hs-keyword">newtype</span><span> </span><span id="CreateSequenceExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CreateSequenceExpr"><span class="hs-identifier hs-var">CreateSequenceExpr</span></a></span></span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CreateSequenceExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CreateSequenceExpr"><span class="hs-identifier hs-var">CreateSequenceExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130434"><span id="local-6989586621679130438"><span class="annot"><span class="annottext">RawSql -&gt; CreateSequenceExpr
+CreateSequenceExpr -&gt; RawSql
+(CreateSequenceExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; CreateSequenceExpr)
+-&gt; SqlExpression CreateSequenceExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CreateSequenceExpr -&gt; RawSql
+toRawSql :: CreateSequenceExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CreateSequenceExpr
+unsafeFromRawSql :: RawSql -&gt; CreateSequenceExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'CreateSequenceExpr' with the given sequence options.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-87"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#createSequenceExpr"><span class="hs-identifier hs-type">createSequenceExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-88"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The name to be used for the sequence</span></span><span>
+</span><span id="line-89"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">SequenceName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @INCREMENT@ expression</span></span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier hs-type">IncrementByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-92"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @MINVALUE@ expression</span></span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-type">MinValueExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @MAXVALUE@ expression</span></span><span>
+</span><span id="line-95"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-type">MaxValueExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-96"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @START WITH@ expression</span></span><span>
+</span><span id="line-97"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier hs-type">StartWithExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-98"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @CACHE@ expression</span></span><span>
+</span><span id="line-99"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier hs-type">CacheExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-100"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @CYCLE@ expression</span></span><span>
+</span><span id="line-101"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-type">CycleExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-102"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CreateSequenceExpr"><span class="hs-identifier hs-type">CreateSequenceExpr</span></a></span><span>
+</span><span id="line-103"></span><span id="createSequenceExpr"><span class="annot"><span class="annottext">createSequenceExpr :: Qualified SequenceName
+-&gt; Maybe IncrementByExpr
+-&gt; Maybe MinValueExpr
+-&gt; Maybe MaxValueExpr
+-&gt; Maybe StartWithExpr
+-&gt; Maybe CacheExpr
+-&gt; Maybe CycleExpr
+-&gt; CreateSequenceExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#createSequenceExpr"><span class="hs-identifier hs-var hs-var">createSequenceExpr</span></a></span></span><span> </span><span id="local-6989586621679130443"><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130443"><span class="hs-identifier hs-var">sequenceName</span></a></span></span><span> </span><span id="local-6989586621679130444"><span class="annot"><span class="annottext">Maybe IncrementByExpr
+</span><a href="#local-6989586621679130444"><span class="hs-identifier hs-var">mbIncrementBy</span></a></span></span><span> </span><span id="local-6989586621679130445"><span class="annot"><span class="annottext">Maybe MinValueExpr
+</span><a href="#local-6989586621679130445"><span class="hs-identifier hs-var">mbMinValue</span></a></span></span><span> </span><span id="local-6989586621679130446"><span class="annot"><span class="annottext">Maybe MaxValueExpr
+</span><a href="#local-6989586621679130446"><span class="hs-identifier hs-var">mbMaxValue</span></a></span></span><span> </span><span id="local-6989586621679130447"><span class="annot"><span class="annottext">Maybe StartWithExpr
+</span><a href="#local-6989586621679130447"><span class="hs-identifier hs-var">mbStartWith</span></a></span></span><span> </span><span id="local-6989586621679130448"><span class="annot"><span class="annottext">Maybe CacheExpr
+</span><a href="#local-6989586621679130448"><span class="hs-identifier hs-var">mbCache</span></a></span></span><span> </span><span id="local-6989586621679130449"><span class="annot"><span class="annottext">Maybe CycleExpr
+</span><a href="#local-6989586621679130449"><span class="hs-identifier hs-var">mbCycle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-104"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CreateSequenceExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CreateSequenceExpr"><span class="hs-identifier hs-var">CreateSequenceExpr</span></a></span><span>
+</span><span id="line-105"></span><span>    </span><span class="annot"><span class="annottext">(RawSql -&gt; CreateSequenceExpr)
+-&gt; ([Maybe RawSql] -&gt; RawSql)
+-&gt; [Maybe RawSql]
+-&gt; CreateSequenceExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><span class="annottext">([RawSql] -&gt; RawSql)
+-&gt; ([Maybe RawSql] -&gt; [RawSql]) -&gt; [Maybe RawSql] -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Maybe RawSql] -&gt; [RawSql]
+forall a. [Maybe a] -&gt; [a]
+</span><span class="hs-identifier hs-var">catMaybes</span></span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><span class="annottext">([Maybe RawSql] -&gt; CreateSequenceExpr)
+-&gt; [Maybe RawSql] -&gt; CreateSequenceExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CREATE SEQUENCE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-108"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130443"><span class="hs-identifier hs-var">sequenceName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-109"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(IncrementByExpr -&gt; RawSql)
+-&gt; Maybe IncrementByExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">IncrementByExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IncrementByExpr
+</span><a href="#local-6989586621679130444"><span class="hs-identifier hs-var">mbIncrementBy</span></a></span><span>
+</span><span id="line-110"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(MinValueExpr -&gt; RawSql) -&gt; Maybe MinValueExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">MinValueExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe MinValueExpr
+</span><a href="#local-6989586621679130445"><span class="hs-identifier hs-var">mbMinValue</span></a></span><span>
+</span><span id="line-111"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(MaxValueExpr -&gt; RawSql) -&gt; Maybe MaxValueExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">MaxValueExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe MaxValueExpr
+</span><a href="#local-6989586621679130446"><span class="hs-identifier hs-var">mbMaxValue</span></a></span><span>
+</span><span id="line-112"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(StartWithExpr -&gt; RawSql) -&gt; Maybe StartWithExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">StartWithExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe StartWithExpr
+</span><a href="#local-6989586621679130447"><span class="hs-identifier hs-var">mbStartWith</span></a></span><span>
+</span><span id="line-113"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(CacheExpr -&gt; RawSql) -&gt; Maybe CacheExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">CacheExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CacheExpr
+</span><a href="#local-6989586621679130448"><span class="hs-identifier hs-var">mbCache</span></a></span><span>
+</span><span id="line-114"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(CycleExpr -&gt; RawSql) -&gt; Maybe CycleExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">CycleExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CycleExpr
+</span><a href="#local-6989586621679130449"><span class="hs-identifier hs-var">mbCycle</span></a></span><span>
+</span><span id="line-115"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span class="hs-comment">{-
+  From https://www.postgresql.org/docs/15/sql-altersequence.html
+
+  @@
+  ALTER SEQUENCE [ IF EXISTS ] name
+    [ AS data_type ]
+    [ INCREMENT [ BY ] increment ]
+    [ MINVALUE minvalue | NO MINVALUE ] [ MAXVALUE maxvalue | NO MAXVALUE ]
+    [ START [ WITH ] start ]
+    [ RESTART [ [ WITH ] restart ] ]
+    [ CACHE cache ] [ [ NO ] CYCLE ]
+    [ OWNED BY { table_name.column_name | NONE } ]
+  ALTER SEQUENCE [ IF EXISTS ] name SET { LOGGED | UNLOGGED }
+  ALTER SEQUENCE [ IF EXISTS ] name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+  ALTER SEQUENCE [ IF EXISTS ] name RENAME TO new_name
+  ALTER SEQUENCE [ IF EXISTS ] name SET SCHEMA new_schema
+  @@
+-}</span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @CREATE SEQUENCE@ statement. E.G.
+
+&gt; ALTER SEQUENCE foo START WITH 0
+
+'AlterSequenceExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-147"></span><span class="hs-keyword">newtype</span><span> </span><span id="AlterSequenceExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#AlterSequenceExpr"><span class="hs-identifier hs-var">AlterSequenceExpr</span></a></span></span><span>
+</span><span id="line-148"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="AlterSequenceExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#AlterSequenceExpr"><span class="hs-identifier hs-var">AlterSequenceExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130456"><span id="local-6989586621679130460"><span class="annot"><span class="annottext">RawSql -&gt; AlterSequenceExpr
+AlterSequenceExpr -&gt; RawSql
+(AlterSequenceExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; AlterSequenceExpr) -&gt; SqlExpression AlterSequenceExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: AlterSequenceExpr -&gt; RawSql
+toRawSql :: AlterSequenceExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; AlterSequenceExpr
+unsafeFromRawSql :: RawSql -&gt; AlterSequenceExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-150"></span><span>
+</span><span id="line-151"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an 'AlterSequenceExpr' with the given sequence options.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#alterSequenceExpr"><span class="hs-identifier hs-type">alterSequenceExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-157"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The name of the sequence to alter</span></span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">SequenceName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-159"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @INCREMENT@ expression</span></span><span>
+</span><span id="line-160"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier hs-type">IncrementByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-161"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @MINVALUE@ expression</span></span><span>
+</span><span id="line-162"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-type">MinValueExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-163"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @MAXVALUE@ expression</span></span><span>
+</span><span id="line-164"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-type">MaxValueExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-165"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @START WITH@ expression</span></span><span>
+</span><span id="line-166"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier hs-type">StartWithExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-167"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @CACHE@ expression</span></span><span>
+</span><span id="line-168"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier hs-type">CacheExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-169"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @CYCLE@ expression</span></span><span>
+</span><span id="line-170"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-type">CycleExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#AlterSequenceExpr"><span class="hs-identifier hs-type">AlterSequenceExpr</span></a></span><span>
+</span><span id="line-172"></span><span id="alterSequenceExpr"><span class="annot"><span class="annottext">alterSequenceExpr :: Qualified SequenceName
+-&gt; Maybe IncrementByExpr
+-&gt; Maybe MinValueExpr
+-&gt; Maybe MaxValueExpr
+-&gt; Maybe StartWithExpr
+-&gt; Maybe CacheExpr
+-&gt; Maybe CycleExpr
+-&gt; AlterSequenceExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#alterSequenceExpr"><span class="hs-identifier hs-var hs-var">alterSequenceExpr</span></a></span></span><span> </span><span id="local-6989586621679130464"><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130464"><span class="hs-identifier hs-var">sequenceName</span></a></span></span><span> </span><span id="local-6989586621679130465"><span class="annot"><span class="annottext">Maybe IncrementByExpr
+</span><a href="#local-6989586621679130465"><span class="hs-identifier hs-var">mbIncrementBy</span></a></span></span><span> </span><span id="local-6989586621679130466"><span class="annot"><span class="annottext">Maybe MinValueExpr
+</span><a href="#local-6989586621679130466"><span class="hs-identifier hs-var">mbMinValue</span></a></span></span><span> </span><span id="local-6989586621679130467"><span class="annot"><span class="annottext">Maybe MaxValueExpr
+</span><a href="#local-6989586621679130467"><span class="hs-identifier hs-var">mbMaxValue</span></a></span></span><span> </span><span id="local-6989586621679130468"><span class="annot"><span class="annottext">Maybe StartWithExpr
+</span><a href="#local-6989586621679130468"><span class="hs-identifier hs-var">mbStartWith</span></a></span></span><span> </span><span id="local-6989586621679130469"><span class="annot"><span class="annottext">Maybe CacheExpr
+</span><a href="#local-6989586621679130469"><span class="hs-identifier hs-var">mbCache</span></a></span></span><span> </span><span id="local-6989586621679130470"><span class="annot"><span class="annottext">Maybe CycleExpr
+</span><a href="#local-6989586621679130470"><span class="hs-identifier hs-var">mbCycle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-173"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; AlterSequenceExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#AlterSequenceExpr"><span class="hs-identifier hs-var">AlterSequenceExpr</span></a></span><span>
+</span><span id="line-174"></span><span>    </span><span class="annot"><span class="annottext">(RawSql -&gt; AlterSequenceExpr)
+-&gt; ([Maybe RawSql] -&gt; RawSql)
+-&gt; [Maybe RawSql]
+-&gt; AlterSequenceExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-175"></span><span>    </span><span class="annot"><span class="annottext">([RawSql] -&gt; RawSql)
+-&gt; ([Maybe RawSql] -&gt; [RawSql]) -&gt; [Maybe RawSql] -&gt; RawSql
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[Maybe RawSql] -&gt; [RawSql]
+forall a. [Maybe a] -&gt; [a]
+</span><span class="hs-identifier hs-var">catMaybes</span></span><span>
+</span><span id="line-176"></span><span>    </span><span class="annot"><span class="annottext">([Maybe RawSql] -&gt; AlterSequenceExpr)
+-&gt; [Maybe RawSql] -&gt; AlterSequenceExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ALTER SEQUENCE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-177"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130464"><span class="hs-identifier hs-var">sequenceName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-178"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(IncrementByExpr -&gt; RawSql)
+-&gt; Maybe IncrementByExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">IncrementByExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IncrementByExpr
+</span><a href="#local-6989586621679130465"><span class="hs-identifier hs-var">mbIncrementBy</span></a></span><span>
+</span><span id="line-179"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(MinValueExpr -&gt; RawSql) -&gt; Maybe MinValueExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">MinValueExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe MinValueExpr
+</span><a href="#local-6989586621679130466"><span class="hs-identifier hs-var">mbMinValue</span></a></span><span>
+</span><span id="line-180"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(MaxValueExpr -&gt; RawSql) -&gt; Maybe MaxValueExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">MaxValueExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe MaxValueExpr
+</span><a href="#local-6989586621679130467"><span class="hs-identifier hs-var">mbMaxValue</span></a></span><span>
+</span><span id="line-181"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(StartWithExpr -&gt; RawSql) -&gt; Maybe StartWithExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">StartWithExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe StartWithExpr
+</span><a href="#local-6989586621679130468"><span class="hs-identifier hs-var">mbStartWith</span></a></span><span>
+</span><span id="line-182"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(CacheExpr -&gt; RawSql) -&gt; Maybe CacheExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">CacheExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CacheExpr
+</span><a href="#local-6989586621679130469"><span class="hs-identifier hs-var">mbCache</span></a></span><span>
+</span><span id="line-183"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(CycleExpr -&gt; RawSql) -&gt; Maybe CycleExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">CycleExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CycleExpr
+</span><a href="#local-6989586621679130470"><span class="hs-identifier hs-var">mbCycle</span></a></span><span>
+</span><span id="line-184"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-185"></span><span>
+</span><span id="line-186"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @INCREMENT BY@ expression for sequences. E.G.
+
+&gt; INCREMENT BY 0
+
+'IncrementByExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-197"></span><span class="hs-keyword">newtype</span><span> </span><span id="IncrementByExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier hs-var">IncrementByExpr</span></a></span></span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="IncrementByExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier hs-var">IncrementByExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-199"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130473"><span id="local-6989586621679130477"><span class="annot"><span class="annottext">RawSql -&gt; IncrementByExpr
+IncrementByExpr -&gt; RawSql
+(IncrementByExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; IncrementByExpr) -&gt; SqlExpression IncrementByExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: IncrementByExpr -&gt; RawSql
+toRawSql :: IncrementByExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; IncrementByExpr
+unsafeFromRawSql :: RawSql -&gt; IncrementByExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-200"></span><span>
+</span><span id="line-201"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an 'IncrementByExpr' that will make the sequence increment by
+  the given value
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-207"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#incrementBy"><span class="hs-identifier hs-type">incrementBy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier hs-type">IncrementByExpr</span></a></span><span>
+</span><span id="line-208"></span><span id="incrementBy"><span class="annot"><span class="annottext">incrementBy :: Int64 -&gt; IncrementByExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#incrementBy"><span class="hs-identifier hs-var hs-var">incrementBy</span></a></span></span><span> </span><span id="local-6989586621679130480"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130480"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-209"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IncrementByExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#IncrementByExpr"><span class="hs-identifier hs-var">IncrementByExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; IncrementByExpr) -&gt; RawSql -&gt; IncrementByExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-210"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;INCREMENT BY &quot;</span></span><span>
+</span><span id="line-211"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-var">RawSql.int64DecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130480"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-212"></span><span>
+</span><span id="line-213"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @MINVALUE@ expression for sequences. E.G.
+
+&gt; MINVALUE 0
+
+'MinValueExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-224"></span><span class="hs-keyword">newtype</span><span> </span><span id="MinValueExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-var">MinValueExpr</span></a></span></span><span>
+</span><span id="line-225"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="MinValueExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-var">MinValueExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-226"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130484"><span id="local-6989586621679130488"><span class="annot"><span class="annottext">RawSql -&gt; MinValueExpr
+MinValueExpr -&gt; RawSql
+(MinValueExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; MinValueExpr) -&gt; SqlExpression MinValueExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: MinValueExpr -&gt; RawSql
+toRawSql :: MinValueExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; MinValueExpr
+unsafeFromRawSql :: RawSql -&gt; MinValueExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-227"></span><span>
+</span><span id="line-228"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an 'MinValueExpr' which gives the sequence the specified minimum
+  value
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-234"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#minValue"><span class="hs-identifier hs-type">minValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-type">MinValueExpr</span></a></span><span>
+</span><span id="line-235"></span><span id="minValue"><span class="annot"><span class="annottext">minValue :: Int64 -&gt; MinValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#minValue"><span class="hs-identifier hs-var hs-var">minValue</span></a></span></span><span> </span><span id="local-6989586621679130491"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130491"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-236"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; MinValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-var">MinValueExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; MinValueExpr) -&gt; RawSql -&gt; MinValueExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-237"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;MINVALUE &quot;</span></span><span>
+</span><span id="line-238"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-var">RawSql.int64DecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130491"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-239"></span><span>
+</span><span id="line-240"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an 'MinValueExpr' which gives the sequence no minimum value (i.e.
+  @NO MINVALUE@)
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-246"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noMinValue"><span class="hs-identifier hs-type">noMinValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-type">MinValueExpr</span></a></span><span>
+</span><span id="line-247"></span><span id="noMinValue"><span class="annot"><span class="annottext">noMinValue :: MinValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noMinValue"><span class="hs-identifier hs-var hs-var">noMinValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-248"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; MinValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MinValueExpr"><span class="hs-identifier hs-var">MinValueExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; MinValueExpr)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; MinValueExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; MinValueExpr) -&gt; String -&gt; MinValueExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NO MINVALUE&quot;</span></span><span>
+</span><span id="line-249"></span><span>
+</span><span id="line-250"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @MAXVALUE@ expression for sequences. E.G.
+
+&gt; MAXVALUE 1000000
+
+'MaxValueExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-261"></span><span class="hs-keyword">newtype</span><span> </span><span id="MaxValueExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-var">MaxValueExpr</span></a></span></span><span>
+</span><span id="line-262"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="MaxValueExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-var">MaxValueExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-263"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130494"><span id="local-6989586621679130498"><span class="annot"><span class="annottext">RawSql -&gt; MaxValueExpr
+MaxValueExpr -&gt; RawSql
+(MaxValueExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; MaxValueExpr) -&gt; SqlExpression MaxValueExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: MaxValueExpr -&gt; RawSql
+toRawSql :: MaxValueExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; MaxValueExpr
+unsafeFromRawSql :: RawSql -&gt; MaxValueExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-264"></span><span>
+</span><span id="line-265"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an 'maxValueExpr' which gives the sequence the specified maximum
+  value
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-271"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#maxValue"><span class="hs-identifier hs-type">maxValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-type">MaxValueExpr</span></a></span><span>
+</span><span id="line-272"></span><span id="maxValue"><span class="annot"><span class="annottext">maxValue :: Int64 -&gt; MaxValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#maxValue"><span class="hs-identifier hs-var hs-var">maxValue</span></a></span></span><span> </span><span id="local-6989586621679130501"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130501"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-273"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; MaxValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-var">MaxValueExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; MaxValueExpr) -&gt; RawSql -&gt; MaxValueExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-274"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;MAXVALUE &quot;</span></span><span>
+</span><span id="line-275"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-var">RawSql.int64DecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130501"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-276"></span><span>
+</span><span id="line-277"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an 'MinValueExpr' which gives the sequence no maximum value (i.e.
+  @NO MAXVALUE@)
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-283"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noMaxValue"><span class="hs-identifier hs-type">noMaxValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-type">MaxValueExpr</span></a></span><span>
+</span><span id="line-284"></span><span id="noMaxValue"><span class="annot"><span class="annottext">noMaxValue :: MaxValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noMaxValue"><span class="hs-identifier hs-var hs-var">noMaxValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-285"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; MaxValueExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#MaxValueExpr"><span class="hs-identifier hs-var">MaxValueExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; MaxValueExpr)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; MaxValueExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; MaxValueExpr) -&gt; String -&gt; MaxValueExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NO MAXVALUE&quot;</span></span><span>
+</span><span id="line-286"></span><span>
+</span><span id="line-287"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @START WITH@ expression for sequences. E.G.
+
+&gt; START WITH 1
+
+'StartWithExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-298"></span><span class="hs-keyword">newtype</span><span> </span><span id="StartWithExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier hs-var">StartWithExpr</span></a></span></span><span>
+</span><span id="line-299"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="StartWithExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier hs-var">StartWithExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-300"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130504"><span id="local-6989586621679130508"><span class="annot"><span class="annottext">RawSql -&gt; StartWithExpr
+StartWithExpr -&gt; RawSql
+(StartWithExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; StartWithExpr) -&gt; SqlExpression StartWithExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: StartWithExpr -&gt; RawSql
+toRawSql :: StartWithExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; StartWithExpr
+unsafeFromRawSql :: RawSql -&gt; StartWithExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-301"></span><span>
+</span><span id="line-302"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'StartWithExpr' which gives the sequence the specified start
+  value
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-308"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#startWith"><span class="hs-identifier hs-type">startWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier hs-type">StartWithExpr</span></a></span><span>
+</span><span id="line-309"></span><span id="startWith"><span class="annot"><span class="annottext">startWith :: Int64 -&gt; StartWithExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#startWith"><span class="hs-identifier hs-var hs-var">startWith</span></a></span></span><span> </span><span id="local-6989586621679130511"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130511"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-310"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; StartWithExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#StartWithExpr"><span class="hs-identifier hs-var">StartWithExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; StartWithExpr) -&gt; RawSql -&gt; StartWithExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-311"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;START WITH &quot;</span></span><span>
+</span><span id="line-312"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-var">RawSql.int64DecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130511"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-313"></span><span>
+</span><span id="line-314"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @CACHE @ expression for sequences. E.G.
+
+&gt; CACHE 16
+
+'CacheExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-325"></span><span class="hs-keyword">newtype</span><span> </span><span id="CacheExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier hs-var">CacheExpr</span></a></span></span><span>
+</span><span id="line-326"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CacheExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier hs-var">CacheExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-327"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130514"><span id="local-6989586621679130518"><span class="annot"><span class="annottext">RawSql -&gt; CacheExpr
+CacheExpr -&gt; RawSql
+(CacheExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; CacheExpr) -&gt; SqlExpression CacheExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CacheExpr -&gt; RawSql
+toRawSql :: CacheExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CacheExpr
+unsafeFromRawSql :: RawSql -&gt; CacheExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-328"></span><span>
+</span><span id="line-329"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'CacheExpr' that will make the sequence pre-allocate the
+  specified number of sequence values.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-335"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cache"><span class="hs-identifier hs-type">cache</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier hs-type">CacheExpr</span></a></span><span>
+</span><span id="line-336"></span><span id="cache"><span class="annot"><span class="annottext">cache :: Int64 -&gt; CacheExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cache"><span class="hs-identifier hs-var hs-var">cache</span></a></span></span><span> </span><span id="local-6989586621679130521"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130521"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-337"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CacheExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CacheExpr"><span class="hs-identifier hs-var">CacheExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CacheExpr) -&gt; RawSql -&gt; CacheExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-338"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CACHE &quot;</span></span><span>
+</span><span id="line-339"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#int64DecLiteral"><span class="hs-identifier hs-var">RawSql.int64DecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130521"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-340"></span><span>
+</span><span id="line-341"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @CYCLE@ expression for sequences. E.G.
+
+&gt; CYCLE
+
+or
+
+&gt; NO CYCLE
+
+'CycleExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-356"></span><span class="hs-keyword">newtype</span><span> </span><span id="CycleExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-var">CycleExpr</span></a></span></span><span>
+</span><span id="line-357"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CycleExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-var">CycleExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-358"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130524"><span id="local-6989586621679130528"><span class="annot"><span class="annottext">RawSql -&gt; CycleExpr
+CycleExpr -&gt; RawSql
+(CycleExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; CycleExpr) -&gt; SqlExpression CycleExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CycleExpr -&gt; RawSql
+toRawSql :: CycleExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CycleExpr
+unsafeFromRawSql :: RawSql -&gt; CycleExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-359"></span><span>
+</span><span id="line-360"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'CycleExpr' that indicate that the sequence should cycle.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-365"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycle"><span class="hs-identifier hs-type">cycle</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-type">CycleExpr</span></a></span><span>
+</span><span id="line-366"></span><span id="cycle"><span class="annot"><span class="annottext">cycle :: CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycle"><span class="hs-identifier hs-var hs-var">cycle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-var">CycleExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CycleExpr) -&gt; RawSql -&gt; CycleExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CYCLE&quot;</span></span><span>
+</span><span id="line-367"></span><span>
+</span><span id="line-368"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'CycleExpr' that indicate that the sequence should not cycle.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-373"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noCycle"><span class="hs-identifier hs-type">noCycle</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-type">CycleExpr</span></a></span><span>
+</span><span id="line-374"></span><span id="noCycle"><span class="annot"><span class="annottext">noCycle :: CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noCycle"><span class="hs-identifier hs-var hs-var">noCycle</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-var">CycleExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CycleExpr) -&gt; RawSql -&gt; CycleExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NO CYCLE&quot;</span></span><span>
+</span><span id="line-375"></span><span>
+</span><span id="line-376"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'CycleExpr' will cause the sequence to cycle if the flag passed
+  is 'True'.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-382"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycleIfTrue"><span class="hs-identifier hs-type">cycleIfTrue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#CycleExpr"><span class="hs-identifier hs-type">CycleExpr</span></a></span><span>
+</span><span id="line-383"></span><span id="cycleIfTrue"><span class="annot"><span class="annottext">cycleIfTrue :: Bool -&gt; CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycleIfTrue"><span class="hs-identifier hs-var hs-var">cycleIfTrue</span></a></span></span><span> </span><span id="local-6989586621679130531"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679130531"><span class="hs-identifier hs-var">cycleFlag</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-384"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679130531"><span class="hs-identifier hs-var">cycleFlag</span></a></span><span>
+</span><span id="line-385"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#cycle"><span class="hs-identifier hs-var">cycle</span></a></span><span>
+</span><span id="line-386"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">CycleExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#noCycle"><span class="hs-identifier hs-var">noCycle</span></a></span><span>
+</span><span id="line-387"></span><span>
+</span><span id="line-388"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a @DROP SEQUENCE@ statement. E.G.
+
+&gt; DROP SEQUENCE foo
+
+'DropSequenceExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-399"></span><span class="hs-keyword">newtype</span><span> </span><span id="DropSequenceExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#DropSequenceExpr"><span class="hs-identifier hs-var">DropSequenceExpr</span></a></span></span><span>
+</span><span id="line-400"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="DropSequenceExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#DropSequenceExpr"><span class="hs-identifier hs-var">DropSequenceExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-401"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679130534"><span id="local-6989586621679130538"><span class="annot"><span class="annottext">RawSql -&gt; DropSequenceExpr
+DropSequenceExpr -&gt; RawSql
+(DropSequenceExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; DropSequenceExpr) -&gt; SqlExpression DropSequenceExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: DropSequenceExpr -&gt; RawSql
+toRawSql :: DropSequenceExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; DropSequenceExpr
+unsafeFromRawSql :: RawSql -&gt; DropSequenceExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-402"></span><span>
+</span><span id="line-403"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'DropSequenceExpr' that will drop sequence with the given name.
+  You maybe specific an 'IfExists' argument if you want to include an @IF
+  EXISTS@ condition in the statement.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-410"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#dropSequenceExpr"><span class="hs-identifier hs-type">dropSequenceExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier hs-type">IfExists</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">SequenceName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#DropSequenceExpr"><span class="hs-identifier hs-type">DropSequenceExpr</span></a></span><span>
+</span><span id="line-411"></span><span id="dropSequenceExpr"><span class="annot"><span class="annottext">dropSequenceExpr :: Maybe IfExists -&gt; Qualified SequenceName -&gt; DropSequenceExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#dropSequenceExpr"><span class="hs-identifier hs-var hs-var">dropSequenceExpr</span></a></span></span><span> </span><span id="local-6989586621679130542"><span class="annot"><span class="annottext">Maybe IfExists
+</span><a href="#local-6989586621679130542"><span class="hs-identifier hs-var">maybeIfExists</span></a></span></span><span> </span><span id="local-6989586621679130543"><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130543"><span class="hs-identifier hs-var">sequenceName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-412"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; DropSequenceExpr
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#DropSequenceExpr"><span class="hs-identifier hs-var">DropSequenceExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DropSequenceExpr) -&gt; RawSql -&gt; DropSequenceExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-413"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span>
+</span><span id="line-414"></span><span>      </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-415"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">[Maybe RawSql] -&gt; [RawSql]
+forall a. [Maybe a] -&gt; [a]
+</span><span class="hs-identifier hs-var">catMaybes</span></span><span>
+</span><span id="line-416"></span><span>          </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;DROP SEQUENCE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-417"></span><span>          </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(IfExists -&gt; RawSql) -&gt; Maybe IfExists -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">IfExists -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe IfExists
+</span><a href="#local-6989586621679130542"><span class="hs-identifier hs-var">maybeIfExists</span></a></span><span>
+</span><span id="line-418"></span><span>          </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130543"><span class="hs-identifier hs-var">sequenceName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-419"></span><span>          </span><span class="hs-special">]</span><span>
+</span><span id="line-420"></span><span>      </span><span class="hs-special">)</span><span>
+</span><span id="line-421"></span><span>
+</span><span id="line-422"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ValueExpression' that will use the @nextval@ PostgreSQL
+  function to get the next value from the given sequence. If you're trying to
+  construct your own @SELECT@ to get the value of the sequnce, you can use the
+  constructed 'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs'
+  to build the item to select.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-431"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextVal"><span class="hs-identifier hs-type">nextVal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">SequenceName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-432"></span><span id="nextVal"><span class="annot"><span class="annottext">nextVal :: Qualified SequenceName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextVal"><span class="hs-identifier hs-var hs-var">nextVal</span></a></span></span><span> </span><span id="local-6989586621679130544"><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130544"><span class="hs-identifier hs-var">sequenceName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-433"></span><span>  </span><span class="annot"><span class="annottext">FunctionName -&gt; [ValueExpression] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-var">functionCall</span></a></span><span>
+</span><span id="line-434"></span><span>    </span><span class="annot"><span class="annottext">FunctionName
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextValFunction"><span class="hs-identifier hs-var">nextValFunction</span></a></span><span>
+</span><span id="line-435"></span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">SqlValue -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier hs-var">valueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlValue -&gt; ValueExpression)
+-&gt; (Qualified SequenceName -&gt; SqlValue)
+-&gt; Qualified SequenceName
+-&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromRawBytes"><span class="hs-identifier hs-var">SqlValue.fromRawBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; SqlValue)
+-&gt; (Qualified SequenceName -&gt; ByteString)
+-&gt; Qualified SequenceName
+-&gt; SqlValue
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; ByteString
+forall sql. SqlExpression sql =&gt; sql -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toExampleBytes"><span class="hs-identifier hs-var">RawSql.toExampleBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(Qualified SequenceName -&gt; ValueExpression)
+-&gt; Qualified SequenceName -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130544"><span class="hs-identifier hs-var">sequenceName</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-436"></span><span>
+</span><span id="line-437"></span><span class="annot"><span class="hs-comment">{- |
+  The @nextval@ PostgreSQL function.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-442"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextValFunction"><span class="hs-identifier hs-type">nextValFunction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier hs-type">FunctionName</span></a></span><span>
+</span><span id="line-443"></span><span id="nextValFunction"><span class="annot"><span class="annottext">nextValFunction :: FunctionName
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#nextValFunction"><span class="hs-identifier hs-var hs-var">nextValFunction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-444"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier hs-var">functionName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;nextval&quot;</span></span><span>
+</span><span id="line-445"></span><span>
+</span><span id="line-446"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ValueExpression' that will use the @currval@ PostgreSQL
+  function to get the current value from the given sequence. If you're trying to
+  construct your own @SELECT@ to get the value of the sequnce, you can use the
+  constructed 'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs'
+  to build the item to select.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-455"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currVal"><span class="hs-identifier hs-type">currVal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">SequenceName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-456"></span><span id="currVal"><span class="annot"><span class="annottext">currVal :: Qualified SequenceName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currVal"><span class="hs-identifier hs-var hs-var">currVal</span></a></span></span><span> </span><span id="local-6989586621679130547"><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130547"><span class="hs-identifier hs-var">sequenceName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-457"></span><span>  </span><span class="annot"><span class="annottext">FunctionName -&gt; [ValueExpression] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-var">functionCall</span></a></span><span>
+</span><span id="line-458"></span><span>    </span><span class="annot"><span class="annottext">FunctionName
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currValFunction"><span class="hs-identifier hs-var">currValFunction</span></a></span><span>
+</span><span id="line-459"></span><span>    </span><span class="hs-special">[</span><span class="annot"><span class="annottext">SqlValue -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier hs-var">valueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlValue -&gt; ValueExpression)
+-&gt; (Qualified SequenceName -&gt; SqlValue)
+-&gt; Qualified SequenceName
+-&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromRawBytes"><span class="hs-identifier hs-var">SqlValue.fromRawBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; SqlValue)
+-&gt; (Qualified SequenceName -&gt; ByteString)
+-&gt; Qualified SequenceName
+-&gt; SqlValue
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; ByteString
+forall sql. SqlExpression sql =&gt; sql -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toExampleBytes"><span class="hs-identifier hs-var">RawSql.toExampleBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(Qualified SequenceName -&gt; ValueExpression)
+-&gt; Qualified SequenceName -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130547"><span class="hs-identifier hs-var">sequenceName</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-460"></span><span>
+</span><span id="line-461"></span><span class="annot"><span class="hs-comment">{- |
+  The @currval@ PostgreSQL function.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-466"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currValFunction"><span class="hs-identifier hs-type">currValFunction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier hs-type">FunctionName</span></a></span><span>
+</span><span id="line-467"></span><span id="currValFunction"><span class="annot"><span class="annottext">currValFunction :: FunctionName
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#currValFunction"><span class="hs-identifier hs-var hs-var">currValFunction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-468"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier hs-var">functionName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;currval&quot;</span></span><span>
+</span><span id="line-469"></span><span>
+</span><span id="line-470"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ValueExpression' that will use the @setval@ PostgreSQL function
+  to set the value from the given sequence. If you're trying to construct your
+  own @SELECT@ to set the value of the sequnce, you can use the constructed
+  'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs' to build the
+  item to select.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-479"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setVal"><span class="hs-identifier hs-type">setVal</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">SequenceName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-480"></span><span id="setVal"><span class="annot"><span class="annottext">setVal :: Qualified SequenceName -&gt; Int64 -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setVal"><span class="hs-identifier hs-var hs-var">setVal</span></a></span></span><span> </span><span id="local-6989586621679130548"><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130548"><span class="hs-identifier hs-var">sequenceName</span></a></span></span><span> </span><span id="local-6989586621679130549"><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130549"><span class="hs-identifier hs-var">newValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-481"></span><span>  </span><span class="annot"><span class="annottext">FunctionName -&gt; [ValueExpression] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-var">functionCall</span></a></span><span>
+</span><span id="line-482"></span><span>    </span><span class="annot"><span class="annottext">FunctionName
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setValFunction"><span class="hs-identifier hs-var">setValFunction</span></a></span><span>
+</span><span id="line-483"></span><span>    </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier hs-var">valueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlValue -&gt; ValueExpression)
+-&gt; (Qualified SequenceName -&gt; SqlValue)
+-&gt; Qualified SequenceName
+-&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromRawBytes"><span class="hs-identifier hs-var">SqlValue.fromRawBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; SqlValue)
+-&gt; (Qualified SequenceName -&gt; ByteString)
+-&gt; Qualified SequenceName
+-&gt; SqlValue
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName -&gt; ByteString
+forall sql. SqlExpression sql =&gt; sql -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toExampleBytes"><span class="hs-identifier hs-var">RawSql.toExampleBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(Qualified SequenceName -&gt; ValueExpression)
+-&gt; Qualified SequenceName -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Qualified SequenceName
+</span><a href="#local-6989586621679130548"><span class="hs-identifier hs-var">sequenceName</span></a></span><span>
+</span><span id="line-484"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#valueExpression"><span class="hs-identifier hs-var">valueExpression</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlValue -&gt; ValueExpression)
+-&gt; (Int64 -&gt; SqlValue) -&gt; Int64 -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromInt64"><span class="hs-identifier hs-var">SqlValue.fromInt64</span></a></span><span> </span><span class="annot"><span class="annottext">(Int64 -&gt; ValueExpression) -&gt; Int64 -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int64
+</span><a href="#local-6989586621679130549"><span class="hs-identifier hs-var">newValue</span></a></span><span>
+</span><span id="line-485"></span><span>    </span><span class="hs-special">]</span><span>
+</span><span id="line-486"></span><span>
+</span><span id="line-487"></span><span class="annot"><span class="hs-comment">{- |
+  The @setval@ PostgreSQL function.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-492"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setValFunction"><span class="hs-identifier hs-type">setValFunction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier hs-type">FunctionName</span></a></span><span>
+</span><span id="line-493"></span><span id="setValFunction"><span class="annot"><span class="annottext">setValFunction :: FunctionName
+</span><a href="Orville.PostgreSQL.Expr.SequenceDefinition.html#setValFunction"><span class="hs-identifier hs-var hs-var">setValFunction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-494"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier hs-var">functionName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;setval&quot;</span></span><span>
+</span><span id="line-495"></span></pre></body></html>

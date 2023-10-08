@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.GroupBy</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByClause"><span class="hs-identifier">GroupByClause</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByClause"><span class="hs-identifier">groupByClause</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier">GroupByExpr</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#appendGroupByExpr"><span class="hs-identifier">appendGroupByExpr</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByExpr"><span class="hs-identifier">groupByExpr</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByColumnsExpr"><span class="hs-identifier">groupByColumnsExpr</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NonEmpty</span></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier">ColumnName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL group by clause. E.G.
+
+&gt; GROUP BY team_name
+
+'GroupByClause' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">newtype</span><span> </span><span id="GroupByClause"><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByClause"><span class="hs-identifier hs-var">GroupByClause</span></a></span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="GroupByClause"><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByClause"><span class="hs-identifier hs-var">GroupByClause</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-40"></span><span>      </span><span id="local-6989586621679129332"><span id="local-6989586621679129337"><span class="annot"><span class="annottext">RawSql -&gt; GroupByClause
+GroupByClause -&gt; RawSql
+(GroupByClause -&gt; RawSql)
+-&gt; (RawSql -&gt; GroupByClause) -&gt; SqlExpression GroupByClause
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: GroupByClause -&gt; RawSql
+toRawSql :: GroupByClause -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; GroupByClause
+unsafeFromRawSql :: RawSql -&gt; GroupByClause
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="annot"><span class="hs-comment">{- | Create a full sql GROUP BY clause with the given expression.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-47"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByClause"><span class="hs-identifier hs-type">groupByClause</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByClause"><span class="hs-identifier hs-type">GroupByClause</span></a></span><span>
+</span><span id="line-48"></span><span id="groupByClause"><span class="annot"><span class="annottext">groupByClause :: GroupByExpr -&gt; GroupByClause
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByClause"><span class="hs-identifier hs-var hs-var">groupByClause</span></a></span></span><span> </span><span id="local-6989586621679129342"><span class="annot"><span class="annottext">GroupByExpr
+</span><a href="#local-6989586621679129342"><span class="hs-identifier hs-var">expr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; GroupByClause
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByClause"><span class="hs-identifier hs-var">GroupByClause</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;GROUP BY &quot;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">GroupByExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">GroupByExpr
+</span><a href="#local-6989586621679129342"><span class="hs-identifier hs-var">expr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL group by expression (the part that follows the @GROUP
+BY@ in sql). E.G.
+
+&gt; team_name
+
+'GroupByExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-62"></span><span class="hs-keyword">newtype</span><span> </span><span id="GroupByExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-var">GroupByExpr</span></a></span></span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="GroupByExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-var">GroupByExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-66"></span><span>      </span><span id="local-6989586621679129347"><span id="local-6989586621679129351"><span class="annot"><span class="annottext">RawSql -&gt; GroupByExpr
+GroupByExpr -&gt; RawSql
+(GroupByExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; GroupByExpr) -&gt; SqlExpression GroupByExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: GroupByExpr -&gt; RawSql
+toRawSql :: GroupByExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; GroupByExpr
+unsafeFromRawSql :: RawSql -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">{- |
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-72"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679129356"><span id="local-6989586621679129360"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span>  </span><span id="local-6989586621679129365"><span class="annot"><span class="annottext">&lt;&gt; :: GroupByExpr -&gt; GroupByExpr -&gt; GroupByExpr
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;&gt;)</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">GroupByExpr -&gt; GroupByExpr -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#appendGroupByExpr"><span class="hs-identifier hs-var">appendGroupByExpr</span></a></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">{- | Combines two 'GroupByExpr's with a comma between them.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#appendGroupByExpr"><span class="hs-identifier hs-type">appendGroupByExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span>
+</span><span id="line-80"></span><span id="appendGroupByExpr"><span class="annot"><span class="annottext">appendGroupByExpr :: GroupByExpr -&gt; GroupByExpr -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#appendGroupByExpr"><span class="hs-identifier hs-var hs-var">appendGroupByExpr</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span> </span><span id="local-6989586621679129366"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679129366"><span class="hs-identifier hs-var">a</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span> </span><span id="local-6989586621679129367"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679129367"><span class="hs-identifier hs-var">b</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-var">GroupByExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679129366"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#commaSpace"><span class="hs-identifier hs-var">RawSql.commaSpace</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679129367"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="annot"><span class="hs-comment">{- | Create a 'GroupByExpr' from some 'RawSql'. Note that it is up to the caller to ensure that the
+  given value can actually be used for a 'GroupByExpr'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByExpr"><span class="hs-identifier hs-type">groupByExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span>
+</span><span id="line-89"></span><span id="groupByExpr"><span class="annot"><span class="annottext">groupByExpr :: RawSql -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByExpr"><span class="hs-identifier hs-var hs-var">groupByExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-var">GroupByExpr</span></a></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><span class="hs-comment">{- | Create a 'GroupByExpr' from the given 'ColumnName's.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByColumnsExpr"><span class="hs-identifier hs-type">groupByColumnsExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">GroupByExpr</span></a></span><span>
+</span><span id="line-97"></span><span id="groupByColumnsExpr"><span class="annot"><span class="annottext">groupByColumnsExpr :: NonEmpty ColumnName -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByColumnsExpr"><span class="hs-identifier hs-var hs-var">groupByColumnsExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-98"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; GroupByExpr
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-var">GroupByExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; GroupByExpr)
+-&gt; (NonEmpty ColumnName -&gt; RawSql)
+-&gt; NonEmpty ColumnName
+-&gt; GroupByExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; NonEmpty ColumnName -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#commaSpace"><span class="hs-identifier hs-var">RawSql.commaSpace</span></a></span><span>
+</span><span id="line-99"></span></pre></body></html>

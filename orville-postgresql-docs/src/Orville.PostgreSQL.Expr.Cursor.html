@@ -1,0 +1,910 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Cursor</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#DeclareExpr"><span class="hs-identifier">DeclareExpr</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#declare"><span class="hs-identifier">declare</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier">ScrollExpr</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#scroll"><span class="hs-identifier">scroll</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#noScroll"><span class="hs-identifier">noScroll</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier">HoldExpr</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#withHold"><span class="hs-identifier">withHold</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#withoutHold"><span class="hs-identifier">withoutHold</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CloseExpr"><span class="hs-identifier">CloseExpr</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#close"><span class="hs-identifier">close</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#AllCursors"><span class="hs-identifier">AllCursors</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#allCursors"><span class="hs-identifier">allCursors</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#FetchExpr"><span class="hs-identifier">FetchExpr</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#fetch"><span class="hs-identifier">fetch</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#MoveExpr"><span class="hs-identifier">MoveExpr</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#move"><span class="hs-identifier">move</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier">CursorDirection</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#next"><span class="hs-identifier">next</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#prior"><span class="hs-identifier">prior</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#first"><span class="hs-identifier">first</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#last"><span class="hs-identifier">last</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#absolute"><span class="hs-identifier">absolute</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#relative"><span class="hs-identifier">relative</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#rowCount"><span class="hs-identifier">rowCount</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#fetchAll"><span class="hs-identifier">fetchAll</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forward"><span class="hs-identifier">forward</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardCount"><span class="hs-identifier">forwardCount</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardAll"><span class="hs-identifier">forwardAll</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backward"><span class="hs-identifier">backward</span></a></span><span>
+</span><span id="line-40"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardCount"><span class="hs-identifier">backwardCount</span></a></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardAll"><span class="hs-identifier">backwardAll</span></a></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-43"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">catMaybes</span></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Either</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Just</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">either</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">fmap</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">($)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&lt;&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier">CursorName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Query</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier">QueryExpr</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="annot"><span class="hs-comment">{- |
+'DeclareExpr' corresponds to the SQL DECLARE statement, for declaring and
+opening cursors. E.G.
+
+&gt; DECLARE FOO CURSOR FOR SELECT * FROM BAR
+
+See PostgreSQL [cursor declare
+documentation](https://www.postgresql.org/docs/current/sql-declare.html) for
+more information.
+
+'DeclareExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-68"></span><span class="hs-keyword">newtype</span><span> </span><span id="DeclareExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#DeclareExpr"><span class="hs-identifier hs-var">DeclareExpr</span></a></span></span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="DeclareExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#DeclareExpr"><span class="hs-identifier hs-var">DeclareExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-72"></span><span>      </span><span id="local-6989586621679131035"><span id="local-6989586621679131039"><span class="annot"><span class="annottext">RawSql -&gt; DeclareExpr
+DeclareExpr -&gt; RawSql
+(DeclareExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; DeclareExpr) -&gt; SqlExpression DeclareExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: DeclareExpr -&gt; RawSql
+toRawSql :: DeclareExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; DeclareExpr
+unsafeFromRawSql :: RawSql -&gt; DeclareExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">{- | A smart constructor for setting up a 'DeclareExpr'. This, along with other functions provided
+   allow to more safely declare a cursor.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#declare"><span class="hs-identifier hs-type">declare</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier hs-type">CursorName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-type">ScrollExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-83"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-type">HoldExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-84"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier hs-type">QueryExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#DeclareExpr"><span class="hs-identifier hs-type">DeclareExpr</span></a></span><span>
+</span><span id="line-86"></span><span id="declare"><span class="annot"><span class="annottext">declare :: CursorName
+-&gt; Maybe ScrollExpr -&gt; Maybe HoldExpr -&gt; QueryExpr -&gt; DeclareExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#declare"><span class="hs-identifier hs-var hs-var">declare</span></a></span></span><span> </span><span id="local-6989586621679131044"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679131044"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span> </span><span id="local-6989586621679131045"><span class="annot"><span class="annottext">Maybe ScrollExpr
+</span><a href="#local-6989586621679131045"><span class="hs-identifier hs-var">maybeScrollExpr</span></a></span></span><span> </span><span id="local-6989586621679131046"><span class="annot"><span class="annottext">Maybe HoldExpr
+</span><a href="#local-6989586621679131046"><span class="hs-identifier hs-var">maybeHoldExpr</span></a></span></span><span> </span><span id="local-6989586621679131047"><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679131047"><span class="hs-identifier hs-var">queryExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-87"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; DeclareExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#DeclareExpr"><span class="hs-identifier hs-var">DeclareExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DeclareExpr) -&gt; RawSql -&gt; DeclareExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-88"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span> </span><span class="annot"><span class="annottext">([RawSql] -&gt; RawSql) -&gt; [RawSql] -&gt; RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-89"></span><span>      </span><span class="annot"><span class="annottext">[Maybe RawSql] -&gt; [RawSql]
+forall a. [Maybe a] -&gt; [a]
+</span><span class="hs-identifier hs-var">catMaybes</span></span><span>
+</span><span id="line-90"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;DECLARE&quot;</span></span><span>
+</span><span id="line-91"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CursorName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679131044"><span class="hs-identifier hs-var">cursorName</span></a></span><span>
+</span><span id="line-92"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(ScrollExpr -&gt; RawSql) -&gt; Maybe ScrollExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ScrollExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ScrollExpr
+</span><a href="#local-6989586621679131045"><span class="hs-identifier hs-var">maybeScrollExpr</span></a></span><span>
+</span><span id="line-93"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CURSOR&quot;</span></span><span>
+</span><span id="line-94"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(HoldExpr -&gt; RawSql) -&gt; Maybe HoldExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">HoldExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe HoldExpr
+</span><a href="#local-6989586621679131046"><span class="hs-identifier hs-var">maybeHoldExpr</span></a></span><span>
+</span><span id="line-95"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FOR&quot;</span></span><span>
+</span><span id="line-96"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">QueryExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679131047"><span class="hs-identifier hs-var">queryExpr</span></a></span><span>
+</span><span id="line-97"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="annot"><span class="hs-comment">{- |
+'ScrollExpr' is used to determine if a cursor should be able to fetch
+nonsequentially. E.G.
+
+&gt; NO SCROLL
+
+Note that the default in at least PostgreSQL versions 11-15 is to allow
+nonsequential fetches under some, but not all, circumstances.
+
+See PostgreSQL [cursor declare
+documentation](https://www.postgresql.org/docs/current/sql-declare.html) for more information.
+
+'ScrollExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-117"></span><span class="hs-keyword">newtype</span><span> </span><span id="ScrollExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-var">ScrollExpr</span></a></span></span><span>
+</span><span id="line-118"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ScrollExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-var">ScrollExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-119"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-120"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-121"></span><span>      </span><span id="local-6989586621679131054"><span id="local-6989586621679131058"><span class="annot"><span class="annottext">RawSql -&gt; ScrollExpr
+ScrollExpr -&gt; RawSql
+(ScrollExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; ScrollExpr) -&gt; SqlExpression ScrollExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ScrollExpr -&gt; RawSql
+toRawSql :: ScrollExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ScrollExpr
+unsafeFromRawSql :: RawSql -&gt; ScrollExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-122"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="annot"><span class="hs-comment">{- | Allow a cursor to be used to fetch rows nonsequentially.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-128"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#scroll"><span class="hs-identifier hs-type">scroll</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-type">ScrollExpr</span></a></span><span>
+</span><span id="line-129"></span><span id="scroll"><span class="annot"><span class="annottext">scroll :: ScrollExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#scroll"><span class="hs-identifier hs-var hs-var">scroll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-130"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ScrollExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-var">ScrollExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ScrollExpr)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; ScrollExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ScrollExpr) -&gt; String -&gt; ScrollExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SCROLL&quot;</span></span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span class="annot"><span class="hs-comment">{- | Only allow a cursor to be used to fetch rows sequentially.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-136"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#noScroll"><span class="hs-identifier hs-type">noScroll</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-type">ScrollExpr</span></a></span><span>
+</span><span id="line-137"></span><span id="noScroll"><span class="annot"><span class="annottext">noScroll :: ScrollExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#noScroll"><span class="hs-identifier hs-var hs-var">noScroll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-138"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ScrollExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-var">ScrollExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ScrollExpr)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; ScrollExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; ScrollExpr) -&gt; String -&gt; ScrollExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NO SCROLL&quot;</span></span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="annot"><span class="hs-comment">{- |
+'HoldExpr' is used to determine if a cursor should be available for use after
+the transaction that created it has been comitted. E.G.
+
+&gt; WITH HOLD
+
+See PostgreSQL [cursor documentation](https://www.postgresql.org/docs/current/sql-declare.html) for
+more information.
+
+'HoldExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-155"></span><span class="hs-keyword">newtype</span><span> </span><span id="HoldExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-var">HoldExpr</span></a></span></span><span>
+</span><span id="line-156"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="HoldExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-var">HoldExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-157"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-158"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-159"></span><span>      </span><span id="local-6989586621679131063"><span id="local-6989586621679131067"><span class="annot"><span class="annottext">RawSql -&gt; HoldExpr
+HoldExpr -&gt; RawSql
+(HoldExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; HoldExpr) -&gt; SqlExpression HoldExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: HoldExpr -&gt; RawSql
+toRawSql :: HoldExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; HoldExpr
+unsafeFromRawSql :: RawSql -&gt; HoldExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-160"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-161"></span><span>
+</span><span id="line-162"></span><span class="annot"><span class="hs-comment">{- | Allow a cursor to be used after the transaction creating it is committed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-166"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#withHold"><span class="hs-identifier hs-type">withHold</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-type">HoldExpr</span></a></span><span>
+</span><span id="line-167"></span><span id="withHold"><span class="annot"><span class="annottext">withHold :: HoldExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#withHold"><span class="hs-identifier hs-var hs-var">withHold</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-168"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; HoldExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-var">HoldExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; HoldExpr) -&gt; (String -&gt; RawSql) -&gt; String -&gt; HoldExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; HoldExpr) -&gt; String -&gt; HoldExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;WITH HOLD&quot;</span></span><span>
+</span><span id="line-169"></span><span>
+</span><span id="line-170"></span><span class="annot"><span class="hs-comment">{- | Do not allow a cursor to be used after the transaction creating it is committed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-174"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#withoutHold"><span class="hs-identifier hs-type">withoutHold</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-type">HoldExpr</span></a></span><span>
+</span><span id="line-175"></span><span id="withoutHold"><span class="annot"><span class="annottext">withoutHold :: HoldExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#withoutHold"><span class="hs-identifier hs-var hs-var">withoutHold</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-176"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; HoldExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-var">HoldExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; HoldExpr) -&gt; (String -&gt; RawSql) -&gt; String -&gt; HoldExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; HoldExpr) -&gt; String -&gt; HoldExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;WITHOUT HOLD&quot;</span></span><span>
+</span><span id="line-177"></span><span>
+</span><span id="line-178"></span><span class="annot"><span class="hs-comment">{- |
+'CloseExpr' corresponds to the SQL CLOSE statement. E.G.
+
+&gt; CLOSE ALL
+
+See PostgreSQL [close documentation](https://www.postgresql.org/docs/current/sql-close.html) for
+more information.
+
+'HoldExpr' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-192"></span><span class="hs-keyword">newtype</span><span> </span><span id="CloseExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CloseExpr"><span class="hs-identifier hs-var">CloseExpr</span></a></span></span><span>
+</span><span id="line-193"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CloseExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CloseExpr"><span class="hs-identifier hs-var">CloseExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-194"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-195"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-196"></span><span>      </span><span id="local-6989586621679131072"><span id="local-6989586621679131076"><span class="annot"><span class="annottext">RawSql -&gt; CloseExpr
+CloseExpr -&gt; RawSql
+(CloseExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; CloseExpr) -&gt; SqlExpression CloseExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CloseExpr -&gt; RawSql
+toRawSql :: CloseExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CloseExpr
+unsafeFromRawSql :: RawSql -&gt; CloseExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-197"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-198"></span><span>
+</span><span id="line-199"></span><span class="annot"><span class="hs-comment">{- | A smart constructor for setting up a 'CloseExpr' either closing all cursors or the given named
+   cursor.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-204"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#close"><span class="hs-identifier hs-type">close</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#AllCursors"><span class="hs-identifier hs-type">AllCursors</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier hs-type">CursorName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CloseExpr"><span class="hs-identifier hs-type">CloseExpr</span></a></span><span>
+</span><span id="line-205"></span><span id="close"><span class="annot"><span class="annottext">close :: Either AllCursors CursorName -&gt; CloseExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#close"><span class="hs-identifier hs-var hs-var">close</span></a></span></span><span> </span><span id="local-6989586621679131080"><span class="annot"><span class="annottext">Either AllCursors CursorName
+</span><a href="#local-6989586621679131080"><span class="hs-identifier hs-var">allOrCursorName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-206"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CloseExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CloseExpr"><span class="hs-identifier hs-var">CloseExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CloseExpr) -&gt; RawSql -&gt; CloseExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-207"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CLOSE &quot;</span></span><span>
+</span><span id="line-208"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(AllCursors -&gt; RawSql)
+-&gt; (CursorName -&gt; RawSql) -&gt; Either AllCursors CursorName -&gt; RawSql
+forall a c b. (a -&gt; c) -&gt; (b -&gt; c) -&gt; Either a b -&gt; c
+</span><span class="hs-identifier hs-var">either</span></span><span> </span><span class="annot"><span class="annottext">AllCursors -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Either AllCursors CursorName
+</span><a href="#local-6989586621679131080"><span class="hs-identifier hs-var">allOrCursorName</span></a></span><span>
+</span><span id="line-209"></span><span>
+</span><span id="line-210"></span><span class="annot"><span class="hs-comment">{- |
+'AllCursors' corresponds to the ALL keyword in a CLOSE statement. E.G.
+
+&gt; ALL
+
+'AllCursors' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-221"></span><span class="hs-keyword">newtype</span><span> </span><span id="AllCursors"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#AllCursors"><span class="hs-identifier hs-var">AllCursors</span></a></span></span><span>
+</span><span id="line-222"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="AllCursors"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#AllCursors"><span class="hs-identifier hs-var">AllCursors</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-223"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-224"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-225"></span><span>      </span><span id="local-6989586621679131083"><span id="local-6989586621679131087"><span class="annot"><span class="annottext">RawSql -&gt; AllCursors
+AllCursors -&gt; RawSql
+(AllCursors -&gt; RawSql)
+-&gt; (RawSql -&gt; AllCursors) -&gt; SqlExpression AllCursors
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: AllCursors -&gt; RawSql
+toRawSql :: AllCursors -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; AllCursors
+unsafeFromRawSql :: RawSql -&gt; AllCursors
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-226"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-227"></span><span>
+</span><span id="line-228"></span><span class="annot"><span class="hs-comment">{- | Specify closing all open cursors, for use with a 'CloseExpr'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-232"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#allCursors"><span class="hs-identifier hs-type">allCursors</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#AllCursors"><span class="hs-identifier hs-type">AllCursors</span></a></span><span>
+</span><span id="line-233"></span><span id="allCursors"><span class="annot"><span class="annottext">allCursors :: AllCursors
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#allCursors"><span class="hs-identifier hs-var hs-var">allCursors</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-234"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; AllCursors
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#AllCursors"><span class="hs-identifier hs-var">AllCursors</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; AllCursors)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; AllCursors
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; AllCursors) -&gt; String -&gt; AllCursors
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ALL&quot;</span></span><span>
+</span><span id="line-235"></span><span>
+</span><span id="line-236"></span><span class="annot"><span class="hs-comment">{- |
+'FetchExpr' corresponds to the SQL FETCH statement, for retrieving rows from a
+previously created cursor. E.G.
+
+&gt; FETCH NEXT FOO
+
+See PostgreSQL [fetch
+documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for more
+information.
+
+'FetchExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-252"></span><span class="hs-keyword">newtype</span><span> </span><span id="FetchExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#FetchExpr"><span class="hs-identifier hs-var">FetchExpr</span></a></span></span><span>
+</span><span id="line-253"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="FetchExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#FetchExpr"><span class="hs-identifier hs-var">FetchExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-254"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-255"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-256"></span><span>      </span><span id="local-6989586621679131092"><span id="local-6989586621679131096"><span class="annot"><span class="annottext">RawSql -&gt; FetchExpr
+FetchExpr -&gt; RawSql
+(FetchExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; FetchExpr) -&gt; SqlExpression FetchExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: FetchExpr -&gt; RawSql
+toRawSql :: FetchExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; FetchExpr
+unsafeFromRawSql :: RawSql -&gt; FetchExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-257"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-258"></span><span>
+</span><span id="line-259"></span><span class="annot"><span class="hs-comment">{- | Construct a 'FetchExpr', for a given cursor and optionally a direction to fetch.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-263"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#fetch"><span class="hs-identifier hs-type">fetch</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier hs-type">CursorName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#FetchExpr"><span class="hs-identifier hs-type">FetchExpr</span></a></span><span>
+</span><span id="line-264"></span><span id="fetch"><span class="annot"><span class="annottext">fetch :: Maybe CursorDirection -&gt; CursorName -&gt; FetchExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#fetch"><span class="hs-identifier hs-var hs-var">fetch</span></a></span></span><span> </span><span id="local-6989586621679131100"><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679131100"><span class="hs-identifier hs-var">maybeDirection</span></a></span></span><span> </span><span id="local-6989586621679131101"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679131101"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-265"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; FetchExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#FetchExpr"><span class="hs-identifier hs-var">FetchExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; FetchExpr) -&gt; RawSql -&gt; FetchExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-266"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span> </span><span class="annot"><span class="annottext">([RawSql] -&gt; RawSql) -&gt; [RawSql] -&gt; RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-267"></span><span>      </span><span class="annot"><span class="annottext">[Maybe RawSql] -&gt; [RawSql]
+forall a. [Maybe a] -&gt; [a]
+</span><span class="hs-identifier hs-var">catMaybes</span></span><span>
+</span><span id="line-268"></span><span>        </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FETCH&quot;</span></span><span>
+</span><span id="line-269"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(CursorDirection -&gt; RawSql)
+-&gt; Maybe CursorDirection -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">CursorDirection -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679131100"><span class="hs-identifier hs-var">maybeDirection</span></a></span><span>
+</span><span id="line-270"></span><span>        </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CursorName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679131101"><span class="hs-identifier hs-var">cursorName</span></a></span><span>
+</span><span id="line-271"></span><span>        </span><span class="hs-special">]</span><span>
+</span><span id="line-272"></span><span>
+</span><span id="line-273"></span><span class="annot"><span class="hs-comment">{- |
+'MoveExpr' corresponds to the SQL MOVE statement, for positioning a previously
+created cursor, /without/ retrieving any rows. E.G.
+
+&gt; MOVE NEXT FOO
+
+'MoveExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-285"></span><span class="hs-keyword">newtype</span><span> </span><span id="MoveExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#MoveExpr"><span class="hs-identifier hs-var">MoveExpr</span></a></span></span><span>
+</span><span id="line-286"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="MoveExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#MoveExpr"><span class="hs-identifier hs-var">MoveExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-287"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-288"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-289"></span><span>      </span><span id="local-6989586621679131104"><span id="local-6989586621679131108"><span class="annot"><span class="annottext">RawSql -&gt; MoveExpr
+MoveExpr -&gt; RawSql
+(MoveExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; MoveExpr) -&gt; SqlExpression MoveExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: MoveExpr -&gt; RawSql
+toRawSql :: MoveExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; MoveExpr
+unsafeFromRawSql :: RawSql -&gt; MoveExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-290"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-291"></span><span>
+</span><span id="line-292"></span><span class="annot"><span class="hs-comment">{- | Construct a 'MoveExpr', for a given cursor and optionally a direction to move.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-296"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#move"><span class="hs-identifier hs-type">move</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier hs-type">CursorName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#MoveExpr"><span class="hs-identifier hs-type">MoveExpr</span></a></span><span>
+</span><span id="line-297"></span><span id="move"><span class="annot"><span class="annottext">move :: Maybe CursorDirection -&gt; CursorName -&gt; MoveExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#move"><span class="hs-identifier hs-var hs-var">move</span></a></span></span><span> </span><span id="local-6989586621679131112"><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679131112"><span class="hs-identifier hs-var">maybeDirection</span></a></span></span><span> </span><span id="local-6989586621679131113"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679131113"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-298"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; MoveExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#MoveExpr"><span class="hs-identifier hs-var">MoveExpr</span></a></span><span>
+</span><span id="line-299"></span><span>    </span><span class="annot"><span class="annottext">(RawSql -&gt; MoveExpr)
+-&gt; ([RawSql] -&gt; RawSql) -&gt; [RawSql] -&gt; MoveExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-300"></span><span>    </span><span class="annot"><span class="annottext">([RawSql] -&gt; MoveExpr) -&gt; [RawSql] -&gt; MoveExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">[Maybe RawSql] -&gt; [RawSql]
+forall a. [Maybe a] -&gt; [a]
+</span><span class="hs-identifier hs-var">catMaybes</span></span><span>
+</span><span id="line-301"></span><span>      </span><span class="hs-special">[</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;MOVE&quot;</span></span><span>
+</span><span id="line-302"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(CursorDirection -&gt; RawSql)
+-&gt; Maybe CursorDirection -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">CursorDirection -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679131112"><span class="hs-identifier hs-var">maybeDirection</span></a></span><span>
+</span><span id="line-303"></span><span>      </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; Maybe RawSql
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; Maybe RawSql) -&gt; RawSql -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CursorName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679131113"><span class="hs-identifier hs-var">cursorName</span></a></span><span>
+</span><span id="line-304"></span><span>      </span><span class="hs-special">]</span><span>
+</span><span id="line-305"></span><span>
+</span><span id="line-306"></span><span class="annot"><span class="hs-comment">{- |
+'CursorDirection' corresponds to the direction argument to the SQL FETCH and
+MOVE statements. E.G.
+
+&gt; BACKWARD
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+'CursorDirection' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-321"></span><span class="hs-keyword">newtype</span><span> </span><span id="CursorDirection"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span></span><span>
+</span><span id="line-322"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CursorDirection"><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-323"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-324"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-325"></span><span>      </span><span id="local-6989586621679131116"><span id="local-6989586621679131120"><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+CursorDirection -&gt; RawSql
+(CursorDirection -&gt; RawSql)
+-&gt; (RawSql -&gt; CursorDirection) -&gt; SqlExpression CursorDirection
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CursorDirection -&gt; RawSql
+toRawSql :: CursorDirection -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CursorDirection
+unsafeFromRawSql :: RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-326"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-327"></span><span>
+</span><span id="line-328"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the next single row. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-335"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#next"><span class="hs-identifier hs-type">next</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-336"></span><span id="next"><span class="annot"><span class="annottext">next :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#next"><span class="hs-identifier hs-var hs-var">next</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-337"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NEXT&quot;</span></span><span>
+</span><span id="line-338"></span><span>
+</span><span id="line-339"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the prior single row. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-346"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#prior"><span class="hs-identifier hs-type">prior</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-347"></span><span id="prior"><span class="annot"><span class="annottext">prior :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#prior"><span class="hs-identifier hs-var hs-var">prior</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-348"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;PRIOR&quot;</span></span><span>
+</span><span id="line-349"></span><span>
+</span><span id="line-350"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the first single row. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-357"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#first"><span class="hs-identifier hs-type">first</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-358"></span><span id="first"><span class="annot"><span class="annottext">first :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#first"><span class="hs-identifier hs-var hs-var">first</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-359"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FIRST&quot;</span></span><span>
+</span><span id="line-360"></span><span>
+</span><span id="line-361"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the last single row. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-368"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#last"><span class="hs-identifier hs-type">last</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-369"></span><span id="last"><span class="annot"><span class="annottext">last :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#last"><span class="hs-identifier hs-var hs-var">last</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-370"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;LAST&quot;</span></span><span>
+</span><span id="line-371"></span><span>
+</span><span id="line-372"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the single row at an absolute position within the cursor. Primarily for
+   use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-380"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#absolute"><span class="hs-identifier hs-type">absolute</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-381"></span><span id="absolute"><span class="annot"><span class="annottext">absolute :: Int -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#absolute"><span class="hs-identifier hs-var hs-var">absolute</span></a></span></span><span> </span><span id="local-6989586621679131123"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131123"><span class="hs-identifier hs-var">countParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-382"></span><span>  </span><span class="hs-comment">-- postgresql won't let us pass the count as a parameter.</span><span>
+</span><span id="line-383"></span><span>  </span><span class="hs-comment">-- when we try we get an error like such error:</span><span>
+</span><span id="line-384"></span><span>  </span><span class="hs-comment">--  ERROR:  syntax error at or near &quot;$1&quot;</span><span>
+</span><span id="line-385"></span><span>  </span><span class="hs-comment">--  LINE 1: FETCH ABSOLUTE $1 \&quot;testcursor\&quot;</span><span>
+</span><span id="line-386"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection) -&gt; RawSql -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-387"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ABSOLUTE &quot;</span></span><span>
+</span><span id="line-388"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var">RawSql.intDecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131123"><span class="hs-identifier hs-var">countParam</span></a></span><span>
+</span><span id="line-389"></span><span>
+</span><span id="line-390"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the single row relative to the cursor's current position. Primarily for
+   use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-398"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#relative"><span class="hs-identifier hs-type">relative</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-399"></span><span id="relative"><span class="annot"><span class="annottext">relative :: Int -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#relative"><span class="hs-identifier hs-var hs-var">relative</span></a></span></span><span> </span><span id="local-6989586621679131125"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131125"><span class="hs-identifier hs-var">countParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-400"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection) -&gt; RawSql -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-401"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;RELATIVE &quot;</span></span><span>
+</span><span id="line-402"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span>
+</span><span id="line-403"></span><span>      </span><span class="hs-comment">-- postgresql won't let us pass the count as a parameter.</span><span>
+</span><span id="line-404"></span><span>      </span><span class="hs-comment">-- when we try we get an error like such error:</span><span>
+</span><span id="line-405"></span><span>      </span><span class="hs-comment">--  ERROR:  syntax error at or near &quot;$1&quot;</span><span>
+</span><span id="line-406"></span><span>      </span><span class="hs-comment">--  LINE 1: FETCH RELATIVE $1 \&quot;testcursor\&quot;</span><span>
+</span><span id="line-407"></span><span>      </span><span class="annot"><span class="annottext">Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var">RawSql.intDecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131125"><span class="hs-identifier hs-var">countParam</span></a></span><span>
+</span><span id="line-408"></span><span>
+</span><span id="line-409"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the next n rows. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-416"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#rowCount"><span class="hs-identifier hs-type">rowCount</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-417"></span><span id="rowCount"><span class="annot"><span class="annottext">rowCount :: Int -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#rowCount"><span class="hs-identifier hs-var hs-var">rowCount</span></a></span></span><span> </span><span id="local-6989586621679131126"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131126"><span class="hs-identifier hs-var">countParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-418"></span><span>  </span><span class="hs-comment">-- postgresql won't let us pass the count as a parameter.</span><span>
+</span><span id="line-419"></span><span>  </span><span class="hs-comment">-- when we try we get an error like such error:</span><span>
+</span><span id="line-420"></span><span>  </span><span class="hs-comment">--  ERROR:  syntax error at or near &quot;$1&quot;</span><span>
+</span><span id="line-421"></span><span>  </span><span class="hs-comment">--  LINE 1: FETCH $1 \&quot;testcursor\&quot;</span><span>
+</span><span id="line-422"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection) -&gt; RawSql -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-423"></span><span>    </span><span class="annot"><span class="annottext">Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var">RawSql.intDecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131126"><span class="hs-identifier hs-var">countParam</span></a></span><span>
+</span><span id="line-424"></span><span>
+</span><span id="line-425"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of all the next rows. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-432"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#fetchAll"><span class="hs-identifier hs-type">fetchAll</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-433"></span><span id="fetchAll"><span class="annot"><span class="annottext">fetchAll :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#fetchAll"><span class="hs-identifier hs-var hs-var">fetchAll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-434"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ALL&quot;</span></span><span>
+</span><span id="line-435"></span><span>
+</span><span id="line-436"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the next single row. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-443"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forward"><span class="hs-identifier hs-type">forward</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-444"></span><span id="forward"><span class="annot"><span class="annottext">forward :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#forward"><span class="hs-identifier hs-var hs-var">forward</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-445"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FORWARD&quot;</span></span><span>
+</span><span id="line-446"></span><span>
+</span><span id="line-447"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the next n rows. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-454"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardCount"><span class="hs-identifier hs-type">forwardCount</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-455"></span><span id="forwardCount"><span class="annot"><span class="annottext">forwardCount :: Int -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardCount"><span class="hs-identifier hs-var hs-var">forwardCount</span></a></span></span><span> </span><span id="local-6989586621679131127"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131127"><span class="hs-identifier hs-var">countParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-456"></span><span>  </span><span class="hs-comment">-- postgresql won't let us pass the count as a parameter.</span><span>
+</span><span id="line-457"></span><span>  </span><span class="hs-comment">-- when we try we get an error like such error:</span><span>
+</span><span id="line-458"></span><span>  </span><span class="hs-comment">--  ERROR:  syntax error at or near &quot;$1&quot;</span><span>
+</span><span id="line-459"></span><span>  </span><span class="hs-comment">--  LINE 1: FETCH FORWARD $1 \&quot;testcursor\&quot;</span><span>
+</span><span id="line-460"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection) -&gt; RawSql -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-461"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FORWARD &quot;</span></span><span>
+</span><span id="line-462"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var">RawSql.intDecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131127"><span class="hs-identifier hs-var">countParam</span></a></span><span>
+</span><span id="line-463"></span><span>
+</span><span id="line-464"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of all the next rows. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-471"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardAll"><span class="hs-identifier hs-type">forwardAll</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-472"></span><span id="forwardAll"><span class="annot"><span class="annottext">forwardAll :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardAll"><span class="hs-identifier hs-var hs-var">forwardAll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-473"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FORWARD ALL&quot;</span></span><span>
+</span><span id="line-474"></span><span>
+</span><span id="line-475"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the prior single row. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-482"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backward"><span class="hs-identifier hs-type">backward</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-483"></span><span id="backward"><span class="annot"><span class="annottext">backward :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#backward"><span class="hs-identifier hs-var hs-var">backward</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-484"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;BACKWARD&quot;</span></span><span>
+</span><span id="line-485"></span><span>
+</span><span id="line-486"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of the prior n rows. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-493"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardCount"><span class="hs-identifier hs-type">backwardCount</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-494"></span><span id="backwardCount"><span class="annot"><span class="annottext">backwardCount :: Int -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardCount"><span class="hs-identifier hs-var hs-var">backwardCount</span></a></span></span><span> </span><span id="local-6989586621679131128"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131128"><span class="hs-identifier hs-var">countParam</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-495"></span><span>  </span><span class="hs-comment">-- postgresql won't let us pass the count as a parameter.</span><span>
+</span><span id="line-496"></span><span>  </span><span class="hs-comment">-- when we try we get an error like such error:</span><span>
+</span><span id="line-497"></span><span>  </span><span class="hs-comment">--  ERROR:  syntax error at or near &quot;$1&quot;</span><span>
+</span><span id="line-498"></span><span>  </span><span class="hs-comment">--  LINE 1: FETCH BACKWARD $1 \&quot;testcursor\&quot;</span><span>
+</span><span id="line-499"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection) -&gt; RawSql -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-500"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;BACKWARD &quot;</span></span><span>
+</span><span id="line-501"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var">RawSql.intDecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679131128"><span class="hs-identifier hs-var">countParam</span></a></span><span>
+</span><span id="line-502"></span><span>
+</span><span id="line-503"></span><span class="annot"><span class="hs-comment">{- | Specify a direction of all the prior rows. Primarily for use with 'fetch' or 'move'.
+
+See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
+more information.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-510"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardAll"><span class="hs-identifier hs-type">backwardAll</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">CursorDirection</span></a></span><span>
+</span><span id="line-511"></span><span id="backwardAll"><span class="annot"><span class="annottext">backwardAll :: CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardAll"><span class="hs-identifier hs-var hs-var">backwardAll</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-512"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CursorDirection
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-var">CursorDirection</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CursorDirection)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; CursorDirection
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; CursorDirection) -&gt; String -&gt; CursorDirection
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;BACKWARD ALL&quot;</span></span><span>
+</span><span id="line-513"></span></pre></body></html>

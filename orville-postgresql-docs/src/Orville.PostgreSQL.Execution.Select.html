@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Functions for working with executable @SELECT@ statements. The 'Select' type is
+a value that can be passed around and executed later. The 'Select' is directly
+associated with how to decode the rows returned by the query . This means it
+can be safely executed via 'executeInsert' and decode the rows.. It is a
+lower-level API than the entity select functions in
+&quot;Orville.PostgreSQL.Execution.EntityOperations&quot;, but not as primitive as
+&quot;Orville.PostgreSQL.Expr.Query&quot;.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.Select</span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier">Select</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#executeSelect"><span class="hs-identifier">executeSelect</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#useSelect"><span class="hs-identifier">useSelect</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#selectToQueryExpr"><span class="hs-identifier">selectToQueryExpr</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#selectTable"><span class="hs-identifier">selectTable</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#selectMarshalledColumns"><span class="hs-identifier">selectMarshalledColumns</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#rawSelectQueryExpr"><span class="hs-identifier">rawSelectQueryExpr</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Execute</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">QueryType</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.SelectOptions</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SelectOptions</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall.SqlMarshaller</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier">AnnotatedSqlMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallerDerivedColumns"><span class="hs-identifier">marshallerDerivedColumns</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier">unannotatedSqlMarshaller</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.html"><span class="hs-identifier">Orville.PostgreSQL.Monad</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.html"><span class="hs-identifier">Orville.PostgreSQL.Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier">TableDefinition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier">tableMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier">tableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="annot"><span class="hs-comment">{- |
+  Represents a @SELECT@ statement that can be executed against a database. A
+  'Select' has a 'SqlMarshaller' bound to it that will be used to decode the
+  database result set when it is executed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">data</span><span> </span><span id="Select"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-var">Select</span></a></span></span><span> </span><span id="local-6989586621679137319"><span class="annot"><a href="#local-6989586621679137319"><span class="hs-identifier hs-type">readEntity</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-46"></span><span>  </span><span id="local-6989586621679137320"><span id="local-6989586621679137321"><span id="Select"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-var">Select</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137320"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137321"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier hs-type">Expr.QueryExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137321"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">{- |
+  Extracts the query that will be run when the select is executed. Normally you
+  don't want to extract the query and run it yourself, but this function is
+  useful to view the query for debugging or query explanation.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-55"></span><span id="local-6989586621679137246"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#selectToQueryExpr"><span class="hs-identifier hs-type">selectToQueryExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137246"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier hs-type">Expr.QueryExpr</span></a></span></span><span>
+</span><span id="line-56"></span><span id="selectToQueryExpr"><span class="annot"><span class="annottext">selectToQueryExpr :: forall readEntity. Select readEntity -&gt; QueryExpr
+</span><a href="Orville.PostgreSQL.Execution.Select.html#selectToQueryExpr"><span class="hs-identifier hs-var hs-var">selectToQueryExpr</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679137322"><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137322"><span class="hs-identifier hs-var">query</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137322"><span class="hs-identifier hs-var">query</span></a></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><span class="hs-comment">{- |
+  Excutes the database query for the 'Select' and uses its 'SqlMarshaller' to
+  decode the result set.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-64"></span><span id="local-6989586621679137252"><span id="local-6989586621679137254"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#executeSelect"><span class="hs-identifier hs-type">executeSelect</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137252"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137254"><span class="hs-identifier hs-type">row</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137252"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679137254"><span class="hs-identifier hs-type">row</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-65"></span><span id="executeSelect"><span class="annot"><span class="annottext">executeSelect :: forall (m :: * -&gt; *) row. MonadOrville m =&gt; Select row -&gt; m [row]
+</span><a href="Orville.PostgreSQL.Execution.Select.html#executeSelect"><span class="hs-identifier hs-var hs-var">executeSelect</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><span class="annottext">(forall writeEntity.
+ QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity row -&gt; m [row])
+-&gt; Select row -&gt; m [row]
+forall readEntity a.
+(forall writeEntity.
+ QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; a)
+-&gt; Select readEntity -&gt; a
+</span><a href="Orville.PostgreSQL.Execution.Select.html#useSelect"><span class="hs-identifier hs-var">useSelect</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">QueryType
+-&gt; QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity row -&gt; m [row]
+forall (m :: * -&gt; *) sql writeEntity readEntity.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-var">Execute.executeAndDecode</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#SelectQuery"><span class="hs-identifier hs-var">QueryType.SelectQuery</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-67"></span><span>
+</span><span id="line-68"></span><span class="annot"><span class="hs-comment">{- |
+  Runs a function allowing it to use the data elements containted within the
+  'Select' it pleases. The marshaller that the function is provided can be use
+  to decode results from the query.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-75"></span><span id="local-6989586621679137258"><span id="local-6989586621679137259"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#useSelect"><span class="hs-identifier hs-type">useSelect</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679137256"><span class="annot"><a href="#local-6989586621679137256"><span class="hs-identifier hs-type">writeEntity</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-77"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier hs-type">Expr.QueryExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-78"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137256"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137258"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-79"></span><span>    </span><span class="annot"><a href="#local-6989586621679137259"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-80"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137258"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><a href="#local-6989586621679137259"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-83"></span><span id="useSelect"><span class="annot"><span class="annottext">useSelect :: forall readEntity a.
+(forall writeEntity.
+ QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; a)
+-&gt; Select readEntity -&gt; a
+</span><a href="Orville.PostgreSQL.Execution.Select.html#useSelect"><span class="hs-identifier hs-var hs-var">useSelect</span></a></span></span><span> </span><span id="local-6989586621679137329"><span class="annot"><span class="annottext">forall writeEntity.
+QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; a
+</span><a href="#local-6989586621679137329"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span id="local-6989586621679137330"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137330"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span id="local-6989586621679137331"><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137331"><span class="hs-identifier hs-var">query</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-84"></span><span>  </span><span class="annot"><span class="annottext">QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; a
+forall writeEntity.
+QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; a
+</span><a href="#local-6989586621679137329"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137331"><span class="hs-identifier hs-var">query</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137330"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Select' that will select all the columns described in the
+  'TableDefinition'. This is the safest way to build a 'Select', because table
+  name and columns are all read from the 'TableDefinition'. If the table is
+  being managed with Orville auto migrations, this will match the schema in the
+  database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-95"></span><span id="local-6989586621679137270"><span id="local-6989586621679137271"><span id="local-6989586621679137272"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#selectTable"><span class="hs-identifier hs-type">selectTable</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-96"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137270"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137271"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137272"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-97"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions.SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-98"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137272"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-99"></span><span id="selectTable"><span class="annot"><span class="annottext">selectTable :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; SelectOptions -&gt; Select readEntity
+</span><a href="Orville.PostgreSQL.Execution.Select.html#selectTable"><span class="hs-identifier hs-var hs-var">selectTable</span></a></span></span><span> </span><span id="local-6989586621679137332"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137332"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-100"></span><span>  </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; Qualified TableName -&gt; SelectOptions -&gt; Select readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; Qualified TableName -&gt; SelectOptions -&gt; Select readEntity
+</span><a href="Orville.PostgreSQL.Execution.Select.html#selectMarshalledColumns"><span class="hs-identifier hs-var">selectMarshalledColumns</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-var">tableMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137332"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier hs-var">tableName</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137332"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-101"></span><span>
+</span><span id="line-102"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Select' that will select the columns described by the marshaller
+  from the specified table. It is up to the caller to ensure that the columns
+  in the marshaller make sense for the table.
+
+  This function is useful for query a subset of table columns using a custom
+  marshaller.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-112"></span><span id="local-6989586621679137280"><span id="local-6989586621679137281"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#selectMarshalledColumns"><span class="hs-identifier hs-type">selectMarshalledColumns</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137280"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137281"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Expr.Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">Expr.TableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-115"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions.SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-116"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137281"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span><span>
+</span><span id="line-117"></span><span id="selectMarshalledColumns"><span class="annot"><span class="annottext">selectMarshalledColumns :: forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; Qualified TableName -&gt; SelectOptions -&gt; Select readEntity
+</span><a href="Orville.PostgreSQL.Execution.Select.html#selectMarshalledColumns"><span class="hs-identifier hs-var hs-var">selectMarshalledColumns</span></a></span></span><span> </span><span id="local-6989586621679137333"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137333"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span id="local-6989586621679137334"><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679137334"><span class="hs-identifier hs-var">qualifiedTableName</span></a></span></span><span> </span><span id="local-6989586621679137335"><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679137335"><span class="hs-identifier hs-var">selectOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; QueryExpr -&gt; Select readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; QueryExpr -&gt; Select readEntity
+</span><a href="Orville.PostgreSQL.Execution.Select.html#rawSelectQueryExpr"><span class="hs-identifier hs-var">rawSelectQueryExpr</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137333"><span class="hs-identifier hs-var">marshaller</span></a></span><span> </span><span class="annot"><span class="annottext">(QueryExpr -&gt; Select readEntity) -&gt; QueryExpr -&gt; Select readEntity
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-119"></span><span>    </span><span class="annot"><span class="annottext">SelectList -&gt; TableReferenceList -&gt; SelectOptions -&gt; QueryExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOptionsQueryExpr"><span class="hs-identifier hs-var">SelectOptions.selectOptionsQueryExpr</span></a></span><span>
+</span><span id="line-120"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[DerivedColumn] -&gt; SelectList
+</span><a href="Orville.PostgreSQL.Expr.Query.html#selectDerivedColumns"><span class="hs-identifier hs-var">Expr.selectDerivedColumns</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity -&gt; [DerivedColumn]
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity -&gt; [DerivedColumn]
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallerDerivedColumns"><span class="hs-identifier hs-var">marshallerDerivedColumns</span></a></span><span> </span><span class="annot"><span class="annottext">(SqlMarshaller writeEntity readEntity -&gt; [DerivedColumn])
+-&gt; (AnnotatedSqlMarshaller writeEntity readEntity
+    -&gt; SqlMarshaller writeEntity readEntity)
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; [DerivedColumn]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier hs-var">unannotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">(AnnotatedSqlMarshaller writeEntity readEntity -&gt; [DerivedColumn])
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; [DerivedColumn]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137333"><span class="hs-identifier hs-var">marshaller</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-121"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Qualified TableName -&gt; TableReferenceList
+</span><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#referencesTable"><span class="hs-identifier hs-var">Expr.referencesTable</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679137334"><span class="hs-identifier hs-var">qualifiedTableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-122"></span><span>      </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679137335"><span class="hs-identifier hs-var">selectOptions</span></a></span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Select' that will execute the specified query and use the given
+  'SqlMarshaller' to decode it. It is up to the caller to ensure that the given
+  'Expr.QueryExpr' makes sense and produces a result set that the
+  'SqlMarshaller' can decode.
+
+  This is the lowest level of escape hatch available for 'Select'. The caller
+  can build any query that Orville supports using the expression building
+  functions, or use @RawSql.fromRawSql@ to build a raw 'Expr.QueryExpr'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-136"></span><span id="local-6989586621679137290"><span id="local-6989586621679137291"><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#rawSelectQueryExpr"><span class="hs-identifier hs-type">rawSelectQueryExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-137"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137290"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137291"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-138"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier hs-type">Expr.QueryExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-139"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137291"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span><span>
+</span><span id="line-140"></span><span id="rawSelectQueryExpr"><span class="annot"><span class="annottext">rawSelectQueryExpr :: forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; QueryExpr -&gt; Select readEntity
+</span><a href="Orville.PostgreSQL.Execution.Select.html#rawSelectQueryExpr"><span class="hs-identifier hs-var hs-var">rawSelectQueryExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; QueryExpr -&gt; Select readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; QueryExpr -&gt; Select readEntity
+</span><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-var">Select</span></a></span><span>
+</span><span id="line-141"></span></pre></body></html>

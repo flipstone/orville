@@ -1,0 +1,540 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.SelectOptions</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier">SelectOptions</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier">emptySelectOptions</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#appendSelectOptions"><span class="hs-identifier">appendSelectOptions</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectDistinct"><span class="hs-identifier">selectDistinct</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectWhereClause"><span class="hs-identifier">selectWhereClause</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOrderByClause"><span class="hs-identifier">selectOrderByClause</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectGroupByClause"><span class="hs-identifier">selectGroupByClause</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectLimitExpr"><span class="hs-identifier">selectLimitExpr</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOffsetExpr"><span class="hs-identifier">selectOffsetExpr</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#distinct"><span class="hs-identifier">distinct</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#where_"><span class="hs-identifier">where_</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#orderBy"><span class="hs-identifier">orderBy</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#limit"><span class="hs-identifier">limit</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#offset"><span class="hs-identifier">offset</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#groupBy"><span class="hs-identifier">groupBy</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOptionsQueryExpr"><span class="hs-identifier">selectOptionsQueryExpr</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Monoid</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">First</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">First</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">getFirst</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="annot"><span class="hs-comment">{- |
+   A 'SelectOptions' is a set of options that can be used to change the way
+   a basic query function works by adding 'WHERE', 'ORDER BY', 'GROUP BY', etc.
+   Functions are provided to construct 'SelectOptions' for individual options,
+   which may then be combined via '&lt;&gt;' (also exposed as 'appendSelectOptions').
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">data</span><span> </span><span id="SelectOptions"><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-var">SelectOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SelectOptions"><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-var">SelectOptions</span></a></span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="i_distinct"><span class="annot"><span class="annottext">SelectOptions -&gt; First Bool
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_distinct"><span class="hs-identifier hs-var hs-var">i_distinct</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">First</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_whereCondition"><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe BooleanExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_whereCondition"><span class="hs-identifier hs-var hs-var">i_whereCondition</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.WhereClause.html#BooleanExpr"><span class="hs-identifier hs-type">Expr.BooleanExpr</span></a></span><span>
+</span><span id="line-43"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_orderBy"><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe OrderByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_orderBy"><span class="hs-identifier hs-var hs-var">i_orderBy</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.OrderBy.html#OrderByExpr"><span class="hs-identifier hs-type">Expr.OrderByExpr</span></a></span><span>
+</span><span id="line-44"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_limitExpr"><span class="annot"><span class="annottext">SelectOptions -&gt; First LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_limitExpr"><span class="hs-identifier hs-var hs-var">i_limitExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">First</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.LimitExpr.html#LimitExpr"><span class="hs-identifier hs-type">Expr.LimitExpr</span></a></span><span>
+</span><span id="line-45"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_offsetExpr"><span class="annot"><span class="annottext">SelectOptions -&gt; First OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_offsetExpr"><span class="hs-identifier hs-var hs-var">i_offsetExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">First</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.OffsetExpr.html#OffsetExpr"><span class="hs-identifier hs-type">Expr.OffsetExpr</span></a></span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_groupByExpr"><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe GroupByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_groupByExpr"><span class="hs-identifier hs-var hs-var">i_groupByExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">Expr.GroupByExpr</span></a></span><span>
+</span><span id="line-47"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679132882"><span id="local-6989586621679132886"><span class="annot"><span class="hs-identifier hs-type">Semigroup</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>  </span><span id="local-6989586621679132891"><span class="annot"><span class="annottext">&lt;&gt; :: SelectOptions -&gt; SelectOptions -&gt; SelectOptions
+</span><span class="hs-operator hs-var hs-var hs-var hs-var">(&lt;&gt;)</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; SelectOptions -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#appendSelectOptions"><span class="hs-identifier hs-var">appendSelectOptions</span></a></span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679132896"><span id="local-6989586621679132900"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-55"></span><span>  </span><span id="local-6989586621679132903"><span class="annot"><span class="annottext">mempty :: SelectOptions
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">mempty</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">{- |
+  A set of empty 'SelectOptions' that will not change how a query is run.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-type">emptySelectOptions</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-63"></span><span id="emptySelectOptions"><span class="annot"><span class="annottext">emptySelectOptions :: SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var hs-var">emptySelectOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-65"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_distinct :: First Bool
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_distinct"><span class="hs-identifier hs-var">i_distinct</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">First Bool
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-66"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_whereCondition :: Maybe BooleanExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_whereCondition"><span class="hs-identifier hs-var">i_whereCondition</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe BooleanExpr
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-67"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_orderBy :: Maybe OrderByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_orderBy"><span class="hs-identifier hs-var">i_orderBy</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe OrderByExpr
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-68"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_limitExpr :: First LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_limitExpr"><span class="hs-identifier hs-var">i_limitExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">First LimitExpr
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_offsetExpr :: First OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_offsetExpr"><span class="hs-identifier hs-var">i_offsetExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">First OffsetExpr
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_groupByExpr :: Maybe GroupByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_groupByExpr"><span class="hs-identifier hs-var">i_groupByExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe GroupByExpr
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="annot"><span class="hs-comment">{- |
+  Combines multple select options together, unioning the options together where
+  possible. For options where this is not possible, (e.g. 'LIMIT'), the one
+  on the left is preferred.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#appendSelectOptions"><span class="hs-identifier hs-type">appendSelectOptions</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-81"></span><span id="appendSelectOptions"><span class="annot"><span class="annottext">appendSelectOptions :: SelectOptions -&gt; SelectOptions -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#appendSelectOptions"><span class="hs-identifier hs-var hs-var">appendSelectOptions</span></a></span></span><span> </span><span id="local-6989586621679132904"><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span></span><span> </span><span id="local-6989586621679132905"><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><span class="annottext">First Bool
+-&gt; Maybe BooleanExpr
+-&gt; Maybe OrderByExpr
+-&gt; First LimitExpr
+-&gt; First OffsetExpr
+-&gt; Maybe GroupByExpr
+-&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-var">SelectOptions</span></a></span><span>
+</span><span id="line-83"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; First Bool
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_distinct"><span class="hs-identifier hs-var">i_distinct</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">First Bool -&gt; First Bool -&gt; First Bool
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; First Bool
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_distinct"><span class="hs-identifier hs-var">i_distinct</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(BooleanExpr -&gt; BooleanExpr -&gt; BooleanExpr)
+-&gt; Maybe BooleanExpr -&gt; Maybe BooleanExpr -&gt; Maybe BooleanExpr
+forall a. (a -&gt; a -&gt; a) -&gt; Maybe a -&gt; Maybe a -&gt; Maybe a
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#unionMaybeWith"><span class="hs-identifier hs-var">unionMaybeWith</span></a></span><span> </span><span class="annot"><span class="annottext">BooleanExpr -&gt; BooleanExpr -&gt; BooleanExpr
+</span><a href="Orville.PostgreSQL.Expr.WhereClause.html#andExpr"><span class="hs-identifier hs-var">Expr.andExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe BooleanExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_whereCondition"><span class="hs-identifier hs-var">i_whereCondition</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe BooleanExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_whereCondition"><span class="hs-identifier hs-var">i_whereCondition</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-85"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe OrderByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_orderBy"><span class="hs-identifier hs-var">i_orderBy</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe OrderByExpr -&gt; Maybe OrderByExpr -&gt; Maybe OrderByExpr
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe OrderByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_orderBy"><span class="hs-identifier hs-var">i_orderBy</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; First LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_limitExpr"><span class="hs-identifier hs-var">i_limitExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">First LimitExpr -&gt; First LimitExpr -&gt; First LimitExpr
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; First LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_limitExpr"><span class="hs-identifier hs-var">i_limitExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; First OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_offsetExpr"><span class="hs-identifier hs-var">i_offsetExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">First OffsetExpr -&gt; First OffsetExpr -&gt; First OffsetExpr
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; First OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_offsetExpr"><span class="hs-identifier hs-var">i_offsetExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe GroupByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_groupByExpr"><span class="hs-identifier hs-var">i_groupByExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132904"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe GroupByExpr -&gt; Maybe GroupByExpr -&gt; Maybe GroupByExpr
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe GroupByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_groupByExpr"><span class="hs-identifier hs-var">i_groupByExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132905"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-89"></span><span>
+</span><span id="line-90"></span><span id="local-6989586621679132811"><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#unionMaybeWith"><span class="hs-identifier hs-type">unionMaybeWith</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679132811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132811"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679132811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679132811"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621679132811"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-91"></span><span id="unionMaybeWith"><span class="annot"><span class="annottext">unionMaybeWith :: forall a. (a -&gt; a -&gt; a) -&gt; Maybe a -&gt; Maybe a -&gt; Maybe a
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#unionMaybeWith"><span class="hs-identifier hs-var hs-var">unionMaybeWith</span></a></span></span><span> </span><span id="local-6989586621679132908"><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+</span><a href="#local-6989586621679132908"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679132909"><span class="annot"><span class="annottext">Maybe a
+</span><a href="#local-6989586621679132909"><span class="hs-identifier hs-var">mbLeft</span></a></span></span><span> </span><span id="local-6989586621679132910"><span class="annot"><span class="annottext">Maybe a
+</span><a href="#local-6989586621679132910"><span class="hs-identifier hs-var">mbRight</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe a
+</span><a href="#local-6989586621679132909"><span class="hs-identifier hs-var">mbLeft</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe a
+</span><a href="#local-6989586621679132910"><span class="hs-identifier hs-var">mbRight</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-93"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Maybe a
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-94"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679132911"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132911"><span class="hs-identifier hs-var">left</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132911"><span class="hs-identifier hs-var">left</span></a></span><span>
+</span><span id="line-95"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679132912"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132912"><span class="hs-identifier hs-var">right</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132912"><span class="hs-identifier hs-var">right</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679132913"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132913"><span class="hs-identifier hs-var">left</span></a></span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679132914"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132914"><span class="hs-identifier hs-var">right</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">a -&gt; Maybe a
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; a -&gt; a
+</span><a href="#local-6989586621679132908"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132913"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132914"><span class="hs-identifier hs-var">right</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the 'Expr.SelectClause' that should be used to include the
+  'distinct's from the 'SelectOptions' on a query.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectDistinct"><span class="hs-identifier hs-type">selectDistinct</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Select.html#SelectClause"><span class="hs-identifier hs-type">Expr.SelectClause</span></a></span><span>
+</span><span id="line-105"></span><span id="selectDistinct"><span class="annot"><span class="annottext">selectDistinct :: SelectOptions -&gt; SelectClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectDistinct"><span class="hs-identifier hs-var hs-var">selectDistinct</span></a></span></span><span> </span><span id="local-6989586621679132915"><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132915"><span class="hs-identifier hs-var">selectOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-106"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; First Bool
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_distinct"><span class="hs-identifier hs-var">i_distinct</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132915"><span class="hs-identifier hs-var">selectOptions</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">First</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SelectExpr -&gt; SelectClause
+</span><a href="Orville.PostgreSQL.Expr.Select.html#selectClause"><span class="hs-identifier hs-var">Expr.selectClause</span></a></span><span> </span><span class="annot"><span class="annottext">(SelectExpr -&gt; SelectClause)
+-&gt; (Maybe Distinct -&gt; SelectExpr) -&gt; Maybe Distinct -&gt; SelectClause
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Maybe Distinct -&gt; SelectExpr
+</span><a href="Orville.PostgreSQL.Expr.Select.html#selectExpr"><span class="hs-identifier hs-var">Expr.selectExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe Distinct -&gt; SelectClause) -&gt; Maybe Distinct -&gt; SelectClause
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Distinct -&gt; Maybe Distinct
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Distinct
+</span><a href="Orville.PostgreSQL.Expr.Select.html#Distinct"><span class="hs-identifier hs-var">Expr.Distinct</span></a></span><span>
+</span><span id="line-108"></span><span>    </span><span class="annot"><span class="annottext">First Bool
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">SelectExpr -&gt; SelectClause
+</span><a href="Orville.PostgreSQL.Expr.Select.html#selectClause"><span class="hs-identifier hs-var">Expr.selectClause</span></a></span><span> </span><span class="annot"><span class="annottext">(SelectExpr -&gt; SelectClause) -&gt; SelectExpr -&gt; SelectClause
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Maybe Distinct -&gt; SelectExpr
+</span><a href="Orville.PostgreSQL.Expr.Select.html#selectExpr"><span class="hs-identifier hs-var">Expr.selectExpr</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe Distinct
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the 'Expr.WhereClause' that should be used to include the
+  'WhereCondition's from the 'SelectOptions' on a query. This will be 'Nothing'
+  where no 'WhereCondition's have been specified.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-117"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectWhereClause"><span class="hs-identifier hs-type">selectWhereClause</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.WhereClause.html#WhereClause"><span class="hs-identifier hs-type">Expr.WhereClause</span></a></span><span>
+</span><span id="line-118"></span><span id="selectWhereClause"><span class="annot"><span class="annottext">selectWhereClause :: SelectOptions -&gt; Maybe WhereClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectWhereClause"><span class="hs-identifier hs-var hs-var">selectWhereClause</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-119"></span><span>  </span><span class="annot"><span class="annottext">(BooleanExpr -&gt; WhereClause)
+-&gt; Maybe BooleanExpr -&gt; Maybe WhereClause
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">BooleanExpr -&gt; WhereClause
+</span><a href="Orville.PostgreSQL.Expr.WhereClause.html#whereClause"><span class="hs-identifier hs-var">Expr.whereClause</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe BooleanExpr -&gt; Maybe WhereClause)
+-&gt; (SelectOptions -&gt; Maybe BooleanExpr)
+-&gt; SelectOptions
+-&gt; Maybe WhereClause
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe BooleanExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_whereCondition"><span class="hs-identifier hs-var">i_whereCondition</span></a></span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SelectOptions' with just 'distinct' set to 'True'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-126"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#distinct"><span class="hs-identifier hs-type">distinct</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-127"></span><span id="distinct"><span class="annot"><span class="annottext">distinct :: SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#distinct"><span class="hs-identifier hs-var hs-var">distinct</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-128"></span><span>  </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-129"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_distinct :: First Bool
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_distinct"><span class="hs-identifier hs-var">i_distinct</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe Bool -&gt; First Bool
+forall a. Maybe a -&gt; First a
+</span><span class="hs-identifier hs-var">First</span></span><span> </span><span class="annot"><span class="annottext">(Maybe Bool -&gt; First Bool) -&gt; Maybe Bool -&gt; First Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Bool -&gt; Maybe Bool
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the 'Expr.OrderByClause' that should be used to include the
+  'OrderByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
+  where no 'OrderByClause's have been specified.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-139"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOrderByClause"><span class="hs-identifier hs-type">selectOrderByClause</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.OrderBy.html#OrderByClause"><span class="hs-identifier hs-type">Expr.OrderByClause</span></a></span><span>
+</span><span id="line-140"></span><span id="selectOrderByClause"><span class="annot"><span class="annottext">selectOrderByClause :: SelectOptions -&gt; Maybe OrderByClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOrderByClause"><span class="hs-identifier hs-var hs-var">selectOrderByClause</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-141"></span><span>  </span><span class="annot"><span class="annottext">(OrderByExpr -&gt; OrderByClause)
+-&gt; Maybe OrderByExpr -&gt; Maybe OrderByClause
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">OrderByExpr -&gt; OrderByClause
+</span><a href="Orville.PostgreSQL.Expr.OrderBy.html#orderByClause"><span class="hs-identifier hs-var">Expr.orderByClause</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe OrderByExpr -&gt; Maybe OrderByClause)
+-&gt; (SelectOptions -&gt; Maybe OrderByExpr)
+-&gt; SelectOptions
+-&gt; Maybe OrderByClause
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe OrderByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_orderBy"><span class="hs-identifier hs-var">i_orderBy</span></a></span><span>
+</span><span id="line-142"></span><span>
+</span><span id="line-143"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the 'Expr.GroupByClause' that should be used to include the
+  'GroupByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
+  where no 'GroupByClause's have been specified.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-150"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectGroupByClause"><span class="hs-identifier hs-type">selectGroupByClause</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByClause"><span class="hs-identifier hs-type">Expr.GroupByClause</span></a></span><span>
+</span><span id="line-151"></span><span id="selectGroupByClause"><span class="annot"><span class="annottext">selectGroupByClause :: SelectOptions -&gt; Maybe GroupByClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectGroupByClause"><span class="hs-identifier hs-var hs-var">selectGroupByClause</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-152"></span><span>  </span><span class="annot"><span class="annottext">(GroupByExpr -&gt; GroupByClause)
+-&gt; Maybe GroupByExpr -&gt; Maybe GroupByClause
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">GroupByExpr -&gt; GroupByClause
+</span><a href="Orville.PostgreSQL.Expr.GroupBy.html#groupByClause"><span class="hs-identifier hs-var">Expr.groupByClause</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe GroupByExpr -&gt; Maybe GroupByClause)
+-&gt; (SelectOptions -&gt; Maybe GroupByExpr)
+-&gt; SelectOptions
+-&gt; Maybe GroupByClause
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe GroupByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_groupByExpr"><span class="hs-identifier hs-var">i_groupByExpr</span></a></span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Expr.LimitExpr' that will limit the query results to the
+  number specified in the 'SelectOptions' (if any)
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-160"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectLimitExpr"><span class="hs-identifier hs-type">selectLimitExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.LimitExpr.html#LimitExpr"><span class="hs-identifier hs-type">Expr.LimitExpr</span></a></span><span>
+</span><span id="line-161"></span><span id="selectLimitExpr"><span class="annot"><span class="annottext">selectLimitExpr :: SelectOptions -&gt; Maybe LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectLimitExpr"><span class="hs-identifier hs-var hs-var">selectLimitExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-162"></span><span>  </span><span class="annot"><span class="annottext">First LimitExpr -&gt; Maybe LimitExpr
+forall a. First a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">getFirst</span></span><span> </span><span class="annot"><span class="annottext">(First LimitExpr -&gt; Maybe LimitExpr)
+-&gt; (SelectOptions -&gt; First LimitExpr)
+-&gt; SelectOptions
+-&gt; Maybe LimitExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; First LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_limitExpr"><span class="hs-identifier hs-var">i_limitExpr</span></a></span><span>
+</span><span id="line-163"></span><span>
+</span><span id="line-164"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Expr.OffsetExpr' that will limit the query results to the
+  number specified in the 'SelectOptions' (if any)
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-170"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOffsetExpr"><span class="hs-identifier hs-type">selectOffsetExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.OffsetExpr.html#OffsetExpr"><span class="hs-identifier hs-type">Expr.OffsetExpr</span></a></span><span>
+</span><span id="line-171"></span><span id="selectOffsetExpr"><span class="annot"><span class="annottext">selectOffsetExpr :: SelectOptions -&gt; Maybe OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOffsetExpr"><span class="hs-identifier hs-var hs-var">selectOffsetExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-172"></span><span>  </span><span class="annot"><span class="annottext">First OffsetExpr -&gt; Maybe OffsetExpr
+forall a. First a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">getFirst</span></span><span> </span><span class="annot"><span class="annottext">(First OffsetExpr -&gt; Maybe OffsetExpr)
+-&gt; (SelectOptions -&gt; First OffsetExpr)
+-&gt; SelectOptions
+-&gt; Maybe OffsetExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SelectOptions -&gt; First OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_offsetExpr"><span class="hs-identifier hs-var">i_offsetExpr</span></a></span><span>
+</span><span id="line-173"></span><span>
+</span><span id="line-174"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SelectOptions' with just the given 'WhereCondition'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-179"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#where_"><span class="hs-identifier hs-type">where_</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.WhereClause.html#BooleanExpr"><span class="hs-identifier hs-type">Expr.BooleanExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-180"></span><span id="where_"><span class="annot"><span class="annottext">where_ :: BooleanExpr -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#where_"><span class="hs-identifier hs-var hs-var">where_</span></a></span></span><span> </span><span id="local-6989586621679132923"><span class="annot"><span class="annottext">BooleanExpr
+</span><a href="#local-6989586621679132923"><span class="hs-identifier hs-var">condition</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-181"></span><span>  </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-182"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_whereCondition :: Maybe BooleanExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_whereCondition"><span class="hs-identifier hs-var">i_whereCondition</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BooleanExpr -&gt; Maybe BooleanExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">BooleanExpr
+</span><a href="#local-6989586621679132923"><span class="hs-identifier hs-var">condition</span></a></span><span>
+</span><span id="line-183"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-184"></span><span>
+</span><span id="line-185"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SelectOptions' with just the given 'Expr.OrderByExpr'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-190"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#orderBy"><span class="hs-identifier hs-type">orderBy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.OrderBy.html#OrderByExpr"><span class="hs-identifier hs-type">Expr.OrderByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-191"></span><span id="orderBy"><span class="annot"><span class="annottext">orderBy :: OrderByExpr -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#orderBy"><span class="hs-identifier hs-var hs-var">orderBy</span></a></span></span><span> </span><span id="local-6989586621679132924"><span class="annot"><span class="annottext">OrderByExpr
+</span><a href="#local-6989586621679132924"><span class="hs-identifier hs-var">order</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-192"></span><span>  </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-193"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_orderBy :: Maybe OrderByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_orderBy"><span class="hs-identifier hs-var">i_orderBy</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OrderByExpr -&gt; Maybe OrderByExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">OrderByExpr
+</span><a href="#local-6989586621679132924"><span class="hs-identifier hs-var">order</span></a></span><span>
+</span><span id="line-194"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-195"></span><span>
+</span><span id="line-196"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SelectOptions' that will apply the given limit.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-201"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#limit"><span class="hs-identifier hs-type">limit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-202"></span><span id="limit"><span class="annot"><span class="annottext">limit :: Int -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#limit"><span class="hs-identifier hs-var hs-var">limit</span></a></span></span><span> </span><span id="local-6989586621679132925"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132925"><span class="hs-identifier hs-var">limitValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-203"></span><span>  </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-204"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_limitExpr :: First LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_limitExpr"><span class="hs-identifier hs-var">i_limitExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe LimitExpr -&gt; First LimitExpr
+forall a. Maybe a -&gt; First a
+</span><span class="hs-identifier hs-var">First</span></span><span> </span><span class="annot"><span class="annottext">(Maybe LimitExpr -&gt; First LimitExpr)
+-&gt; (Int -&gt; Maybe LimitExpr) -&gt; Int -&gt; First LimitExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">LimitExpr -&gt; Maybe LimitExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(LimitExpr -&gt; Maybe LimitExpr)
+-&gt; (Int -&gt; LimitExpr) -&gt; Int -&gt; Maybe LimitExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; LimitExpr
+</span><a href="Orville.PostgreSQL.Expr.LimitExpr.html#limitExpr"><span class="hs-identifier hs-var">Expr.limitExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; First LimitExpr) -&gt; Int -&gt; First LimitExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132925"><span class="hs-identifier hs-var">limitValue</span></a></span><span>
+</span><span id="line-205"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-206"></span><span>
+</span><span id="line-207"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SelectOptions' that will apply the given offset.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-212"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#offset"><span class="hs-identifier hs-type">offset</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-213"></span><span id="offset"><span class="annot"><span class="annottext">offset :: Int -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#offset"><span class="hs-identifier hs-var hs-var">offset</span></a></span></span><span> </span><span id="local-6989586621679132927"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132927"><span class="hs-identifier hs-var">offsetValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-214"></span><span>  </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-215"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_offsetExpr :: First OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_offsetExpr"><span class="hs-identifier hs-var">i_offsetExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe OffsetExpr -&gt; First OffsetExpr
+forall a. Maybe a -&gt; First a
+</span><span class="hs-identifier hs-var">First</span></span><span> </span><span class="annot"><span class="annottext">(Maybe OffsetExpr -&gt; First OffsetExpr)
+-&gt; (Int -&gt; Maybe OffsetExpr) -&gt; Int -&gt; First OffsetExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">OffsetExpr -&gt; Maybe OffsetExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(OffsetExpr -&gt; Maybe OffsetExpr)
+-&gt; (Int -&gt; OffsetExpr) -&gt; Int -&gt; Maybe OffsetExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; OffsetExpr
+</span><a href="Orville.PostgreSQL.Expr.OffsetExpr.html#offsetExpr"><span class="hs-identifier hs-var">Expr.offsetExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; First OffsetExpr) -&gt; Int -&gt; First OffsetExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132927"><span class="hs-identifier hs-var">offsetValue</span></a></span><span>
+</span><span id="line-216"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-217"></span><span>
+</span><span id="line-218"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SelectOptions' with just the given 'GroupByClause'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-223"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#groupBy"><span class="hs-identifier hs-type">groupBy</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.GroupBy.html#GroupByExpr"><span class="hs-identifier hs-type">Expr.GroupByExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span>
+</span><span id="line-224"></span><span id="groupBy"><span class="annot"><span class="annottext">groupBy :: GroupByExpr -&gt; SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#groupBy"><span class="hs-identifier hs-var hs-var">groupBy</span></a></span></span><span> </span><span id="local-6989586621679132929"><span class="annot"><span class="annottext">GroupByExpr
+</span><a href="#local-6989586621679132929"><span class="hs-identifier hs-var">groupByExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-225"></span><span>  </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#emptySelectOptions"><span class="hs-identifier hs-var">emptySelectOptions</span></a></span><span>
+</span><span id="line-226"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_groupByExpr :: Maybe GroupByExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#i_groupByExpr"><span class="hs-identifier hs-var">i_groupByExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">GroupByExpr -&gt; Maybe GroupByExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">GroupByExpr
+</span><a href="#local-6989586621679132929"><span class="hs-identifier hs-var">groupByExpr</span></a></span><span>
+</span><span id="line-227"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-228"></span><span>
+</span><span id="line-229"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'QueryExpr' that will use the specified 'Expr.SelectList' when building
+  the @SELECT@ statement to execute. It it up to the caller to make sure that
+  the 'Expr.SelectList' expression makes sens for the table being queried, and
+  that the names of the columns in the result set match those expected by the
+  given 'SqlMarshaller', which will be used to decode it.
+
+  This function is useful for building more advanced queries that need to
+  select things other than simple columns from the table, such as using
+  aggregate functions. The 'Expr.SelectList' can be built however the caller
+  desires. If Orville does not support building the 'Expr.SelectList' you need
+  using any of the expression building functions, you can resort to
+  @RawSql.fromRawSql@ as an escape hatch to build the 'Expr.SelectList' here.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-245"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOptionsQueryExpr"><span class="hs-identifier hs-type">selectOptionsQueryExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-246"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#SelectList"><span class="hs-identifier hs-type">Expr.SelectList</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-247"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#TableReferenceList"><span class="hs-identifier hs-type">Expr.TableReferenceList</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-248"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html#SelectOptions"><span class="hs-identifier hs-type">SelectOptions</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-249"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Query.html#QueryExpr"><span class="hs-identifier hs-type">Expr.QueryExpr</span></a></span><span>
+</span><span id="line-250"></span><span id="selectOptionsQueryExpr"><span class="annot"><span class="annottext">selectOptionsQueryExpr :: SelectList -&gt; TableReferenceList -&gt; SelectOptions -&gt; QueryExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOptionsQueryExpr"><span class="hs-identifier hs-var hs-var">selectOptionsQueryExpr</span></a></span></span><span> </span><span id="local-6989586621679132930"><span class="annot"><span class="annottext">SelectList
+</span><a href="#local-6989586621679132930"><span class="hs-identifier hs-var">selectList</span></a></span></span><span> </span><span id="local-6989586621679132931"><span class="annot"><span class="annottext">TableReferenceList
+</span><a href="#local-6989586621679132931"><span class="hs-identifier hs-var">tableReferenceList</span></a></span></span><span> </span><span id="local-6989586621679132932"><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-251"></span><span>  </span><span class="annot"><span class="annottext">SelectClause -&gt; SelectList -&gt; Maybe TableExpr -&gt; QueryExpr
+</span><a href="Orville.PostgreSQL.Expr.Query.html#queryExpr"><span class="hs-identifier hs-var">Expr.queryExpr</span></a></span><span>
+</span><span id="line-252"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; SelectClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectDistinct"><span class="hs-identifier hs-var">selectDistinct</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-253"></span><span>    </span><span class="annot"><span class="annottext">SelectList
+</span><a href="#local-6989586621679132930"><span class="hs-identifier hs-var">selectList</span></a></span><span>
+</span><span id="line-254"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">TableExpr -&gt; Maybe TableExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(TableExpr -&gt; Maybe TableExpr) -&gt; TableExpr -&gt; Maybe TableExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-255"></span><span>        </span><span class="annot"><span class="annottext">TableReferenceList
+-&gt; Maybe WhereClause
+-&gt; Maybe GroupByClause
+-&gt; Maybe OrderByClause
+-&gt; Maybe LimitExpr
+-&gt; Maybe OffsetExpr
+-&gt; TableExpr
+</span><a href="Orville.PostgreSQL.Expr.Query.html#tableExpr"><span class="hs-identifier hs-var">Expr.tableExpr</span></a></span><span>
+</span><span id="line-256"></span><span>          </span><span class="annot"><span class="annottext">TableReferenceList
+</span><a href="#local-6989586621679132931"><span class="hs-identifier hs-var">tableReferenceList</span></a></span><span>
+</span><span id="line-257"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe WhereClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectWhereClause"><span class="hs-identifier hs-var">selectWhereClause</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-258"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe GroupByClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectGroupByClause"><span class="hs-identifier hs-var">selectGroupByClause</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-259"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe OrderByClause
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOrderByClause"><span class="hs-identifier hs-var">selectOrderByClause</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-260"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe LimitExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectLimitExpr"><span class="hs-identifier hs-var">selectLimitExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-261"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SelectOptions -&gt; Maybe OffsetExpr
+</span><a href="Orville.PostgreSQL.Execution.SelectOptions.html#selectOffsetExpr"><span class="hs-identifier hs-var">selectOffsetExpr</span></a></span><span> </span><span class="annot"><span class="annottext">SelectOptions
+</span><a href="#local-6989586621679132932"><span class="hs-identifier hs-var">selectOptions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-262"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-263"></span></pre></body></html>

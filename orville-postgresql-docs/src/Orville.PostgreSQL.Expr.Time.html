@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Time</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#now"><span class="hs-identifier">now</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#makeInterval"><span class="hs-identifier">makeInterval</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier">IntervalArgument</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#years"><span class="hs-identifier">years</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#months"><span class="hs-identifier">months</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#weeks"><span class="hs-identifier">weeks</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#days"><span class="hs-identifier">days</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#hours"><span class="hs-identifier">hours</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#minutes"><span class="hs-identifier">minutes</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#seconds"><span class="hs-identifier">seconds</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier">functionName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.ValueExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier">ParameterName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier">ValueExpression</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier">functionCall</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCallNamedParams"><span class="hs-identifier">functionCallNamedParams</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="annot"><span class="hs-comment">{- |
+  The value of the current time as returned by the PostgreSQL function @now()@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-33"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#now"><span class="hs-identifier hs-type">now</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-34"></span><span id="now"><span class="annot"><span class="annottext">now :: ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Time.html#now"><span class="hs-identifier hs-var hs-var">now</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">FunctionName -&gt; [ValueExpression] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-var">functionCall</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier hs-var">functionName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;now&quot;</span></span><span class="hs-special">)</span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ValueExpression' whose value in PostgreSQL is the result of
+  calling @make_interval@ with the specified time intervals passed as named
+  arguments.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-43"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#makeInterval"><span class="hs-identifier hs-type">makeInterval</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span class="hs-special">)</span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-44"></span><span id="makeInterval"><span class="annot"><span class="annottext">makeInterval :: [(IntervalArgument, ValueExpression)] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Time.html#makeInterval"><span class="hs-identifier hs-var hs-var">makeInterval</span></a></span></span><span> </span><span id="local-6989586621679129666"><span class="annot"><span class="annottext">[(IntervalArgument, ValueExpression)]
+</span><a href="#local-6989586621679129666"><span class="hs-identifier hs-var">args</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-45"></span><span>  </span><span class="annot"><span class="annottext">FunctionName
+-&gt; [(ParameterName, ValueExpression)] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCallNamedParams"><span class="hs-identifier hs-var">functionCallNamedParams</span></a></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier hs-var">functionName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;make_interval&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">((IntervalArgument, ValueExpression)
+ -&gt; (ParameterName, ValueExpression))
+-&gt; [(IntervalArgument, ValueExpression)]
+-&gt; [(ParameterName, ValueExpression)]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span> </span><span id="local-6989586621679129668"><span class="annot"><span class="annottext">ParameterName
+</span><a href="#local-6989586621679129668"><span class="hs-identifier hs-var">paramName</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679129669"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129669"><span class="hs-identifier hs-var">value</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ParameterName
+</span><a href="#local-6989586621679129668"><span class="hs-identifier hs-var">paramName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129669"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[(IntervalArgument, ValueExpression)]
+</span><a href="#local-6989586621679129666"><span class="hs-identifier hs-var">args</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the name of a time interval argument to the PostgreSQL
+@make_interval@ function. E.G.
+
+&gt; years
+
+'IntervalArgument' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-61"></span><span class="hs-keyword">newtype</span><span> </span><span id="IntervalArgument"><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-var">IntervalArgument</span></a></span></span><span>
+</span><span id="line-62"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="IntervalArgument"><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-var">IntervalArgument</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ParameterName"><span class="hs-identifier hs-type">ParameterName</span></a></span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679129672"><span id="local-6989586621679129676"><span class="annot"><span class="annottext">RawSql -&gt; IntervalArgument
+IntervalArgument -&gt; RawSql
+(IntervalArgument -&gt; RawSql)
+-&gt; (RawSql -&gt; IntervalArgument) -&gt; SqlExpression IntervalArgument
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: IntervalArgument -&gt; RawSql
+toRawSql :: IntervalArgument -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; IntervalArgument
+unsafeFromRawSql :: RawSql -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs an arbitrary 'IntervalArgument' with whatever name you specify. It
+  is up to you to ensure that name a valid argument name for @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-71"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-type">unsafeIntervalArg</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-72"></span><span id="unsafeIntervalArg"><span class="annot"><span class="annottext">unsafeIntervalArg :: String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var hs-var">unsafeIntervalArg</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><span class="annottext">ParameterName -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-var">IntervalArgument</span></a></span><span> </span><span class="annot"><span class="annottext">(ParameterName -&gt; IntervalArgument)
+-&gt; (String -&gt; ParameterName) -&gt; String -&gt; IntervalArgument
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ParameterName
+forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var">RawSql.unsafeSqlExpression</span></a></span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">{- |
+  The @years@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-80"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#years"><span class="hs-identifier hs-type">years</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-81"></span><span id="years"><span class="annot"><span class="annottext">years :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#years"><span class="hs-identifier hs-var hs-var">years</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;years&quot;</span></span><span>
+</span><span id="line-82"></span><span>
+</span><span id="line-83"></span><span class="annot"><span class="hs-comment">{- |
+  The @months@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#months"><span class="hs-identifier hs-type">months</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-89"></span><span id="months"><span class="annot"><span class="annottext">months :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#months"><span class="hs-identifier hs-var hs-var">months</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;months&quot;</span></span><span>
+</span><span id="line-90"></span><span>
+</span><span id="line-91"></span><span class="annot"><span class="hs-comment">{- |
+  The @weeks@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-96"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#weeks"><span class="hs-identifier hs-type">weeks</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-97"></span><span id="weeks"><span class="annot"><span class="annottext">weeks :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#weeks"><span class="hs-identifier hs-var hs-var">weeks</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;weeks&quot;</span></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="annot"><span class="hs-comment">{- |
+  The @days@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#days"><span class="hs-identifier hs-type">days</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-105"></span><span id="days"><span class="annot"><span class="annottext">days :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#days"><span class="hs-identifier hs-var hs-var">days</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;days&quot;</span></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="annot"><span class="hs-comment">{- |
+  The @hours@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-112"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#hours"><span class="hs-identifier hs-type">hours</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-113"></span><span id="hours"><span class="annot"><span class="annottext">hours :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#hours"><span class="hs-identifier hs-var hs-var">hours</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;hours&quot;</span></span><span>
+</span><span id="line-114"></span><span>
+</span><span id="line-115"></span><span class="annot"><span class="hs-comment">{- |
+  The @mins@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-120"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#minutes"><span class="hs-identifier hs-type">minutes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-121"></span><span id="minutes"><span class="annot"><span class="annottext">minutes :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#minutes"><span class="hs-identifier hs-var hs-var">minutes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;mins&quot;</span></span><span>
+</span><span id="line-122"></span><span>
+</span><span id="line-123"></span><span class="annot"><span class="hs-comment">{- |
+  The @secs@ argument to @make_interval@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-128"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#seconds"><span class="hs-identifier hs-type">seconds</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Time.html#IntervalArgument"><span class="hs-identifier hs-type">IntervalArgument</span></a></span><span>
+</span><span id="line-129"></span><span id="seconds"><span class="annot"><span class="annottext">seconds :: IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#seconds"><span class="hs-identifier hs-var hs-var">seconds</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; IntervalArgument
+</span><a href="Orville.PostgreSQL.Expr.Time.html#unsafeIntervalArg"><span class="hs-identifier hs-var">unsafeIntervalArg</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;secs&quot;</span></span><span>
+</span><span id="line-130"></span></pre></body></html>

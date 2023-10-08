@@ -1,0 +1,467 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Transaction</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier">BeginTransactionExpr</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#beginTransaction"><span class="hs-identifier">beginTransaction</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier">TransactionMode</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readWrite"><span class="hs-identifier">readWrite</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readOnly"><span class="hs-identifier">readOnly</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#deferrable"><span class="hs-identifier">deferrable</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#notDeferrable"><span class="hs-identifier">notDeferrable</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#isolationLevel"><span class="hs-identifier">isolationLevel</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier">IsolationLevel</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#serializable"><span class="hs-identifier">serializable</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#repeatableRead"><span class="hs-identifier">repeatableRead</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readCommitted"><span class="hs-identifier">readCommitted</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readUncommitted"><span class="hs-identifier">readUncommitted</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#CommitExpr"><span class="hs-identifier">CommitExpr</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#commit"><span class="hs-identifier">commit</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier">RollbackExpr</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#rollback"><span class="hs-identifier">rollback</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#rollbackTo"><span class="hs-identifier">rollbackTo</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#SavepointExpr"><span class="hs-identifier">SavepointExpr</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#savepoint"><span class="hs-identifier">savepoint</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#ReleaseSavepointExpr"><span class="hs-identifier">ReleaseSavepointExpr</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#releaseSavepoint"><span class="hs-identifier">releaseSavepoint</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">maybeToList</span></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Name</span></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the name of a begin transaction statement. E.G.
+
+&gt; BEGIN TRANSACTION
+
+'BeginTransactionExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">newtype</span><span> </span><span id="BeginTransactionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-var">BeginTransactionExpr</span></a></span></span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="BeginTransactionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-var">BeginTransactionExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128645"><span id="local-6989586621679128649"><span class="annot"><span class="annottext">RawSql -&gt; BeginTransactionExpr
+BeginTransactionExpr -&gt; RawSql
+(BeginTransactionExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; BeginTransactionExpr)
+-&gt; SqlExpression BeginTransactionExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: BeginTransactionExpr -&gt; RawSql
+toRawSql :: BeginTransactionExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; BeginTransactionExpr
+unsafeFromRawSql :: RawSql -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'BeginTransactionExpr' that will begin a transaction using
+  the specified mode, if any.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-62"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#beginTransaction"><span class="hs-identifier hs-type">beginTransaction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-type">TransactionMode</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-type">BeginTransactionExpr</span></a></span><span>
+</span><span id="line-63"></span><span id="beginTransaction"><span class="annot"><span class="annottext">beginTransaction :: Maybe TransactionMode -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#beginTransaction"><span class="hs-identifier hs-var hs-var">beginTransaction</span></a></span></span><span> </span><span id="local-6989586621679128654"><span class="annot"><span class="annottext">Maybe TransactionMode
+</span><a href="#local-6989586621679128654"><span class="hs-identifier hs-var">maybeTransactionMode</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-var">BeginTransactionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; BeginTransactionExpr) -&gt; RawSql -&gt; BeginTransactionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-65"></span><span>    </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span> </span><span class="annot"><span class="annottext">([RawSql] -&gt; RawSql) -&gt; [RawSql] -&gt; RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-66"></span><span>      </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;BEGIN TRANSACTION&quot;</span></span><span>
+</span><span id="line-67"></span><span>          </span><span class="annot"><span class="annottext">RawSql -&gt; [RawSql] -&gt; [RawSql]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="annot"><span class="annottext">Maybe RawSql -&gt; [RawSql]
+forall a. Maybe a -&gt; [a]
+</span><span class="hs-identifier hs-var">maybeToList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TransactionMode -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(TransactionMode -&gt; RawSql)
+-&gt; Maybe TransactionMode -&gt; Maybe RawSql
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">Maybe TransactionMode
+</span><a href="#local-6989586621679128654"><span class="hs-identifier hs-var">maybeTransactionMode</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-68"></span><span>      </span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the a transaction mode. E.G.
+
+&gt; ISOLATION LEVEL SERIALIZABLE
+
+'TransactionMode' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-81"></span><span class="hs-keyword">newtype</span><span> </span><span id="TransactionMode"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span></span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="TransactionMode"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128662"><span id="local-6989586621679128666"><span class="annot"><span class="annottext">RawSql -&gt; TransactionMode
+TransactionMode -&gt; RawSql
+(TransactionMode -&gt; RawSql)
+-&gt; (RawSql -&gt; TransactionMode) -&gt; SqlExpression TransactionMode
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: TransactionMode -&gt; RawSql
+toRawSql :: TransactionMode -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; TransactionMode
+unsafeFromRawSql :: RawSql -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-84"></span><span>
+</span><span id="line-85"></span><span class="annot"><span class="hs-comment">{- |
+  The @READ WRITE@ transaction mode.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-90"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readWrite"><span class="hs-identifier hs-type">readWrite</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-type">TransactionMode</span></a></span><span>
+</span><span id="line-91"></span><span id="readWrite"><span class="annot"><span class="annottext">readWrite :: TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#readWrite"><span class="hs-identifier hs-var hs-var">readWrite</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;READ WRITE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="annot"><span class="hs-comment">{- |
+  The @READ ONLY@ transaction mode.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-99"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readOnly"><span class="hs-identifier hs-type">readOnly</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-type">TransactionMode</span></a></span><span>
+</span><span id="line-100"></span><span id="readOnly"><span class="annot"><span class="annottext">readOnly :: TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#readOnly"><span class="hs-identifier hs-var hs-var">readOnly</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-101"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;READ ONLY&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-102"></span><span>
+</span><span id="line-103"></span><span class="annot"><span class="hs-comment">{- |
+  The @DEFERRABLE@ transaction mode.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-108"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#deferrable"><span class="hs-identifier hs-type">deferrable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-type">TransactionMode</span></a></span><span>
+</span><span id="line-109"></span><span id="deferrable"><span class="annot"><span class="annottext">deferrable :: TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#deferrable"><span class="hs-identifier hs-var hs-var">deferrable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-110"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;DEFERRABLE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="annot"><span class="hs-comment">{- |
+  The @NOT DEFERRABLE@ transaction mode.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-117"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#notDeferrable"><span class="hs-identifier hs-type">notDeferrable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-type">TransactionMode</span></a></span><span>
+</span><span id="line-118"></span><span id="notDeferrable"><span class="annot"><span class="annottext">notDeferrable :: TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#notDeferrable"><span class="hs-identifier hs-var hs-var">notDeferrable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-119"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;NOT DEFERRABLE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-120"></span><span>
+</span><span id="line-121"></span><span class="annot"><span class="hs-comment">{- |
+  An @ISOLATION LEVEL@ transaction mode with the given 'IsolationLevel'.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-126"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#isolationLevel"><span class="hs-identifier hs-type">isolationLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-type">IsolationLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-type">TransactionMode</span></a></span><span>
+</span><span id="line-127"></span><span id="isolationLevel"><span class="annot"><span class="annottext">isolationLevel :: IsolationLevel -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#isolationLevel"><span class="hs-identifier hs-var hs-var">isolationLevel</span></a></span></span><span> </span><span id="local-6989586621679128670"><span class="annot"><span class="annottext">IsolationLevel
+</span><a href="#local-6989586621679128670"><span class="hs-identifier hs-var">level</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-128"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TransactionMode
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#TransactionMode"><span class="hs-identifier hs-var">TransactionMode</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; TransactionMode) -&gt; RawSql -&gt; TransactionMode
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-129"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ISOLATION LEVEL &quot;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IsolationLevel -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">IsolationLevel
+</span><a href="#local-6989586621679128670"><span class="hs-identifier hs-var">level</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-130"></span><span>
+</span><span id="line-131"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the a transaction isolation level. E.G.
+
+&gt; SERIALIZABLE
+
+'IsolationLevel' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-142"></span><span class="hs-keyword">newtype</span><span> </span><span id="IsolationLevel"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-var">IsolationLevel</span></a></span></span><span>
+</span><span id="line-143"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="IsolationLevel"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-var">IsolationLevel</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-144"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128672"><span id="local-6989586621679128676"><span class="annot"><span class="annottext">RawSql -&gt; IsolationLevel
+IsolationLevel -&gt; RawSql
+(IsolationLevel -&gt; RawSql)
+-&gt; (RawSql -&gt; IsolationLevel) -&gt; SqlExpression IsolationLevel
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: IsolationLevel -&gt; RawSql
+toRawSql :: IsolationLevel -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; IsolationLevel
+unsafeFromRawSql :: RawSql -&gt; IsolationLevel
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-145"></span><span>
+</span><span id="line-146"></span><span class="annot"><span class="hs-comment">{- |
+  The @SERIALIZABLE@ isolation level.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-151"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#serializable"><span class="hs-identifier hs-type">serializable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-type">IsolationLevel</span></a></span><span>
+</span><span id="line-152"></span><span id="serializable"><span class="annot"><span class="annottext">serializable :: IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#serializable"><span class="hs-identifier hs-var hs-var">serializable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-153"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-var">IsolationLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SERIALIZABLE&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-154"></span><span>
+</span><span id="line-155"></span><span class="annot"><span class="hs-comment">{- |
+  The @REPEATABLE READ@ isolation level.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-160"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#repeatableRead"><span class="hs-identifier hs-type">repeatableRead</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-type">IsolationLevel</span></a></span><span>
+</span><span id="line-161"></span><span id="repeatableRead"><span class="annot"><span class="annottext">repeatableRead :: IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#repeatableRead"><span class="hs-identifier hs-var hs-var">repeatableRead</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-162"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-var">IsolationLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;REPEATABLE READ&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>
+</span><span id="line-164"></span><span class="annot"><span class="hs-comment">{- |
+  The @READ COMMITTED@ isolation level.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-169"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readCommitted"><span class="hs-identifier hs-type">readCommitted</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-type">IsolationLevel</span></a></span><span>
+</span><span id="line-170"></span><span id="readCommitted"><span class="annot"><span class="annottext">readCommitted :: IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#readCommitted"><span class="hs-identifier hs-var hs-var">readCommitted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-var">IsolationLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;READ COMMITTED&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-172"></span><span>
+</span><span id="line-173"></span><span class="annot"><span class="hs-comment">{- |
+  The @READ UNCOMMITTED@ isolation level.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-178"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#readUncommitted"><span class="hs-identifier hs-type">readUncommitted</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-type">IsolationLevel</span></a></span><span>
+</span><span id="line-179"></span><span id="readUncommitted"><span class="annot"><span class="annottext">readUncommitted :: IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#readUncommitted"><span class="hs-identifier hs-var hs-var">readUncommitted</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-180"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IsolationLevel
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#IsolationLevel"><span class="hs-identifier hs-var">IsolationLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;READ UNCOMMITTED&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the transaction commit statement. E.G.
+
+&gt; COMMIT
+
+'CommitExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-193"></span><span class="hs-keyword">newtype</span><span> </span><span id="CommitExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#CommitExpr"><span class="hs-identifier hs-var">CommitExpr</span></a></span></span><span>
+</span><span id="line-194"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CommitExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#CommitExpr"><span class="hs-identifier hs-var">CommitExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-195"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128681"><span id="local-6989586621679128685"><span class="annot"><span class="annottext">RawSql -&gt; CommitExpr
+CommitExpr -&gt; RawSql
+(CommitExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; CommitExpr) -&gt; SqlExpression CommitExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CommitExpr -&gt; RawSql
+toRawSql :: CommitExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CommitExpr
+unsafeFromRawSql :: RawSql -&gt; CommitExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-196"></span><span>
+</span><span id="line-197"></span><span class="annot"><span class="hs-comment">{- |
+  A @COMMIT@ transaction statement
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-202"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#commit"><span class="hs-identifier hs-type">commit</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#CommitExpr"><span class="hs-identifier hs-type">CommitExpr</span></a></span><span>
+</span><span id="line-203"></span><span id="commit"><span class="annot"><span class="annottext">commit :: CommitExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#commit"><span class="hs-identifier hs-var hs-var">commit</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-204"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CommitExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#CommitExpr"><span class="hs-identifier hs-var">CommitExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;COMMIT&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span><span>
+</span><span id="line-206"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the transaction rollback statement. E.G.
+
+&gt; ROLLBACK
+
+'RollbackExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-217"></span><span class="hs-keyword">newtype</span><span> </span><span id="RollbackExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier hs-var">RollbackExpr</span></a></span></span><span>
+</span><span id="line-218"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="RollbackExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier hs-var">RollbackExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-219"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128691"><span id="local-6989586621679128695"><span class="annot"><span class="annottext">RawSql -&gt; RollbackExpr
+RollbackExpr -&gt; RawSql
+(RollbackExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; RollbackExpr) -&gt; SqlExpression RollbackExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: RollbackExpr -&gt; RawSql
+toRawSql :: RollbackExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; RollbackExpr
+unsafeFromRawSql :: RawSql -&gt; RollbackExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-220"></span><span>
+</span><span id="line-221"></span><span class="annot"><span class="hs-comment">{- |
+  A @ROLLBACK@ transaction statement
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-226"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#rollback"><span class="hs-identifier hs-type">rollback</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier hs-type">RollbackExpr</span></a></span><span>
+</span><span id="line-227"></span><span id="rollback"><span class="annot"><span class="annottext">rollback :: RollbackExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#rollback"><span class="hs-identifier hs-var hs-var">rollback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-228"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; RollbackExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier hs-var">RollbackExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ROLLBACK&quot;</span></span><span class="hs-special">)</span><span>
+</span><span id="line-229"></span><span>
+</span><span id="line-230"></span><span class="annot"><span class="hs-comment">{- |
+  A @ROLLBACK TO@ transaction statement that will rollback to the specified
+  savepoint.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-236"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#rollbackTo"><span class="hs-identifier hs-type">rollbackTo</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SavepointName.html#SavepointName"><span class="hs-identifier hs-type">Name.SavepointName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier hs-type">RollbackExpr</span></a></span><span>
+</span><span id="line-237"></span><span id="rollbackTo"><span class="annot"><span class="annottext">rollbackTo :: SavepointName -&gt; RollbackExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#rollbackTo"><span class="hs-identifier hs-var hs-var">rollbackTo</span></a></span></span><span> </span><span id="local-6989586621679128699"><span class="annot"><span class="annottext">SavepointName
+</span><a href="#local-6989586621679128699"><span class="hs-identifier hs-var">savepointName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-238"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; RollbackExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#RollbackExpr"><span class="hs-identifier hs-var">RollbackExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; RollbackExpr) -&gt; RawSql -&gt; RollbackExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-239"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ROLLBACK TO SAVEPOINT &quot;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SavepointName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">SavepointName
+</span><a href="#local-6989586621679128699"><span class="hs-identifier hs-var">savepointName</span></a></span><span>
+</span><span id="line-240"></span><span>
+</span><span id="line-241"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the transaction savepoint statement. E.G.
+
+&gt; SAVEPOINT foo
+
+'SavepointExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-252"></span><span class="hs-keyword">newtype</span><span> </span><span id="SavepointExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#SavepointExpr"><span class="hs-identifier hs-var">SavepointExpr</span></a></span></span><span>
+</span><span id="line-253"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="SavepointExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#SavepointExpr"><span class="hs-identifier hs-var">SavepointExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-254"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128702"><span id="local-6989586621679128706"><span class="annot"><span class="annottext">RawSql -&gt; SavepointExpr
+SavepointExpr -&gt; RawSql
+(SavepointExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; SavepointExpr) -&gt; SqlExpression SavepointExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: SavepointExpr -&gt; RawSql
+toRawSql :: SavepointExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; SavepointExpr
+unsafeFromRawSql :: RawSql -&gt; SavepointExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-255"></span><span>
+</span><span id="line-256"></span><span class="annot"><span class="hs-comment">{- |
+  A @SAVEPOINT@ statement that will create a savepoint with the given name.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-261"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#savepoint"><span class="hs-identifier hs-type">savepoint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SavepointName.html#SavepointName"><span class="hs-identifier hs-type">Name.SavepointName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#SavepointExpr"><span class="hs-identifier hs-type">SavepointExpr</span></a></span><span>
+</span><span id="line-262"></span><span id="savepoint"><span class="annot"><span class="annottext">savepoint :: SavepointName -&gt; SavepointExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#savepoint"><span class="hs-identifier hs-var hs-var">savepoint</span></a></span></span><span> </span><span id="local-6989586621679128710"><span class="annot"><span class="annottext">SavepointName
+</span><a href="#local-6989586621679128710"><span class="hs-identifier hs-var">savepointName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-263"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; SavepointExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#SavepointExpr"><span class="hs-identifier hs-var">SavepointExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; SavepointExpr) -&gt; RawSql -&gt; SavepointExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-264"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SAVEPOINT &quot;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SavepointName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">SavepointName
+</span><a href="#local-6989586621679128710"><span class="hs-identifier hs-var">savepointName</span></a></span><span>
+</span><span id="line-265"></span><span>
+</span><span id="line-266"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the transaction release savepoint statement. E.G.
+
+&gt; RELEASE SAVEPOINT foo
+
+'ReleaseSavepointExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-277"></span><span class="hs-keyword">newtype</span><span> </span><span id="ReleaseSavepointExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#ReleaseSavepointExpr"><span class="hs-identifier hs-var">ReleaseSavepointExpr</span></a></span></span><span>
+</span><span id="line-278"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ReleaseSavepontExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#ReleaseSavepontExpr"><span class="hs-identifier hs-var">ReleaseSavepontExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-279"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128713"><span id="local-6989586621679128717"><span class="annot"><span class="annottext">RawSql -&gt; ReleaseSavepointExpr
+ReleaseSavepointExpr -&gt; RawSql
+(ReleaseSavepointExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; ReleaseSavepointExpr)
+-&gt; SqlExpression ReleaseSavepointExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ReleaseSavepointExpr -&gt; RawSql
+toRawSql :: ReleaseSavepointExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ReleaseSavepointExpr
+unsafeFromRawSql :: RawSql -&gt; ReleaseSavepointExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-280"></span><span>
+</span><span id="line-281"></span><span class="annot"><span class="hs-comment">{- |
+  A @RELEASE SAVEPOINT@ statement that will release the specified savepoint.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-286"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#releaseSavepoint"><span class="hs-identifier hs-type">releaseSavepoint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SavepointName.html#SavepointName"><span class="hs-identifier hs-type">Name.SavepointName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#ReleaseSavepointExpr"><span class="hs-identifier hs-type">ReleaseSavepointExpr</span></a></span><span>
+</span><span id="line-287"></span><span id="releaseSavepoint"><span class="annot"><span class="annottext">releaseSavepoint :: SavepointName -&gt; ReleaseSavepointExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#releaseSavepoint"><span class="hs-identifier hs-var hs-var">releaseSavepoint</span></a></span></span><span> </span><span id="local-6989586621679128721"><span class="annot"><span class="annottext">SavepointName
+</span><a href="#local-6989586621679128721"><span class="hs-identifier hs-var">savepointName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-288"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ReleaseSavepointExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#ReleaseSavepontExpr"><span class="hs-identifier hs-var">ReleaseSavepontExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ReleaseSavepointExpr) -&gt; RawSql -&gt; ReleaseSavepointExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-289"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;RELEASE SAVEPOINT &quot;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SavepointName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">SavepointName
+</span><a href="#local-6989586621679128721"><span class="hs-identifier hs-var">savepointName</span></a></span><span>
+</span><span id="line-290"></span></pre></body></html>

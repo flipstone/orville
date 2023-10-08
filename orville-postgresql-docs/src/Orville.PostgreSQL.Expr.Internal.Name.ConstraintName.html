@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Internal.Name.ConstraintName</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#ConstraintName"><span class="hs-identifier">ConstraintName</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#constraintName"><span class="hs-identifier">constraintName</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Internal.Name.Identifier</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier">Identifier</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier">IdentifierExpression</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier">identifier</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL constraint name. 'ConstraintName' values constructed
+via the 'constraintName' function will be properly escaped as part of the
+generated SQL. E.G.
+
+&gt; &quot;some_constraint_name&quot;
+
+'ConstraintName' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">newtype</span><span> </span><span id="ConstraintName"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#ConstraintName"><span class="hs-identifier hs-var">ConstraintName</span></a></span></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ConstraintName"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#ConstraintName"><span class="hs-identifier hs-var">ConstraintName</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-36"></span><span>      </span><span id="local-6989586621679128422"><span id="local-6989586621679128427"><span class="annot"><span class="annottext">RawSql -&gt; ConstraintName
+ConstraintName -&gt; RawSql
+(ConstraintName -&gt; RawSql)
+-&gt; (RawSql -&gt; ConstraintName) -&gt; SqlExpression ConstraintName
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ConstraintName -&gt; RawSql
+toRawSql :: ConstraintName -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ConstraintName
+unsafeFromRawSql :: RawSql -&gt; ConstraintName
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-38"></span><span>      </span><span id="local-6989586621679128433"><span id="local-6989586621679128438"><span class="annot"><span class="annottext">Identifier -&gt; ConstraintName
+ConstraintName -&gt; Identifier
+(ConstraintName -&gt; Identifier)
+-&gt; (Identifier -&gt; ConstraintName)
+-&gt; IdentifierExpression ConstraintName
+forall name.
+(name -&gt; Identifier)
+-&gt; (Identifier -&gt; name) -&gt; IdentifierExpression name
+$ctoIdentifier :: ConstraintName -&gt; Identifier
+toIdentifier :: ConstraintName -&gt; Identifier
+$cfromIdentifier :: Identifier -&gt; ConstraintName
+fromIdentifier :: Identifier -&gt; ConstraintName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">IdentifierExpression</span></a></span></span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><span class="hs-comment">{- |
+Construct a 'ConstraintName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-46"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#constraintName"><span class="hs-identifier hs-type">constraintName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#ConstraintName"><span class="hs-identifier hs-type">ConstraintName</span></a></span><span>
+</span><span id="line-47"></span><span id="constraintName"><span class="annot"><span class="annottext">constraintName :: String -&gt; ConstraintName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#constraintName"><span class="hs-identifier hs-var hs-var">constraintName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Identifier -&gt; ConstraintName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.ConstraintName.html#ConstraintName"><span class="hs-identifier hs-var">ConstraintName</span></a></span><span> </span><span class="annot"><span class="annottext">(Identifier -&gt; ConstraintName)
+-&gt; (String -&gt; Identifier) -&gt; String -&gt; ConstraintName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier hs-var">identifier</span></a></span><span>
+</span><span id="line-48"></span></pre></body></html>

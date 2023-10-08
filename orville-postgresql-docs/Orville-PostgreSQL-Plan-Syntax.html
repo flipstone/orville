@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Orville.PostgreSQL.Plan.Syntax</title><link href="linuwial.css" rel="stylesheet" type="text/css" title="Linuwial" /><link rel="stylesheet" type="text/css" href="quick-jump.css" /><link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400i,700" /><script src="haddock-bundle.min.js" async="async" type="text/javascript"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { processClass: "mathjax", ignoreClass: ".*" } });</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script></head><body><div id="package-header"><span class="caption">orville-postgresql-1.0.0.0: ORM</span><ul class="links" id="page-menu"><li><a href="src/Orville.PostgreSQL.Plan.Syntax.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul></div><div id="content"><div id="module-header"><table class="info"><tr><th valign="top">Copyright</th><td>Flipstone Technology Partners 2023</td></tr><tr><th>License</th><td>MIT</td></tr><tr><th>Safe Haskell</th><td>Safe-Inferred</td></tr><tr><th>Language</th><td>Haskell2010</td></tr></table><p class="caption">Orville.PostgreSQL.Plan.Syntax</p></div><div id="description"><p class="caption">Description</p><div class="doc"><p>This module exports the <code><a href="Orville-PostgreSQL-Plan.html#v:bind" title="Orville.PostgreSQL.Plan">bind</a></code> function as <code><a href="Orville-PostgreSQL-Plan-Syntax.html#v:-62--62--61-" title="Orville.PostgreSQL.Plan.Syntax">&gt;&gt;=</a></code> so that it can be used in
+conjuction with the <code>QualifiedDo</code> language extension to write plans using do
+syntax like so:</p><pre>{-# LANGUAGE QualifiedDo #-}
+module MyModule where
+
+import qualified Orville.PostgreSQL.Plan.Syntax as PlanSyntax
+
+data FooFamily =
+  FooFamily
+    { foo :: Foo
+    , children :: [FooChildren]
+    , pets :: [FooPets]
+    }
+
+findFooFamily = PlanSyntax.do $
+  fooHeader &lt;- Plan.findOne fooTable fooIdField
+  fooChildren &lt;- Plan.findAll fooChildTable fooIdField
+  fooPets &lt;- Plan.findAll fooPetTable fooIdField
+
+  FooFamily
+    <a href="$">$</a> Plan.use fooHeader
+    <a href="*">*</a> Plan.use fooChildren
+    <a href="*">*</a> Plan.use fooPets
+</pre><p><em>Since: 1.0.0.0</em></p></div></div><div id="synopsis"><details id="syn"><summary>Synopsis</summary><ul class="details-toggle" data-details-id="syn"><li class="src short"><a href="#v:-62--62--61-">(&gt;&gt;=)</a> :: <a href="Orville-PostgreSQL-Plan.html#t:Plan" title="Orville.PostgreSQL.Plan">Plan</a> scope param a -&gt; (<a href="Orville-PostgreSQL-Plan.html#t:Planned" title="Orville.PostgreSQL.Plan">Planned</a> scope param a -&gt; <a href="Orville-PostgreSQL-Plan.html#t:Plan" title="Orville.PostgreSQL.Plan">Plan</a> scope param result) -&gt; <a href="Orville-PostgreSQL-Plan.html#t:Plan" title="Orville.PostgreSQL.Plan">Plan</a> scope param result</li></ul></details></div><div id="interface"><h1>Documentation</h1><div class="top"><p class="src"><a id="v:-62--62--61-" class="def">(&gt;&gt;=)</a> :: <a href="Orville-PostgreSQL-Plan.html#t:Plan" title="Orville.PostgreSQL.Plan">Plan</a> scope param a -&gt; (<a href="Orville-PostgreSQL-Plan.html#t:Planned" title="Orville.PostgreSQL.Plan">Planned</a> scope param a -&gt; <a href="Orville-PostgreSQL-Plan.html#t:Plan" title="Orville.PostgreSQL.Plan">Plan</a> scope param result) -&gt; <a href="Orville-PostgreSQL-Plan.html#t:Plan" title="Orville.PostgreSQL.Plan">Plan</a> scope param result <a href="src/Orville.PostgreSQL.Plan.Syntax.html#%3E%3E%3D" class="link">Source</a> <a href="#v:-62--62--61-" class="selflink">#</a></p><div class="doc"><p>An operator alias of <code><a href="Orville-PostgreSQL-Plan.html#v:bind" title="Orville.PostgreSQL.Plan">bind</a></code> so that it can be used with <code>QualifiedDo</code>.</p><p><em>Since: 1.0.0.0</em></p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.27.0</p></div></body></html>

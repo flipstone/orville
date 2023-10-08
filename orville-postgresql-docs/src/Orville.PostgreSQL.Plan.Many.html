@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Plan.Many</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier">Many</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier">NotAKey</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier">NotAKey</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#fromKeys"><span class="hs-identifier">fromKeys</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier">lookup</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#keys"><span class="hs-identifier">keys</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#elems"><span class="hs-identifier">elems</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#map"><span class="hs-identifier">map</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#toMap"><span class="hs-identifier">toMap</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#apply"><span class="hs-identifier">apply</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#compose"><span class="hs-identifier">compose</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-20"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Either</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Left</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Right</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Functor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">fmap</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Maybe</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Just</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Nothing</span></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Ord</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">($)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(.)</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-operator">(&lt;*&gt;)</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Either</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Either</span></span><span>
+</span><span id="line-25"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Maybe</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Maybe</span></span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="annot"><span class="hs-comment">{- |
+  'NotAKey' is returned from various 'Many' related functions when presented
+  with an input parameter that was not one of the original inputs that the
+  'Many' was constructed with.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">data</span><span> </span><span id="NotAKey"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier hs-var">NotAKey</span></a></span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="NotAKey"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier hs-var">NotAKey</span></a></span></span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="annot"><span class="hs-comment">{- |
+  A 'Many k a' represents a group of values keyed by list of parameters and
+  is used to return the results of executing an Orville Plan with a list of
+  input parameters. If you need to find the result of the query associated
+  with a particular input parameter, you can use 'lookup' to find it. If you
+  don't care about the association with particular inputs, you can simply
+  use 'elems' to get a list of all the results.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">data</span><span> </span><span id="Many"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-var">Many</span></a></span></span><span> </span><span id="local-6989586621679126691"><span class="annot"><a href="#local-6989586621679126691"><span class="hs-identifier hs-type">k</span></a></span></span><span> </span><span id="local-6989586621679126692"><span class="annot"><a href="#local-6989586621679126692"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Many"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-var">Many</span></a></span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679126691"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679126691"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier hs-type">NotAKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126692"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679126618"><span id="local-6989586621679126695"><span class="annot"><span class="hs-identifier hs-type">Functor</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126618"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-52"></span><span>  </span><span id="local-6989586621679126699"><span class="annot"><span class="annottext">fmap :: forall a b. (a -&gt; b) -&gt; Many k a -&gt; Many k b
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">fmap</span></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; Many k a -&gt; Many k b
+forall a b k. (a -&gt; b) -&gt; Many k a -&gt; Many k b
+</span><a href="Orville.PostgreSQL.Plan.Many.html#map"><span class="hs-identifier hs-var">map</span></a></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="annot"><span class="hs-comment">{- |
+  'fromKeys' constructs a 'Many' value from a list of keys and a function that
+  maps them to their values. The order and duplication of keys in the list will
+  be preserved by the 'Many' type in the relevant functions. The mapping
+  function provided should be a total function -- i.e. it should not produce a
+  runtime error. If it is not possible to map every @k@ (even those not in the
+  input list provided to 'fromKeys'), the values should be wrapped in an
+  appropriate type such as 'Maybe' so that an empty or default value can be
+  returned.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-66"></span><span id="local-6989586621679126624"><span id="local-6989586621679126626"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#fromKeys"><span class="hs-identifier hs-type">fromKeys</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679126624"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679126624"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier hs-type">NotAKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126626"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126624"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126626"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-67"></span><span id="fromKeys"><span class="annot"><span class="annottext">fromKeys :: forall k a. [k] -&gt; (k -&gt; Either NotAKey a) -&gt; Many k a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#fromKeys"><span class="hs-identifier hs-var hs-var">fromKeys</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="annottext">[k] -&gt; (k -&gt; Either NotAKey a) -&gt; Many k a
+forall k a. [k] -&gt; (k -&gt; Either NotAKey a) -&gt; Many k a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-var">Many</span></a></span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><span class="hs-comment">{- |
+   'map' calls a function on all the values found in a 'Many' collection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-75"></span><span id="local-6989586621679126621"><span id="local-6989586621679126622"><span id="local-6989586621679126623"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#map"><span class="hs-identifier hs-type">map</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679126621"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679126622"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126623"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126621"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126623"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126622"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-76"></span><span id="map"><span class="annot"><span class="annottext">map :: forall a b k. (a -&gt; b) -&gt; Many k a -&gt; Many k b
+</span><a href="Orville.PostgreSQL.Plan.Many.html#map"><span class="hs-identifier hs-var hs-var">map</span></a></span></span><span> </span><span id="local-6989586621679126702"><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679126702"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span id="local-6989586621679126703"><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126703"><span class="hs-identifier hs-var">ks</span></a></span></span><span> </span><span id="local-6989586621679126704"><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126704"><span class="hs-identifier hs-var">keyToValue</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><span class="annottext">[k] -&gt; (k -&gt; Either NotAKey b) -&gt; Many k b
+forall k a. [k] -&gt; (k -&gt; Either NotAKey a) -&gt; Many k a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-var">Many</span></a></span><span> </span><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126703"><span class="hs-identifier hs-var">ks</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(a -&gt; b) -&gt; Either NotAKey a -&gt; Either NotAKey b
+forall a b. (a -&gt; b) -&gt; Either NotAKey a -&gt; Either NotAKey b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">a -&gt; b
+</span><a href="#local-6989586621679126702"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Either NotAKey a -&gt; Either NotAKey b)
+-&gt; (k -&gt; Either NotAKey a) -&gt; k -&gt; Either NotAKey b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126704"><span class="hs-identifier hs-var">keyToValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><span class="hs-comment">{- |
+   'apply' allows you to apply many functions to many values. The function
+   associated with each parameter is applied to the value associated with the
+   same paremeter.
+
+   (If you're looking for 'pure' or an 'Applicative' instance for 'Many', this
+   is as good as it gets. 'Many' cannot be an 'Applicative' because there is no
+   correct implementation of 'pure' that we can reasonably provide).
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-90"></span><span id="local-6989586621679126636"><span id="local-6989586621679126637"><span id="local-6989586621679126638"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#apply"><span class="hs-identifier hs-type">apply</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-91"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126636"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679126637"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679126638"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126636"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126637"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-93"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126636"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126638"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span></span><span>
+</span><span id="line-94"></span><span id="apply"><span class="annot"><span class="annottext">apply :: forall param a b.
+Many param (a -&gt; b) -&gt; Many param a -&gt; Many param b
+</span><a href="Orville.PostgreSQL.Plan.Many.html#apply"><span class="hs-identifier hs-var hs-var">apply</span></a></span></span><span> </span><span id="local-6989586621679126705"><span class="annot"><span class="annottext">Many param (a -&gt; b)
+</span><a href="#local-6989586621679126705"><span class="hs-identifier hs-var">manyFs</span></a></span></span><span> </span><span id="local-6989586621679126706"><span class="annot"><span class="annottext">Many param a
+</span><a href="#local-6989586621679126706"><span class="hs-identifier hs-var">manyAs</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-95"></span><span>  </span><span class="annot"><span class="annottext">[param] -&gt; (param -&gt; Either NotAKey b) -&gt; Many param b
+forall k a. [k] -&gt; (k -&gt; Either NotAKey a) -&gt; Many k a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#fromKeys"><span class="hs-identifier hs-var">fromKeys</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Many param (a -&gt; b) -&gt; [param]
+forall k a. Many k a -&gt; [k]
+</span><a href="Orville.PostgreSQL.Plan.Many.html#keys"><span class="hs-identifier hs-var">keys</span></a></span><span> </span><span class="annot"><span class="annottext">Many param (a -&gt; b)
+</span><a href="#local-6989586621679126705"><span class="hs-identifier hs-var">manyFs</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">param -&gt; Either NotAKey b
+</span><a href="#local-6989586621679126707"><span class="hs-identifier hs-var">applyF</span></a></span><span>
+</span><span id="line-96"></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-97"></span><span>  </span><span id="local-6989586621679126707"><span class="annot"><span class="annottext">applyF :: param -&gt; Either NotAKey b
+</span><a href="#local-6989586621679126707"><span class="hs-identifier hs-var hs-var">applyF</span></a></span></span><span> </span><span id="local-6989586621679126710"><span class="annot"><span class="annottext">param
+</span><a href="#local-6989586621679126710"><span class="hs-identifier hs-var">param</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><span class="annottext">param -&gt; Many param (a -&gt; b) -&gt; Either NotAKey (a -&gt; b)
+forall k a. k -&gt; Many k a -&gt; Either NotAKey a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier hs-var">lookup</span></a></span><span> </span><span class="annot"><span class="annottext">param
+</span><a href="#local-6989586621679126710"><span class="hs-identifier hs-var">param</span></a></span><span> </span><span class="annot"><span class="annottext">Many param (a -&gt; b)
+</span><a href="#local-6989586621679126705"><span class="hs-identifier hs-var">manyFs</span></a></span><span> </span><span class="annot"><span class="annottext">Either NotAKey (a -&gt; b) -&gt; Either NotAKey a -&gt; Either NotAKey b
+forall a b.
+Either NotAKey (a -&gt; b) -&gt; Either NotAKey a -&gt; Either NotAKey b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">param -&gt; Many param a -&gt; Either NotAKey a
+forall k a. k -&gt; Many k a -&gt; Either NotAKey a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier hs-var">lookup</span></a></span><span> </span><span class="annot"><span class="annottext">param
+</span><a href="#local-6989586621679126710"><span class="hs-identifier hs-var">param</span></a></span><span> </span><span class="annot"><span class="annottext">Many param a
+</span><a href="#local-6989586621679126706"><span class="hs-identifier hs-var">manyAs</span></a></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="annot"><span class="hs-comment">{- |
+  'compose' uses the values of a 'Many' value as keys to a second 'Many' to
+  create a 'Many' mapping from the original keys to the final values.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span id="local-6989586621679126650"><span id="local-6989586621679126651"><span id="local-6989586621679126652"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#compose"><span class="hs-identifier hs-type">compose</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126650"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126651"><span class="hs-identifier hs-type">c</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126652"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126650"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126652"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126651"><span class="hs-identifier hs-type">c</span></a></span></span></span></span><span>
+</span><span id="line-107"></span><span id="compose"><span class="annot"><span class="annottext">compose :: forall b c a. Many b c -&gt; Many a b -&gt; Many a c
+</span><a href="Orville.PostgreSQL.Plan.Many.html#compose"><span class="hs-identifier hs-var hs-var">compose</span></a></span></span><span> </span><span id="local-6989586621679126711"><span class="annot"><span class="annottext">Many b c
+</span><a href="#local-6989586621679126711"><span class="hs-identifier hs-var">manyBC</span></a></span></span><span> </span><span id="local-6989586621679126712"><span class="annot"><span class="annottext">Many a b
+</span><a href="#local-6989586621679126712"><span class="hs-identifier hs-var">manyAB</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="annottext">[a] -&gt; (a -&gt; Either NotAKey c) -&gt; Many a c
+forall k a. [k] -&gt; (k -&gt; Either NotAKey a) -&gt; Many k a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#fromKeys"><span class="hs-identifier hs-var">fromKeys</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Many a b -&gt; [a]
+forall k a. Many k a -&gt; [k]
+</span><a href="Orville.PostgreSQL.Plan.Many.html#keys"><span class="hs-identifier hs-var">keys</span></a></span><span> </span><span class="annot"><span class="annottext">Many a b
+</span><a href="#local-6989586621679126712"><span class="hs-identifier hs-var">manyAB</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">a -&gt; Either NotAKey c
+</span><a href="#local-6989586621679126713"><span class="hs-identifier hs-var">aToC</span></a></span><span>
+</span><span id="line-109"></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-110"></span><span>  </span><span id="local-6989586621679126713"><span class="annot"><span class="annottext">aToC :: a -&gt; Either NotAKey c
+</span><a href="#local-6989586621679126713"><span class="hs-identifier hs-var hs-var">aToC</span></a></span></span><span> </span><span id="local-6989586621679126716"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679126716"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-111"></span><span>    </span><span id="local-6989586621679126717"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679126717"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">a -&gt; Many a b -&gt; Either NotAKey b
+forall k a. k -&gt; Many k a -&gt; Either NotAKey a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier hs-var">lookup</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679126716"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">Many a b
+</span><a href="#local-6989586621679126712"><span class="hs-identifier hs-var">manyAB</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><span class="annottext">b -&gt; Many b c -&gt; Either NotAKey c
+forall k a. k -&gt; Many k a -&gt; Either NotAKey a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier hs-var">lookup</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679126717"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">Many b c
+</span><a href="#local-6989586621679126711"><span class="hs-identifier hs-var">manyBC</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">{- |
+  'keys' fetches the list of keys from a 'Many'. Note that is a list and not
+  a set. 'Many' preserves the order and duplication of any key values that were
+  in the key list at the time of construction.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-121"></span><span id="local-6989586621679126642"><span id="local-6989586621679126643"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#keys"><span class="hs-identifier hs-type">keys</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126642"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126643"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679126642"><span class="hs-identifier hs-type">k</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-122"></span><span id="keys"><span class="annot"><span class="annottext">keys :: forall k a. Many k a -&gt; [k]
+</span><a href="Orville.PostgreSQL.Plan.Many.html#keys"><span class="hs-identifier hs-var hs-var">keys</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span id="local-6989586621679126718"><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126718"><span class="hs-identifier hs-var">ks</span></a></span></span><span> </span><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-123"></span><span>  </span><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126718"><span class="hs-identifier hs-var">ks</span></a></span><span>
+</span><span id="line-124"></span><span>
+</span><span id="line-125"></span><span class="annot"><span class="hs-comment">{- |
+  'elems' returns all the values that correspond the keys of the 'Many'. The
+  values will be returned in the same order that the keys were present at the
+  time of creation, though if you truly care about this it's probably better to
+  use 'lookup' to make that correspondence explicit.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-133"></span><span id="local-6989586621679126659"><span id="local-6989586621679126660"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#elems"><span class="hs-identifier hs-type">elems</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126659"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126660"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679126660"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-134"></span><span id="elems"><span class="annot"><span class="annottext">elems :: forall k a. Many k a -&gt; [a]
+</span><a href="Orville.PostgreSQL.Plan.Many.html#elems"><span class="hs-identifier hs-var hs-var">elems</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span id="local-6989586621679126721"><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126721"><span class="hs-identifier hs-var">ks</span></a></span></span><span> </span><span id="local-6989586621679126722"><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126722"><span class="hs-identifier hs-var">keyToValue</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-135"></span><span>  </span><span class="annot"><span class="annottext">[Either NotAKey a] -&gt; [a]
+forall a b. [Either a b] -&gt; [b]
+</span><span class="hs-identifier hs-var">Either.rights</span></span><span> </span><span class="annot"><span class="annottext">([Either NotAKey a] -&gt; [a]) -&gt; [Either NotAKey a] -&gt; [a]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(k -&gt; Either NotAKey a) -&gt; [k] -&gt; [Either NotAKey a]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126722"><span class="hs-identifier hs-var">keyToValue</span></a></span><span> </span><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126721"><span class="hs-identifier hs-var">ks</span></a></span><span>
+</span><span id="line-136"></span><span>
+</span><span id="line-137"></span><span class="annot"><span class="hs-comment">{- |
+  'toMap' converts the 'Many' into a 'Map' value. If all you wanted to do was
+  find the value for a specific key, you should probably use 'lookup' instead.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-143"></span><span id="local-6989586621679126668"><span id="local-6989586621679126669"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#toMap"><span class="hs-identifier hs-type">toMap</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Ord</span></span><span> </span><span class="annot"><a href="#local-6989586621679126668"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126668"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126669"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="#local-6989586621679126668"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126669"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-144"></span><span id="toMap"><span class="annot"><span class="annottext">toMap :: forall k a. Ord k =&gt; Many k a -&gt; Map k a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#toMap"><span class="hs-identifier hs-var hs-var">toMap</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span id="local-6989586621679126726"><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126726"><span class="hs-identifier hs-var">ks</span></a></span></span><span> </span><span id="local-6989586621679126727"><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126727"><span class="hs-identifier hs-var">keyToValue</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-145"></span><span>  </span><span class="annot"><span class="annottext">[(k, a)] -&gt; Map k a
+forall k a. Ord k =&gt; [(k, a)] -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.fromList</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(k -&gt; Maybe (k, a)) -&gt; [k] -&gt; [(k, a)]
+forall a b. (a -&gt; Maybe b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">Maybe.mapMaybe</span></span><span> </span><span class="annot"><span class="annottext">k -&gt; Maybe (k, a)
+</span><a href="#local-6989586621679126730"><span class="hs-identifier hs-var">mkPair</span></a></span><span> </span><span class="annot"><span class="annottext">[k]
+</span><a href="#local-6989586621679126726"><span class="hs-identifier hs-var">ks</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-146"></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-147"></span><span>  </span><span id="local-6989586621679126730"><span class="annot"><span class="annottext">mkPair :: k -&gt; Maybe (k, a)
+</span><a href="#local-6989586621679126730"><span class="hs-identifier hs-var hs-var">mkPair</span></a></span></span><span> </span><span id="local-6989586621679126731"><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621679126731"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-148"></span><span>    </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126727"><span class="hs-identifier hs-var">keyToValue</span></a></span><span> </span><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621679126731"><span class="hs-identifier hs-var">k</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-149"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span class="annot"><span class="annottext">NotAKey
+</span><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier hs-var">NotAKey</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-150"></span><span>        </span><span class="annot"><span class="annottext">Maybe (k, a)
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-151"></span><span>      </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679126732"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679126732"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-152"></span><span>        </span><span class="annot"><span class="annottext">(k, a) -&gt; Maybe (k, a)
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621679126731"><span class="hs-identifier hs-var">k</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679126732"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-153"></span><span>
+</span><span id="line-154"></span><span class="annot"><span class="hs-comment">{- |
+  'lookup' returns the value for the given parameter. If the given @k@ is
+  not one of the original input values that the 'Many' was constructed with,
+  the mapping function given at the contructor will determine what value to
+  return. Often this will be whatever a reasonable empty or default value for
+  the type @a@ is.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-163"></span><span id="local-6989586621679126645"><span id="local-6989586621679126646"><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier hs-type">lookup</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="#local-6989586621679126645"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126645"><span class="hs-identifier hs-type">k</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126646"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Either</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#NotAKey"><span class="hs-identifier hs-type">NotAKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679126646"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-164"></span><span id="lookup"><span class="annot"><span class="annottext">lookup :: forall k a. k -&gt; Many k a -&gt; Either NotAKey a
+</span><a href="Orville.PostgreSQL.Plan.Many.html#lookup"><span class="hs-identifier hs-var hs-var">lookup</span></a></span></span><span> </span><span id="local-6989586621679126733"><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621679126733"><span class="hs-identifier hs-var">k</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.Many.html#Many"><span class="hs-identifier hs-type">Many</span></a></span><span> </span><span class="annot"><span class="annottext">[k]
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679126734"><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126734"><span class="hs-identifier hs-var">keyToValue</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-165"></span><span>  </span><span class="annot"><span class="annottext">k -&gt; Either NotAKey a
+</span><a href="#local-6989586621679126734"><span class="hs-identifier hs-var">keyToValue</span></a></span><span> </span><span class="annot"><span class="annottext">k
+</span><a href="#local-6989586621679126733"><span class="hs-identifier hs-var">k</span></a></span><span>
+</span><span id="line-166"></span></pre></body></html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Internal.FieldName</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier">FieldName</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#stringToFieldName"><span class="hs-identifier">stringToFieldName</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToString"><span class="hs-identifier">fieldNameToString</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToColumnName"><span class="hs-identifier">fieldNameToColumnName</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToByteString"><span class="hs-identifier">fieldNameToByteString</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#byteStringToFieldName"><span class="hs-identifier">byteStringToFieldName</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-16"></span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Char8</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">B8</span></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="annot"><span class="hs-comment">{- |
+  A simple type to represent the name of a field.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">newtype</span><span> </span><span id="FieldName"><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-var">FieldName</span></a></span></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="FieldName"><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-var">FieldName</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679132731"><span id="local-6989586621679132736"><span class="annot"><span class="annottext">FieldName -&gt; FieldName -&gt; Bool
+(FieldName -&gt; FieldName -&gt; Bool)
+-&gt; (FieldName -&gt; FieldName -&gt; Bool) -&gt; Eq FieldName
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: FieldName -&gt; FieldName -&gt; Bool
+== :: FieldName -&gt; FieldName -&gt; Bool
+$c/= :: FieldName -&gt; FieldName -&gt; Bool
+/= :: FieldName -&gt; FieldName -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679132744"><span id="local-6989586621679132749"><span id="local-6989586621679132753"><span id="local-6989586621679132757"><span id="local-6989586621679132761"><span id="local-6989586621679132765"><span id="local-6989586621679132769"><span class="annot"><span class="annottext">Eq FieldName
+Eq FieldName
+-&gt; (FieldName -&gt; FieldName -&gt; Ordering)
+-&gt; (FieldName -&gt; FieldName -&gt; Bool)
+-&gt; (FieldName -&gt; FieldName -&gt; Bool)
+-&gt; (FieldName -&gt; FieldName -&gt; Bool)
+-&gt; (FieldName -&gt; FieldName -&gt; Bool)
+-&gt; (FieldName -&gt; FieldName -&gt; FieldName)
+-&gt; (FieldName -&gt; FieldName -&gt; FieldName)
+-&gt; Ord FieldName
+FieldName -&gt; FieldName -&gt; Bool
+FieldName -&gt; FieldName -&gt; Ordering
+FieldName -&gt; FieldName -&gt; FieldName
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: FieldName -&gt; FieldName -&gt; Ordering
+compare :: FieldName -&gt; FieldName -&gt; Ordering
+$c&lt; :: FieldName -&gt; FieldName -&gt; Bool
+&lt; :: FieldName -&gt; FieldName -&gt; Bool
+$c&lt;= :: FieldName -&gt; FieldName -&gt; Bool
+&lt;= :: FieldName -&gt; FieldName -&gt; Bool
+$c&gt; :: FieldName -&gt; FieldName -&gt; Bool
+&gt; :: FieldName -&gt; FieldName -&gt; Bool
+$c&gt;= :: FieldName -&gt; FieldName -&gt; Bool
+&gt;= :: FieldName -&gt; FieldName -&gt; Bool
+$cmax :: FieldName -&gt; FieldName -&gt; FieldName
+max :: FieldName -&gt; FieldName -&gt; FieldName
+$cmin :: FieldName -&gt; FieldName -&gt; FieldName
+min :: FieldName -&gt; FieldName -&gt; FieldName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679132775"><span id="local-6989586621679132781"><span id="local-6989586621679132785"><span class="annot"><span class="annottext">Int -&gt; FieldName -&gt; ShowS
+[FieldName] -&gt; ShowS
+FieldName -&gt; String
+(Int -&gt; FieldName -&gt; ShowS)
+-&gt; (FieldName -&gt; String)
+-&gt; ([FieldName] -&gt; ShowS)
+-&gt; Show FieldName
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; FieldName -&gt; ShowS
+showsPrec :: Int -&gt; FieldName -&gt; ShowS
+$cshow :: FieldName -&gt; String
+show :: FieldName -&gt; String
+$cshowList :: [FieldName] -&gt; ShowS
+showList :: [FieldName] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="annot"><span class="hs-comment">{- |
+  Convert a field name to an 'Expr.ColumnName' for usage in SQL expressions.
+  The field name will be properly quoted and escaped.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-36"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToColumnName"><span class="hs-identifier hs-type">fieldNameToColumnName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">Expr.ColumnName</span></a></span><span>
+</span><span id="line-37"></span><span id="fieldNameToColumnName"><span class="annot"><span class="annottext">fieldNameToColumnName :: FieldName -&gt; ColumnName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToColumnName"><span class="hs-identifier hs-var hs-var">fieldNameToColumnName</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span> </span><span id="local-6989586621679132788"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679132788"><span class="hs-identifier hs-var">name</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-38"></span><span>  </span><span class="annot"><span class="annottext">Identifier -&gt; ColumnName
+forall name. IdentifierExpression name =&gt; Identifier -&gt; name
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#fromIdentifier"><span class="hs-identifier hs-var">Expr.fromIdentifier</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifierFromBytes"><span class="hs-identifier hs-var">Expr.identifierFromBytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679132788"><span class="hs-identifier hs-var">name</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'FieldName' from a 'String'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-45"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#stringToFieldName"><span class="hs-identifier hs-type">stringToFieldName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span>
+</span><span id="line-46"></span><span id="stringToFieldName"><span class="annot"><span class="annottext">stringToFieldName :: String -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#stringToFieldName"><span class="hs-identifier hs-var hs-var">stringToFieldName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><span class="annottext">ByteString -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-var">FieldName</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; FieldName)
+-&gt; (String -&gt; ByteString) -&gt; String -&gt; FieldName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ByteString
+</span><span class="hs-identifier hs-var">B8.pack</span></span><span>
+</span><span id="line-48"></span><span>
+</span><span id="line-49"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'FieldName' back to a 'String'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToString"><span class="hs-identifier hs-type">fieldNameToString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-55"></span><span id="fieldNameToString"><span class="annot"><span class="annottext">fieldNameToString :: FieldName -&gt; String
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToString"><span class="hs-identifier hs-var hs-var">fieldNameToString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-56"></span><span>  </span><span class="annot"><span class="annottext">ByteString -&gt; String
+</span><span class="hs-identifier hs-var">B8.unpack</span></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; String)
+-&gt; (FieldName -&gt; ByteString) -&gt; FieldName -&gt; String
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">FieldName -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToByteString"><span class="hs-identifier hs-var">fieldNameToByteString</span></a></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'FieldName' back to a 'B8.ByteString'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-63"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToByteString"><span class="hs-identifier hs-type">fieldNameToByteString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span>
+</span><span id="line-64"></span><span id="fieldNameToByteString"><span class="annot"><span class="annottext">fieldNameToByteString :: FieldName -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#fieldNameToByteString"><span class="hs-identifier hs-var hs-var">fieldNameToByteString</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span> </span><span id="local-6989586621679132794"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679132794"><span class="hs-identifier hs-var">name</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679132794"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-66"></span><span>
+</span><span id="line-67"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'FieldName' from a 'B8.ByteString'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-72"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#byteStringToFieldName"><span class="hs-identifier hs-type">byteStringToFieldName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">B8.ByteString</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-type">FieldName</span></a></span><span>
+</span><span id="line-73"></span><span id="byteStringToFieldName"><span class="annot"><span class="annottext">byteStringToFieldName :: ByteString -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#byteStringToFieldName"><span class="hs-identifier hs-var hs-var">byteStringToFieldName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; FieldName
+</span><a href="Orville.PostgreSQL.Internal.FieldName.html#FieldName"><span class="hs-identifier hs-var">FieldName</span></a></span><span>
+</span><span id="line-74"></span></pre></body></html>

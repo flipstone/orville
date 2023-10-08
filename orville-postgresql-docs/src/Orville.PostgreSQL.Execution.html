@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# OPTIONS_GHC -Wno-missing-import-lists #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+You can import &quot;Orville.PostgreSQL.Execution&quot; to get access to all the
+execution-related functions and types exported by the modules below. This
+includes a number of lowel-level items not exported by &quot;Orville.PostgreSQL&quot;
+that give you more control (and therefore responsibility) over how the SQL is
+executed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution</span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * High level modules for most common tasks</span></span><span>
+</span><span id="line-18"></span><span>      </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.EntityOperations.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.EntityOperations</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.SelectOptions</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Sequence</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Transaction.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Transaction</span></a></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Mid-level modules with more flexibility for handling less common queries</span></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Select</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Insert.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Insert</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Update.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Update</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Delete</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Cursor</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.ReturningOption</span></a></span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Low-level modules for executing and decoding SQL expressions yourself</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.ExecutionResult</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-36"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="hs-comment">-- Note: we list the re-exports explicity above to control the order that they</span><span>
+</span><span id="line-39"></span><span class="hs-comment">-- appear in the generated haddock documentation.</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Cursor</span></a></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Delete</span></a></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.EntityOperations.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.EntityOperations</span></a></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span></a></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ExecutionResult.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.ExecutionResult</span></a></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Insert.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Insert</span></a></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.ReturningOption</span></a></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Select</span></a></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.SelectOptions.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.SelectOptions</span></a></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Sequence.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Sequence</span></a></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Transaction.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Transaction</span></a></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Update.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Update</span></a></span><span>
+</span><span id="line-54"></span></pre></body></html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Functions for working with executable @DELETE@ statements. The 'Delete' type is
+a value that can be passed around and executed later. The 'Delete' is directly
+associated with the presence of a returning clause and how to decode any rows
+returned by that clause. This means it can be safely executed via
+'executeDelete' or 'executeDeleteReturning' as appropriate. It is a lower-level
+API than the entity delete functions in
+&quot;Orville.PostgreSQL.Execution.EntityOperations&quot;, but not as primitive as
+&quot;Orville.PostgreSQL.Expr.Delete&quot;.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.Delete</span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier">Delete</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromDeleteExpr"><span class="hs-identifier">deleteFromDeleteExpr</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#executeDelete"><span class="hs-identifier">executeDelete</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#executeDeleteReturnEntities"><span class="hs-identifier">executeDeleteReturnEntities</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromTableReturning"><span class="hs-identifier">deleteFromTableReturning</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromTable"><span class="hs-identifier">deleteFromTable</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#rawDeleteExpr"><span class="hs-identifier">rawDeleteExpr</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-29"></span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Execute</span></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">QueryType</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.ReturningOption</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier">NoReturningClause</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier">ReturningClause</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier">ReturningOption</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithReturning"><span class="hs-identifier">WithReturning</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithoutReturning"><span class="hs-identifier">WithoutReturning</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall.SqlMarshaller</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier">AnnotatedSqlMarshaller</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.html"><span class="hs-identifier">Orville.PostgreSQL.Monad</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.html"><span class="hs-identifier">Orville.PostgreSQL.Schema</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier">TableDefinition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableReturningClause"><span class="hs-identifier">mkTableReturningClause</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier">tableMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier">tableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="annot"><span class="hs-comment">{- | Represents a @DELETE@ statement that can be executed against a database. A 'Delete' has a
+  'SqlMarshaller' bound to it that, when the delete returns data from the database, will be used to
+  decode the database result set when it is executed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">data</span><span> </span><span id="Delete"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-var">Delete</span></a></span></span><span> </span><span id="local-6989586621679137749"><span class="annot"><a href="#local-6989586621679137749"><span class="hs-identifier hs-type">readEntity</span></a></span></span><span> </span><span id="local-6989586621679137750"><span class="annot"><a href="#local-6989586621679137750"><span class="hs-identifier hs-type">returningClause</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-45"></span><span>  </span><span id="local-6989586621679137736"><span id="Delete"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-var">Delete</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-46"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Delete.html#DeleteExpr"><span class="hs-identifier hs-type">Expr.DeleteExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-47"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137736"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier hs-type">NoReturningClause</span></a></span></span><span>
+</span><span id="line-48"></span><span>  </span><span id="local-6989586621679137735"><span id="local-6989586621679137751"><span id="DeleteReturning"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#DeleteReturning"><span class="hs-identifier hs-var">DeleteReturning</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137751"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137735"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Delete.html#DeleteExpr"><span class="hs-identifier hs-type">Expr.DeleteExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137735"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier hs-type">ReturningClause</span></a></span></span></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="annot"><span class="hs-comment">{- |
+  Extracts the query that will be run when the delete is executed. Normally you
+  don't want to extract the query and run it yourself, but this function is
+  useful to view the query for debugging or query explanation.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-57"></span><span id="local-6989586621679137660"><span id="local-6989586621679137661"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromDeleteExpr"><span class="hs-identifier hs-type">deleteFromDeleteExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137660"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137661"><span class="hs-identifier hs-type">returningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Delete.html#DeleteExpr"><span class="hs-identifier hs-type">Expr.DeleteExpr</span></a></span></span></span><span>
+</span><span id="line-58"></span><span id="deleteFromDeleteExpr"><span class="annot"><span class="annottext">deleteFromDeleteExpr :: forall readEntity returningClause.
+Delete readEntity returningClause -&gt; DeleteExpr
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromDeleteExpr"><span class="hs-identifier hs-var hs-var">deleteFromDeleteExpr</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span id="local-6989586621679137754"><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137754"><span class="hs-identifier hs-var">expr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137754"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-59"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromDeleteExpr"><span class="hs-identifier hs-var">deleteFromDeleteExpr</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#DeleteReturning"><span class="hs-identifier hs-type">DeleteReturning</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679137756"><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137756"><span class="hs-identifier hs-var">expr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137756"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="annot"><span class="hs-comment">{- |
+  Excutes the database query for the 'Delete' and returns the number of
+  rows affected by the query.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-67"></span><span id="local-6989586621679137670"><span id="local-6989586621679137672"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#executeDelete"><span class="hs-identifier hs-type">executeDelete</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137670"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-69"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137672"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier hs-type">NoReturningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-70"></span><span>  </span><span class="annot"><a href="#local-6989586621679137670"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span></span><span>
+</span><span id="line-71"></span><span id="executeDelete"><span class="annot"><span class="annottext">executeDelete :: forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Delete readEntity NoReturningClause -&gt; m Int
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#executeDelete"><span class="hs-identifier hs-var hs-var">executeDelete</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span id="local-6989586621679137762"><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137762"><span class="hs-identifier hs-var">expr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><span class="annottext">QueryType -&gt; DeleteExpr -&gt; m Int
+forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m Int
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRows"><span class="hs-identifier hs-var">Execute.executeAndReturnAffectedRows</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#DeleteQuery"><span class="hs-identifier hs-var">QueryType.DeleteQuery</span></a></span><span> </span><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137762"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-73"></span><span>
+</span><span id="line-74"></span><span class="annot"><span class="hs-comment">{- | Excutes the database query for the 'Delete' and uses its 'SqlMarshaller' to decode the rows (that
+  were just deleteed) as returned via a RETURNING clause.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-79"></span><span id="local-6989586621679137679"><span id="local-6989586621679137680"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#executeDeleteReturnEntities"><span class="hs-identifier hs-type">executeDeleteReturnEntities</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-80"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137679"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137680"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier hs-type">ReturningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><a href="#local-6989586621679137679"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679137680"><span class="hs-identifier hs-type">readEntity</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-83"></span><span id="executeDeleteReturnEntities"><span class="annot"><span class="annottext">executeDeleteReturnEntities :: forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Delete readEntity ReturningClause -&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#executeDeleteReturnEntities"><span class="hs-identifier hs-var hs-var">executeDeleteReturnEntities</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#DeleteReturning"><span class="hs-identifier hs-type">DeleteReturning</span></a></span><span> </span><span id="local-6989586621679137769"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137769"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span id="local-6989586621679137770"><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137770"><span class="hs-identifier hs-var">expr</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-84"></span><span>  </span><span class="annot"><span class="annottext">QueryType
+-&gt; DeleteExpr
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+forall (m :: * -&gt; *) sql writeEntity readEntity.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-var">Execute.executeAndDecode</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#DeleteQuery"><span class="hs-identifier hs-var">QueryType.DeleteQuery</span></a></span><span> </span><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137770"><span class="hs-identifier hs-var">expr</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137769"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Delete' that will delete all of the writeable columns described in the
+  'TableDefinition' without returning the data as seen by the database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-92"></span><span id="local-6989586621679137688"><span id="local-6989586621679137689"><span id="local-6989586621679137690"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromTable"><span class="hs-identifier hs-type">deleteFromTable</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137688"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137689"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137690"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.WhereClause.html#BooleanExpr"><span class="hs-identifier hs-type">Expr.BooleanExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-95"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137690"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#NoReturningClause"><span class="hs-identifier hs-type">NoReturningClause</span></a></span></span></span></span><span>
+</span><span id="line-96"></span><span id="deleteFromTable"><span class="annot"><span class="annottext">deleteFromTable :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr -&gt; Delete readEntity NoReturningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromTable"><span class="hs-identifier hs-var hs-var">deleteFromTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>  </span><span class="annot"><span class="annottext">ReturningOption NoReturningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr
+-&gt; Delete readEntity NoReturningClause
+forall returningClause key writeEntity readEntity.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr
+-&gt; Delete readEntity returningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#deleteTable"><span class="hs-identifier hs-var">deleteTable</span></a></span><span> </span><span class="annot"><span class="annottext">ReturningOption NoReturningClause
+</span><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithoutReturning"><span class="hs-identifier hs-var">WithoutReturning</span></a></span><span>
+</span><span id="line-98"></span><span>
+</span><span id="line-99"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Delete' that will delete all of the writeable columns described in the
+  'TableDefinition' and returning the data as seen by the database. This is useful for getting
+  database managed columns such as auto-incrementing identifiers and sequences.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span id="local-6989586621679137701"><span id="local-6989586621679137702"><span id="local-6989586621679137703"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromTableReturning"><span class="hs-identifier hs-type">deleteFromTableReturning</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-107"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137701"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137702"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137703"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.WhereClause.html#BooleanExpr"><span class="hs-identifier hs-type">Expr.BooleanExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-109"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137703"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningClause"><span class="hs-identifier hs-type">ReturningClause</span></a></span></span></span></span><span>
+</span><span id="line-110"></span><span id="deleteFromTableReturning"><span class="annot"><span class="annottext">deleteFromTableReturning :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr -&gt; Delete readEntity ReturningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#deleteFromTableReturning"><span class="hs-identifier hs-var hs-var">deleteFromTableReturning</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-111"></span><span>  </span><span class="annot"><span class="annottext">ReturningOption ReturningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr
+-&gt; Delete readEntity ReturningClause
+forall returningClause key writeEntity readEntity.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr
+-&gt; Delete readEntity returningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#deleteTable"><span class="hs-identifier hs-var">deleteTable</span></a></span><span> </span><span class="annot"><span class="annottext">ReturningOption ReturningClause
+</span><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithReturning"><span class="hs-identifier hs-var">WithReturning</span></a></span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="hs-comment">-- an internal helper function for creating a delete with a given `ReturningOption`</span><span>
+</span><span id="line-114"></span><span id="local-6989586621679137697"><span id="local-6989586621679137698"><span id="local-6989586621679137699"><span id="local-6989586621679137700"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#deleteTable"><span class="hs-identifier hs-type">deleteTable</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-115"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-type">ReturningOption</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137697"><span class="hs-identifier hs-type">returningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-116"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137698"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137699"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137700"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-117"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.WhereClause.html#BooleanExpr"><span class="hs-identifier hs-type">Expr.BooleanExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137700"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137697"><span class="hs-identifier hs-type">returningClause</span></a></span></span></span></span></span><span>
+</span><span id="line-119"></span><span id="deleteTable"><span class="annot"><span class="annottext">deleteTable :: forall returningClause key writeEntity readEntity.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe BooleanExpr
+-&gt; Delete readEntity returningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#deleteTable"><span class="hs-identifier hs-var hs-var">deleteTable</span></a></span></span><span> </span><span id="local-6989586621679137775"><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679137775"><span class="hs-identifier hs-var">returningOption</span></a></span></span><span> </span><span id="local-6989586621679137776"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137776"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span id="local-6989586621679137777"><span class="annot"><span class="annottext">Maybe BooleanExpr
+</span><a href="#local-6989586621679137777"><span class="hs-identifier hs-var">whereCondition</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-120"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-121"></span><span>    </span><span id="local-6989586621679137778"><span class="annot"><span class="annottext">deleteExpr :: DeleteExpr
+</span><a href="#local-6989586621679137778"><span class="hs-identifier hs-var hs-var">deleteExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-122"></span><span>      </span><span class="annot"><span class="annottext">Qualified TableName
+-&gt; Maybe WhereClause -&gt; Maybe ReturningExpr -&gt; DeleteExpr
+</span><a href="Orville.PostgreSQL.Expr.Delete.html#deleteExpr"><span class="hs-identifier hs-var">Expr.deleteExpr</span></a></span><span>
+</span><span id="line-123"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier hs-var">tableName</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137776"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-124"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(BooleanExpr -&gt; WhereClause)
+-&gt; Maybe BooleanExpr -&gt; Maybe WhereClause
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">BooleanExpr -&gt; WhereClause
+</span><a href="Orville.PostgreSQL.Expr.WhereClause.html#whereClause"><span class="hs-identifier hs-var">Expr.whereClause</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe BooleanExpr
+</span><a href="#local-6989586621679137777"><span class="hs-identifier hs-var">whereCondition</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-125"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe ReturningExpr
+forall returningClause key writeEntity readEntty.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntty -&gt; Maybe ReturningExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableReturningClause"><span class="hs-identifier hs-var">mkTableReturningClause</span></a></span><span> </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679137775"><span class="hs-identifier hs-var">returningOption</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137776"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-127"></span><span>    </span><span class="annot"><span class="annottext">ReturningOption returningClause
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; DeleteExpr
+-&gt; Delete readEntity returningClause
+forall returningClause writeEntity readEntity.
+ReturningOption returningClause
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; DeleteExpr
+-&gt; Delete readEntity returningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#rawDeleteExpr"><span class="hs-identifier hs-var">rawDeleteExpr</span></a></span><span> </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679137775"><span class="hs-identifier hs-var">returningOption</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-var">tableMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679137776"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">DeleteExpr
+</span><a href="#local-6989586621679137778"><span class="hs-identifier hs-var">deleteExpr</span></a></span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Delete' that will execute the specified query and use the given
+  'SqlMarshaller' to decode it. It is up to the caller to ensure that the given
+  'Expr.DeleteExpr' makes sense and returns a result that the 'SqlMarshaller'
+  can decode.
+
+  This is the lowest level of escape hatch available for 'Delete'. The caller can build any query
+  that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
+  a raw 'Expr.DeleteExpr'. It is expected that the 'ReturningOption' given matches the
+  'Expr.DeleteExpr'. This level of interface does not provide an automatic enforcement of the
+  expectation, however failure is likely if that is not met.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-143"></span><span id="local-6989586621679137725"><span id="local-6989586621679137726"><span id="local-6989586621679137727"><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#rawDeleteExpr"><span class="hs-identifier hs-type">rawDeleteExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-type">ReturningOption</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137725"><span class="hs-identifier hs-type">returningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137726"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137727"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Delete.html#DeleteExpr"><span class="hs-identifier hs-type">Expr.DeleteExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-type">Delete</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137727"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137725"><span class="hs-identifier hs-type">returningClause</span></a></span></span></span></span><span>
+</span><span id="line-144"></span><span id="rawDeleteExpr"><span class="annot"><span class="annottext">rawDeleteExpr :: forall returningClause writeEntity readEntity.
+ReturningOption returningClause
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; DeleteExpr
+-&gt; Delete readEntity returningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#rawDeleteExpr"><span class="hs-identifier hs-var hs-var">rawDeleteExpr</span></a></span></span><span> </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithReturning"><span class="hs-identifier hs-var">WithReturning</span></a></span><span> </span><span id="local-6989586621679137782"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137782"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; DeleteExpr -&gt; Delete readEntity ReturningClause
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; DeleteExpr -&gt; Delete readEntity ReturningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#DeleteReturning"><span class="hs-identifier hs-var">DeleteReturning</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137782"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-145"></span><span class="annot"><a href="Orville.PostgreSQL.Execution.Delete.html#rawDeleteExpr"><span class="hs-identifier hs-var">rawDeleteExpr</span></a></span><span> </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithoutReturning"><span class="hs-identifier hs-var">WithoutReturning</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">DeleteExpr -&gt; Delete readEntity returningClause
+DeleteExpr -&gt; Delete readEntity NoReturningClause
+forall readEntity.
+DeleteExpr -&gt; Delete readEntity NoReturningClause
+</span><a href="Orville.PostgreSQL.Execution.Delete.html#Delete"><span class="hs-identifier hs-var">Delete</span></a></span><span>
+</span><span id="line-146"></span></pre></body></html>

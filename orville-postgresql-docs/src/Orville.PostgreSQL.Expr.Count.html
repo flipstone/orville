@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Count</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#count"><span class="hs-identifier">count</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#countFunction"><span class="hs-identifier">countFunction</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#count1"><span class="hs-identifier">count1</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#countColumn"><span class="hs-identifier">countColumn</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier">ColumnName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier">FunctionName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier">functionName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.ValueExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier">ValueExpression</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#columnReference"><span class="hs-identifier">columnReference</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier">functionCall</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="annot"><span class="hs-comment">{- | The SQL @count@ function
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-24"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#countFunction"><span class="hs-identifier hs-type">countFunction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#FunctionName"><span class="hs-identifier hs-type">FunctionName</span></a></span><span>
+</span><span id="line-25"></span><span id="countFunction"><span class="annot"><span class="annottext">countFunction :: FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Count.html#countFunction"><span class="hs-identifier hs-var hs-var">countFunction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.FunctionName.html#functionName"><span class="hs-identifier hs-var">functionName</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;count&quot;</span></span><span>
+</span><span id="line-26"></span><span>
+</span><span id="line-27"></span><span class="annot"><span class="hs-comment">{- | Given a 'ValueExpression', use it as the argument to the SQL @count@
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-31"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#count"><span class="hs-identifier hs-type">count</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-32"></span><span id="count"><span class="annot"><span class="annottext">count :: ValueExpression -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Count.html#count"><span class="hs-identifier hs-var hs-var">count</span></a></span></span><span> </span><span id="local-6989586621679129706"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129706"><span class="hs-identifier hs-var">value</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-33"></span><span>  </span><span class="annot"><span class="annottext">FunctionName -&gt; [ValueExpression] -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#functionCall"><span class="hs-identifier hs-var">functionCall</span></a></span><span> </span><span class="annot"><span class="annottext">FunctionName
+</span><a href="Orville.PostgreSQL.Expr.Count.html#countFunction"><span class="hs-identifier hs-var">countFunction</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679129706"><span class="hs-identifier hs-var">value</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="annot"><span class="hs-comment">{- | The SQL @count(1)@
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-39"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#count1"><span class="hs-identifier hs-type">count1</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-40"></span><span id="count1"><span class="annot"><span class="annottext">count1 :: ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Count.html#count1"><span class="hs-identifier hs-var hs-var">count1</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-41"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Count.html#count"><span class="hs-identifier hs-var">count</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; ValueExpression)
+-&gt; (Int -&gt; ValueExpression) -&gt; Int -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression)
+-&gt; (Int -&gt; RawSql) -&gt; Int -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intDecLiteral"><span class="hs-identifier hs-var">RawSql.intDecLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">(Int -&gt; ValueExpression) -&gt; Int -&gt; ValueExpression
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="annot"><span class="hs-comment">{- | Use a given column as the argument to the SQL @count@
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-47"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#countColumn"><span class="hs-identifier hs-type">countColumn</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span>
+</span><span id="line-48"></span><span id="countColumn"><span class="annot"><span class="annottext">countColumn :: ColumnName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Count.html#countColumn"><span class="hs-identifier hs-var hs-var">countColumn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.Count.html#count"><span class="hs-identifier hs-var">count</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; ValueExpression)
+-&gt; (ColumnName -&gt; ValueExpression) -&gt; ColumnName -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ColumnName -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Expr.ValueExpression.html#columnReference"><span class="hs-identifier hs-var">columnReference</span></a></span><span>
+</span><span id="line-50"></span></pre></body></html>

@@ -1,0 +1,862 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.PgAttribute</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier">PgAttribute</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeMaxLength"><span class="hs-identifier">pgAttributeMaxLength</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier">AttributeName</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameToString"><span class="hs-identifier">attributeNameToString</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier">AttributeNumber</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberToInt16"><span class="hs-identifier">attributeNumberToInt16</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberFromInt16"><span class="hs-identifier">attributeNumberFromInt16</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTextBuilder"><span class="hs-identifier">attributeNumberTextBuilder</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberParser"><span class="hs-identifier">attributeNumberParser</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#isOrdinaryColumn"><span class="hs-identifier">isOrdinaryColumn</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTable"><span class="hs-identifier">pgAttributeTable</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeRelationOidField"><span class="hs-identifier">attributeRelationOidField</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameField"><span class="hs-identifier">attributeNameField</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeOidField"><span class="hs-identifier">attributeTypeOidField</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeLengthField"><span class="hs-identifier">attributeLengthField</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsDroppedField"><span class="hs-identifier">attributeIsDroppedField</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTypeField"><span class="hs-identifier">attributeNumberTypeField</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Attoparsec.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">AttoText</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">)</span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.String</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">String</span></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Lazy.Builder</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LTB</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Lazy.Builder.Int</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LTBI</span></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.html"><span class="hs-identifier">Orville.PostgreSQL</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Orville</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html"><span class="hs-identifier">Orville.PostgreSQL.PgCatalog.OidField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier">oidTypeField</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="annot"><span class="hs-comment">{- |
+  The Haskell representation of data read from the @pg_catalog.pg_attribute@
+  table. Rows in this table correspond to table columns, but also for attributes
+  of other items from the @pg_class@ table.
+
+  See also 'Orville.PostgreSQL.PgCatalog.PgClass'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">data</span><span> </span><span id="PgAttribute"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-var">PgAttribute</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="PgAttribute"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-var">PgAttribute</span></a></span></span><span>
+</span><span id="line-52"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="pgAttributeRelationOid"><span class="annot"><span class="annottext">PgAttribute -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeRelationOid"><span class="hs-identifier hs-var hs-var">pgAttributeRelationOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-53"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ for the relation that this</span><span>
+</span><span id="line-54"></span><span>  </span><span class="hs-comment">-- attribute belongs to. References @pg_class.oid@</span><span>
+</span><span id="line-55"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeName"><span class="annot"><span class="annottext">PgAttribute -&gt; AttributeName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeName"><span class="hs-identifier hs-var hs-var">pgAttributeName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier hs-type">AttributeName</span></a></span><span>
+</span><span id="line-56"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The name of attribute</span></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeNumber"><span class="annot"><span class="annottext">PgAttribute -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeNumber"><span class="hs-identifier hs-var hs-var">pgAttributeNumber</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-58"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ The PostgreSQL number of attribute</span></span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeTypeOid"><span class="annot"><span class="annottext">PgAttribute -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTypeOid"><span class="hs-identifier hs-var hs-var">pgAttributeTypeOid</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-comment">-- ^ The PostgreSQL @oid@ for the type of this attribute. References</span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-comment">-- @pg_type.oid@</span><span>
+</span><span id="line-62"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeLength"><span class="annot"><span class="annottext">PgAttribute -&gt; Int16
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeLength"><span class="hs-identifier hs-var hs-var">pgAttributeLength</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-comment">-- ^ The length of this attributes type (a copy of @pg_type.typlen@). Note</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-comment">-- that this is _NOT_ the maximum length of a @varchar@ column!</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeTypeModifier"><span class="annot"><span class="annottext">PgAttribute -&gt; Int32
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTypeModifier"><span class="hs-identifier hs-var hs-var">pgAttributeTypeModifier</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ Type-specific data supplied at creation time, such as the maximum length of a @varchar@ column</span></span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeIsDropped"><span class="annot"><span class="annottext">PgAttribute -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeIsDropped"><span class="hs-identifier hs-var hs-var">pgAttributeIsDropped</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ Indicates whether the column has been dropped and is not longer valid</span></span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="pgAttributeIsNotNull"><span class="annot"><span class="annottext">PgAttribute -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeIsNotNull"><span class="hs-identifier hs-var hs-var">pgAttributeIsNotNull</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-70"></span><span>  </span><span class="annot"><span class="hs-comment">-- ^ Indicates whether the column has a not-null constraint</span></span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-72"></span><span>
+</span><span id="line-73"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the maximum length for an attribute with a variable length type,
+  or 'Nothing' if the length if the type is not variable.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-79"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeMaxLength"><span class="hs-identifier hs-type">pgAttributeMaxLength</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-type">PgAttribute</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-80"></span><span id="pgAttributeMaxLength"><span class="annot"><span class="annottext">pgAttributeMaxLength :: PgAttribute -&gt; Maybe Int32
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeMaxLength"><span class="hs-identifier hs-var hs-var">pgAttributeMaxLength</span></a></span></span><span> </span><span id="local-6989586621679140959"><span class="annot"><span class="annottext">PgAttribute
+</span><a href="#local-6989586621679140959"><span class="hs-identifier hs-var">attr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-81"></span><span>  </span><span class="hs-comment">-- This function is a port of the follow function from _pg_char_max_length function postgresql:</span><span>
+</span><span id="line-82"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-83"></span><span>  </span><span class="hs-comment">-- Note that it does not handle DOMAIN (user created) types correctly at the</span><span>
+</span><span id="line-84"></span><span>  </span><span class="hs-comment">-- moment. Handling domain types would require loading the pg_type record and</span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-comment">-- checking whether to use the typid and typmod from the attribute or the</span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-comment">-- base type and typemod from the domain type.</span><span>
+</span><span id="line-87"></span><span>  </span><span class="hs-comment">--</span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-89"></span><span>    </span><span id="local-6989586621679140963"><span class="annot"><span class="annottext">charTypes :: [Oid]
+</span><a href="#local-6989586621679140963"><span class="hs-identifier hs-var hs-var">charTypes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-90"></span><span>      </span><span class="hs-special">[</span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1042</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1043</span></span><span class="hs-special">]</span><span> </span><span class="hs-comment">-- char, varchar</span><span>
+</span><span id="line-91"></span><span>    </span><span id="local-6989586621679140967"><span class="annot"><span class="annottext">bitTypes :: [Oid]
+</span><a href="#local-6989586621679140967"><span class="hs-identifier hs-var hs-var">bitTypes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-92"></span><span>      </span><span class="hs-special">[</span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1560</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">CUInt -&gt; Oid
+</span><span class="hs-identifier hs-var">LibPQ.Oid</span></span><span> </span><span class="annot"><span class="annottext">CUInt
+</span><span class="hs-number">1562</span></span><span class="hs-special">]</span><span> </span><span class="hs-comment">-- bit, varbit</span><span>
+</span><span id="line-93"></span><span>    </span><span id="local-6989586621679140968"><span class="annot"><span class="annottext">typeOid :: Oid
+</span><a href="#local-6989586621679140968"><span class="hs-identifier hs-var hs-var">typeOid</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>      </span><span class="annot"><span class="annottext">PgAttribute -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTypeOid"><span class="hs-identifier hs-var">pgAttributeTypeOid</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute
+</span><a href="#local-6989586621679140959"><span class="hs-identifier hs-var">attr</span></a></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span>    </span><span id="local-6989586621679140969"><span class="annot"><span class="annottext">typeMod :: Int32
+</span><a href="#local-6989586621679140969"><span class="hs-identifier hs-var hs-var">typeMod</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-97"></span><span>      </span><span class="annot"><span class="annottext">PgAttribute -&gt; Int32
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTypeModifier"><span class="hs-identifier hs-var">pgAttributeTypeModifier</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute
+</span><a href="#local-6989586621679140959"><span class="hs-identifier hs-var">attr</span></a></span><span>
+</span><span id="line-98"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-99"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679140969"><span class="hs-identifier hs-var">typeMod</span></a></span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Int32 -&gt; Bool
+forall a. Eq a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">==</span></span><span> </span><span class="hs-glyph">-</span><span class="annot"><span class="annottext">Int32
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-100"></span><span>      </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-101"></span><span>      </span><span class="hs-keyword">else</span><span>
+</span><span id="line-102"></span><span>        </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Oid
+</span><a href="#local-6989586621679140968"><span class="hs-identifier hs-var">typeOid</span></a></span><span> </span><span class="annot"><span class="annottext">Oid -&gt; [Oid] -&gt; Bool
+forall a. Eq a =&gt; a -&gt; [a] -&gt; Bool
+forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
+</span><span class="hs-operator hs-var">`elem`</span></span><span> </span><span class="annot"><span class="annottext">[Oid]
+</span><a href="#local-6989586621679140963"><span class="hs-identifier hs-var">charTypes</span></a></span><span>
+</span><span id="line-103"></span><span>          </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Maybe Int32
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679140969"><span class="hs-identifier hs-var">typeMod</span></a></span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Int32 -&gt; Int32
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-glyph hs-var">-</span></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><span class="hs-number">4</span></span><span class="hs-special">)</span><span>
+</span><span id="line-104"></span><span>          </span><span class="hs-keyword">else</span><span>
+</span><span id="line-105"></span><span>            </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Oid
+</span><a href="#local-6989586621679140968"><span class="hs-identifier hs-var">typeOid</span></a></span><span> </span><span class="annot"><span class="annottext">Oid -&gt; [Oid] -&gt; Bool
+forall a. Eq a =&gt; a -&gt; [a] -&gt; Bool
+forall (t :: * -&gt; *) a. (Foldable t, Eq a) =&gt; a -&gt; t a -&gt; Bool
+</span><span class="hs-operator hs-var">`elem`</span></span><span> </span><span class="annot"><span class="annottext">[Oid]
+</span><a href="#local-6989586621679140967"><span class="hs-identifier hs-var">bitTypes</span></a></span><span>
+</span><span id="line-106"></span><span>              </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; Maybe Int32
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">Int32
+</span><a href="#local-6989586621679140969"><span class="hs-identifier hs-var">typeMod</span></a></span><span>
+</span><span id="line-107"></span><span>              </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">Maybe Int32
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-108"></span><span>
+</span><span id="line-109"></span><span class="annot"><span class="hs-comment">{- |
+  Determines whether the attribute represents a system column by inspecting
+  the attribute\'s 'AttributeNumber'. Ordinary columns have attribute numbers
+  starting at 1.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-116"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#isOrdinaryColumn"><span class="hs-identifier hs-type">isOrdinaryColumn</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-type">PgAttribute</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-117"></span><span id="isOrdinaryColumn"><span class="annot"><span class="annottext">isOrdinaryColumn :: PgAttribute -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#isOrdinaryColumn"><span class="hs-identifier hs-var hs-var">isOrdinaryColumn</span></a></span></span><span> </span><span id="local-6989586621679140972"><span class="annot"><span class="annottext">PgAttribute
+</span><a href="#local-6989586621679140972"><span class="hs-identifier hs-var">attr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">PgAttribute -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeNumber"><span class="hs-identifier hs-var">pgAttributeNumber</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute
+</span><a href="#local-6989586621679140972"><span class="hs-identifier hs-var">attr</span></a></span><span> </span><span class="annot"><span class="annottext">AttributeNumber -&gt; AttributeNumber -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&gt;</span></span><span> </span><span class="annot"><span class="annottext">Int16 -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-var">AttributeNumber</span></a></span><span> </span><span class="annot"><span class="annottext">Int16
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="annot"><span class="hs-comment">{- |
+  A Haskell type for the name of the attribute represented by a 'PgAttribute'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-125"></span><span class="hs-keyword">newtype</span><span> </span><span id="AttributeName"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier hs-var">AttributeName</span></a></span></span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="AttributeName"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier hs-var">AttributeName</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679140976"><span id="local-6989586621679140982"><span id="local-6989586621679140986"><span class="annot"><span class="annottext">Int -&gt; AttributeName -&gt; ShowS
+[AttributeName] -&gt; ShowS
+AttributeName -&gt; String
+(Int -&gt; AttributeName -&gt; ShowS)
+-&gt; (AttributeName -&gt; String)
+-&gt; ([AttributeName] -&gt; ShowS)
+-&gt; Show AttributeName
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AttributeName -&gt; ShowS
+showsPrec :: Int -&gt; AttributeName -&gt; ShowS
+$cshow :: AttributeName -&gt; String
+show :: AttributeName -&gt; String
+$cshowList :: [AttributeName] -&gt; ShowS
+showList :: [AttributeName] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679140990"><span id="local-6989586621679140995"><span class="annot"><span class="annottext">AttributeName -&gt; AttributeName -&gt; Bool
+(AttributeName -&gt; AttributeName -&gt; Bool)
+-&gt; (AttributeName -&gt; AttributeName -&gt; Bool) -&gt; Eq AttributeName
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: AttributeName -&gt; AttributeName -&gt; Bool
+== :: AttributeName -&gt; AttributeName -&gt; Bool
+$c/= :: AttributeName -&gt; AttributeName -&gt; Bool
+/= :: AttributeName -&gt; AttributeName -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141003"><span id="local-6989586621679141008"><span id="local-6989586621679141012"><span id="local-6989586621679141016"><span id="local-6989586621679141020"><span id="local-6989586621679141024"><span id="local-6989586621679141028"><span class="annot"><span class="annottext">Eq AttributeName
+Eq AttributeName
+-&gt; (AttributeName -&gt; AttributeName -&gt; Ordering)
+-&gt; (AttributeName -&gt; AttributeName -&gt; Bool)
+-&gt; (AttributeName -&gt; AttributeName -&gt; Bool)
+-&gt; (AttributeName -&gt; AttributeName -&gt; Bool)
+-&gt; (AttributeName -&gt; AttributeName -&gt; Bool)
+-&gt; (AttributeName -&gt; AttributeName -&gt; AttributeName)
+-&gt; (AttributeName -&gt; AttributeName -&gt; AttributeName)
+-&gt; Ord AttributeName
+AttributeName -&gt; AttributeName -&gt; Bool
+AttributeName -&gt; AttributeName -&gt; Ordering
+AttributeName -&gt; AttributeName -&gt; AttributeName
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: AttributeName -&gt; AttributeName -&gt; Ordering
+compare :: AttributeName -&gt; AttributeName -&gt; Ordering
+$c&lt; :: AttributeName -&gt; AttributeName -&gt; Bool
+&lt; :: AttributeName -&gt; AttributeName -&gt; Bool
+$c&lt;= :: AttributeName -&gt; AttributeName -&gt; Bool
+&lt;= :: AttributeName -&gt; AttributeName -&gt; Bool
+$c&gt; :: AttributeName -&gt; AttributeName -&gt; Bool
+&gt; :: AttributeName -&gt; AttributeName -&gt; Bool
+$c&gt;= :: AttributeName -&gt; AttributeName -&gt; Bool
+&gt;= :: AttributeName -&gt; AttributeName -&gt; Bool
+$cmax :: AttributeName -&gt; AttributeName -&gt; AttributeName
+max :: AttributeName -&gt; AttributeName -&gt; AttributeName
+$cmin :: AttributeName -&gt; AttributeName -&gt; AttributeName
+min :: AttributeName -&gt; AttributeName -&gt; AttributeName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141034"><span class="annot"><span class="annottext">String -&gt; AttributeName
+(String -&gt; AttributeName) -&gt; IsString AttributeName
+forall a. (String -&gt; a) -&gt; IsString a
+$cfromString :: String -&gt; AttributeName
+fromString :: String -&gt; AttributeName
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var">String.IsString</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="annot"><span class="hs-comment">{- |
+  Converts an 'AttributeName' to a plain old string
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameToString"><span class="hs-identifier hs-type">attributeNameToString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier hs-type">AttributeName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-135"></span><span id="attributeNameToString"><span class="annot"><span class="annottext">attributeNameToString :: AttributeName -&gt; String
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameToString"><span class="hs-identifier hs-var hs-var">attributeNameToString</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier hs-type">AttributeName</span></a></span><span> </span><span id="local-6989586621679141040"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141040"><span class="hs-identifier hs-var">txt</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-136"></span><span>  </span><span class="annot"><span class="annottext">Text -&gt; String
+</span><span class="hs-identifier hs-var">T.unpack</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679141040"><span class="hs-identifier hs-var">txt</span></a></span><span>
+</span><span id="line-137"></span><span>
+</span><span id="line-138"></span><span class="annot"><span class="hs-comment">{- |
+  A Haskell type for the number of the attribute represented by a 'PgAttribute'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-143"></span><span class="hs-keyword">newtype</span><span> </span><span id="AttributeNumber"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-var">AttributeNumber</span></a></span></span><span>
+</span><span id="line-144"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="AttributeNumber"><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-var">AttributeNumber</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span>
+</span><span id="line-145"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679141043"><span id="local-6989586621679141048"><span id="local-6989586621679141052"><span class="annot"><span class="annottext">Int -&gt; AttributeNumber -&gt; ShowS
+[AttributeNumber] -&gt; ShowS
+AttributeNumber -&gt; String
+(Int -&gt; AttributeNumber -&gt; ShowS)
+-&gt; (AttributeNumber -&gt; String)
+-&gt; ([AttributeNumber] -&gt; ShowS)
+-&gt; Show AttributeNumber
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AttributeNumber -&gt; ShowS
+showsPrec :: Int -&gt; AttributeNumber -&gt; ShowS
+$cshow :: AttributeNumber -&gt; String
+show :: AttributeNumber -&gt; String
+$cshowList :: [AttributeNumber] -&gt; ShowS
+showList :: [AttributeNumber] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141055"><span id="local-6989586621679141060"><span class="annot"><span class="annottext">AttributeNumber -&gt; AttributeNumber -&gt; Bool
+(AttributeNumber -&gt; AttributeNumber -&gt; Bool)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; Bool)
+-&gt; Eq AttributeNumber
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+== :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+$c/= :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+/= :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141067"><span id="local-6989586621679141072"><span id="local-6989586621679141076"><span id="local-6989586621679141080"><span id="local-6989586621679141084"><span id="local-6989586621679141088"><span id="local-6989586621679141092"><span class="annot"><span class="annottext">Eq AttributeNumber
+Eq AttributeNumber
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; Ordering)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; Bool)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; Bool)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; Bool)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; Bool)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; Ord AttributeNumber
+AttributeNumber -&gt; AttributeNumber -&gt; Bool
+AttributeNumber -&gt; AttributeNumber -&gt; Ordering
+AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: AttributeNumber -&gt; AttributeNumber -&gt; Ordering
+compare :: AttributeNumber -&gt; AttributeNumber -&gt; Ordering
+$c&lt; :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+&lt; :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+$c&lt;= :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+&lt;= :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+$c&gt; :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+&gt; :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+$c&gt;= :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+&gt;= :: AttributeNumber -&gt; AttributeNumber -&gt; Bool
+$cmax :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+max :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$cmin :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+min :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141096"><span id="local-6989586621679141101"><span id="local-6989586621679141105"><span id="local-6989586621679141109"><span id="local-6989586621679141113"><span id="local-6989586621679141117"><span id="local-6989586621679141121"><span id="local-6989586621679141125"><span class="annot"><span class="annottext">Int -&gt; AttributeNumber
+AttributeNumber -&gt; Int
+AttributeNumber -&gt; [AttributeNumber]
+AttributeNumber -&gt; AttributeNumber
+AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+AttributeNumber
+-&gt; AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+(AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber)
+-&gt; (Int -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; Int)
+-&gt; (AttributeNumber -&gt; [AttributeNumber])
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber])
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber])
+-&gt; (AttributeNumber
+    -&gt; AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber])
+-&gt; Enum AttributeNumber
+forall a.
+(a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Int -&gt; a)
+-&gt; (a -&gt; Int)
+-&gt; (a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; [a])
+-&gt; (a -&gt; a -&gt; a -&gt; [a])
+-&gt; Enum a
+$csucc :: AttributeNumber -&gt; AttributeNumber
+succ :: AttributeNumber -&gt; AttributeNumber
+$cpred :: AttributeNumber -&gt; AttributeNumber
+pred :: AttributeNumber -&gt; AttributeNumber
+$ctoEnum :: Int -&gt; AttributeNumber
+toEnum :: Int -&gt; AttributeNumber
+$cfromEnum :: AttributeNumber -&gt; Int
+fromEnum :: AttributeNumber -&gt; Int
+$cenumFrom :: AttributeNumber -&gt; [AttributeNumber]
+enumFrom :: AttributeNumber -&gt; [AttributeNumber]
+$cenumFromThen :: AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+enumFromThen :: AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+$cenumFromTo :: AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+enumFromTo :: AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+$cenumFromThenTo :: AttributeNumber
+-&gt; AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+enumFromThenTo :: AttributeNumber
+-&gt; AttributeNumber -&gt; AttributeNumber -&gt; [AttributeNumber]
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Enum</span></span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141131"><span id="local-6989586621679141135"><span id="local-6989586621679141139"><span id="local-6989586621679141143"><span id="local-6989586621679141147"><span id="local-6989586621679141151"><span id="local-6989586621679141155"><span class="annot"><span class="annottext">Integer -&gt; AttributeNumber
+AttributeNumber -&gt; AttributeNumber
+AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+(AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber)
+-&gt; (Integer -&gt; AttributeNumber)
+-&gt; Num AttributeNumber
+forall a.
+(a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (a -&gt; a)
+-&gt; (Integer -&gt; a)
+-&gt; Num a
+$c+ :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
++ :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$c- :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+- :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$c* :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+* :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$cnegate :: AttributeNumber -&gt; AttributeNumber
+negate :: AttributeNumber -&gt; AttributeNumber
+$cabs :: AttributeNumber -&gt; AttributeNumber
+abs :: AttributeNumber -&gt; AttributeNumber
+$csignum :: AttributeNumber -&gt; AttributeNumber
+signum :: AttributeNumber -&gt; AttributeNumber
+$cfromInteger :: Integer -&gt; AttributeNumber
+fromInteger :: Integer -&gt; AttributeNumber
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Num</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141165"><span id="local-6989586621679141169"><span id="local-6989586621679141173"><span id="local-6989586621679141177"><span id="local-6989586621679141181"><span id="local-6989586621679141185"><span id="local-6989586621679141189"><span class="annot"><span class="annottext">Enum AttributeNumber
+Real AttributeNumber
+Real AttributeNumber
+-&gt; Enum AttributeNumber
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber)
+-&gt; (AttributeNumber
+    -&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber))
+-&gt; (AttributeNumber
+    -&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber))
+-&gt; (AttributeNumber -&gt; Integer)
+-&gt; Integral AttributeNumber
+AttributeNumber -&gt; Integer
+AttributeNumber
+-&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber)
+AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+forall a.
+Real a
+-&gt; Enum a
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; (a, a))
+-&gt; (a -&gt; a -&gt; (a, a))
+-&gt; (a -&gt; Integer)
+-&gt; Integral a
+$cquot :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+quot :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$crem :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+rem :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$cdiv :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+div :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$cmod :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+mod :: AttributeNumber -&gt; AttributeNumber -&gt; AttributeNumber
+$cquotRem :: AttributeNumber
+-&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber)
+quotRem :: AttributeNumber
+-&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber)
+$cdivMod :: AttributeNumber
+-&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber)
+divMod :: AttributeNumber
+-&gt; AttributeNumber -&gt; (AttributeNumber, AttributeNumber)
+$ctoInteger :: AttributeNumber -&gt; Integer
+toInteger :: AttributeNumber -&gt; Integer
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Integral</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679141198"><span class="annot"><span class="annottext">Num AttributeNumber
+Ord AttributeNumber
+Num AttributeNumber
+-&gt; Ord AttributeNumber
+-&gt; (AttributeNumber -&gt; Rational)
+-&gt; Real AttributeNumber
+AttributeNumber -&gt; Rational
+forall a. Num a -&gt; Ord a -&gt; (a -&gt; Rational) -&gt; Real a
+$ctoRational :: AttributeNumber -&gt; Rational
+toRational :: AttributeNumber -&gt; Rational
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Real</span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-146"></span><span>
+</span><span id="line-147"></span><span class="annot"><span class="hs-comment">{- |
+  Converts an 'AttributeNumber' to an integer
+-}</span></span><span>
+</span><span id="line-150"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberToInt16"><span class="hs-identifier hs-type">attributeNumberToInt16</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span>
+</span><span id="line-151"></span><span id="attributeNumberToInt16"><span class="annot"><span class="annottext">attributeNumberToInt16 :: AttributeNumber -&gt; Int16
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberToInt16"><span class="hs-identifier hs-var hs-var">attributeNumberToInt16</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span> </span><span id="local-6989586621679141203"><span class="annot"><span class="annottext">Int16
+</span><a href="#local-6989586621679141203"><span class="hs-identifier hs-var">int</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int16
+</span><a href="#local-6989586621679141203"><span class="hs-identifier hs-var">int</span></a></span><span>
+</span><span id="line-152"></span><span>
+</span><span id="line-153"></span><span class="annot"><span class="hs-comment">{- |
+  Converts an integer to an 'AttributeNumber'
+-}</span></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberFromInt16"><span class="hs-identifier hs-type">attributeNumberFromInt16</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-157"></span><span id="attributeNumberFromInt16"><span class="annot"><span class="annottext">attributeNumberFromInt16 :: Int16 -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberFromInt16"><span class="hs-identifier hs-var hs-var">attributeNumberFromInt16</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int16 -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-var">AttributeNumber</span></a></span><span>
+</span><span id="line-158"></span><span>
+</span><span id="line-159"></span><span class="annot"><span class="hs-comment">{- |
+  Attoparsec parser for 'AttributeNumber'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-164"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberParser"><span class="hs-identifier hs-type">attributeNumberParser</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">AttoText.Parser</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-165"></span><span id="attributeNumberParser"><span class="annot"><span class="annottext">attributeNumberParser :: Parser AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberParser"><span class="hs-identifier hs-var hs-var">attributeNumberParser</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-166"></span><span>  </span><span class="annot"><span class="annottext">Parser AttributeNumber -&gt; Parser AttributeNumber
+forall a. Num a =&gt; Parser a -&gt; Parser a
+</span><span class="hs-identifier hs-var">AttoText.signed</span></span><span> </span><span class="annot"><span class="annottext">Parser AttributeNumber
+forall a. Integral a =&gt; Parser a
+</span><span class="hs-identifier hs-var">AttoText.decimal</span></span><span>
+</span><span id="line-167"></span><span>
+</span><span id="line-168"></span><span class="annot"><span class="hs-comment">{- |
+  Encodes an 'AttributeNumber' to lazy text as a builder
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-173"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTextBuilder"><span class="hs-identifier hs-type">attributeNumberTextBuilder</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">LTB.Builder</span></span><span>
+</span><span id="line-174"></span><span id="attributeNumberTextBuilder"><span class="annot"><span class="annottext">attributeNumberTextBuilder :: AttributeNumber -&gt; Builder
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTextBuilder"><span class="hs-identifier hs-var hs-var">attributeNumberTextBuilder</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-175"></span><span>  </span><span class="annot"><span class="annottext">Int16 -&gt; Builder
+forall a. Integral a =&gt; a -&gt; Builder
+</span><span class="hs-identifier hs-var">LTBI.decimal</span></span><span> </span><span class="annot"><span class="annottext">(Int16 -&gt; Builder)
+-&gt; (AttributeNumber -&gt; Int16) -&gt; AttributeNumber -&gt; Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">AttributeNumber -&gt; Int16
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberToInt16"><span class="hs-identifier hs-var">attributeNumberToInt16</span></a></span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span class="annot"><span class="hs-comment">{- |
+  An Orville 'Orville.TableDefinition' for querying the
+  @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-183"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTable"><span class="hs-identifier hs-type">pgAttributeTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">Orville.TableDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#NoKey"><span class="hs-identifier hs-type">Orville.NoKey</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-type">PgAttribute</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-type">PgAttribute</span></a></span><span>
+</span><span id="line-184"></span><span id="pgAttributeTable"><span class="annot"><span class="annottext">pgAttributeTable :: TableDefinition NoKey PgAttribute PgAttribute
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTable"><span class="hs-identifier hs-var hs-var">pgAttributeTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-185"></span><span>  </span><span class="annot"><span class="annottext">String
+-&gt; TableDefinition NoKey PgAttribute PgAttribute
+-&gt; TableDefinition NoKey PgAttribute PgAttribute
+forall key writeEntity readEntity.
+String
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-var">Orville.setTableSchema</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_catalog&quot;</span></span><span> </span><span class="annot"><span class="annottext">(TableDefinition NoKey PgAttribute PgAttribute
+ -&gt; TableDefinition NoKey PgAttribute PgAttribute)
+-&gt; TableDefinition NoKey PgAttribute PgAttribute
+-&gt; TableDefinition NoKey PgAttribute PgAttribute
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-186"></span><span>    </span><span class="annot"><span class="annottext">String
+-&gt; SqlMarshaller PgAttribute PgAttribute
+-&gt; TableDefinition NoKey PgAttribute PgAttribute
+forall writeEntity readEntity.
+String
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition NoKey writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinitionWithoutKey"><span class="hs-identifier hs-var">Orville.mkTableDefinitionWithoutKey</span></a></span><span>
+</span><span id="line-187"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;pg_attribute&quot;</span></span><span>
+</span><span id="line-188"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller PgAttribute PgAttribute
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeMarshaller"><span class="hs-identifier hs-var">pgAttributeMarshaller</span></a></span><span>
+</span><span id="line-189"></span><span>
+</span><span id="line-190"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeMarshaller"><span class="hs-identifier hs-type">pgAttributeMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">Orville.SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-type">PgAttribute</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-type">PgAttribute</span></a></span><span>
+</span><span id="line-191"></span><span id="pgAttributeMarshaller"><span class="annot"><span class="annottext">pgAttributeMarshaller :: SqlMarshaller PgAttribute PgAttribute
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeMarshaller"><span class="hs-identifier hs-var hs-var">pgAttributeMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-192"></span><span>  </span><span class="annot"><span class="annottext">Oid
+-&gt; AttributeName
+-&gt; AttributeNumber
+-&gt; Oid
+-&gt; Int16
+-&gt; Int32
+-&gt; Bool
+-&gt; Bool
+-&gt; PgAttribute
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#PgAttribute"><span class="hs-identifier hs-var">PgAttribute</span></a></span><span>
+</span><span id="line-193"></span><span>    </span><span class="annot"><span class="annottext">(Oid
+ -&gt; AttributeName
+ -&gt; AttributeNumber
+ -&gt; Oid
+ -&gt; Int16
+ -&gt; Int32
+ -&gt; Bool
+ -&gt; Bool
+ -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute Oid
+-&gt; SqlMarshaller
+     PgAttribute
+     (AttributeName
+      -&gt; AttributeNumber
+      -&gt; Oid
+      -&gt; Int16
+      -&gt; Int32
+      -&gt; Bool
+      -&gt; Bool
+      -&gt; PgAttribute)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgAttribute Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeRelationOid"><span class="hs-identifier hs-var">pgAttributeRelationOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeRelationOidField"><span class="hs-identifier hs-var">attributeRelationOidField</span></a></span><span>
+</span><span id="line-194"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgAttribute
+  (AttributeName
+   -&gt; AttributeNumber
+   -&gt; Oid
+   -&gt; Int16
+   -&gt; Int32
+   -&gt; Bool
+   -&gt; Bool
+   -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute AttributeName
+-&gt; SqlMarshaller
+     PgAttribute
+     (AttributeNumber
+      -&gt; Oid -&gt; Int16 -&gt; Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; AttributeName)
+-&gt; FieldDefinition NotNull AttributeName
+-&gt; SqlMarshaller PgAttribute AttributeName
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; AttributeName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeName"><span class="hs-identifier hs-var">pgAttributeName</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull AttributeName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameField"><span class="hs-identifier hs-var">attributeNameField</span></a></span><span>
+</span><span id="line-195"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgAttribute
+  (AttributeNumber
+   -&gt; Oid -&gt; Int16 -&gt; Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute AttributeNumber
+-&gt; SqlMarshaller
+     PgAttribute (Oid -&gt; Int16 -&gt; Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; AttributeNumber)
+-&gt; FieldDefinition NotNull AttributeNumber
+-&gt; SqlMarshaller PgAttribute AttributeNumber
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeNumber"><span class="hs-identifier hs-var">pgAttributeNumber</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberField"><span class="hs-identifier hs-var">attributeNumberField</span></a></span><span>
+</span><span id="line-196"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgAttribute (Oid -&gt; Int16 -&gt; Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute Oid
+-&gt; SqlMarshaller
+     PgAttribute (Int16 -&gt; Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; Oid)
+-&gt; FieldDefinition NotNull Oid -&gt; SqlMarshaller PgAttribute Oid
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTypeOid"><span class="hs-identifier hs-var">pgAttributeTypeOid</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeOidField"><span class="hs-identifier hs-var">attributeTypeOidField</span></a></span><span>
+</span><span id="line-197"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller
+  PgAttribute (Int16 -&gt; Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute Int16
+-&gt; SqlMarshaller PgAttribute (Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; Int16)
+-&gt; FieldDefinition NotNull Int16 -&gt; SqlMarshaller PgAttribute Int16
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; Int16
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeLength"><span class="hs-identifier hs-var">pgAttributeLength</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int16
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeLengthField"><span class="hs-identifier hs-var">attributeLengthField</span></a></span><span>
+</span><span id="line-198"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgAttribute (Int32 -&gt; Bool -&gt; Bool -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute Int32
+-&gt; SqlMarshaller PgAttribute (Bool -&gt; Bool -&gt; PgAttribute)
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; Int32)
+-&gt; FieldDefinition NotNull Int32 -&gt; SqlMarshaller PgAttribute Int32
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; Int32
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeTypeModifier"><span class="hs-identifier hs-var">pgAttributeTypeModifier</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int32
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeModifierField"><span class="hs-identifier hs-var">attributeTypeModifierField</span></a></span><span>
+</span><span id="line-199"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgAttribute (Bool -&gt; Bool -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute Bool
+-&gt; SqlMarshaller PgAttribute (Bool -&gt; PgAttribute)
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; Bool)
+-&gt; FieldDefinition NotNull Bool -&gt; SqlMarshaller PgAttribute Bool
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeIsDropped"><span class="hs-identifier hs-var">pgAttributeIsDropped</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsDroppedField"><span class="hs-identifier hs-var">attributeIsDroppedField</span></a></span><span>
+</span><span id="line-200"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller PgAttribute (Bool -&gt; PgAttribute)
+-&gt; SqlMarshaller PgAttribute Bool
+-&gt; SqlMarshaller PgAttribute PgAttribute
+forall a b.
+SqlMarshaller PgAttribute (a -&gt; b)
+-&gt; SqlMarshaller PgAttribute a -&gt; SqlMarshaller PgAttribute b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(PgAttribute -&gt; Bool)
+-&gt; FieldDefinition NotNull Bool -&gt; SqlMarshaller PgAttribute Bool
+forall writeEntity fieldValue nullability.
+(writeEntity -&gt; fieldValue)
+-&gt; FieldDefinition nullability fieldValue
+-&gt; SqlMarshaller writeEntity fieldValue
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallField"><span class="hs-identifier hs-var">Orville.marshallField</span></a></span><span> </span><span class="annot"><span class="annottext">PgAttribute -&gt; Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#pgAttributeIsNotNull"><span class="hs-identifier hs-var">pgAttributeIsNotNull</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsNotNullField"><span class="hs-identifier hs-var">attributeIsNotNullField</span></a></span><span>
+</span><span id="line-201"></span><span>
+</span><span id="line-202"></span><span class="annot"><span class="hs-comment">{- |
+  The @attrelid@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-207"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeRelationOidField"><span class="hs-identifier hs-type">attributeRelationOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-208"></span><span id="attributeRelationOidField"><span class="annot"><span class="annottext">attributeRelationOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeRelationOidField"><span class="hs-identifier hs-var hs-var">attributeRelationOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-209"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attrelid&quot;</span></span><span>
+</span><span id="line-210"></span><span>
+</span><span id="line-211"></span><span class="annot"><span class="hs-comment">{- |
+  The @attname@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-216"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameField"><span class="hs-identifier hs-type">attributeNameField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeName"><span class="hs-identifier hs-type">AttributeName</span></a></span><span>
+</span><span id="line-217"></span><span id="attributeNameField"><span class="annot"><span class="annottext">attributeNameField :: FieldDefinition NotNull AttributeName
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNameField"><span class="hs-identifier hs-var hs-var">attributeNameField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-218"></span><span>  </span><span class="annot"><span class="annottext">FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull AttributeName
+forall a b nullability.
+(Coercible a b, Coercible b a) =&gt;
+FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#coerceField"><span class="hs-identifier hs-var">Orville.coerceField</span></a></span><span> </span><span class="annot"><span class="annottext">(FieldDefinition NotNull Text
+ -&gt; FieldDefinition NotNull AttributeName)
+-&gt; FieldDefinition NotNull Text
+-&gt; FieldDefinition NotNull AttributeName
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-219"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Text
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#unboundedTextField"><span class="hs-identifier hs-var">Orville.unboundedTextField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attname&quot;</span></span><span>
+</span><span id="line-220"></span><span>
+</span><span id="line-221"></span><span class="annot"><span class="hs-comment">{- |
+  The @attnum@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-226"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberField"><span class="hs-identifier hs-type">attributeNumberField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-227"></span><span id="attributeNumberField"><span class="annot"><span class="annottext">attributeNumberField :: FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberField"><span class="hs-identifier hs-var hs-var">attributeNumberField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-228"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTypeField"><span class="hs-identifier hs-var">attributeNumberTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attnum&quot;</span></span><span>
+</span><span id="line-229"></span><span>
+</span><span id="line-230"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Orville.FieldDefinition' for a field with type 'AttributeNumber'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-235"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTypeField"><span class="hs-identifier hs-type">attributeNumberTypeField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#AttributeNumber"><span class="hs-identifier hs-type">AttributeNumber</span></a></span><span>
+</span><span id="line-236"></span><span id="attributeNumberTypeField"><span class="annot"><span class="annottext">attributeNumberTypeField :: String -&gt; FieldDefinition NotNull AttributeNumber
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeNumberTypeField"><span class="hs-identifier hs-var hs-var">attributeNumberTypeField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-237"></span><span>  </span><span class="annot"><span class="annottext">FieldDefinition NotNull Int16
+-&gt; FieldDefinition NotNull AttributeNumber
+forall a b nullability.
+(Coercible a b, Coercible b a) =&gt;
+FieldDefinition nullability a -&gt; FieldDefinition nullability b
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#coerceField"><span class="hs-identifier hs-var">Orville.coerceField</span></a></span><span> </span><span class="annot"><span class="annottext">(FieldDefinition NotNull Int16
+ -&gt; FieldDefinition NotNull AttributeNumber)
+-&gt; (String -&gt; FieldDefinition NotNull Int16)
+-&gt; String
+-&gt; FieldDefinition NotNull AttributeNumber
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int16
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#smallIntegerField"><span class="hs-identifier hs-var">Orville.smallIntegerField</span></a></span><span>
+</span><span id="line-238"></span><span>
+</span><span id="line-239"></span><span class="annot"><span class="hs-comment">{- |
+  The @atttypid@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-244"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeOidField"><span class="hs-identifier hs-type">attributeTypeOidField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Oid</span></span><span>
+</span><span id="line-245"></span><span id="attributeTypeOidField"><span class="annot"><span class="annottext">attributeTypeOidField :: FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeOidField"><span class="hs-identifier hs-var hs-var">attributeTypeOidField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-246"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Oid
+</span><a href="Orville.PostgreSQL.PgCatalog.OidField.html#oidTypeField"><span class="hs-identifier hs-var">oidTypeField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;atttypid&quot;</span></span><span>
+</span><span id="line-247"></span><span>
+</span><span id="line-248"></span><span class="annot"><span class="hs-comment">{- |
+  The @attlen@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-253"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeLengthField"><span class="hs-identifier hs-type">attributeLengthField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span>
+</span><span id="line-254"></span><span id="attributeLengthField"><span class="annot"><span class="annottext">attributeLengthField :: FieldDefinition NotNull Int16
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeLengthField"><span class="hs-identifier hs-var hs-var">attributeLengthField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-255"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int16
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#smallIntegerField"><span class="hs-identifier hs-var">Orville.smallIntegerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attlen&quot;</span></span><span>
+</span><span id="line-256"></span><span>
+</span><span id="line-257"></span><span class="annot"><span class="hs-comment">{- |
+  The @atttypmod@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-262"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeModifierField"><span class="hs-identifier hs-type">attributeTypeModifierField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-263"></span><span id="attributeTypeModifierField"><span class="annot"><span class="annottext">attributeTypeModifierField :: FieldDefinition NotNull Int32
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeTypeModifierField"><span class="hs-identifier hs-var hs-var">attributeTypeModifierField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-264"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Int32
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#integerField"><span class="hs-identifier hs-var">Orville.integerField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;atttypmod&quot;</span></span><span>
+</span><span id="line-265"></span><span>
+</span><span id="line-266"></span><span class="annot"><span class="hs-comment">{- |
+  The @attisdropped@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-271"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsDroppedField"><span class="hs-identifier hs-type">attributeIsDroppedField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-272"></span><span id="attributeIsDroppedField"><span class="annot"><span class="annottext">attributeIsDroppedField :: FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsDroppedField"><span class="hs-identifier hs-var hs-var">attributeIsDroppedField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-273"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#booleanField"><span class="hs-identifier hs-var">Orville.booleanField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attisdropped&quot;</span></span><span>
+</span><span id="line-274"></span><span>
+</span><span id="line-275"></span><span class="annot"><span class="hs-comment">{- |
+  The @attnotnull@ column of the @pg_catalog.pg_attribute@ table
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-280"></span><span class="annot"><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsNotNullField"><span class="hs-identifier hs-type">attributeIsNotNullField</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#FieldDefinition"><span class="hs-identifier hs-type">Orville.FieldDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#NotNull"><span class="hs-identifier hs-type">Orville.NotNull</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-281"></span><span id="attributeIsNotNullField"><span class="annot"><span class="annottext">attributeIsNotNullField :: FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.PgCatalog.PgAttribute.html#attributeIsNotNullField"><span class="hs-identifier hs-var hs-var">attributeIsNotNullField</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-282"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; FieldDefinition NotNull Bool
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#booleanField"><span class="hs-identifier hs-var">Orville.booleanField</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;attnotnull&quot;</span></span><span>
+</span><span id="line-283"></span></pre></body></html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Internal.Bracket</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#bracketWithResult"><span class="hs-identifier">bracketWithResult</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketResult"><span class="hs-identifier">BracketResult</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketSuccess"><span class="hs-identifier">BracketSuccess</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketError"><span class="hs-identifier">BracketError</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-12"></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">SomeException</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">catch</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">mask</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throwIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">liftIO</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html"><span class="hs-identifier">Orville.PostgreSQL.Monad.MonadOrville</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier">MonadOrvilleControl</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier">liftCatch</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier">liftMask</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="hs-keyword">data</span><span> </span><span id="BracketResult"><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketResult"><span class="hs-identifier hs-var">BracketResult</span></a></span></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="BracketSuccess"><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketSuccess"><span class="hs-identifier hs-var">BracketSuccess</span></a></span></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="BracketError"><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketError"><span class="hs-identifier hs-var">BracketError</span></a></span></span><span>
+</span><span id="line-21"></span><span>
+</span><span id="line-22"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: A version of 'bracket' that allows us to distinguish between
+  exception and non-exception release cases. This is available in certain
+  packages as a typeclass function under the name 'generalBracket', but is
+  implemented here directly in terms of IO's 'mask' and 'catch' to guarantee
+  our exception handling semantics without forcing the Orville user's choice of
+  library for lifting and unlift IO actions (e.g. UnliftIO).
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span id="local-6989586621679132624"><span id="local-6989586621679132627"><span id="local-6989586621679132629"><span id="local-6989586621679132630"><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#bracketWithResult"><span class="hs-identifier hs-type">bracketWithResult</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132624"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrvilleControl"><span class="hs-identifier hs-type">MonadOrvilleControl</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132624"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-34"></span><span>  </span><span class="annot"><a href="#local-6989586621679132624"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132627"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679132627"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketResult"><span class="hs-identifier hs-type">BracketResult</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132624"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132629"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679132627"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679132624"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132630"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-37"></span><span>  </span><span class="annot"><a href="#local-6989586621679132624"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132630"><span class="hs-identifier hs-type">b</span></a></span></span></span></span></span><span>
+</span><span id="line-38"></span><span id="bracketWithResult"><span class="annot"><span class="annottext">bracketWithResult :: forall (m :: * -&gt; *) a c b.
+(MonadIO m, MonadOrvilleControl m) =&gt;
+m a -&gt; (a -&gt; BracketResult -&gt; m c) -&gt; (a -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#bracketWithResult"><span class="hs-identifier hs-var hs-var">bracketWithResult</span></a></span></span><span> </span><span id="local-6989586621679132693"><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621679132693"><span class="hs-identifier hs-var">acquire</span></a></span></span><span> </span><span id="local-6989586621679132694"><span class="annot"><span class="annottext">a -&gt; BracketResult -&gt; m c
+</span><a href="#local-6989586621679132694"><span class="hs-identifier hs-var">release</span></a></span></span><span> </span><span id="local-6989586621679132695"><span class="annot"><span class="annottext">a -&gt; m b
+</span><a href="#local-6989586621679132695"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-39"></span><span>  </span><span class="annot"><span class="annottext">(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall {a}. m a -&gt; m a) -&gt; m b) -&gt; m b
+forall c.
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall {a}. m a -&gt; m a) -&gt; m c) -&gt; m c
+forall (m :: * -&gt; *) c.
+MonadOrvilleControl m =&gt;
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall a. m a -&gt; m a) -&gt; m c) -&gt; m c
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftMask"><span class="hs-identifier hs-var">liftMask</span></a></span><span> </span><span class="annot"><span class="annottext">((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><span class="hs-identifier hs-var">mask</span></span><span> </span><span class="annot"><span class="annottext">(((forall {a}. m a -&gt; m a) -&gt; m b) -&gt; m b)
+-&gt; ((forall {a}. m a -&gt; m a) -&gt; m b) -&gt; m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679132696"><span class="annot"><span class="annottext">forall {a}. m a -&gt; m a
+</span><a href="#local-6989586621679132696"><span class="hs-identifier hs-var">restore</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-40"></span><span>    </span><span id="local-6989586621679132697"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132697"><span class="hs-identifier hs-var">resource</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621679132693"><span class="hs-identifier hs-var">acquire</span></a></span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span>    </span><span id="local-6989586621679132698"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679132698"><span class="hs-identifier hs-var">result</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-43"></span><span>      </span><span class="annot"><span class="annottext">(forall a. IO a -&gt; (SomeException -&gt; IO a) -&gt; IO a)
+-&gt; m b -&gt; (SomeException -&gt; m b) -&gt; m b
+forall e b.
+Exception e =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a) -&gt; m b -&gt; (e -&gt; m b) -&gt; m b
+forall (m :: * -&gt; *) e b.
+(MonadOrvilleControl m, Exception e) =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a) -&gt; m b -&gt; (e -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#liftCatch"><span class="hs-identifier hs-var">liftCatch</span></a></span><span>
+</span><span id="line-44"></span><span>        </span><span class="annot"><span class="annottext">IO a -&gt; (SomeException -&gt; IO a) -&gt; IO a
+forall a. IO a -&gt; (SomeException -&gt; IO a) -&gt; IO a
+forall e a. Exception e =&gt; IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><span class="hs-identifier hs-var">catch</span></span><span>
+</span><span id="line-45"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m b -&gt; m b
+forall {a}. m a -&gt; m a
+</span><a href="#local-6989586621679132696"><span class="hs-identifier hs-var">restore</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; m b
+</span><a href="#local-6989586621679132695"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132697"><span class="hs-identifier hs-var">resource</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m c -&gt; SomeException -&gt; m b
+forall (m :: * -&gt; *) a b. MonadIO m =&gt; m a -&gt; SomeException -&gt; m b
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#handleAndRethrow"><span class="hs-identifier hs-var">handleAndRethrow</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">a -&gt; BracketResult -&gt; m c
+</span><a href="#local-6989586621679132694"><span class="hs-identifier hs-var">release</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132697"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="annot"><span class="annottext">BracketResult
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketError"><span class="hs-identifier hs-var">BracketError</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">c
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">a -&gt; BracketResult -&gt; m c
+</span><a href="#local-6989586621679132694"><span class="hs-identifier hs-var">release</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621679132697"><span class="hs-identifier hs-var">resource</span></a></span><span> </span><span class="annot"><span class="annottext">BracketResult
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#BracketSuccess"><span class="hs-identifier hs-var">BracketSuccess</span></a></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span>    </span><span class="annot"><span class="annottext">b -&gt; m b
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621679132698"><span class="hs-identifier hs-var">result</span></a></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: Catch any exception, run the given handler, and rethrow the
+  exception. This is mostly useful to force the exception being caught to be of
+  the type 'SomeException'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-59"></span><span id="local-6989586621679132655"><span id="local-6989586621679132656"><span id="local-6989586621679132657"><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html#handleAndRethrow"><span class="hs-identifier hs-type">handleAndRethrow</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-60"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132655"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-61"></span><span>  </span><span class="annot"><a href="#local-6989586621679132655"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132656"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-62"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">SomeException</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-63"></span><span>  </span><span class="annot"><a href="#local-6989586621679132655"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679132657"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-64"></span><span id="handleAndRethrow"><span class="annot"><span class="annottext">handleAndRethrow :: forall (m :: * -&gt; *) a b. MonadIO m =&gt; m a -&gt; SomeException -&gt; m b
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#handleAndRethrow"><span class="hs-identifier hs-var hs-var">handleAndRethrow</span></a></span></span><span> </span><span id="local-6989586621679132706"><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621679132706"><span class="hs-identifier hs-var">handle</span></a></span></span><span> </span><span id="local-6989586621679132707"><span class="annot"><span class="annottext">SomeException
+</span><a href="#local-6989586621679132707"><span class="hs-identifier hs-var">ex</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><span class="annottext">a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m a
+</span><a href="#local-6989586621679132706"><span class="hs-identifier hs-var">handle</span></a></span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><span class="annottext">IO b -&gt; m b
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO b -&gt; m b) -&gt; (SomeException -&gt; IO b) -&gt; SomeException -&gt; m b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SomeException -&gt; IO b
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(SomeException -&gt; m b) -&gt; SomeException -&gt; m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SomeException
+</span><a href="#local-6989586621679132707"><span class="hs-identifier hs-var">ex</span></a></span><span>
+</span><span id="line-67"></span></pre></body></html>

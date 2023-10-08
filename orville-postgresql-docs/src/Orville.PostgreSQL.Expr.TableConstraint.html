@@ -1,0 +1,408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.TableConstraint</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier">TableConstraint</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#uniqueConstraint"><span class="hs-identifier">uniqueConstraint</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyConstraint"><span class="hs-identifier">foreignKeyConstraint</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier">ForeignKeyActionExpr</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#restrictExpr"><span class="hs-identifier">restrictExpr</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#cascadeExpr"><span class="hs-identifier">cascadeExpr</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setNullExpr"><span class="hs-identifier">setNullExpr</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setDefaultExpr"><span class="hs-identifier">setDefaultExpr</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyDeleteActionExpr"><span class="hs-identifier">ForeignKeyDeleteActionExpr</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyDeleteActionExpr"><span class="hs-identifier">foreignKeyDeleteActionExpr</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyUpdateActionExpr"><span class="hs-identifier">ForeignKeyUpdateActionExpr</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyUpdateActionExpr"><span class="hs-identifier">foreignKeyUpdateActionExpr</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NonEmpty</span></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier">ColumnName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier">Qualified</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier">TableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a table constraint that would be part of a @CREATE TABLE@ or
+@ALTER TABLE@ statement. For instances, the @UNIQUE@ constraint in
+
+&gt; CREATE TABLE FOO
+&gt;  ( id integer
+&gt;  , UNIQUE id
+&gt;  )
+&gt;
+
+'TableConstraint' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">newtype</span><span> </span><span id="TableConstraint"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-var">TableConstraint</span></a></span></span><span>
+</span><span id="line-48"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="TableConstraint"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-var">TableConstraint</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128822"><span id="local-6989586621679128827"><span class="annot"><span class="annottext">RawSql -&gt; TableConstraint
+TableConstraint -&gt; RawSql
+(TableConstraint -&gt; RawSql)
+-&gt; (RawSql -&gt; TableConstraint) -&gt; SqlExpression TableConstraint
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: TableConstraint -&gt; RawSql
+toRawSql :: TableConstraint -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; TableConstraint
+unsafeFromRawSql :: RawSql -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span>
+</span><span id="line-51"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'TableConstraint' will create a @UNIQUE@ constraint on the
+  given columns.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-57"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#uniqueConstraint"><span class="hs-identifier hs-type">uniqueConstraint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-type">TableConstraint</span></a></span><span>
+</span><span id="line-58"></span><span id="uniqueConstraint"><span class="annot"><span class="annottext">uniqueConstraint :: NonEmpty ColumnName -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#uniqueConstraint"><span class="hs-identifier hs-var hs-var">uniqueConstraint</span></a></span></span><span> </span><span id="local-6989586621679128832"><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679128832"><span class="hs-identifier hs-var">columnNames</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-59"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-var">TableConstraint</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; TableConstraint) -&gt; RawSql -&gt; TableConstraint
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;UNIQUE &quot;</span></span><span>
+</span><span id="line-61"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-62"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; NonEmpty ColumnName -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679128832"><span class="hs-identifier hs-var">columnNames</span></a></span><span>
+</span><span id="line-63"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-64"></span><span>
+</span><span id="line-65"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a foreign key action on a @FOREIGN KEY@ constraint. E.G.
+the @CASCADE@ in
+
+&gt; FOREIGN KEY (foo_id) REFERENCES foo (id) ON DELETE CASCADE
+
+'ForeignKeyActionExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-77"></span><span class="hs-keyword">newtype</span><span> </span><span id="ForeignKeyActionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-var">ForeignKeyActionExpr</span></a></span></span><span>
+</span><span id="line-78"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ForeignKeyActionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-var">ForeignKeyActionExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-79"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128840"><span id="local-6989586621679128844"><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyActionExpr
+ForeignKeyActionExpr -&gt; RawSql
+(ForeignKeyActionExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; ForeignKeyActionExpr)
+-&gt; SqlExpression ForeignKeyActionExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ForeignKeyActionExpr -&gt; RawSql
+toRawSql :: ForeignKeyActionExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ForeignKeyActionExpr
+unsafeFromRawSql :: RawSql -&gt; ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-80"></span><span>
+</span><span id="line-81"></span><span class="annot"><span class="hs-comment">{- |
+  The foreign key action @RESTRICT@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-86"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#restrictExpr"><span class="hs-identifier hs-type">restrictExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">ForeignKeyActionExpr</span></a></span><span>
+</span><span id="line-87"></span><span id="restrictExpr"><span class="annot"><span class="annottext">restrictExpr :: ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#restrictExpr"><span class="hs-identifier hs-var hs-var">restrictExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-var">ForeignKeyActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ForeignKeyActionExpr) -&gt; RawSql -&gt; ForeignKeyActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;RESTRICT&quot;</span></span><span>
+</span><span id="line-88"></span><span>
+</span><span id="line-89"></span><span class="annot"><span class="hs-comment">{- |
+  The foreign key action @CASCADE@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-94"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#cascadeExpr"><span class="hs-identifier hs-type">cascadeExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">ForeignKeyActionExpr</span></a></span><span>
+</span><span id="line-95"></span><span id="cascadeExpr"><span class="annot"><span class="annottext">cascadeExpr :: ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#cascadeExpr"><span class="hs-identifier hs-var hs-var">cascadeExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-var">ForeignKeyActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ForeignKeyActionExpr) -&gt; RawSql -&gt; ForeignKeyActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CASCADE&quot;</span></span><span>
+</span><span id="line-96"></span><span>
+</span><span id="line-97"></span><span class="annot"><span class="hs-comment">{- |
+  The foreign key action @SET NULL@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-102"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setNullExpr"><span class="hs-identifier hs-type">setNullExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">ForeignKeyActionExpr</span></a></span><span>
+</span><span id="line-103"></span><span id="setNullExpr"><span class="annot"><span class="annottext">setNullExpr :: ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setNullExpr"><span class="hs-identifier hs-var hs-var">setNullExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-var">ForeignKeyActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ForeignKeyActionExpr) -&gt; RawSql -&gt; ForeignKeyActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SET NULL&quot;</span></span><span>
+</span><span id="line-104"></span><span>
+</span><span id="line-105"></span><span class="annot"><span class="hs-comment">{- |
+  The foreign key action @SET DEFAULT@.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-110"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setDefaultExpr"><span class="hs-identifier hs-type">setDefaultExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">ForeignKeyActionExpr</span></a></span><span>
+</span><span id="line-111"></span><span id="setDefaultExpr"><span class="annot"><span class="annottext">setDefaultExpr :: ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#setDefaultExpr"><span class="hs-identifier hs-var hs-var">setDefaultExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-var">ForeignKeyActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ForeignKeyActionExpr) -&gt; RawSql -&gt; ForeignKeyActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;SET DEFAULT&quot;</span></span><span>
+</span><span id="line-112"></span><span>
+</span><span id="line-113"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent an foreign key update action on a @FOREIGN KEY@ constraint. E.G.
+the @ON UPDATE RESTRICT@ in
+
+&gt; FOREIGN KEY (foo_id) REFERENCES foo (id) ON UPDATE RESTRICT
+
+'ForeignKeyUpdateActionExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-125"></span><span class="hs-keyword">newtype</span><span> </span><span id="ForeignKeyUpdateActionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyUpdateActionExpr"><span class="hs-identifier hs-var">ForeignKeyUpdateActionExpr</span></a></span></span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ForeignKeyUpdateActionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyUpdateActionExpr"><span class="hs-identifier hs-var">ForeignKeyUpdateActionExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128849"><span id="local-6989586621679128853"><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyUpdateActionExpr
+ForeignKeyUpdateActionExpr -&gt; RawSql
+(ForeignKeyUpdateActionExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; ForeignKeyUpdateActionExpr)
+-&gt; SqlExpression ForeignKeyUpdateActionExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ForeignKeyUpdateActionExpr -&gt; RawSql
+toRawSql :: ForeignKeyUpdateActionExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ForeignKeyUpdateActionExpr
+unsafeFromRawSql :: RawSql -&gt; ForeignKeyUpdateActionExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ForeignKeyActionExpr' that use the given 'ForeignKeyActionExpr'
+  in an @ON UPDATE@ clause for a foreign key.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-135"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyUpdateActionExpr"><span class="hs-identifier hs-type">foreignKeyUpdateActionExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">ForeignKeyActionExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyUpdateActionExpr"><span class="hs-identifier hs-type">ForeignKeyUpdateActionExpr</span></a></span><span>
+</span><span id="line-136"></span><span id="foreignKeyUpdateActionExpr"><span class="annot"><span class="annottext">foreignKeyUpdateActionExpr :: ForeignKeyActionExpr -&gt; ForeignKeyUpdateActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyUpdateActionExpr"><span class="hs-identifier hs-var hs-var">foreignKeyUpdateActionExpr</span></a></span></span><span> </span><span id="local-6989586621679128856"><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="#local-6989586621679128856"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-137"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyUpdateActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyUpdateActionExpr"><span class="hs-identifier hs-var">ForeignKeyUpdateActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ForeignKeyUpdateActionExpr)
+-&gt; RawSql -&gt; ForeignKeyUpdateActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-138"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ON UPDATE&quot;</span></span><span>
+</span><span id="line-139"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-140"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="#local-6989586621679128856"><span class="hs-identifier hs-var">action</span></a></span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent an foreign key update action on a @FOREIGN KEY@ constraint. E.G.
+the @ON DELETE RESTRICT@ in
+
+&gt; FOREIGN KEY (foo_id) REFERENCES foo (id) ON DELETE RESTRICT
+
+'ForeignKeyDeleteActionExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-154"></span><span class="hs-keyword">newtype</span><span> </span><span id="ForeignKeyDeleteActionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyDeleteActionExpr"><span class="hs-identifier hs-var">ForeignKeyDeleteActionExpr</span></a></span></span><span>
+</span><span id="line-155"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ForeignKeyDeleteActionExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyDeleteActionExpr"><span class="hs-identifier hs-var">ForeignKeyDeleteActionExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-156"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128861"><span id="local-6989586621679128865"><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyDeleteActionExpr
+ForeignKeyDeleteActionExpr -&gt; RawSql
+(ForeignKeyDeleteActionExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; ForeignKeyDeleteActionExpr)
+-&gt; SqlExpression ForeignKeyDeleteActionExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ForeignKeyDeleteActionExpr -&gt; RawSql
+toRawSql :: ForeignKeyDeleteActionExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ForeignKeyDeleteActionExpr
+unsafeFromRawSql :: RawSql -&gt; ForeignKeyDeleteActionExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-157"></span><span>
+</span><span id="line-158"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'ForeignKeyActionExpr' that use the given 'ForeignKeyActionExpr'
+  in an @ON UPDATE@ clause for a foreign key.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-164"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyDeleteActionExpr"><span class="hs-identifier hs-type">foreignKeyDeleteActionExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyActionExpr"><span class="hs-identifier hs-type">ForeignKeyActionExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyDeleteActionExpr"><span class="hs-identifier hs-type">ForeignKeyDeleteActionExpr</span></a></span><span>
+</span><span id="line-165"></span><span id="foreignKeyDeleteActionExpr"><span class="annot"><span class="annottext">foreignKeyDeleteActionExpr :: ForeignKeyActionExpr -&gt; ForeignKeyDeleteActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyDeleteActionExpr"><span class="hs-identifier hs-var hs-var">foreignKeyDeleteActionExpr</span></a></span></span><span> </span><span id="local-6989586621679128868"><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="#local-6989586621679128868"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-166"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; ForeignKeyDeleteActionExpr
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyDeleteActionExpr"><span class="hs-identifier hs-var">ForeignKeyDeleteActionExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ForeignKeyDeleteActionExpr)
+-&gt; RawSql -&gt; ForeignKeyDeleteActionExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-167"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ON DELETE&quot;</span></span><span>
+</span><span id="line-168"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-169"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyActionExpr
+</span><a href="#local-6989586621679128868"><span class="hs-identifier hs-var">action</span></a></span><span>
+</span><span id="line-170"></span><span>
+</span><span id="line-171"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'TableConstraint' that represent a @FOREIGN KEY@ constraint
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-176"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyConstraint"><span class="hs-identifier hs-type">foreignKeyConstraint</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-177"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The names of the columns in the source table that form the foreign key</span></span><span>
+</span><span id="line-178"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-179"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The table of the table that the foreign key references</span></span><span>
+</span><span id="line-180"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">TableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-181"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The names of the columns in the foreign table that the foreign key references</span></span><span>
+</span><span id="line-182"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-183"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @ON UPDATE@ foreign key action to perform</span></span><span>
+</span><span id="line-184"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyUpdateActionExpr"><span class="hs-identifier hs-type">ForeignKeyUpdateActionExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-185"></span><span>  </span><span class="annot"><span class="hs-comment">-- | An optional @ON DELETE@ foreign key action to perform</span></span><span>
+</span><span id="line-186"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#ForeignKeyDeleteActionExpr"><span class="hs-identifier hs-type">ForeignKeyDeleteActionExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-187"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-type">TableConstraint</span></a></span><span>
+</span><span id="line-188"></span><span id="foreignKeyConstraint"><span class="annot"><span class="annottext">foreignKeyConstraint :: NonEmpty ColumnName
+-&gt; Qualified TableName
+-&gt; NonEmpty ColumnName
+-&gt; Maybe ForeignKeyUpdateActionExpr
+-&gt; Maybe ForeignKeyDeleteActionExpr
+-&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#foreignKeyConstraint"><span class="hs-identifier hs-var hs-var">foreignKeyConstraint</span></a></span></span><span> </span><span id="local-6989586621679128869"><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679128869"><span class="hs-identifier hs-var">columnNames</span></a></span></span><span> </span><span id="local-6989586621679128870"><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679128870"><span class="hs-identifier hs-var">foreignTableName</span></a></span></span><span> </span><span id="local-6989586621679128871"><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679128871"><span class="hs-identifier hs-var">foreignColumnNames</span></a></span></span><span> </span><span id="local-6989586621679128872"><span class="annot"><span class="annottext">Maybe ForeignKeyUpdateActionExpr
+</span><a href="#local-6989586621679128872"><span class="hs-identifier hs-var">mbUpdateAction</span></a></span></span><span> </span><span id="local-6989586621679128873"><span class="annot"><span class="annottext">Maybe ForeignKeyDeleteActionExpr
+</span><a href="#local-6989586621679128873"><span class="hs-identifier hs-var">mbDeleteAction</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-189"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Expr.TableConstraint.html#TableConstraint"><span class="hs-identifier hs-var">TableConstraint</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; TableConstraint) -&gt; RawSql -&gt; TableConstraint
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-190"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;FOREIGN KEY &quot;</span></span><span>
+</span><span id="line-191"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-192"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; NonEmpty ColumnName -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679128869"><span class="hs-identifier hs-var">columnNames</span></a></span><span>
+</span><span id="line-193"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-194"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; REFERENCES &quot;</span></span><span>
+</span><span id="line-195"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Qualified TableName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679128870"><span class="hs-identifier hs-var">foreignTableName</span></a></span><span>
+</span><span id="line-196"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-197"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-198"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; NonEmpty ColumnName -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679128871"><span class="hs-identifier hs-var">foreignColumnNames</span></a></span><span>
+</span><span id="line-199"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-200"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+-&gt; (ForeignKeyUpdateActionExpr -&gt; RawSql)
+-&gt; Maybe ForeignKeyUpdateActionExpr
+-&gt; RawSql
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679128875"><span class="annot"><span class="annottext">ForeignKeyUpdateActionExpr
+</span><a href="#local-6989586621679128875"><span class="hs-identifier hs-var">updateAction</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyUpdateActionExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyUpdateActionExpr
+</span><a href="#local-6989586621679128875"><span class="hs-identifier hs-var">updateAction</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyUpdateActionExpr
+</span><a href="#local-6989586621679128872"><span class="hs-identifier hs-var">mbUpdateAction</span></a></span><span>
+</span><span id="line-201"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+-&gt; (ForeignKeyDeleteActionExpr -&gt; RawSql)
+-&gt; Maybe ForeignKeyDeleteActionExpr
+-&gt; RawSql
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679128876"><span class="annot"><span class="annottext">ForeignKeyDeleteActionExpr
+</span><a href="#local-6989586621679128876"><span class="hs-identifier hs-var">deleteAction</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ForeignKeyDeleteActionExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ForeignKeyDeleteActionExpr
+</span><a href="#local-6989586621679128876"><span class="hs-identifier hs-var">deleteAction</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">Maybe ForeignKeyDeleteActionExpr
+</span><a href="#local-6989586621679128873"><span class="hs-identifier hs-var">mbDeleteAction</span></a></span><span>
+</span><span id="line-202"></span></pre></body></html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Internal.Name.TableName</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier">TableName</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#tableName"><span class="hs-identifier">tableName</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Internal.Name.Identifier</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier">Identifier</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier">IdentifierExpression</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier">identifier</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL table name. 'TableName' values constructed via the
+'tableName' function will be properly escaped as part of the generated SQL.
+E.G.
+
+&gt; &quot;some_table_name&quot;
+
+'TableName' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">newtype</span><span> </span><span id="TableName"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-var">TableName</span></a></span></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="TableName"><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-var">TableName</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#Identifier"><span class="hs-identifier hs-type">Identifier</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-35"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-36"></span><span>      </span><span id="local-6989586621679128163"><span id="local-6989586621679128168"><span class="annot"><span class="annottext">RawSql -&gt; TableName
+TableName -&gt; RawSql
+(TableName -&gt; RawSql)
+-&gt; (RawSql -&gt; TableName) -&gt; SqlExpression TableName
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: TableName -&gt; RawSql
+toRawSql :: TableName -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; TableName
+unsafeFromRawSql :: RawSql -&gt; TableName
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-37"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-38"></span><span>      </span><span id="local-6989586621679128174"><span id="local-6989586621679128179"><span class="annot"><span class="annottext">Identifier -&gt; TableName
+TableName -&gt; Identifier
+(TableName -&gt; Identifier)
+-&gt; (Identifier -&gt; TableName) -&gt; IdentifierExpression TableName
+forall name.
+(name -&gt; Identifier)
+-&gt; (Identifier -&gt; name) -&gt; IdentifierExpression name
+$ctoIdentifier :: TableName -&gt; Identifier
+toIdentifier :: TableName -&gt; Identifier
+$cfromIdentifier :: Identifier -&gt; TableName
+fromIdentifier :: Identifier -&gt; TableName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#IdentifierExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">IdentifierExpression</span></a></span></span></span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><span class="hs-comment">{- |
+Construct a 'TableName' from a 'String' with proper escaping as part of the generated SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-46"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#tableName"><span class="hs-identifier hs-type">tableName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">TableName</span></a></span><span>
+</span><span id="line-47"></span><span id="tableName"><span class="annot"><span class="annottext">tableName :: String -&gt; TableName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#tableName"><span class="hs-identifier hs-var hs-var">tableName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-48"></span><span>  </span><span class="annot"><span class="annottext">Identifier -&gt; TableName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-var">TableName</span></a></span><span> </span><span class="annot"><span class="annottext">(Identifier -&gt; TableName)
+-&gt; (String -&gt; Identifier) -&gt; String -&gt; TableName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Identifier
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Identifier.html#identifier"><span class="hs-identifier hs-var">identifier</span></a></span><span>
+</span><span id="line-49"></span></pre></body></html>

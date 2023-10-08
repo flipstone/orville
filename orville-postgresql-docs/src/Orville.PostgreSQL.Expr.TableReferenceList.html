@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.TableReferenceList</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#TableReferenceList"><span class="hs-identifier">TableReferenceList</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#referencesTable"><span class="hs-identifier">referencesTable</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier">Qualified</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier">TableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-17"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the tables references in the @FROM@ clause of a @SELECT
+statement. E.G. just the
+
+&gt; foo
+
+in
+
+&gt; FROM foo
+
+'TableReferenceList' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">newtype</span><span> </span><span id="TableReferenceList"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#TableReferenceList"><span class="hs-identifier hs-var">TableReferenceList</span></a></span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="TableReferenceList"><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#TableReferenceList"><span class="hs-identifier hs-var">TableReferenceList</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679128738"><span id="local-6989586621679128743"><span class="annot"><span class="annottext">RawSql -&gt; TableReferenceList
+TableReferenceList -&gt; RawSql
+(TableReferenceList -&gt; RawSql)
+-&gt; (RawSql -&gt; TableReferenceList)
+-&gt; SqlExpression TableReferenceList
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: TableReferenceList -&gt; RawSql
+toRawSql :: TableReferenceList -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; TableReferenceList
+unsafeFromRawSql :: RawSql -&gt; TableReferenceList
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'TableReferenceList' consisting of just the specified table
+  name.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-45"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#referencesTable"><span class="hs-identifier hs-type">referencesTable</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">TableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#TableReferenceList"><span class="hs-identifier hs-type">TableReferenceList</span></a></span><span>
+</span><span id="line-46"></span><span id="referencesTable"><span class="annot"><span class="annottext">referencesTable :: Qualified TableName -&gt; TableReferenceList
+</span><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#referencesTable"><span class="hs-identifier hs-var hs-var">referencesTable</span></a></span></span><span> </span><span id="local-6989586621679128748"><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679128748"><span class="hs-identifier hs-var">qualifiedTableName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; TableReferenceList
+</span><a href="Orville.PostgreSQL.Expr.TableReferenceList.html#TableReferenceList"><span class="hs-identifier hs-var">TableReferenceList</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; TableReferenceList) -&gt; RawSql -&gt; TableReferenceList
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-48"></span><span>    </span><span class="annot"><span class="annottext">Qualified TableName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679128748"><span class="hs-identifier hs-var">qualifiedTableName</span></a></span><span>
+</span><span id="line-49"></span></pre></body></html>

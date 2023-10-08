@@ -1,0 +1,547 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Marshall.DefaultValue</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier">DefaultValue</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integerDefault"><span class="hs-identifier">integerDefault</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#smallIntegerDefault"><span class="hs-identifier">smallIntegerDefault</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#bigIntegerDefault"><span class="hs-identifier">bigIntegerDefault</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integralDefault"><span class="hs-identifier">integralDefault</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#doubleDefault"><span class="hs-identifier">doubleDefault</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#booleanDefault"><span class="hs-identifier">booleanDefault</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#textDefault"><span class="hs-identifier">textDefault</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#dateDefault"><span class="hs-identifier">dateDefault</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentDateDefault"><span class="hs-identifier">currentDateDefault</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#utcTimestampDefault"><span class="hs-identifier">utcTimestampDefault</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentUTCTimestampDefault"><span class="hs-identifier">currentUTCTimestampDefault</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#localTimestampDefault"><span class="hs-identifier">localTimestampDefault</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentLocalTimestampDefault"><span class="hs-identifier">currentLocalTimestampDefault</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#coerceDefaultValue"><span class="hs-identifier">coerceDefaultValue</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#defaultValueExpression"><span class="hs-identifier">defaultValueExpression</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#rawSqlDefault"><span class="hs-identifier">rawSqlDefault</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-30"></span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Builder</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">BSB</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.ByteString.Lazy</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LBS</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Int</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Int16</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int32</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">Int64</span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">T</span></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Text.Encoding</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">TextEnc</span></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Time</span></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Numeric</span></span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.PgTime.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.PgTime</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">PgTime</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="annot"><span class="hs-comment">{- |
+  A 'DefaultValue' is a SQL expression that can be attached to a
+  field definition to give a default value for a column at the database level.
+  The default value will be used if an insert is done and the column is not
+  provided.
+
+  This is useful if you want to add a new column to a table that is already
+  in production without breaking a previous version of your application that
+  is running (e.g. during a zero-down-time deployment) and without needing to
+  make the new column nullable. Default values can also be used to create
+  database-assigned values such as using 'now()' to set a 'created_at' column
+  on a row automatically in the database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-58"></span><span class="hs-keyword">newtype</span><span> </span><span id="DefaultValue"><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span></span><span> </span><span id="local-6989586621679131752"><span class="annot"><a href="#local-6989586621679131752"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-59"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="DefaultValue"><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">Expr.ValueExpression</span></a></span><span>
+</span><span id="line-60"></span><span>
+</span><span id="line-61"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value for any 'Integral' type @n@ by converting it an
+  'Integer'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-67"></span><span id="local-6989586621679131737"><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integralDefault"><span class="hs-identifier hs-type">integralDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integral</span></span><span> </span><span class="annot"><a href="#local-6989586621679131737"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679131737"><span class="hs-identifier hs-type">n</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131737"><span class="hs-identifier hs-type">n</span></a></span></span><span>
+</span><span id="line-68"></span><span id="integralDefault"><span class="annot"><span class="annottext">integralDefault :: forall n. Integral n =&gt; n -&gt; DefaultValue n
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integralDefault"><span class="hs-identifier hs-var hs-var">integralDefault</span></a></span></span><span> </span><span id="local-6989586621679131830"><span class="annot"><span class="annottext">n
+</span><a href="#local-6989586621679131830"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-69"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-70"></span><span>    </span><span id="local-6989586621679131837"><span class="annot"><span class="annottext">decimalBytes :: ByteString
+</span><a href="#local-6989586621679131837"><span class="hs-identifier hs-var hs-var">decimalBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-71"></span><span>      </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">LBS.toStrict</span></span><span>
+</span><span id="line-72"></span><span>        </span><span class="annot"><span class="annottext">(ByteString -&gt; ByteString) -&gt; (n -&gt; ByteString) -&gt; n -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; ByteString
+</span><span class="hs-identifier hs-var">BSB.toLazyByteString</span></span><span>
+</span><span id="line-73"></span><span>        </span><span class="annot"><span class="annottext">(Builder -&gt; ByteString) -&gt; (n -&gt; Builder) -&gt; n -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.integerDec</span></span><span>
+</span><span id="line-74"></span><span>        </span><span class="annot"><span class="annottext">(Integer -&gt; Builder) -&gt; (n -&gt; Integer) -&gt; n -&gt; Builder
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">n -&gt; Integer
+forall a. Integral a =&gt; a -&gt; Integer
+</span><span class="hs-identifier hs-var">toInteger</span></span><span>
+</span><span id="line-75"></span><span>        </span><span class="annot"><span class="annottext">(n -&gt; ByteString) -&gt; n -&gt; ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">n
+</span><a href="#local-6989586621679131830"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-77"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">n
+</span><a href="#local-6989586621679131830"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">n -&gt; n -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">n
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-78"></span><span>      </span><span class="hs-keyword">then</span><span>
+</span><span id="line-79"></span><span>        </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue n
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue n)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; DefaultValue n
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DefaultValue n) -&gt; RawSql -&gt; DefaultValue n
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-80"></span><span>          </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var">RawSql.stringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131837"><span class="hs-identifier hs-var">decimalBytes</span></a></span><span>
+</span><span id="line-81"></span><span>            </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::integer&quot;</span></span><span>
+</span><span id="line-82"></span><span>      </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue n
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue n)
+-&gt; (ByteString -&gt; ValueExpression) -&gt; ByteString -&gt; DefaultValue n
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression)
+-&gt; (ByteString -&gt; RawSql) -&gt; ByteString -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromBytes"><span class="hs-identifier hs-var">RawSql.fromBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; DefaultValue n) -&gt; ByteString -&gt; DefaultValue n
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131837"><span class="hs-identifier hs-var">decimalBytes</span></a></span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from an 'Int16' for use with small integer fields.
+
+  This is a specialization of 'integerDefault'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-91"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#smallIntegerDefault"><span class="hs-identifier hs-type">smallIntegerDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int16</span></span><span>
+</span><span id="line-92"></span><span id="smallIntegerDefault"><span class="annot"><span class="annottext">smallIntegerDefault :: Int16 -&gt; DefaultValue Int16
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#smallIntegerDefault"><span class="hs-identifier hs-var hs-var">smallIntegerDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int16 -&gt; DefaultValue Int16
+forall n. Integral n =&gt; n -&gt; DefaultValue n
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integralDefault"><span class="hs-identifier hs-var">integralDefault</span></a></span><span>
+</span><span id="line-93"></span><span>
+</span><span id="line-94"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from an 'Int32' for use with integer fields.
+
+  This is a specialization of 'integerDefault'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-101"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integerDefault"><span class="hs-identifier hs-type">integerDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int32</span></span><span>
+</span><span id="line-102"></span><span id="integerDefault"><span class="annot"><span class="annottext">integerDefault :: Int32 -&gt; DefaultValue Int32
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integerDefault"><span class="hs-identifier hs-var hs-var">integerDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int32 -&gt; DefaultValue Int32
+forall n. Integral n =&gt; n -&gt; DefaultValue n
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integralDefault"><span class="hs-identifier hs-var">integralDefault</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from an 'Int16' for use with big integer fields.
+
+  This is a specialization of 'integerDefault'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-111"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#bigIntegerDefault"><span class="hs-identifier hs-type">bigIntegerDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int64</span></span><span>
+</span><span id="line-112"></span><span id="bigIntegerDefault"><span class="annot"><span class="annottext">bigIntegerDefault :: Int64 -&gt; DefaultValue Int64
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#bigIntegerDefault"><span class="hs-identifier hs-var hs-var">bigIntegerDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int64 -&gt; DefaultValue Int64
+forall n. Integral n =&gt; n -&gt; DefaultValue n
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#integralDefault"><span class="hs-identifier hs-var">integralDefault</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from a 'Double' field with double fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-119"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#doubleDefault"><span class="hs-identifier hs-type">doubleDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Double</span></span><span>
+</span><span id="line-120"></span><span id="doubleDefault"><span class="annot"><span class="annottext">doubleDefault :: Double -&gt; DefaultValue Double
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#doubleDefault"><span class="hs-identifier hs-var hs-var">doubleDefault</span></a></span></span><span> </span><span id="local-6989586621679131847"><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679131847"><span class="hs-identifier hs-var">d</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-122"></span><span>    </span><span id="local-6989586621679131850"><span class="annot"><span class="annottext">decimalBytes :: ByteString
+</span><a href="#local-6989586621679131850"><span class="hs-identifier hs-var hs-var">decimalBytes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-123"></span><span>      </span><span class="annot"><span class="annottext">ByteString -&gt; ByteString
+</span><span class="hs-identifier hs-var">LBS.toStrict</span></span><span>
+</span><span id="line-124"></span><span>        </span><span class="annot"><span class="annottext">(ByteString -&gt; ByteString)
+-&gt; (String -&gt; ByteString) -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Builder -&gt; ByteString
+</span><span class="hs-identifier hs-var">BSB.toLazyByteString</span></span><span>
+</span><span id="line-125"></span><span>        </span><span class="annot"><span class="annottext">(Builder -&gt; ByteString)
+-&gt; (String -&gt; Builder) -&gt; String -&gt; ByteString
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Builder
+</span><span class="hs-identifier hs-var">BSB.string7</span></span><span>
+</span><span id="line-126"></span><span>        </span><span class="annot"><span class="annottext">(String -&gt; ByteString) -&gt; String -&gt; ByteString
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">Maybe Int -&gt; Double -&gt; ShowS
+forall a. RealFloat a =&gt; Maybe Int -&gt; a -&gt; ShowS
+</span><span class="hs-identifier hs-var">Numeric.showFFloat</span></span><span> </span><span class="annot"><span class="annottext">Maybe Int
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679131847"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&quot;</span></span><span>
+</span><span id="line-127"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">Double
+</span><a href="#local-6989586621679131847"><span class="hs-identifier hs-var">d</span></a></span><span> </span><span class="annot"><span class="annottext">Double -&gt; Double -&gt; Bool
+forall a. Ord a =&gt; a -&gt; a -&gt; Bool
+</span><span class="hs-operator hs-var">&lt;</span></span><span> </span><span class="annot"><span class="annottext">Double
+</span><span class="hs-number">0</span></span><span>
+</span><span id="line-129"></span><span>      </span><span class="hs-keyword">then</span><span>
+</span><span id="line-130"></span><span>        </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue Double
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue Double)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; DefaultValue Double
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DefaultValue Double) -&gt; RawSql -&gt; DefaultValue Double
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-131"></span><span>          </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var">RawSql.stringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131850"><span class="hs-identifier hs-var">decimalBytes</span></a></span><span>
+</span><span id="line-132"></span><span>            </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::numeric&quot;</span></span><span>
+</span><span id="line-133"></span><span>      </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue Double
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue Double)
+-&gt; (ByteString -&gt; ValueExpression)
+-&gt; ByteString
+-&gt; DefaultValue Double
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression)
+-&gt; (ByteString -&gt; RawSql) -&gt; ByteString -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromBytes"><span class="hs-identifier hs-var">RawSql.fromBytes</span></a></span><span> </span><span class="annot"><span class="annottext">(ByteString -&gt; DefaultValue Double)
+-&gt; ByteString -&gt; DefaultValue Double
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131850"><span class="hs-identifier hs-var">decimalBytes</span></a></span><span>
+</span><span id="line-134"></span><span>
+</span><span id="line-135"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from a 'Bool', for use with boolean fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-140"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#booleanDefault"><span class="hs-identifier hs-type">booleanDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-141"></span><span id="booleanDefault"><span class="annot"><span class="annottext">booleanDefault :: Bool -&gt; DefaultValue Bool
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#booleanDefault"><span class="hs-identifier hs-var hs-var">booleanDefault</span></a></span></span><span> </span><span id="local-6989586621679131853"><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679131853"><span class="hs-identifier hs-var">bool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-143"></span><span>    </span><span id="local-6989586621679131854"><span class="annot"><span class="annottext">pgString :: String
+</span><a href="#local-6989586621679131854"><span class="hs-identifier hs-var hs-var">pgString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-144"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><a href="#local-6989586621679131853"><span class="hs-identifier hs-var">bool</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-145"></span><span>        </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;true&quot;</span></span><span>
+</span><span id="line-146"></span><span>        </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;false&quot;</span></span><span>
+</span><span id="line-147"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-148"></span><span>    </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue Bool
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue Bool)
+-&gt; ValueExpression -&gt; DefaultValue Bool
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ValueExpression
+forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var">RawSql.unsafeSqlExpression</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679131854"><span class="hs-identifier hs-var">pgString</span></a></span><span>
+</span><span id="line-149"></span><span>
+</span><span id="line-150"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from a 'T.Text', for use with unbounded, bounded
+  and fixed-length text fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#textDefault"><span class="hs-identifier hs-type">textDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">T.Text</span></span><span>
+</span><span id="line-157"></span><span id="textDefault"><span class="annot"><span class="annottext">textDefault :: Text -&gt; DefaultValue Text
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#textDefault"><span class="hs-identifier hs-var hs-var">textDefault</span></a></span></span><span> </span><span id="local-6989586621679131856"><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679131856"><span class="hs-identifier hs-var">text</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue Text
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue Text)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; DefaultValue Text
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DefaultValue Text) -&gt; RawSql -&gt; DefaultValue Text
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-159"></span><span>    </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var">RawSql.stringLiteral</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Text -&gt; ByteString
+</span><span class="hs-identifier hs-var">TextEnc.encodeUtf8</span></span><span> </span><span class="annot"><span class="annottext">Text
+</span><a href="#local-6989586621679131856"><span class="hs-identifier hs-var">text</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-160"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::text&quot;</span></span><span>
+</span><span id="line-161"></span><span>
+</span><span id="line-162"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from a 'Time.Day' for use with date fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-167"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#dateDefault"><span class="hs-identifier hs-type">dateDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.Day</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.Day</span></span><span>
+</span><span id="line-168"></span><span id="dateDefault"><span class="annot"><span class="annottext">dateDefault :: Day -&gt; DefaultValue Day
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#dateDefault"><span class="hs-identifier hs-var hs-var">dateDefault</span></a></span></span><span> </span><span id="local-6989586621679131858"><span class="annot"><span class="annottext">Day
+</span><a href="#local-6989586621679131858"><span class="hs-identifier hs-var">day</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-169"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-170"></span><span>    </span><span id="local-6989586621679131859"><span class="annot"><span class="annottext">pgText :: ByteString
+</span><a href="#local-6989586621679131859"><span class="hs-identifier hs-var hs-var">pgText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>      </span><span class="annot"><span class="annottext">Day -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#dayToPostgreSQL"><span class="hs-identifier hs-var">PgTime.dayToPostgreSQL</span></a></span><span> </span><span class="annot"><span class="annottext">Day
+</span><a href="#local-6989586621679131858"><span class="hs-identifier hs-var">day</span></a></span><span>
+</span><span id="line-172"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-173"></span><span>    </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue Day
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue Day)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; DefaultValue Day
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DefaultValue Day) -&gt; RawSql -&gt; DefaultValue Day
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-174"></span><span>      </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var">RawSql.stringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131859"><span class="hs-identifier hs-var">pgText</span></a></span><span>
+</span><span id="line-175"></span><span>        </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::date&quot;</span></span><span>
+</span><span id="line-176"></span><span>
+</span><span id="line-177"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value that will default to the current date (i.e. the
+  date at which the database populates the default value on a given row).
+
+  For use with date fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-185"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentDateDefault"><span class="hs-identifier hs-type">currentDateDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.Day</span></span><span>
+</span><span id="line-186"></span><span id="currentDateDefault"><span class="annot"><span class="annottext">currentDateDefault :: DefaultValue Day
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentDateDefault"><span class="hs-identifier hs-var hs-var">currentDateDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-187"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue Day
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span>
+</span><span id="line-188"></span><span>    </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue Day)
+-&gt; (String -&gt; ValueExpression) -&gt; String -&gt; DefaultValue Day
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span>
+</span><span id="line-189"></span><span>    </span><span class="annot"><span class="annottext">(RawSql -&gt; ValueExpression)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; ValueExpression
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span>
+</span><span id="line-190"></span><span>    </span><span class="annot"><span class="annottext">(String -&gt; DefaultValue Day) -&gt; String -&gt; DefaultValue Day
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;('now'::text)::date&quot;</span></span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from a 'Time.UTCTime' for use with utc timestamp fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-197"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#utcTimestampDefault"><span class="hs-identifier hs-type">utcTimestampDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.UTCTime</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.UTCTime</span></span><span>
+</span><span id="line-198"></span><span id="utcTimestampDefault"><span class="annot"><span class="annottext">utcTimestampDefault :: UTCTime -&gt; DefaultValue UTCTime
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#utcTimestampDefault"><span class="hs-identifier hs-var hs-var">utcTimestampDefault</span></a></span></span><span> </span><span id="local-6989586621679131862"><span class="annot"><span class="annottext">UTCTime
+</span><a href="#local-6989586621679131862"><span class="hs-identifier hs-var">utcTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-199"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-200"></span><span>    </span><span id="local-6989586621679131863"><span class="annot"><span class="annottext">pgText :: ByteString
+</span><a href="#local-6989586621679131863"><span class="hs-identifier hs-var hs-var">pgText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-201"></span><span>      </span><span class="annot"><span class="annottext">UTCTime -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#utcTimeToPostgreSQL"><span class="hs-identifier hs-var">PgTime.utcTimeToPostgreSQL</span></a></span><span> </span><span class="annot"><span class="annottext">UTCTime
+</span><a href="#local-6989586621679131862"><span class="hs-identifier hs-var">utcTime</span></a></span><span>
+</span><span id="line-202"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-203"></span><span>    </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue UTCTime
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue UTCTime)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; DefaultValue UTCTime
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DefaultValue UTCTime) -&gt; RawSql -&gt; DefaultValue UTCTime
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-204"></span><span>      </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var">RawSql.stringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131863"><span class="hs-identifier hs-var">pgText</span></a></span><span>
+</span><span id="line-205"></span><span>        </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::timestamp with time zone&quot;</span></span><span>
+</span><span id="line-206"></span><span>
+</span><span id="line-207"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value that will default to the current utc time (i.e. the
+  time at which the database populates the default value on a given row).
+
+  For use with utc timestamp fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-215"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentUTCTimestampDefault"><span class="hs-identifier hs-type">currentUTCTimestampDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.UTCTime</span></span><span>
+</span><span id="line-216"></span><span id="currentUTCTimestampDefault"><span class="annot"><span class="annottext">currentUTCTimestampDefault :: DefaultValue UTCTime
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentUTCTimestampDefault"><span class="hs-identifier hs-var hs-var">currentUTCTimestampDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-217"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue UTCTime
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue UTCTime)
+-&gt; ValueExpression -&gt; DefaultValue UTCTime
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ValueExpression
+forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var">RawSql.unsafeSqlExpression</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;now()&quot;</span></span><span>
+</span><span id="line-218"></span><span>
+</span><span id="line-219"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value from a 'Time.LocalTime' for use with local timestamp fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-224"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#localTimestampDefault"><span class="hs-identifier hs-type">localTimestampDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.LocalTime</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.LocalTime</span></span><span>
+</span><span id="line-225"></span><span id="localTimestampDefault"><span class="annot"><span class="annottext">localTimestampDefault :: LocalTime -&gt; DefaultValue LocalTime
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#localTimestampDefault"><span class="hs-identifier hs-var hs-var">localTimestampDefault</span></a></span></span><span> </span><span id="local-6989586621679131866"><span class="annot"><span class="annottext">LocalTime
+</span><a href="#local-6989586621679131866"><span class="hs-identifier hs-var">localTime</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-226"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-227"></span><span>    </span><span id="local-6989586621679131867"><span class="annot"><span class="annottext">pgText :: ByteString
+</span><a href="#local-6989586621679131867"><span class="hs-identifier hs-var hs-var">pgText</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-228"></span><span>      </span><span class="annot"><span class="annottext">LocalTime -&gt; ByteString
+</span><a href="Orville.PostgreSQL.Raw.PgTime.html#localTimeToPostgreSQL"><span class="hs-identifier hs-var">PgTime.localTimeToPostgreSQL</span></a></span><span> </span><span class="annot"><span class="annottext">LocalTime
+</span><a href="#local-6989586621679131866"><span class="hs-identifier hs-var">localTime</span></a></span><span>
+</span><span id="line-229"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-230"></span><span>    </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue LocalTime
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span>
+</span><span id="line-231"></span><span>      </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue LocalTime)
+-&gt; (RawSql -&gt; ValueExpression) -&gt; RawSql -&gt; DefaultValue LocalTime
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span>
+</span><span id="line-232"></span><span>      </span><span class="annot"><span class="annottext">(RawSql -&gt; DefaultValue LocalTime)
+-&gt; RawSql -&gt; DefaultValue LocalTime
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">ByteString -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#stringLiteral"><span class="hs-identifier hs-var">RawSql.stringLiteral</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679131867"><span class="hs-identifier hs-var">pgText</span></a></span><span>
+</span><span id="line-233"></span><span>        </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;::timestamp without time zone&quot;</span></span><span>
+</span><span id="line-234"></span><span>
+</span><span id="line-235"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a default value that will default to the current local time (i.e. the
+  time at which the database populates the default value on a given row).
+
+  Note: &quot;local&quot; time here will be determined by the database itself, subject to
+  whatever timezone offset has been configured in its settings.
+
+  For use with local timestamp fields.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-246"></span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentLocalTimestampDefault"><span class="hs-identifier hs-type">currentLocalTimestampDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Time.LocalTime</span></span><span>
+</span><span id="line-247"></span><span id="currentLocalTimestampDefault"><span class="annot"><span class="annottext">currentLocalTimestampDefault :: DefaultValue LocalTime
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#currentLocalTimestampDefault"><span class="hs-identifier hs-var hs-var">currentLocalTimestampDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-248"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue LocalTime
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">(ValueExpression -&gt; DefaultValue LocalTime)
+-&gt; ValueExpression -&gt; DefaultValue LocalTime
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ValueExpression
+forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var">RawSql.unsafeSqlExpression</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;('now'::text)::timestamp without time zone&quot;</span></span><span>
+</span><span id="line-249"></span><span>
+</span><span id="line-250"></span><span class="annot"><span class="hs-comment">{- |
+  Coerce's a 'DefaultValue' so that it can be used with field definitions of
+  a different Haskell type. The coercion will always succeed, and is safe as
+  far as Haskell itself it concerned. As long as the 'DefaultValue' is used
+  with a column whose database type is the same as the one the 'DefaultValue'
+  was originally intended for, everything will work as expected.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-259"></span><span id="local-6989586621679131763"><span id="local-6989586621679131764"><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#coerceDefaultValue"><span class="hs-identifier hs-type">coerceDefaultValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131763"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131764"><span class="hs-identifier hs-type">b</span></a></span></span></span><span>
+</span><span id="line-260"></span><span id="coerceDefaultValue"><span class="annot"><span class="annottext">coerceDefaultValue :: forall a b. DefaultValue a -&gt; DefaultValue b
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#coerceDefaultValue"><span class="hs-identifier hs-var hs-var">coerceDefaultValue</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span id="local-6989586621679131869"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679131869"><span class="hs-identifier hs-var">expression</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-261"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue b
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679131869"><span class="hs-identifier hs-var">expression</span></a></span><span>
+</span><span id="line-262"></span><span>
+</span><span id="line-263"></span><span class="annot"><span class="hs-comment">{- |
+  Returns database value expression for the default value
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-268"></span><span id="local-6989586621679131767"><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#defaultValueExpression"><span class="hs-identifier hs-type">defaultValueExpression</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131767"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">Expr.ValueExpression</span></a></span></span><span>
+</span><span id="line-269"></span><span id="defaultValueExpression"><span class="annot"><span class="annottext">defaultValueExpression :: forall a. DefaultValue a -&gt; ValueExpression
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#defaultValueExpression"><span class="hs-identifier hs-var hs-var">defaultValueExpression</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span id="local-6989586621679131870"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679131870"><span class="hs-identifier hs-var">expression</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-270"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679131870"><span class="hs-identifier hs-var">expression</span></a></span><span>
+</span><span id="line-271"></span><span>
+</span><span id="line-272"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a default value from a 'ValueExpression'. You can use this
+  to construct default values for any SQL expression that Orville does not
+  support directly.
+
+  Note: If you are using auto migrations, the 'Expr.ValueExpression' that you
+  pass here must match what is returned by the PostgreSQL @pg_get_expr@
+  function. @pg_get_expr@ decompiles the compiled version of the default
+  experssion back to source text, sometimes in non-obvious ways. Orville's auto
+  migration compares expression given in the field definition with the
+  decompiled expression from the database to determine whether the default
+  value needs to be updated in the schema or not.  If the expression given by a
+  'DefaultValue' is logically equivalent but does not match the decompiled
+  form, auto migration will continue to execute SQL statements to update the
+  schema even when it does not need to.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-290"></span><span id="local-6989586621679131871"><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#rawSqlDefault"><span class="hs-identifier hs-type">rawSqlDefault</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">Expr.ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-type">DefaultValue</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679131871"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-291"></span><span id="rawSqlDefault"><span class="annot"><span class="annottext">rawSqlDefault :: forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#rawSqlDefault"><span class="hs-identifier hs-var hs-var">rawSqlDefault</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-292"></span><span>  </span><span class="annot"><span class="annottext">ValueExpression -&gt; DefaultValue a
+forall a. ValueExpression -&gt; DefaultValue a
+</span><a href="Orville.PostgreSQL.Marshall.DefaultValue.html#DefaultValue"><span class="hs-identifier hs-var">DefaultValue</span></a></span><span>
+</span><span id="line-293"></span></pre></body></html>

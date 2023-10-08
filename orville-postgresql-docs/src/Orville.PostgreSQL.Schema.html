@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# OPTIONS_GHC -Wno-missing-import-lists #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+You can import &quot;Orville.PostgreSQL.Schema&quot; to get access to all the functions
+related to representing a SQL schema. This includes a number of lowel-level
+items not exported by &quot;Orville.PostgreSQL&quot; that give you more control (and
+therefore responsibility) over the definition of the schema.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-15"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Schema</span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- * Defining Tables</span></span><span>
+</span><span id="line-17"></span><span>      </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.TableDefinition</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.TableIdentifier</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.PrimaryKey</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.IndexDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.IndexDefinition</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.ConstraintDefinition</span></a></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span>    </span><span class="annot"><span class="hs-comment">-- * Defining Sequences</span></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.SequenceDefinition</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">module</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.SequenceIdentifier</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="hs-comment">-- Note: we list the re-exports explicity above to control the order that they</span><span>
+</span><span id="line-30"></span><span class="hs-comment">-- appear in the generated haddock documentation.</span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.ConstraintDefinition</span></a></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.IndexDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.IndexDefinition</span></a></span><span>
+</span><span id="line-34"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.PrimaryKey</span></a></span><span>
+</span><span id="line-35"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.SequenceDefinition</span></a></span><span>
+</span><span id="line-36"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.SequenceIdentifier</span></a></span><span>
+</span><span id="line-37"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.TableDefinition</span></a></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.TableIdentifier</span></a></span><span>
+</span><span id="line-39"></span></pre></body></html>

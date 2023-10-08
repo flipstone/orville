@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Schema.SequenceIdentifier</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier">SequenceIdentifier</span></a></span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#unqualifiedNameToSequenceId"><span class="hs-identifier">unqualifiedNameToSequenceId</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#setSequenceIdSchema"><span class="hs-identifier">setSequenceIdSchema</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdQualifiedName"><span class="hs-identifier">sequenceIdQualifiedName</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedName"><span class="hs-identifier">sequenceIdUnqualifiedName</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaName"><span class="hs-identifier">sequenceIdSchemaName</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdToString"><span class="hs-identifier">sequenceIdToString</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedNameString"><span class="hs-identifier">sequenceIdUnqualifiedNameString</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaNameString"><span class="hs-identifier">sequenceIdSchemaNameString</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-22"></span><span>
+</span><span id="line-23"></span><span class="annot"><span class="hs-comment">{- |
+  An identifier used by Orville to identify a particular sequence in a particular
+  schema.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">data</span><span> </span><span id="SequenceIdentifier"><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-var">SequenceIdentifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="SequenceIdentifier"><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-var">SequenceIdentifier</span></a></span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="i_sequenceIdName"><span class="annot"><span class="annottext">SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdName"><span class="hs-identifier hs-var hs-var">i_sequenceIdName</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_sequenceIdSchema"><span class="annot"><span class="annottext">SequenceIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdSchema"><span class="hs-identifier hs-var hs-var">i_sequenceIdSchema</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679133408"><span id="local-6989586621679133415"><span class="annot"><span class="annottext">SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+(SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool)
+-&gt; Eq SequenceIdentifier
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+== :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+$c/= :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+/= :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133423"><span id="local-6989586621679133430"><span id="local-6989586621679133435"><span id="local-6989586621679133439"><span id="local-6989586621679133442"><span id="local-6989586621679133445"><span id="local-6989586621679133448"><span class="annot"><span class="annottext">Eq SequenceIdentifier
+Eq SequenceIdentifier
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; Ordering)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier)
+-&gt; (SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier)
+-&gt; Ord SequenceIdentifier
+SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+SequenceIdentifier -&gt; SequenceIdentifier -&gt; Ordering
+SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Ordering
+compare :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Ordering
+$c&lt; :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+&lt; :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+$c&lt;= :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+&lt;= :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+$c&gt; :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+&gt; :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+$c&gt;= :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+&gt;= :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; Bool
+$cmax :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier
+max :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier
+$cmin :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier
+min :: SequenceIdentifier -&gt; SequenceIdentifier -&gt; SequenceIdentifier
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679133453"><span id="local-6989586621679133462"><span id="local-6989586621679133466"><span class="annot"><span class="annottext">Int -&gt; SequenceIdentifier -&gt; ShowS
+[SequenceIdentifier] -&gt; ShowS
+SequenceIdentifier -&gt; String
+(Int -&gt; SequenceIdentifier -&gt; ShowS)
+-&gt; (SequenceIdentifier -&gt; String)
+-&gt; ([SequenceIdentifier] -&gt; ShowS)
+-&gt; Show SequenceIdentifier
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; SequenceIdentifier -&gt; ShowS
+showsPrec :: Int -&gt; SequenceIdentifier -&gt; ShowS
+$cshow :: SequenceIdentifier -&gt; String
+show :: SequenceIdentifier -&gt; String
+$cshowList :: [SequenceIdentifier] -&gt; ShowS
+showList :: [SequenceIdentifier] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a 'SequenceIdentifier' where the sequence's name will not be qualified
+  by a particular schema.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-41"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#unqualifiedNameToSequenceId"><span class="hs-identifier hs-type">unqualifiedNameToSequenceId</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span>
+</span><span id="line-42"></span><span id="unqualifiedNameToSequenceId"><span class="annot"><span class="annottext">unqualifiedNameToSequenceId :: String -&gt; SequenceIdentifier
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#unqualifiedNameToSequenceId"><span class="hs-identifier hs-var hs-var">unqualifiedNameToSequenceId</span></a></span></span><span> </span><span id="local-6989586621679133470"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133470"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span>
+</span><span id="line-44"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_sequenceIdName :: String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdName"><span class="hs-identifier hs-var">i_sequenceIdName</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133470"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_sequenceIdSchema :: Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdSchema"><span class="hs-identifier hs-var">i_sequenceIdSchema</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe String
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-46"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-47"></span><span>
+</span><span id="line-48"></span><span class="annot"><span class="hs-comment">{- |
+  Sets the schema of the 'SequenceIdentifier'. Wherever applicable, references to
+  the sequence will be qualified by the given scheme name.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-54"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#setSequenceIdSchema"><span class="hs-identifier hs-type">setSequenceIdSchema</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span>
+</span><span id="line-55"></span><span id="setSequenceIdSchema"><span class="annot"><span class="annottext">setSequenceIdSchema :: String -&gt; SequenceIdentifier -&gt; SequenceIdentifier
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#setSequenceIdSchema"><span class="hs-identifier hs-var hs-var">setSequenceIdSchema</span></a></span></span><span> </span><span id="local-6989586621679133471"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133471"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span id="local-6989586621679133472"><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133472"><span class="hs-identifier hs-var">sequenceId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-56"></span><span>  </span><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133472"><span class="hs-identifier hs-var">sequenceId</span></a></span><span>
+</span><span id="line-57"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_sequenceIdSchema :: Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdSchema"><span class="hs-identifier hs-var">i_sequenceIdSchema</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; Maybe String
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133471"><span class="hs-identifier hs-var">schema</span></a></span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the 'Expr.Qualified Expr.SequenceName' that should be used to refer to the
+  sequence in SQL queries.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdQualifiedName"><span class="hs-identifier hs-type">sequenceIdQualifiedName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Expr.Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">Expr.SequenceName</span></a></span><span>
+</span><span id="line-67"></span><span id="sequenceIdQualifiedName"><span class="annot"><span class="annottext">sequenceIdQualifiedName :: SequenceIdentifier -&gt; Qualified SequenceName
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdQualifiedName"><span class="hs-identifier hs-var hs-var">sequenceIdQualifiedName</span></a></span></span><span> </span><span id="local-6989586621679133473"><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133473"><span class="hs-identifier hs-var">sequenceId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><span class="annottext">Maybe SchemaName -&gt; SequenceName -&gt; Qualified SequenceName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#qualifySequence"><span class="hs-identifier hs-var">Expr.qualifySequence</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; Maybe SchemaName
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaName"><span class="hs-identifier hs-var">sequenceIdSchemaName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133473"><span class="hs-identifier hs-var">sequenceId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; SequenceName
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedName"><span class="hs-identifier hs-var">sequenceIdUnqualifiedName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133473"><span class="hs-identifier hs-var">sequenceId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the unqualified 'Expr.SequenceName' that should be used to refer to the
+  sequence in SQL queries where an unqualified reference is appropriate.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-78"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedName"><span class="hs-identifier hs-type">sequenceIdUnqualifiedName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#SequenceName"><span class="hs-identifier hs-type">Expr.SequenceName</span></a></span><span>
+</span><span id="line-79"></span><span id="sequenceIdUnqualifiedName"><span class="annot"><span class="annottext">sequenceIdUnqualifiedName :: SequenceIdentifier -&gt; SequenceName
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedName"><span class="hs-identifier hs-var hs-var">sequenceIdUnqualifiedName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-80"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; SequenceName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.SequenceName.html#sequenceName"><span class="hs-identifier hs-var">Expr.sequenceName</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; SequenceName)
+-&gt; (SequenceIdentifier -&gt; String)
+-&gt; SequenceIdentifier
+-&gt; SequenceName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdName"><span class="hs-identifier hs-var">i_sequenceIdName</span></a></span><span>
+</span><span id="line-81"></span><span>
+</span><span id="line-82"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the 'Expr.SchemaName' (if any) that should be used to qualify
+  references to the sequence in SQL queries.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-88"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaName"><span class="hs-identifier hs-type">sequenceIdSchemaName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.SchemaName.html#SchemaName"><span class="hs-identifier hs-type">Expr.SchemaName</span></a></span><span>
+</span><span id="line-89"></span><span id="sequenceIdSchemaName"><span class="annot"><span class="annottext">sequenceIdSchemaName :: SequenceIdentifier -&gt; Maybe SchemaName
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaName"><span class="hs-identifier hs-var hs-var">sequenceIdSchemaName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="annottext">(String -&gt; SchemaName) -&gt; Maybe String -&gt; Maybe SchemaName
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; SchemaName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.SchemaName.html#schemaName"><span class="hs-identifier hs-var">Expr.schemaName</span></a></span><span> </span><span class="annot"><span class="annottext">(Maybe String -&gt; Maybe SchemaName)
+-&gt; (SequenceIdentifier -&gt; Maybe String)
+-&gt; SequenceIdentifier
+-&gt; Maybe SchemaName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdSchema"><span class="hs-identifier hs-var">i_sequenceIdSchema</span></a></span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves the unqualified name of the sequence as a string.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-97"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedNameString"><span class="hs-identifier hs-type">sequenceIdUnqualifiedNameString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-98"></span><span id="sequenceIdUnqualifiedNameString"><span class="annot"><span class="annottext">sequenceIdUnqualifiedNameString :: SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdUnqualifiedNameString"><span class="hs-identifier hs-var hs-var">sequenceIdUnqualifiedNameString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-99"></span><span>  </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdName"><span class="hs-identifier hs-var">i_sequenceIdName</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves the schema name of the sequence as a string
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaNameString"><span class="hs-identifier hs-type">sequenceIdSchemaNameString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-107"></span><span id="sequenceIdSchemaNameString"><span class="annot"><span class="annottext">sequenceIdSchemaNameString :: SequenceIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdSchemaNameString"><span class="hs-identifier hs-var hs-var">sequenceIdSchemaNameString</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdSchema"><span class="hs-identifier hs-var">i_sequenceIdSchema</span></a></span><span>
+</span><span id="line-109"></span><span>
+</span><span id="line-110"></span><span class="annot"><span class="hs-comment">{- |
+  Converts a 'SequenceIdentifier' for a string for descriptive purposes. The
+  name will be qualified if a schema name has been set for the identifier.
+
+  Note: You should not use this function for building SQL expressions. Use
+  'sequenceIdQualifiedName' instead for that.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-119"></span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdToString"><span class="hs-identifier hs-type">sequenceIdToString</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#SequenceIdentifier"><span class="hs-identifier hs-type">SequenceIdentifier</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-120"></span><span id="sequenceIdToString"><span class="annot"><span class="annottext">sequenceIdToString :: SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#sequenceIdToString"><span class="hs-identifier hs-var hs-var">sequenceIdToString</span></a></span></span><span> </span><span id="local-6989586621679133478"><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133478"><span class="hs-identifier hs-var">sequenceId</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-121"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; Maybe String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdSchema"><span class="hs-identifier hs-var">i_sequenceIdSchema</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133478"><span class="hs-identifier hs-var">sequenceId</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-122"></span><span>    </span><span class="annot"><span class="annottext">Maybe String
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-123"></span><span>      </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdName"><span class="hs-identifier hs-var">i_sequenceIdName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133478"><span class="hs-identifier hs-var">sequenceId</span></a></span><span>
+</span><span id="line-124"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679133479"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133479"><span class="hs-identifier hs-var">schema</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-125"></span><span>      </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679133479"><span class="hs-identifier hs-var">schema</span></a></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;.&quot;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; ShowS
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier -&gt; String
+</span><a href="Orville.PostgreSQL.Schema.SequenceIdentifier.html#i_sequenceIdName"><span class="hs-identifier hs-var">i_sequenceIdName</span></a></span><span> </span><span class="annot"><span class="annottext">SequenceIdentifier
+</span><a href="#local-6989586621679133478"><span class="hs-identifier hs-var">sequenceId</span></a></span><span>
+</span><span id="line-126"></span></pre></body></html>

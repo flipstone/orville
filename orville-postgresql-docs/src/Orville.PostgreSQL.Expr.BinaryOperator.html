@@ -1,0 +1,413 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Provides a type representing sql operators with exactly two arguments, as well
+as values of that type for many common operators.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-13"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.BinaryOperator</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier">BinaryOperator</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier">binaryOperator</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOpExpression"><span class="hs-identifier">binaryOpExpression</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#equalsOp"><span class="hs-identifier">equalsOp</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#notEqualsOp"><span class="hs-identifier">notEqualsOp</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#greaterThanOp"><span class="hs-identifier">greaterThanOp</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#lessThanOp"><span class="hs-identifier">lessThanOp</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#greaterThanOrEqualsOp"><span class="hs-identifier">greaterThanOrEqualsOp</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#lessThanOrEqualsOp"><span class="hs-identifier">lessThanOrEqualsOp</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#likeOp"><span class="hs-identifier">likeOp</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#iLikeOp"><span class="hs-identifier">iLikeOp</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#orOp"><span class="hs-identifier">orOp</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#andOp"><span class="hs-identifier">andOp</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#plusOp"><span class="hs-identifier">plusOp</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#minusOp"><span class="hs-identifier">minusOp</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#multiplicationOp"><span class="hs-identifier">multiplicationOp</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#divisionOp"><span class="hs-identifier">divisionOp</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#moduloOp"><span class="hs-identifier">moduloOp</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#exponentiationOp"><span class="hs-identifier">exponentiationOp</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseAndOp"><span class="hs-identifier">bitwiseAndOp</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseOrOp"><span class="hs-identifier">bitwiseOrOp</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseXorOp"><span class="hs-identifier">bitwiseXorOp</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseShiftLeftOp"><span class="hs-identifier">bitwiseShiftLeftOp</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseShiftRightOp"><span class="hs-identifier">bitwiseShiftRightOp</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-39"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.ValueExpression</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier">ValueExpression</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-43"></span><span>
+</span><span id="line-44"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent any SQL operator of two arguments. E.G.
+
+&gt; AND
+
+'BinaryOperator' provides' a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">newtype</span><span> </span><span id="BinaryOperator"><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-var">BinaryOperator</span></a></span></span><span>
+</span><span id="line-56"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="BinaryOperator"><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-var">BinaryOperator</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-57"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-58"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-59"></span><span>      </span><span id="local-6989586621679130068"><span id="local-6989586621679130073"><span class="annot"><span class="annottext">RawSql -&gt; BinaryOperator
+BinaryOperator -&gt; RawSql
+(BinaryOperator -&gt; RawSql)
+-&gt; (RawSql -&gt; BinaryOperator) -&gt; SqlExpression BinaryOperator
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: BinaryOperator -&gt; RawSql
+toRawSql :: BinaryOperator -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; BinaryOperator
+unsafeFromRawSql :: RawSql -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-60"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-61"></span><span>
+</span><span id="line-62"></span><span class="annot"><span class="hs-comment">{- | Construct a binary operator, note that this does not include any check to determine if the
+operator is valid either by being a native SQL operator, or a custom defined operator in the
+database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-68"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-type">binaryOperator</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-69"></span><span id="binaryOperator"><span class="annot"><span class="annottext">binaryOperator :: String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var hs-var">binaryOperator</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-70"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-var">BinaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; BinaryOperator)
+-&gt; (String -&gt; RawSql) -&gt; String -&gt; BinaryOperator
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">{- | The SQL equal binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-76"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#equalsOp"><span class="hs-identifier hs-type">equalsOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-77"></span><span id="equalsOp"><span class="annot"><span class="annottext">equalsOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#equalsOp"><span class="hs-identifier hs-var hs-var">equalsOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;=&quot;</span></span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="annot"><span class="hs-comment">{- | The SQL not equal binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-84"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#notEqualsOp"><span class="hs-identifier hs-type">notEqualsOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-85"></span><span id="notEqualsOp"><span class="annot"><span class="annottext">notEqualsOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#notEqualsOp"><span class="hs-identifier hs-var hs-var">notEqualsOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-86"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;&gt;&quot;</span></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="annot"><span class="hs-comment">{- | The SQL strictly greater than binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-92"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#greaterThanOp"><span class="hs-identifier hs-type">greaterThanOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-93"></span><span id="greaterThanOp"><span class="annot"><span class="annottext">greaterThanOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#greaterThanOp"><span class="hs-identifier hs-var hs-var">greaterThanOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&gt;&quot;</span></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">{- | The SQL strictly less than binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-100"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#lessThanOp"><span class="hs-identifier hs-type">lessThanOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-101"></span><span id="lessThanOp"><span class="annot"><span class="annottext">lessThanOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#lessThanOp"><span class="hs-identifier hs-var hs-var">lessThanOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-102"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;&quot;</span></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><span class="hs-comment">{- | The SQL greater than or equal binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-108"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#greaterThanOrEqualsOp"><span class="hs-identifier hs-type">greaterThanOrEqualsOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-109"></span><span id="greaterThanOrEqualsOp"><span class="annot"><span class="annottext">greaterThanOrEqualsOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#greaterThanOrEqualsOp"><span class="hs-identifier hs-var hs-var">greaterThanOrEqualsOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-110"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&gt;=&quot;</span></span><span>
+</span><span id="line-111"></span><span>
+</span><span id="line-112"></span><span class="annot"><span class="hs-comment">{- | The SQL less than or equal binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-116"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#lessThanOrEqualsOp"><span class="hs-identifier hs-type">lessThanOrEqualsOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-117"></span><span id="lessThanOrEqualsOp"><span class="annot"><span class="annottext">lessThanOrEqualsOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#lessThanOrEqualsOp"><span class="hs-identifier hs-var hs-var">lessThanOrEqualsOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;=&quot;</span></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span class="annot"><span class="hs-comment">{- | The SQL LIKE binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-124"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#likeOp"><span class="hs-identifier hs-type">likeOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-125"></span><span id="likeOp"><span class="annot"><span class="annottext">likeOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#likeOp"><span class="hs-identifier hs-var hs-var">likeOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-126"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;LIKE&quot;</span></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="annot"><span class="hs-comment">{- | The SQL ILIKE binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-132"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#iLikeOp"><span class="hs-identifier hs-type">iLikeOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-133"></span><span id="iLikeOp"><span class="annot"><span class="annottext">iLikeOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#iLikeOp"><span class="hs-identifier hs-var hs-var">iLikeOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-134"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ILIKE&quot;</span></span><span>
+</span><span id="line-135"></span><span>
+</span><span id="line-136"></span><span class="annot"><span class="hs-comment">{- | The SQL logical or binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-140"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#orOp"><span class="hs-identifier hs-type">orOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-141"></span><span id="orOp"><span class="annot"><span class="annottext">orOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#orOp"><span class="hs-identifier hs-var hs-var">orOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;OR&quot;</span></span><span>
+</span><span id="line-143"></span><span>
+</span><span id="line-144"></span><span class="annot"><span class="hs-comment">{- | The SQL logical and binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#andOp"><span class="hs-identifier hs-type">andOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-149"></span><span id="andOp"><span class="annot"><span class="annottext">andOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#andOp"><span class="hs-identifier hs-var hs-var">andOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-150"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;AND&quot;</span></span><span>
+</span><span id="line-151"></span><span>
+</span><span id="line-152"></span><span class="annot"><span class="hs-comment">{- | The SQL + binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-156"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#plusOp"><span class="hs-identifier hs-type">plusOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-157"></span><span id="plusOp"><span class="annot"><span class="annottext">plusOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#plusOp"><span class="hs-identifier hs-var hs-var">plusOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;+&quot;</span></span><span>
+</span><span id="line-159"></span><span>
+</span><span id="line-160"></span><span class="annot"><span class="hs-comment">{- | The SQL - binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-164"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#minusOp"><span class="hs-identifier hs-type">minusOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-165"></span><span id="minusOp"><span class="annot"><span class="annottext">minusOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#minusOp"><span class="hs-identifier hs-var hs-var">minusOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-166"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;-&quot;</span></span><span>
+</span><span id="line-167"></span><span>
+</span><span id="line-168"></span><span class="annot"><span class="hs-comment">{- | The SQL * binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-172"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#multiplicationOp"><span class="hs-identifier hs-type">multiplicationOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-173"></span><span id="multiplicationOp"><span class="annot"><span class="annottext">multiplicationOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#multiplicationOp"><span class="hs-identifier hs-var hs-var">multiplicationOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-174"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;*&quot;</span></span><span>
+</span><span id="line-175"></span><span>
+</span><span id="line-176"></span><span class="annot"><span class="hs-comment">{- | The SQL / binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-180"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#divisionOp"><span class="hs-identifier hs-type">divisionOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-181"></span><span id="divisionOp"><span class="annot"><span class="annottext">divisionOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#divisionOp"><span class="hs-identifier hs-var hs-var">divisionOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-182"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;/&quot;</span></span><span>
+</span><span id="line-183"></span><span>
+</span><span id="line-184"></span><span class="annot"><span class="hs-comment">{- | The SQL % binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-188"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#moduloOp"><span class="hs-identifier hs-type">moduloOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-189"></span><span id="moduloOp"><span class="annot"><span class="annottext">moduloOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#moduloOp"><span class="hs-identifier hs-var hs-var">moduloOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-190"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;%&quot;</span></span><span>
+</span><span id="line-191"></span><span>
+</span><span id="line-192"></span><span class="annot"><span class="hs-comment">{- | The SQL ^ binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-196"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#exponentiationOp"><span class="hs-identifier hs-type">exponentiationOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-197"></span><span id="exponentiationOp"><span class="annot"><span class="annottext">exponentiationOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#exponentiationOp"><span class="hs-identifier hs-var hs-var">exponentiationOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-198"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;^&quot;</span></span><span>
+</span><span id="line-199"></span><span>
+</span><span id="line-200"></span><span class="annot"><span class="hs-comment">{- | The SQL bitwise and (a.k.a &amp;) binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-204"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseAndOp"><span class="hs-identifier hs-type">bitwiseAndOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-205"></span><span id="bitwiseAndOp"><span class="annot"><span class="annottext">bitwiseAndOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseAndOp"><span class="hs-identifier hs-var hs-var">bitwiseAndOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-206"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&amp;&quot;</span></span><span>
+</span><span id="line-207"></span><span>
+</span><span id="line-208"></span><span class="annot"><span class="hs-comment">{- | The SQL bitwise or (a.k.a |) binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-212"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseOrOp"><span class="hs-identifier hs-type">bitwiseOrOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-213"></span><span id="bitwiseOrOp"><span class="annot"><span class="annottext">bitwiseOrOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseOrOp"><span class="hs-identifier hs-var hs-var">bitwiseOrOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-214"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;|&quot;</span></span><span>
+</span><span id="line-215"></span><span>
+</span><span id="line-216"></span><span class="annot"><span class="hs-comment">{- | The SQL bitwise exclusive or (a.k.a #) binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-220"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseXorOp"><span class="hs-identifier hs-type">bitwiseXorOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-221"></span><span id="bitwiseXorOp"><span class="annot"><span class="annottext">bitwiseXorOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseXorOp"><span class="hs-identifier hs-var hs-var">bitwiseXorOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-222"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;#&quot;</span></span><span>
+</span><span id="line-223"></span><span>
+</span><span id="line-224"></span><span class="annot"><span class="hs-comment">{- | The SQL bitwise left shift (a.k.a &lt;&lt;) binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-228"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseShiftLeftOp"><span class="hs-identifier hs-type">bitwiseShiftLeftOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-229"></span><span id="bitwiseShiftLeftOp"><span class="annot"><span class="annottext">bitwiseShiftLeftOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseShiftLeftOp"><span class="hs-identifier hs-var hs-var">bitwiseShiftLeftOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-230"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&lt;&lt;&quot;</span></span><span>
+</span><span id="line-231"></span><span>
+</span><span id="line-232"></span><span class="annot"><span class="hs-comment">{- | The SQL bitwise right shift (a.k.a &gt;&gt;) binary operator.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-236"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseShiftRightOp"><span class="hs-identifier hs-type">bitwiseShiftRightOp</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span>
+</span><span id="line-237"></span><span id="bitwiseShiftRightOp"><span class="annot"><span class="annottext">bitwiseShiftRightOp :: BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#bitwiseShiftRightOp"><span class="hs-identifier hs-var hs-var">bitwiseShiftRightOp</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-238"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; BinaryOperator
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOperator"><span class="hs-identifier hs-var">binaryOperator</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;&gt;&gt;&quot;</span></span><span>
+</span><span id="line-239"></span><span>
+</span><span id="line-240"></span><span class="annot"><span class="hs-comment">{- | Apply a binary operator to two 'ValueExpression's resulting in some
+ 'RawSql.SqlExpression'. Note that this does *NOT* extend typechecking to the 'ValueExpression's
+ being used with the 'BinaryOperator'. It is left to the caller to ensure that the operator makes
+ sense with the arguments being passed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-247"></span><span id="local-6989586621679130034"><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOpExpression"><span class="hs-identifier hs-type">binaryOpExpression</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-248"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679130034"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-249"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-250"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-251"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-252"></span><span>  </span><span class="annot"><a href="#local-6989586621679130034"><span class="hs-identifier hs-type">sql</span></a></span></span><span>
+</span><span id="line-253"></span><span id="binaryOpExpression"><span class="annot"><span class="annottext">binaryOpExpression :: forall sql.
+SqlExpression sql =&gt;
+BinaryOperator -&gt; ValueExpression -&gt; ValueExpression -&gt; sql
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOpExpression"><span class="hs-identifier hs-var hs-var">binaryOpExpression</span></a></span></span><span> </span><span id="local-6989586621679130092"><span class="annot"><span class="annottext">BinaryOperator
+</span><a href="#local-6989586621679130092"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span id="local-6989586621679130093"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130093"><span class="hs-identifier hs-var">left</span></a></span></span><span> </span><span id="local-6989586621679130094"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130094"><span class="hs-identifier hs-var">right</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-254"></span><span>  </span><span class="annot"><span class="annottext">BinaryOperator -&gt; ValueExpression -&gt; ValueExpression -&gt; sql
+forall sql.
+SqlExpression sql =&gt;
+BinaryOperator -&gt; ValueExpression -&gt; ValueExpression -&gt; sql
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOpExpressionUnparenthenizedArguments"><span class="hs-identifier hs-var">binaryOpExpressionUnparenthenizedArguments</span></a></span><span>
+</span><span id="line-255"></span><span>    </span><span class="annot"><span class="annottext">BinaryOperator
+</span><a href="#local-6989586621679130092"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-256"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ValueExpression -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130093"><span class="hs-identifier hs-var">left</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-257"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql -&gt; ValueExpression
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ValueExpression -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130094"><span class="hs-identifier hs-var">right</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-258"></span><span>
+</span><span id="line-259"></span><span class="hs-comment">-- internal helper function</span><span>
+</span><span id="line-260"></span><span id="local-6989586621679130100"><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOpExpressionUnparenthenizedArguments"><span class="hs-identifier hs-type">binaryOpExpressionUnparenthenizedArguments</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-261"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679130100"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-262"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#BinaryOperator"><span class="hs-identifier hs-type">BinaryOperator</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-263"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-264"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ValueExpression.html#ValueExpression"><span class="hs-identifier hs-type">ValueExpression</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-265"></span><span>  </span><span class="annot"><a href="#local-6989586621679130100"><span class="hs-identifier hs-type">sql</span></a></span></span><span>
+</span><span id="line-266"></span><span id="binaryOpExpressionUnparenthenizedArguments"><span class="annot"><span class="annottext">binaryOpExpressionUnparenthenizedArguments :: forall sql.
+SqlExpression sql =&gt;
+BinaryOperator -&gt; ValueExpression -&gt; ValueExpression -&gt; sql
+</span><a href="Orville.PostgreSQL.Expr.BinaryOperator.html#binaryOpExpressionUnparenthenizedArguments"><span class="hs-identifier hs-var hs-var">binaryOpExpressionUnparenthenizedArguments</span></a></span></span><span> </span><span id="local-6989586621679130110"><span class="annot"><span class="annottext">BinaryOperator
+</span><a href="#local-6989586621679130110"><span class="hs-identifier hs-var">op</span></a></span></span><span> </span><span id="local-6989586621679130111"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130111"><span class="hs-identifier hs-var">left</span></a></span></span><span> </span><span id="local-6989586621679130112"><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130112"><span class="hs-identifier hs-var">right</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-267"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; sql
+forall a. SqlExpression a =&gt; RawSql -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeFromRawSql"><span class="hs-identifier hs-var">RawSql.unsafeFromRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; sql) -&gt; RawSql -&gt; sql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-268"></span><span>    </span><span class="annot"><span class="annottext">ValueExpression -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130111"><span class="hs-identifier hs-var">left</span></a></span><span>
+</span><span id="line-269"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-270"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">BinaryOperator -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">BinaryOperator
+</span><a href="#local-6989586621679130110"><span class="hs-identifier hs-var">op</span></a></span><span>
+</span><span id="line-271"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-272"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">ValueExpression -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">ValueExpression
+</span><a href="#local-6989586621679130112"><span class="hs-identifier hs-var">right</span></a></span><span>
+</span><span id="line-273"></span></pre></body></html>

@@ -1,0 +1,132 @@
+name: Build and Test
+
+on:
+  push:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 5
+      matrix:
+        pg-version: ["pg12", "pg13", "pg14", "pg15", "pg16"]
+        stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yml","stack-lts-19.33-ghc-9.0.2.yml","stack-lts-20.26-ghc-9.2.8.yml","stack-nightly-2023-10-01-ghc-9.6.3.yml","stack.yml"]
+    permissions:
+      packages: write
+      contents: read
+      actions: read
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache
+        uses: actions/cache@v3
+        env:
+          cache-version: build-v2
+        with:
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          restore-keys: |
+            ${{ env.cache-version }}-
+          path: |
+            ./stack-root
+
+      - name: Build dev environment
+        run: |
+          set -e
+          cd orville-postgresql
+          docker-compose build -q
+
+      - name: Run Tests
+        run: |
+          set -e
+          cd orville-postgresql
+          PG_VERSION=${{ matrix.pg-version }}
+          cp compose.override.github.yml compose.override.yml
+          docker-compose run \
+            --rm \
+            dev \
+            stack --stack-yaml ${{ matrix.stack-yaml }} test \
+            --ghc-options=-j --flag orville-postgresql:ci
+
+  formatting-check:
+    name: Formatting Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache
+        uses: actions/cache@v3
+        env:
+          cache-version: format-v1
+        with:
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          restore-keys: |
+            ${{ env.cache-version }}-
+          path: |
+            ./stack-root
+
+      - name: Build dev environment
+        run: |
+          set -e
+          cd orville-postgresql
+          docker-compose build -q
+
+      - name: Format and Check for Diff
+        run: |
+          set -e
+
+          cd orville-postgresql
+          cp compose.override.github.yml compose.override.yml
+          docker-compose run \
+            --rm \
+            dev \
+            sh -c ./scripts/format-repo.sh
+
+          sh -c scripts/format-check-ci.sh
+
+  cabal-check:
+    name: Cabal Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache
+        uses: actions/cache@v3
+        env:
+          cache-version: format-v1
+        with:
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          restore-keys: |
+            ${{ env.cache-version }}-
+          path: |
+            ./stack-root
+
+      - name: Build dev environment
+        run: |
+          set -e
+          cd orville-postgresql
+          docker-compose build -q
+
+      - name: Format and Check for Diff
+        run: |
+          set -e
+
+          cd orville-postgresql
+          cp compose.override.github.yml compose.override.yml
+          docker-compose run \
+            --rm \
+            dev \
+            cabal check

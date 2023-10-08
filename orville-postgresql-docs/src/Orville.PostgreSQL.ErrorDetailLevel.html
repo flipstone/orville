@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-8"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.ErrorDetailLevel</span><span>
+</span><span id="line-9"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier">ErrorDetailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier">ErrorDetailLevel</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeErrorMessage"><span class="hs-identifier">includeErrorMessage</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeSchemaNames"><span class="hs-identifier">includeSchemaNames</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeRowIdentifierValues"><span class="hs-identifier">includeRowIdentifierValues</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeNonIdentifierValues"><span class="hs-identifier">includeNonIdentifierValues</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-10"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#defaultErrorDetailLevel"><span class="hs-identifier">defaultErrorDetailLevel</span></a></span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#minimalErrorDetailLevel"><span class="hs-identifier">minimalErrorDetailLevel</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#maximalErrorDetailLevel"><span class="hs-identifier">maximalErrorDetailLevel</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactErrorMessage"><span class="hs-identifier">redactErrorMessage</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier">redactSchemaName</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactIdentifierValue"><span class="hs-identifier">redactIdentifierValue</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactNonIdentifierValue"><span class="hs-identifier">redactNonIdentifierValue</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-18"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-19"></span><span>
+</span><span id="line-20"></span><span class="annot"><span class="hs-comment">{- |
+  'ErrorDetailLevel' provides a means to configure what elements of information
+  are included in error messages that originate from decoding rows queried
+  from the database. This can be specified either my manually rendering the
+  error message and providing the desired configuration, or by setting the
+  desired detail level in the @OrvilleState@ as a default.
+
+  Information will be redacted from error messages for any of the fields
+  that are set to @False@.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">data</span><span> </span><span id="ErrorDetailLevel"><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-var">ErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ErrorDetailLevel"><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-var">ErrorDetailLevel</span></a></span></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="includeErrorMessage"><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeErrorMessage"><span class="hs-identifier hs-var hs-var">includeErrorMessage</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="includeSchemaNames"><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeSchemaNames"><span class="hs-identifier hs-var hs-var">includeSchemaNames</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="includeRowIdentifierValues"><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeRowIdentifierValues"><span class="hs-identifier hs-var hs-var">includeRowIdentifierValues</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="includeNonIdentifierValues"><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeNonIdentifierValues"><span class="hs-identifier hs-var hs-var">includeNonIdentifierValues</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-39"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-40"></span><span>      </span><span id="local-6989586621679126289"><span id="local-6989586621679126298"><span id="local-6989586621679126302"><span class="annot"><span class="annottext">Int -&gt; ErrorDetailLevel -&gt; ShowS
+[ErrorDetailLevel] -&gt; ShowS
+ErrorDetailLevel -&gt; String
+(Int -&gt; ErrorDetailLevel -&gt; ShowS)
+-&gt; (ErrorDetailLevel -&gt; String)
+-&gt; ([ErrorDetailLevel] -&gt; ShowS)
+-&gt; Show ErrorDetailLevel
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; ErrorDetailLevel -&gt; ShowS
+showsPrec :: Int -&gt; ErrorDetailLevel -&gt; ShowS
+$cshow :: ErrorDetailLevel -&gt; String
+show :: ErrorDetailLevel -&gt; String
+$cshowList :: [ErrorDetailLevel] -&gt; ShowS
+showList :: [ErrorDetailLevel] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-41"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="annot"><span class="hs-comment">{- |
+  A minimal 'ErrorDetailLevel' where everything all information (including
+  any situationally-specific error message!) is redacted from error messages.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-49"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#minimalErrorDetailLevel"><span class="hs-identifier hs-type">minimalErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-50"></span><span id="minimalErrorDetailLevel"><span class="annot"><span class="annottext">minimalErrorDetailLevel :: ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#minimalErrorDetailLevel"><span class="hs-identifier hs-var hs-var">minimalErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-51"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-52"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">includeErrorMessage :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeErrorMessage"><span class="hs-identifier hs-var">includeErrorMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-53"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeSchemaNames :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeSchemaNames"><span class="hs-identifier hs-var">includeSchemaNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-54"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeRowIdentifierValues :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeRowIdentifierValues"><span class="hs-identifier hs-var">includeRowIdentifierValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-55"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeNonIdentifierValues :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeNonIdentifierValues"><span class="hs-identifier hs-var">includeNonIdentifierValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-56"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="annot"><span class="hs-comment">{- |
+  A default 'ErrorDetailLevel' that strikes balance of including all &quot;Generic&quot;
+  information such as the error message, schema names and row identifiers, but
+  avoids untentionally leaking non-identifier values from the database by
+  redacting them.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-66"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#defaultErrorDetailLevel"><span class="hs-identifier hs-type">defaultErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-67"></span><span id="defaultErrorDetailLevel"><span class="annot"><span class="annottext">defaultErrorDetailLevel :: ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#defaultErrorDetailLevel"><span class="hs-identifier hs-var hs-var">defaultErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-69"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">includeErrorMessage :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeErrorMessage"><span class="hs-identifier hs-var">includeErrorMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-70"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeSchemaNames :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeSchemaNames"><span class="hs-identifier hs-var">includeSchemaNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-71"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeRowIdentifierValues :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeRowIdentifierValues"><span class="hs-identifier hs-var">includeRowIdentifierValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-72"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeNonIdentifierValues :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeNonIdentifierValues"><span class="hs-identifier hs-var">includeNonIdentifierValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">False</span></span><span>
+</span><span id="line-73"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-74"></span><span>
+</span><span id="line-75"></span><span class="annot"><span class="hs-comment">{- |
+  A maximal 'ErrorDetailLevel' that redacts no information from the error
+  messages. Error messages will include values from the database for any
+  columns are involved in a decoding failure, including some which you may
+  not have intended to expose through error message. Use with caution.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-83"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#maximalErrorDetailLevel"><span class="hs-identifier hs-type">maximalErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-84"></span><span id="maximalErrorDetailLevel"><span class="annot"><span class="annottext">maximalErrorDetailLevel :: ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#maximalErrorDetailLevel"><span class="hs-identifier hs-var hs-var">maximalErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-86"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">includeErrorMessage :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeErrorMessage"><span class="hs-identifier hs-var">includeErrorMessage</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-87"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeSchemaNames :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeSchemaNames"><span class="hs-identifier hs-var">includeSchemaNames</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-88"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeRowIdentifierValues :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeRowIdentifierValues"><span class="hs-identifier hs-var">includeRowIdentifierValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-89"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">includeNonIdentifierValues :: Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeNonIdentifierValues"><span class="hs-identifier hs-var">includeNonIdentifierValues</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool
+</span><span class="hs-identifier hs-var">True</span></span><span>
+</span><span id="line-90"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-91"></span><span>
+</span><span id="line-92"></span><span class="annot"><span class="hs-comment">{- |
+  Redacts given the error message string if the 'ErrorDetailLevel' indicates
+  that error messages should be redacted.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-98"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactErrorMessage"><span class="hs-identifier hs-type">redactErrorMessage</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-99"></span><span id="redactErrorMessage"><span class="annot"><span class="annottext">redactErrorMessage :: ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactErrorMessage"><span class="hs-identifier hs-var hs-var">redactErrorMessage</span></a></span></span><span> </span><span id="local-6989586621679126305"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126305"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679126306"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126306"><span class="hs-identifier hs-var">message</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-100"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeErrorMessage"><span class="hs-identifier hs-var">includeErrorMessage</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126305"><span class="hs-identifier hs-var">detailLevel</span></a></span><span>
+</span><span id="line-101"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126306"><span class="hs-identifier hs-var">message</span></a></span><span>
+</span><span id="line-102"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactedValue"><span class="hs-identifier hs-var">redactedValue</span></a></span><span>
+</span><span id="line-103"></span><span>
+</span><span id="line-104"></span><span class="annot"><span class="hs-comment">{- |
+  Redacts given the schema name string if the 'ErrorDetailLevel' indicates
+  that schema names should be redacted.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-110"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier hs-type">redactSchemaName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-111"></span><span id="redactSchemaName"><span class="annot"><span class="annottext">redactSchemaName :: ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactSchemaName"><span class="hs-identifier hs-var hs-var">redactSchemaName</span></a></span></span><span> </span><span id="local-6989586621679126308"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126308"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679126309"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126309"><span class="hs-identifier hs-var">schemaName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-112"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeSchemaNames"><span class="hs-identifier hs-var">includeSchemaNames</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126308"><span class="hs-identifier hs-var">detailLevel</span></a></span><span>
+</span><span id="line-113"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126309"><span class="hs-identifier hs-var">schemaName</span></a></span><span>
+</span><span id="line-114"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactedValue"><span class="hs-identifier hs-var">redactedValue</span></a></span><span>
+</span><span id="line-115"></span><span>
+</span><span id="line-116"></span><span class="annot"><span class="hs-comment">{- |
+  Redacts given the identifier value string if the 'ErrorDetailLevel' indicates
+  that identifier values should be redacted.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-122"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactIdentifierValue"><span class="hs-identifier hs-type">redactIdentifierValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-123"></span><span id="redactIdentifierValue"><span class="annot"><span class="annottext">redactIdentifierValue :: ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactIdentifierValue"><span class="hs-identifier hs-var hs-var">redactIdentifierValue</span></a></span></span><span> </span><span id="local-6989586621679126310"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126310"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679126311"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126311"><span class="hs-identifier hs-var">idValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-124"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeRowIdentifierValues"><span class="hs-identifier hs-var">includeRowIdentifierValues</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126310"><span class="hs-identifier hs-var">detailLevel</span></a></span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126311"><span class="hs-identifier hs-var">idValue</span></a></span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactedValue"><span class="hs-identifier hs-var">redactedValue</span></a></span><span>
+</span><span id="line-127"></span><span>
+</span><span id="line-128"></span><span class="annot"><span class="hs-comment">{- |
+  Redacts given the non-identifier value string if the 'ErrorDetailLevel' indicates
+  that non-identifier values should be redacted.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-134"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactNonIdentifierValue"><span class="hs-identifier hs-type">redactNonIdentifierValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-135"></span><span id="redactNonIdentifierValue"><span class="annot"><span class="annottext">redactNonIdentifierValue :: ErrorDetailLevel -&gt; ShowS
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactNonIdentifierValue"><span class="hs-identifier hs-var hs-var">redactNonIdentifierValue</span></a></span></span><span> </span><span id="local-6989586621679126312"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126312"><span class="hs-identifier hs-var">detailLevel</span></a></span></span><span> </span><span id="local-6989586621679126313"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126313"><span class="hs-identifier hs-var">nonIdValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-136"></span><span>  </span><span class="hs-keyword">if</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Bool
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#includeNonIdentifierValues"><span class="hs-identifier hs-var">includeNonIdentifierValues</span></a></span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679126312"><span class="hs-identifier hs-var">detailLevel</span></a></span><span>
+</span><span id="line-137"></span><span>    </span><span class="hs-keyword">then</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679126313"><span class="hs-identifier hs-var">nonIdValue</span></a></span><span>
+</span><span id="line-138"></span><span>    </span><span class="hs-keyword">else</span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactedValue"><span class="hs-identifier hs-var">redactedValue</span></a></span><span>
+</span><span id="line-139"></span><span>
+</span><span id="line-140"></span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactedValue"><span class="hs-identifier hs-type">redactedValue</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-141"></span><span id="redactedValue"><span class="annot"><span class="annottext">redactedValue :: String
+</span><a href="Orville.PostgreSQL.ErrorDetailLevel.html#redactedValue"><span class="hs-identifier hs-var hs-var">redactedValue</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;[REDACTED]&quot;</span></span><span>
+</span><span id="line-143"></span></pre></body></html>

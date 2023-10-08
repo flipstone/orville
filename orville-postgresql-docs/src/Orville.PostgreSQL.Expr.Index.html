@@ -1,0 +1,469 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.Index</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier">CreateIndexExpr</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#createIndexExpr"><span class="hs-identifier">createIndexExpr</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexUniqueness"><span class="hs-identifier">IndexUniqueness</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#UniqueIndex"><span class="hs-identifier">UniqueIndex</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#NonUniqueIndex"><span class="hs-identifier">NonUniqueIndex</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexBodyExpr"><span class="hs-identifier">IndexBodyExpr</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#indexBodyColumns"><span class="hs-identifier">indexBodyColumns</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#ConcurrentlyExpr"><span class="hs-identifier">ConcurrentlyExpr</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#concurrently"><span class="hs-identifier">concurrently</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#DropIndexExpr"><span class="hs-identifier">DropIndexExpr</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#dropIndexExpr"><span class="hs-identifier">dropIndexExpr</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#createNamedIndexExpr"><span class="hs-identifier">createNamedIndexExpr</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-23"></span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NonEmpty</span></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Name.html"><span class="hs-identifier">Orville.PostgreSQL.Expr.Name</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier">ColumnName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.IndexName.html#IndexName"><span class="hs-identifier">IndexName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier">Qualified</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier">TableName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL &quot;CREATE INDEX&quot; statement. E.G.
+
+&gt; CREATE INDEX ON table (foo, bar, baz)
+
+'CreateIndexExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">newtype</span><span> </span><span id="CreateIndexExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier hs-var">CreateIndexExpr</span></a></span></span><span>
+</span><span id="line-41"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="CreateIndexExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier hs-var">CreateIndexExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-42"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-43"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-44"></span><span>      </span><span id="local-6989586621679129180"><span id="local-6989586621679129185"><span class="annot"><span class="annottext">RawSql -&gt; CreateIndexExpr
+CreateIndexExpr -&gt; RawSql
+(CreateIndexExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; CreateIndexExpr) -&gt; SqlExpression CreateIndexExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: CreateIndexExpr -&gt; RawSql
+toRawSql :: CreateIndexExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; CreateIndexExpr
+unsafeFromRawSql :: RawSql -&gt; CreateIndexExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-45"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span class="annot"><span class="hs-comment">{- |
+Construct a SQL CREATE INDEX from an indicator of if the index should be
+unique, a table, and corresponding collection of 'ColumnName's.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-53"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#createIndexExpr"><span class="hs-identifier hs-type">createIndexExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-54"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexUniqueness"><span class="hs-identifier hs-type">IndexUniqueness</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-55"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#ConcurrentlyExpr"><span class="hs-identifier hs-type">ConcurrentlyExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-56"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">TableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-57"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-58"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier hs-type">CreateIndexExpr</span></a></span><span>
+</span><span id="line-59"></span><span id="createIndexExpr"><span class="annot"><span class="annottext">createIndexExpr :: IndexUniqueness
+-&gt; Maybe ConcurrentlyExpr
+-&gt; Qualified TableName
+-&gt; NonEmpty ColumnName
+-&gt; CreateIndexExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#createIndexExpr"><span class="hs-identifier hs-var hs-var">createIndexExpr</span></a></span></span><span> </span><span id="local-6989586621679129190"><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="#local-6989586621679129190"><span class="hs-identifier hs-var">uniqueness</span></a></span></span><span> </span><span id="local-6989586621679129191"><span class="annot"><span class="annottext">Maybe ConcurrentlyExpr
+</span><a href="#local-6989586621679129191"><span class="hs-identifier hs-var">mbConcurrently</span></a></span></span><span> </span><span id="local-6989586621679129192"><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679129192"><span class="hs-identifier hs-var">tableName</span></a></span></span><span> </span><span id="local-6989586621679129193"><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679129193"><span class="hs-identifier hs-var">columns</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-60"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CreateIndexExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier hs-var">CreateIndexExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CreateIndexExpr) -&gt; RawSql -&gt; CreateIndexExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-61"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CREATE &quot;</span></span><span>
+</span><span id="line-62"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IndexUniqueness -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Expr.Index.html#uniquenessToSql"><span class="hs-identifier hs-var">uniquenessToSql</span></a></span><span> </span><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="#local-6989586621679129190"><span class="hs-identifier hs-var">uniqueness</span></a></span><span>
+</span><span id="line-63"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;INDEX &quot;</span></span><span>
+</span><span id="line-64"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; (RawSql -&gt; RawSql) -&gt; Maybe RawSql -&gt; RawSql
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ConcurrentlyExpr -&gt; RawSql)
+-&gt; Maybe ConcurrentlyExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ConcurrentlyExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ConcurrentlyExpr
+</span><a href="#local-6989586621679129191"><span class="hs-identifier hs-var">mbConcurrently</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-65"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;ON &quot;</span></span><span>
+</span><span id="line-66"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Qualified TableName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679129192"><span class="hs-identifier hs-var">tableName</span></a></span><span>
+</span><span id="line-67"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-68"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IndexBodyExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NonEmpty ColumnName -&gt; IndexBodyExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#indexBodyColumns"><span class="hs-identifier hs-var">indexBodyColumns</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679129193"><span class="hs-identifier hs-var">columns</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="annot"><span class="hs-comment">{- |
+Construct a SQL CREATE INDEX from an indicator of if the index should be
+unique, a table, a name for the index, and some sql representing the rest of
+the index creation.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-77"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#createNamedIndexExpr"><span class="hs-identifier hs-type">createNamedIndexExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-78"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexUniqueness"><span class="hs-identifier hs-type">IndexUniqueness</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-79"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#ConcurrentlyExpr"><span class="hs-identifier hs-type">ConcurrentlyExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-80"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">TableName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-81"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.IndexName.html#IndexName"><span class="hs-identifier hs-type">IndexName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-82"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexBodyExpr"><span class="hs-identifier hs-type">IndexBodyExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-83"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier hs-type">CreateIndexExpr</span></a></span><span>
+</span><span id="line-84"></span><span id="createNamedIndexExpr"><span class="annot"><span class="annottext">createNamedIndexExpr :: IndexUniqueness
+-&gt; Maybe ConcurrentlyExpr
+-&gt; Qualified TableName
+-&gt; IndexName
+-&gt; IndexBodyExpr
+-&gt; CreateIndexExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#createNamedIndexExpr"><span class="hs-identifier hs-var hs-var">createNamedIndexExpr</span></a></span></span><span> </span><span id="local-6989586621679129199"><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="#local-6989586621679129199"><span class="hs-identifier hs-var">uniqueness</span></a></span></span><span> </span><span id="local-6989586621679129200"><span class="annot"><span class="annottext">Maybe ConcurrentlyExpr
+</span><a href="#local-6989586621679129200"><span class="hs-identifier hs-var">mbConcurrently</span></a></span></span><span> </span><span id="local-6989586621679129201"><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679129201"><span class="hs-identifier hs-var">tableName</span></a></span></span><span> </span><span id="local-6989586621679129202"><span class="annot"><span class="annottext">IndexName
+</span><a href="#local-6989586621679129202"><span class="hs-identifier hs-var">indexName</span></a></span></span><span> </span><span id="local-6989586621679129203"><span class="annot"><span class="annottext">IndexBodyExpr
+</span><a href="#local-6989586621679129203"><span class="hs-identifier hs-var">bodyExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-85"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; CreateIndexExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#CreateIndexExpr"><span class="hs-identifier hs-var">CreateIndexExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; CreateIndexExpr) -&gt; RawSql -&gt; CreateIndexExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-86"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CREATE &quot;</span></span><span>
+</span><span id="line-87"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IndexUniqueness -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Expr.Index.html#uniquenessToSql"><span class="hs-identifier hs-var">uniquenessToSql</span></a></span><span> </span><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="#local-6989586621679129199"><span class="hs-identifier hs-var">uniqueness</span></a></span><span>
+</span><span id="line-88"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;INDEX &quot;</span></span><span>
+</span><span id="line-89"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; (RawSql -&gt; RawSql) -&gt; Maybe RawSql -&gt; RawSql
+forall b a. b -&gt; (a -&gt; b) -&gt; Maybe a -&gt; b
+</span><span class="hs-identifier hs-var">maybe</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ConcurrentlyExpr -&gt; RawSql)
+-&gt; Maybe ConcurrentlyExpr -&gt; Maybe RawSql
+forall a b. (a -&gt; b) -&gt; Maybe a -&gt; Maybe b
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-identifier hs-var">fmap</span></span><span> </span><span class="annot"><span class="annottext">ConcurrentlyExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ConcurrentlyExpr
+</span><a href="#local-6989586621679129200"><span class="hs-identifier hs-var">mbConcurrently</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-90"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IndexName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">IndexName
+</span><a href="#local-6989586621679129202"><span class="hs-identifier hs-var">indexName</span></a></span><span>
+</span><span id="line-91"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot; ON &quot;</span></span><span>
+</span><span id="line-92"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">Qualified TableName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">Qualified TableName
+</span><a href="#local-6989586621679129201"><span class="hs-identifier hs-var">tableName</span></a></span><span>
+</span><span id="line-93"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#space"><span class="hs-identifier hs-var">RawSql.space</span></a></span><span>
+</span><span id="line-94"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IndexBodyExpr -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">IndexBodyExpr
+</span><a href="#local-6989586621679129203"><span class="hs-identifier hs-var">bodyExpr</span></a></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent the @CONCURRENTLY@ keyword for index creation. E.G.
+
+&gt; CONCURRENTLY
+
+'ConcurrentlyExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-107"></span><span class="hs-keyword">newtype</span><span> </span><span id="ConcurrentlyExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#ConcurrentlyExpr"><span class="hs-identifier hs-var">ConcurrentlyExpr</span></a></span></span><span>
+</span><span id="line-108"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="ConcurrentlyExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#ConcurrentlyExpr"><span class="hs-identifier hs-var">ConcurrentlyExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-109"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-110"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-111"></span><span>      </span><span id="local-6989586621679129206"><span id="local-6989586621679129210"><span class="annot"><span class="annottext">RawSql -&gt; ConcurrentlyExpr
+ConcurrentlyExpr -&gt; RawSql
+(ConcurrentlyExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; ConcurrentlyExpr) -&gt; SqlExpression ConcurrentlyExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: ConcurrentlyExpr -&gt; RawSql
+toRawSql :: ConcurrentlyExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; ConcurrentlyExpr
+unsafeFromRawSql :: RawSql -&gt; ConcurrentlyExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-112"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="annot"><span class="hs-comment">{- |
+The @CONCURRENTLY@ keyword indicates to PostgreSQL that an index should be
+create concurrently.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-120"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#concurrently"><span class="hs-identifier hs-type">concurrently</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#ConcurrentlyExpr"><span class="hs-identifier hs-type">ConcurrentlyExpr</span></a></span><span>
+</span><span id="line-121"></span><span id="concurrently"><span class="annot"><span class="annottext">concurrently :: ConcurrentlyExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#concurrently"><span class="hs-identifier hs-var hs-var">concurrently</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-122"></span><span>  </span><span class="annot"><span class="annottext">String -&gt; ConcurrentlyExpr
+forall a. SqlExpression a =&gt; String -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#unsafeSqlExpression"><span class="hs-identifier hs-var">RawSql.unsafeSqlExpression</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;CONCURRENTLY&quot;</span></span><span>
+</span><span id="line-123"></span><span>
+</span><span id="line-124"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent if the body of an index definition E.G.
+
+&gt; (foo, bar)
+
+in
+
+&gt; CREATE some_index ON some_table (foo, bar)
+
+'IndexBodyExpr' provides a 'RawSql.SqlExpression' instance. See
+'Rawsql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-139"></span><span class="hs-keyword">newtype</span><span> </span><span id="IndexBodyExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexBodyExpr"><span class="hs-identifier hs-var">IndexBodyExpr</span></a></span></span><span>
+</span><span id="line-140"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="IndexBodyExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexBodyExpr"><span class="hs-identifier hs-var">IndexBodyExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-141"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-142"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-143"></span><span>      </span><span id="local-6989586621679129215"><span id="local-6989586621679129219"><span class="annot"><span class="annottext">RawSql -&gt; IndexBodyExpr
+IndexBodyExpr -&gt; RawSql
+(IndexBodyExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; IndexBodyExpr) -&gt; SqlExpression IndexBodyExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: IndexBodyExpr -&gt; RawSql
+toRawSql :: IndexBodyExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; IndexBodyExpr
+unsafeFromRawSql :: RawSql -&gt; IndexBodyExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-144"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-145"></span><span>
+</span><span id="line-146"></span><span class="annot"><span class="hs-comment">{- |
+Creates an 'IndexBodyExpr' for the given column names. The resulting
+SQL looks like @(column1, column2, ...)@.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-152"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#indexBodyColumns"><span class="hs-identifier hs-type">indexBodyColumns</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-153"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.ColumnName.html#ColumnName"><span class="hs-identifier hs-type">ColumnName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-154"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexBodyExpr"><span class="hs-identifier hs-type">IndexBodyExpr</span></a></span><span>
+</span><span id="line-155"></span><span id="indexBodyColumns"><span class="annot"><span class="annottext">indexBodyColumns :: NonEmpty ColumnName -&gt; IndexBodyExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#indexBodyColumns"><span class="hs-identifier hs-var hs-var">indexBodyColumns</span></a></span></span><span> </span><span id="local-6989586621679129222"><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679129222"><span class="hs-identifier hs-var">columns</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-156"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IndexBodyExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#IndexBodyExpr"><span class="hs-identifier hs-var">IndexBodyExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; IndexBodyExpr) -&gt; RawSql -&gt; IndexBodyExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-157"></span><span>    </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#leftParen"><span class="hs-identifier hs-var">RawSql.leftParen</span></a></span><span>
+</span><span id="line-158"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; NonEmpty ColumnName -&gt; RawSql
+forall sql (f :: * -&gt; *).
+(SqlExpression sql, Foldable f) =&gt;
+RawSql -&gt; f sql -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#intercalate"><span class="hs-identifier hs-var">RawSql.intercalate</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#comma"><span class="hs-identifier hs-var">RawSql.comma</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty ColumnName
+</span><a href="#local-6989586621679129222"><span class="hs-identifier hs-var">columns</span></a></span><span>
+</span><span id="line-159"></span><span>      </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#rightParen"><span class="hs-identifier hs-var">RawSql.rightParen</span></a></span><span>
+</span><span id="line-160"></span><span>
+</span><span id="line-161"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent if an index should be unique.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-166"></span><span class="hs-keyword">data</span><span> </span><span id="IndexUniqueness"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexUniqueness"><span class="hs-identifier hs-var">IndexUniqueness</span></a></span></span><span>
+</span><span id="line-167"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="UniqueIndex"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#UniqueIndex"><span class="hs-identifier hs-var">UniqueIndex</span></a></span></span><span>
+</span><span id="line-168"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="NonUniqueIndex"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#NonUniqueIndex"><span class="hs-identifier hs-var">NonUniqueIndex</span></a></span></span><span>
+</span><span id="line-169"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-170"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-171"></span><span>      </span><span id="local-6989586621679129228"><span id="local-6989586621679129230"><span class="annot"><span class="annottext">IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+(IndexUniqueness -&gt; IndexUniqueness -&gt; Bool)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; Bool)
+-&gt; Eq IndexUniqueness
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+== :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+$c/= :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+/= :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span>
+</span><span id="line-172"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-173"></span><span>      </span><span id="local-6989586621679129237"><span id="local-6989586621679129239"><span id="local-6989586621679129241"><span id="local-6989586621679129245"><span id="local-6989586621679129248"><span id="local-6989586621679129251"><span id="local-6989586621679129254"><span class="annot"><span class="annottext">Eq IndexUniqueness
+Eq IndexUniqueness
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; Ordering)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; Bool)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; Bool)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; Bool)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; Bool)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness)
+-&gt; (IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness)
+-&gt; Ord IndexUniqueness
+IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+IndexUniqueness -&gt; IndexUniqueness -&gt; Ordering
+IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness
+forall a.
+Eq a
+-&gt; (a -&gt; a -&gt; Ordering)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; Bool)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; (a -&gt; a -&gt; a)
+-&gt; Ord a
+$ccompare :: IndexUniqueness -&gt; IndexUniqueness -&gt; Ordering
+compare :: IndexUniqueness -&gt; IndexUniqueness -&gt; Ordering
+$c&lt; :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+&lt; :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+$c&lt;= :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+&lt;= :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+$c&gt; :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+&gt; :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+$c&gt;= :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+&gt;= :: IndexUniqueness -&gt; IndexUniqueness -&gt; Bool
+$cmax :: IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness
+max :: IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness
+$cmin :: IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness
+min :: IndexUniqueness -&gt; IndexUniqueness -&gt; IndexUniqueness
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Ord</span></span></span></span></span></span></span></span></span><span>
+</span><span id="line-174"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-175"></span><span>      </span><span id="local-6989586621679129258"><span id="local-6989586621679129260"><span id="local-6989586621679129264"><span class="annot"><span class="annottext">Int -&gt; IndexUniqueness -&gt; ShowS
+[IndexUniqueness] -&gt; ShowS
+IndexUniqueness -&gt; String
+(Int -&gt; IndexUniqueness -&gt; ShowS)
+-&gt; (IndexUniqueness -&gt; String)
+-&gt; ([IndexUniqueness] -&gt; ShowS)
+-&gt; Show IndexUniqueness
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; IndexUniqueness -&gt; ShowS
+showsPrec :: Int -&gt; IndexUniqueness -&gt; ShowS
+$cshow :: IndexUniqueness -&gt; String
+show :: IndexUniqueness -&gt; String
+$cshowList :: [IndexUniqueness] -&gt; ShowS
+showList :: [IndexUniqueness] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-176"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-177"></span><span>
+</span><span id="line-178"></span><span class="hs-comment">-- Internal helper</span><span>
+</span><span id="line-179"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#uniquenessToSql"><span class="hs-identifier hs-type">uniquenessToSql</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#IndexUniqueness"><span class="hs-identifier hs-type">IndexUniqueness</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-180"></span><span id="uniquenessToSql"><span class="annot"><span class="annottext">uniquenessToSql :: IndexUniqueness -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Expr.Index.html#uniquenessToSql"><span class="hs-identifier hs-var hs-var">uniquenessToSql</span></a></span></span><span> </span><span id="local-6989586621679129267"><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="#local-6989586621679129267"><span class="hs-identifier hs-var">uniqueness</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-181"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="#local-6989586621679129267"><span class="hs-identifier hs-var">uniqueness</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-182"></span><span>    </span><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="Orville.PostgreSQL.Expr.Index.html#UniqueIndex"><span class="hs-identifier hs-var">UniqueIndex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;UNIQUE &quot;</span></span><span>
+</span><span id="line-183"></span><span>    </span><span class="annot"><span class="annottext">IndexUniqueness
+</span><a href="Orville.PostgreSQL.Expr.Index.html#NonUniqueIndex"><span class="hs-identifier hs-var">NonUniqueIndex</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">RawSql
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-184"></span><span>
+</span><span id="line-185"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL &quot;DROP INDEX&quot; statement. E.G.
+
+&gt; DROP INDEX foo
+
+'DropIndexExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-196"></span><span class="hs-keyword">newtype</span><span> </span><span id="DropIndexExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#DropIndexExpr"><span class="hs-identifier hs-var">DropIndexExpr</span></a></span></span><span>
+</span><span id="line-197"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="DropIndexExpr"><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#DropIndexExpr"><span class="hs-identifier hs-var">DropIndexExpr</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-198"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-199"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-200"></span><span>      </span><span id="local-6989586621679129270"><span id="local-6989586621679129274"><span class="annot"><span class="annottext">RawSql -&gt; DropIndexExpr
+DropIndexExpr -&gt; RawSql
+(DropIndexExpr -&gt; RawSql)
+-&gt; (RawSql -&gt; DropIndexExpr) -&gt; SqlExpression DropIndexExpr
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: DropIndexExpr -&gt; RawSql
+toRawSql :: DropIndexExpr -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; DropIndexExpr
+unsafeFromRawSql :: RawSql -&gt; DropIndexExpr
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-201"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-202"></span><span>
+</span><span id="line-203"></span><span class="annot"><span class="hs-comment">{- |
+Construct a SQL DROP INDEX for a given 'IndexName'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-208"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#dropIndexExpr"><span class="hs-identifier hs-type">dropIndexExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.IndexName.html#IndexName"><span class="hs-identifier hs-type">IndexName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Index.html#DropIndexExpr"><span class="hs-identifier hs-type">DropIndexExpr</span></a></span><span>
+</span><span id="line-209"></span><span id="dropIndexExpr"><span class="annot"><span class="annottext">dropIndexExpr :: IndexName -&gt; DropIndexExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#dropIndexExpr"><span class="hs-identifier hs-var hs-var">dropIndexExpr</span></a></span></span><span> </span><span id="local-6989586621679129278"><span class="annot"><span class="annottext">IndexName
+</span><a href="#local-6989586621679129278"><span class="hs-identifier hs-var">indexName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-210"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; DropIndexExpr
+</span><a href="Orville.PostgreSQL.Expr.Index.html#DropIndexExpr"><span class="hs-identifier hs-var">DropIndexExpr</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; DropIndexExpr) -&gt; RawSql -&gt; DropIndexExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-211"></span><span>    </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;DROP INDEX &quot;</span></span><span> </span><span class="annot"><span class="annottext">RawSql -&gt; RawSql -&gt; RawSql
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">IndexName -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">IndexName
+</span><a href="#local-6989586621679129278"><span class="hs-identifier hs-var">indexName</span></a></span><span>
+</span><span id="line-212"></span></pre></body></html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{- ORMOLU_DISABLE -}</span><span>
+</span><span id="line-2"></span><span class="hs-comment">{-
+  Disable formatting this comment so that fourmolu doesn't complain about
+  qualified do in the example code.
+-}</span><span>
+</span><span id="line-6"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+
+This module exports the 'Plan.bind' function as '&gt;&gt;=' so that it can be used in
+conjuction with the @QualifiedDo@ language extension to write plans using do
+syntax like so:
+
+@
+{-# LANGUAGE QualifiedDo #-}
+module MyModule where
+
+import qualified Orville.PostgreSQL.Plan.Syntax as PlanSyntax
+
+data FooFamily =
+  FooFamily
+    { foo :: Foo
+    , children :: [FooChildren]
+    , pets :: [FooPets]
+    }
+
+findFooFamily = PlanSyntax.do $
+  fooHeader &lt;- Plan.findOne fooTable fooIdField
+  fooChildren &lt;- Plan.findAll fooChildTable fooIdField
+  fooPets &lt;- Plan.findAll fooPetTable fooIdField
+
+  FooFamily
+    &lt;$&gt; Plan.use fooHeader
+    &lt;*&gt; Plan.use fooChildren
+    &lt;*&gt; Plan.use fooPets
+@
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-40"></span><span class="hs-comment">{- ORMOLU_ENABLE -}</span><span>
+</span><span id="line-41"></span><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Plan.Syntax</span><span>
+</span><span id="line-49"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.Syntax.html#%3E%3E%3D"><span class="hs-operator">(&gt;&gt;=)</span></a></span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Prelude</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.html"><span class="hs-identifier">Orville.PostgreSQL.Plan</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Plan</span></span><span>
+</span><span id="line-56"></span><span>
+</span><span id="line-57"></span><span class="annot"><span class="hs-comment">{- |
+  An operator alias of 'Plan.bind' so that it can be used with @QualifiedDo@.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-62"></span><span id="local-6989586621679139884"><span id="local-6989586621679139885"><span id="local-6989586621679139886"><span id="local-6989586621679139889"><span class="annot"><a href="Orville.PostgreSQL.Plan.Syntax.html#%3E%3E%3D"><span class="hs-operator hs-type">(&gt;&gt;=)</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-63"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Plan.html#Plan"><span class="hs-identifier hs-type">Plan.Plan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139884"><span class="hs-identifier hs-type">scope</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139885"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139886"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Plan.html#Planned"><span class="hs-identifier hs-type">Plan.Planned</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139884"><span class="hs-identifier hs-type">scope</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139885"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139886"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Plan.html#Plan"><span class="hs-identifier hs-type">Plan.Plan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139884"><span class="hs-identifier hs-type">scope</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139885"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139889"><span class="hs-identifier hs-type">result</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-65"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Plan.html#Plan"><span class="hs-identifier hs-type">Plan.Plan</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139884"><span class="hs-identifier hs-type">scope</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139885"><span class="hs-identifier hs-type">param</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679139889"><span class="hs-identifier hs-type">result</span></a></span></span></span></span></span><span>
+</span><span id="line-66"></span><span id="%3E%3E%3D"><span class="annot"><span class="annottext">&gt;&gt;= :: forall scope param a result.
+Plan scope param a
+-&gt; (Planned scope param a -&gt; Plan scope param result)
+-&gt; Plan scope param result
+</span><a href="Orville.PostgreSQL.Plan.Syntax.html#%3E%3E%3D"><span class="hs-operator hs-var hs-var">(&gt;&gt;=)</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Plan scope param a
+-&gt; (Planned scope param a -&gt; Plan scope param result)
+-&gt; Plan scope param result
+forall scope param a result.
+Plan scope param a
+-&gt; (Planned scope param a -&gt; Plan scope param result)
+-&gt; Plan scope param result
+</span><a href="Orville.PostgreSQL.Plan.html#bind"><span class="hs-identifier hs-var">Plan.bind</span></a></span><span>
+</span><span id="line-67"></span></pre></body></html>

@@ -1,0 +1,1139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-3"></span><span>
+</span><span id="line-4"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Schema.TableDefinition</span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier">TableDefinition</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier">HasKey</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#NoKey"><span class="hs-identifier">NoKey</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinition"><span class="hs-identifier">mkTableDefinition</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinitionWithoutKey"><span class="hs-identifier">mkTableDefinitionWithoutKey</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#dropColumns"><span class="hs-identifier">dropColumns</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#columnsToDrop"><span class="hs-identifier">columnsToDrop</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableIdentifier"><span class="hs-identifier">tableIdentifier</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier">tableName</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier">setTableSchema</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraints"><span class="hs-identifier">tableConstraints</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#addTableConstraints"><span class="hs-identifier">addTableConstraints</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableIndexes"><span class="hs-identifier">tableIndexes</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#addTableIndexes"><span class="hs-identifier">addTableIndexes</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tablePrimaryKey"><span class="hs-identifier">tablePrimaryKey</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier">tableMarshaller</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mapTableMarshaller"><span class="hs-identifier">mapTableMarshaller</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertExpr"><span class="hs-identifier">mkInsertExpr</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkCreateTableExpr"><span class="hs-identifier">mkCreateTableExpr</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableColumnDefinitions"><span class="hs-identifier">mkTableColumnDefinitions</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTablePrimaryKeyExpr"><span class="hs-identifier">mkTablePrimaryKeyExpr</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertColumnList"><span class="hs-identifier">mkInsertColumnList</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertSource"><span class="hs-identifier">mkInsertSource</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableReturningClause"><span class="hs-identifier">mkTableReturningClause</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.List.NonEmpty</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">NonEmpty</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">toList</span></span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Set</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Set</span></span><span>
+</span><span id="line-42"></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.ReturningOption</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier">ReturningOption</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithReturning"><span class="hs-identifier">WithReturning</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithoutReturning"><span class="hs-identifier">WithoutReturning</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Internal.IndexDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexDefinition"><span class="hs-identifier">IndexDefinition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexMigrationKey"><span class="hs-identifier">IndexMigrationKey</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#indexMigrationKey"><span class="hs-identifier">indexMigrationKey</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall.FieldDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldColumnDefinition"><span class="hs-identifier">fieldColumnDefinition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldColumnName"><span class="hs-identifier">fieldColumnName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldValueToSqlValue"><span class="hs-identifier">fieldValueToSqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall.SqlMarshaller</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier">AnnotatedSqlMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#MarshallerField"><span class="hs-identifier">MarshallerField</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#Natural"><span class="hs-identifier">Natural</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#Synthetic"><span class="hs-identifier">Synthetic</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#ReadOnlyColumnOption"><span class="hs-identifier">ReadOnlyColumnOption</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#ExcludeReadOnlyColumns"><span class="hs-identifier">ExcludeReadOnlyColumns</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#IncludeReadOnlyColumns"><span class="hs-identifier">IncludeReadOnlyColumns</span></a></span><span class="hs-special">)</span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier">SqlMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#annotateSqlMarshaller"><span class="hs-identifier">annotateSqlMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#annotateSqlMarshallerEmptyAnnotation"><span class="hs-identifier">annotateSqlMarshallerEmptyAnnotation</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#collectFromField"><span class="hs-identifier">collectFromField</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#foldMarshallerFields"><span class="hs-identifier">foldMarshallerFields</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#mapSqlMarshaller"><span class="hs-identifier">mapSqlMarshaller</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallerDerivedColumns"><span class="hs-identifier">marshallerDerivedColumns</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallerTableConstraints"><span class="hs-identifier">marshallerTableConstraints</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier">unannotatedSqlMarshaller</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier">SqlValue</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.ConstraintDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier">ConstraintDefinition</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier">TableConstraints</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#addConstraint"><span class="hs-identifier">addConstraint</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintSqlExpr"><span class="hs-identifier">constraintSqlExpr</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#emptyTableConstraints"><span class="hs-identifier">emptyTableConstraints</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintDefinitions"><span class="hs-identifier">tableConstraintDefinitions</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.PrimaryKey</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#PrimaryKey"><span class="hs-identifier">PrimaryKey</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#mkPrimaryKeyExpr"><span class="hs-identifier">mkPrimaryKeyExpr</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#primaryKeyFieldNames"><span class="hs-identifier">primaryKeyFieldNames</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html"><span class="hs-identifier">Orville.PostgreSQL.Schema.TableIdentifier</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier">TableIdentifier</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#setTableIdSchema"><span class="hs-identifier">setTableIdSchema</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdQualifiedName"><span class="hs-identifier">tableIdQualifiedName</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#unqualifiedNameToTableId"><span class="hs-identifier">unqualifiedNameToTableId</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-52"></span><span>
+</span><span id="line-53"></span><span class="annot"><span class="hs-comment">{- |
+  Contains the definition of a SQL table for Orville to use for generating
+  queries and marshalling Haskell values to and from the database.
+
+  * 'key' is a Haskell type used to indicate whether the table has a primary
+    key and what the type of the key is if so. See 'HasKey' and 'NoKey' for
+    values to be used in this parameter.
+
+  * 'writeEntity' is the Haskell type for values that Orville will write
+    to the database for you (i.e. both inserts and updates)
+
+  * 'readEntity' is the Haskell type for values that Orville will decode
+    from the result set when entities are queried from this table.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-69"></span><span class="hs-keyword">data</span><span> </span><span id="TableDefinition"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-var">TableDefinition</span></a></span></span><span> </span><span id="local-6989586621679136419"><span class="annot"><a href="#local-6989586621679136419"><span class="hs-identifier hs-type">key</span></a></span></span><span> </span><span id="local-6989586621679136420"><span class="annot"><a href="#local-6989586621679136420"><span class="hs-identifier hs-type">writeEntity</span></a></span></span><span> </span><span id="local-6989586621679136421"><span class="annot"><a href="#local-6989586621679136421"><span class="hs-identifier hs-type">readEntity</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="TableDefinition"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-var">TableDefinition</span></a></span></span><span>
+</span><span id="line-70"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="i_tableIdentifier"><span class="annot"><span class="annottext">forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var hs-var">i_tableIdentifier</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_tablePrimaryKey"><span class="annot"><span class="annottext">forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TablePrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tablePrimaryKey"><span class="hs-identifier hs-var hs-var">i_tablePrimaryKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TablePrimaryKey"><span class="hs-identifier hs-type">TablePrimaryKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136419"><span class="hs-identifier hs-type">key</span></a></span><span>
+</span><span id="line-72"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_tableMarshaller"><span class="annot"><span class="annottext">forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var hs-var">i_tableMarshaller</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136420"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136421"><span class="hs-identifier hs-type">readEntity</span></a></span><span>
+</span><span id="line-73"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_tableColumnsToDrop"><span class="annot"><span class="annottext">forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableColumnsToDrop"><span class="hs-identifier hs-var hs-var">i_tableColumnsToDrop</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Set.Set</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-74"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_tableConstraintsFromTable"><span class="annot"><span class="annottext">forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableConstraintsFromTable"><span class="hs-identifier hs-var hs-var">i_tableConstraintsFromTable</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span><span>
+</span><span id="line-75"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="i_tableIndexes"><span class="annot"><span class="annottext">forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIndexes"><span class="hs-identifier hs-var hs-var">i_tableIndexes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexMigrationKey"><span class="hs-identifier hs-type">IndexMigrationKey</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexDefinition"><span class="hs-identifier hs-type">IndexDefinition</span></a></span><span>
+</span><span id="line-76"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><span class="hs-comment">{- |
+  'HasKey' is a type with no constructors. It is used only at the type level
+  as the @key@ parameter to the 'TableDefinition' type to indicate that the
+  the table has a primary key and what the Haskell type of the primary key is.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-85"></span><span class="hs-keyword">data</span><span> </span><span id="HasKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-var">HasKey</span></a></span></span><span> </span><span id="local-6989586621679136716"><span class="annot"><a href="#local-6989586621679136716"><span class="hs-identifier hs-type">key</span></a></span></span><span>
+</span><span id="line-86"></span><span>
+</span><span id="line-87"></span><span class="annot"><span class="hs-comment">{- |
+  'NoKey' is a type with no constructors. It is used only at the type level
+  as the @key@ parameter to the 'TableDefinition' type to indicate that the
+  the table does not have a primary key.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-94"></span><span class="hs-keyword">data</span><span> </span><span id="NoKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#NoKey"><span class="hs-identifier hs-var">NoKey</span></a></span></span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: Use at the value level to track whether the 'TableDefinition' has a
+  primary key. The @key@ parameter matches the @key@ parameter of
+  'TableDefinition'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-103"></span><span class="hs-keyword">data</span><span> </span><span id="TablePrimaryKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TablePrimaryKey"><span class="hs-identifier hs-var">TablePrimaryKey</span></a></span></span><span> </span><span id="local-6989586621679136717"><span class="annot"><a href="#local-6989586621679136717"><span class="hs-identifier hs-type">key</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-104"></span><span>  </span><span id="local-6989586621679136718"><span id="TableHasKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasKey"><span class="hs-identifier hs-var">TableHasKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#PrimaryKey"><span class="hs-identifier hs-type">PrimaryKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136718"><span class="hs-identifier hs-type">keyType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TablePrimaryKey"><span class="hs-identifier hs-type">TablePrimaryKey</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-type">HasKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136718"><span class="hs-identifier hs-type">keyType</span></a></span><span class="hs-special">)</span></span><span>
+</span><span id="line-105"></span><span>  </span><span id="TableHasNoKey"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasNoKey"><span class="hs-identifier hs-var">TableHasNoKey</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TablePrimaryKey"><span class="hs-identifier hs-type">TablePrimaryKey</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#NoKey"><span class="hs-identifier hs-type">NoKey</span></a></span><span>
+</span><span id="line-106"></span><span>
+</span><span id="line-107"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a new 'TableDefinition' with the basic fields required for
+  operation. For convenience, this function accepts a 'PrimaryKey' even though
+  this is not required for all Orville operations to work. If you need to
+  create a table without any primary key, see 'mkTableDefinitionWithoutKey'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-115"></span><span id="local-6989586621679136449"><span id="local-6989586621679136451"><span id="local-6989586621679136452"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinition"><span class="hs-identifier hs-type">mkTableDefinition</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-116"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The name of the table</span></span><span>
+</span><span id="line-117"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-118"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Definition of the table's primary key</span></span><span>
+</span><span id="line-119"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#PrimaryKey"><span class="hs-identifier hs-type">PrimaryKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136449"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-120"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A 'SqlMarshaller' to marshall table entities to and from the database</span></span><span>
+</span><span id="line-121"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136451"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136452"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-122"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-type">HasKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136449"><span class="hs-identifier hs-type">key</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679136451"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136452"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-123"></span><span id="mkTableDefinition"><span class="annot"><span class="annottext">mkTableDefinition :: forall key writeEntity readEntity.
+String
+-&gt; PrimaryKey key
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition (HasKey key) writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinition"><span class="hs-identifier hs-var hs-var">mkTableDefinition</span></a></span></span><span> </span><span id="local-6989586621679136721"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679136721"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span id="local-6989586621679136722"><span class="annot"><span class="annottext">PrimaryKey key
+</span><a href="#local-6989586621679136722"><span class="hs-identifier hs-var">primaryKey</span></a></span></span><span> </span><span id="local-6989586621679136723"><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136723"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-124"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span>
+</span><span id="line-125"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableIdentifier :: TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var">i_tableIdentifier</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#unqualifiedNameToTableId"><span class="hs-identifier hs-var">unqualifiedNameToTableId</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679136721"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-126"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tablePrimaryKey :: TablePrimaryKey (HasKey key)
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tablePrimaryKey"><span class="hs-identifier hs-var">i_tablePrimaryKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">PrimaryKey key -&gt; TablePrimaryKey (HasKey key)
+forall keyType.
+PrimaryKey keyType -&gt; TablePrimaryKey (HasKey keyType)
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasKey"><span class="hs-identifier hs-var">TableHasKey</span></a></span><span> </span><span class="annot"><span class="annottext">PrimaryKey key
+</span><a href="#local-6989586621679136722"><span class="hs-identifier hs-var">primaryKey</span></a></span><span>
+</span><span id="line-127"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableMarshaller :: AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var">i_tableMarshaller</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[FieldName]
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall writeEntity readEntity.
+[FieldName]
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#annotateSqlMarshaller"><span class="hs-identifier hs-var">annotateSqlMarshaller</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NonEmpty FieldName -&gt; [FieldName]
+forall a. NonEmpty a -&gt; [a]
+</span><span class="hs-identifier hs-var">toList</span></span><span> </span><span class="annot"><span class="annottext">(NonEmpty FieldName -&gt; [FieldName])
+-&gt; NonEmpty FieldName -&gt; [FieldName]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PrimaryKey key -&gt; NonEmpty FieldName
+forall key. PrimaryKey key -&gt; NonEmpty FieldName
+</span><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#primaryKeyFieldNames"><span class="hs-identifier hs-var">primaryKeyFieldNames</span></a></span><span> </span><span class="annot"><span class="annottext">PrimaryKey key
+</span><a href="#local-6989586621679136722"><span class="hs-identifier hs-var">primaryKey</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136723"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-128"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableColumnsToDrop :: Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableColumnsToDrop"><span class="hs-identifier hs-var">i_tableColumnsToDrop</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set String
+forall a. Set a
+</span><span class="hs-identifier hs-var">Set.empty</span></span><span>
+</span><span id="line-129"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableConstraintsFromTable :: TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableConstraintsFromTable"><span class="hs-identifier hs-var">i_tableConstraintsFromTable</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#emptyTableConstraints"><span class="hs-identifier hs-var">emptyTableConstraints</span></a></span><span>
+</span><span id="line-130"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableIndexes :: Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIndexes"><span class="hs-identifier hs-var">i_tableIndexes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map IndexMigrationKey IndexDefinition
+forall k a. Map k a
+</span><span class="hs-identifier hs-var">Map.empty</span></span><span>
+</span><span id="line-131"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-132"></span><span>
+</span><span id="line-133"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs a new 'TableDefinition' with the minimal fields required for
+  operation. Note: tables created via this function will not have a primary
+  key. Certain Orville functions required a primary key. Attempting to call
+  functions requiring a primary key will fail to compile when using a table
+  that has no key.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-142"></span><span id="local-6989586621679136470"><span id="local-6989586621679136471"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinitionWithoutKey"><span class="hs-identifier hs-type">mkTableDefinitionWithoutKey</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-143"></span><span>  </span><span class="annot"><span class="hs-comment">-- | The name of the table</span></span><span>
+</span><span id="line-144"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-145"></span><span>  </span><span class="annot"><span class="hs-comment">-- | A 'SqlMarshaller' to marshall table entities to and from the database</span></span><span>
+</span><span id="line-146"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136470"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136471"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-147"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#NoKey"><span class="hs-identifier hs-type">NoKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136470"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136471"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span><span>
+</span><span id="line-148"></span><span id="mkTableDefinitionWithoutKey"><span class="annot"><span class="annottext">mkTableDefinitionWithoutKey :: forall writeEntity readEntity.
+String
+-&gt; SqlMarshaller writeEntity readEntity
+-&gt; TableDefinition NoKey writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableDefinitionWithoutKey"><span class="hs-identifier hs-var hs-var">mkTableDefinitionWithoutKey</span></a></span></span><span> </span><span id="local-6989586621679136726"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679136726"><span class="hs-identifier hs-var">name</span></a></span></span><span> </span><span id="local-6989586621679136727"><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136727"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-149"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span>
+</span><span id="line-150"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableIdentifier :: TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var">i_tableIdentifier</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#unqualifiedNameToTableId"><span class="hs-identifier hs-var">unqualifiedNameToTableId</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679136726"><span class="hs-identifier hs-var">name</span></a></span><span>
+</span><span id="line-151"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tablePrimaryKey :: TablePrimaryKey NoKey
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tablePrimaryKey"><span class="hs-identifier hs-var">i_tablePrimaryKey</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TablePrimaryKey NoKey
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasNoKey"><span class="hs-identifier hs-var">TableHasNoKey</span></a></span><span>
+</span><span id="line-152"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableMarshaller :: AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var">i_tableMarshaller</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#annotateSqlMarshallerEmptyAnnotation"><span class="hs-identifier hs-var">annotateSqlMarshallerEmptyAnnotation</span></a></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136727"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-153"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableColumnsToDrop :: Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableColumnsToDrop"><span class="hs-identifier hs-var">i_tableColumnsToDrop</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Set String
+forall a. Set a
+</span><span class="hs-identifier hs-var">Set.empty</span></span><span>
+</span><span id="line-154"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableConstraintsFromTable :: TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableConstraintsFromTable"><span class="hs-identifier hs-var">i_tableConstraintsFromTable</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#emptyTableConstraints"><span class="hs-identifier hs-var">emptyTableConstraints</span></a></span><span>
+</span><span id="line-155"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">i_tableIndexes :: Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIndexes"><span class="hs-identifier hs-var">i_tableIndexes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Map IndexMigrationKey IndexDefinition
+forall k a. Map k a
+</span><span class="hs-identifier hs-var">Map.empty</span></span><span>
+</span><span id="line-156"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-157"></span><span>
+</span><span id="line-158"></span><span class="annot"><span class="hs-comment">{- |
+  Annotates a 'TableDefinition' with a direction to drop columns if they are
+  found in the database. Orville does not drop columns during auto migration
+  unless they are explicitly requested to be dropped via 'dropColumns'.
+
+  If you remove a reference to a column from the table's 'SqlMarshaller'
+  without adding the column's name to 'dropColumns', Orville will operate as if
+  the column does not exist without actually dropping the column. This is often
+  useful if you're not sure you want to lose the data in the column, or if you
+  have zero down-time deployments, which requires the column not be referenced
+  by deployed code before it can be dropped.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-172"></span><span id="local-6989586621679136477"><span id="local-6989586621679136478"><span id="local-6989586621679136479"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#dropColumns"><span class="hs-identifier hs-type">dropColumns</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-173"></span><span>  </span><span class="annot"><span class="hs-comment">-- | Columns that should be dropped from the table</span></span><span>
+</span><span id="line-174"></span><span>  </span><span class="hs-special">[</span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-175"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136477"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136478"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136479"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-176"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136477"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136478"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136479"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-177"></span><span id="dropColumns"><span class="annot"><span class="annottext">dropColumns :: forall key writeEntity readEntity.
+[String]
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#dropColumns"><span class="hs-identifier hs-var hs-var">dropColumns</span></a></span></span><span> </span><span id="local-6989586621679136735"><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679136735"><span class="hs-identifier hs-var">columns</span></a></span></span><span> </span><span id="local-6989586621679136736"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136736"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-178"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136736"><span class="hs-identifier hs-var">tableDef</span></a></span><span>
+</span><span id="line-179"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableColumnsToDrop :: Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableColumnsToDrop"><span class="hs-identifier hs-var">i_tableColumnsToDrop</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Set String
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableColumnsToDrop"><span class="hs-identifier hs-var">i_tableColumnsToDrop</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136736"><span class="hs-identifier hs-var">tableDef</span></a></span><span> </span><span class="annot"><span class="annottext">Set String -&gt; Set String -&gt; Set String
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">[String] -&gt; Set String
+forall a. Ord a =&gt; [a] -&gt; Set a
+</span><span class="hs-identifier hs-var">Set.fromList</span></span><span> </span><span class="annot"><span class="annottext">[String]
+</span><a href="#local-6989586621679136735"><span class="hs-identifier hs-var">columns</span></a></span><span>
+</span><span id="line-180"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the set of columns that have be marked be dropped by 'dropColumns'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-187"></span><span id="local-6989586621679136738"><span id="local-6989586621679136739"><span id="local-6989586621679136740"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#columnsToDrop"><span class="hs-identifier hs-type">columnsToDrop</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136738"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136739"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136740"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Set.Set</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span></span></span></span><span>
+</span><span id="line-188"></span><span id="columnsToDrop"><span class="annot"><span class="annottext">columnsToDrop :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#columnsToDrop"><span class="hs-identifier hs-var hs-var">columnsToDrop</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-189"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Set String
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Set String
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableColumnsToDrop"><span class="hs-identifier hs-var">i_tableColumnsToDrop</span></a></span><span>
+</span><span id="line-190"></span><span>
+</span><span id="line-191"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the table's 'TableIdentifier'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-196"></span><span id="local-6989586621679136741"><span id="local-6989586621679136742"><span id="local-6989586621679136743"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableIdentifier"><span class="hs-identifier hs-type">tableIdentifier</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136741"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136742"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136743"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#TableIdentifier"><span class="hs-identifier hs-type">TableIdentifier</span></a></span></span></span></span><span>
+</span><span id="line-197"></span><span id="tableIdentifier"><span class="annot"><span class="annottext">tableIdentifier :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableIdentifier"><span class="hs-identifier hs-var hs-var">tableIdentifier</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-198"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var">i_tableIdentifier</span></a></span><span>
+</span><span id="line-199"></span><span>
+</span><span id="line-200"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the table's name as an expression that can be used to build SQL
+  statements. If the table has a schema name set, the name will be qualified
+  with it.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-207"></span><span id="local-6989586621679136493"><span id="local-6989586621679136494"><span id="local-6989586621679136495"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier hs-type">tableName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136493"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136494"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136495"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.Qualified.html#Qualified"><span class="hs-identifier hs-type">Expr.Qualified</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.TableName.html#TableName"><span class="hs-identifier hs-type">Expr.TableName</span></a></span></span></span></span><span>
+</span><span id="line-208"></span><span id="tableName"><span class="annot"><span class="annottext">tableName :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier hs-var hs-var">tableName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-209"></span><span>  </span><span class="annot"><span class="annottext">TableIdentifier -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#tableIdQualifiedName"><span class="hs-identifier hs-var">tableIdQualifiedName</span></a></span><span> </span><span class="annot"><span class="annottext">(TableIdentifier -&gt; Qualified TableName)
+-&gt; (TableDefinition key writeEntity readEntity -&gt; TableIdentifier)
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Qualified TableName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var">i_tableIdentifier</span></a></span><span>
+</span><span id="line-210"></span><span>
+</span><span id="line-211"></span><span class="annot"><span class="hs-comment">{- |
+  Sets the table's schema to the name in the given string, which will be
+  treated as a SQL identifier. If a table has a schema name set, it will be
+  included as a qualified on the table name for all queries involving the
+  table.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-219"></span><span id="local-6989586621679136504"><span id="local-6989586621679136505"><span id="local-6989586621679136506"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-type">setTableSchema</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-220"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-221"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136504"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136505"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136506"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-222"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136504"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136505"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136506"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-223"></span><span id="setTableSchema"><span class="annot"><span class="annottext">setTableSchema :: forall key writeEntity readEntity.
+String
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#setTableSchema"><span class="hs-identifier hs-var hs-var">setTableSchema</span></a></span></span><span> </span><span id="local-6989586621679136745"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679136745"><span class="hs-identifier hs-var">schemaName</span></a></span></span><span> </span><span id="local-6989586621679136746"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136746"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-224"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136746"><span class="hs-identifier hs-var">tableDef</span></a></span><span>
+</span><span id="line-225"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableIdentifier :: TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var">i_tableIdentifier</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">String -&gt; TableIdentifier -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableIdentifier.html#setTableIdSchema"><span class="hs-identifier hs-var">setTableIdSchema</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679136745"><span class="hs-identifier hs-var">schemaName</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableIdentifier
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIdentifier"><span class="hs-identifier hs-var">i_tableIdentifier</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136746"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-226"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-227"></span><span>
+</span><span id="line-228"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves all the table constraints that have been added to the table either
+  via 'addTableConstraints' or that are found on 'FieldDefinition's included
+  with this table's 'SqlMarshaller'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-235"></span><span id="local-6989586621679136747"><span id="local-6989586621679136748"><span id="local-6989586621679136749"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraints"><span class="hs-identifier hs-type">tableConstraints</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-236"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136747"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136748"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136749"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-237"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span></span></span></span><span>
+</span><span id="line-238"></span><span id="tableConstraints"><span class="annot"><span class="annottext">tableConstraints :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraints"><span class="hs-identifier hs-var hs-var">tableConstraints</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-239"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableConstraints
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraintsFromMarshaller"><span class="hs-identifier hs-var">tableConstraintsFromMarshaller</span></a></span><span>
+</span><span id="line-240"></span><span>    </span><span class="annot"><span class="annottext">(TableDefinition key writeEntity readEntity -&gt; TableConstraints)
+-&gt; (TableDefinition key writeEntity readEntity -&gt; TableConstraints)
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableConstraints
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableConstraints
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraintsFromTable"><span class="hs-identifier hs-var">tableConstraintsFromTable</span></a></span><span>
+</span><span id="line-241"></span><span>
+</span><span id="line-242"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves all the table constraints that have been added to the table via
+  'addTableConstraints'. This does NOT include any table constraints from the
+  table's 'SqlMarshaller'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-249"></span><span id="local-6989586621679136756"><span id="local-6989586621679136757"><span id="local-6989586621679136758"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraintsFromTable"><span class="hs-identifier hs-type">tableConstraintsFromTable</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-250"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136756"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136757"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136758"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-251"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span></span></span></span><span>
+</span><span id="line-252"></span><span id="tableConstraintsFromTable"><span class="annot"><span class="annottext">tableConstraintsFromTable :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraintsFromTable"><span class="hs-identifier hs-var hs-var">tableConstraintsFromTable</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-253"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableConstraints
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableConstraintsFromTable"><span class="hs-identifier hs-var">i_tableConstraintsFromTable</span></a></span><span>
+</span><span id="line-254"></span><span>
+</span><span id="line-255"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves all the table constraints that were included in the table's
+  'SqlMarsheller' when it was created. This does NOT include any table
+  constraints add via 'addTableConstraints'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-262"></span><span id="local-6989586621679136759"><span id="local-6989586621679136760"><span id="local-6989586621679136761"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraintsFromMarshaller"><span class="hs-identifier hs-type">tableConstraintsFromMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-263"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136759"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136760"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136761"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-264"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#TableConstraints"><span class="hs-identifier hs-type">TableConstraints</span></a></span></span></span></span><span>
+</span><span id="line-265"></span><span id="tableConstraintsFromMarshaller"><span class="annot"><span class="annottext">tableConstraintsFromMarshaller :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraintsFromMarshaller"><span class="hs-identifier hs-var hs-var">tableConstraintsFromMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-266"></span><span>  </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity -&gt; TableConstraints
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallerTableConstraints"><span class="hs-identifier hs-var">marshallerTableConstraints</span></a></span><span>
+</span><span id="line-267"></span><span>    </span><span class="annot"><span class="annottext">(SqlMarshaller writeEntity readEntity -&gt; TableConstraints)
+-&gt; (TableDefinition key writeEntity readEntity
+    -&gt; SqlMarshaller writeEntity readEntity)
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableConstraints
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier hs-var">unannotatedSqlMarshaller</span></a></span><span>
+</span><span id="line-268"></span><span>    </span><span class="annot"><span class="annottext">(AnnotatedSqlMarshaller writeEntity readEntity
+ -&gt; SqlMarshaller writeEntity readEntity)
+-&gt; (TableDefinition key writeEntity readEntity
+    -&gt; AnnotatedSqlMarshaller writeEntity readEntity)
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var">i_tableMarshaller</span></a></span><span>
+</span><span id="line-269"></span><span>
+</span><span id="line-270"></span><span class="annot"><span class="hs-comment">{- |
+  Adds the given table constraints to the table definition. It's also possible
+  to add constraints that apply to only one column adding them to
+  the 'FieldDefinition's that are included in the table's 'SqlMarshaller'.
+
+  If you wish to constrain multiple columns with a single constraint (e.g. a
+  multi-column unique constraint), you must use 'addTableConstraints'.
+
+  Note: If multiple constraints are added with the same
+  'ConstraintMigrationKey', only the last one that is added will be part of the
+  'TableDefinition'. Any previously added constraint with the same key is
+  replaced by the new one.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-285"></span><span id="local-6989586621679136526"><span id="local-6989586621679136527"><span id="local-6989586621679136528"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#addTableConstraints"><span class="hs-identifier hs-type">addTableConstraints</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-286"></span><span>  </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#ConstraintDefinition"><span class="hs-identifier hs-type">ConstraintDefinition</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-287"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136526"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136527"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136528"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-288"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136526"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136527"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136528"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-289"></span><span id="addTableConstraints"><span class="annot"><span class="annottext">addTableConstraints :: forall key writeEntity readEntity.
+[ConstraintDefinition]
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#addTableConstraints"><span class="hs-identifier hs-var hs-var">addTableConstraints</span></a></span></span><span> </span><span id="local-6989586621679136764"><span class="annot"><span class="annottext">[ConstraintDefinition]
+</span><a href="#local-6989586621679136764"><span class="hs-identifier hs-var">constraintDefs</span></a></span></span><span> </span><span id="local-6989586621679136765"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136765"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-290"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136765"><span class="hs-identifier hs-var">tableDef</span></a></span><span>
+</span><span id="line-291"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableConstraintsFromTable :: TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableConstraintsFromTable"><span class="hs-identifier hs-var">i_tableConstraintsFromTable</span></a></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-292"></span><span>        </span><span class="annot"><span class="annottext">(ConstraintDefinition -&gt; TableConstraints -&gt; TableConstraints)
+-&gt; TableConstraints -&gt; [ConstraintDefinition] -&gt; TableConstraints
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span>
+</span><span id="line-293"></span><span>          </span><span class="annot"><span class="annottext">ConstraintDefinition -&gt; TableConstraints -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#addConstraint"><span class="hs-identifier hs-var">addConstraint</span></a></span><span>
+</span><span id="line-294"></span><span>          </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableConstraints
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableConstraintsFromTable"><span class="hs-identifier hs-var">i_tableConstraintsFromTable</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136765"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-295"></span><span>          </span><span class="annot"><span class="annottext">[ConstraintDefinition]
+</span><a href="#local-6989586621679136764"><span class="hs-identifier hs-var">constraintDefs</span></a></span><span>
+</span><span id="line-296"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-297"></span><span>
+</span><span id="line-298"></span><span class="annot"><span class="hs-comment">{- |
+  Retrieves all the table indexes that have been added to the table via
+  'addTableIndexes'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-304"></span><span id="local-6989586621679136767"><span id="local-6989586621679136768"><span id="local-6989586621679136769"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableIndexes"><span class="hs-identifier hs-type">tableIndexes</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-305"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136767"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136768"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136769"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-306"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Map.Map</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexMigrationKey"><span class="hs-identifier hs-type">IndexMigrationKey</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexDefinition"><span class="hs-identifier hs-type">IndexDefinition</span></a></span></span></span></span><span>
+</span><span id="line-307"></span><span id="tableIndexes"><span class="annot"><span class="annottext">tableIndexes :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableIndexes"><span class="hs-identifier hs-var hs-var">tableIndexes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-308"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; Map IndexMigrationKey IndexDefinition
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIndexes"><span class="hs-identifier hs-var">i_tableIndexes</span></a></span><span>
+</span><span id="line-309"></span><span>
+</span><span id="line-310"></span><span class="annot"><span class="hs-comment">{- |
+  Adds the given table indexes to the table definition.
+
+  Note: If multiple indexes are added with the same 'IndexMigrationKey', only
+  the last one that is added will be part of the 'TableDefinition'. Any
+  previously added index with the same key is replaced by the new one.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-319"></span><span id="local-6989586621679136538"><span id="local-6989586621679136539"><span id="local-6989586621679136540"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#addTableIndexes"><span class="hs-identifier hs-type">addTableIndexes</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-320"></span><span>  </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#IndexDefinition"><span class="hs-identifier hs-type">IndexDefinition</span></a></span><span class="hs-special">]</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-321"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136538"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136539"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136540"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-322"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136538"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136539"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136540"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-323"></span><span id="addTableIndexes"><span class="annot"><span class="annottext">addTableIndexes :: forall key writeEntity readEntity.
+[IndexDefinition]
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; TableDefinition key writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#addTableIndexes"><span class="hs-identifier hs-var hs-var">addTableIndexes</span></a></span></span><span> </span><span id="local-6989586621679136771"><span class="annot"><span class="annottext">[IndexDefinition]
+</span><a href="#local-6989586621679136771"><span class="hs-identifier hs-var">indexDefs</span></a></span></span><span> </span><span id="local-6989586621679136772"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136772"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-324"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-325"></span><span>    </span><span id="local-6989586621679136775"><span class="annot"><span class="annottext">addIndex :: IndexDefinition
+-&gt; Map IndexMigrationKey IndexDefinition
+-&gt; Map IndexMigrationKey IndexDefinition
+</span><a href="#local-6989586621679136775"><span class="hs-identifier hs-var hs-var">addIndex</span></a></span></span><span> </span><span id="local-6989586621679136776"><span class="annot"><span class="annottext">IndexDefinition
+</span><a href="#local-6989586621679136776"><span class="hs-identifier hs-var">index</span></a></span></span><span> </span><span id="local-6989586621679136777"><span class="annot"><span class="annottext">Map IndexMigrationKey IndexDefinition
+</span><a href="#local-6989586621679136777"><span class="hs-identifier hs-var">indexMap</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-326"></span><span>      </span><span class="annot"><span class="annottext">IndexMigrationKey
+-&gt; IndexDefinition
+-&gt; Map IndexMigrationKey IndexDefinition
+-&gt; Map IndexMigrationKey IndexDefinition
+forall k a. Ord k =&gt; k -&gt; a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.insert</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IndexDefinition -&gt; IndexMigrationKey
+</span><a href="Orville.PostgreSQL.Internal.IndexDefinition.html#indexMigrationKey"><span class="hs-identifier hs-var">indexMigrationKey</span></a></span><span> </span><span class="annot"><span class="annottext">IndexDefinition
+</span><a href="#local-6989586621679136776"><span class="hs-identifier hs-var">index</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">IndexDefinition
+</span><a href="#local-6989586621679136776"><span class="hs-identifier hs-var">index</span></a></span><span> </span><span class="annot"><span class="annottext">Map IndexMigrationKey IndexDefinition
+</span><a href="#local-6989586621679136777"><span class="hs-identifier hs-var">indexMap</span></a></span><span>
+</span><span id="line-327"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-328"></span><span>    </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136772"><span class="hs-identifier hs-var">tableDef</span></a></span><span>
+</span><span id="line-329"></span><span>      </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">i_tableIndexes :: Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIndexes"><span class="hs-identifier hs-var">i_tableIndexes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(IndexDefinition
+ -&gt; Map IndexMigrationKey IndexDefinition
+ -&gt; Map IndexMigrationKey IndexDefinition)
+-&gt; Map IndexMigrationKey IndexDefinition
+-&gt; [IndexDefinition]
+-&gt; Map IndexMigrationKey IndexDefinition
+forall a b. (a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b
+forall (t :: * -&gt; *) a b.
+Foldable t =&gt;
+(a -&gt; b -&gt; b) -&gt; b -&gt; t a -&gt; b
+</span><span class="hs-identifier hs-var">foldr</span></span><span> </span><span class="annot"><span class="annottext">IndexDefinition
+-&gt; Map IndexMigrationKey IndexDefinition
+-&gt; Map IndexMigrationKey IndexDefinition
+</span><a href="#local-6989586621679136775"><span class="hs-identifier hs-var">addIndex</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; Map IndexMigrationKey IndexDefinition
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; Map IndexMigrationKey IndexDefinition
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableIndexes"><span class="hs-identifier hs-var">i_tableIndexes</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136772"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[IndexDefinition]
+</span><a href="#local-6989586621679136771"><span class="hs-identifier hs-var">indexDefs</span></a></span><span>
+</span><span id="line-330"></span><span>      </span><span class="hs-special">}</span><span>
+</span><span id="line-331"></span><span>
+</span><span id="line-332"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-337"></span><span id="local-6989586621679136546"><span id="local-6989586621679136547"><span id="local-6989586621679136548"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tablePrimaryKey"><span class="hs-identifier hs-type">tablePrimaryKey</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#HasKey"><span class="hs-identifier hs-type">HasKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136546"><span class="hs-identifier hs-type">key</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><a href="#local-6989586621679136547"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136548"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#PrimaryKey"><span class="hs-identifier hs-type">PrimaryKey</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136546"><span class="hs-identifier hs-type">key</span></a></span></span></span></span><span>
+</span><span id="line-338"></span><span id="tablePrimaryKey"><span class="annot"><span class="annottext">tablePrimaryKey :: forall key writeEntity readEntity.
+TableDefinition (HasKey key) writeEntity readEntity
+-&gt; PrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tablePrimaryKey"><span class="hs-identifier hs-var hs-var">tablePrimaryKey</span></a></span></span><span> </span><span id="local-6989586621679136779"><span class="annot"><span class="annottext">TableDefinition (HasKey key) writeEntity readEntity
+</span><a href="#local-6989586621679136779"><span class="hs-identifier hs-var">def</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-339"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TableDefinition (HasKey key) writeEntity readEntity
+-&gt; TablePrimaryKey (HasKey key)
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TablePrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tablePrimaryKey"><span class="hs-identifier hs-var">i_tablePrimaryKey</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition (HasKey key) writeEntity readEntity
+</span><a href="#local-6989586621679136779"><span class="hs-identifier hs-var">def</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-340"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasKey"><span class="hs-identifier hs-type">TableHasKey</span></a></span><span> </span><span id="local-6989586621679136783"><span class="annot"><span class="annottext">PrimaryKey keyType
+</span><a href="#local-6989586621679136783"><span class="hs-identifier hs-var">primaryKey</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">PrimaryKey key
+PrimaryKey keyType
+</span><a href="#local-6989586621679136783"><span class="hs-identifier hs-var">primaryKey</span></a></span><span>
+</span><span id="line-341"></span><span>
+</span><span id="line-342"></span><span class="annot"><span class="hs-comment">{- |
+  Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-347"></span><span id="local-6989586621679136784"><span id="local-6989586621679136785"><span id="local-6989586621679136786"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-type">tableMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136784"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136785"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136786"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136785"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136786"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span></span><span>
+</span><span id="line-348"></span><span id="tableMarshaller"><span class="annot"><span class="annottext">tableMarshaller :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-var hs-var">tableMarshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var">i_tableMarshaller</span></a></span><span>
+</span><span id="line-349"></span><span>
+</span><span id="line-350"></span><span class="annot"><span class="hs-comment">{- |
+  Applies the provided function to the underlying 'SqlMarshaller' of the 'TableDefinition'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-355"></span><span id="local-6989586621679136556"><span id="local-6989586621679136557"><span id="local-6989586621679136558"><span id="local-6989586621679136559"><span id="local-6989586621679136560"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mapTableMarshaller"><span class="hs-identifier hs-type">mapTableMarshaller</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-356"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136556"><span class="hs-identifier hs-type">readEntityA</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136557"><span class="hs-identifier hs-type">writeEntityA</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136558"><span class="hs-identifier hs-type">readEntityB</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136559"><span class="hs-identifier hs-type">writeEntityB</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-357"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136560"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136556"><span class="hs-identifier hs-type">readEntityA</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136557"><span class="hs-identifier hs-type">writeEntityA</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-358"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136560"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136558"><span class="hs-identifier hs-type">readEntityB</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136559"><span class="hs-identifier hs-type">writeEntityB</span></a></span></span></span></span></span></span><span>
+</span><span id="line-359"></span><span id="mapTableMarshaller"><span class="annot"><span class="annottext">mapTableMarshaller :: forall readEntityA writeEntityA readEntityB writeEntityB key.
+(SqlMarshaller readEntityA writeEntityA
+ -&gt; SqlMarshaller readEntityB writeEntityB)
+-&gt; TableDefinition key readEntityA writeEntityA
+-&gt; TableDefinition key readEntityB writeEntityB
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mapTableMarshaller"><span class="hs-identifier hs-var hs-var">mapTableMarshaller</span></a></span></span><span> </span><span id="local-6989586621679136787"><span class="annot"><span class="annottext">SqlMarshaller readEntityA writeEntityA
+-&gt; SqlMarshaller readEntityB writeEntityB
+</span><a href="#local-6989586621679136787"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621679136788"><span class="annot"><span class="annottext">TableDefinition key readEntityA writeEntityA
+</span><a href="#local-6989586621679136788"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-360"></span><span>  </span><span class="annot"><span class="annottext">TableDefinition key readEntityA writeEntityA
+</span><a href="#local-6989586621679136788"><span class="hs-identifier hs-var">tableDef</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">i_tableMarshaller :: AnnotatedSqlMarshaller readEntityB writeEntityB
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var">i_tableMarshaller</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(SqlMarshaller readEntityA writeEntityA
+ -&gt; SqlMarshaller readEntityB writeEntityB)
+-&gt; AnnotatedSqlMarshaller readEntityA writeEntityA
+-&gt; AnnotatedSqlMarshaller readEntityB writeEntityB
+forall readEntityA writeEntityA readEntityB writeEntityB.
+(SqlMarshaller readEntityA writeEntityA
+ -&gt; SqlMarshaller readEntityB writeEntityB)
+-&gt; AnnotatedSqlMarshaller readEntityA writeEntityA
+-&gt; AnnotatedSqlMarshaller readEntityB writeEntityB
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#mapSqlMarshaller"><span class="hs-identifier hs-var">mapSqlMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller readEntityA writeEntityA
+-&gt; SqlMarshaller readEntityB writeEntityB
+</span><a href="#local-6989586621679136787"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(AnnotatedSqlMarshaller readEntityA writeEntityA
+ -&gt; AnnotatedSqlMarshaller readEntityB writeEntityB)
+-&gt; AnnotatedSqlMarshaller readEntityA writeEntityA
+-&gt; AnnotatedSqlMarshaller readEntityB writeEntityB
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key readEntityA writeEntityA
+-&gt; AnnotatedSqlMarshaller readEntityA writeEntityA
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tableMarshaller"><span class="hs-identifier hs-var">i_tableMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key readEntityA writeEntityA
+</span><a href="#local-6989586621679136788"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-361"></span><span>
+</span><span id="line-362"></span><span class="annot"><span class="hs-comment">{- |
+  Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the
+  given 'TableDefinition' when it is executed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-368"></span><span id="local-6989586621679136570"><span id="local-6989586621679136571"><span id="local-6989586621679136572"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkCreateTableExpr"><span class="hs-identifier hs-type">mkCreateTableExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-369"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136570"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136571"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136572"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-370"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableDefinition.html#CreateTableExpr"><span class="hs-identifier hs-type">Expr.CreateTableExpr</span></a></span></span></span></span><span>
+</span><span id="line-371"></span><span id="mkCreateTableExpr"><span class="annot"><span class="annottext">mkCreateTableExpr :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; CreateTableExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkCreateTableExpr"><span class="hs-identifier hs-var hs-var">mkCreateTableExpr</span></a></span></span><span> </span><span id="local-6989586621679136789"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136789"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-372"></span><span>  </span><span class="annot"><span class="annottext">Qualified TableName
+-&gt; [ColumnDefinition]
+-&gt; Maybe PrimaryKeyExpr
+-&gt; [TableConstraint]
+-&gt; CreateTableExpr
+</span><a href="Orville.PostgreSQL.Expr.TableDefinition.html#createTableExpr"><span class="hs-identifier hs-var">Expr.createTableExpr</span></a></span><span>
+</span><span id="line-373"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier hs-var">tableName</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136789"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-374"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; [ColumnDefinition]
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; [ColumnDefinition]
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableColumnDefinitions"><span class="hs-identifier hs-var">mkTableColumnDefinitions</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136789"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-375"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Maybe PrimaryKeyExpr
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Maybe PrimaryKeyExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTablePrimaryKeyExpr"><span class="hs-identifier hs-var">mkTablePrimaryKeyExpr</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136789"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-376"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(ConstraintDefinition -&gt; TableConstraint)
+-&gt; [ConstraintDefinition] -&gt; [TableConstraint]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">ConstraintDefinition -&gt; TableConstraint
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#constraintSqlExpr"><span class="hs-identifier hs-var">constraintSqlExpr</span></a></span><span> </span><span class="annot"><span class="annottext">([ConstraintDefinition] -&gt; [TableConstraint])
+-&gt; (TableDefinition key writeEntity readEntity
+    -&gt; [ConstraintDefinition])
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; [TableConstraint]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableConstraints -&gt; [ConstraintDefinition]
+</span><a href="Orville.PostgreSQL.Schema.ConstraintDefinition.html#tableConstraintDefinitions"><span class="hs-identifier hs-var">tableConstraintDefinitions</span></a></span><span> </span><span class="annot"><span class="annottext">(TableConstraints -&gt; [ConstraintDefinition])
+-&gt; (TableDefinition key writeEntity readEntity -&gt; TableConstraints)
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; [ConstraintDefinition]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TableConstraints
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TableConstraints
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableConstraints"><span class="hs-identifier hs-var">tableConstraints</span></a></span><span> </span><span class="annot"><span class="annottext">(TableDefinition key writeEntity readEntity -&gt; [TableConstraint])
+-&gt; TableDefinition key writeEntity readEntity -&gt; [TableConstraint]
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136789"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-377"></span><span>
+</span><span id="line-378"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the 'Expr.ColumnDefinitions' for all the fields described by the
+  table definition's 'SqlMarshaller'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-384"></span><span id="local-6989586621679136580"><span id="local-6989586621679136581"><span id="local-6989586621679136582"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableColumnDefinitions"><span class="hs-identifier hs-type">mkTableColumnDefinitions</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-385"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136580"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136581"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136582"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-386"></span><span>  </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Expr.ColumnDefinition.html#ColumnDefinition"><span class="hs-identifier hs-type">Expr.ColumnDefinition</span></a></span><span class="hs-special">]</span></span></span></span><span>
+</span><span id="line-387"></span><span id="mkTableColumnDefinitions"><span class="annot"><span class="annottext">mkTableColumnDefinitions :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; [ColumnDefinition]
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableColumnDefinitions"><span class="hs-identifier hs-var hs-var">mkTableColumnDefinitions</span></a></span></span><span> </span><span id="local-6989586621679136791"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136791"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-388"></span><span>  </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+-&gt; [ColumnDefinition]
+-&gt; (MarshallerField writeEntity
+    -&gt; [ColumnDefinition] -&gt; [ColumnDefinition])
+-&gt; [ColumnDefinition]
+forall writeEntity readEntity result.
+SqlMarshaller writeEntity readEntity
+-&gt; result
+-&gt; (MarshallerField writeEntity -&gt; result -&gt; result)
+-&gt; result
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#foldMarshallerFields"><span class="hs-identifier hs-var">foldMarshallerFields</span></a></span><span>
+</span><span id="line-389"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier hs-var">unannotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">(AnnotatedSqlMarshaller writeEntity readEntity
+ -&gt; SqlMarshaller writeEntity readEntity)
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-var">tableMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136791"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-390"></span><span>    </span><span class="hs-special">[</span><span class="hs-special">]</span><span>
+</span><span id="line-391"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ReadOnlyColumnOption
+-&gt; (forall nullability a.
+    FieldDefinition nullability a -&gt; ColumnDefinition)
+-&gt; MarshallerField writeEntity
+-&gt; [ColumnDefinition]
+-&gt; [ColumnDefinition]
+forall result entity.
+ReadOnlyColumnOption
+-&gt; (forall nullability a. FieldDefinition nullability a -&gt; result)
+-&gt; MarshallerField entity
+-&gt; [result]
+-&gt; [result]
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#collectFromField"><span class="hs-identifier hs-var">collectFromField</span></a></span><span> </span><span class="annot"><span class="annottext">ReadOnlyColumnOption
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#IncludeReadOnlyColumns"><span class="hs-identifier hs-var">IncludeReadOnlyColumns</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition nullability a -&gt; ColumnDefinition
+forall nullability a.
+FieldDefinition nullability a -&gt; ColumnDefinition
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldColumnDefinition"><span class="hs-identifier hs-var">fieldColumnDefinition</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-392"></span><span>
+</span><span id="line-393"></span><span class="annot"><span class="hs-comment">{- |
+  Builds the 'Expr.PrimaryKeyExpr' for this table, or none of this table has no
+  primary key.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-399"></span><span id="local-6989586621679136583"><span id="local-6989586621679136584"><span id="local-6989586621679136585"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTablePrimaryKeyExpr"><span class="hs-identifier hs-type">mkTablePrimaryKeyExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-400"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136583"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136584"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136585"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-401"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.TableDefinition.html#PrimaryKeyExpr"><span class="hs-identifier hs-type">Expr.PrimaryKeyExpr</span></a></span></span></span></span><span>
+</span><span id="line-402"></span><span id="mkTablePrimaryKeyExpr"><span class="annot"><span class="annottext">mkTablePrimaryKeyExpr :: forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Maybe PrimaryKeyExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTablePrimaryKeyExpr"><span class="hs-identifier hs-var hs-var">mkTablePrimaryKeyExpr</span></a></span></span><span> </span><span id="local-6989586621679136792"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136792"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-403"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; TablePrimaryKey key
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; TablePrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#i_tablePrimaryKey"><span class="hs-identifier hs-var">i_tablePrimaryKey</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136792"><span class="hs-identifier hs-var">tableDef</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-404"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasKey"><span class="hs-identifier hs-type">TableHasKey</span></a></span><span> </span><span id="local-6989586621679136794"><span class="annot"><span class="annottext">PrimaryKey keyType
+</span><a href="#local-6989586621679136794"><span class="hs-identifier hs-var">primaryKey</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-405"></span><span>      </span><span class="annot"><span class="annottext">PrimaryKeyExpr -&gt; Maybe PrimaryKeyExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(PrimaryKeyExpr -&gt; Maybe PrimaryKeyExpr)
+-&gt; PrimaryKeyExpr -&gt; Maybe PrimaryKeyExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">PrimaryKey keyType -&gt; PrimaryKeyExpr
+forall key. PrimaryKey key -&gt; PrimaryKeyExpr
+</span><a href="Orville.PostgreSQL.Schema.PrimaryKey.html#mkPrimaryKeyExpr"><span class="hs-identifier hs-var">mkPrimaryKeyExpr</span></a></span><span> </span><span class="annot"><span class="annottext">PrimaryKey keyType
+</span><a href="#local-6989586621679136794"><span class="hs-identifier hs-var">primaryKey</span></a></span><span>
+</span><span id="line-406"></span><span>    </span><span class="annot"><span class="annottext">TablePrimaryKey key
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableHasNoKey"><span class="hs-identifier hs-var">TableHasNoKey</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-407"></span><span>      </span><span class="annot"><span class="annottext">Maybe PrimaryKeyExpr
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-408"></span><span>
+</span><span id="line-409"></span><span class="annot"><span class="hs-comment">{- |
+  When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
+  return all the columns in the given table definition.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-415"></span><span id="local-6989586621679136609"><span id="local-6989586621679136611"><span id="local-6989586621679136612"><span id="local-6989586621679136613"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableReturningClause"><span class="hs-identifier hs-type">mkTableReturningClause</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-416"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-type">ReturningOption</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136609"><span class="hs-identifier hs-type">returningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-417"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136611"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136612"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136613"><span class="hs-identifier hs-type">readEntty</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-418"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.ReturningExpr.html#ReturningExpr"><span class="hs-identifier hs-type">Expr.ReturningExpr</span></a></span></span></span></span></span><span>
+</span><span id="line-419"></span><span id="mkTableReturningClause"><span class="annot"><span class="annottext">mkTableReturningClause :: forall returningClause key writeEntity readEntty.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntty -&gt; Maybe ReturningExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableReturningClause"><span class="hs-identifier hs-var hs-var">mkTableReturningClause</span></a></span></span><span> </span><span id="local-6989586621679136796"><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679136796"><span class="hs-identifier hs-var">returningOption</span></a></span></span><span> </span><span id="local-6989586621679136797"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntty
+</span><a href="#local-6989586621679136797"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-420"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679136796"><span class="hs-identifier hs-var">returningOption</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-421"></span><span>    </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithoutReturning"><span class="hs-identifier hs-var">WithoutReturning</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-422"></span><span>      </span><span class="annot"><span class="annottext">Maybe ReturningExpr
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-423"></span><span>    </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="Orville.PostgreSQL.Execution.ReturningOption.html#WithReturning"><span class="hs-identifier hs-var">WithReturning</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-424"></span><span>      </span><span class="annot"><span class="annottext">ReturningExpr -&gt; Maybe ReturningExpr
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span>
+</span><span id="line-425"></span><span>        </span><span class="annot"><span class="annottext">(ReturningExpr -&gt; Maybe ReturningExpr)
+-&gt; (TableDefinition key writeEntity readEntty -&gt; ReturningExpr)
+-&gt; TableDefinition key writeEntity readEntty
+-&gt; Maybe ReturningExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SelectList -&gt; ReturningExpr
+</span><a href="Orville.PostgreSQL.Expr.ReturningExpr.html#returningExpr"><span class="hs-identifier hs-var">Expr.returningExpr</span></a></span><span>
+</span><span id="line-426"></span><span>        </span><span class="annot"><span class="annottext">(SelectList -&gt; ReturningExpr)
+-&gt; (TableDefinition key writeEntity readEntty -&gt; SelectList)
+-&gt; TableDefinition key writeEntity readEntty
+-&gt; ReturningExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">[DerivedColumn] -&gt; SelectList
+</span><a href="Orville.PostgreSQL.Expr.Query.html#selectDerivedColumns"><span class="hs-identifier hs-var">Expr.selectDerivedColumns</span></a></span><span>
+</span><span id="line-427"></span><span>        </span><span class="annot"><span class="annottext">([DerivedColumn] -&gt; SelectList)
+-&gt; (TableDefinition key writeEntity readEntty -&gt; [DerivedColumn])
+-&gt; TableDefinition key writeEntity readEntty
+-&gt; SelectList
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntty -&gt; [DerivedColumn]
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity -&gt; [DerivedColumn]
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallerDerivedColumns"><span class="hs-identifier hs-var">marshallerDerivedColumns</span></a></span><span>
+</span><span id="line-428"></span><span>        </span><span class="annot"><span class="annottext">(SqlMarshaller writeEntity readEntty -&gt; [DerivedColumn])
+-&gt; (TableDefinition key writeEntity readEntty
+    -&gt; SqlMarshaller writeEntity readEntty)
+-&gt; TableDefinition key writeEntity readEntty
+-&gt; [DerivedColumn]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntty
+-&gt; SqlMarshaller writeEntity readEntty
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier hs-var">unannotatedSqlMarshaller</span></a></span><span>
+</span><span id="line-429"></span><span>        </span><span class="annot"><span class="annottext">(AnnotatedSqlMarshaller writeEntity readEntty
+ -&gt; SqlMarshaller writeEntity readEntty)
+-&gt; (TableDefinition key writeEntity readEntty
+    -&gt; AnnotatedSqlMarshaller writeEntity readEntty)
+-&gt; TableDefinition key writeEntity readEntty
+-&gt; SqlMarshaller writeEntity readEntty
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntty
+-&gt; AnnotatedSqlMarshaller writeEntity readEntty
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-var">tableMarshaller</span></a></span><span>
+</span><span id="line-430"></span><span>        </span><span class="annot"><span class="annottext">(TableDefinition key writeEntity readEntty -&gt; Maybe ReturningExpr)
+-&gt; TableDefinition key writeEntity readEntty -&gt; Maybe ReturningExpr
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntty
+</span><a href="#local-6989586621679136797"><span class="hs-identifier hs-var">tableDef</span></a></span><span>
+</span><span id="line-431"></span><span>
+</span><span id="line-432"></span><span class="annot"><span class="hs-comment">{- |
+  Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
+  table when it is executed. A @RETURNING@ clause with either be included to
+  return the insert rows or not, depending on the 'ReturnOption' given.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-439"></span><span id="local-6989586621679136625"><span id="local-6989586621679136626"><span id="local-6989586621679136627"><span id="local-6989586621679136628"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertExpr"><span class="hs-identifier hs-type">mkInsertExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-440"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.ReturningOption.html#ReturningOption"><span class="hs-identifier hs-type">ReturningOption</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136625"><span class="hs-identifier hs-type">returningClause</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-441"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#TableDefinition"><span class="hs-identifier hs-type">TableDefinition</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136626"><span class="hs-identifier hs-type">key</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136627"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136628"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-442"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="#local-6989586621679136627"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-443"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Insert.html#InsertExpr"><span class="hs-identifier hs-type">Expr.InsertExpr</span></a></span></span></span></span></span><span>
+</span><span id="line-444"></span><span id="mkInsertExpr"><span class="annot"><span class="annottext">mkInsertExpr :: forall returningClause key writeEntity readEntity.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; NonEmpty writeEntity
+-&gt; InsertExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertExpr"><span class="hs-identifier hs-var hs-var">mkInsertExpr</span></a></span></span><span> </span><span id="local-6989586621679136802"><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679136802"><span class="hs-identifier hs-var">returningOption</span></a></span></span><span> </span><span id="local-6989586621679136803"><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136803"><span class="hs-identifier hs-var">tableDef</span></a></span></span><span> </span><span id="local-6989586621679136804"><span class="annot"><span class="annottext">NonEmpty writeEntity
+</span><a href="#local-6989586621679136804"><span class="hs-identifier hs-var">entities</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-445"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-446"></span><span>    </span><span id="local-6989586621679136805"><span class="annot"><span class="annottext">marshaller :: SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136805"><span class="hs-identifier hs-var hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-447"></span><span>      </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#unannotatedSqlMarshaller"><span class="hs-identifier hs-var">unannotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">(AnnotatedSqlMarshaller writeEntity readEntity
+ -&gt; SqlMarshaller writeEntity readEntity)
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; SqlMarshaller writeEntity readEntity
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableMarshaller"><span class="hs-identifier hs-var">tableMarshaller</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136803"><span class="hs-identifier hs-var">tableDef</span></a></span><span>
+</span><span id="line-448"></span><span>
+</span><span id="line-449"></span><span>    </span><span id="local-6989586621679136806"><span class="annot"><span class="annottext">insertColumnList :: InsertColumnList
+</span><a href="#local-6989586621679136806"><span class="hs-identifier hs-var hs-var">insertColumnList</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-450"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity -&gt; InsertColumnList
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity -&gt; InsertColumnList
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertColumnList"><span class="hs-identifier hs-var">mkInsertColumnList</span></a></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136805"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-451"></span><span>
+</span><span id="line-452"></span><span>    </span><span id="local-6989586621679136807"><span class="annot"><span class="annottext">insertSource :: InsertSource
+</span><a href="#local-6989586621679136807"><span class="hs-identifier hs-var hs-var">insertSource</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-453"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+-&gt; NonEmpty writeEntity -&gt; InsertSource
+forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity
+-&gt; NonEmpty writeEntity -&gt; InsertSource
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertSource"><span class="hs-identifier hs-var">mkInsertSource</span></a></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136805"><span class="hs-identifier hs-var">marshaller</span></a></span><span> </span><span class="annot"><span class="annottext">NonEmpty writeEntity
+</span><a href="#local-6989586621679136804"><span class="hs-identifier hs-var">entities</span></a></span><span>
+</span><span id="line-454"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-455"></span><span>    </span><span class="annot"><span class="annottext">Qualified TableName
+-&gt; Maybe InsertColumnList
+-&gt; InsertSource
+-&gt; Maybe ReturningExpr
+-&gt; InsertExpr
+</span><a href="Orville.PostgreSQL.Expr.Insert.html#insertExpr"><span class="hs-identifier hs-var">Expr.insertExpr</span></a></span><span>
+</span><span id="line-456"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+forall key writeEntity readEntity.
+TableDefinition key writeEntity readEntity -&gt; Qualified TableName
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#tableName"><span class="hs-identifier hs-var">tableName</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136803"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-457"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">InsertColumnList -&gt; Maybe InsertColumnList
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">InsertColumnList
+</span><a href="#local-6989586621679136806"><span class="hs-identifier hs-var">insertColumnList</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-458"></span><span>      </span><span class="annot"><span class="annottext">InsertSource
+</span><a href="#local-6989586621679136807"><span class="hs-identifier hs-var">insertSource</span></a></span><span>
+</span><span id="line-459"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntity
+-&gt; Maybe ReturningExpr
+forall returningClause key writeEntity readEntty.
+ReturningOption returningClause
+-&gt; TableDefinition key writeEntity readEntty -&gt; Maybe ReturningExpr
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkTableReturningClause"><span class="hs-identifier hs-var">mkTableReturningClause</span></a></span><span> </span><span class="annot"><span class="annottext">ReturningOption returningClause
+</span><a href="#local-6989586621679136802"><span class="hs-identifier hs-var">returningOption</span></a></span><span> </span><span class="annot"><span class="annottext">TableDefinition key writeEntity readEntity
+</span><a href="#local-6989586621679136803"><span class="hs-identifier hs-var">tableDef</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-460"></span><span>
+</span><span id="line-461"></span><span class="annot"><span class="hs-comment">{- |
+  Builds an 'Expr.InsertColumnList' that specifies the columns for an
+  insert statement in the order that they appear in the given 'SqlMarshaller'.
+
+  In normal circumstances you will want to build the complete insert statement
+  via 'mkInsertExpr', but this is exported in case you are a composing SQL
+  yourself and need the column list of an insert as a fragment.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-471"></span><span id="local-6989586621679136635"><span id="local-6989586621679136636"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertColumnList"><span class="hs-identifier hs-type">mkInsertColumnList</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-472"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136635"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136636"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-473"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Insert.html#InsertColumnList"><span class="hs-identifier hs-type">Expr.InsertColumnList</span></a></span></span></span><span>
+</span><span id="line-474"></span><span id="mkInsertColumnList"><span class="annot"><span class="annottext">mkInsertColumnList :: forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity -&gt; InsertColumnList
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertColumnList"><span class="hs-identifier hs-var hs-var">mkInsertColumnList</span></a></span></span><span> </span><span id="local-6989586621679136809"><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136809"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-475"></span><span>  </span><span class="annot"><span class="annottext">[ColumnName] -&gt; InsertColumnList
+</span><a href="Orville.PostgreSQL.Expr.Insert.html#insertColumnList"><span class="hs-identifier hs-var">Expr.insertColumnList</span></a></span><span> </span><span class="annot"><span class="annottext">([ColumnName] -&gt; InsertColumnList)
+-&gt; [ColumnName] -&gt; InsertColumnList
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-476"></span><span>    </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+-&gt; [ColumnName]
+-&gt; (MarshallerField writeEntity -&gt; [ColumnName] -&gt; [ColumnName])
+-&gt; [ColumnName]
+forall writeEntity readEntity result.
+SqlMarshaller writeEntity readEntity
+-&gt; result
+-&gt; (MarshallerField writeEntity -&gt; result -&gt; result)
+-&gt; result
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#foldMarshallerFields"><span class="hs-identifier hs-var">foldMarshallerFields</span></a></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136809"><span class="hs-identifier hs-var">marshaller</span></a></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ReadOnlyColumnOption
+-&gt; (forall nullability a.
+    FieldDefinition nullability a -&gt; ColumnName)
+-&gt; MarshallerField writeEntity
+-&gt; [ColumnName]
+-&gt; [ColumnName]
+forall result entity.
+ReadOnlyColumnOption
+-&gt; (forall nullability a. FieldDefinition nullability a -&gt; result)
+-&gt; MarshallerField entity
+-&gt; [result]
+-&gt; [result]
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#collectFromField"><span class="hs-identifier hs-var">collectFromField</span></a></span><span> </span><span class="annot"><span class="annottext">ReadOnlyColumnOption
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#ExcludeReadOnlyColumns"><span class="hs-identifier hs-var">ExcludeReadOnlyColumns</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition nullability a -&gt; ColumnName
+forall nullability a. FieldDefinition nullability a -&gt; ColumnName
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldColumnName"><span class="hs-identifier hs-var">fieldColumnName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-477"></span><span>
+</span><span id="line-478"></span><span class="annot"><span class="hs-comment">{- |
+  Builds an 'Expr.InsertSource' that will insert the given entities with their
+  values specified in the order that the fields appear in the given
+  'SqlMarshaller' (which matches the order of column names produced by
+  'mkInsertColumnColumnsList').
+
+  In normal circumstances you will want to build the complete insert statement
+  via 'mkInsertExpr', but this is exported in case you are a composing SQL
+  yourself and need the column list of an insert as a fragment.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-490"></span><span id="local-6989586621679136638"><span id="local-6989586621679136639"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertSource"><span class="hs-identifier hs-type">mkInsertSource</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-491"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#SqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136638"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136639"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-492"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">NonEmpty</span></span><span> </span><span class="annot"><a href="#local-6989586621679136638"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-493"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Insert.html#InsertSource"><span class="hs-identifier hs-type">Expr.InsertSource</span></a></span></span></span><span>
+</span><span id="line-494"></span><span id="mkInsertSource"><span class="annot"><span class="annottext">mkInsertSource :: forall writeEntity readEntity.
+SqlMarshaller writeEntity readEntity
+-&gt; NonEmpty writeEntity -&gt; InsertSource
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#mkInsertSource"><span class="hs-identifier hs-var hs-var">mkInsertSource</span></a></span></span><span> </span><span id="local-6989586621679136811"><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136811"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span id="local-6989586621679136812"><span class="annot"><span class="annottext">NonEmpty writeEntity
+</span><a href="#local-6989586621679136812"><span class="hs-identifier hs-var">entities</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-495"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-496"></span><span>    </span><span id="local-6989586621679136813"><span class="annot"><span class="annottext">encodeRow :: writeEntity -&gt; [SqlValue]
+</span><a href="#local-6989586621679136813"><span class="hs-identifier hs-var hs-var">encodeRow</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-497"></span><span>      </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+-&gt; (writeEntity -&gt; [SqlValue])
+-&gt; (MarshallerField writeEntity
+    -&gt; (writeEntity -&gt; [SqlValue]) -&gt; writeEntity -&gt; [SqlValue])
+-&gt; writeEntity
+-&gt; [SqlValue]
+forall writeEntity readEntity result.
+SqlMarshaller writeEntity readEntity
+-&gt; result
+-&gt; (MarshallerField writeEntity -&gt; result -&gt; result)
+-&gt; result
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#foldMarshallerFields"><span class="hs-identifier hs-var">foldMarshallerFields</span></a></span><span> </span><span class="annot"><span class="annottext">SqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679136811"><span class="hs-identifier hs-var">marshaller</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[SqlValue] -&gt; writeEntity -&gt; [SqlValue]
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="hs-special">[</span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">MarshallerField writeEntity
+-&gt; (writeEntity -&gt; [SqlValue]) -&gt; writeEntity -&gt; [SqlValue]
+forall entity.
+MarshallerField entity
+-&gt; (entity -&gt; [SqlValue]) -&gt; entity -&gt; [SqlValue]
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#collectSqlValue"><span class="hs-identifier hs-var">collectSqlValue</span></a></span><span>
+</span><span id="line-498"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-499"></span><span>    </span><span class="annot"><span class="annottext">[[SqlValue]] -&gt; InsertSource
+</span><a href="Orville.PostgreSQL.Expr.Insert.html#insertSqlValues"><span class="hs-identifier hs-var">Expr.insertSqlValues</span></a></span><span> </span><span class="annot"><span class="annottext">([[SqlValue]] -&gt; InsertSource) -&gt; [[SqlValue]] -&gt; InsertSource
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">(writeEntity -&gt; [SqlValue]) -&gt; [writeEntity] -&gt; [[SqlValue]]
+forall a b. (a -&gt; b) -&gt; [a] -&gt; [b]
+</span><span class="hs-identifier hs-var">map</span></span><span> </span><span class="annot"><span class="annottext">writeEntity -&gt; [SqlValue]
+</span><a href="#local-6989586621679136813"><span class="hs-identifier hs-var">encodeRow</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">NonEmpty writeEntity -&gt; [writeEntity]
+forall a. NonEmpty a -&gt; [a]
+</span><span class="hs-identifier hs-var">toList</span></span><span> </span><span class="annot"><span class="annottext">NonEmpty writeEntity
+</span><a href="#local-6989586621679136812"><span class="hs-identifier hs-var">entities</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-500"></span><span>
+</span><span id="line-501"></span><span class="annot"><span class="hs-comment">{- |
+  An internal helper function that collects the 'SqlValue' encoded value for a
+  field from a Haskell entity, adding it a list of 'SqlValue's that is being
+  built.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-508"></span><span id="local-6989586621679136650"><span class="annot"><a href="Orville.PostgreSQL.Schema.TableDefinition.html#collectSqlValue"><span class="hs-identifier hs-type">collectSqlValue</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-509"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#MarshallerField"><span class="hs-identifier hs-type">MarshallerField</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679136650"><span class="hs-identifier hs-type">entity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-510"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679136650"><span class="hs-identifier hs-type">entity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-511"></span><span>  </span><span class="annot"><a href="#local-6989586621679136650"><span class="hs-identifier hs-type">entity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-512"></span><span>  </span><span class="hs-special">[</span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html#SqlValue"><span class="hs-identifier hs-type">SqlValue</span></a></span><span class="hs-special">]</span></span><span>
+</span><span id="line-513"></span><span id="collectSqlValue"><span class="annot"><span class="annottext">collectSqlValue :: forall entity.
+MarshallerField entity
+-&gt; (entity -&gt; [SqlValue]) -&gt; entity -&gt; [SqlValue]
+</span><a href="Orville.PostgreSQL.Schema.TableDefinition.html#collectSqlValue"><span class="hs-identifier hs-var hs-var">collectSqlValue</span></a></span></span><span> </span><span id="local-6989586621679136817"><span class="annot"><span class="annottext">MarshallerField entity
+</span><a href="#local-6989586621679136817"><span class="hs-identifier hs-var">entry</span></a></span></span><span> </span><span id="local-6989586621679136818"><span class="annot"><span class="annottext">entity -&gt; [SqlValue]
+</span><a href="#local-6989586621679136818"><span class="hs-identifier hs-var">encodeRest</span></a></span></span><span> </span><span id="local-6989586621679136819"><span class="annot"><span class="annottext">entity
+</span><a href="#local-6989586621679136819"><span class="hs-identifier hs-var">entity</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-514"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">MarshallerField entity
+</span><a href="#local-6989586621679136817"><span class="hs-identifier hs-var">entry</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-515"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#Natural"><span class="hs-identifier hs-type">Natural</span></a></span><span> </span><span id="local-6989586621679136820"><span class="annot"><span class="annottext">FieldDefinition nullability a
+</span><a href="#local-6989586621679136820"><span class="hs-identifier hs-var">fieldDef</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679136821"><span class="annot"><span class="annottext">entity -&gt; a
+</span><a href="#local-6989586621679136821"><span class="hs-identifier hs-var">accessor</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-516"></span><span>      </span><span class="annot"><span class="annottext">FieldDefinition nullability a -&gt; a -&gt; SqlValue
+forall nullability a.
+FieldDefinition nullability a -&gt; a -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Marshall.FieldDefinition.html#fieldValueToSqlValue"><span class="hs-identifier hs-var">fieldValueToSqlValue</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition nullability a
+</span><a href="#local-6989586621679136820"><span class="hs-identifier hs-var">fieldDef</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">entity -&gt; a
+</span><a href="#local-6989586621679136821"><span class="hs-identifier hs-var">accessor</span></a></span><span> </span><span class="annot"><span class="annottext">entity
+</span><a href="#local-6989586621679136819"><span class="hs-identifier hs-var">entity</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; [SqlValue] -&gt; [SqlValue]
+forall a. a -&gt; [a] -&gt; [a]
+</span><span class="hs-glyph hs-var">:</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">entity -&gt; [SqlValue]
+</span><a href="#local-6989586621679136818"><span class="hs-identifier hs-var">encodeRest</span></a></span><span> </span><span class="annot"><span class="annottext">entity
+</span><a href="#local-6989586621679136819"><span class="hs-identifier hs-var">entity</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-517"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#Natural"><span class="hs-identifier hs-type">Natural</span></a></span><span> </span><span class="annot"><span class="annottext">FieldDefinition nullability a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Maybe (entity -&gt; a)
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-518"></span><span>      </span><span class="annot"><span class="annottext">entity -&gt; [SqlValue]
+</span><a href="#local-6989586621679136818"><span class="hs-identifier hs-var">encodeRest</span></a></span><span> </span><span class="annot"><span class="annottext">entity
+</span><a href="#local-6989586621679136819"><span class="hs-identifier hs-var">entity</span></a></span><span>
+</span><span id="line-519"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#Synthetic"><span class="hs-identifier hs-type">Synthetic</span></a></span><span> </span><span class="annot"><span class="annottext">SyntheticField a
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-520"></span><span>      </span><span class="annot"><span class="annottext">entity -&gt; [SqlValue]
+</span><a href="#local-6989586621679136818"><span class="hs-identifier hs-var">encodeRest</span></a></span><span> </span><span class="annot"><span class="annottext">entity
+</span><a href="#local-6989586621679136819"><span class="hs-identifier hs-var">entity</span></a></span><span>
+</span><span id="line-521"></span></pre></body></html>

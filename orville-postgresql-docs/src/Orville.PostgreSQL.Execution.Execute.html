@@ -1,0 +1,475 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Low-level functions for executing 'RawSql.SqlExpression' values directly.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier">executeAndDecode</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRows"><span class="hs-identifier">executeAndReturnAffectedRows</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier">executeVoid</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecodeIO"><span class="hs-identifier">executeAndDecodeIO</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRowsIO"><span class="hs-identifier">executeAndReturnAffectedRowsIO</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoidIO"><span class="hs-identifier">executeVoidIO</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#AffectedRowsDecodingError"><span class="hs-identifier">AffectedRowsDecodingError</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-19"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Exception</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Exception</span></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier">throwIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-22"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">void</span></span><span class="hs-special">)</span><span>
+</span><span id="line-23"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">liftIO</span></span><span class="hs-special">)</span><span>
+</span><span id="line-24"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Database.PostgreSQL.LibPQ</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">LibPQ</span></span><span>
+</span><span id="line-25"></span><span>
+</span><span id="line-26"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier">QueryType</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-27"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall.SqlMarshaller</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlMarshaller</span></span><span>
+</span><span id="line-28"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.html"><span class="hs-identifier">Orville.PostgreSQL.Monad</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier">MonadOrville</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier">askOrvilleState</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier">withConnection</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-29"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.OrvilleState.html"><span class="hs-identifier">Orville.PostgreSQL.OrvilleState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier">OrvilleState</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleErrorDetailLevel"><span class="hs-identifier">orvilleErrorDetailLevel</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlCommenterAttributes"><span class="hs-identifier">orvilleSqlCommenterAttributes</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlExecutionCallback"><span class="hs-identifier">orvilleSqlExecutionCallback</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-30"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.Connection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier">Connection</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-31"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlCommenter</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlCommenter</span></span><span>
+</span><span id="line-33"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlValue.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlValue</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlValue</span></span><span>
+</span><span id="line-34"></span><span>
+</span><span id="line-35"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a SQL query and decodes the result set using the provided
+  marshaller. Any SQL Execution callbacks that have been added to the
+  'OrvilleState' will be called.
+
+  If the query fails or if any row is unable to be decoded by the marshaller,
+  an exception will be raised.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-45"></span><span id="local-6989586621679135656"><span id="local-6989586621679135658"><span id="local-6989586621679135661"><span id="local-6989586621679135662"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-type">executeAndDecode</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-46"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135656"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135658"><span class="hs-identifier hs-type">sql</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-47"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-48"></span><span>  </span><span class="annot"><a href="#local-6989586621679135658"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller.AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135661"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135662"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-50"></span><span>  </span><span class="annot"><a href="#local-6989586621679135656"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679135662"><span class="hs-identifier hs-type">readEntity</span></a></span><span class="hs-special">]</span></span></span></span></span><span>
+</span><span id="line-51"></span><span id="executeAndDecode"><span class="annot"><span class="annottext">executeAndDecode :: forall (m :: * -&gt; *) sql writeEntity readEntity.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-var hs-var">executeAndDecode</span></a></span></span><span> </span><span id="local-6989586621679135759"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135759"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135760"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135760"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span id="local-6989586621679135761"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679135761"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-52"></span><span>  </span><span id="local-6989586621679135762"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135762"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m OrvilleState
+forall (m :: * -&gt; *). HasOrvilleState m =&gt; m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var">askOrvilleState</span></a></span><span>
+</span><span id="line-53"></span><span>  </span><span class="annot"><span class="annottext">(Connection -&gt; m [readEntity]) -&gt; m [readEntity]
+forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(Connection -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier hs-var">withConnection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO [readEntity] -&gt; m [readEntity]
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO [readEntity] -&gt; m [readEntity])
+-&gt; (Connection -&gt; IO [readEntity]) -&gt; Connection -&gt; m [readEntity]
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; OrvilleState
+-&gt; Connection
+-&gt; IO [readEntity]
+forall sql writeEntity readEntity.
+SqlExpression sql =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; OrvilleState
+-&gt; Connection
+-&gt; IO [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecodeIO"><span class="hs-identifier hs-var">executeAndDecodeIO</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135759"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135760"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679135761"><span class="hs-identifier hs-var">marshaller</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135762"><span class="hs-identifier hs-var">orvilleState</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a SQL query and returns the number of rows affected by the query.
+  Any SQL Execution callbacks that have been added to the 'OrvilleState' will
+  be called.
+
+  This function can only be used for the execution of a SELECT, CREATE
+  TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement, or an
+  EXECUTE of a prepared query that contains an INSERT, UPDATE, or DELETE
+  statement. If the query is anything else an 'AffectedRowsDecodingError'
+  wil be raised after the query is executed when the result is read.
+
+  If the query fails an exception will be raised.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-70"></span><span id="local-6989586621679135684"><span id="local-6989586621679135685"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRows"><span class="hs-identifier hs-type">executeAndReturnAffectedRows</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-71"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135684"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135685"><span class="hs-identifier hs-type">sql</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-72"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-73"></span><span>  </span><span class="annot"><a href="#local-6989586621679135685"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-74"></span><span>  </span><span class="annot"><a href="#local-6989586621679135684"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span></span><span>
+</span><span id="line-75"></span><span id="executeAndReturnAffectedRows"><span class="annot"><span class="annottext">executeAndReturnAffectedRows :: forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m Int
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRows"><span class="hs-identifier hs-var hs-var">executeAndReturnAffectedRows</span></a></span></span><span> </span><span id="local-6989586621679135775"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135775"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135776"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135776"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-76"></span><span>  </span><span id="local-6989586621679135777"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135777"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m OrvilleState
+forall (m :: * -&gt; *). HasOrvilleState m =&gt; m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var">askOrvilleState</span></a></span><span>
+</span><span id="line-77"></span><span>  </span><span class="annot"><span class="annottext">(Connection -&gt; m Int) -&gt; m Int
+forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(Connection -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier hs-var">withConnection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO Int -&gt; m Int
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO Int -&gt; m Int) -&gt; (Connection -&gt; IO Int) -&gt; Connection -&gt; m Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Int
+forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Int
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRowsIO"><span class="hs-identifier hs-var">executeAndReturnAffectedRowsIO</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135775"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135776"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135777"><span class="hs-identifier hs-var">orvilleState</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-78"></span><span>
+</span><span id="line-79"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a SQL query and ignores the result. Any SQL Execution callbacks
+  that have been added to the 'OrvilleState' will be called.
+
+  If the query fails an exception will be raised.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-87"></span><span id="local-6989586621679135689"><span id="local-6989586621679135690"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier hs-type">executeVoid</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-88"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135689"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135690"><span class="hs-identifier hs-type">sql</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-89"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><a href="#local-6989586621679135690"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><a href="#local-6989586621679135689"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-92"></span><span id="executeVoid"><span class="annot"><span class="annottext">executeVoid :: forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier hs-var hs-var">executeVoid</span></a></span></span><span> </span><span id="local-6989586621679135788"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135788"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135789"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135789"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-93"></span><span>  </span><span id="local-6989586621679135790"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135790"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m OrvilleState
+forall (m :: * -&gt; *). HasOrvilleState m =&gt; m OrvilleState
+</span><a href="Orville.PostgreSQL.Monad.HasOrvilleState.html#askOrvilleState"><span class="hs-identifier hs-var">askOrvilleState</span></a></span><span>
+</span><span id="line-94"></span><span>  </span><span class="annot"><span class="annottext">(Connection -&gt; m ()) -&gt; m ()
+forall (m :: * -&gt; *) a.
+MonadOrville m =&gt;
+(Connection -&gt; m a) -&gt; m a
+</span><a href="Orville.PostgreSQL.Monad.MonadOrville.html#withConnection"><span class="hs-identifier hs-var">withConnection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO () -&gt; m ()
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO () -&gt; m ()) -&gt; (Connection -&gt; IO ()) -&gt; Connection -&gt; m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO ()
+forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoidIO"><span class="hs-identifier hs-var">executeVoidIO</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135788"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135789"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135790"><span class="hs-identifier hs-var">orvilleState</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span><span>
+</span><span id="line-96"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a SQL query and decodes the result set using the provided
+  marshaller. Any SQL Execution callbacks that have been added to the
+  'OrvilleState' will be called.
+
+  If the query fails or if any row is unable to be decoded by the marshaller,
+  an exception will be raised.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-106"></span><span id="local-6989586621679135681"><span id="local-6989586621679135682"><span id="local-6989586621679135683"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecodeIO"><span class="hs-identifier hs-type">executeAndDecodeIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-107"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135681"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-108"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-109"></span><span>  </span><span class="annot"><a href="#local-6989586621679135681"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-110"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">SqlMarshaller.AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135682"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135683"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-111"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-112"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679135683"><span class="hs-identifier hs-type">readEntity</span></a></span><span class="hs-special">]</span></span></span></span><span>
+</span><span id="line-114"></span><span id="executeAndDecodeIO"><span class="annot"><span class="annottext">executeAndDecodeIO :: forall sql writeEntity readEntity.
+SqlExpression sql =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; OrvilleState
+-&gt; Connection
+-&gt; IO [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecodeIO"><span class="hs-identifier hs-var hs-var">executeAndDecodeIO</span></a></span></span><span> </span><span id="local-6989586621679135802"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135802"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135803"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135803"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span id="local-6989586621679135804"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679135804"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span id="local-6989586621679135805"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135805"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span id="local-6989586621679135806"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679135806"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-115"></span><span>  </span><span id="local-6989586621679135807"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679135807"><span class="hs-identifier hs-var">libPqResult</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeWithCallbacksIO"><span class="hs-identifier hs-var">executeWithCallbacksIO</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135802"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135803"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135805"><span class="hs-identifier hs-var">orvilleState</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679135806"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-116"></span><span>
+</span><span id="line-117"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-118"></span><span>    </span><span id="local-6989586621679135809"><span class="annot"><span class="annottext">errorDetailLevel :: ErrorDetailLevel
+</span><a href="#local-6989586621679135809"><span class="hs-identifier hs-var hs-var">errorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleErrorDetailLevel"><span class="hs-identifier hs-var">orvilleErrorDetailLevel</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135805"><span class="hs-identifier hs-var">orvilleState</span></a></span><span>
+</span><span id="line-119"></span><span>
+</span><span id="line-120"></span><span>  </span><span id="local-6989586621679135810"><span class="annot"><span class="annottext">Either MarshallError [readEntity]
+</span><a href="#local-6989586621679135810"><span class="hs-identifier hs-var">decodingResult</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span>
+</span><span id="line-121"></span><span>    </span><span class="annot"><span class="annottext">ErrorDetailLevel
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; Result
+-&gt; IO (Either MarshallError [readEntity])
+forall result writeEntity readEntity.
+ExecutionResult result =&gt;
+ErrorDetailLevel
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; result
+-&gt; IO (Either MarshallError [readEntity])
+</span><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#marshallResultFromSql"><span class="hs-identifier hs-var">SqlMarshaller.marshallResultFromSql</span></a></span><span>
+</span><span id="line-122"></span><span>      </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679135809"><span class="hs-identifier hs-var">errorDetailLevel</span></a></span><span>
+</span><span id="line-123"></span><span>      </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679135804"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-124"></span><span>      </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679135807"><span class="hs-identifier hs-var">libPqResult</span></a></span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Either MarshallError [readEntity]
+</span><a href="#local-6989586621679135810"><span class="hs-identifier hs-var">decodingResult</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-127"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679135812"><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679135812"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-128"></span><span>      </span><span class="annot"><span class="annottext">MarshallError -&gt; IO [readEntity]
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">MarshallError
+</span><a href="#local-6989586621679135812"><span class="hs-identifier hs-var">err</span></a></span><span>
+</span><span id="line-129"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679135813"><span class="annot"><span class="annottext">[readEntity]
+</span><a href="#local-6989586621679135813"><span class="hs-identifier hs-var">entities</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-130"></span><span>      </span><span class="annot"><span class="annottext">[readEntity] -&gt; IO [readEntity]
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">[readEntity]
+</span><a href="#local-6989586621679135813"><span class="hs-identifier hs-var">entities</span></a></span><span>
+</span><span id="line-131"></span><span>
+</span><span id="line-132"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a SQL query and returns the number of rows affected by the query.
+  Any SQL Execution callbacks that have been added to the 'OrvilleState' will
+  be called.
+
+  This function can only be used for the execution of a SELECT, CREATE
+  TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement, or an
+  EXECUTE of a prepared query that contains an INSERT, UPDATE, or DELETE
+  statement. If the query is anything else an 'AffectedRowsDecodingError'
+  wil be raised after the query is executed when the result is read.
+
+  If the query fails an exception will be raised.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-147"></span><span id="local-6989586621679135688"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRowsIO"><span class="hs-identifier hs-type">executeAndReturnAffectedRowsIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-148"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135688"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-149"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-150"></span><span>  </span><span class="annot"><a href="#local-6989586621679135688"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-151"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-152"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-153"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span></span><span>
+</span><span id="line-154"></span><span id="executeAndReturnAffectedRowsIO"><span class="annot"><span class="annottext">executeAndReturnAffectedRowsIO :: forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Int
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndReturnAffectedRowsIO"><span class="hs-identifier hs-var hs-var">executeAndReturnAffectedRowsIO</span></a></span></span><span> </span><span id="local-6989586621679135822"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135822"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135823"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135823"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span id="local-6989586621679135824"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135824"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span id="local-6989586621679135825"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679135825"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-155"></span><span>  </span><span id="local-6989586621679135826"><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679135826"><span class="hs-identifier hs-var">libPqResult</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeWithCallbacksIO"><span class="hs-identifier hs-var">executeWithCallbacksIO</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135822"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135823"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135824"><span class="hs-identifier hs-var">orvilleState</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679135825"><span class="hs-identifier hs-var">conn</span></a></span><span>
+</span><span id="line-156"></span><span>  </span><span id="local-6989586621679135827"><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679135827"><span class="hs-identifier hs-var">mbTupleCount</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">Result -&gt; IO (Maybe ByteString)
+</span><span class="hs-identifier hs-var">LibPQ.cmdTuples</span></span><span> </span><span class="annot"><span class="annottext">Result
+</span><a href="#local-6989586621679135826"><span class="hs-identifier hs-var">libPqResult</span></a></span><span>
+</span><span id="line-157"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><a href="#local-6989586621679135827"><span class="hs-identifier hs-var">mbTupleCount</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-158"></span><span>    </span><span class="annot"><span class="annottext">Maybe ByteString
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-159"></span><span>      </span><span class="annot"><span class="annottext">AffectedRowsDecodingError -&gt; IO Int
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span>
+</span><span id="line-160"></span><span>        </span><span class="annot"><span class="annottext">(AffectedRowsDecodingError -&gt; IO Int)
+-&gt; (String -&gt; AffectedRowsDecodingError) -&gt; String -&gt; IO Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; AffectedRowsDecodingError
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#AffectedRowsDecodingError"><span class="hs-identifier hs-var">AffectedRowsDecodingError</span></a></span><span>
+</span><span id="line-161"></span><span>        </span><span class="annot"><span class="annottext">(String -&gt; IO Int) -&gt; String -&gt; IO Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;No affected row count was produced by the query&quot;</span></span><span>
+</span><span id="line-162"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679135829"><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679135829"><span class="hs-identifier hs-var">bs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-163"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">SqlValue -&gt; Either String Int
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#toInt"><span class="hs-identifier hs-var">SqlValue.toInt</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">ByteString -&gt; SqlValue
+</span><a href="Orville.PostgreSQL.Raw.SqlValue.html#fromRawBytes"><span class="hs-identifier hs-var">SqlValue.fromRawBytes</span></a></span><span> </span><span class="annot"><span class="annottext">ByteString
+</span><a href="#local-6989586621679135829"><span class="hs-identifier hs-var">bs</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-164"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Left</span></span><span> </span><span id="local-6989586621679135832"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679135832"><span class="hs-identifier hs-var">err</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-165"></span><span>          </span><span class="annot"><span class="annottext">AffectedRowsDecodingError -&gt; IO Int
+forall e a. Exception e =&gt; e -&gt; IO a
+</span><span class="hs-identifier hs-var">throwIO</span></span><span> </span><span class="annot"><span class="annottext">(AffectedRowsDecodingError -&gt; IO Int)
+-&gt; (String -&gt; AffectedRowsDecodingError) -&gt; String -&gt; IO Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; AffectedRowsDecodingError
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#AffectedRowsDecodingError"><span class="hs-identifier hs-var">AffectedRowsDecodingError</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO Int) -&gt; String -&gt; IO Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621679135832"><span class="hs-identifier hs-var">err</span></a></span><span>
+</span><span id="line-166"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Right</span></span><span> </span><span id="local-6989586621679135833"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679135833"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-167"></span><span>          </span><span class="annot"><span class="annottext">Int -&gt; IO Int
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679135833"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-168"></span><span>
+</span><span id="line-169"></span><span class="annot"><span class="hs-comment">{- |
+  Executes a SQL query and ignores the result. Any SQL Execution callbacks
+  that have been added to the 'OrvilleState' will be called.
+
+  If the query fails an exception will be raised.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-177"></span><span id="local-6989586621679135693"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoidIO"><span class="hs-identifier hs-type">executeVoidIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-178"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135693"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-179"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-180"></span><span>  </span><span class="annot"><a href="#local-6989586621679135693"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-181"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-182"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-183"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span><span>
+</span><span id="line-184"></span><span id="executeVoidIO"><span class="annot"><span class="annottext">executeVoidIO :: forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoidIO"><span class="hs-identifier hs-var hs-var">executeVoidIO</span></a></span></span><span> </span><span id="local-6989586621679135838"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135838"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135839"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135839"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span id="local-6989586621679135840"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135840"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-185"></span><span>  </span><span class="annot"><span class="annottext">IO Result -&gt; IO ()
+forall (f :: * -&gt; *) a. Functor f =&gt; f a -&gt; f ()
+</span><span class="hs-identifier hs-var">void</span></span><span> </span><span class="annot"><span class="annottext">(IO Result -&gt; IO ())
+-&gt; (Connection -&gt; IO Result) -&gt; Connection -&gt; IO ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeWithCallbacksIO"><span class="hs-identifier hs-var">executeWithCallbacksIO</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135838"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135839"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135840"><span class="hs-identifier hs-var">orvilleState</span></a></span><span>
+</span><span id="line-186"></span><span>
+</span><span id="line-187"></span><span id="local-6989586621679135701"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#executeWithCallbacksIO"><span class="hs-identifier hs-type">executeWithCallbacksIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-188"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-type">RawSql.SqlExpression</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679135701"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-189"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-190"></span><span>  </span><span class="annot"><a href="#local-6989586621679135701"><span class="hs-identifier hs-type">sql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-191"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-192"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-193"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">LibPQ.Result</span></span></span><span>
+</span><span id="line-194"></span><span id="executeWithCallbacksIO"><span class="annot"><span class="annottext">executeWithCallbacksIO :: forall sql.
+SqlExpression sql =&gt;
+QueryType -&gt; sql -&gt; OrvilleState -&gt; Connection -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeWithCallbacksIO"><span class="hs-identifier hs-var hs-var">executeWithCallbacksIO</span></a></span></span><span> </span><span id="local-6989586621679135844"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135844"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679135845"><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135845"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span id="local-6989586621679135846"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135846"><span class="hs-identifier hs-var">orvilleState</span></a></span></span><span> </span><span id="local-6989586621679135847"><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679135847"><span class="hs-identifier hs-var">conn</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-195"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-196"></span><span>    </span><span id="local-6989586621679135851"><span class="annot"><span class="annottext">rawSql :: RawSql
+</span><a href="#local-6989586621679135851"><span class="hs-identifier hs-var hs-var">rawSql</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-197"></span><span>      </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135846"><span class="hs-identifier hs-var">orvilleState</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-198"></span><span>        </span><span class="annot"><span class="annottext">Maybe SqlCommenterAttributes
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-199"></span><span>          </span><span class="annot"><span class="annottext">sql -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135845"><span class="hs-identifier hs-var">sql</span></a></span><span>
+</span><span id="line-200"></span><span>        </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679135853"><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679135853"><span class="hs-identifier hs-var">sqlCommenterAttributes</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-201"></span><span>          </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; RawSql -&gt; RawSql
+forall a. SqlExpression a =&gt; SqlCommenterAttributes -&gt; a -&gt; a
+</span><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#addSqlCommenterAttributes"><span class="hs-identifier hs-var">SqlCommenter.addSqlCommenterAttributes</span></a></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679135853"><span class="hs-identifier hs-var">sqlCommenterAttributes</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; RawSql) -&gt; RawSql -&gt; RawSql
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">sql -&gt; RawSql
+forall a. SqlExpression a =&gt; a -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#toRawSql"><span class="hs-identifier hs-var">RawSql.toRawSql</span></a></span><span> </span><span class="annot"><span class="annottext">sql
+</span><a href="#local-6989586621679135845"><span class="hs-identifier hs-var">sql</span></a></span><span>
+</span><span id="line-202"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-203"></span><span>    </span><span class="annot"><span class="annottext">OrvilleState -&gt; forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlExecutionCallback"><span class="hs-identifier hs-var">orvilleSqlExecutionCallback</span></a></span><span>
+</span><span id="line-204"></span><span>      </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679135846"><span class="hs-identifier hs-var">orvilleState</span></a></span><span>
+</span><span id="line-205"></span><span>      </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679135844"><span class="hs-identifier hs-var">queryType</span></a></span><span>
+</span><span id="line-206"></span><span>      </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679135851"><span class="hs-identifier hs-var">rawSql</span></a></span><span>
+</span><span id="line-207"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Connection -&gt; RawSql -&gt; IO Result
+forall sql. SqlExpression sql =&gt; Connection -&gt; sql -&gt; IO Result
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#execute"><span class="hs-identifier hs-var">RawSql.execute</span></a></span><span> </span><span class="annot"><span class="annottext">Connection
+</span><a href="#local-6989586621679135847"><span class="hs-identifier hs-var">conn</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679135851"><span class="hs-identifier hs-var">rawSql</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span class="annot"><span class="hs-comment">{- |
+  Thrown by 'executeAndReturnAffectedRows' and 'executeAndReturnAffectedRowsIO'
+  if the number of affected rows cannot be successfully read from the LibPQ
+  command result.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-216"></span><span class="hs-keyword">newtype</span><span> </span><span id="AffectedRowsDecodingError"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#AffectedRowsDecodingError"><span class="hs-identifier hs-var">AffectedRowsDecodingError</span></a></span></span><span>
+</span><span id="line-217"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="AffectedRowsDecodingError"><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#AffectedRowsDecodingError"><span class="hs-identifier hs-var">AffectedRowsDecodingError</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">String</span></span><span>
+</span><span id="line-218"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-219"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-220"></span><span>      </span><span id="local-6989586621679135857"><span id="local-6989586621679135864"><span id="local-6989586621679135868"><span class="annot"><span class="annottext">Int -&gt; AffectedRowsDecodingError -&gt; ShowS
+[AffectedRowsDecodingError] -&gt; ShowS
+AffectedRowsDecodingError -&gt; String
+(Int -&gt; AffectedRowsDecodingError -&gt; ShowS)
+-&gt; (AffectedRowsDecodingError -&gt; String)
+-&gt; ([AffectedRowsDecodingError] -&gt; ShowS)
+-&gt; Show AffectedRowsDecodingError
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; AffectedRowsDecodingError -&gt; ShowS
+showsPrec :: Int -&gt; AffectedRowsDecodingError -&gt; ShowS
+$cshow :: AffectedRowsDecodingError -&gt; String
+show :: AffectedRowsDecodingError -&gt; String
+$cshowList :: [AffectedRowsDecodingError] -&gt; ShowS
+showList :: [AffectedRowsDecodingError] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span>
+</span><span id="line-221"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-222"></span><span>
+</span><span id="line-223"></span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-224"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621679135877"><span id="local-6989586621679135880"><span id="local-6989586621679135883"><span class="annot"><span class="hs-identifier hs-type">Exception</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html#AffectedRowsDecodingError"><span class="hs-identifier hs-type">AffectedRowsDecodingError</span></a></span></span></span></span><span>
+</span><span id="line-225"></span></pre></body></html>

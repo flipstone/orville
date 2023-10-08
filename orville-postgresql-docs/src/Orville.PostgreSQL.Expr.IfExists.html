@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GeneralizedNewtypeDeriving #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Expr.IfExists</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier">IfExists</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#ifExists"><span class="hs-identifier">ifExists</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-14"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-15"></span><span>
+</span><span id="line-16"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-17"></span><span>
+</span><span id="line-18"></span><span class="annot"><span class="hs-comment">{- |
+Type to represent a SQL &quot;IF EXISTS&quot; expression. E.G.
+
+&gt; IF EXISTS
+
+'IfExists' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-29"></span><span class="hs-keyword">newtype</span><span> </span><span id="IfExists"><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier hs-var">IfExists</span></a></span></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="IfExists"><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier hs-var">IfExists</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-keyword">deriving</span><span>
+</span><span id="line-32"></span><span>    </span><span class="hs-special">(</span><span> </span><span class="annot"><span class="hs-comment">-- | @since 1.0.0.0</span></span><span>
+</span><span id="line-33"></span><span>      </span><span id="local-6989586621679129290"><span id="local-6989586621679129295"><span class="annot"><span class="annottext">RawSql -&gt; IfExists
+IfExists -&gt; RawSql
+(IfExists -&gt; RawSql)
+-&gt; (RawSql -&gt; IfExists) -&gt; SqlExpression IfExists
+forall a. (a -&gt; RawSql) -&gt; (RawSql -&gt; a) -&gt; SqlExpression a
+$ctoRawSql :: IfExists -&gt; RawSql
+toRawSql :: IfExists -&gt; RawSql
+$cunsafeFromRawSql :: RawSql -&gt; IfExists
+unsafeFromRawSql :: RawSql -&gt; IfExists
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#SqlExpression"><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">RawSql.SqlExpression</span></a></span></span></span><span>
+</span><span id="line-34"></span><span>    </span><span class="hs-special">)</span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="annot"><span class="hs-comment">{- |
+A value of the SQL &quot;IF EXISTS&quot;
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-41"></span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#ifExists"><span class="hs-identifier hs-type">ifExists</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier hs-type">IfExists</span></a></span><span>
+</span><span id="line-42"></span><span id="ifExists"><span class="annot"><span class="annottext">ifExists :: IfExists
+</span><a href="Orville.PostgreSQL.Expr.IfExists.html#ifExists"><span class="hs-identifier hs-var hs-var">ifExists</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-43"></span><span>  </span><span class="annot"><span class="annottext">RawSql -&gt; IfExists
+</span><a href="Orville.PostgreSQL.Expr.IfExists.html#IfExists"><span class="hs-identifier hs-var">IfExists</span></a></span><span> </span><span class="annot"><span class="annottext">(RawSql -&gt; IfExists) -&gt; RawSql -&gt; IfExists
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; RawSql
+</span><a href="Orville.PostgreSQL.Raw.RawSql.html#fromString"><span class="hs-identifier hs-var">RawSql.fromString</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;IF EXISTS&quot;</span></span><span>
+</span><span id="line-44"></span></pre></body></html>

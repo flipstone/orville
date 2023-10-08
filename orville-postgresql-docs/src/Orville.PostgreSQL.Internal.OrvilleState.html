@@ -1,0 +1,742 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-10"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Internal.OrvilleState</span><span>
+</span><span id="line-11"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier">OrvilleState</span></a></span><span>
+</span><span id="line-12"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newOrvilleState"><span class="hs-identifier">newOrvilleState</span></a></span><span>
+</span><span id="line-13"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#resetOrvilleState"><span class="hs-identifier">resetOrvilleState</span></a></span><span>
+</span><span id="line-14"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionPool"><span class="hs-identifier">orvilleConnectionPool</span></a></span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionState"><span class="hs-identifier">orvilleConnectionState</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleErrorDetailLevel"><span class="hs-identifier">orvilleErrorDetailLevel</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleTransactionCallback"><span class="hs-identifier">orvilleTransactionCallback</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlCommenterAttributes"><span class="hs-identifier">orvilleSqlCommenterAttributes</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addTransactionCallback"><span class="hs-identifier">addTransactionCallback</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier">TransactionEvent</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#BeginTransaction"><span class="hs-identifier">BeginTransaction</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NewSavepoint"><span class="hs-identifier">NewSavepoint</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ReleaseSavepoint"><span class="hs-identifier">ReleaseSavepoint</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#RollbackToSavepoint"><span class="hs-identifier">RollbackToSavepoint</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#CommitTransaction"><span class="hs-identifier">CommitTransaction</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#RollbackTransaction"><span class="hs-identifier">RollbackTransaction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#openTransactionEvent"><span class="hs-identifier">openTransactionEvent</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#rollbackTransactionEvent"><span class="hs-identifier">rollbackTransactionEvent</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#transactionSuccessEvent"><span class="hs-identifier">transactionSuccessEvent</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectionState"><span class="hs-identifier">ConnectionState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NotConnected"><span class="hs-identifier">NotConnected</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Connected"><span class="hs-identifier">Connected</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier">ConnectedState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier">ConnectedState</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedConnection"><span class="hs-identifier">connectedConnection</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedTransaction"><span class="hs-identifier">connectedTransaction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectState"><span class="hs-identifier">connectState</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier">TransactionState</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier">OutermostTransaction</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier">SavepointTransaction</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newTransaction"><span class="hs-identifier">newTransaction</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier">Savepoint</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#savepointNestingLevel"><span class="hs-identifier">savepointNestingLevel</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#initialSavepoint"><span class="hs-identifier">initialSavepoint</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#nextSavepoint"><span class="hs-identifier">nextSavepoint</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlExecutionCallback"><span class="hs-identifier">orvilleSqlExecutionCallback</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addSqlExecutionCallback"><span class="hs-identifier">addSqlExecutionCallback</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleBeginTransactionExpr"><span class="hs-identifier">orvilleBeginTransactionExpr</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#setBeginTransactionExpr"><span class="hs-identifier">setBeginTransactionExpr</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#setSqlCommenterAttributes"><span class="hs-identifier">setSqlCommenterAttributes</span></a></span><span>
+</span><span id="line-38"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addSqlCommenterAttributes"><span class="hs-identifier">addSqlCommenterAttributes</span></a></span><span>
+</span><span id="line-39"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-40"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Map.Strict</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Map</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Data.Pool</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">Pool</span></span><span class="hs-special">)</span><span>
+</span><span id="line-44"></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html"><span class="hs-identifier">Orville.PostgreSQL.ErrorDetailLevel</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier">ErrorDetailLevel</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-46"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier">QueryType</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.Connection</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier">Connection</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.RawSql</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">RawSql</span></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html"><span class="hs-identifier">Orville.PostgreSQL.Raw.SqlCommenter</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">SqlCommenter</span></span><span>
+</span><span id="line-51"></span><span>
+</span><span id="line-52"></span><span class="annot"><span class="hs-comment">{- |
+  'OrvilleState' is used to manange opening connections to the database,
+  transactions, etc. 'newOrvilleState' should be used to create an appopriate
+  initial state for your monad's context.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-59"></span><span class="hs-keyword">data</span><span> </span><span id="OrvilleState"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-var">OrvilleState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="OrvilleState"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-var">OrvilleState</span></a></span></span><span>
+</span><span id="line-60"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="_orvilleConnectionPool"><span class="annot"><span class="annottext">OrvilleState -&gt; Pool Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionPool"><span class="hs-identifier hs-var hs-var">_orvilleConnectionPool</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Pool</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span>
+</span><span id="line-61"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_orvilleConnectionState"><span class="annot"><span class="annottext">OrvilleState -&gt; ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionState"><span class="hs-identifier hs-var hs-var">_orvilleConnectionState</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectionState"><span class="hs-identifier hs-type">ConnectionState</span></a></span><span>
+</span><span id="line-62"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_orvilleErrorDetailLevel"><span class="annot"><span class="annottext">OrvilleState -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleErrorDetailLevel"><span class="hs-identifier hs-var hs-var">_orvilleErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-63"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_orvilleTransactionCallback"><span class="annot"><span class="annottext">OrvilleState -&gt; TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleTransactionCallback"><span class="hs-identifier hs-var hs-var">_orvilleTransactionCallback</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-64"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_orvilleSqlExecutionCallback"><span class="annot"><span class="annottext">OrvilleState -&gt; forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlExecutionCallback"><span class="hs-identifier hs-var hs-var">_orvilleSqlExecutionCallback</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679131883"><span class="annot"><a href="#local-6989586621679131883"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679131883"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679131883"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_orvilleBeginTransactionExpr"><span class="annot"><span class="annottext">OrvilleState -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleBeginTransactionExpr"><span class="hs-identifier hs-var hs-var">_orvilleBeginTransactionExpr</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-type">Expr.BeginTransactionExpr</span></a></span><span>
+</span><span id="line-66"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="_orvilleSqlCommenterAttributes"><span class="annot"><span class="annottext">OrvilleState -&gt; Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var hs-var">_orvilleSqlCommenterAttributes</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenter.SqlCommenterAttributes</span></a></span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-68"></span><span>
+</span><span id="line-69"></span><span class="annot"><span class="hs-comment">{- |
+  Get the connection pool being used for the 'OrvilleState'
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-74"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionPool"><span class="hs-identifier hs-type">orvilleConnectionPool</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Pool</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span>
+</span><span id="line-75"></span><span id="orvilleConnectionPool"><span class="annot"><span class="annottext">orvilleConnectionPool :: OrvilleState -&gt; Pool Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionPool"><span class="hs-identifier hs-var hs-var">orvilleConnectionPool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-76"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; Pool Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionPool"><span class="hs-identifier hs-var">_orvilleConnectionPool</span></a></span><span>
+</span><span id="line-77"></span><span>
+</span><span id="line-78"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: The 'ConnectionState' indicates whether Orville currently has a connection
+  open, and contains the connection if it does.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-84"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionState"><span class="hs-identifier hs-type">orvilleConnectionState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectionState"><span class="hs-identifier hs-type">ConnectionState</span></a></span><span>
+</span><span id="line-85"></span><span id="orvilleConnectionState"><span class="annot"><span class="annottext">orvilleConnectionState :: OrvilleState -&gt; ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleConnectionState"><span class="hs-identifier hs-var hs-var">orvilleConnectionState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-86"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionState"><span class="hs-identifier hs-var">_orvilleConnectionState</span></a></span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span class="annot"><span class="hs-comment">{- |
+  The 'ErrorDetailLevel' controls how much information Orville includes in
+  error messages it generates when data cannot be decoded rows in the database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-94"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleErrorDetailLevel"><span class="hs-identifier hs-type">orvilleErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span>
+</span><span id="line-95"></span><span id="orvilleErrorDetailLevel"><span class="annot"><span class="annottext">orvilleErrorDetailLevel :: OrvilleState -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleErrorDetailLevel"><span class="hs-identifier hs-var hs-var">orvilleErrorDetailLevel</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-96"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleErrorDetailLevel"><span class="hs-identifier hs-var">_orvilleErrorDetailLevel</span></a></span><span>
+</span><span id="line-97"></span><span>
+</span><span id="line-98"></span><span class="annot"><span class="hs-comment">{- |
+  Orville will call the transaction callback any time a transaction event
+  occurrs. You can register a callback with 'addTransactionCallBack'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-104"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleTransactionCallback"><span class="hs-identifier hs-type">orvilleTransactionCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-105"></span><span id="orvilleTransactionCallback"><span class="annot"><span class="annottext">orvilleTransactionCallback :: OrvilleState -&gt; TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleTransactionCallback"><span class="hs-identifier hs-var hs-var">orvilleTransactionCallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-106"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleTransactionCallback"><span class="hs-identifier hs-var">_orvilleTransactionCallback</span></a></span><span>
+</span><span id="line-107"></span><span>
+</span><span id="line-108"></span><span class="annot"><span class="hs-comment">{- |
+  The SQL expression that Orville will use to begin a transaction. You can set
+  this via 'setBeginTransactionExpr' to have fine grained control over the
+  transaction parameters, such as isolation level.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-115"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleBeginTransactionExpr"><span class="hs-identifier hs-type">orvilleBeginTransactionExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-type">Expr.BeginTransactionExpr</span></a></span><span>
+</span><span id="line-116"></span><span id="orvilleBeginTransactionExpr"><span class="annot"><span class="annottext">orvilleBeginTransactionExpr :: OrvilleState -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleBeginTransactionExpr"><span class="hs-identifier hs-var hs-var">orvilleBeginTransactionExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-117"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleBeginTransactionExpr"><span class="hs-identifier hs-var">_orvilleBeginTransactionExpr</span></a></span><span>
+</span><span id="line-118"></span><span>
+</span><span id="line-119"></span><span class="annot"><span class="hs-comment">{- |
+  The SqlCommenter attributes that Orville will include with queries. These can
+  be modified with 'addSqlCommenterAttributes'. See
+  https://google.github.io/sqlcommenter/.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-126"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlCommenterAttributes"><span class="hs-identifier hs-type">orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenter.SqlCommenterAttributes</span></a></span><span>
+</span><span id="line-127"></span><span id="orvilleSqlCommenterAttributes"><span class="annot"><span class="annottext">orvilleSqlCommenterAttributes :: OrvilleState -&gt; Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var hs-var">orvilleSqlCommenterAttributes</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-128"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">_orvilleSqlCommenterAttributes</span></a></span><span>
+</span><span id="line-129"></span><span>
+</span><span id="line-130"></span><span class="annot"><span class="hs-comment">{- |
+  Registers a callback to be invoked during transactions.
+
+  The callback given will be called after the SQL statement corresponding
+  to the given event has finished executing. Callbacks will be called
+  in the order the are added.
+
+  Note: There is no specialized error handling for these callbacks. This means
+  that if a callback raises an exception no further callbacks will be called
+  and the exception will propagate up until it caught elsewhere. In particular,
+  if an exception is raised by a callback upon opening the transaction it will
+  cause the transaction to be rolled-back the same as any other exception that
+  might happen during the transaction. In general, we recommend only using
+  callbacks that either raise no exceptions or can handle their own exceptions
+  cleanly.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-148"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addTransactionCallback"><span class="hs-identifier hs-type">addTransactionCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-149"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-150"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-151"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-152"></span><span id="addTransactionCallback"><span class="annot"><span class="annottext">addTransactionCallback :: (TransactionEvent -&gt; IO ()) -&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addTransactionCallback"><span class="hs-identifier hs-var hs-var">addTransactionCallback</span></a></span></span><span> </span><span id="local-6989586621679131972"><span class="annot"><span class="annottext">TransactionEvent -&gt; IO ()
+</span><a href="#local-6989586621679131972"><span class="hs-identifier hs-var">newCallback</span></a></span></span><span> </span><span id="local-6989586621679131973"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679131973"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-153"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-154"></span><span>    </span><span id="local-6989586621679131974"><span class="annot"><span class="annottext">originalCallback :: TransactionEvent -&gt; IO ()
+</span><a href="#local-6989586621679131974"><span class="hs-identifier hs-var hs-var">originalCallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-155"></span><span>      </span><span class="annot"><span class="annottext">OrvilleState -&gt; TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleTransactionCallback"><span class="hs-identifier hs-var">_orvilleTransactionCallback</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679131973"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span>    </span><span id="local-6989586621679131977"><span class="annot"><span class="annottext">wrappedCallback :: TransactionEvent -&gt; IO ()
+</span><a href="#local-6989586621679131977"><span class="hs-identifier hs-var hs-var">wrappedCallback</span></a></span></span><span> </span><span id="local-6989586621679131978"><span class="annot"><span class="annottext">TransactionEvent
+</span><a href="#local-6989586621679131978"><span class="hs-identifier hs-var">event</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-158"></span><span>      </span><span class="annot"><span class="annottext">TransactionEvent -&gt; IO ()
+</span><a href="#local-6989586621679131974"><span class="hs-identifier hs-var">originalCallback</span></a></span><span> </span><span class="annot"><span class="annottext">TransactionEvent
+</span><a href="#local-6989586621679131978"><span class="hs-identifier hs-var">event</span></a></span><span>
+</span><span id="line-159"></span><span>      </span><span class="annot"><span class="annottext">TransactionEvent -&gt; IO ()
+</span><a href="#local-6989586621679131972"><span class="hs-identifier hs-var">newCallback</span></a></span><span> </span><span class="annot"><span class="annottext">TransactionEvent
+</span><a href="#local-6989586621679131978"><span class="hs-identifier hs-var">event</span></a></span><span>
+</span><span id="line-160"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-161"></span><span>    </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679131973"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_orvilleTransactionCallback :: TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleTransactionCallback"><span class="hs-identifier hs-var">_orvilleTransactionCallback</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TransactionEvent -&gt; IO ()
+</span><a href="#local-6989586621679131977"><span class="hs-identifier hs-var">wrappedCallback</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-162"></span><span>
+</span><span id="line-163"></span><span class="annot"><span class="hs-comment">{- |
+  Creates a appropriate initial 'OrvilleState' that will use the connection
+  pool given to initiate connections to the database.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-169"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newOrvilleState"><span class="hs-identifier hs-type">newOrvilleState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.ErrorDetailLevel.html#ErrorDetailLevel"><span class="hs-identifier hs-type">ErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Pool</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-170"></span><span id="newOrvilleState"><span class="annot"><span class="annottext">newOrvilleState :: ErrorDetailLevel -&gt; Pool Connection -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newOrvilleState"><span class="hs-identifier hs-var hs-var">newOrvilleState</span></a></span></span><span> </span><span id="local-6989586621679131979"><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679131979"><span class="hs-identifier hs-var">errorDetailLevel</span></a></span></span><span> </span><span id="local-6989586621679131980"><span class="annot"><span class="annottext">Pool Connection
+</span><a href="#local-6989586621679131980"><span class="hs-identifier hs-var">pool</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-171"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-172"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_orvilleConnectionPool :: Pool Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionPool"><span class="hs-identifier hs-var">_orvilleConnectionPool</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Pool Connection
+</span><a href="#local-6989586621679131980"><span class="hs-identifier hs-var">pool</span></a></span><span>
+</span><span id="line-173"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_orvilleConnectionState :: ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionState"><span class="hs-identifier hs-var">_orvilleConnectionState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NotConnected"><span class="hs-identifier hs-var">NotConnected</span></a></span><span>
+</span><span id="line-174"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_orvilleErrorDetailLevel :: ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleErrorDetailLevel"><span class="hs-identifier hs-var">_orvilleErrorDetailLevel</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ErrorDetailLevel
+</span><a href="#local-6989586621679131979"><span class="hs-identifier hs-var">errorDetailLevel</span></a></span><span>
+</span><span id="line-175"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_orvilleTransactionCallback :: TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleTransactionCallback"><span class="hs-identifier hs-var">_orvilleTransactionCallback</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultTransactionCallback"><span class="hs-identifier hs-var">defaultTransactionCallback</span></a></span><span>
+</span><span id="line-176"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_orvilleSqlExecutionCallback :: forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlExecutionCallback"><span class="hs-identifier hs-var">_orvilleSqlExecutionCallback</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultSqlExectionCallback"><span class="hs-identifier hs-var">defaultSqlExectionCallback</span></a></span><span>
+</span><span id="line-177"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_orvilleBeginTransactionExpr :: BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleBeginTransactionExpr"><span class="hs-identifier hs-var">_orvilleBeginTransactionExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultBeginTransactionExpr"><span class="hs-identifier hs-var">defaultBeginTransactionExpr</span></a></span><span>
+</span><span id="line-178"></span><span>    </span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">_orvilleSqlCommenterAttributes :: Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">_orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Maybe SqlCommenterAttributes
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-179"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-180"></span><span>
+</span><span id="line-181"></span><span class="annot"><span class="hs-comment">{- |
+  Creates a new initial 'OrvilleState' using the connection pool from the
+  provide state. You might need to use this if you are spawning one Orville
+  monad from another and they should not share the same connection and
+  transaction state.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-189"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#resetOrvilleState"><span class="hs-identifier hs-type">resetOrvilleState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-190"></span><span id="resetOrvilleState"><span class="annot"><span class="annottext">resetOrvilleState :: OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#resetOrvilleState"><span class="hs-identifier hs-var hs-var">resetOrvilleState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-191"></span><span>  </span><span class="annot"><span class="annottext">ErrorDetailLevel -&gt; Pool Connection -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newOrvilleState"><span class="hs-identifier hs-var">newOrvilleState</span></a></span><span>
+</span><span id="line-192"></span><span>    </span><span class="annot"><span class="annottext">(ErrorDetailLevel -&gt; Pool Connection -&gt; OrvilleState)
+-&gt; (OrvilleState -&gt; ErrorDetailLevel)
+-&gt; OrvilleState
+-&gt; Pool Connection
+-&gt; OrvilleState
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; ErrorDetailLevel
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleErrorDetailLevel"><span class="hs-identifier hs-var">_orvilleErrorDetailLevel</span></a></span><span>
+</span><span id="line-193"></span><span>    </span><span class="annot"><span class="annottext">(OrvilleState -&gt; Pool Connection -&gt; OrvilleState)
+-&gt; (OrvilleState -&gt; Pool Connection)
+-&gt; OrvilleState
+-&gt; OrvilleState
+forall a b.
+(OrvilleState -&gt; a -&gt; b)
+-&gt; (OrvilleState -&gt; a) -&gt; OrvilleState -&gt; b
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; Pool Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionPool"><span class="hs-identifier hs-var">_orvilleConnectionPool</span></a></span><span>
+</span><span id="line-194"></span><span>
+</span><span id="line-195"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: Transitions the 'OrvilleState' into &quot;connected&quot; status, storing
+  the given 'Connection' as the database connection to be used to execute
+  all queries. This is used by 'withConnection' to track the connection it
+  retrieves from the pool.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-203"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectState"><span class="hs-identifier hs-type">connectState</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier hs-type">ConnectedState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-204"></span><span id="connectState"><span class="annot"><span class="annottext">connectState :: ConnectedState -&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectState"><span class="hs-identifier hs-var hs-var">connectState</span></a></span></span><span> </span><span id="local-6989586621679131985"><span class="annot"><span class="annottext">ConnectedState
+</span><a href="#local-6989586621679131985"><span class="hs-identifier hs-var">connectedState</span></a></span></span><span> </span><span id="local-6989586621679131986"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679131986"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-205"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679131986"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-206"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_orvilleConnectionState :: ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleConnectionState"><span class="hs-identifier hs-var">_orvilleConnectionState</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">ConnectedState -&gt; ConnectionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Connected"><span class="hs-identifier hs-var">Connected</span></a></span><span> </span><span class="annot"><span class="annottext">ConnectedState
+</span><a href="#local-6989586621679131985"><span class="hs-identifier hs-var">connectedState</span></a></span><span>
+</span><span id="line-207"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-208"></span><span>
+</span><span id="line-209"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: This type is used to signal whether a database connection has
+  been retrieved from the pool for the current operation or not. The
+  value is tracked in the 'OrvilleState' for the host monad, and is checked
+  by 'withConnection' to avoid checking out two separate connections for a
+  multiple operations that needs to be run on the same connection (e.g.
+  multiple operations inside a transaction).
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-219"></span><span class="hs-keyword">data</span><span> </span><span id="ConnectionState"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectionState"><span class="hs-identifier hs-var">ConnectionState</span></a></span></span><span>
+</span><span id="line-220"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="NotConnected"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NotConnected"><span class="hs-identifier hs-var">NotConnected</span></a></span></span><span>
+</span><span id="line-221"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="Connected"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Connected"><span class="hs-identifier hs-var">Connected</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier hs-type">ConnectedState</span></a></span><span>
+</span><span id="line-222"></span><span>
+</span><span id="line-223"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: This type is used hold the connection while it is open and
+  track the state of open transactions and savepoints on the connection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-229"></span><span class="hs-keyword">data</span><span> </span><span id="ConnectedState"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier hs-var">ConnectedState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span id="ConnectedState"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ConnectedState"><span class="hs-identifier hs-var">ConnectedState</span></a></span></span><span>
+</span><span id="line-230"></span><span>  </span><span class="hs-special">{</span><span> </span><span id="connectedConnection"><span class="annot"><span class="annottext">ConnectedState -&gt; Connection
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedConnection"><span class="hs-identifier hs-var hs-var">connectedConnection</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.Connection.html#Connection"><span class="hs-identifier hs-type">Connection</span></a></span><span>
+</span><span id="line-231"></span><span>  </span><span class="hs-special">,</span><span> </span><span id="connectedTransaction"><span class="annot"><span class="annottext">ConnectedState -&gt; Maybe TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#connectedTransaction"><span class="hs-identifier hs-var hs-var">connectedTransaction</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-type">TransactionState</span></a></span><span>
+</span><span id="line-232"></span><span>  </span><span class="hs-special">}</span><span>
+</span><span id="line-233"></span><span>
+</span><span id="line-234"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: This type is use to track the state of open transactions and
+  savepoints on an open connection.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-240"></span><span class="hs-keyword">data</span><span> </span><span id="TransactionState"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-var">TransactionState</span></a></span></span><span>
+</span><span id="line-241"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="OutermostTransaction"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier hs-var">OutermostTransaction</span></a></span></span><span>
+</span><span id="line-242"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span id="SavepointTransaction"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-var">SavepointTransaction</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span>
+</span><span id="line-243"></span><span>
+</span><span id="line-244"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL: Constructs a new 'TransactionState' to represent beginning a
+  new transaction in SQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-250"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newTransaction"><span class="hs-identifier hs-type">newTransaction</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-type">TransactionState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-type">TransactionState</span></a></span><span>
+</span><span id="line-251"></span><span id="newTransaction"><span class="annot"><span class="annottext">newTransaction :: Maybe TransactionState -&gt; TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#newTransaction"><span class="hs-identifier hs-var hs-var">newTransaction</span></a></span></span><span> </span><span id="local-6989586621679131987"><span class="annot"><span class="annottext">Maybe TransactionState
+</span><a href="#local-6989586621679131987"><span class="hs-identifier hs-var">maybeTransactionState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-252"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Maybe TransactionState
+</span><a href="#local-6989586621679131987"><span class="hs-identifier hs-var">maybeTransactionState</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-253"></span><span>    </span><span class="annot"><span class="annottext">Maybe TransactionState
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-254"></span><span>      </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier hs-var">OutermostTransaction</span></a></span><span>
+</span><span id="line-255"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier hs-var">OutermostTransaction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-256"></span><span>      </span><span class="annot"><span class="annottext">Savepoint -&gt; TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-var">SavepointTransaction</span></a></span><span> </span><span class="annot"><span class="annottext">Savepoint
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#initialSavepoint"><span class="hs-identifier hs-var">initialSavepoint</span></a></span><span>
+</span><span id="line-257"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-type">SavepointTransaction</span></a></span><span> </span><span id="local-6989586621679131988"><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679131988"><span class="hs-identifier hs-var">savepoint</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-258"></span><span>      </span><span class="annot"><span class="annottext">Savepoint -&gt; TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-var">SavepointTransaction</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Savepoint -&gt; Savepoint
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#nextSavepoint"><span class="hs-identifier hs-var">nextSavepoint</span></a></span><span> </span><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679131988"><span class="hs-identifier hs-var">savepoint</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-259"></span><span>
+</span><span id="line-260"></span><span class="annot"><span class="hs-comment">{- |
+  An internal Orville identifier for a savepoint in a PostgreSQL transaction.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-265"></span><span class="hs-keyword">newtype</span><span> </span><span id="Savepoint"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-var">Savepoint</span></a></span></span><span>
+</span><span id="line-266"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span id="Savepoint"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-var">Savepoint</span></a></span></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-267"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679131991"><span id="local-6989586621679131996"><span class="annot"><span class="annottext">Savepoint -&gt; Savepoint -&gt; Bool
+(Savepoint -&gt; Savepoint -&gt; Bool)
+-&gt; (Savepoint -&gt; Savepoint -&gt; Bool) -&gt; Eq Savepoint
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: Savepoint -&gt; Savepoint -&gt; Bool
+== :: Savepoint -&gt; Savepoint -&gt; Bool
+$c/= :: Savepoint -&gt; Savepoint -&gt; Bool
+/= :: Savepoint -&gt; Savepoint -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679132002"><span id="local-6989586621679132008"><span id="local-6989586621679132012"><span class="annot"><span class="annottext">Int -&gt; Savepoint -&gt; ShowS
+[Savepoint] -&gt; ShowS
+Savepoint -&gt; String
+(Int -&gt; Savepoint -&gt; ShowS)
+-&gt; (Savepoint -&gt; String)
+-&gt; ([Savepoint] -&gt; ShowS)
+-&gt; Show Savepoint
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; Savepoint -&gt; ShowS
+showsPrec :: Int -&gt; Savepoint -&gt; ShowS
+$cshow :: Savepoint -&gt; String
+show :: Savepoint -&gt; String
+$cshowList :: [Savepoint] -&gt; ShowS
+showList :: [Savepoint] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-268"></span><span>
+</span><span id="line-269"></span><span class="annot"><span class="hs-comment">{- |
+  The initial identifier Orville uses to track the first savepoint within
+  a transaction.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-275"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#initialSavepoint"><span class="hs-identifier hs-type">initialSavepoint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span>
+</span><span id="line-276"></span><span id="initialSavepoint"><span class="annot"><span class="annottext">initialSavepoint :: Savepoint
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#initialSavepoint"><span class="hs-identifier hs-var hs-var">initialSavepoint</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-277"></span><span>  </span><span class="annot"><span class="annottext">Int -&gt; Savepoint
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-var">Savepoint</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span>
+</span><span id="line-278"></span><span>
+</span><span id="line-279"></span><span class="annot"><span class="hs-comment">{- |
+  Determines identifier for the next savepoint in a transaction after the
+  given saveponit&gt;
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-285"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#nextSavepoint"><span class="hs-identifier hs-type">nextSavepoint</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span>
+</span><span id="line-286"></span><span id="nextSavepoint"><span class="annot"><span class="annottext">nextSavepoint :: Savepoint -&gt; Savepoint
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#nextSavepoint"><span class="hs-identifier hs-var hs-var">nextSavepoint</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span> </span><span id="local-6989586621679132015"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132015"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-287"></span><span>  </span><span class="annot"><span class="annottext">Int -&gt; Savepoint
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-var">Savepoint</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132015"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Int -&gt; Int
+forall a. Num a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">+</span></span><span> </span><span class="annot"><span class="annottext">Int
+</span><span class="hs-number">1</span></span><span class="hs-special">)</span><span>
+</span><span id="line-288"></span><span>
+</span><span id="line-289"></span><span class="annot"><span class="hs-comment">{- |
+  Indicates how many levels of nested savepoints the given 'Savepoint'
+  identifier represents.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-295"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#savepointNestingLevel"><span class="hs-identifier hs-type">savepointNestingLevel</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span>
+</span><span id="line-296"></span><span id="savepointNestingLevel"><span class="annot"><span class="annottext">savepointNestingLevel :: Savepoint -&gt; Int
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#savepointNestingLevel"><span class="hs-identifier hs-var hs-var">savepointNestingLevel</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span> </span><span id="local-6989586621679132017"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132017"><span class="hs-identifier hs-var">n</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679132017"><span class="hs-identifier hs-var">n</span></a></span><span>
+</span><span id="line-297"></span><span>
+</span><span id="line-298"></span><span class="annot"><span class="hs-comment">{- |
+  Describes an event in the lifecycle of a database transaction. You can use
+  'addTransactionCallBack' to register a callback to respond to these events.
+  The callback will be called after the even in question has been succesfully
+  executed.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-306"></span><span class="hs-keyword">data</span><span> </span><span id="TransactionEvent"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-var">TransactionEvent</span></a></span></span><span>
+</span><span id="line-307"></span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="hs-comment">-- | Indicates a new transaction has been started</span></span><span>
+</span><span id="line-308"></span><span>    </span><span id="BeginTransaction"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#BeginTransaction"><span class="hs-identifier hs-var">BeginTransaction</span></a></span></span><span>
+</span><span id="line-309"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Indicates that a new savepoint has been saved within a transaction</span></span><span>
+</span><span id="line-310"></span><span>    </span><span id="NewSavepoint"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NewSavepoint"><span class="hs-identifier hs-var">NewSavepoint</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span>
+</span><span id="line-311"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="hs-comment">-- | Indicates that a previous savepoint has been released. It can no</span><span>
+</span><span id="line-312"></span><span>    </span><span class="hs-comment">-- longer be rolled back to.</span><span>
+</span><span id="line-313"></span><span>    </span><span id="ReleaseSavepoint"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ReleaseSavepoint"><span class="hs-identifier hs-var">ReleaseSavepoint</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span>
+</span><span id="line-314"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="hs-comment">-- | Indicates that rollbac was performed to a prior savepoint.</span><span>
+</span><span id="line-315"></span><span>    </span><span class="hs-comment">--</span><span>
+</span><span id="line-316"></span><span>    </span><span class="hs-comment">-- Note: It is possible to rollback to a savepoint prior to the most recent</span><span>
+</span><span id="line-317"></span><span>    </span><span class="hs-comment">-- one without releasing or rolling back to intermediate savepoints. Doing</span><span>
+</span><span id="line-318"></span><span>    </span><span class="hs-comment">-- so destroys any savepoints created after given savepoint. Although</span><span>
+</span><span id="line-319"></span><span>    </span><span class="hs-comment">-- Orville currently always matches 'NewSavepoint' with either</span><span>
+</span><span id="line-320"></span><span>    </span><span class="hs-comment">-- 'ReleaseSavepoint' or 'RollbackToSavepoint', it is recommended that you</span><span>
+</span><span id="line-321"></span><span>    </span><span class="hs-comment">-- do not rely on this behavior.</span><span>
+</span><span id="line-322"></span><span>    </span><span id="RollbackToSavepoint"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#RollbackToSavepoint"><span class="hs-identifier hs-var">RollbackToSavepoint</span></a></span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#Savepoint"><span class="hs-identifier hs-type">Savepoint</span></a></span><span>
+</span><span id="line-323"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Indicates that the transaction has been committed.</span></span><span>
+</span><span id="line-324"></span><span>    </span><span id="CommitTransaction"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#CommitTransaction"><span class="hs-identifier hs-var">CommitTransaction</span></a></span></span><span>
+</span><span id="line-325"></span><span>  </span><span class="hs-glyph">|</span><span> </span><span class="annot"><span class="hs-comment">-- | Indicates that the transaction has been rolled back.</span></span><span>
+</span><span id="line-326"></span><span>    </span><span id="RollbackTransaction"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#RollbackTransaction"><span class="hs-identifier hs-var">RollbackTransaction</span></a></span></span><span>
+</span><span id="line-327"></span><span>  </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span id="local-6989586621679132019"><span id="local-6989586621679132024"><span class="annot"><span class="annottext">TransactionEvent -&gt; TransactionEvent -&gt; Bool
+(TransactionEvent -&gt; TransactionEvent -&gt; Bool)
+-&gt; (TransactionEvent -&gt; TransactionEvent -&gt; Bool)
+-&gt; Eq TransactionEvent
+forall a. (a -&gt; a -&gt; Bool) -&gt; (a -&gt; a -&gt; Bool) -&gt; Eq a
+$c== :: TransactionEvent -&gt; TransactionEvent -&gt; Bool
+== :: TransactionEvent -&gt; TransactionEvent -&gt; Bool
+$c/= :: TransactionEvent -&gt; TransactionEvent -&gt; Bool
+/= :: TransactionEvent -&gt; TransactionEvent -&gt; Bool
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var">Eq</span></span></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621679132028"><span id="local-6989586621679132036"><span id="local-6989586621679132040"><span class="annot"><span class="annottext">Int -&gt; TransactionEvent -&gt; ShowS
+[TransactionEvent] -&gt; ShowS
+TransactionEvent -&gt; String
+(Int -&gt; TransactionEvent -&gt; ShowS)
+-&gt; (TransactionEvent -&gt; String)
+-&gt; ([TransactionEvent] -&gt; ShowS)
+-&gt; Show TransactionEvent
+forall a.
+(Int -&gt; a -&gt; ShowS) -&gt; (a -&gt; String) -&gt; ([a] -&gt; ShowS) -&gt; Show a
+$cshowsPrec :: Int -&gt; TransactionEvent -&gt; ShowS
+showsPrec :: Int -&gt; TransactionEvent -&gt; ShowS
+$cshow :: TransactionEvent -&gt; String
+show :: TransactionEvent -&gt; String
+$cshowList :: [TransactionEvent] -&gt; ShowS
+showList :: [TransactionEvent] -&gt; ShowS
+</span><span class="hs-identifier hs-var hs-var hs-var hs-var hs-var hs-var hs-var hs-var">Show</span></span></span></span></span><span class="hs-special">)</span><span>
+</span><span id="line-328"></span><span>
+</span><span id="line-329"></span><span class="annot"><span class="hs-comment">{- |
+  The default transaction callback is simply a no-op.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-334"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultTransactionCallback"><span class="hs-identifier hs-type">defaultTransactionCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><span id="line-335"></span><span id="defaultTransactionCallback"><span class="annot"><span class="annottext">defaultTransactionCallback :: TransactionEvent -&gt; IO ()
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultTransactionCallback"><span class="hs-identifier hs-var hs-var">defaultTransactionCallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO () -&gt; TransactionEvent -&gt; IO ()
+forall a b. a -&gt; b -&gt; a
+</span><span class="hs-identifier hs-var">const</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">() -&gt; IO ()
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-336"></span><span>
+</span><span id="line-337"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs the appropriate 'TransactionEvent' for opening a new transaction
+  based on the current 'TransactionState'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-343"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#openTransactionEvent"><span class="hs-identifier hs-type">openTransactionEvent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-type">TransactionState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span>
+</span><span id="line-344"></span><span id="openTransactionEvent"><span class="annot"><span class="annottext">openTransactionEvent :: TransactionState -&gt; TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#openTransactionEvent"><span class="hs-identifier hs-var hs-var">openTransactionEvent</span></a></span></span><span> </span><span id="local-6989586621679132043"><span class="annot"><span class="annottext">TransactionState
+</span><a href="#local-6989586621679132043"><span class="hs-identifier hs-var">txnState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-345"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="#local-6989586621679132043"><span class="hs-identifier hs-var">txnState</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-346"></span><span>    </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier hs-var">OutermostTransaction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#BeginTransaction"><span class="hs-identifier hs-var">BeginTransaction</span></a></span><span>
+</span><span id="line-347"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-type">SavepointTransaction</span></a></span><span> </span><span id="local-6989586621679132044"><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679132044"><span class="hs-identifier hs-var">savepoint</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Savepoint -&gt; TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#NewSavepoint"><span class="hs-identifier hs-var">NewSavepoint</span></a></span><span> </span><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679132044"><span class="hs-identifier hs-var">savepoint</span></a></span><span>
+</span><span id="line-348"></span><span>
+</span><span id="line-349"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs the appropriate 'TransactionEvent' for rolling back the innermost
+  transaction based on the current 'TransactionState'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-355"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#rollbackTransactionEvent"><span class="hs-identifier hs-type">rollbackTransactionEvent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-type">TransactionState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span>
+</span><span id="line-356"></span><span id="rollbackTransactionEvent"><span class="annot"><span class="annottext">rollbackTransactionEvent :: TransactionState -&gt; TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#rollbackTransactionEvent"><span class="hs-identifier hs-var hs-var">rollbackTransactionEvent</span></a></span></span><span> </span><span id="local-6989586621679132045"><span class="annot"><span class="annottext">TransactionState
+</span><a href="#local-6989586621679132045"><span class="hs-identifier hs-var">txnState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-357"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="#local-6989586621679132045"><span class="hs-identifier hs-var">txnState</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-358"></span><span>    </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier hs-var">OutermostTransaction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#RollbackTransaction"><span class="hs-identifier hs-var">RollbackTransaction</span></a></span><span>
+</span><span id="line-359"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-type">SavepointTransaction</span></a></span><span> </span><span id="local-6989586621679132046"><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679132046"><span class="hs-identifier hs-var">savepoint</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Savepoint -&gt; TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#RollbackToSavepoint"><span class="hs-identifier hs-var">RollbackToSavepoint</span></a></span><span> </span><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679132046"><span class="hs-identifier hs-var">savepoint</span></a></span><span>
+</span><span id="line-360"></span><span>
+</span><span id="line-361"></span><span class="annot"><span class="hs-comment">{- |
+  Constructs the appropriate 'TransactionEvent' to represent a transaction
+  completely successfully based on the current 'TransactionState'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-367"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#transactionSuccessEvent"><span class="hs-identifier hs-type">transactionSuccessEvent</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionState"><span class="hs-identifier hs-type">TransactionState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#TransactionEvent"><span class="hs-identifier hs-type">TransactionEvent</span></a></span><span>
+</span><span id="line-368"></span><span id="transactionSuccessEvent"><span class="annot"><span class="annottext">transactionSuccessEvent :: TransactionState -&gt; TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#transactionSuccessEvent"><span class="hs-identifier hs-var hs-var">transactionSuccessEvent</span></a></span></span><span> </span><span id="local-6989586621679132047"><span class="annot"><span class="annottext">TransactionState
+</span><a href="#local-6989586621679132047"><span class="hs-identifier hs-var">txnState</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-369"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="#local-6989586621679132047"><span class="hs-identifier hs-var">txnState</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-370"></span><span>    </span><span class="annot"><span class="annottext">TransactionState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OutermostTransaction"><span class="hs-identifier hs-var">OutermostTransaction</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#CommitTransaction"><span class="hs-identifier hs-var">CommitTransaction</span></a></span><span>
+</span><span id="line-371"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#SavepointTransaction"><span class="hs-identifier hs-type">SavepointTransaction</span></a></span><span> </span><span id="local-6989586621679132048"><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679132048"><span class="hs-identifier hs-var">savepoint</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Savepoint -&gt; TransactionEvent
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#ReleaseSavepoint"><span class="hs-identifier hs-var">ReleaseSavepoint</span></a></span><span> </span><span class="annot"><span class="annottext">Savepoint
+</span><a href="#local-6989586621679132048"><span class="hs-identifier hs-var">savepoint</span></a></span><span>
+</span><span id="line-372"></span><span>
+</span><span id="line-373"></span><span class="annot"><span class="hs-comment">{- |
+  The callback Orville will call whenever it wants to run SQL. You can
+  register a callback using 'addSqlExecutionCallback'.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-379"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlExecutionCallback"><span class="hs-identifier hs-type">orvilleSqlExecutionCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-380"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-381"></span><span>  </span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132049"><span class="annot"><a href="#local-6989586621679132049"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span>
+</span><span id="line-382"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-383"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-384"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132049"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-385"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132049"><span class="hs-identifier hs-type">a</span></a></span><span>
+</span><span id="line-386"></span><span id="orvilleSqlExecutionCallback"><span class="annot"><span class="annottext">orvilleSqlExecutionCallback :: OrvilleState -&gt; forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlExecutionCallback"><span class="hs-identifier hs-var hs-var">orvilleSqlExecutionCallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-387"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState -&gt; QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+OrvilleState -&gt; forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlExecutionCallback"><span class="hs-identifier hs-var">_orvilleSqlExecutionCallback</span></a></span><span>
+</span><span id="line-388"></span><span>
+</span><span id="line-389"></span><span class="annot"><span class="hs-comment">{- |
+  The default SQL execption callback simply runs the IO action given without
+  doing anything else.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-395"></span><span id="local-6989586621679132051"><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultSqlExectionCallback"><span class="hs-identifier hs-type">defaultSqlExectionCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132051"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132051"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-396"></span><span id="defaultSqlExectionCallback"><span class="annot"><span class="annottext">defaultSqlExectionCallback :: forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultSqlExectionCallback"><span class="hs-identifier hs-var hs-var">defaultSqlExectionCallback</span></a></span></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679132052"><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679132052"><span class="hs-identifier hs-var">io</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679132052"><span class="hs-identifier hs-var">io</span></a></span><span>
+</span><span id="line-397"></span><span>
+</span><span id="line-398"></span><span class="annot"><span class="hs-comment">{- |
+  Adds a callback to be called when an Orville operation executes a SQL
+  statement. The callback is given the IO action that will perform the
+  query execution and must call that action for the query to be run.
+  In particular, you can use this to time query and log any that are slow.
+
+  Calls to any previously added callbacks will also be execute as part of
+  the IO action passed to the new callback. Thus the newly added callback
+  happens &quot;around&quot; the previously added callback.
+
+  There is no special exception handling done for these callbacks beyond what
+  they implement themelves. Any callbacks should allow for the possibility that
+  the IO action they are given may raise an exception.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-414"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addSqlExecutionCallback"><span class="hs-identifier hs-type">addSqlExecutionCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-415"></span><span>  </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679132053"><span class="annot"><a href="#local-6989586621679132053"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132053"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132053"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-416"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-417"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-418"></span><span id="addSqlExecutionCallback"><span class="annot"><span class="annottext">addSqlExecutionCallback :: (forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a)
+-&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addSqlExecutionCallback"><span class="hs-identifier hs-var hs-var">addSqlExecutionCallback</span></a></span></span><span> </span><span id="local-6989586621679132054"><span class="annot"><span class="annottext">forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="#local-6989586621679132054"><span class="hs-identifier hs-var">outerCallback</span></a></span></span><span> </span><span id="local-6989586621679132055"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132055"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-419"></span><span>  </span><span class="hs-keyword">let</span><span>
+</span><span id="line-420"></span><span>    </span><span id="local-6989586621679132056"><span class="annot"><a href="#local-6989586621679132057"><span class="hs-identifier hs-type">layeredCallback</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621679132058"><span class="hs-identifier hs-type">innerCallback</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html#QueryType"><span class="hs-identifier hs-type">QueryType</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Raw.RawSql.html#RawSql"><span class="hs-identifier hs-type">RawSql.RawSql</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132056"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679132056"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-421"></span><span>    </span><span id="local-6989586621679132057"><span class="annot"><span class="annottext">layeredCallback :: forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="#local-6989586621679132057"><span class="hs-identifier hs-var hs-var">layeredCallback</span></a></span></span><span> </span><span id="local-6989586621679132059"><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679132059"><span class="hs-identifier hs-var">queryType</span></a></span></span><span> </span><span id="local-6989586621679132060"><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679132060"><span class="hs-identifier hs-var">sql</span></a></span></span><span> </span><span id="local-6989586621679132061"><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679132061"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-422"></span><span>      </span><span class="annot"><span class="annottext">QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="#local-6989586621679132054"><span class="hs-identifier hs-var">outerCallback</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679132059"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679132060"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="#local-6989586621679132058"><span class="hs-identifier hs-var">innerCallback</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="#local-6989586621679132059"><span class="hs-identifier hs-var">queryType</span></a></span><span> </span><span class="annot"><span class="annottext">RawSql
+</span><a href="#local-6989586621679132060"><span class="hs-identifier hs-var">sql</span></a></span><span> </span><span class="annot"><span class="annottext">IO a
+</span><a href="#local-6989586621679132061"><span class="hs-identifier hs-var">action</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-423"></span><span>    </span><span id="local-6989586621679132058"><span class="annot"><span class="annottext">innerCallback :: forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="#local-6989586621679132058"><span class="hs-identifier hs-var hs-var">innerCallback</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlExecutionCallback"><span class="hs-identifier hs-var">_orvilleSqlExecutionCallback</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132055"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-424"></span><span>  </span><span class="hs-keyword">in</span><span>
+</span><span id="line-425"></span><span>    </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132055"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-special">{</span><span class="annot"><span class="annottext">_orvilleSqlExecutionCallback :: forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlExecutionCallback"><span class="hs-identifier hs-var">_orvilleSqlExecutionCallback</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+forall a. QueryType -&gt; RawSql -&gt; IO a -&gt; IO a
+</span><a href="#local-6989586621679132057"><span class="hs-identifier hs-var">layeredCallback</span></a></span><span class="hs-special">}</span><span>
+</span><span id="line-426"></span><span>
+</span><span id="line-427"></span><span class="annot"><span class="hs-comment">{- |
+  The default begin transaction expression is simply @BEGIN TRANSACTION@
+  with no options specified.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-433"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultBeginTransactionExpr"><span class="hs-identifier hs-type">defaultBeginTransactionExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-type">Expr.BeginTransactionExpr</span></a></span><span>
+</span><span id="line-434"></span><span id="defaultBeginTransactionExpr"><span class="annot"><span class="annottext">defaultBeginTransactionExpr :: BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#defaultBeginTransactionExpr"><span class="hs-identifier hs-var hs-var">defaultBeginTransactionExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-435"></span><span>  </span><span class="annot"><span class="annottext">Maybe TransactionMode -&gt; BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Expr.Transaction.html#beginTransaction"><span class="hs-identifier hs-var">Expr.beginTransaction</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe TransactionMode
+forall a. Maybe a
+</span><span class="hs-identifier hs-var">Nothing</span></span><span>
+</span><span id="line-436"></span><span>
+</span><span id="line-437"></span><span class="annot"><span class="hs-comment">{- |
+  Sets the SQL expression that Orville will use to begin transactions. You can
+  control the transaction isolation level by building your own
+  'Expr.BeginTransactionExpr' with the desired isolation level.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-444"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#setBeginTransactionExpr"><span class="hs-identifier hs-type">setBeginTransactionExpr</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-445"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Transaction.html#BeginTransactionExpr"><span class="hs-identifier hs-type">Expr.BeginTransactionExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-446"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-447"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-448"></span><span id="setBeginTransactionExpr"><span class="annot"><span class="annottext">setBeginTransactionExpr :: BeginTransactionExpr -&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#setBeginTransactionExpr"><span class="hs-identifier hs-var hs-var">setBeginTransactionExpr</span></a></span></span><span> </span><span id="local-6989586621679132063"><span class="annot"><span class="annottext">BeginTransactionExpr
+</span><a href="#local-6989586621679132063"><span class="hs-identifier hs-var">expr</span></a></span></span><span> </span><span id="local-6989586621679132064"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132064"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-449"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132064"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-450"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_orvilleBeginTransactionExpr :: BeginTransactionExpr
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleBeginTransactionExpr"><span class="hs-identifier hs-var">_orvilleBeginTransactionExpr</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">BeginTransactionExpr
+</span><a href="#local-6989586621679132063"><span class="hs-identifier hs-var">expr</span></a></span><span>
+</span><span id="line-451"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-452"></span><span>
+</span><span id="line-453"></span><span class="annot"><span class="hs-comment">{- |
+  Sets the SqlCommenterAttributes that Orville will then add to any following statement executions.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-458"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#setSqlCommenterAttributes"><span class="hs-identifier hs-type">setSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-459"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenter.SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-460"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-461"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-462"></span><span id="setSqlCommenterAttributes"><span class="annot"><span class="annottext">setSqlCommenterAttributes :: SqlCommenterAttributes -&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#setSqlCommenterAttributes"><span class="hs-identifier hs-var hs-var">setSqlCommenterAttributes</span></a></span></span><span> </span><span id="local-6989586621679132065"><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132065"><span class="hs-identifier hs-var">comments</span></a></span></span><span> </span><span id="local-6989586621679132066"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132066"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-463"></span><span>  </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132066"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-464"></span><span>    </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_orvilleSqlCommenterAttributes :: Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">_orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; Maybe SqlCommenterAttributes
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132065"><span class="hs-identifier hs-var">comments</span></a></span><span>
+</span><span id="line-465"></span><span>    </span><span class="hs-special">}</span><span>
+</span><span id="line-466"></span><span>
+</span><span id="line-467"></span><span class="annot"><span class="hs-comment">{- |
+  Adds the SqlCommenterAttributes to the already existing that Orville will then add to any following statement executions.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-472"></span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addSqlCommenterAttributes"><span class="hs-identifier hs-type">addSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-473"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Raw.SqlCommenter.html#SqlCommenterAttributes"><span class="hs-identifier hs-type">SqlCommenter.SqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-474"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-475"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Internal.OrvilleState.html#OrvilleState"><span class="hs-identifier hs-type">OrvilleState</span></a></span><span>
+</span><span id="line-476"></span><span id="addSqlCommenterAttributes"><span class="annot"><span class="annottext">addSqlCommenterAttributes :: SqlCommenterAttributes -&gt; OrvilleState -&gt; OrvilleState
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#addSqlCommenterAttributes"><span class="hs-identifier hs-var hs-var">addSqlCommenterAttributes</span></a></span></span><span> </span><span id="local-6989586621679132067"><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132067"><span class="hs-identifier hs-var">comments</span></a></span></span><span> </span><span id="local-6989586621679132068"><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132068"><span class="hs-identifier hs-var">state</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-477"></span><span>  </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">OrvilleState -&gt; Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132068"><span class="hs-identifier hs-var">state</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-478"></span><span>    </span><span class="annot"><span class="annottext">Maybe SqlCommenterAttributes
+</span><span class="hs-identifier hs-var">Nothing</span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-479"></span><span>      </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132068"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-480"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_orvilleSqlCommenterAttributes :: Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">_orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; Maybe SqlCommenterAttributes
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132067"><span class="hs-identifier hs-var">comments</span></a></span><span>
+</span><span id="line-481"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-482"></span><span>    </span><span class="annot"><span class="hs-identifier hs-type">Just</span></span><span> </span><span id="local-6989586621679132069"><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132069"><span class="hs-identifier hs-var">existingAttrs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-483"></span><span>      </span><span class="annot"><span class="annottext">OrvilleState
+</span><a href="#local-6989586621679132068"><span class="hs-identifier hs-var">state</span></a></span><span>
+</span><span id="line-484"></span><span>        </span><span class="hs-special">{</span><span> </span><span class="annot"><span class="annottext">_orvilleSqlCommenterAttributes :: Maybe SqlCommenterAttributes
+</span><a href="Orville.PostgreSQL.Internal.OrvilleState.html#_orvilleSqlCommenterAttributes"><span class="hs-identifier hs-var">_orvilleSqlCommenterAttributes</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes -&gt; Maybe SqlCommenterAttributes
+forall a. a -&gt; Maybe a
+</span><span class="hs-identifier hs-var">Just</span></span><span> </span><span class="annot"><span class="annottext">(SqlCommenterAttributes -&gt; Maybe SqlCommenterAttributes)
+-&gt; SqlCommenterAttributes -&gt; Maybe SqlCommenterAttributes
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+-&gt; SqlCommenterAttributes -&gt; SqlCommenterAttributes
+forall k a. Ord k =&gt; Map k a -&gt; Map k a -&gt; Map k a
+</span><span class="hs-identifier hs-var">Map.union</span></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132067"><span class="hs-identifier hs-var">comments</span></a></span><span> </span><span class="annot"><span class="annottext">SqlCommenterAttributes
+</span><a href="#local-6989586621679132069"><span class="hs-identifier hs-var">existingAttrs</span></a></span><span>
+</span><span id="line-485"></span><span>        </span><span class="hs-special">}</span><span>
+</span><span id="line-486"></span></pre></body></html>

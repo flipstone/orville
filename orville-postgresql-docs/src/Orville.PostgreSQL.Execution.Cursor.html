@@ -1,0 +1,389 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE GADTs #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+Funtions and types for working with PostgreSQL cursors. You can use cursors to
+execute a query and consume rows from the result set incrementally. Rows that
+you do not consume will never be sent from the database to the client.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-14"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.Execution.Cursor</span><span>
+</span><span id="line-15"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier">Cursor</span></a></span><span>
+</span><span id="line-16"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#withCursor"><span class="hs-identifier">withCursor</span></a></span><span>
+</span><span id="line-17"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#declareCursor"><span class="hs-identifier">declareCursor</span></a></span><span>
+</span><span id="line-18"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#closeCursor"><span class="hs-identifier">closeCursor</span></a></span><span>
+</span><span id="line-19"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#newCursorName"><span class="hs-identifier">newCursorName</span></a></span><span>
+</span><span id="line-20"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#fetch"><span class="hs-identifier">fetch</span></a></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#move"><span class="hs-identifier">move</span></a></span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier">Expr.CursorDirection</span></a></span><span>
+</span><span id="line-23"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#next"><span class="hs-identifier">Expr.next</span></a></span><span>
+</span><span id="line-24"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#prior"><span class="hs-identifier">Expr.prior</span></a></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#first"><span class="hs-identifier">Expr.first</span></a></span><span>
+</span><span id="line-26"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#last"><span class="hs-identifier">Expr.last</span></a></span><span>
+</span><span id="line-27"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#absolute"><span class="hs-identifier">Expr.absolute</span></a></span><span>
+</span><span id="line-28"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#relative"><span class="hs-identifier">Expr.relative</span></a></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Count.html#count"><span class="hs-identifier">Expr.count</span></a></span><span>
+</span><span id="line-30"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#fetchAll"><span class="hs-identifier">Expr.fetchAll</span></a></span><span>
+</span><span id="line-31"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forward"><span class="hs-identifier">Expr.forward</span></a></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardCount"><span class="hs-identifier">Expr.forwardCount</span></a></span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#forwardAll"><span class="hs-identifier">Expr.forwardAll</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backward"><span class="hs-identifier">Expr.backward</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardCount"><span class="hs-identifier">Expr.backwardCount</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#backwardAll"><span class="hs-identifier">Expr.backwardAll</span></a></span><span>
+</span><span id="line-37"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-38"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-39"></span><span>
+</span><span id="line-40"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Class</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">MonadIO</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier">liftIO</span></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-41"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Time</span></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Time.Clock.POSIX</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">POSIXTime</span></span><span>
+</span><span id="line-43"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Data.Word</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Word</span></span><span>
+</span><span id="line-44"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">System.Random</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Random</span></span><span>
+</span><span id="line-45"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Text.Printf</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Printf</span></span><span>
+</span><span id="line-46"></span><span>
+</span><span id="line-47"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Execute.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Execute</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Execute</span></span><span>
+</span><span id="line-48"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.QueryType.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.QueryType</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">QueryType</span></span><span>
+</span><span id="line-49"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html"><span class="hs-identifier">Orville.PostgreSQL.Execution.Select</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier">Select</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#useSelect"><span class="hs-identifier">useSelect</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-50"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.html"><span class="hs-identifier">Orville.PostgreSQL.Expr</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Expr</span></span><span>
+</span><span id="line-51"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Internal.Bracket.html"><span class="hs-identifier">Orville.PostgreSQL.Internal.Bracket</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Bracket</span></span><span>
+</span><span id="line-52"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.html"><span class="hs-identifier">Orville.PostgreSQL.Marshall</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier">AnnotatedSqlMarshaller</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-53"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Monad.html"><span class="hs-identifier">Orville.PostgreSQL.Monad</span></a></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">Monad</span></span><span>
+</span><span id="line-54"></span><span>
+</span><span id="line-55"></span><span class="annot"><span class="hs-comment">{- |
+  A 'Cursor' allows you to fetch rows incrementally from PostgreSQL. Using
+  a cursor will allow you to execute a query that returns a very large
+  result set without the entire result set being loaded in memory in your
+  application and instead pulling rows as you're able to process them.
+
+  See 'withCursor', 'fetch' and 'move' for details on creating and using
+  'Cursor' values.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-66"></span><span class="hs-keyword">data</span><span> </span><span id="Cursor"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-var">Cursor</span></a></span></span><span> </span><span id="local-6989586621679137455"><span class="annot"><a href="#local-6989586621679137455"><span class="hs-identifier hs-type">readEntity</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-67"></span><span>  </span><span id="local-6989586621679137386"><span id="local-6989586621679137456"><span id="Cursor"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-var">Cursor</span></a></span></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-68"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Marshall.SqlMarshaller.html#AnnotatedSqlMarshaller"><span class="hs-identifier hs-type">AnnotatedSqlMarshaller</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137456"><span class="hs-identifier hs-type">writeEntity</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137386"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-69"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier hs-type">Expr.CursorName</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-70"></span><span>    </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137386"><span class="hs-identifier hs-type">readEntity</span></a></span></span></span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="annot"><span class="hs-comment">{- |
+  Declares a @CURSOR@ in PostgreSQL that is available for the duration of the
+  action passed to 'withCursor' and closes the cursor when that action
+  completes (or raises an exception).
+
+  See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
+  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
+  behave in general.
+
+  We recommend you use this instead of 'declareCursor' and 'closeCursor'
+  unless you need to control the cursor resource acquisition and release
+  yourself and can do so safely.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-87"></span><span id="local-6989586621679137340"><span id="local-6989586621679137344"><span id="local-6989586621679137347"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#withCursor"><span class="hs-identifier hs-type">withCursor</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-88"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137340"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-89"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-type">Expr.ScrollExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-type">Expr.HoldExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-91"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137344"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-92"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137344"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137340"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137347"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-93"></span><span>  </span><span class="annot"><a href="#local-6989586621679137340"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137347"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-94"></span><span id="withCursor"><span class="annot"><span class="annottext">withCursor :: forall (m :: * -&gt; *) readEntity a.
+MonadOrville m =&gt;
+Maybe ScrollExpr
+-&gt; Maybe HoldExpr
+-&gt; Select readEntity
+-&gt; (Cursor readEntity -&gt; m a)
+-&gt; m a
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#withCursor"><span class="hs-identifier hs-var hs-var">withCursor</span></a></span></span><span> </span><span id="local-6989586621679137466"><span class="annot"><span class="annottext">Maybe ScrollExpr
+</span><a href="#local-6989586621679137466"><span class="hs-identifier hs-var">scrollExpr</span></a></span></span><span> </span><span id="local-6989586621679137467"><span class="annot"><span class="annottext">Maybe HoldExpr
+</span><a href="#local-6989586621679137467"><span class="hs-identifier hs-var">holdExpr</span></a></span></span><span> </span><span id="local-6989586621679137468"><span class="annot"><span class="annottext">Select readEntity
+</span><a href="#local-6989586621679137468"><span class="hs-identifier hs-var">select</span></a></span></span><span> </span><span id="local-6989586621679137469"><span class="annot"><span class="annottext">Cursor readEntity -&gt; m a
+</span><a href="#local-6989586621679137469"><span class="hs-identifier hs-var">useCursor</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-95"></span><span>  </span><span class="annot"><span class="annottext">m (Cursor readEntity)
+-&gt; (Cursor readEntity -&gt; BracketResult -&gt; m ())
+-&gt; (Cursor readEntity -&gt; m a)
+-&gt; m a
+forall (m :: * -&gt; *) a c b.
+(MonadIO m, MonadOrvilleControl m) =&gt;
+m a -&gt; (a -&gt; BracketResult -&gt; m c) -&gt; (a -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.Internal.Bracket.html#bracketWithResult"><span class="hs-identifier hs-var">Bracket.bracketWithResult</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe ScrollExpr
+-&gt; Maybe HoldExpr -&gt; Select readEntity -&gt; m (Cursor readEntity)
+forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Maybe ScrollExpr
+-&gt; Maybe HoldExpr -&gt; Select readEntity -&gt; m (Cursor readEntity)
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#declareCursor"><span class="hs-identifier hs-var">declareCursor</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ScrollExpr
+</span><a href="#local-6989586621679137466"><span class="hs-identifier hs-var">scrollExpr</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe HoldExpr
+</span><a href="#local-6989586621679137467"><span class="hs-identifier hs-var">holdExpr</span></a></span><span> </span><span class="annot"><span class="annottext">Select readEntity
+</span><a href="#local-6989586621679137468"><span class="hs-identifier hs-var">select</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-97"></span><span>    </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679137471"><span class="annot"><span class="annottext">Cursor readEntity
+</span><a href="#local-6989586621679137471"><span class="hs-identifier hs-var">cursor</span></a></span></span><span> </span><span id="local-6989586621679137472"><span class="annot"><span class="annottext">BracketResult
+</span><a href="#local-6989586621679137472"><span class="hs-identifier hs-var">_bracketResult</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Cursor readEntity -&gt; m ()
+forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Cursor readEntity -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#closeCursor"><span class="hs-identifier hs-var">closeCursor</span></a></span><span> </span><span class="annot"><span class="annottext">Cursor readEntity
+</span><a href="#local-6989586621679137471"><span class="hs-identifier hs-var">cursor</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><span class="annottext">Cursor readEntity -&gt; m a
+</span><a href="#local-6989586621679137469"><span class="hs-identifier hs-var">useCursor</span></a></span><span>
+</span><span id="line-99"></span><span>
+</span><span id="line-100"></span><span class="annot"><span class="hs-comment">{- |
+  Declares a @CURSOR@ in PostgreSQL and returns it for you to use. The cursor
+  must be closed via 'closeCursor' (or another means) when you are done using
+  it. Generally you should use 'withCursor' instead of 'declareCursor' to
+  ensure that the cursor gets closed properly.
+
+  See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
+  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
+  behave in general.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-112"></span><span id="local-6989586621679137359"><span id="local-6989586621679137360"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#declareCursor"><span class="hs-identifier hs-type">declareCursor</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-113"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137359"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-114"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#ScrollExpr"><span class="hs-identifier hs-type">Expr.ScrollExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-115"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#HoldExpr"><span class="hs-identifier hs-type">Expr.HoldExpr</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-116"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Select.html#Select"><span class="hs-identifier hs-type">Select</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137360"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-117"></span><span>  </span><span class="annot"><a href="#local-6989586621679137359"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137360"><span class="hs-identifier hs-type">readEntity</span></a></span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-118"></span><span id="declareCursor"><span class="annot"><span class="annottext">declareCursor :: forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Maybe ScrollExpr
+-&gt; Maybe HoldExpr -&gt; Select readEntity -&gt; m (Cursor readEntity)
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#declareCursor"><span class="hs-identifier hs-var hs-var">declareCursor</span></a></span></span><span> </span><span id="local-6989586621679137479"><span class="annot"><span class="annottext">Maybe ScrollExpr
+</span><a href="#local-6989586621679137479"><span class="hs-identifier hs-var">scrollExpr</span></a></span></span><span> </span><span id="local-6989586621679137480"><span class="annot"><span class="annottext">Maybe HoldExpr
+</span><a href="#local-6989586621679137480"><span class="hs-identifier hs-var">holdExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-119"></span><span>  </span><span class="annot"><span class="annottext">(forall writeEntity.
+ QueryExpr
+ -&gt; AnnotatedSqlMarshaller writeEntity readEntity
+ -&gt; m (Cursor readEntity))
+-&gt; Select readEntity -&gt; m (Cursor readEntity)
+forall readEntity a.
+(forall writeEntity.
+ QueryExpr -&gt; AnnotatedSqlMarshaller writeEntity readEntity -&gt; a)
+-&gt; Select readEntity -&gt; a
+</span><a href="Orville.PostgreSQL.Execution.Select.html#useSelect"><span class="hs-identifier hs-var">useSelect</span></a></span><span> </span><span class="annot"><span class="annottext">((forall writeEntity.
+  QueryExpr
+  -&gt; AnnotatedSqlMarshaller writeEntity readEntity
+  -&gt; m (Cursor readEntity))
+ -&gt; Select readEntity -&gt; m (Cursor readEntity))
+-&gt; (forall writeEntity.
+    QueryExpr
+    -&gt; AnnotatedSqlMarshaller writeEntity readEntity
+    -&gt; m (Cursor readEntity))
+-&gt; Select readEntity
+-&gt; m (Cursor readEntity)
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679137488"><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137488"><span class="hs-identifier hs-var">queryExpr</span></a></span></span><span> </span><span id="local-6989586621679137489"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137489"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-120"></span><span>    </span><span id="local-6989586621679137490"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137490"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m CursorName
+forall (m :: * -&gt; *). MonadIO m =&gt; m CursorName
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#newCursorName"><span class="hs-identifier hs-var">newCursorName</span></a></span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span>    </span><span class="hs-keyword">let</span><span>
+</span><span id="line-123"></span><span>      </span><span id="local-6989586621679137491"><span class="annot"><span class="annottext">declareExpr :: DeclareExpr
+</span><a href="#local-6989586621679137491"><span class="hs-identifier hs-var hs-var">declareExpr</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-124"></span><span>        </span><span class="annot"><span class="annottext">CursorName
+-&gt; Maybe ScrollExpr -&gt; Maybe HoldExpr -&gt; QueryExpr -&gt; DeclareExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#declare"><span class="hs-identifier hs-var">Expr.declare</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137490"><span class="hs-identifier hs-var">cursorName</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe ScrollExpr
+</span><a href="#local-6989586621679137479"><span class="hs-identifier hs-var">scrollExpr</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe HoldExpr
+</span><a href="#local-6989586621679137480"><span class="hs-identifier hs-var">holdExpr</span></a></span><span> </span><span class="annot"><span class="annottext">QueryExpr
+</span><a href="#local-6989586621679137488"><span class="hs-identifier hs-var">queryExpr</span></a></span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span>    </span><span class="annot"><span class="annottext">()
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">QueryType -&gt; DeclareExpr -&gt; m ()
+forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier hs-var">Execute.executeVoid</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#CursorQuery"><span class="hs-identifier hs-var">QueryType.CursorQuery</span></a></span><span> </span><span class="annot"><span class="annottext">DeclareExpr
+</span><a href="#local-6989586621679137491"><span class="hs-identifier hs-var">declareExpr</span></a></span><span>
+</span><span id="line-127"></span><span>    </span><span class="annot"><span class="annottext">Cursor readEntity -&gt; m (Cursor readEntity)
+forall a. a -&gt; m a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; CursorName -&gt; Cursor readEntity
+forall writeEntity readEntity.
+AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; CursorName -&gt; Cursor readEntity
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-var">Cursor</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137489"><span class="hs-identifier hs-var">marshaller</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137490"><span class="hs-identifier hs-var">cursorName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-128"></span><span>
+</span><span id="line-129"></span><span class="annot"><span class="hs-comment">{- |
+  Closes a @CURSOR@ in PostgreSQL that was previously declared.
+  This should be used to close any cursors you open via 'declareCursor',
+  thought we recommend you use 'withCursor' instead to ensure that any
+  opened cursor are closed in the event of an exception.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-137"></span><span id="local-6989586621679137361"><span id="local-6989586621679137362"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#closeCursor"><span class="hs-identifier hs-type">closeCursor</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-138"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137361"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-139"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137362"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-140"></span><span>  </span><span class="annot"><a href="#local-6989586621679137361"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-141"></span><span id="closeCursor"><span class="annot"><span class="annottext">closeCursor :: forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Cursor readEntity -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#closeCursor"><span class="hs-identifier hs-var hs-var">closeCursor</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679137499"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137499"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-142"></span><span>  </span><span class="annot"><span class="annottext">QueryType -&gt; CloseExpr -&gt; m ()
+forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier hs-var">Execute.executeVoid</span></a></span><span> </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#CursorQuery"><span class="hs-identifier hs-var">QueryType.CursorQuery</span></a></span><span>
+</span><span id="line-143"></span><span>    </span><span class="annot"><span class="annottext">(CloseExpr -&gt; m ())
+-&gt; (CursorName -&gt; CloseExpr) -&gt; CursorName -&gt; m ()
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">Either AllCursors CursorName -&gt; CloseExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#close"><span class="hs-identifier hs-var">Expr.close</span></a></span><span>
+</span><span id="line-144"></span><span>    </span><span class="annot"><span class="annottext">(Either AllCursors CursorName -&gt; CloseExpr)
+-&gt; (CursorName -&gt; Either AllCursors CursorName)
+-&gt; CursorName
+-&gt; CloseExpr
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">CursorName -&gt; Either AllCursors CursorName
+forall a b. b -&gt; Either a b
+</span><span class="hs-identifier hs-var">Right</span></span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><span class="annottext">(CursorName -&gt; m ()) -&gt; CursorName -&gt; m ()
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137499"><span class="hs-identifier hs-var">cursorName</span></a></span><span>
+</span><span id="line-146"></span><span>
+</span><span id="line-147"></span><span class="annot"><span class="hs-comment">{- |
+  Fetch rows from a cursor according to the 'Expr.CursorDirection' given. See
+  @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
+  effect of fetch and the meanings of cursor directions to PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-154"></span><span id="local-6989586621679137397"><span id="local-6989586621679137399"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#fetch"><span class="hs-identifier hs-type">fetch</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-155"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137397"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-156"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">Expr.CursorDirection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-157"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137399"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-158"></span><span>  </span><span class="annot"><a href="#local-6989586621679137397"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621679137399"><span class="hs-identifier hs-type">readEntity</span></a></span><span class="hs-special">]</span></span></span><span>
+</span><span id="line-159"></span><span id="fetch"><span class="annot"><span class="annottext">fetch :: forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Maybe CursorDirection -&gt; Cursor readEntity -&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#fetch"><span class="hs-identifier hs-var hs-var">fetch</span></a></span></span><span> </span><span id="local-6989586621679137503"><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679137503"><span class="hs-identifier hs-var">direction</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span id="local-6989586621679137507"><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137507"><span class="hs-identifier hs-var">marshaller</span></a></span></span><span> </span><span id="local-6989586621679137508"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137508"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-160"></span><span>  </span><span class="annot"><span class="annottext">QueryType
+-&gt; FetchExpr
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+forall (m :: * -&gt; *) sql writeEntity readEntity.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType
+-&gt; sql
+-&gt; AnnotatedSqlMarshaller writeEntity readEntity
+-&gt; m [readEntity]
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeAndDecode"><span class="hs-identifier hs-var">Execute.executeAndDecode</span></a></span><span>
+</span><span id="line-161"></span><span>    </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#CursorQuery"><span class="hs-identifier hs-var">QueryType.CursorQuery</span></a></span><span>
+</span><span id="line-162"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe CursorDirection -&gt; CursorName -&gt; FetchExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#fetch"><span class="hs-identifier hs-var">Expr.fetch</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679137503"><span class="hs-identifier hs-var">direction</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137508"><span class="hs-identifier hs-var">cursorName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-163"></span><span>    </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><a href="#local-6989586621679137507"><span class="hs-identifier hs-var">marshaller</span></a></span><span>
+</span><span id="line-164"></span><span>
+</span><span id="line-165"></span><span class="annot"><span class="hs-comment">{- |
+  Moves a cursor according to the 'Expr.CursorDirection' given. See
+  @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
+  effect of move and the meanings of cursor directions to PostgreSQL.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-172"></span><span id="local-6989586621679137408"><span id="local-6989586621679137409"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#move"><span class="hs-identifier hs-type">move</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-173"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Monad.MonadOrville.html#MonadOrville"><span class="hs-identifier hs-type">Monad.MonadOrville</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137408"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-174"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Cursor.html#CursorDirection"><span class="hs-identifier hs-type">Expr.CursorDirection</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-175"></span><span>  </span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679137409"><span class="hs-identifier hs-type">readEntity</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-176"></span><span>  </span><span class="annot"><a href="#local-6989586621679137408"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span></span></span><span>
+</span><span id="line-177"></span><span id="move"><span class="annot"><span class="annottext">move :: forall (m :: * -&gt; *) readEntity.
+MonadOrville m =&gt;
+Maybe CursorDirection -&gt; Cursor readEntity -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#move"><span class="hs-identifier hs-var hs-var">move</span></a></span></span><span> </span><span id="local-6989586621679137512"><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679137512"><span class="hs-identifier hs-var">direction</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#Cursor"><span class="hs-identifier hs-type">Cursor</span></a></span><span> </span><span class="annot"><span class="annottext">AnnotatedSqlMarshaller writeEntity readEntity
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621679137516"><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137516"><span class="hs-identifier hs-var">cursorName</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-178"></span><span>  </span><span class="annot"><span class="annottext">QueryType -&gt; MoveExpr -&gt; m ()
+forall (m :: * -&gt; *) sql.
+(MonadOrville m, SqlExpression sql) =&gt;
+QueryType -&gt; sql -&gt; m ()
+</span><a href="Orville.PostgreSQL.Execution.Execute.html#executeVoid"><span class="hs-identifier hs-var">Execute.executeVoid</span></a></span><span>
+</span><span id="line-179"></span><span>    </span><span class="annot"><span class="annottext">QueryType
+</span><a href="Orville.PostgreSQL.Execution.QueryType.html#CursorQuery"><span class="hs-identifier hs-var">QueryType.CursorQuery</span></a></span><span>
+</span><span id="line-180"></span><span>    </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Maybe CursorDirection -&gt; CursorName -&gt; MoveExpr
+</span><a href="Orville.PostgreSQL.Expr.Cursor.html#move"><span class="hs-identifier hs-var">Expr.move</span></a></span><span> </span><span class="annot"><span class="annottext">Maybe CursorDirection
+</span><a href="#local-6989586621679137512"><span class="hs-identifier hs-var">direction</span></a></span><span> </span><span class="annot"><span class="annottext">CursorName
+</span><a href="#local-6989586621679137516"><span class="hs-identifier hs-var">cursorName</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-181"></span><span>
+</span><span id="line-182"></span><span class="annot"><span class="hs-comment">{- |
+  INTERNAL - Generates a unique (or very nearly guaranteed to be) cursor name.
+  Cursor names only need to be unique among the currently open cursors on the
+  current connection, so using POSIX time plus a 32 bit random tag should be
+  more than sufficient to ensure conflicts are not seen in practice.
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-190"></span><span id="local-6989586621679137379"><span class="annot"><a href="Orville.PostgreSQL.Execution.Cursor.html#newCursorName"><span class="hs-identifier hs-type">newCursorName</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">MonadIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679137379"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679137379"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#CursorName"><span class="hs-identifier hs-type">Expr.CursorName</span></a></span></span><span>
+</span><span id="line-191"></span><span id="newCursorName"><span class="annot"><span class="annottext">newCursorName :: forall (m :: * -&gt; *). MonadIO m =&gt; m CursorName
+</span><a href="Orville.PostgreSQL.Execution.Cursor.html#newCursorName"><span class="hs-identifier hs-var hs-var">newCursorName</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-192"></span><span>  </span><span class="annot"><span class="annottext">IO CursorName -&gt; m CursorName
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO CursorName -&gt; m CursorName) -&gt; IO CursorName -&gt; m CursorName
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-193"></span><span>    </span><span id="local-6989586621679137542"><span class="annot"><span class="annottext">POSIXTime
+</span><a href="#local-6989586621679137542"><span class="hs-identifier hs-var">now</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO POSIXTime
+</span><span class="hs-identifier hs-var">POSIXTime.getPOSIXTime</span></span><span>
+</span><span id="line-194"></span><span>    </span><span id="local-6989586621679137544"><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679137544"><span class="hs-identifier hs-var">randomWord</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">IO Word32
+forall a (m :: * -&gt; *). (Random a, MonadIO m) =&gt; m a
+</span><span class="hs-identifier hs-var">Random.randomIO</span></span><span>
+</span><span id="line-195"></span><span>
+</span><span id="line-196"></span><span>    </span><span class="hs-keyword">let</span><span>
+</span><span id="line-197"></span><span>      </span><span id="local-6989586621679137546"><span class="annot"><span class="annottext">nowAsInteger :: Int
+</span><a href="#local-6989586621679137546"><span class="hs-identifier hs-var hs-var">nowAsInteger</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-198"></span><span>        </span><span class="annot"><span class="annottext">Pico -&gt; Int
+forall a. Enum a =&gt; a -&gt; Int
+</span><span class="hs-identifier hs-var">fromEnum</span></span><span> </span><span class="annot"><span class="annottext">(Pico -&gt; Int) -&gt; (POSIXTime -&gt; Pico) -&gt; POSIXTime -&gt; Int
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">POSIXTime -&gt; Pico
+</span><span class="hs-identifier hs-var">Time.nominalDiffTimeToSeconds</span></span><span> </span><span class="annot"><span class="annottext">(POSIXTime -&gt; Int) -&gt; POSIXTime -&gt; Int
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="annot"><span class="annottext">POSIXTime
+</span><a href="#local-6989586621679137542"><span class="hs-identifier hs-var">now</span></a></span><span>
+</span><span id="line-199"></span><span>
+</span><span id="line-200"></span><span>    </span><span class="annot"><span class="annottext">CursorName -&gt; IO CursorName
+forall a. a -&gt; IO a
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">(CursorName -&gt; IO CursorName)
+-&gt; (String -&gt; CursorName) -&gt; String -&gt; IO CursorName
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; CursorName
+</span><a href="Orville.PostgreSQL.Expr.Internal.Name.CursorName.html#cursorName"><span class="hs-identifier hs-var">Expr.cursorName</span></a></span><span> </span><span class="annot"><span class="annottext">(String -&gt; IO CursorName) -&gt; String -&gt; IO CursorName
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-201"></span><span>      </span><span class="annot"><span class="annottext">String -&gt; Int -&gt; Word32 -&gt; String
+forall r. PrintfType r =&gt; String -&gt; r
+</span><span class="hs-identifier hs-var">Printf.printf</span></span><span>
+</span><span id="line-202"></span><span>        </span><span class="annot"><span class="annottext">String
+</span><span class="hs-string">&quot;orville_cursor_%x_%08x&quot;</span></span><span>
+</span><span id="line-203"></span><span>        </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621679137546"><span class="hs-identifier hs-var">nowAsInteger</span></a></span><span>
+</span><span id="line-204"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Word32
+</span><a href="#local-6989586621679137544"><span class="hs-identifier hs-var">randomWord</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Word.Word32</span></span><span class="hs-special">)</span><span>
+</span><span id="line-205"></span></pre></body></html>

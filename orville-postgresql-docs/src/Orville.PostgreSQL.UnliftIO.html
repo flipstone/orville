@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE RankNTypes #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="annot"><span class="hs-comment">{- |
+Copyright : Flipstone Technology Partners 2023
+License   : MIT
+Stability : Stable
+
+This module provides function that can be used to implement
+'MonadOrvilleControl' for monads that implement 'MonadUnliftIO'. For example,
+
+@
+module MyMonad
+  ( MyMonad
+  ) where
+
+import qualified Control.Monad.IO.Unlift as UnliftIO
+import qualified Orville.PostgreSQL as O
+import qualified Orville.PostgreSQL.UnliftIO as OrvilleUnliftIO
+
+newtype MyMonad =
+  ...
+  deriving (UnliftIO.MonadUnliftIO)
+
+instance O.MonadOrvilleControl MyMonad where
+  liftWithConnection = OrvilleUnliftIO.liftWithConnectionViaUnliftIO
+  liftCatch = OrvilleUnliftIO.liftCatchViaUnliftIO
+  liftMask = OrvilleUnliftIO.liftMaskViaUnliftIO
+@
+
+@since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-32"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Orville.PostgreSQL.UnliftIO</span><span>
+</span><span id="line-33"></span><span>  </span><span class="hs-special">(</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.UnliftIO.html#liftWithConnectionViaUnliftIO"><span class="hs-identifier">liftWithConnectionViaUnliftIO</span></a></span><span>
+</span><span id="line-34"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.UnliftIO.html#liftCatchViaUnliftIO"><span class="hs-identifier">liftCatchViaUnliftIO</span></a></span><span>
+</span><span id="line-35"></span><span>  </span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Orville.PostgreSQL.UnliftIO.html#liftMaskViaUnliftIO"><span class="hs-identifier">liftMaskViaUnliftIO</span></a></span><span>
+</span><span id="line-36"></span><span>  </span><span class="hs-special">)</span><span>
+</span><span id="line-37"></span><span class="hs-keyword">where</span><span>
+</span><span id="line-38"></span><span>
+</span><span id="line-39"></span><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="annot"><span class="hs-identifier">Control.Monad.IO.Unlift</span></span><span> </span><span class="hs-keyword">as</span><span> </span><span class="annot"><span class="hs-identifier">UL</span></span><span>
+</span><span id="line-40"></span><span>
+</span><span id="line-41"></span><span class="annot"><span class="hs-comment">{- |
+  liftWithConnectionViaUnliftIO can be use as the implementation of
+  'liftWithConnection' for 'MonadOrvilleControl' when the 'Monad'
+  implements 'MonadUnliftIO'.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-48"></span><span id="local-6989586621679143358"><span id="local-6989586621679143360"><span id="local-6989586621679143362"><span class="annot"><a href="Orville.PostgreSQL.UnliftIO.html#liftWithConnectionViaUnliftIO"><span class="hs-identifier hs-type">liftWithConnectionViaUnliftIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-49"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">UL.MonadUnliftIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143358"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-50"></span><span>  </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679143361"><span class="annot"><a href="#local-6989586621679143361"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679143360"><span class="hs-identifier hs-type">conn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143361"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143361"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-51"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679143360"><span class="hs-identifier hs-type">conn</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679143358"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143362"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-52"></span><span>  </span><span class="annot"><a href="#local-6989586621679143358"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143362"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-53"></span><span id="liftWithConnectionViaUnliftIO"><span class="annot"><span class="annottext">liftWithConnectionViaUnliftIO :: forall (m :: * -&gt; *) conn b.
+MonadUnliftIO m =&gt;
+(forall a. (conn -&gt; IO a) -&gt; IO a) -&gt; (conn -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.UnliftIO.html#liftWithConnectionViaUnliftIO"><span class="hs-identifier hs-var hs-var">liftWithConnectionViaUnliftIO</span></a></span></span><span> </span><span id="local-6989586621679143402"><span class="annot"><span class="annottext">forall a. (conn -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679143402"><span class="hs-identifier hs-var">ioWithConn</span></a></span></span><span> </span><span id="local-6989586621679143403"><span class="annot"><span class="annottext">conn -&gt; m b
+</span><a href="#local-6989586621679143403"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span>
+</span><span id="line-54"></span><span>  </span><span class="annot"><span class="annottext">((forall a. m a -&gt; IO a) -&gt; IO b) -&gt; m b
+forall b. ((forall a. m a -&gt; IO a) -&gt; IO b) -&gt; m b
+forall (m :: * -&gt; *) b.
+MonadUnliftIO m =&gt;
+((forall a. m a -&gt; IO a) -&gt; IO b) -&gt; m b
+</span><span class="hs-identifier hs-var">UL.withRunInIO</span></span><span> </span><span class="annot"><span class="annottext">(((forall a. m a -&gt; IO a) -&gt; IO b) -&gt; m b)
+-&gt; ((forall a. m a -&gt; IO a) -&gt; IO b) -&gt; m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679143405"><span class="annot"><span class="annottext">forall a. m a -&gt; IO a
+</span><a href="#local-6989586621679143405"><span class="hs-identifier hs-var">runInIO</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(conn -&gt; IO b) -&gt; IO b
+forall a. (conn -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679143402"><span class="hs-identifier hs-var">ioWithConn</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">m b -&gt; IO b
+forall a. m a -&gt; IO a
+</span><a href="#local-6989586621679143405"><span class="hs-identifier hs-var">runInIO</span></a></span><span> </span><span class="annot"><span class="annottext">(m b -&gt; IO b) -&gt; (conn -&gt; m b) -&gt; conn -&gt; IO b
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">conn -&gt; m b
+</span><a href="#local-6989586621679143403"><span class="hs-identifier hs-var">action</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-55"></span><span>
+</span><span id="line-56"></span><span class="annot"><span class="hs-comment">{- |
+  liftCatchViaUnliftIO can be use as the implementation of
+  'liftCatch' for 'MonadOrvilleControl' when the 'Monad'
+  implements 'MonadUnliftIO'.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-63"></span><span id="local-6989586621679143375"><span id="local-6989586621679143377"><span id="local-6989586621679143378"><span class="annot"><a href="Orville.PostgreSQL.UnliftIO.html#liftCatchViaUnliftIO"><span class="hs-identifier hs-type">liftCatchViaUnliftIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-64"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">UL.MonadUnliftIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143375"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-65"></span><span>  </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679143376"><span class="annot"><a href="#local-6989586621679143376"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143376"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679143377"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143376"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143376"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-66"></span><span>  </span><span class="annot"><a href="#local-6989586621679143375"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143378"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-67"></span><span>  </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621679143377"><span class="hs-identifier hs-type">e</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679143375"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143378"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-68"></span><span>  </span><span class="annot"><a href="#local-6989586621679143375"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143378"><span class="hs-identifier hs-type">b</span></a></span></span></span></span><span>
+</span><span id="line-69"></span><span id="liftCatchViaUnliftIO"><span class="annot"><span class="annottext">liftCatchViaUnliftIO :: forall (m :: * -&gt; *) e b.
+MonadUnliftIO m =&gt;
+(forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a) -&gt; m b -&gt; (e -&gt; m b) -&gt; m b
+</span><a href="Orville.PostgreSQL.UnliftIO.html#liftCatchViaUnliftIO"><span class="hs-identifier hs-var hs-var">liftCatchViaUnliftIO</span></a></span></span><span> </span><span id="local-6989586621679143415"><span class="annot"><span class="annottext">forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679143415"><span class="hs-identifier hs-var">ioCatch</span></a></span></span><span> </span><span id="local-6989586621679143416"><span class="annot"><span class="annottext">m b
+</span><a href="#local-6989586621679143416"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span id="local-6989586621679143417"><span class="annot"><span class="annottext">e -&gt; m b
+</span><a href="#local-6989586621679143417"><span class="hs-identifier hs-var">handler</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-70"></span><span>  </span><span id="local-6989586621679143418"><span class="annot"><span class="annottext">UnliftIO m
+</span><a href="#local-6989586621679143418"><span class="hs-identifier hs-var">unlio</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m (UnliftIO m)
+forall (m :: * -&gt; *). MonadUnliftIO m =&gt; m (UnliftIO m)
+</span><span class="hs-identifier hs-var">UL.askUnliftIO</span></span><span>
+</span><span id="line-71"></span><span>  </span><span class="annot"><span class="annottext">IO b -&gt; m b
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">UL.liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO b -&gt; m b) -&gt; IO b -&gt; m b
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-72"></span><span>    </span><span class="annot"><span class="annottext">IO b -&gt; (e -&gt; IO b) -&gt; IO b
+forall a. IO a -&gt; (e -&gt; IO a) -&gt; IO a
+</span><a href="#local-6989586621679143415"><span class="hs-identifier hs-var">ioCatch</span></a></span><span>
+</span><span id="line-73"></span><span>      </span><span class="hs-special">(</span><span class="annot"><span class="annottext">UnliftIO m -&gt; forall a. m a -&gt; IO a
+forall (m :: * -&gt; *). UnliftIO m -&gt; forall a. m a -&gt; IO a
+</span><span class="hs-identifier hs-var">UL.unliftIO</span></span><span> </span><span class="annot"><span class="annottext">UnliftIO m
+</span><a href="#local-6989586621679143418"><span class="hs-identifier hs-var">unlio</span></a></span><span> </span><span class="annot"><span class="annottext">m b
+</span><a href="#local-6989586621679143416"><span class="hs-identifier hs-var">action</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-74"></span><span>      </span><span class="hs-special">(</span><span class="hs-glyph">\</span><span id="local-6989586621679143422"><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679143422"><span class="hs-identifier hs-var">ex</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">UnliftIO m -&gt; forall a. m a -&gt; IO a
+forall (m :: * -&gt; *). UnliftIO m -&gt; forall a. m a -&gt; IO a
+</span><span class="hs-identifier hs-var">UL.unliftIO</span></span><span> </span><span class="annot"><span class="annottext">UnliftIO m
+</span><a href="#local-6989586621679143418"><span class="hs-identifier hs-var">unlio</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">e -&gt; m b
+</span><a href="#local-6989586621679143417"><span class="hs-identifier hs-var">handler</span></a></span><span> </span><span class="annot"><span class="annottext">e
+</span><a href="#local-6989586621679143422"><span class="hs-identifier hs-var">ex</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="annot"><span class="hs-comment">{- |
+  liftMaskViaUnliftIO can be use as the implementation of
+  'liftMask for 'MonadOrvilleControl' when the 'Monad'
+  implements 'MonadUnliftIO'.
+
+  @since 1.0.0.0
+-}</span></span><span>
+</span><span id="line-83"></span><span id="local-6989586621679143389"><span id="local-6989586621679143393"><span class="annot"><a href="Orville.PostgreSQL.UnliftIO.html#liftMaskViaUnliftIO"><span class="hs-identifier hs-type">liftMaskViaUnliftIO</span></a></span><span> </span><span class="hs-glyph">::</span><span>
+</span><span id="line-84"></span><span>  </span><span class="annot"><span class="hs-identifier hs-type">UL.MonadUnliftIO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143389"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span>
+</span><span id="line-85"></span><span>  </span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679143391"><span class="annot"><a href="#local-6989586621679143391"><span class="hs-identifier hs-type">b</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679143390"><span class="annot"><a href="#local-6989586621679143390"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143390"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143390"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143391"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="hs-identifier hs-type">IO</span></span><span> </span><span class="annot"><a href="#local-6989586621679143391"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-86"></span><span>  </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-keyword">forall</span><span> </span><span id="local-6989586621679143392"><span class="annot"><a href="#local-6989586621679143392"><span class="hs-identifier hs-type">a</span></a></span></span><span class="hs-operator">.</span><span> </span><span class="annot"><a href="#local-6989586621679143389"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143392"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679143389"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143392"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621679143389"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143393"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-87"></span><span>  </span><span class="annot"><a href="#local-6989586621679143389"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621679143393"><span class="hs-identifier hs-type">c</span></a></span></span></span><span>
+</span><span id="line-88"></span><span id="liftMaskViaUnliftIO"><span class="annot"><span class="annottext">liftMaskViaUnliftIO :: forall (m :: * -&gt; *) c.
+MonadUnliftIO m =&gt;
+(forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b)
+-&gt; ((forall a. m a -&gt; m a) -&gt; m c) -&gt; m c
+</span><a href="Orville.PostgreSQL.UnliftIO.html#liftMaskViaUnliftIO"><span class="hs-identifier hs-var hs-var">liftMaskViaUnliftIO</span></a></span></span><span> </span><span id="local-6989586621679143429"><span class="annot"><span class="annottext">forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679143429"><span class="hs-identifier hs-var">ioMask</span></a></span></span><span> </span><span id="local-6989586621679143430"><span class="annot"><span class="annottext">(forall a. m a -&gt; m a) -&gt; m c
+</span><a href="#local-6989586621679143430"><span class="hs-identifier hs-var">action</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">do</span><span>
+</span><span id="line-89"></span><span>  </span><span id="local-6989586621679143431"><span class="annot"><span class="annottext">UnliftIO m
+</span><a href="#local-6989586621679143431"><span class="hs-identifier hs-var">unlio</span></a></span></span><span> </span><span class="hs-glyph">&lt;-</span><span> </span><span class="annot"><span class="annottext">m (UnliftIO m)
+forall (m :: * -&gt; *). MonadUnliftIO m =&gt; m (UnliftIO m)
+</span><span class="hs-identifier hs-var">UL.askUnliftIO</span></span><span>
+</span><span id="line-90"></span><span>  </span><span class="annot"><span class="annottext">IO c -&gt; m c
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">UL.liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO c -&gt; m c) -&gt; IO c -&gt; m c
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><span class="annottext">((forall a. IO a -&gt; IO a) -&gt; IO c) -&gt; IO c
+forall b. ((forall a. IO a -&gt; IO a) -&gt; IO b) -&gt; IO b
+</span><a href="#local-6989586621679143429"><span class="hs-identifier hs-var">ioMask</span></a></span><span> </span><span class="annot"><span class="annottext">(((forall a. IO a -&gt; IO a) -&gt; IO c) -&gt; IO c)
+-&gt; ((forall a. IO a -&gt; IO a) -&gt; IO c) -&gt; IO c
+forall a b. (a -&gt; b) -&gt; a -&gt; b
+</span><span class="hs-operator hs-var">$</span></span><span> </span><span class="hs-glyph">\</span><span id="local-6989586621679143432"><span class="annot"><span class="annottext">forall a. IO a -&gt; IO a
+</span><a href="#local-6989586621679143432"><span class="hs-identifier hs-var">restore</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span>
+</span><span id="line-92"></span><span>      </span><span class="annot"><span class="annottext">UnliftIO m -&gt; forall a. m a -&gt; IO a
+forall (m :: * -&gt; *). UnliftIO m -&gt; forall a. m a -&gt; IO a
+</span><span class="hs-identifier hs-var">UL.unliftIO</span></span><span>
+</span><span id="line-93"></span><span>        </span><span class="annot"><span class="annottext">UnliftIO m
+</span><a href="#local-6989586621679143431"><span class="hs-identifier hs-var">unlio</span></a></span><span>
+</span><span id="line-94"></span><span>        </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(forall a. m a -&gt; m a) -&gt; m c
+</span><a href="#local-6989586621679143430"><span class="hs-identifier hs-var">action</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">IO a -&gt; m a
+forall a. IO a -&gt; m a
+forall (m :: * -&gt; *) a. MonadIO m =&gt; IO a -&gt; m a
+</span><span class="hs-identifier hs-var">UL.liftIO</span></span><span> </span><span class="annot"><span class="annottext">(IO a -&gt; m a) -&gt; (m a -&gt; IO a) -&gt; m a -&gt; m a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">IO a -&gt; IO a
+forall a. IO a -&gt; IO a
+</span><a href="#local-6989586621679143432"><span class="hs-identifier hs-var">restore</span></a></span><span> </span><span class="annot"><span class="annottext">(IO a -&gt; IO a) -&gt; (m a -&gt; IO a) -&gt; m a -&gt; IO a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">UnliftIO m -&gt; forall a. m a -&gt; IO a
+forall (m :: * -&gt; *). UnliftIO m -&gt; forall a. m a -&gt; IO a
+</span><span class="hs-identifier hs-var">UL.unliftIO</span></span><span> </span><span class="annot"><span class="annottext">UnliftIO m
+</span><a href="#local-6989586621679143431"><span class="hs-identifier hs-var">unlio</span></a></span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><span id="line-95"></span></pre></body></html>
