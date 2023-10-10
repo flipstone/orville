@@ -6,8 +6,7 @@ SQL has a rigid schema. Using JSON inside SQL allows for pockets of schemaless
 data, that is still queryable using PostgreSQL's built-in functionality.
 
 This document explains how to use Orville with the JSONB data type that
-PostgreSQL natively supports. The data type isn't built in to Orville, but it's
-shown here how to add it.
+PostgreSQL natively supports.
 
 Project initialization is similar to previous tutorials, but additional
 dependencies like Aeson have been added. Aeson is a JSON library for Haskell.
@@ -47,8 +46,7 @@ EOF
 Let's suppose we have an example entity with an ID, and some arbitrary JSON
 data in a column called 'tags'.
 
-Note how `fooTagsField` below uses the `Value` type from the Aeson library, and the
-`jsonb` which we'll define shortly.
+Note how `fooTagsField` below uses the `Value` type from the Aeson library.
 
 Remember that the `Value` contains its own `Null` constructor, which is
 distinct from SQL's `NULL`. So we can have JSON nulls in this field, but no SQL
