@@ -6,7 +6,7 @@ Stability : Stable
 "Orville.PostgreSQL" is the module you will most often want to import for using
 Orville. It re-exports most of the functions you need for everyday basic
 operations on table entities. If you cannot find the function you need exported here,
-you may be able to find it one of the modules that re-exports more functional
+you may be able to find it in one of the modules that re-exports more functions
 for a specific area:
 
 * "Orville.PostgreSQL.AutoMigration"

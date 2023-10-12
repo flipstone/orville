@@ -72,7 +72,7 @@ emptySelectOptions =
 
 {- |
   Combines multple select options together, unioning the options together where
-  possible. For options where this is not possible, (e.g. 'LIMIT'), the one
+  possible. For options where this is not possible (e.g. 'LIMIT'), the one
   on the left is preferred.
 
 @since 1.0.0.0
@@ -110,7 +110,7 @@ selectDistinct selectOptions =
 {- |
   Builds the 'Expr.WhereClause' that should be used to include the
   'WhereCondition's from the 'SelectOptions' on a query. This will be 'Nothing'
-  where no 'WhereCondition's have been specified.
+  when no 'WhereCondition's have been specified.
 
 @since 1.0.0.0
 -}
@@ -132,7 +132,7 @@ distinct =
 {- |
   Builds the 'Expr.OrderByClause' that should be used to include the
   'OrderByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
-  where no 'OrderByClause's have been specified.
+  when no 'OrderByClause's have been specified.
 
 @since 1.0.0.0
 -}
@@ -143,7 +143,7 @@ selectOrderByClause =
 {- |
   Builds the 'Expr.GroupByClause' that should be used to include the
   'GroupByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
-  where no 'GroupByClause's have been specified.
+  when no 'GroupByClause's have been specified.
 
 @since 1.0.0.0
 -}

@@ -59,13 +59,13 @@ class
   MonadOrville m
 
 {- |
-  'MonadOrvilleControl' presents the interface that Orville will used to
+  'MonadOrvilleControl' presents the interface that Orville will use to
   lift low-level IO operations that cannot be lifted via 'liftIO' (i.e.
-  those where the IO parameter is contravriant rather than covariant).
+  those where the IO parameter is contravariant rather than covariant).
 
   For application monads built using only 'ReaderT' and 'IO', this can be
   trivially implemented (or derived), using the 'ReaderT' instance that is
-  provided here. If you monad stack is sufficiently complicated, you may
+  provided here. If your monad stack is sufficiently complicated, you may
   need to use the 'unliftio' package as a stepping stone to implementing
   'MonadOrvilleControl'. If your monad uses features that 'unliftio' cannot
   support (e.g. the State monad or continuations), then you may need to
@@ -100,7 +100,7 @@ class MonadOrvilleControl m where
 
   -- |
   --     Orville will use this function to lift `mask` calls into the application
-  --     monad to guarantee resource cleanup is executed even when asynchrouns
+  --     monad to guarantee resource cleanup is executed even when asynchronous
   --     exceptions are thrown.
   --
   -- @since 1.0.0.0
@@ -144,10 +144,10 @@ instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleStat
   Orville.  For the "outermost" call of 'withConnection', a connection will be
   acquired from the resource pool. Additional calls to 'withConnection' that
   happen inside the 'm a' that uses the connection will return the same
-  'Connection' the same connection. When the 'm a' finishes the connection
-  will be returned to the pool. If 'm a' throws an exception the pool's
-  exception handling will take effect, generally destroying the connection in
-  case it was the source of the error.
+  'Connection'. When the 'm a' finishes the connection will be returned to the
+  pool. If 'm a' throws an exception the pool's exception handling will take
+  effect, generally destroying the connection in case it was the source of the
+  error.
 
 @since 1.0.0.0
 -}

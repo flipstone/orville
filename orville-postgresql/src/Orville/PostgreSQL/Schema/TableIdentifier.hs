@@ -108,7 +108,7 @@ tableIdSchemaNameString =
   i_tableIdSchema
 
 {- |
-  Converts a 'TableIdentifier' for a string for descriptive purposes. The
+  Converts a 'TableIdentifier' to a string for descriptive purposes. The
   name will be qualified if a schema name has been set for the identifier.
 
   Note: You should not use this function for building SQL expressions. Use

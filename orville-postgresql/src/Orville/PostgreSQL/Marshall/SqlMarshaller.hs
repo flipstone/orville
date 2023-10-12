@@ -69,13 +69,14 @@ import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDef
 
 {- |
   An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
-  annotations cannot necessarily be determined from the data in the marshaller
-  itself. In particular, it includes the names of fields that be used to
-  identify a row in the database when an error is encoutered during decoding.
+  annotations which cannot necessarily be determined from the data in the
+  marshaller itself. In particular, it includes the names of fields that can be
+  used to identify a row in the database when an error is encoutered during
+  decoding.
 
   Normally you will not need to interact with this type directly -- the
   @TableDefinition@ type creates it for you using the information it has about
-  the primary key of table to identify rows in decoding errors. If you are
+  the primary key of the table to identify rows in decoding errors. If you are
   executing custom queries directly, you may need to annotate a raw
   'SqlMarshaller' yourself so that rows can be identified. See
   'annotateSqlMarshaller' and 'annotateSqlMarshallerEmptyAnnotation'.
@@ -129,10 +130,10 @@ mapSqlMarshaller f (AnnotatedSqlMarshaller rowIdFields marshaller) =
 
 {- |
   'SqlMarshaller' is how we group the lowest level translation of single fields
-  into a higher level marshalling of full sql records into Haskell records.
+  into a higher level marshalling of full SQL records into Haskell records.
   This is a flexible abstraction that allows us to ultimately model SQL tables
   and work with them as potentially nested Haskell records. We can then
-  "marshall" the data as we want to model it in sql and Haskell.
+  "marshall" the data as we want to model it in SQL and Haskell.
 
 @since 1.0.0.0
 -}
@@ -153,7 +154,7 @@ data SqlMarshaller a b where
   MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)
   -- | Marshall a column with a possibility of error
   MarshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
-  -- | Marshall a column that is read only, like auto-incrementing ids
+  -- | Marshall a column that is read-only, like auto-incrementing ids
   MarshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
 
 instance Functor (SqlMarshaller a) where
@@ -770,9 +771,9 @@ mkRowIdentityExtractor fields result =
 {- |
   Builds a 'SqlMarshaller' that maps a single field of a Haskell entity to
   a single column in the database. That value to store in the database will
-  be retried from the entity using provided accessor function. This function
+  be retried from the entity using a provided accessor function. This function
   is intended to be used inside of a stanza of 'Applicative' syntax that will
-  pass values read from the database a constructor function to rebuild the
+  pass values read from the database to a constructor function to rebuild the
   entity containing the field, like so:
 
   @
@@ -798,7 +799,7 @@ marshallField accessor fieldDef =
 
 {- |
   Builds a 'SqlMarshaller' that will include a SQL expression in select
-  statements to calculate a value the columns of the table being selected
+  statements to calculate a value using the columns of the table being selected
   from. The columns being used in the calculation do not themselves need
   to be selected, though they must be present in the table so they can
   be referenced.
@@ -831,8 +832,8 @@ marshallSyntheticField =
   MarshallSyntheticField
 
 {- |
-  Nests a 'SqlMarshaller' inside another, using the given accesser to retrieve
-  value to be marshalled. The resulting marshaller can then be used in the same
+  Nests a 'SqlMarshaller' inside another, using the given accessor to retrieve
+  values to be marshalled. The resulting marshaller can then be used in the same
   way as 'marshallField' within the applicative syntax of a larger marshaller.
 
   For Example:
@@ -846,8 +847,8 @@ marshallSyntheticField =
 
   data Name =
     Name
-      { firstName :: T.Text
-      , lastName :: T.Text
+      { firstName :: Text
+      , lastName :: Text
       }
 
   personMarshaller :: SqlMarshaller Person Person
@@ -944,7 +945,7 @@ prefixMarshaller prefix = go
     MarshallReadOnly m -> MarshallReadOnly $ go m
 
 {- |
-  Marks a 'SqlMarshaller' as ready only so that it will not attempt to
+  Marks a 'SqlMarshaller' as read-only so that it will not attempt to
   read any values from the @writeEntity@. You should use this if you have
   a group of fields which are populated by database rather than the application.
 
@@ -955,8 +956,8 @@ marshallReadOnly = MarshallReadOnly
 
 {- |
   A version of 'marshallField' that uses 'marshallReadOnly' to make a single
-  read only field. You will usually use this in conjuction with a
-  'FieldDefinition' like @serialField@ where the valuue is populated by the
+  read-only field. You will usually use this in conjuction with a
+  'FieldDefinition' like @serialField@ where the value is populated by the
   database.
 
 @since 1.0.0.0

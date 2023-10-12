@@ -52,7 +52,7 @@ import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Schema as Schema
 
 {- |
-  Inserts a entity into the specified table.
+  Inserts an entity into the specified table.
 
 @since 1.0.0.0
 -}
@@ -65,7 +65,7 @@ insertEntity entityTable =
   Monad.void . insertEntityAndReturnRowCount entityTable
 
 {- |
-  Inserts a entity into the specified table. Returns the number of rows
+  Inserts an entity into the specified table. Returns the number of rows
   affected by the query.
 
 @since 1.0.0.0
@@ -79,7 +79,7 @@ insertEntityAndReturnRowCount entityTable entity =
   insertEntitiesAndReturnRowCount entityTable (entity :| [])
 
 {- |
-  Inserts a entity into the specified table, returning the data inserted into
+  Inserts an entity into the specified table, returning the data inserted into
   the database.
 
   You can use this function to obtain any column values filled in by the
@@ -144,7 +144,7 @@ insertAndReturnEntities tableDef =
   Insert.executeInsertReturnEntities . Insert.insertToTableReturning tableDef
 
 {- |
-  Updates the row with the given key in with the data given by 'writeEntity'.
+  Updates the row with the given key with the data given by 'writeEntity'.
 
 @since 1.0.0.0
 -}
@@ -158,7 +158,7 @@ updateEntity tableDef key =
   Monad.void . updateEntityAndReturnRowCount tableDef key
 
 {- |
-  Updates the row with the given key in with the data given by 'writeEntity'.
+  Updates the row with the given key with the data given by 'writeEntity'.
   Returns the number of rows affected by the query.
 
 @since 1.0.0.0
@@ -177,12 +177,12 @@ updateEntityAndReturnRowCount tableDef key writeEntity =
       Update.executeUpdate update
 
 {- |
-  Updates the row with the given key in with the data given by 'writeEntity',
-  returning updated row from the database. If no row matches the given key,
+  Updates the row with the given key with the data given by 'writeEntity',
+  returning the updated row from the database. If no row matches the given key,
   'Nothing' will be returned.
 
-  You can use this function to obtain any column values computer by the database
-  during update, including columns with triggers attached to them.
+  You can use this function to obtain any column values computed by the database
+  during the update, including columns with triggers attached to them.
 
 @since 1.0.0.0
 -}
@@ -370,7 +370,7 @@ findEntitiesBy entityTable selectOptions =
     Select.selectTable entityTable selectOptions
 
 {- |
-  Like 'findEntitiesBy, but adds a 'LIMIT 1' to the query and then returns
+  Like 'findEntitiesBy', but adds a 'LIMIT 1' to the query and then returns
   the first item from the list. Usually when you use this you will want to
   provide an order by clause in the 'SelectOptions.SelectOptions' because the
   database will not guarantee ordering.

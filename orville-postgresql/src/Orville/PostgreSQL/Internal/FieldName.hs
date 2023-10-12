@@ -28,7 +28,7 @@ newtype FieldName
   deriving (Eq, Ord, Show)
 
 {- |
-  Convert a field name to an 'Expr.ColumnName' for usage in SQL expressions.
+  Convert a field name to a 'Expr.ColumnName' for usage in SQL expressions.
   The field name will be properly quoted and escaped.
 
 @since 1.0.0.0
@@ -38,7 +38,7 @@ fieldNameToColumnName (FieldName name) =
   Expr.fromIdentifier (Expr.identifierFromBytes name)
 
 {- |
-  Constructs a 'FieldName' from a 'String'
+  Constructs a 'FieldName' from a 'String'.
 
 @since 1.0.0.0
 -}
@@ -47,7 +47,7 @@ stringToFieldName =
   FieldName . B8.pack
 
 {- |
-  Converts a 'FieldName' back to a 'String'
+  Converts a 'FieldName' back to a 'String'.
 
 @since 1.0.0.0
 -}
@@ -56,7 +56,7 @@ fieldNameToString =
   B8.unpack . fieldNameToByteString
 
 {- |
-  Converts a 'FieldName' back to a 'B8.ByteString'
+  Converts a 'FieldName' back to a 'B8.ByteString'.
 
 @since 1.0.0.0
 -}
@@ -65,7 +65,7 @@ fieldNameToByteString (FieldName name) =
   name
 
 {- |
-  Constructs a 'FieldName' from a 'B8.ByteString'
+  Constructs a 'FieldName' from a 'B8.ByteString'.
 
 @since 1.0.0.0
 -}

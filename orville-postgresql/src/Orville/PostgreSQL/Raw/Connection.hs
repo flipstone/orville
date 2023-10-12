@@ -46,8 +46,8 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Orville.PostgreSQL.Raw.PgTextFormatValue (NULByteFoundError (NULByteFoundError), PgTextFormatValue, toBytesForLibPQ)
 
 {- |
-  An option for 'createConnectionPool' than indicates whether the LibPQ should
-  print notice reports for warnings to the console
+  An option for 'createConnectionPool' that indicates whether the LibPQ should
+  print notice reports for warnings to the console.
 
 @since 1.0.0.0
 -}

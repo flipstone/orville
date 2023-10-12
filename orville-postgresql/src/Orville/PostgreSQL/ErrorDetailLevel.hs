@@ -20,7 +20,7 @@ where
 {- |
   'ErrorDetailLevel' provides a means to configure what elements of information
   are included in error messages that originate from decoding rows queried
-  from the database. This can be specified either my manually rendering the
+  from the database. This can be specified either by manually rendering the
   error message and providing the desired configuration, or by setting the
   desired detail level in the @OrvilleState@ as a default.
 
@@ -41,8 +41,8 @@ data ErrorDetailLevel = ErrorDetailLevel
     )
 
 {- |
-  A minimal 'ErrorDetailLevel' where everything all information (including
-  any situationally-specific error message!) is redacted from error messages.
+  A minimal 'ErrorDetailLevel' where all information (including any
+  situationally-specific error messages!) is redacted from error messages.
 
 @since 1.0.0.0
 -}
@@ -56,9 +56,9 @@ minimalErrorDetailLevel =
     }
 
 {- |
-  A default 'ErrorDetailLevel' that strikes balance of including all "Generic"
+  A default 'ErrorDetailLevel' that strikes a balance of including all "Generic"
   information such as the error message, schema names and row identifiers, but
-  avoids untentionally leaking non-identifier values from the database by
+  avoids unintentionally leaking non-identifier values from the database by
   redacting them.
 
 @since 1.0.0.0
@@ -75,8 +75,8 @@ defaultErrorDetailLevel =
 {- |
   A maximal 'ErrorDetailLevel' that redacts no information from the error
   messages. Error messages will include values from the database for any
-  columns are involved in a decoding failure, including some which you may
-  not have intended to expose through error message. Use with caution.
+  columns that are involved in a decoding failure, including some which you may
+  not have intended to expose through error messages. Use with caution.
 
 @since 1.0.0.0
 -}

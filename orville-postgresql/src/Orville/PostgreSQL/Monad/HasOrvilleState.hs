@@ -22,7 +22,7 @@ import Orville.PostgreSQL.OrvilleState (OrvilleState)
   'HasOrvilleState' is the typeclass that Orville uses to access and manange
   the connection pool and state tracking when it is being executed inside an
   unknown Monad. It is a specialized version of the Reader interface so that it
-  can easily implemented by application Monads that already have a Reader
+  can be easily implemented by application Monads that already have a Reader
   context and want to simply add 'OrvilleState' as an attribute to that
   context, like so
 

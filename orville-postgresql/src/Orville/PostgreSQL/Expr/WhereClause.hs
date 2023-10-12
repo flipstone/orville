@@ -126,7 +126,7 @@ orExpr left right =
     (booleanValueExpression right)
 
 {- |
-  The SQL @OR@ operator (alias for 'orExpr')
+  The SQL @OR@ operator (alias for 'orExpr').
 
   @since 1.0.0.0
 -}
@@ -150,7 +150,7 @@ andExpr left right =
     (booleanValueExpression right)
 
 {- |
-  The SQL @AND@ operator (alias for 'andExpr')
+  The SQL @AND@ operator (alias for 'andExpr').
 
   @since 1.0.0.0
 -}

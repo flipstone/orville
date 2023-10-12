@@ -147,7 +147,7 @@ fieldDescription :: FieldDefinition nullability a -> Maybe String
 fieldDescription = i_fieldDescription
 
 {- |
-  Sets the description for the field. This description not currently used
+  Sets the description for the field. This description is not currently used
   anywhere by Orville itself, but users can retrieve the description via
   'fieldDescription' for their own purposes (e.g. generating documentation).
 
@@ -161,7 +161,7 @@ setFieldDescription description fieldDef =
 
 {- |
   The 'SqlType' for the 'FieldDefinition' determines the PostgreSQL data type
-  used to define the field as well as how to mashall Haskell values to and
+  used to define the field as well as how to marshall Haskell values to and
   from the database.
 
 @since 1.0.0.0
@@ -193,8 +193,8 @@ data FieldNullability a
 {- |
  Resolves the 'nullablity' of a field to a concrete type, which is returned
  via the 'FieldNullability' type. You can pattern match on this type to then
- extract the either 'Nullable' or 'NotNull' not field for cases where you
- may require different logic based on the nullability of a field.
+ extract the either 'Nullable' or 'NotNull' field for cases where you may
+ require different logic based on the nullability of a field.
 
 @since 1.0.0.0
 -}
@@ -205,7 +205,7 @@ fieldNullability field =
     NotNullGADT -> NotNullField field
 
 {- |
-  Indicates whether a field is nullable.
+  Indicates whether a field is not nullable.
 
 @since 1.0.0.0
 -}
@@ -370,7 +370,7 @@ fieldColumnName =
   fieldNameToColumnName . fieldName
 
 {- |
-  Constructs the 'Expr.ValueExpression for a field for use in SQL expressions
+  Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
   from the 'Expr' module.
 
 @since 1.0.0.0
@@ -380,8 +380,8 @@ fieldColumnReference =
   Expr.columnReference . fieldColumnName
 
 {- |
-  Constructions the equivalant 'Expr.FieldDefinition' as a SQL expression,
-  generally for use in DDL for creating column in a table.
+  Constructs the equivalant 'Expr.FieldDefinition' as a SQL expression,
+  generally for use in DDL for creating columns in a table.
 
 @since 1.0.0.0
 -}
@@ -428,7 +428,7 @@ data NullabilityGADT nullability where
 
 {- |
 
-  'NotNull' is a values-less type used to track that a 'FieldDefinition'
+  'NotNull' is a value-less type used to track that a 'FieldDefinition'
   represents a field that is marked not-null in the database schema.  See the
   'Nullability' type for the value-level representation of field nullability.
 
@@ -437,7 +437,7 @@ data NullabilityGADT nullability where
 data NotNull
 
 {- |
-  'Nullable' is a values-less type used to track that a 'FieldDefinition'
+  'Nullable' is a value-less type used to track that a 'FieldDefinition'
   represents a field that is marked nullable in the database schema. See the
   'Nullability' type for the value-level representation of field nullability.
 
@@ -648,7 +648,7 @@ uuidField ::
 uuidField = fieldOfType SqlType.uuid
 
 {- |
-  Builds a 'FieldDefinition' for will use the given 'SqlType' to determine
+  Builds a 'FieldDefinition' that will use the given 'SqlType' to determine
   the database representation of the field. If you have created a custom
   'SqlType', you can use this function to construct a helper like the
   other functions in this module for creating 'FieldDefinition's for your
@@ -657,7 +657,7 @@ uuidField = fieldOfType SqlType.uuid
 @since 1.0.0.0
 -}
 fieldOfType ::
-  -- | 'SqlType' that represents the PostgreSQL data type for the field.
+  -- | 'SqlType' that represents the PostgreSQL data type for the field
   SqlType.SqlType a ->
   -- | Name of the field in the database
   String ->
@@ -676,7 +676,7 @@ fieldOfType sqlType name =
   Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field
   in 'Maybe'. The field will be marked as 'NULL' in the database schema and
   the value 'Nothing' will be used to represent 'NULL' values when converting
-  to and from sql.
+  to and from SQL.
 
 @since 1.0.0.0
 -}
@@ -706,8 +706,8 @@ nullableField field =
 {- |
   Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
   'NotNull', you wanted 'nullableField' instead of this function). Note that
-  fields created using this function have asymetric encoding and decoding of
-  'NULL' values. Because the provided field is 'Nullable', 'NULL' values decode
+  fields created using this function have asymmetric encoding and decoding of
+  'NULL' values. Because the provided field is 'Nullable', 'NULL' values decoded
   from the database already have a representation in the 'a' type, so 'NULL'
   will be decoded as 'Just <value of type a for NULL>'. This means if you
   insert a 'Nothing' value using the field, it will be read back as 'Just'
@@ -738,8 +738,8 @@ asymmetricNullableField field =
 
 {- |
   Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can
-  use this function the create 'FieldDefinition's for based on the primitive
-  ones provided, but with more specific Haskell types.
+  use this function to create 'FieldDefinition's based on the primitive ones
+  provided, but with more specific Haskell types.
 
   See 'SqlType.convertSqlType' and 'SqlType.tryConvertSqlType' for functions
   to create the conversion needed as the first argument to 'convertField'.
@@ -775,7 +775,7 @@ coerceField =
   Sets a default value for the field. The default value will be added as part
   of the column definition in the database. Because the default value is
   ultimately provided by the database this can be used to add a not-null column
-  to safely to an existing table as long as a reasonable default value is
+  safely to an existing table as long as a reasonable default value is
   available to use.
 
 @since 1.0.0.0
@@ -819,8 +819,8 @@ prefixField prefix fieldDef =
 
 {- |
   Constructs a 'Expr.SetClause' that will set the column named in the
-  field definition to the given value. The value is be converted to SQL
-  value using 'fieldValueToSqlValue'
+  field definition to the given value. The value is converted to a SQL
+  value using 'fieldValueToSqlValue'.
 
 @since 1.0.0.0
 -}
@@ -831,7 +831,7 @@ setField fieldDef value =
     (fieldValueToSqlValue fieldDef value)
 
 {- |
-  Operator alias for 'setField'
+  Operator alias for 'setField'.
 
 @since 1.0.0.0
 -}
@@ -848,7 +848,7 @@ fieldEquals =
   whereColumnComparison Expr.equals
 
 {- |
-  Operator alias for 'fieldEquals'
+  Operator alias for 'fieldEquals'.
 
 @since 1.0.0.0
 -}
@@ -867,7 +867,7 @@ fieldNotEquals =
   whereColumnComparison Expr.notEquals
 
 {- |
-  Operator alias for 'fieldNotEquals'
+  Operator alias for 'fieldNotEquals'.
 
 @since 1.0.0.0
 -}
@@ -886,7 +886,7 @@ fieldGreaterThan =
   whereColumnComparison Expr.greaterThan
 
 {- |
-  Operator alias for 'fieldGreaterThan'
+  Operator alias for 'fieldGreaterThan'.
 
 @since 1.0.0.0
 -}
@@ -905,7 +905,7 @@ fieldLessThan =
   whereColumnComparison Expr.lessThan
 
 {- |
-  Operator alias for 'fieldLessThan'
+  Operator alias for 'fieldLessThan'.
 
 @since 1.0.0.0
 -}
@@ -924,7 +924,7 @@ fieldGreaterThanOrEqualTo =
   whereColumnComparison Expr.greaterThanOrEqualTo
 
 {- |
-  Operator alias for 'fieldGreaterThanOrEqualTo'
+  Operator alias for 'fieldGreaterThanOrEqualTo'.
 
 @since 1.0.0.0
 -}
@@ -943,7 +943,7 @@ fieldLessThanOrEqualTo =
   whereColumnComparison Expr.lessThanOrEqualTo
 
 {- |
-  Operator alias for 'fieldLessThanOrEqualTo'
+  Operator alias for 'fieldLessThanOrEqualTo'.
 
 @since 1.0.0.0
 -}
@@ -953,7 +953,7 @@ fieldLessThanOrEqualTo =
 infixl 9 .<=
 
 {- |
-  Checks that the value in a field matches a like pattern
+  Checks that the value in a field matches a like pattern.
 
 @since 1.0.0.0
 -}
@@ -964,7 +964,7 @@ fieldLike fieldDef likePattern =
     (Expr.valueExpression (SqlValue.fromText likePattern))
 
 {- |
-  Checks that the value in a field matches a like pattern case insensitively
+  Checks that the value in a field matches a like pattern case insensitively.
 
 @since 1.0.0.0
 -}
@@ -993,7 +993,7 @@ fieldIsNotNull =
   Expr.isNotNull . fieldColumnReference
 
 {- |
-  Checks that a field matches a list of values
+  Checks that a field matches a list of values.
 
 @since 1.0.0.0
 -}
@@ -1004,7 +1004,7 @@ fieldIn fieldDef values =
     (fmap (fieldValueToExpression fieldDef) values)
 
 {- |
-  Operator alias for 'fieldIn'
+  Operator alias for 'fieldIn'.
 
 @since 1.0.0.0
 -}
@@ -1014,7 +1014,7 @@ fieldIn fieldDef values =
 infixl 9 .<-
 
 {- |
-  Checks that a field does not match a list of values
+  Checks that a field does not match a list of values.
 
 @since 1.0.0.0
 -}
@@ -1025,7 +1025,7 @@ fieldNotIn fieldDef values =
     (fmap (fieldValueToExpression fieldDef) values)
 
 {- |
-  Operator alias for 'fieldNotIn'
+  Operator alias for 'fieldNotIn'.
 
 @since 1.0.0.0
 -}
@@ -1035,7 +1035,7 @@ fieldNotIn fieldDef values =
 infixl 9 .</-
 
 {- |
-  Checks that a tuple of two fields is in the list of specified tuplies
+  Checks that a tuple of two fields is in the list of specified tuples.
 
 @since 1.0.0.0
 -}
@@ -1050,7 +1050,7 @@ fieldTupleIn fieldDefA fieldDefB values =
     (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
 
 {- |
-  Checks that a tuple of two fields is not in the list of specified tuplies
+  Checks that a tuple of two fields is not in the list of specified tuples.
 
 @since 1.0.0.0
 -}

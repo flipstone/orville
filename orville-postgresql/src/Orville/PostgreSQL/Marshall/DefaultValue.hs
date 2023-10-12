@@ -59,7 +59,7 @@ newtype DefaultValue a
   = DefaultValue Expr.ValueExpression
 
 {- |
-  Builds a default value for any 'Integral' type @n@ by converting it an
+  Builds a default value for any 'Integral' type @n@ by converting it to an
   'Integer'.
 
 @since 1.0.0.0
@@ -112,7 +112,7 @@ bigIntegerDefault :: Int64 -> DefaultValue Int64
 bigIntegerDefault = integralDefault
 
 {- |
-  Builds a default value from a 'Double' field with double fields.
+  Builds a default value from a 'Double' field for use with double fields.
 
 @since 1.0.0.0
 -}
@@ -190,7 +190,7 @@ currentDateDefault =
     $ "('now'::text)::date"
 
 {- |
-  Builds a default value from a 'Time.UTCTime' for use with utc timestamp fields.
+  Builds a default value from a 'Time.UTCTime' for use with UTC timestamp fields.
 
 @since 1.0.0.0
 -}
@@ -205,10 +205,10 @@ utcTimestampDefault utcTime =
         <> RawSql.fromString "::timestamp with time zone"
 
 {- |
-  Builds a default value that will default to the current utc time (i.e. the
+  Builds a default value that will default to the current UTC time (i.e. the
   time at which the database populates the default value on a given row).
 
-  For use with utc timestamp fields.
+  For use with UTC timestamp fields.
 
 @since 1.0.0.0
 -}
@@ -248,7 +248,7 @@ currentLocalTimestampDefault =
   DefaultValue $ RawSql.unsafeSqlExpression "('now'::text)::timestamp without time zone"
 
 {- |
-  Coerce's a 'DefaultValue' so that it can be used with field definitions of
+  Coerces a 'DefaultValue' so that it can be used with field definitions of
   a different Haskell type. The coercion will always succeed, and is safe as
   far as Haskell itself it concerned. As long as the 'DefaultValue' is used
   with a column whose database type is the same as the one the 'DefaultValue'
@@ -261,7 +261,7 @@ coerceDefaultValue (DefaultValue expression) =
   DefaultValue expression
 
 {- |
-  Returns database value expression for the default value
+  Returns database value expression for the default value.
 
 @since 1.0.0.0
 -}
@@ -274,15 +274,15 @@ defaultValueExpression (DefaultValue expression) =
   to construct default values for any SQL expression that Orville does not
   support directly.
 
-  Note: If you are using auto migrations, the 'Expr.ValueExpression' that you
+  Note: If you are using auto-migrations, the 'Expr.ValueExpression' that you
   pass here must match what is returned by the PostgreSQL @pg_get_expr@
   function. @pg_get_expr@ decompiles the compiled version of the default
-  experssion back to source text, sometimes in non-obvious ways. Orville's auto
-  migration compares expression given in the field definition with the
+  experssion back to source text, sometimes in non-obvious ways. Orville's
+  auto-migration compares the expression given in the field definition with the
   decompiled expression from the database to determine whether the default
-  value needs to be updated in the schema or not.  If the expression given by a
+  value needs to be updated in the schema or not. If the expression given by a
   'DefaultValue' is logically equivalent but does not match the decompiled
-  form, auto migration will continue to execute SQL statements to update the
+  form, auto-migration will continue to execute SQL statements to update the
   schema even when it does not need to.
 
 @since 1.0.0.0

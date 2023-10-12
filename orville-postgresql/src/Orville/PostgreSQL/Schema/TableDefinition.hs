@@ -59,7 +59,7 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSch
     values to be used in this parameter.
 
   * 'writeEntity' is the Haskell type for values that Orville will write
-    to the database for you (i.e. both inserts and updates)
+    to the database for you (i.e. both inserts and updates).
 
   * 'readEntity' is the Haskell type for values that Orville will decode
     from the result set when entities are queried from this table.
@@ -78,7 +78,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
 {- |
   'HasKey' is a type with no constructors. It is used only at the type level
   as the @key@ parameter to the 'TableDefinition' type to indicate that the
-  the table has a primary key and what the Haskell type of the primary key is.
+  table has a primary key and what the Haskell type of the primary key is.
 
 @since 1.0.0.0
 -}
@@ -87,7 +87,7 @@ data HasKey key
 {- |
   'NoKey' is a type with no constructors. It is used only at the type level
   as the @key@ parameter to the 'TableDefinition' type to indicate that the
-  the table does not have a primary key.
+  table does not have a primary key.
 
 @since 1.0.0.0
 -}
@@ -133,7 +133,7 @@ mkTableDefinition name primaryKey marshaller =
 {- |
   Constructs a new 'TableDefinition' with the minimal fields required for
   operation. Note: tables created via this function will not have a primary
-  key. Certain Orville functions required a primary key. Attempting to call
+  key. Certain Orville functions require a primary key. Attempting to call
   functions requiring a primary key will fail to compile when using a table
   that has no key.
 
@@ -180,7 +180,7 @@ dropColumns columns tableDef =
     }
 
 {- |
-  Returns the set of columns that have be marked be dropped by 'dropColumns'
+  Returns the set of columns that have been marked as dropped by 'dropColumns'.
 
 @since 1.0.0.0
 -}
@@ -189,7 +189,7 @@ columnsToDrop =
   i_tableColumnsToDrop
 
 {- |
-  Returns the table's 'TableIdentifier'
+  Returns the table's 'TableIdentifier'.
 
 @since 1.0.0.0
 -}
@@ -211,7 +211,7 @@ tableName =
 {- |
   Sets the table's schema to the name in the given string, which will be
   treated as a SQL identifier. If a table has a schema name set, it will be
-  included as a qualified on the table name for all queries involving the
+  included as a qualifier on the table name for all queries involving the
   table.
 
 @since 1.0.0.0
@@ -269,7 +269,7 @@ tableConstraintsFromMarshaller =
 
 {- |
   Adds the given table constraints to the table definition. It's also possible
-  to add constraints that apply to only one column adding them to
+  to add constraints that apply to only one column, adding them to
   the 'FieldDefinition's that are included in the table's 'SqlMarshaller'.
 
   If you wish to constrain multiple columns with a single constraint (e.g. a
@@ -391,7 +391,7 @@ mkTableColumnDefinitions tableDef =
     (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
 
 {- |
-  Builds the 'Expr.PrimaryKeyExpr' for this table, or none of this table has no
+  Builds the 'Expr.PrimaryKeyExpr' for this table, or none if this table has no
   primary key.
 
 @since 1.0.0.0

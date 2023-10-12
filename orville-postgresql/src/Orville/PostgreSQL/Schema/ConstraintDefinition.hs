@@ -97,7 +97,7 @@ tableConstraintDefinitions (TableConstraints constraints) =
   Defines a constraint that can be added to a
   'Orville.PostgreSQL.TableDefinition'. Use one of the constructor functions
   below (such as 'uniqueConstraint') to construct the constraint definition you
-  wish to have and then use 'Orville.PostgreSQL.addTableConstraints'. to add
+  wish to have and then use 'Orville.PostgreSQL.addTableConstraints' to add
   them to your table definition. Orville will then add the constraint next time
   you run auto-migrations.
 
@@ -137,7 +137,7 @@ data ConstraintKeyType
   deriving (Eq, Ord, Show)
 
 {- |
-  Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'
+  Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'.
 
 @since 1.0.0.0
 -}
@@ -192,7 +192,7 @@ data ForeignReference = ForeignReference
   }
 
 {- |
-  Constructs a 'ForeignReference'
+  Constructs a 'ForeignReference'.
 
 @since 1.0.0.0
 -}
@@ -217,9 +217,9 @@ foreignReference localName foreignName =
 -}
 data ForeignKeyOptions = ForeignKeyOptions
   { foreignKeyOptionsOnUpdate :: ForeignKeyAction
-  -- ^ The @ON UPDATE@ action for the foreign key
+  -- ^ The @ON UPDATE@ action for the foreign key.
   , foreignKeyOptionsOnDelete :: ForeignKeyAction
-  -- ^ The @ON DELETE@ action for the foreign key
+  -- ^ The @ON DELETE@ action for the foreign key.
   }
 
 {- |

@@ -74,7 +74,7 @@ mkSequenceDefinition name =
 {- |
   Sets the sequence's schema to the name in the given string, which will be
   treated as a SQL identifier. If a sequence has a schema name set, it will be
-  included as a qualified on the sequence name for all queries involving the
+  included as a qualifier on the sequence name for all queries involving the
   sequence.
 
 @since 1.0.0.0
@@ -90,7 +90,7 @@ setSequenceSchema schemaName sequenceDef =
 
 {- |
   Retrieves the 'SequenceIdentifier' for this sequence, which is set by the
-  name provided to 'mkSequenceDefinition' and any calls make to
+  name provided to 'mkSequenceDefinition' and any calls made to
   'setSequenceSchema' thereafter.
 
 @since 1.0.0.0
@@ -157,7 +157,7 @@ setSequenceMinValue n sequenceDef =
 
 {- |
   Retrieves the max value of the sequence. If no explicit maximum has been set
-  this returns 'maxBound' for 'Int64' for ascending sequences and @-1@
+  this returns 'maxBound' for 'Int64' for ascending sequences and @-1@ for
   descending sequences.
 
 @since 1.0.0.0

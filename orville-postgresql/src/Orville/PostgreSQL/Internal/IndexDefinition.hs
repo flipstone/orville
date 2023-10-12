@@ -34,7 +34,7 @@ import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
   Defines an index that can be added to a 'Orville.PostgreSQL.TableDefinition'.
   Use one of the constructor functions below (such as 'uniqueIndex') to
   construct the index definition you wish to have and then use
-  'Orville.PostgreSQL.addTableIndexes'. to add them to your table definition.
+  'Orville.PostgreSQL.addTableIndexes' to add them to your table definition.
   Orville will then add the index next time you run auto-migrations.
 
 @since 1.0.0.0
@@ -51,7 +51,7 @@ data IndexDefinition = IndexDefinition
 {- |
   Sets the 'IndexCreationStrategy' strategy to be used when creating the index
   described by the 'IndexDefinition'. By default all indexes are created using
-  the 'Transactional' strategy, but some tables are too large for for this to
+  the 'Transactional' strategy, but some tables are too large for this to
   be feasible. See the 'Asynchronous' creation strategy for how to work around
   this.
 
@@ -80,14 +80,14 @@ indexCreationStrategy =
   i_indexCreationStrategy
 
 {- |
-  Defines how an 'IndexDefinition' will be execute to add an index to a table.
-  By default all indexes a created via the 'Transactional'
+  Defines how an 'IndexDefinition' will be executed to add an index to a table.
+  By default all indexes are created using the 'Transactional' strategy.
 
 @since 1.0.0.0
 -}
 data IndexCreationStrategy
   = -- |
-    --       The default strategy. The index will be added as part of the a database
+    --       The default strategy. The index will be added as part of a database
     --       transaction along with all the other DDL being executed to migrate the
     --       database schema. If any migration should fail the index creation will be
     --       rolled back as part of the transaction. This is how schema migrations
@@ -172,7 +172,7 @@ indexCreateExpr indexDef =
 
 {- |
   Constructs an 'IndexDefinition' for a non-unique index on the given
-  columns
+  columns.
 
 @since 1.0.0.0
 -}
@@ -182,7 +182,7 @@ nonUniqueIndex =
 
 {- |
   Constructs an 'IndexDefinition' for a non-unique index with given SQL and
-  index name
+  index name.
 
 @since 1.0.0.0
 -}
@@ -212,7 +212,7 @@ uniqueNamedIndex =
 
 {- |
   Constructs an 'IndexDefinition' for an index on the given columns with the
-  given uniquness.
+  given uniqueness.
 
 @since 1.0.0.0
 -}

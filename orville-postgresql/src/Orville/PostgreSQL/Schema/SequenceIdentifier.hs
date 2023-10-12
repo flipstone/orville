@@ -99,7 +99,7 @@ sequenceIdUnqualifiedNameString =
   i_sequenceIdName
 
 {- |
-  Retrieves the schema name of the sequence as a string
+  Retrieves the schema name of the sequence as a string.
 
 @since 1.0.0.0
 -}

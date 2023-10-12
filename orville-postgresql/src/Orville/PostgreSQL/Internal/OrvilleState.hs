@@ -50,7 +50,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 
 {- |
-  'OrvilleState' is used to manange opening connections to the database,
+  'OrvilleState' is used to manage opening connections to the database,
   transactions, etc. 'newOrvilleState' should be used to create an appopriate
   initial state for your monad's context.
 
@@ -132,16 +132,16 @@ orvilleSqlCommenterAttributes =
 
   The callback given will be called after the SQL statement corresponding
   to the given event has finished executing. Callbacks will be called
-  in the order the are added.
+  in the order they are added.
 
   Note: There is no specialized error handling for these callbacks. This means
   that if a callback raises an exception no further callbacks will be called
-  and the exception will propagate up until it caught elsewhere. In particular,
-  if an exception is raised by a callback upon opening the transaction it will
-  cause the transaction to be rolled-back the same as any other exception that
-  might happen during the transaction. In general, we recommend only using
-  callbacks that either raise no exceptions or can handle their own exceptions
-  cleanly.
+  and the exception will propagate up until it is caught elsewhere. In
+  particular, if an exception is raised by a callback upon opening the
+  transaction it will cause the transaction to be rolled-back the same as any
+  other exception that might happen during the transaction. In general, we
+  recommend only using callbacks that either raise no exceptions or can handle
+  their own exceptions cleanly.
 
 @since 1.0.0.0
 -}
@@ -161,7 +161,7 @@ addTransactionCallback newCallback state =
     state {_orvilleTransactionCallback = wrappedCallback}
 
 {- |
-  Creates a appropriate initial 'OrvilleState' that will use the connection
+  Creates an appropriate initial 'OrvilleState' that will use the connection
   pool given to initiate connections to the database.
 
 @since 1.0.0.0
@@ -180,7 +180,7 @@ newOrvilleState errorDetailLevel pool =
 
 {- |
   Creates a new initial 'OrvilleState' using the connection pool from the
-  provide state. You might need to use this if you are spawning one Orville
+  provided state. You might need to use this if you are spawning one Orville
   monad from another and they should not share the same connection and
   transaction state.
 
@@ -298,24 +298,24 @@ savepointNestingLevel (Savepoint n) = n
 {- |
   Describes an event in the lifecycle of a database transaction. You can use
   'addTransactionCallBack' to register a callback to respond to these events.
-  The callback will be called after the even in question has been succesfully
+  The callback will be called after the event in question has been succesfully
   executed.
 
 @since 1.0.0.0
 -}
 data TransactionEvent
-  = -- | Indicates a new transaction has been started
+  = -- | Indicates a new transaction has been started.
     BeginTransaction
-  | -- | Indicates that a new savepoint has been saved within a transaction
+  | -- | Indicates that a new savepoint has been saved within a transaction.
     NewSavepoint Savepoint
   | -- | Indicates that a previous savepoint has been released. It can no
     -- longer be rolled back to.
     ReleaseSavepoint Savepoint
-  | -- | Indicates that rollbac was performed to a prior savepoint.
+  | -- | Indicates that rollback was performed to a prior savepoint.
     --
     -- Note: It is possible to rollback to a savepoint prior to the most recent
     -- one without releasing or rolling back to intermediate savepoints. Doing
-    -- so destroys any savepoints created after given savepoint. Although
+    -- so destroys any savepoints created after the given savepoint. Although
     -- Orville currently always matches 'NewSavepoint' with either
     -- 'ReleaseSavepoint' or 'RollbackToSavepoint', it is recommended that you
     -- do not rely on this behavior.
@@ -399,15 +399,15 @@ defaultSqlExectionCallback _ _ io = io
   Adds a callback to be called when an Orville operation executes a SQL
   statement. The callback is given the IO action that will perform the
   query execution and must call that action for the query to be run.
-  In particular, you can use this to time query and log any that are slow.
+  In particular, you can use this to time queries and log any that are slow.
 
-  Calls to any previously added callbacks will also be execute as part of
+  Calls to any previously added callbacks will also be executed as part of
   the IO action passed to the new callback. Thus the newly added callback
   happens "around" the previously added callback.
 
   There is no special exception handling done for these callbacks beyond what
-  they implement themelves. Any callbacks should allow for the possibility that
-  the IO action they are given may raise an exception.
+  they implement themselves. Any callbacks should allow for the possibility
+  that the IO action they are given may raise an exception.
 
 @since 1.0.0.0
 -}
@@ -465,7 +465,8 @@ setSqlCommenterAttributes comments state =
     }
 
 {- |
-  Adds the SqlCommenterAttributes to the already existing that Orville will then add to any following statement executions.
+  Adds the SqlCommenterAttributes to the already existing attributes that
+  Orville will then add to any following statement executions.
 
 @since 1.0.0.0
 -}

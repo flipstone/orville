@@ -37,8 +37,8 @@ data SyntheticField a = SyntheticField
   }
 
 {- |
-  Returns the SQL expression that should be in with select statements to
-  calculated the sythetic field.
+  Returns the SQL expression that should be used in select statements to
+  calculate the sythetic field.
 
 @since 1.0.0.0
 -}
@@ -75,7 +75,7 @@ syntheticFieldValueFromSqlValue =
 syntheticField ::
   -- | The SQL expression to be selected
   Expr.ValueExpression ->
-  -- | The alias to be used to name the calculation in SQL experios
+  -- | The alias to be used to name the calculation in SQL expressions
   String ->
   -- | A function to decode the expression result from a 'SqlValue.SqlValue'
   (SqlValue.SqlValue -> Either String a) ->

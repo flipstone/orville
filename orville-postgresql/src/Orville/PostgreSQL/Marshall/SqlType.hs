@@ -73,32 +73,31 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 -}
 data SqlType a = SqlType
   { sqlTypeExpr :: Expr.DataType
-  -- ^ The sql data type expression to use when creating/migrating columns of
-  -- this type
+  -- ^ The SQL data type expression to use when creating/migrating columns of
+  -- this type.
   , sqlTypeReferenceExpr :: Maybe Expr.DataType
-  -- ^ The sql data type experession to use when creating/migrating columns
-  -- with foreign keys to this type. This is used foreignRefType to build a
-  -- new SqlType when making foreign key fields
+  -- ^ The SQL data type expression to use when creating/migrating columns
+  -- with foreign keys to this type. This is used by 'foreignRefType' to build a
+  -- new SqlType when making foreign key fields.
   , sqlTypeOid :: LibPQ.Oid
-  -- ^ The Oid for the type in postgresql. This will be used during
+  -- ^ The Oid for the type in PostgreSQL. This will be used during
   -- migrations to determine whether the column type needs to be altered.
   , sqlTypeMaximumLength :: Maybe Int32
-  -- ^ The maximum length for lengths that take a type parameter (such as
-  -- @char@ and @varchar@).  This will be used during migration to determine
+  -- ^ The maximum length for types that take a type parameter (such as
+  -- @char@ and @varchar@). This will be used during migration to determine
   -- whether the column type needs to be altered.
   , sqlTypeToSql :: a -> SqlValue
   -- ^ A function for converting Haskell values of this type into values to
   -- be stored in the database.
   , sqlTypeFromSql :: SqlValue -> Either String a
-  -- ^ A function for converting values of this are stored in the database
-  -- into Haskell values. This function should return 'Nothing' to indicate
+  -- ^ A function for converting values of this type stored in the database
+  -- into Haskell values. This function should return 'Left' to indicate
   -- an error if the conversion is impossible. Otherwise it should return
-  -- 'Just' the corresponding 'a' value.
+  -- a 'Right' of the corresponding 'a' value.
   , sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
   -- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
-  -- create an implicit default value. This flag tells Orville's auto
-  -- migration logic to ignore the default value rather than drop it as it
-  -- normally would.
+  -- create an implicit default value. This flag tells Orville's auto-migration
+  -- logic to ignore the default value rather than drop it as it normally would.
   }
 
 {- |
@@ -419,11 +418,11 @@ oid =
     }
 
 {- |
-  'foreignRefType' creates a 'SqlType' suitable for columns will be foreign
-  keys referencing a column of the given 'SqlType'. For most types the
-  underlying sql type with be identical, but for special types (such as
-  autoincrementing primary keys), the type construted by 'foreignRefType' with
-  have regular underlying sql type. Each 'SqlType' definition must specify any
+  'foreignRefType' creates a 'SqlType' suitable for columns that will be
+  foreign keys referencing a column of the given 'SqlType'. For most types the
+  underlying SQL type will be identical, but for special types (such as
+  auto-incrementing primary keys), the type constructed by 'foreignRefType' will
+  have a regular underlying SQL type. Each 'SqlType' definition must specify any
   special handling required when creating foreign reference types by setting
   the 'sqlTypeReferenceExpr' field to an appropriate value.
 
@@ -440,8 +439,8 @@ foreignRefType sqlType =
   changing the column type that will be used in the database schema. The
   functions given will be used to convert the now Haskell type to and from the
   original type when reading and writing values from the database. When reading
-  an 'a' value from the database, the conversion function should produce 'Left
-  with an error message if the value cannot be successfully converted to a 'b'
+  an 'a' value from the database, the conversion function should produce 'Left'
+  with an error message if the value cannot be successfully converted to a 'b'.
 
 @since 1.0.0.0
 -}
