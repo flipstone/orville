@@ -17,7 +17,7 @@ module Orville.PostgreSQL.Schema.IndexDefinition
   , IndexDefinition.mkNamedIndexDefinition
   , Expr.IndexUniqueness (UniqueIndex, NonUniqueIndex)
   , IndexDefinition.indexCreateExpr
-  , IndexDefinition.IndexCreationStrategy (Transactional, Asynchronous)
+  , IndexDefinition.IndexCreationStrategy (Transactional, Concurrent)
   )
 where
 

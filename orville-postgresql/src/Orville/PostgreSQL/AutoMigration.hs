@@ -13,7 +13,9 @@ See 'autoMigrateSchema' as a primary, high level entry point.
 @since 1.0.0.0
 -}
 module Orville.PostgreSQL.AutoMigration
-  ( autoMigrateSchema
+  ( MigrationOptions (runSchemaChanges, runConcurrentIndexCreations, migrationLockId)
+  , defaultOptions
+  , autoMigrateSchema
   , SchemaItem (..)
   , schemaItemSummary
   , MigrationPlan
@@ -22,13 +24,16 @@ module Orville.PostgreSQL.AutoMigration
   , executeMigrationPlan
   , MigrationStep
   , MigrationDataError
+  , MigrationLock.MigrationLockId
+  , MigrationLock.defaultLockId
+  , MigrationLock.nextLockId
   , MigrationLock.withMigrationLock
   , MigrationLock.MigrationLockError
   )
 where
 
 import Control.Exception.Safe (Exception, throwIO)
-import Control.Monad (guard)
+import Control.Monad (guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
 import qualified Data.List as List
@@ -120,7 +125,7 @@ successfully committed.
 -}
 data MigrationPlan = MigrationPlan
   { i_transactionalSteps :: [MigrationStep]
-  , i_asynchronusSteps :: [MigrationStep]
+  , i_concurrentIndexSteps :: [MigrationStep]
   }
 
 {- |
@@ -128,26 +133,26 @@ data MigrationPlan = MigrationPlan
   single list. This is useful if you merely want to examine the steps of a plan
   rather than execute them. You should always use 'executeMigrationPlan' to
   execute a migration plan to ensure that the transactional steps are done
-  within a transaction while the asynchronous steps are done afterward outside
-  of it.
+  within a transaction while the concurrent index steps are done afterward
+  outside of it.
 
 @since 1.0.0.0
 -}
 migrationPlanSteps :: MigrationPlan -> [MigrationStep]
 migrationPlanSteps plan =
-  i_transactionalSteps plan <> i_asynchronusSteps plan
+  i_transactionalSteps plan <> i_concurrentIndexSteps plan
 
 mkMigrationPlan :: [MigrationStepWithType] -> MigrationPlan
 mkMigrationPlan steps =
   let
-    (transactionalSteps, asynchronousSteps) =
+    (transactionalSteps, concurrentIndexSteps) =
       List.partition isMigrationStepTransactional
         . List.sortOn migrationStepType
         $ steps
   in
     MigrationPlan
       { i_transactionalSteps = map migrationStep transactionalSteps
-      , i_asynchronusSteps = map migrationStep asynchronousSteps
+      , i_concurrentIndexSteps = map migrationStep concurrentIndexSteps
       }
 
 {- |
@@ -196,7 +201,7 @@ isMigrationStepTransactional stepWithType =
     AddIndexesTransactionally -> True
     AddUniqueConstraints -> True
     AddForeignKeys -> True
-    AddIndexesAsynchronously -> False
+    AddIndexesConcurrently -> False
 
 {- |
   Indicates the kind of operation being performed by a 'MigrationStep' so
@@ -214,7 +219,7 @@ data StepType
   | AddIndexesTransactionally
   | AddUniqueConstraints
   | AddForeignKeys
-  | AddIndexesAsynchronously
+  | AddIndexesConcurrently
   deriving
     ( -- | @since 1.0.0.0
       Eq
@@ -240,23 +245,76 @@ data MigrationDataError
 instance Exception MigrationDataError
 
 {- |
+Options to control how 'autoMigrateSchema' and similar functions behave. You
+should use 'defaultOptions' to construct a 'MigrationOptions' value
+and then use the record accessors to change any values you want to customize.
+
+@since 1.0.0.0
+-}
+data MigrationOptions = MigrationOptions
+  { runSchemaChanges :: Bool
+  -- ^
+  --       Indicates whether the normal schema changes (other than concurrent index
+  --       creations) should be run. The default value is 'True'. You may want to
+  --       disable this if you wish to run concurrent index creations separately
+  --       from the rest of the schema changes.
+  --
+  --       @since 1.0.0.0
+  , runConcurrentIndexCreations :: Bool
+  -- ^
+  --       Indicates whether indexes with the 'Orville.Concurrent' creation strategy
+  --       will be created. The default value is 'True'. You may want to disable
+  --       this if you wish to run concurrent index creations separately from the
+  --       rest of the schema changes.
+  --
+  --       @since 1.0.0.0
+  , migrationLockId :: MigrationLock.MigrationLockId
+  -- ^
+  --       The 'MigrationLockId' that will be use to ensure only one application is
+  --       running migrations at a time. The default value is 'defaultLockId'. You
+  --       may want to change this if you want to run concurrent index creations
+  --       separately from the rest of the schema changes without blocking one
+  --       another.
+  --
+  --       @since 1.0.0.0
+  }
+
+{- |
+The default 'MigrationOptions', which is to run both the schema changes and
+concurrent index creations together using the default Orville migration lock.
+
+@since 1.0.0.0
+-}
+defaultOptions :: MigrationOptions
+defaultOptions =
+  MigrationOptions
+    { runSchemaChanges = True
+    , runConcurrentIndexCreations = True
+    , migrationLockId = MigrationLock.defaultLockId
+    }
+
+{- |
   This function compares the list of 'SchemaItem's provided against the current
   schema found in the database to determine whether any migration are
   necessary.  If any changes need to be made, this function executes. You can
   call 'generateMigrationPlan' and 'executeMigrationPlan' yourself if you want
   to have more control over the process, but must then take care to ensure that
-  the schema has not changed between the two calls. This function uses an
+  the schema has not changed between the two calls. This function uses a
   PostgreSQL advisory lock to ensure that no other calls to 'autoMigrateSchema'
   (potentially on other processes) attempt to modify the schema at the same
   time.
 
 @since 1.0.0.0
 -}
-autoMigrateSchema :: Orville.MonadOrville m => [SchemaItem] -> m ()
-autoMigrateSchema schemaItems =
-  MigrationLock.withMigrationLock $ do
+autoMigrateSchema ::
+  Orville.MonadOrville m =>
+  MigrationOptions ->
+  [SchemaItem] ->
+  m ()
+autoMigrateSchema options schemaItems =
+  MigrationLock.withMigrationLock (migrationLockId options) $ do
     plan <- generateMigrationPlanWithoutLock schemaItems
-    executeMigrationPlanWithoutLock plan
+    executeMigrationPlanWithoutLock options plan
 
 {- |
   Compares the list of 'SchemaItem's provided against the current schema found
@@ -273,9 +331,14 @@ autoMigrateSchema schemaItems =
 
 @since 1.0.0.0
 -}
-generateMigrationPlan :: Orville.MonadOrville m => [SchemaItem] -> m MigrationPlan
-generateMigrationPlan =
-  MigrationLock.withMigrationLock . generateMigrationPlanWithoutLock
+generateMigrationPlan ::
+  Orville.MonadOrville m =>
+  MigrationOptions ->
+  [SchemaItem] ->
+  m MigrationPlan
+generateMigrationPlan options =
+  MigrationLock.withMigrationLock (migrationLockId options)
+    . generateMigrationPlanWithoutLock
 
 generateMigrationPlanWithoutLock :: Orville.MonadOrville m => [SchemaItem] -> m MigrationPlan
 generateMigrationPlanWithoutLock schemaItems =
@@ -298,35 +361,45 @@ generateMigrationPlanWithoutLock schemaItems =
   'generateMigrationPlan'. Normally all the steps in a migration plan are
   executed in a transaction so that they will all be applied together
   successfully or all rolled-back if one of them fails. Any indexes using the
-  'Orville.Asynchronous' creation strategy cannot be created this way, however,
+  'Orville.Concurrent' creation strategy cannot be created this way, however,
   because PostgreSQL does not allow @CREATE INDEX CONCURRENTLY@ to be used from
   inside a transaction. If a 'MigrationPlan' includes any indexes whose
-  creation strategy is set to 'Orville.Asynchronous', Orville will begin the
-  creation of those indexes after the rest of the migration steps have been
-  committed successfully. This function will return before PostgreSQL has
-  fineshed creating those indexes. You should check on the status of indexes
-  created this way manually to ensure they were created successfully. If they
-  could not be, you can drop them and Orville will re-attempt creating them the
-  next time migration is performed.
+  creation strategy is set to 'Orville.Concurrent', Orville will create indexes
+  after the rest of the migration steps have been committed successfully. This
+  function will wait for until all the migration steps that it runs to finish
+  before returning. If one of the concurrent indexes fails during creation it
+  will be left in an invalid state (as is the default PostgreSQL behavior). You
+  should check on the status of indexes created this way manually to ensure
+  they were created successfully. If they could not be, you can drop them and
+  Orville will re-attempt creating them the next time migration is performed.
 
 @since 1.0.0.0
 -}
 executeMigrationPlan ::
   Orville.MonadOrville m =>
+  MigrationOptions ->
   MigrationPlan ->
   m ()
-executeMigrationPlan =
-  MigrationLock.withMigrationLock . executeMigrationPlanWithoutLock
+executeMigrationPlan options =
+  MigrationLock.withMigrationLock (migrationLockId options)
+    . executeMigrationPlanWithoutLock options
 
 executeMigrationPlanWithoutLock ::
   Orville.MonadOrville m =>
+  MigrationOptions ->
   MigrationPlan ->
   m ()
-executeMigrationPlanWithoutLock plan = do
-  Orville.withTransaction $
-    executeMigrationStepsWithoutTransaction (i_transactionalSteps plan)
+executeMigrationPlanWithoutLock options plan = do
+  when (runSchemaChanges options)
+    . Orville.withTransaction
+    . executeMigrationStepsWithoutTransaction
+    . i_transactionalSteps
+    $ plan
 
-  executeMigrationStepsWithoutTransaction (i_asynchronusSteps plan)
+  when (runConcurrentIndexCreations options)
+    . executeMigrationStepsWithoutTransaction
+    $ i_concurrentIndexSteps
+    $ plan
 
 executeMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [MigrationStep] -> m ()
 executeMigrationStepsWithoutTransaction =
@@ -886,7 +959,7 @@ mkAddIndexSteps existingIndexes tableName indexDef =
     indexStep =
       case Orville.indexCreationStrategy indexDef of
         Orville.Transactional -> AddIndexesTransactionally
-        Orville.Asynchronous -> AddIndexesAsynchronously
+        Orville.Concurrent -> AddIndexesConcurrently
   in
     if Set.member indexKey existingIndexes
       then []

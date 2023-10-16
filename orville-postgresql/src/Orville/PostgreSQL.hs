@@ -131,7 +131,7 @@ module Orville.PostgreSQL
   , IndexDefinition.mkNamedIndexDefinition
   , IndexDefinition.IndexUniqueness (UniqueIndex, NonUniqueIndex)
   , IndexDefinition.indexCreateExpr
-  , IndexDefinition.IndexCreationStrategy (Transactional, Asynchronous)
+  , IndexDefinition.IndexCreationStrategy (Transactional, Concurrent)
   , IndexDefinition.setIndexCreationStrategy
   , IndexDefinition.indexCreationStrategy
   , PrimaryKey.PrimaryKey

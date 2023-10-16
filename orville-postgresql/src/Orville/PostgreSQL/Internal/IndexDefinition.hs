@@ -20,7 +20,7 @@ module Orville.PostgreSQL.Internal.IndexDefinition
   , NamedIndexMigrationKey
   , indexMigrationKey
   , indexCreateExpr
-  , IndexCreationStrategy (Transactional, Asynchronous)
+  , IndexCreationStrategy (Transactional, Concurrent)
   )
 where
 
@@ -52,7 +52,7 @@ data IndexDefinition = IndexDefinition
   Sets the 'IndexCreationStrategy' strategy to be used when creating the index
   described by the 'IndexDefinition'. By default all indexes are created using
   the 'Transactional' strategy, but some tables are too large for this to
-  be feasible. See the 'Asynchronous' creation strategy for how to work around
+  be feasible. See the 'Concurrent' creation strategy for how to work around
   this.
 
 @since 1.0.0.0
@@ -94,20 +94,25 @@ data IndexCreationStrategy
     --       work in general in Orville.
     Transactional
   | -- |
-    --       Creates the index asynchronously using the @CONCURRENTLY@ keyword in
-    --       PostgreSQL. Index creation will return immediately and the index will be
-    --       created in the background by PostgreSQL. Index creation may fail when
-    --       using the 'Asynchronous' strategy. Orville has no special provision to
-    --       detect or recover from this failure currently. You should manually check
-    --       that index creation has succeeded. If necessary, you can manually drop
-    --       the index to cause Orville to recreate it the next time migrations are
-    --       run. This is useful when you need to add an index to a very large table
-    --       because this can lock the table for a long time and cause an application
-    --       to fail health checks at startup if migrations do not finish quickly enough.
-    --       You should familiarize youself with how concurrent index creation works
-    --       in PostgreSQL before using this. See
+    --       Creates the index using the @CONCURRENTLY@ keyword in PostgreSQL.
+    --       Index creation will not lock the table during creation, allowing
+    --       the application access the table normally while the index is
+    --       created. Concurrent index creation cannot be done in a
+    --       transaction, so indexes created using @CONCURRENTLY@ are created
+    --       outside the normal schema transaction. Index creation may fail
+    --       when using the 'Concurrent' strategy. Orville has no special
+    --       provision to detect or recover from this failure currently. You
+    --       should manually check that index creation has succeeded. If
+    --       necessary, you can manually drop the index to cause Orville to
+    --       recreate it the next time migrations are run. Note that while the
+    --       table will not be locked, index migration will still block
+    --       application startup by default. See the information about schema
+    --       migration options in "Orville.PostgreSQL.AutoMigration" for
+    --       details about how to work around this if it is a problem for you.
+    --       Also, it a good idea to read the PostgreSQL docs about creating
+    --       indexes concurrently before you use this strategy. See
     --       https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY
-    Asynchronous
+    Concurrent
   deriving (Eq, Show)
 
 {- |
@@ -278,4 +283,4 @@ mkMaybeConcurrently :: IndexCreationStrategy -> Maybe Expr.ConcurrentlyExpr
 mkMaybeConcurrently strategy =
   case strategy of
     Transactional -> Nothing
-    Asynchronous -> Just Expr.concurrently
+    Concurrent -> Just Expr.concurrently
