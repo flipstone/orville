@@ -60,10 +60,10 @@ executeAndDecode queryType sql marshaller = do
   This function can only be used for the execution of a SELECT, CREATE
   TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement, or an
   EXECUTE of a prepared query that contains an INSERT, UPDATE, or DELETE
-  statement. If the query is anything else an 'AffectedRowsDecodingError'
+  statement. If the query is anything else, an 'AffectedRowsDecodingError'
   wil be raised after the query is executed when the result is read.
 
-  If the query fails an exception will be raised.
+  If the query fails, an exception will be raised.
 
 @since 1.0.0.0
 -}
@@ -137,10 +137,10 @@ executeAndDecodeIO queryType sql marshaller orvilleState conn = do
   This function can only be used for the execution of a SELECT, CREATE
   TABLE AS, INSERT, UPDATE, DELETE, MOVE, FETCH, or COPY statement, or an
   EXECUTE of a prepared query that contains an INSERT, UPDATE, or DELETE
-  statement. If the query is anything else an 'AffectedRowsDecodingError'
+  statement. If the query is anything else, an 'AffectedRowsDecodingError'
   wil be raised after the query is executed when the result is read.
 
-  If the query fails an exception will be raised.
+  If the query fails, an exception will be raised.
 
 @since 1.0.0.0
 -}
@@ -170,7 +170,7 @@ executeAndReturnAffectedRowsIO queryType sql orvilleState conn = do
   Executes a SQL query and ignores the result. Any SQL Execution callbacks
   that have been added to the 'OrvilleState' will be called.
 
-  If the query fails an exception will be raised.
+  If the query fails, an exception will be raised.
 
 @since 1.0.0.0
 -}

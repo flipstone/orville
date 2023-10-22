@@ -75,7 +75,7 @@ data Cursor readEntity where
   completes (or raises an exception).
 
   See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
-  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
+  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursors
   behave in general.
 
   We recommend you use this instead of 'declareCursor' and 'closeCursor'
@@ -104,7 +104,7 @@ withCursor scrollExpr holdExpr select useCursor =
   ensure that the cursor gets closed properly.
 
   See @https://www.postgresql.org/docs/current/sql-declare.html@ for details
-  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursor
+  about the 'Expr.ScrollExpr' and 'Expr.HoldExpr' parameters and how cursors
   behave in general.
 
 @since 1.0.0.0
@@ -129,8 +129,8 @@ declareCursor scrollExpr holdExpr =
 {- |
   Closes a @CURSOR@ in PostgreSQL that was previously declared.
   This should be used to close any cursors you open via 'declareCursor',
-  thought we recommend you use 'withCursor' instead to ensure that any
-  opened cursor are closed in the event of an exception.
+  though we recommend you use 'withCursor' instead to ensure that any
+  opened cursors are closed in the event of an exception.
 
 @since 1.0.0.0
 -}
@@ -147,7 +147,7 @@ closeCursor (Cursor _ cursorName) =
 {- |
   Fetch rows from a cursor according to the 'Expr.CursorDirection' given. See
   @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
-  effect of fetch and the meanings of cursor directions to PostgreSQL.
+  the effects of fetch and the meanings of cursor directions to PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -165,7 +165,7 @@ fetch direction (Cursor marshaller cursorName) =
 {- |
   Moves a cursor according to the 'Expr.CursorDirection' given. See
   @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
-  effect of move and the meanings of cursor directions to PostgreSQL.
+  the effect of move and the meanings of cursor directions to PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -181,8 +181,8 @@ move direction (Cursor _ cursorName) =
 
 {- |
   INTERNAL - Generates a unique (or very nearly guaranteed to be) cursor name.
-  Cursor names only need to be unique among the currently open cursors on the
-  current connection, so using POSIX time plus a 32 bit random tag should be
+  Cursor names only need to be unique among the currently-open cursors on the
+  current connection, so using POSIX time plus a 32-bit random tag should be
   more than sufficient to ensure conflicts are not seen in practice.
 
 @since 1.0.0.0

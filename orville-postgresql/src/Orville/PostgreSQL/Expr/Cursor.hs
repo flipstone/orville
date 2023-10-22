@@ -325,7 +325,8 @@ newtype CursorDirection
       RawSql.SqlExpression
     )
 
-{- | Specify a direction of the next single row. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the next single row. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -336,7 +337,8 @@ next :: CursorDirection
 next =
   CursorDirection . RawSql.fromString $ "NEXT"
 
-{- | Specify a direction of the prior single row. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the prior single row. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -347,7 +349,8 @@ prior :: CursorDirection
 prior =
   CursorDirection . RawSql.fromString $ "PRIOR"
 
-{- | Specify a direction of the first single row. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the first single row. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -358,7 +361,8 @@ first :: CursorDirection
 first =
   CursorDirection . RawSql.fromString $ "FIRST"
 
-{- | Specify a direction of the last single row. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the last single row. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -369,8 +373,8 @@ last :: CursorDirection
 last =
   CursorDirection . RawSql.fromString $ "LAST"
 
-{- | Specify a direction of the single row at an absolute position within the cursor. Primarily for
-   use with 'fetch' or 'move'.
+{- | Specify the direction of the single row at an absolute position within the
+    cursor. Primarily for use with 'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -387,8 +391,8 @@ absolute countParam =
     RawSql.fromString "ABSOLUTE "
       <> RawSql.intDecLiteral countParam
 
-{- | Specify a direction of the single row relative to the cursor's current position. Primarily for
-   use with 'fetch' or 'move'.
+{- | Specify the direction of the single row relative to the cursor's current
+    position. Primarily for use with 'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -406,7 +410,8 @@ relative countParam =
       --  LINE 1: FETCH RELATIVE $1 \"testcursor\"
       RawSql.intDecLiteral countParam
 
-{- | Specify a direction of the next n rows. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the next n rows. Primarily for use with 'fetch'
+    or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -422,7 +427,8 @@ rowCount countParam =
   CursorDirection $
     RawSql.intDecLiteral countParam
 
-{- | Specify a direction of all the next rows. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of all the next rows. Primarily for use with 'fetch'
+    or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -433,7 +439,8 @@ fetchAll :: CursorDirection
 fetchAll =
   CursorDirection . RawSql.fromString $ "ALL"
 
-{- | Specify a direction of the next single row. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the next single row. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -444,7 +451,8 @@ forward :: CursorDirection
 forward =
   CursorDirection . RawSql.fromString $ "FORWARD"
 
-{- | Specify a direction of the next n rows. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the next n rows. Primarily for use with 'fetch'
+    or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -461,7 +469,8 @@ forwardCount countParam =
     RawSql.fromString "FORWARD "
       <> RawSql.intDecLiteral countParam
 
-{- | Specify a direction of all the next rows. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of all the next rows. Primarily for use with 'fetch'
+    or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -472,7 +481,8 @@ forwardAll :: CursorDirection
 forwardAll =
   CursorDirection . RawSql.fromString $ "FORWARD ALL"
 
-{- | Specify a direction of the prior single row. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the prior single row. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -483,7 +493,8 @@ backward :: CursorDirection
 backward =
   CursorDirection . RawSql.fromString $ "BACKWARD"
 
-{- | Specify a direction of the prior n rows. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of the prior n rows. Primarily for use with 'fetch'
+    or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.
@@ -500,7 +511,8 @@ backwardCount countParam =
     RawSql.fromString "BACKWARD "
       <> RawSql.intDecLiteral countParam
 
-{- | Specify a direction of all the prior rows. Primarily for use with 'fetch' or 'move'.
+{- | Specify the direction of all the prior rows. Primarily for use with
+    'fetch' or 'move'.
 
 See PostgreSQL [fetch documentation](https://www.postgresql.org/docs/current/sql-fetch.html) for
 more information.

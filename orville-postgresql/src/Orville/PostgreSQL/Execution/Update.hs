@@ -101,12 +101,12 @@ updateToTable =
 
 {- |
   Builds an 'Update' that will update all of the writable columns described in
-  the 'TableDefinition' and returning the data as seen by the database. This is
-  useful for getting database managed columns such as auto-incrementing
+  the 'TableDefinition' and return the data as seen by the database. This is
+  useful for getting database-managed columns such as auto-incrementing
   identifiers and sequences.
 
   This function returns 'Nothing' if the 'TableDefinition' has no columns,
-  which would otherwise generate and 'Update' with invalid SQL syntax.
+  which would otherwise generate an 'Update' with invalid SQL syntax.
 
 @since 1.0.0.0
 -}
@@ -154,7 +154,7 @@ updateToTableFieldsReturning =
   decode.
 
   This is the lowest level of escape hatch available for 'Update'. The caller can build any query
-  that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
+  that Orville supports using the expression-building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.UpdateExpr'.
 
 @since 1.0.0.0

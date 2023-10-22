@@ -153,7 +153,7 @@ selectGroupByClause =
 
 {- |
   Builds a 'Expr.LimitExpr' that will limit the query results to the
-  number specified in the 'SelectOptions' (if any)
+  number specified in the 'SelectOptions' (if any).
 
 @since 1.0.0.0
 -}
@@ -162,8 +162,8 @@ selectLimitExpr =
   getFirst . i_limitExpr
 
 {- |
-  Builds a 'Expr.OffsetExpr' that will limit the query results to the
-  number specified in the 'SelectOptions' (if any)
+  Builds an 'Expr.OffsetExpr' that will limit the query results to the
+  number specified in the 'SelectOptions' (if any).
 
 @since 1.0.0.0
 -}
@@ -228,8 +228,8 @@ groupBy groupByExpr =
 
 {- |
   Builds a 'QueryExpr' that will use the specified 'Expr.SelectList' when building
-  the @SELECT@ statement to execute. It it up to the caller to make sure that
-  the 'Expr.SelectList' expression makes sens for the table being queried, and
+  the @SELECT@ statement to execute. It is up to the caller to make sure that
+  the 'Expr.SelectList' expression makes sense for the table being queried, and
   that the names of the columns in the result set match those expected by the
   given 'SqlMarshaller', which will be used to decode it.
 
@@ -237,7 +237,7 @@ groupBy groupByExpr =
   select things other than simple columns from the table, such as using
   aggregate functions. The 'Expr.SelectList' can be built however the caller
   desires. If Orville does not support building the 'Expr.SelectList' you need
-  using any of the expression building functions, you can resort to
+  using any of the expression-building functions, you can resort to
   @RawSql.fromRawSql@ as an escape hatch to build the 'Expr.SelectList' here.
 
 @since 1.0.0.0

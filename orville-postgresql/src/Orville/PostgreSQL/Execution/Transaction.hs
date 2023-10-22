@@ -3,7 +3,7 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-This module provides the functionality to work with SQL transactions, notably
+This module provides the functionality to work with SQL transactions - notably
 to ensure some Haskell action occurs within a database transaction.
 
 @since 1.0.0.0
@@ -29,7 +29,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   the transaction will be committed. If the action raises an exception, the transaction will
   rollback.
 
-  This function is safe to call from within another transaction. When called this way the
+  This function is safe to call from within another transaction. When called this way, the
   transaction will establish a new savepoint at the beginning of the nested transaction and
   either release the savepoint or rollback to it as appropriate.
 
