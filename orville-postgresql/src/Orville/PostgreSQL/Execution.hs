@@ -7,14 +7,14 @@ Stability : Stable
 
 You can import "Orville.PostgreSQL.Execution" to get access to all the
 execution-related functions and types exported by the modules below. This
-includes a number of lowel-level items not exported by "Orville.PostgreSQL"
+includes a number of lower-level items not exported by "Orville.PostgreSQL"
 that give you more control (and therefore responsibility) over how the SQL is
 executed.
 
 @since 1.0.0.0
 -}
 module Orville.PostgreSQL.Execution
-  ( -- * High level modules for most common tasks
+  ( -- * High-level modules for most common tasks
       module Orville.PostgreSQL.Execution.EntityOperations
   , module Orville.PostgreSQL.Execution.SelectOptions
   , module Orville.PostgreSQL.Execution.Sequence

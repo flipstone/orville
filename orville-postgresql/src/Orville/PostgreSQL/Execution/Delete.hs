@@ -59,7 +59,7 @@ deleteFromDeleteExpr (Delete expr) = expr
 deleteFromDeleteExpr (DeleteReturning _ expr) = expr
 
 {- |
-  Excutes the database query for the 'Delete' and returns the number of
+  Executes the database query for the 'Delete' and returns the number of
   rows affected by the query.
 
 @since 1.0.0.0
@@ -71,8 +71,8 @@ executeDelete ::
 executeDelete (Delete expr) =
   Execute.executeAndReturnAffectedRows QueryType.DeleteQuery expr
 
-{- | Excutes the database query for the 'Delete' and uses its 'SqlMarshaller' to decode the rows (that
-  were just deleteed) as returned via a RETURNING clause.
+{- | Executes the database query for the 'Delete' and uses its 'SqlMarshaller' to decode the rows (that
+  were just deleted) as returned via a RETURNING clause.
 
 @since 1.0.0.0
 -}
@@ -84,7 +84,7 @@ executeDeleteReturnEntities (DeleteReturning marshaller expr) =
   Execute.executeAndDecode QueryType.DeleteQuery expr marshaller
 
 {- |
-  Builds a 'Delete' that will delete all of the writeable columns described in the
+  Builds a 'Delete' that will delete all of the writable columns described in the
   'TableDefinition' without returning the data as seen by the database.
 
 @since 1.0.0.0
@@ -97,9 +97,9 @@ deleteFromTable =
   deleteTable WithoutReturning
 
 {- |
-  Builds a 'Delete' that will delete all of the writeable columns described in the
-  'TableDefinition' and returning the data as seen by the database. This is useful for getting
-  database managed columns such as auto-incrementing identifiers and sequences.
+  Builds a 'Delete' that will delete all of the writable columns described in the
+  'TableDefinition' and return the data as seen by the database. This is useful for getting
+  database-managed columns such as auto-incrementing identifiers and sequences.
 
 @since 1.0.0.0
 -}
@@ -133,7 +133,7 @@ deleteTable returningOption tableDef whereCondition =
   can decode.
 
   This is the lowest level of escape hatch available for 'Delete'. The caller can build any query
-  that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
+  that Orville supports using the expression-building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.DeleteExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.DeleteExpr'. This level of interface does not provide an automatic enforcement of the
   expectation, however failure is likely if that is not met.

@@ -4,7 +4,7 @@ License   : MIT
 Stability : Stable
 
 Entry-level functions for executing based CRUD operations on entity tables.
-This are the functions that you will use most often for interacting with
+These are the functions that you will use most often for interacting with
 tables.
 
 @since 1.0.0.0

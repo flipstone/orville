@@ -8,8 +8,8 @@ Stability : Stable
 
 Functions for working with executable @SELECT@ statements. The 'Select' type is
 a value that can be passed around and executed later. The 'Select' is directly
-associated with how to decode the rows returned by the query . This means it
-can be safely executed via 'executeInsert' and decode the rows.. It is a
+associated with how to decode the rows returned by the query. This means it
+can be safely executed via 'executeSelect' and used to decode the rows. It is a
 lower-level API than the entity select functions in
 "Orville.PostgreSQL.Execution.EntityOperations", but not as primitive as
 "Orville.PostgreSQL.Expr.Query".
@@ -56,7 +56,7 @@ selectToQueryExpr :: Select readEntity -> Expr.QueryExpr
 selectToQueryExpr (Select _ query) = query
 
 {- |
-  Excutes the database query for the 'Select' and uses its 'SqlMarshaller' to
+  Executes the database query for the 'Select' and uses its 'SqlMarshaller' to
   decode the result set.
 
 @since 1.0.0.0
@@ -87,7 +87,7 @@ useSelect f (Select marshaller query) =
   Builds a 'Select' that will select all the columns described in the
   'TableDefinition'. This is the safest way to build a 'Select', because table
   name and columns are all read from the 'TableDefinition'. If the table is
-  being managed with Orville auto migrations, this will match the schema in the
+  being managed with Orville auto-migrations, this will match the schema in the
   database.
 
 @since 1.0.0.0
@@ -104,7 +104,7 @@ selectTable tableDef =
   from the specified table. It is up to the caller to ensure that the columns
   in the marshaller make sense for the table.
 
-  This function is useful for query a subset of table columns using a custom
+  This function is useful for querying a subset of table columns using a custom
   marshaller.
 
 @since 1.0.0.0
@@ -128,7 +128,7 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
   'SqlMarshaller' can decode.
 
   This is the lowest level of escape hatch available for 'Select'. The caller
-  can build any query that Orville supports using the expression building
+  can build any query that Orville supports using the expression-building
   functions, or use @RawSql.fromRawSql@ to build a raw 'Expr.QueryExpr'.
 
 @since 1.0.0.0

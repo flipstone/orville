@@ -73,7 +73,7 @@ orvilleLockScope = 17772
 {- |
   Executes an Orville action with a PostgreSQL advisory lock held that
   indicates to other Orville processes that a database migration is being done
-  an no others should be performed concurrently.
+  and no others should be performed concurrently.
 
 @since 1.0.0.0
 -}

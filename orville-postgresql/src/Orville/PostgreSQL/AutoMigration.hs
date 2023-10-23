@@ -8,7 +8,7 @@ License   : MIT
 Stability : Stable
 
 Facilities for performing some database migrations automatically.
-See 'autoMigrateSchema' as a primary, high level entry point.
+See 'autoMigrateSchema' as a primary, high-level entry point.
 
 @since 1.0.0.0
 -}
@@ -90,8 +90,8 @@ data SchemaItem where
     SchemaItem
 
 {- |
-  Returns a one-line string describe the 'SchemaItem', suitable for a human to
-  identify it in a list of output.
+  Returns a one-line string describing the 'SchemaItem', suitable for a human
+  to identify it in a list of output.
 
   For example, a 'SchemaItem' constructed via 'schemaTable' gives @Table <table
   name>@.
@@ -295,7 +295,7 @@ defaultOptions =
 
 {- |
   This function compares the list of 'SchemaItem's provided against the current
-  schema found in the database to determine whether any migration are
+  schema found in the database to determine whether any migrations are
   necessary.  If any changes need to be made, this function executes. You can
   call 'generateMigrationPlan' and 'executeMigrationPlan' yourself if you want
   to have more control over the process, but must then take care to ensure that
@@ -321,12 +321,12 @@ autoMigrateSchema options schemaItems =
   in the database and returns a 'MigrationPlan' that could be executed to make
   the database schema match the items given.
 
-  You can execute the 'MigrationPlan' yourself using 'executeMigrationPlan'
+  You can execute the 'MigrationPlan' yourself using the 'executeMigrationPlan'
   convenience function, though 'autoMigrateSchema' is usually a better option
   because it uses a database lock to ensure that no other processes are also
   using 'autoMigrateSchema' to apply migrations at the same time. If you use
-  'generateMigrationPlan' and 'executeMigrationPlan' separately you are
-  responsible for ensuring that the schema has no changed between the time the
+  'generateMigrationPlan' and 'executeMigrationPlan' separately, you are
+  responsible for ensuring that the schema has not changed between the time the
   plan is generated and executed yourself.
 
 @since 1.0.0.0
@@ -357,7 +357,7 @@ generateMigrationPlanWithoutLock schemaItems =
         pure . mkMigrationPlan . concat $ migrationSteps
 
 {- |
-  Executes a 'MigrationPlan' that has be previously devised via
+  Executes a 'MigrationPlan' that has been previously devised via
   'generateMigrationPlan'. Normally all the steps in a migration plan are
   executed in a transaction so that they will all be applied together
   successfully or all rolled-back if one of them fails. Any indexes using the
@@ -366,8 +366,8 @@ generateMigrationPlanWithoutLock schemaItems =
   inside a transaction. If a 'MigrationPlan' includes any indexes whose
   creation strategy is set to 'Orville.Concurrent', Orville will create indexes
   after the rest of the migration steps have been committed successfully. This
-  function will wait for until all the migration steps that it runs to finish
-  before returning. If one of the concurrent indexes fails during creation it
+  function will wait until all of the migration steps that it runs to finish
+  before returning. If one of the concurrent indexes fails during creation, it
   will be left in an invalid state (as is the default PostgreSQL behavior). You
   should check on the status of indexes created this way manually to ensure
   they were created successfully. If they could not be, you can drop them and

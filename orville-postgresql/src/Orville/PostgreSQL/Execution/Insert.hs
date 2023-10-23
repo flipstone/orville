@@ -63,7 +63,7 @@ insertToInsertExpr (Insert _ expr) = expr
 insertToInsertExpr (InsertReturning _ expr) = expr
 
 {- |
-  Excutes the database query for the 'Insert' and returns the number of rows
+  Executes the database query for the 'Insert' and returns the number of rows
   affected by the query.
 
 @since 1.0.0.0
@@ -75,7 +75,7 @@ executeInsert ::
 executeInsert (Insert _ expr) =
   Execute.executeAndReturnAffectedRows QueryType.InsertQuery expr
 
-{- | Excutes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
+{- | Executes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
   were just inserted) as returned via a RETURNING clause.
 
 @since 1.0.0.0
@@ -88,7 +88,7 @@ executeInsertReturnEntities (InsertReturning marshaller expr) =
   Execute.executeAndDecode QueryType.InsertQuery expr marshaller
 
 {- |
-  Builds an 'Insert' that will insert all of the writeable columns described in the
+  Builds an 'Insert' that will insert all of the writable columns described in the
   'TableDefinition' without returning the data as seen by the database.
 
 @since 1.0.0.0
@@ -101,9 +101,9 @@ insertToTable =
   insertTable WithoutReturning
 
 {- |
-  Builds an 'Insert' that will insert all of the writeable columns described in the
-  'TableDefinition' and returning the data as seen by the database. This is useful for getting
-  database managed columns such as auto-incrementing identifiers and sequences.
+  Builds an 'Insert' that will insert all of the writable columns described in the
+  'TableDefinition' and return the data as seen by the database. This is useful for getting
+  database-managed columns such as auto-incrementing identifiers and sequences.
 
 @since 1.0.0.0
 -}
@@ -130,7 +130,7 @@ insertTable returningOption tableDef entities =
   decode.
 
   This is the lowest level of escape hatch available for 'Update'. The caller can build any query
-  that Orville supports using the expression building functions, or use @RawSql.fromRawSql@ to build
+  that Orville supports using the expression-building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.InsertExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.InsertExpr'. This level of interface does not provide an automatic enforcement of the
   expectation, however failure is likely if that is not met.
