@@ -61,7 +61,7 @@ newtype WhereClause
   deriving (RawSql.SqlExpression)
 
 {- |
-Constructs a 'WHERE' clause from the given 'BooleanExpr'. E.G.
+Constructs a @WHERE@ clause from the given 'BooleanExpr'. E.G.
 
 > WHERE <boolean expr>
 

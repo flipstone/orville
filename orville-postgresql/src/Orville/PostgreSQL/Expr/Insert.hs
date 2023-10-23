@@ -127,7 +127,7 @@ insertRowValues rows =
     RawSql.fromString "VALUES "
       <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql rows)
 
-{- | Create an 'InsertSource' for the given 'SqlValues'. This ensures that all input values are used
+{- | Create an 'InsertSource' for the given 'SqlValue's. This ensures that all input values are used
 as parameters and comma separated in the generated SQL.
 
 @since 1.0.0.0
@@ -155,7 +155,7 @@ newtype RowValues
       RawSql.SqlExpression
     )
 
-{- | Create a 'RowValues' for the given 'SqlValues'. This ensures that all input values are used as
+{- | Create a 'RowValues' for the given 'SqlValue's. This ensures that all input values are used as
 parameters and comma separated in the generated SQL.
 
 @since 1.0.0.0

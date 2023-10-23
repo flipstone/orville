@@ -163,7 +163,7 @@ connect noticeReporting connectionString =
   things that are not interruptible
   <https://www.stackage.org/haddock/lts-16.15/base-4.13.0.0/Control-Exception.html#g:13>
 
-  From the previous link, 'tryTakeMVar' is not interruptible, where 'takeMVar'
+  From the previous link, 'tryTakeMVar' is not interruptible, where @takeMVar@
   *is*.  So by using 'tryTakeMVar' along with 'mask', we should be safe from
   async exceptions causing us to not finish an underlying connection.  Notice
   that the only place the MVar is ever taken is here so 'tryTakeMVar' gives us
@@ -174,11 +174,11 @@ connect noticeReporting connectionString =
 @since 1.0.0.0
 -}
 close :: Connection -> IO ()
-close (Connection handle') =
+close (Connection handle) =
   let
     underlyingFinish :: (forall a. IO a -> IO a) -> IO (Maybe ())
     underlyingFinish restore = do
-      underlyingConnection <- tryTakeMVar handle'
+      underlyingConnection <- tryTakeMVar handle
       restore (traverse LibPQ.finish underlyingConnection)
   in
     void $ mask underlyingFinish
@@ -188,7 +188,7 @@ close (Connection handle') =
 
   This is not intended to be directly exposed to end users, but instead wrapped
   in something using a pool.  Note there are potential dragons here in that
-  this calls `tryReadMvar` and then returns an error if the MVar is not full.
+  this calls @tryReadMvar@ and then returns an error if the MVar is not full.
   The intent is to never expose the ability to empty the `MVar` outside of this
   module, so unless a connection has been closed it *should* never be empty.
   And a connection should be closed upon removal from a resource pool (in which

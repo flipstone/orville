@@ -97,7 +97,7 @@ orvilleErrorDetailLevel =
 
 {- |
   Orville will call the transaction callback any time a transaction event
-  occurrs. You can register a callback with 'addTransactionCallBack'.
+  occurrs. You can register a callback with 'addTransactionCallback'.
 
 @since 1.0.0.0
 -}
@@ -193,10 +193,10 @@ resetOrvilleState =
     <*> _orvilleConnectionPool
 
 {- |
-  INTERNAL: Transitions the 'OrvilleState' into "connected" status, storing
-  the given 'Connection' as the database connection to be used to execute
-  all queries. This is used by 'withConnection' to track the connection it
-  retrieves from the pool.
+  INTERNAL: Transitions the 'OrvilleState' into "connected" status, storing the
+  given 'Connection' as the database connection to be used to execute all
+  queries. This is used by 'Orville.PostgreSQL.Monad.withConnection' to track
+  the connection it retrieves from the pool.
 
 @since 1.0.0.0
 -}
@@ -210,9 +210,9 @@ connectState connectedState state =
   INTERNAL: This type is used to signal whether a database connection has
   been retrieved from the pool for the current operation or not. The
   value is tracked in the 'OrvilleState' for the host monad, and is checked
-  by 'withConnection' to avoid checking out two separate connections for a
-  multiple operations that needs to be run on the same connection (e.g.
-  multiple operations inside a transaction).
+  by 'Orville.PostgreSQL.Monad.withConnection' to avoid checking out two
+  separate connections for a multiple operations that needs to be run on the
+  same connection (e.g. multiple operations inside a transaction).
 
 @since 1.0.0.0
 -}
@@ -297,7 +297,7 @@ savepointNestingLevel (Savepoint n) = n
 
 {- |
   Describes an event in the lifecycle of a database transaction. You can use
-  'addTransactionCallBack' to register a callback to respond to these events.
+  'addTransactionCallback' to register a callback to respond to these events.
   The callback will be called after the event in question has been succesfully
   executed.
 

@@ -64,7 +64,7 @@ import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
-  SqlType defines the mapping of a Haskell type (`a`) to a SQL column type in the
+  SqlType defines the mapping of a Haskell type (@a@) to a SQL column type in the
   database. This includes both how to convert the type to and from the raw values
   read from the database as well as the schema information required to create
   and migrate columns using the type.
@@ -93,7 +93,7 @@ data SqlType a = SqlType
   -- ^ A function for converting values of this type stored in the database
   -- into Haskell values. This function should return 'Left' to indicate
   -- an error if the conversion is impossible. Otherwise it should return
-  -- a 'Right' of the corresponding 'a' value.
+  -- a 'Right' of the corresponding @a@ value.
   , sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
   -- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
   -- create an implicit default value. This flag tells Orville's auto-migration
@@ -439,8 +439,8 @@ foreignRefType sqlType =
   changing the column type that will be used in the database schema. The
   functions given will be used to convert the now Haskell type to and from the
   original type when reading and writing values from the database. When reading
-  an 'a' value from the database, the conversion function should produce 'Left'
-  with an error message if the value cannot be successfully converted to a 'b'.
+  an @a@ value from the database, the conversion function should produce 'Left'
+  with an error message if the value cannot be successfully converted to a @b@.
 
 @since 1.0.0.0
 -}
@@ -455,7 +455,7 @@ tryConvertSqlType bToA aToB sqlType =
 
 {- |
   'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
-  as 'tryConvertSqlType' in cases where an 'a' can always be converted to a 'b'.
+  as 'tryConvertSqlType' in cases where an @a@ can always be converted to a @b@.
 
 @since 1.0.0.0
 -}

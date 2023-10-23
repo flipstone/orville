@@ -79,8 +79,10 @@ appendOrderByExpr :: OrderByExpr -> OrderByExpr -> OrderByExpr
 appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
   OrderByExpr (a <> RawSql.commaSpace <> b)
 
-{- | Create a 'OrderByExpr' from some 'RawSql' and a 'OrderByDirection'. Note that it is up to the
-  caller to ensure that the given value can actually be used for a 'OrderByExpr'
+{- |
+Create a 'OrderByExpr' from some 'RawSql.RawSql' and a 'OrderByDirection'. Note
+that it is up to the caller to ensure that the given value can actually be used
+for a 'OrderByExpr'
 
 @since 1.0.0.0
 -}

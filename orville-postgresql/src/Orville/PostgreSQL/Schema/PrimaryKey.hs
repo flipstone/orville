@@ -92,8 +92,8 @@ primaryKeyToSql keyDef key =
   mapPrimaryKeyParts (partSqlValue key) keyDef
 
 {- |
-  'partSqlValue' is an internal helper function that builds the 'SqlValue'
-  for one part of a (possible composite) primary key.
+  'partSqlValue' is an internal helper function that builds the
+  'SqlValue.SqlValue' for one part of a (possible composite) primary key.
 
 @since 1.0.0.0
 -}
@@ -104,7 +104,7 @@ partSqlValue key getPart partField =
 {- |
   'primaryKey' constructs a single-field primary key from the 'FieldDefinition'
   that corresponds to the primary key's column. This is generally used while
-  building a 'TableDefinition'.
+  building a 'Orville.PostgreSQL.TableDefinition'.
 
 @since 1.0.0.0
 -}
@@ -115,11 +115,11 @@ primaryKey fieldDef =
 {- |
   'compositePrimaryKey' constructs a multi-field primary key from the given
   parts, each of which corresponds to one field in the primary key.  You should
-  use this while building a 'TableDefinition' for a table that you want to have
-  a multi-column primary key. See 'primaryKeyPart' for how to build the parts
-  to be passed as parameters. Note: there is no special significance to the
-  first argument other than requiring that there is at least one field in the
-  primary key.
+  use this while building a 'Orville.PostgreSQL.TableDefinition' for a table
+  that you want to have a multi-column primary key. See 'primaryKeyPart' for
+  how to build the parts to be passed as parameters. Note: there is no special
+  significance to the first argument other than requiring that there is at
+  least one field in the primary key.
 
 @since 1.0.0.0
 -}
@@ -133,7 +133,7 @@ compositePrimaryKey =
 {- |
   'primaryKeyPart' constructs a building block for a composite primary key
   based on a 'FieldDefinition' and an accessor function to extract the value for
-  that field from the Haskell 'key' type that represents the overall composite
+  that field from the Haskell @key@ type that represents the overall composite
   key. 'PrimaryKeyPart' values built using this function are usually then
   passed in a list to 'compositePrimaryKey' to build a 'PrimaryKey'.
 

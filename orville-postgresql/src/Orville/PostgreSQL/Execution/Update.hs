@@ -40,9 +40,10 @@ import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (HasKey, TableDefinition, mkTableReturningClause, primaryKeyEquals, tableMarshaller, tableName, tablePrimaryKey)
 
 {- |
-  Represents an @UPDATE@ statement that can be executed against a database. An 'Update' has a
-  'SqlMarshaller' bound to it that, when the update returns data from the database, will be used to
-  decode the database result set when it is executed.
+  Represents an @UPDATE@ statement that can be executed against a database. An
+  'Update' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that, when the
+  update returns data from the database, will be used to decode the database
+  result set when it is executed.
 
 @since 1.0.0.0
 -}

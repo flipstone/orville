@@ -52,14 +52,17 @@ data PgConstraint = PgConstraint
   -- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
   -- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
   , pgConstraintKey :: Maybe [AttributeNumber]
-  -- ^ For table constraints, the attribute numbers of the constrained columns. These
-  -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
+  -- ^ For table constraints, the attribute numbers of the constrained columns.
+  -- These correspond to them 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber'
+  -- field of 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
   , pgConstraintForeignRelationOid :: LibPQ.Oid
   -- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the
   -- foreign key references
   , pgConstraintForeignKey :: Maybe [AttributeNumber]
-  -- ^ For foreignkey constraints, the attribute numbers of the referenced columns. These
-  -- correspond to the 'pgAttributeNumber' field of 'PgAttribute'.
+  -- ^ For foreignkey constraints, the attribute numbers of the referenced
+  -- columns. These correspond to the
+  -- 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber' field of
+  -- 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
   , pgConstraintForeignKeyOnUpdateType :: Maybe Orville.ForeignKeyAction
   -- ^ For foreignkey constraints, the on update action type
   , pgConstraintForeignKeyOnDeleteType :: Maybe Orville.ForeignKeyAction

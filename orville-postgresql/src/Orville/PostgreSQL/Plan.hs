@@ -129,7 +129,7 @@ instance Applicative (Plan scope param) where
   (<*>) = Apply
 
 {- |
-  'Execute' is a tag type used by as the 'scope' variable for
+  'Execute' is a tag type used by as the @scope@ variable for
   'Plan' values when executing them via the 'execute' function.
 
 @since 1.0.0.0
@@ -137,7 +137,7 @@ instance Applicative (Plan scope param) where
 data Execute
 
 {- |
-  'ExecuteMany' is an internal tag type used by as the 'scope' variable for
+  'ExecuteMany' is an internal tag type used by as the @scope@ variable for
   'Plan' values when executing them against multiple inputs via the
   'executeMany' internal function.
 
@@ -189,7 +189,7 @@ mapPlanned f planned =
       PlannedExplain
 
 {- |
-  'resolveOne' resolves a 'Planned' value that is known to be in the 'One'
+  'resolveOne' resolves a 'Planned' value that is known to be in the 'Execute'
   scope to its single wrapped value.
 
 @since 1.0.0.0
@@ -198,8 +198,8 @@ resolveOne :: Planned Execute param a -> a
 resolveOne (PlannedOne a) = a
 
 {- |
-  'resolveMany resolves a 'Planned' value that is known to be in the 'Many'
-  scope to the 'Many' value wrapped inside it.
+  'resolveMany resolves a 'Planned' value that is known to be in the
+  'ExecuteMany' scope to the 'Many' value wrapped inside it.
 
 @since 1.0.0.0
 -}
@@ -259,7 +259,7 @@ findMaybeOne tableDef fieldDef =
 
 {- |
   'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a
-  'WhereCondition' to be specified to restrict which rows are matched by the
+  'Expr.BooleanExpr' to be specified to restrict which rows are matched by the
   database query.
 
 @since 1.0.0.0
@@ -295,7 +295,7 @@ findOneShowVia showParam tableDef fieldDef =
 
 {- |
   'findOne' is an alias to 'findOneShowVia' that uses the 'Show' instance of
-  'fieldValue' when producing a failure message in the result the entity cannot
+  @fieldValue@ when producing a failure message in the result the entity cannot
   be found.
 
 @since 1.0.0.0
@@ -308,7 +308,7 @@ findOne ::
 findOne = findOneShowVia show
 
 {- |
-  'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a 'WhereCondition' to be
+  'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a 'Expr.BooleanExpr' to be
   specified to restrict which rows are matched by the database query.
 
 @since 1.0.0.0
@@ -327,7 +327,7 @@ findOneWhereShowVia showParam tableDef fieldDef cond =
 
 {- |
   'findOneWhere' is an alias to 'findOneWhereShowVia' that uses the 'Show' instance of
-  'fieldValue' when producing a failure message in the result the entity cannot
+  @fieldValue@ when producing a failure message in the result the entity cannot
   be found.
 
 @since 1.0.0.0
@@ -383,7 +383,7 @@ findAll tableDef fieldDef =
   planOperation (Op.findAll tableDef (Op.byField fieldDef))
 
 {- |
-  'findAllWhere' is similar to 'findAll', but allows a 'WhereCondition' to be
+  'findAllWhere' is similar to 'findAll', but allows a 'Expr.BooleanExpr' to be
   specified to restrict which rows are matched by the database query.
 
 @since 1.0.0.0
@@ -603,7 +603,7 @@ assert assertion aPlan =
 {- |
   'execute' accepts the input parameter (or parameters) expected by a 'Plan'
   and runs the plan to completion, either throwing an 'Op.AssertionFailed'
-  exception in the monad 'm' or producing the expected result.
+  exception in the monad @m@ or producing the expected result.
 
   If you have a plan that takes one input and want to provide a list of
   input, use 'planMany' to adapt it to a multple-input plan before calling
@@ -621,7 +621,7 @@ execute plan param =
 
 {- |
   'executeOne' is an internal helper that executes a 'Plan' with a concrete
-  'scope' type to ensure all 'Planned' values are built with 'PlannedOne'.
+  @scope@ type to ensure all 'Planned' values are built with 'PlannedOne'.
 
 @since 1.0.0.0
 -}
@@ -735,7 +735,7 @@ executeMany plan params =
       pure $ Many.compose cs bs
 
 {- |
-  'Explain' is an tag type used as the 'scope' variable when explaining a
+  'Explain' is an tag type used as the @scope@ variable when explaining a
   'Plan' via the 'explain' function.
 
 @since 1.0.0.0
@@ -759,7 +759,7 @@ explain plan =
 
 {- |
   'explainPlan' is an internal helper to executes a plan with the
-  'scope' type fixed to 'Explain' to ensure that all 'Planned'
+  @scope@ type fixed to 'Explain' to ensure that all 'Planned'
   values are constructed with the 'PlannedExplain' constructor.
 
 @since 1.0.0.0

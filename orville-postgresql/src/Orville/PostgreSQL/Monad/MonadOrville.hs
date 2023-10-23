@@ -59,21 +59,22 @@ class
   MonadOrville m
 
 {- |
-  'MonadOrvilleControl' presents the interface that Orville will use to
-  lift low-level IO operations that cannot be lifted via 'liftIO' (i.e.
-  those where the IO parameter is contravariant rather than covariant).
+  'MonadOrvilleControl' presents the interface that Orville will use to lift
+  low-level IO operations that cannot be lifted via
+  'Control.Monad.IO.Class.liftIO' (i.e. those where the IO parameter is
+  contravariant rather than covariant).
 
   For application monads built using only 'ReaderT' and 'IO', this can be
   trivially implemented (or derived), using the 'ReaderT' instance that is
   provided here. If your monad stack is sufficiently complicated, you may
-  need to use the 'unliftio' package as a stepping stone to implementing
-  'MonadOrvilleControl'. If your monad uses features that 'unliftio' cannot
+  need to use the @unliftio@ package as a stepping stone to implementing
+  'MonadOrvilleControl'. If your monad uses features that @unliftio@ cannot
   support (e.g. the State monad or continuations), then you may need to
-  use 'monad-control' instead.
+  use @monad-control@ instead.
 
   See 'Orville.PostgreSQL.UnliftIO' for functions that can be used as the
   implementation of the methods below for monads that implement
-  'MonadUnliftIO'.
+  'Control.Monad.IO.Unlift.MonadUnliftIO'.
 
 @since 1.0.0.0
 -}
@@ -99,9 +100,9 @@ class MonadOrvilleControl m where
     m b
 
   -- |
-  --     Orville will use this function to lift `mask` calls into the application
-  --     monad to guarantee resource cleanup is executed even when asynchronous
-  --     exceptions are thrown.
+  --     Orville will use this function to lift 'Control.Exception.mask' calls
+  --     into the application monad to guarantee resource cleanup is executed
+  --     even when asynchronous exceptions are thrown.
   --
   -- @since 1.0.0.0
   liftMask ::
@@ -161,8 +162,8 @@ withConnection connectedAction = do
   even without using the handle because it ensures that all the Orville
   operations performed by the action passed to it occur on the same connection.
   Orville uses connection pooling, so unless you use either 'withConnection' or
-  'withTransaction' each database operation may be performed on a different
-  connection.
+  'Orville.PostgreSQL.withTransaction' each database operation may be performed
+  on a different connection.
 
 @since 1.0.0.0
 -}

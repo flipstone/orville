@@ -27,9 +27,10 @@ import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
-  A 'MarshallError' may be returned from 'marshallResultFromSql' when a row being
-  decoded from the database doesn't meet the expectations of the
-  'SqlMarshaller' that is decoding it.
+  A 'MarshallError' may be returned from
+  'Orville.PostgreSQL.Marshall.marshallResultFromSql' when a row being decoded
+  from the database doesn't meet the expectations of the
+  'Orville.PostgreSQL.Marshall.SqlMarshaller' that is decoding it.
 
 @since 1.0.0.0
 -}
@@ -63,7 +64,7 @@ instance Exception MarshallError
   You may want to use this function to render certain with a higher level of
   detail that you consider safe for (for example) you application logs while
   using a lower default error detail level to be used with the 'Show' instance
-  of 'MarhallError' in case an exception is handled in a more visible section
+  of 'MarshallError' in case an exception is handled in a more visible section
   of code that return information more publicly (e.g. a request handler for a
   public endpoint).
 
@@ -112,9 +113,10 @@ presentSqlColumnValue detailLevel redacter (columnName, sqlValue) =
       <> sqlValueString
 
 {- |
-  A 'MarshallErrorDetails' may be returned from 'marshallFromSql' if the result set
-  being decoded from the database doesn't meet the expectations of the
-  'SqlMarshaller' that is decoding it.
+  A 'MarshallErrorDetails' may be returned from
+  'Orville.PostgreSQL.Marshall.marshallResultFromSql' if the result set being
+  decoded from the database doesn't meet the expectations of the
+  'Orville.PostgreSQL.Marshall.SqlMarshaller' that is decoding it.
 
 @since 1.0.0.0
 -}

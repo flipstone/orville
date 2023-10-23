@@ -54,14 +54,14 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSch
   Contains the definition of a SQL table for Orville to use for generating
   queries and marshalling Haskell values to and from the database.
 
-  * 'key' is a Haskell type used to indicate whether the table has a primary
+  * @key@ is a Haskell type used to indicate whether the table has a primary
     key and what the type of the key is if so. See 'HasKey' and 'NoKey' for
     values to be used in this parameter.
 
-  * 'writeEntity' is the Haskell type for values that Orville will write
+  * @writeEntity@ is the Haskell type for values that Orville will write
     to the database for you (i.e. both inserts and updates).
 
-  * 'readEntity' is the Haskell type for values that Orville will decode
+  * @readEntity@ is the Haskell type for values that Orville will decode
     from the result set when entities are queried from this table.
 
 @since 1.0.0.0
@@ -227,8 +227,9 @@ setTableSchema schemaName tableDef =
 
 {- |
   Retrieves all the table constraints that have been added to the table either
-  via 'addTableConstraints' or that are found on 'FieldDefinition's included
-  with this table's 'SqlMarshaller'.
+  via 'addTableConstraints' or that are found on
+  'Orville.PostgreSQL.FieldDefinition's included with this table's
+  'SqlMarshaller'.
 
 @since 1.0.0.0
 -}
@@ -254,7 +255,7 @@ tableConstraintsFromTable =
 
 {- |
   Retrieves all the table constraints that were included in the table's
-  'SqlMarsheller' when it was created. This does NOT include any table
+  'SqlMarshaller' when it was created. This does NOT include any table
   constraints add via 'addTableConstraints'.
 
 @since 1.0.0.0
@@ -269,16 +270,17 @@ tableConstraintsFromMarshaller =
 
 {- |
   Adds the given table constraints to the table definition. It's also possible
-  to add constraints that apply to only one column, adding them to
-  the 'FieldDefinition's that are included in the table's 'SqlMarshaller'.
+  to add constraints that apply to only one column, adding them to the
+  'Orville.PostgreSQL.FieldDefinition's that are included in the table's
+  'SqlMarshaller'.
 
   If you wish to constrain multiple columns with a single constraint (e.g. a
   multi-column unique constraint), you must use 'addTableConstraints'.
 
   Note: If multiple constraints are added with the same
-  'ConstraintMigrationKey', only the last one that is added will be part of the
-  'TableDefinition'. Any previously added constraint with the same key is
-  replaced by the new one.
+  'Orville.PostgreSQL.Schema.ConstraintMigrationKey', only the last one that is
+  added will be part of the 'TableDefinition'. Any previously added constraint
+  with the same key is replaced by the new one.
 
 @since 1.0.0.0
 -}
@@ -432,7 +434,7 @@ mkTableReturningClause returningOption tableDef =
 {- |
   Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
   table when it is executed. A @RETURNING@ clause with either be included to
-  return the insert rows or not, depending on the 'ReturnOption' given.
+  return the insert rows or not, depending on the 'ReturningOption' given.
 
 @since 1.0.0.0
 -}
@@ -479,7 +481,7 @@ mkInsertColumnList marshaller =
   Builds an 'Expr.InsertSource' that will insert the given entities with their
   values specified in the order that the fields appear in the given
   'SqlMarshaller' (which matches the order of column names produced by
-  'mkInsertColumnColumnsList').
+  'mkInsertColumnList').
 
   In normal circumstances you will want to build the complete insert statement
   via 'mkInsertExpr', but this is exported in case you are a composing SQL

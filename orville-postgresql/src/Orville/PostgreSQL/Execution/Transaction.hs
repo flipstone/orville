@@ -34,7 +34,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   either release the savepoint or rollback to it as appropriate.
 
   Note: Exceptions are handled using the implementations of 'Monad.catch' and
-  'Monad.mask' provided by the 'MonadOrvilleControl' instance for @m@.
+  'Monad.mask' provided by the 'Monad.MonadOrvilleControl' instance for @m@.
 
 @since 1.0.0.0
 -}

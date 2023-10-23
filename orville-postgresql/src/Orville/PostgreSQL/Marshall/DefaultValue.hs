@@ -50,7 +50,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
   in production without breaking a previous version of your application that
   is running (e.g. during a zero-down-time deployment) and without needing to
   make the new column nullable. Default values can also be used to create
-  database-assigned values such as using 'now()' to set a 'created_at' column
+  database-assigned values such as using @now()@ to set a @created_at@ column
   on a row automatically in the database.
 
 @since 1.0.0.0
@@ -270,9 +270,9 @@ defaultValueExpression (DefaultValue expression) =
   expression
 
 {- |
-  Constructs a default value from a 'ValueExpression'. You can use this
-  to construct default values for any SQL expression that Orville does not
-  support directly.
+  Constructs a default value from a 'Expr.ValueExpression'. You can use this to
+  construct default values for any SQL expression that Orville does not support
+  directly.
 
   Note: If you are using auto-migrations, the 'Expr.ValueExpression' that you
   pass here must match what is returned by the PostgreSQL @pg_get_expr@

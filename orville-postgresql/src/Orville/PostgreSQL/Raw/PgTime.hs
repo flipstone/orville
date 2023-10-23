@@ -109,7 +109,7 @@ localTimeToPostgreSQL =
 {- |
   An Attoparsec parser for parsing 'Time.LocalTime' from an ISO 8601 style
   datetime with a few exceptions. The seperator between the date and time
-  is always ' ' and never 'T'.
+  is always @\' \'@ and never @\'T\'@.
 
 @since 1.0.0.0
 -}

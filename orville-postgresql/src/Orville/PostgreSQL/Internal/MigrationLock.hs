@@ -55,9 +55,9 @@ defaultLockId =
     }
 
 {- |
-Increments the 'lockKey2' of the given 'MigrationLockId', creating a new
-distinct lock id. You can use this to create your own custom 'MigrationLockId'
-values as necessary if you need to control migration runs in a custom manner.
+Increments the id of the given 'MigrationLockId', creating a new distinct lock
+id. You can use this to create your own custom 'MigrationLockId' values as
+necessary if you need to control migration runs in a custom manner.
 
 @since 1.0.0.0
 -}

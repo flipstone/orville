@@ -31,7 +31,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 -}
 type SqlCommenterAttributes = Map.Map T.Text T.Text
 
-{- | Adds a given 'SqlCommenter' set of key/value 'T.Text' pairs to a 'RawSql.SqlExpression'. This
+{- | Adds a given @SqlCommenter@ set of key/value 'T.Text' pairs to a 'RawSql.SqlExpression'. This
   performs all of the required serialization for the given values. Note that no values are
   automatically added here, so any that you may wish to add can be freely set without a name clash
   of any kind from this function itself.
@@ -48,7 +48,7 @@ keyValueSerializationToRawSql :: SqlCommenterAttributes -> RawSql.RawSql
 keyValueSerializationToRawSql =
   RawSql.fromText . keyValueSerialization
 
-{- | Perform the sqlcommenter serialization on for the whole 'SqlCommenter' map of key/value pairs.
+{- | Perform the sqlcommenter serialization on for the whole @SqlCommenter@ map of key/value pairs.
      The spec can be found
      [here](https://google.github.io/sqlcommenter/spec/#key-value-serialization)
 

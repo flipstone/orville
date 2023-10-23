@@ -263,7 +263,7 @@ newtype MaxValueExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs an 'maxValueExpr' which gives the sequence the specified maximum
+  Constructs an 'MaxValueExpr' which gives the sequence the specified maximum
   value
 
   @since 1.0.0.0
@@ -375,7 +375,7 @@ noCycle = CycleExpr $ RawSql.fromString "NO CYCLE"
 
 {- |
   Constructs a 'CycleExpr' will cause the sequence to cycle if the flag passed
-  is 'True'.
+  is @True@.
 
   @since 1.0.0.0
 -}

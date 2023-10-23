@@ -144,7 +144,7 @@ insertAndReturnEntities tableDef =
   Insert.executeInsertReturnEntities . Insert.insertToTableReturning tableDef
 
 {- |
-  Updates the row with the given key with the data given by 'writeEntity'.
+  Updates the row with the given key with the data given by @writeEntity@.
 
 @since 1.0.0.0
 -}
@@ -158,7 +158,7 @@ updateEntity tableDef key =
   Monad.void . updateEntityAndReturnRowCount tableDef key
 
 {- |
-  Updates the row with the given key with the data given by 'writeEntity'.
+  Updates the row with the given key with the data given by @writeEntity@.
   Returns the number of rows affected by the query.
 
 @since 1.0.0.0
@@ -177,7 +177,7 @@ updateEntityAndReturnRowCount tableDef key writeEntity =
       Update.executeUpdate update
 
 {- |
-  Updates the row with the given key with the data given by 'writeEntity',
+  Updates the row with the given key with the data given by @writeEntity@,
   returning the updated row from the database. If no row matches the given key,
   'Nothing' will be returned.
 

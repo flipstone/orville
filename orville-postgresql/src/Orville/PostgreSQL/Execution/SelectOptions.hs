@@ -31,7 +31,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 
 {- |
    A 'SelectOptions' is a set of options that can be used to change the way
-   a basic query function works by adding 'WHERE', 'ORDER BY', 'GROUP BY', etc.
+   a basic query function works by adding @WHERE@, @ORDER BY@, @GROUP BY@, etc.
    Functions are provided to construct 'SelectOptions' for individual options,
    which may then be combined via '<>' (also exposed as 'appendSelectOptions').
 
@@ -72,7 +72,7 @@ emptySelectOptions =
 
 {- |
   Combines multple select options together, unioning the options together where
-  possible. For options where this is not possible (e.g. 'LIMIT'), the one
+  possible. For options where this is not possible (e.g. @LIMIT@), the one
   on the left is preferred.
 
 @since 1.0.0.0
@@ -109,8 +109,8 @@ selectDistinct selectOptions =
 
 {- |
   Builds the 'Expr.WhereClause' that should be used to include the
-  'WhereCondition's from the 'SelectOptions' on a query. This will be 'Nothing'
-  when no 'WhereCondition's have been specified.
+  'Expr.BooleanExpr's from the 'SelectOptions' on a query. This will be 'Nothing'
+  when no 'Expr.BooleanExpr's have been specified.
 
 @since 1.0.0.0
 -}
@@ -131,8 +131,8 @@ distinct =
 
 {- |
   Builds the 'Expr.OrderByClause' that should be used to include the
-  'OrderByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
-  when no 'OrderByClause's have been specified.
+  'Expr.OrderByClause's from the 'SelectOptions' on a query. This will be
+  'Nothing' when no 'Expr.OrderByClause's have been specified.
 
 @since 1.0.0.0
 -}
@@ -142,8 +142,8 @@ selectOrderByClause =
 
 {- |
   Builds the 'Expr.GroupByClause' that should be used to include the
-  'GroupByClause's from the 'SelectOptions' on a query. This will be 'Nothing'
-  when no 'GroupByClause's have been specified.
+  'Expr.GroupByClause's from the 'SelectOptions' on a query. This will be
+  'Nothing' when no 'Expr.GroupByClause's have been specified.
 
 @since 1.0.0.0
 -}
@@ -172,7 +172,7 @@ selectOffsetExpr =
   getFirst . i_offsetExpr
 
 {- |
-  Constructs a 'SelectOptions' with just the given 'WhereCondition'.
+  Constructs a 'SelectOptions' with just the given 'Expr.BooleanExpr'.
 
 @since 1.0.0.0
 -}
@@ -216,7 +216,7 @@ offset offsetValue =
     }
 
 {- |
-  Constructs a 'SelectOptions' with just the given 'GroupByClause'.
+  Constructs a 'SelectOptions' with just the given 'Expr.GroupByClause'.
 
 @since 1.0.0.0
 -}
@@ -227,11 +227,12 @@ groupBy groupByExpr =
     }
 
 {- |
-  Builds a 'QueryExpr' that will use the specified 'Expr.SelectList' when building
-  the @SELECT@ statement to execute. It is up to the caller to make sure that
-  the 'Expr.SelectList' expression makes sense for the table being queried, and
-  that the names of the columns in the result set match those expected by the
-  given 'SqlMarshaller', which will be used to decode it.
+  Builds a 'Expr.QueryExpr' that will use the specified 'Expr.SelectList' when
+  building the @SELECT@ statement to execute. It is up to the caller to make
+  sure that the 'Expr.SelectList' expression makes sense for the table being
+  queried, and that the names of the columns in the result set match those
+  expected by the 'Orville.PostgreSQL.SqlMarshaller' that is ultimately used to
+  decode it.
 
   This function is useful for building more advanced queries that need to
   select things other than simple columns from the table, such as using

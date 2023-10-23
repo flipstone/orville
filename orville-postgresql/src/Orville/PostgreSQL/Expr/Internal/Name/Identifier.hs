@@ -25,7 +25,7 @@ E.G.
 
 > "some_identifier"
 
-'Identifer' provides a 'RawSql.SqlExpression' instance. See
+'Identifier' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 

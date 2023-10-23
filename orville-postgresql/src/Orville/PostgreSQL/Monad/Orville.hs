@@ -26,12 +26,12 @@ import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import Orville.PostgreSQL.Raw.Connection (Connection)
 
 {- |
-  The 'Orville' Monad provides a easy starter implementation of 'MonadOrville'
-  when you don't have a monad specific to your application that you need to
-  use.
+  The 'Orville' Monad provides a easy starter implementation of
+  'MonadOrville.MonadOrville' when you don't have a monad specific to your
+  application that you need to use.
 
   If you want add Orville capabilities to your own monad, take a look at
-  'MonadOrville' to learn what needs to be done.
+  'MonadOrville.MonadOrville' to learn what needs to be done.
 
 @since 1.0.0.0
 -}
@@ -54,10 +54,10 @@ newtype Orville a = Orville
   Runs an 'Orville' operation in the 'IO' monad using the given connection
   pool.
 
-  This will run the 'Orville' operation with the 'ErrorDetailLevel' set to the
-  default. If want to run with a different detail level, you can use
-  'OrvilleState.newOrvilleState' to create a state with the desired detail
-  level and then use 'runOrvilleWithState'.
+  This will run the 'Orville' operation with the
+  'ErrorDetailLevel.ErrorDetailLevel' set to the default. If want to run with a
+  different detail level, you can use 'OrvilleState.newOrvilleState' to create
+  a state with the desired detail level and then use 'runOrvilleWithState'.
 
 @since 1.0.0.0
 -}
@@ -68,9 +68,9 @@ runOrville =
 
 {- |
   Runs an 'Orville' operation in the 'IO' monad, starting from the provided
-  'OrvilleState'.
+  'OrvilleState.OrvilleState'.
 
-  Caution: If you harvest an 'OrvilleState' from inside a
+  Caution: If you harvest an 'OrvilleState.OrvilleState' from inside a
   'MonadOrville.MonadOrville' monad using 'MonadOrville.askOrvilleState',
   you may pick up connection tracking state that you didn't intend to. You
   may want to use 'MonadOrville.resetOrvilleState' in this situation to get

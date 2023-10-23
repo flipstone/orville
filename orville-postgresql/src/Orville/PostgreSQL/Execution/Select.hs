@@ -37,8 +37,8 @@ import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
 
 {- |
   Represents a @SELECT@ statement that can be executed against a database. A
-  'Select' has a 'SqlMarshaller' bound to it that will be used to decode the
-  database result set when it is executed.
+  'Select' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that will be
+  used to decode the database result set when it is executed.
 
 @since 1.0.0.0
 -}
@@ -56,8 +56,8 @@ selectToQueryExpr :: Select readEntity -> Expr.QueryExpr
 selectToQueryExpr (Select _ query) = query
 
 {- |
-  Executes the database query for the 'Select' and uses its 'SqlMarshaller' to
-  decode the result set.
+  Executes the database query for the 'Select' and uses its
+  'Orville.PostgreSQL.SqlMarshaller' to decode the result set.
 
 @since 1.0.0.0
 -}
@@ -123,9 +123,9 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
 
 {- |
   Builds a 'Select' that will execute the specified query and use the given
-  'SqlMarshaller' to decode it. It is up to the caller to ensure that the given
-  'Expr.QueryExpr' makes sense and produces a result set that the
-  'SqlMarshaller' can decode.
+  'Orville.PostgreSQL.SqlMarshaller' to decode it. It is up to the caller to
+  ensure that the given 'Expr.QueryExpr' makes sense and produces a result set
+  that the 'Orville.PostgreSQL.SqlMarshaller' can decode.
 
   This is the lowest level of escape hatch available for 'Select'. The caller
   can build any query that Orville supports using the expression-building

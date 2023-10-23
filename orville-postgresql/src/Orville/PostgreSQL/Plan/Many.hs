@@ -81,9 +81,10 @@ map f (Many ks keyToValue) =
    associated with each parameter is applied to the value associated with the
    same paremeter.
 
-   (If you're looking for 'pure' or an 'Applicative' instance for 'Many', this
-   is as good as it gets. 'Many' cannot be an 'Applicative' because there is no
-   correct implementation of 'pure' that we can reasonably provide).
+   (If you're looking for 'Prelude.pure' or an 'Prelude.Applicative' instance
+   for 'Many', this is as good as it gets. 'Many' cannot be an
+   'Prelude.Applicative' because there is no correct implementation of
+   'Prelude.pure' that we can reasonably provide).
 
 @since 1.0.0.0
 -}
@@ -135,8 +136,9 @@ elems (Many ks keyToValue) =
   Either.rights $ fmap keyToValue ks
 
 {- |
-  'toMap' converts the 'Many' into a 'Map' value. If all you wanted to do was
-  find the value for a specific key, you should probably use 'lookup' instead.
+  'toMap' converts the 'Many' into a 'Map.Map' value. If all you wanted to do
+  was find the value for a specific key, you should probably use 'lookup'
+  instead.
 
 @since 1.0.0.0
 -}

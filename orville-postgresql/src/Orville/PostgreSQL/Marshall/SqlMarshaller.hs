@@ -295,8 +295,8 @@ collectSetClauses entity entry clauses =
       clauses
 
 {- |
-  Specifies whether read-only fields should be included when using functions
-  such as 'collectFromField' and 'marshallerColumnNames'.
+  Specifies whether read-only fields should be included when the function
+  such as 'collectFromField'.
 
 @since 1.0.0.0
 -}
@@ -308,7 +308,7 @@ data ReadOnlyColumnOption
   'foldMarshallerFields' allows you to consume the 'FieldDefinition's that
   are contained within the 'SqlMarshaller' to process them however is
   required. This can be used to collect the names of all the fields, encode
-  them to 'SqlValue', etc.
+  them to 'SqlValue.SqlValue', etc.
 
 @since 1.0.0.0
 -}
@@ -323,7 +323,7 @@ foldMarshallerFields marshaller =
 {- |
   The internal helper function that actually implements 'foldMarshallerFields'.
   It takes with it a function that extracts the current nesting entity from
-  the overall 'writeEntity' that the 'SqlMarshaller' is build on. 'MarshallNest'
+  the overall @writeEntity@ that the 'SqlMarshaller' is build on. 'MarshallNest'
   adds more nesting by composing its accessor with the one given here.
 
 @since 1.0.0.0
@@ -359,8 +359,8 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
 
 {- |
   Decodes all the rows found in a execution result at once. The first row that
-  fails to decode will return the 'MarshallErrorDetails' that results, otherwise all
-  decoded rows will be returned.
+  fails to decode will return the 'MarshallError.MarshallErrorDetails' that
+  results, otherwise all decoded rows will be returned.
 
   Note that this function loads are decoded rows into memory at once, so it
   should only be used with result sets that you know will fit into memory.
@@ -382,10 +382,10 @@ marshallResultFromSql errorDetailLevel marshallerWithMeta result =
 
 {- |
   Decodes all the rows found in a execution result at once. The first row that
-  fails to decode will return the 'MarshallErrorDetails' that results, otherwise all
-  decoded rows will be returned. If an error occurs while decoding a row, the
-  'RowIdentityExtractor' will be used to extract values to identify the row
-  in the error details.
+  fails to decode will return the 'MarshallError.MarshallErrorDetails' that
+  results, otherwise all decoded rows will be returned. If an error occurs
+  while decoding a row, the 'RowIdentityExtractor' will be used to extract
+  values to identify the row in the error details.
 
   Note that this function loads are decoded rows into memory at once, so it
   should only be used with result sets that you know will fit into memory.
@@ -432,8 +432,8 @@ traverseSequence f =
 
 {- |
   Attempts to decode a result set row that has already been fetched from the
-  database server into a Haskell value. If the decoding fails, a 'MarshallError'
-  will be returned.
+  database server into a Haskell value. If the decoding fails, a
+  'MarshallError.MarshallError' will be returned.
 
 @since 1.0.0.0
 -}
@@ -715,8 +715,8 @@ mkColumnRowSource sourceFieldName fromSqlValue result column =
           pure (Left $ MarshallError.DecodingError details)
 
 {- |
-  A 'RowIdentityExtractor' is used to retrieve identifying information
-  for a row when a 'MarshallError' occurs reading it from the database.
+  A 'RowIdentityExtractor' is used to retrieve identifying information for a
+  row when a 'MarshallError.MarshallError' occurs reading it from the database.
 
   You should only need to worry about this type if you're using
   'marshallResultFromSqlUsingRowIdExtractor' and need to manually provide it.

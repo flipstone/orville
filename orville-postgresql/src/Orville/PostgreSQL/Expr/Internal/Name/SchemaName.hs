@@ -39,7 +39,7 @@ newtype SchemaName
     )
 
 {- |
-Construct a 'ColumnName' from a 'String' with proper escaping as part of the generated SQL.
+Construct a 'SchemaName' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.0.0.0
 -}

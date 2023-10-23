@@ -75,18 +75,18 @@ data Operation param result = Operation
       Monad.MonadOrville m =>
       NonEmpty param ->
       m (Either AssertionFailed (Many param result))
-  -- ^ 'executeOperationMany' will be called when an plan is
-  -- executed with multiple input parameters (via 'planMany').
+  -- ^ 'executeOperationMany' will be called when an plan is executed with
+  -- multiple input parameters (via 'Orville.PostgreSQL.Plan.planMany').
   , explainOperationOne :: Exp.Explanation
   -- ^ 'explainOperationOne' will be called when producing an explanation
   -- of what the plan will do when given one input parameter. Plans that do
   -- not perform any interesting IO interactions should generally return an
   -- empty explanation.
   , explainOperationMany :: Exp.Explanation
-  -- ^ 'explainOperationMany' will be called when producing an explanation
-  -- of what the plan will do when given multiple input parameters (via
-  -- 'planMany'). Plans that do not perform any interesting IO interactions
-  -- should generally return an empty explanation.
+  -- ^ 'explainOperationMany' will be called when producing an explanation of
+  -- what the plan will do when given multiple input parameters (via
+  -- 'Orville.PostgreSQL.Plan.planMany'). Plans that do not perform any
+  -- interesting IO interactions should generally return an empty explanation.
   }
 
 {- |
@@ -171,7 +171,7 @@ assertRight =
 
 {- |
   The functions below ('findOne', 'findAll', etc) accept a 'WherePlanner'
-  to determine how to build the where conditions for executing a 'Select'
+  to determine how to build the where conditions for executing a 'Exec.Select'
   statement as part of a the plan operation.
 
   For simple queries you can use the functions such as 'byField' that are
@@ -310,7 +310,7 @@ findOne tableDef wherePlanner =
   findOneWithOpts tableDef wherePlanner mempty
 
 {- |
-  'findOneWhere' is similar to 'findOne' but allows a 'WhereCondition' to be
+  'findOneWhere' is similar to 'findOne' but allows a 'Expr.BooleanExpr' to be
   specified that is added to the database query to restrict which rows are
   returned.
 
@@ -385,7 +385,7 @@ findAll tableDef wherePlanner =
   findAllWithOpts tableDef wherePlanner mempty
 
 {- |
-  'findAllWhere' is similar to 'findAll' but allows a 'WhereCondition' to be
+  'findAllWhere' is similar to 'findAll' but allows a 'Expr.BooleanExpr' to be
   specified that is added to the database query to restrict which rows are
   returned.
 
@@ -443,11 +443,11 @@ findAllWithOpts tableDef wherePlanner opts =
       (Schema.tableMarshaller tableDef)
 
 {- |
-  'stringifyField' arbitrarily re-labels the 'SqlType' of a field definition
-  as text. It is an internal helper function that is used for constructing
-  'WhereCondition' clauses used to generate sql when explaining how a plan
-  will be executed. Relabeling the type as 'T.Text' allows us to use text
-  values as example inputs in the queries when for explaining plans.
+  'stringifyField' arbitrarily re-labels the 'Marshall.SqlType' of a field
+  definition as text. It is an internal helper function that is used for
+  constructing 'Expr.BooleanExpr' clauses used to generate sql when explaining
+  how a plan will be executed. Relabeling the type as 'T.Text' allows us to use
+  text values as example inputs in the queries when for explaining plans.
 
 @since 1.0.0.0
 -}
@@ -459,7 +459,7 @@ stringifyField =
 
 {- |
   'SelectOperation' is a helper type for building 'Operation' primitives that
-  run 'Select' queries. Specifying the fields of 'SelectOperation' and then
+  run 'Ex.cSelect' queries. Specifying the fields of 'SelectOperation' and then
   using the 'selectOperation' function to build an 'Operation' is more
   convenient that building functions to execute the queries thate are required
   by the 'Operation' type.
@@ -475,13 +475,13 @@ stringifyField =
 -}
 data SelectOperation param row result = SelectOperation
   { selectOne :: param -> Exec.Select row
-  -- ^ 'selectOne' will be called to build the 'Select' query that should
+  -- ^ 'selectOne' will be called to build the 'Exec.Select' query that should
   -- be run when there is a single input parameter while executing a plan.
   -- Note that the "One-ness" here refers to the single input parameter
   -- rather than result. See 'produceResult' below for more information
   -- about returning one values vs. many from a 'SelectOperation'.
   , selectMany :: NonEmpty param -> Exec.Select row
-  -- ^ 'selectMany' will be called to build the 'Select' query that should
+  -- ^ 'selectMany' will be called to build the 'Exec.Select' query that should
   -- be run when there are multiple parameters while executing a plan.
   -- Note that the "Many-ness" here refers to the multiple input parameters
   -- rather than result. See 'produceResult' below for more information
@@ -501,12 +501,12 @@ data SelectOperation param row result = SelectOperation
   -- parameters to determine which input parameter the row should be
   -- associated with.
   , produceResult :: [row] -> result
-  -- ^ 'produceResult' will be used convert the 'row' type returned by the
-  -- 'Select' queries for the operation input the 'result' type that is
+  -- ^ 'produceResult' will be used convert the @row@ type returned by the
+  -- 'Exec.Select' queries for the operation input the @result@ type that is
   -- present as the output of the operation. The input rows will be all the
-  -- inputs associated with a single parameter. The 'result' type
+  -- inputs associated with a single parameter. The @result@ type
   -- constructed here need not be a single value. For instance, 'findAll'
-  -- uses the list type as the 'result' type and 'findOne' uses 'Maybe'.
+  -- uses the list type as the @result@ type and 'findOne' uses 'Maybe'.
   }
 
 {- |
@@ -534,7 +534,7 @@ explainSelect =
   Exp.explainStep . BS8.unpack . RawSql.toExampleBytes . Exec.selectToQueryExpr
 
 {- |
-  'runSelectOne' is an internal helper function that executes a
+  'executeSelectOne' is an internal helper function that executes a
   'SelectOperation' on a single input parameter.
 
 @since 1.0.0.0

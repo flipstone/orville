@@ -81,7 +81,7 @@ fromByteString =
 
 {- |
   Converts the 'PgTextFormatValue' to bytes intended to be passed to libpq.
-  If any '\NUL' bytes are found, 'NULByteErrorFound' will be returned (unless
+  If any '\NUL' bytes are found, 'NULByteFoundError' will be returned (unless
   'unsafeFromByteString' was used to construct the value).
 
 @since 1.0.0.0

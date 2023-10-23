@@ -38,9 +38,11 @@ import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkInsertExpr, tableMarshaller)
 
-{- | Represents an @INSERT@ statement that can be executed against a database. An 'Insert' has a
-  'SqlMarshaller' bound to it that, when the insert returns data from the database, will be used to
-  decode the database result set when it is executed.
+{- |
+Represents an @INSERT@ statement that can be executed against a database. An
+'Insert' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that, when the
+insert returns data from the database, will be used to decode the database
+result set when it is executed.
 
 @since 1.0.0.0
 -}
@@ -75,8 +77,10 @@ executeInsert ::
 executeInsert (Insert _ expr) =
   Execute.executeAndReturnAffectedRows QueryType.InsertQuery expr
 
-{- | Executes the database query for the 'Insert' and uses its 'SqlMarshaller' to decode the rows (that
-  were just inserted) as returned via a RETURNING clause.
+{- |
+Executes the database query for the 'Insert' and uses its
+'Orville.PostgreSQL.SqlMarshaller' to decode the rows (that were just inserted)
+as returned via a RETURNING clause.
 
 @since 1.0.0.0
 -}
@@ -124,12 +128,13 @@ insertTable returningOption tableDef entities =
   rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef entities)
 
 {- |
-  Builds an 'Insert' that will execute the specified query and use the given 'SqlMarshaller' to
-  decode it. It is up to the caller to ensure that the given 'Expr.InsertExpr' makes sense and
-  produces a value that can be stored, as well as returning a result that the 'SqlMarshaller' can
-  decode.
+  Builds an 'Insert' that will execute the specified query and use the given
+  'Orville.PostgreSQL.SqlMarshaller' to decode it. It is up to the caller to
+  ensure that the given 'Expr.InsertExpr' makes sense and produces a value that
+  can be stored, as well as returning a result that the
+  'Orville.PostgreSQL.SqlMarshaller' can decode.
 
-  This is the lowest level of escape hatch available for 'Update'. The caller can build any query
+  This is the lowest level of escape hatch available for 'Insert'. The caller can build any query
   that Orville supports using the expression-building functions, or use @RawSql.fromRawSql@ to build
   a raw 'Expr.InsertExpr'. It is expected that the 'ReturningOption' given matches the
   'Expr.InsertExpr'. This level of interface does not provide an automatic enforcement of the

@@ -17,6 +17,7 @@ boolean conditions for matching rows in queries.
 module Orville.PostgreSQL.Marshall.FieldDefinition
   ( FieldDefinition
   , fieldName
+  , setFieldName
   , fieldDescription
   , setFieldDescription
   , fieldType
@@ -139,6 +140,17 @@ fieldName :: FieldDefinition nullability a -> FieldName
 fieldName = i_fieldName
 
 {- |
+  Sets the name used in database queries to reference the field.
+
+@since 1.0.0.0
+-}
+setFieldName :: FieldName -> FieldDefinition nullability a -> FieldDefinition nullability a
+setFieldName newName fieldDef =
+  fieldDef
+    { i_fieldName = newName
+    }
+
+{- |
   Returns the description that was passed to 'setFieldDescription', if any.
 
 @since 1.0.0.0
@@ -160,9 +172,9 @@ setFieldDescription description fieldDef =
     }
 
 {- |
-  The 'SqlType' for the 'FieldDefinition' determines the PostgreSQL data type
-  used to define the field as well as how to marshall Haskell values to and
-  from the database.
+  The 'SqlType.SqlType' for the 'FieldDefinition' determines the PostgreSQL
+  data type used to define the field as well as how to marshall Haskell values
+  to and from the database.
 
 @since 1.0.0.0
 -}
@@ -191,7 +203,7 @@ data FieldNullability a
   | NotNullField (FieldDefinition NotNull a)
 
 {- |
- Resolves the 'nullablity' of a field to a concrete type, which is returned
+ Resolves the @nullability@ of a field to a concrete type, which is returned
  via the 'FieldNullability' type. You can pattern match on this type to then
  extract the either 'Nullable' or 'NotNull' field for cases where you may
  require different logic based on the nullability of a field.
@@ -241,14 +253,14 @@ fieldTableConstraints fieldDef =
   Adds the given table constraints to the field definition. These constraints
   will then be included on any table where the field is used. The constraints
   are passed a functions that will take the name of the field definition an
-  construct the constraints. This allows the 'ConstraintDefinition's to use the
-  correct name of the field in the case where 'setFieldName' is used after
-  constraints are added.
+  construct the constraints. This allows the
+  'ConstraintDefinition.ConstraintDefinition's to use the correct name of the
+  field in the case where 'setFieldName' is used after constraints are added.
 
   Note: If multiple constraints are added with the same
-  'ConstraintMigrationKey', only the last one that is added will be part of the
-  'TableDefinition'. Any previously added constraint with the same key is
-  replaced by the new one.
+  'Orville.PostgreSQL.ConstraintMigrationKey', only the last one that is added
+  will be part of the 'Orville.PostgreSQL.TableDefinition'. Any previously
+  added constraint with the same key is replaced by the new one.
 
 @since 1.0.0.0
 -}
@@ -329,7 +341,7 @@ addUniqueConstraint fieldDef =
     addFieldTableConstraints [constraintToAdd] fieldDef
 
 {- |
-  Mashalls a Haskell value to be stored in the field to its 'SqlValue'
+  Mashalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
   representation and packages the resul as a 'Expr.ValueExression' so that
   it can be easily used with other @Expr@ functions.
 
@@ -340,7 +352,7 @@ fieldValueToExpression field =
   Expr.valueExpression . fieldValueToSqlValue field
 
 {- |
-  Mashalls a Haskell value to be stored in the field to its 'SqlValue'
+  Mashalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
   representation.
 
 @since 1.0.0.0
@@ -350,7 +362,7 @@ fieldValueToSqlValue =
   SqlType.sqlTypeToSql . fieldType
 
 {- |
-  Marshalls a 'SqlValue' from the database into the Haskell value that represents it.
+  Marshalls a 'SqlValue.SqlValue' from the database into the Haskell value that represents it.
   This may fail, in which case a 'Left' is returned with an error message.
 
 @since 1.0.0.0
@@ -361,7 +373,7 @@ fieldValueFromSqlValue =
 
 {- |
   Constructs the 'Expr.ColumnName' for a field for use in SQL expressions
-  from the 'Expr' module.
+  from the "Orville.PostgreSQL.Expr" module.
 
 @since 1.0.0.0
 -}
@@ -371,7 +383,7 @@ fieldColumnName =
 
 {- |
   Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
-  from the 'Expr' module.
+  from the "Orville.PostgreSQL.Expr" module.
 
 @since 1.0.0.0
 -}
@@ -414,7 +426,7 @@ fieldColumnConstraint fieldDef =
   it meaningfully. The 'FieldNullability' type is used as the public interface
   to surface this information to users outside the module.
 
-  The 'NullabilityGADT' represents whether a field will be marked as 'NULL' or
+  The 'NullabilityGADT' represents whether a field will be marked as @NULL@ or
   'NOT NULL' in the database schema. It is a GADT so that the value
   constructors can be used to record this knowledge in the type system as well.
   This allows functions that work only on 'Nullable' or 'NotNull' fields to
@@ -429,8 +441,8 @@ data NullabilityGADT nullability where
 {- |
 
   'NotNull' is a value-less type used to track that a 'FieldDefinition'
-  represents a field that is marked not-null in the database schema.  See the
-  'Nullability' type for the value-level representation of field nullability.
+  represents a field that is marked not-null in the database schema. See the
+  'FieldNullability' type for the value-level representation of field nullability.
 
 @since 1.0.0.0
 -}
@@ -439,7 +451,7 @@ data NotNull
 {- |
   'Nullable' is a value-less type used to track that a 'FieldDefinition'
   represents a field that is marked nullable in the database schema. See the
-  'Nullability' type for the value-level representation of field nullability.
+  'FieldNullability' type for the value-level representation of field nullability.
 
 @since 1.0.0.0
 -}
@@ -648,16 +660,16 @@ uuidField ::
 uuidField = fieldOfType SqlType.uuid
 
 {- |
-  Builds a 'FieldDefinition' that will use the given 'SqlType' to determine
-  the database representation of the field. If you have created a custom
-  'SqlType', you can use this function to construct a helper like the
-  other functions in this module for creating 'FieldDefinition's for your
-  custom type.
+  Builds a 'FieldDefinition' that will use the given 'SqlType.SqlType' to
+  determine the database representation of the field. If you have created a
+  custom 'SqlType.SqlType', you can use this function to construct a helper
+  like the other functions in this module for creating 'FieldDefinition's for
+  your custom type.
 
 @since 1.0.0.0
 -}
 fieldOfType ::
-  -- | 'SqlType' that represents the PostgreSQL data type for the field
+  -- | 'SqlType.SqlType' that represents the PostgreSQL data type for the field
   SqlType.SqlType a ->
   -- | Name of the field in the database
   String ->
@@ -674,8 +686,8 @@ fieldOfType sqlType name =
 
 {- |
   Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field
-  in 'Maybe'. The field will be marked as 'NULL' in the database schema and
-  the value 'Nothing' will be used to represent 'NULL' values when converting
+  in 'Maybe'. The field will be marked as @NULL@ in the database schema and
+  the value 'Nothing' will be used to represent @NULL@ values when converting
   to and from SQL.
 
 @since 1.0.0.0
@@ -704,16 +716,17 @@ nullableField field =
       }
 
 {- |
-  Adds a `Maybe` wrapper to a field that is already nullable. (If your field is
+  Adds a 'Maybe' wrapper to a field that is already nullable. (If your field is
   'NotNull', you wanted 'nullableField' instead of this function). Note that
   fields created using this function have asymmetric encoding and decoding of
-  'NULL' values. Because the provided field is 'Nullable', 'NULL' values decoded
-  from the database already have a representation in the 'a' type, so 'NULL'
+  @NULL@ values. Because the provided field is 'Nullable', @NULL@ values decoded
+  from the database already have a representation in the @a@ type, so @NULL@
   will be decoded as 'Just <value of type a for NULL>'. This means if you
   insert a 'Nothing' value using the field, it will be read back as 'Just'
   value. This is useful for building high level combinators that might need to
   make fields 'Nullable' but need the value to be decoded in its underlying
-  type when reading back (e.g. 'maybeMapper' from 'SqlMarshaller').
+  type when reading back (e.g. 'Orville.PostgreSQL.maybeMapper' from
+  "Orville.PostgreSQL.Marshall.SqlMarshaller").
 
 @since 1.0.0.0
 -}

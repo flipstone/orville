@@ -93,7 +93,7 @@ data SchemaItem where
   Returns a one-line string describing the 'SchemaItem', suitable for a human
   to identify it in a list of output.
 
-  For example, a 'SchemaItem' constructed via 'schemaTable' gives @Table <table
+  For example, a 'SchemaItem' constructed via 'SchemaTable' gives @Table <table
   name>@.
 
 @since 1.0.0.0
@@ -270,11 +270,11 @@ data MigrationOptions = MigrationOptions
   --       @since 1.0.0.0
   , migrationLockId :: MigrationLock.MigrationLockId
   -- ^
-  --       The 'MigrationLockId' that will be use to ensure only one application is
-  --       running migrations at a time. The default value is 'defaultLockId'. You
-  --       may want to change this if you want to run concurrent index creations
-  --       separately from the rest of the schema changes without blocking one
-  --       another.
+  --       The 'MigrationLock.MigrationLockId' that will be use to ensure only
+  --       one application is running migrations at a time. The default value
+  --       is 'MigrationLock.defaultLockId'. You may want to change this if you
+  --       want to run concurrent index creations separately from the rest of
+  --       the schema changes without blocking one another.
   --
   --       @since 1.0.0.0
   }
@@ -766,7 +766,7 @@ mkAddAlterColumnActions relationDesc fieldDef =
   Builds 'Expr.AlterTableAction' expressions for the given attribute to make
   the database schema match the given 'Orville.TableDefinition'. This function
   is only responsible for handling cases where the attribute does not have a
-  correspending 'Orville.FieldDefinition'. See 'mkFieldActions' for those
+  correspending 'Orville.FieldDefinition'. See 'mkAlterTableSteps' for those
   cases.
 
 @since 1.0.0.0

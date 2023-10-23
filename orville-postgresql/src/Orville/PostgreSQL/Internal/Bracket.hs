@@ -20,9 +20,9 @@ data BracketResult
   | BracketError
 
 {- |
-  INTERNAL: A version of 'bracket' that allows us to distinguish between
+  INTERNAL: A version of 'Control.Exception.bracket' that allows us to distinguish between
   exception and non-exception release cases. This is available in certain
-  packages as a typeclass function under the name 'generalBracket', but is
+  packages as a typeclass function under the name "generalBracket", but is
   implemented here directly in terms of IO's 'mask' and 'catch' to guarantee
   our exception handling semantics without forcing the Orville user's choice of
   library for lifting and unlift IO actions (e.g. UnliftIO).

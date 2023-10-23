@@ -192,6 +192,7 @@ module Orville.PostgreSQL
   , FieldDefinition.fieldColumnName
   , FieldDefinition.fieldColumnReference
   , FieldDefinition.fieldName
+  , FieldDefinition.setFieldName
   , FieldDefinition.fieldDescription
   , FieldDefinition.setFieldDescription
   , FieldDefinition.addUniqueConstraint

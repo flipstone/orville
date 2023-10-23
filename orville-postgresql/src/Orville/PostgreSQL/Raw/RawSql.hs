@@ -325,7 +325,7 @@ fromString =
   SqlSection . BSB.stringUtf8
 
 {- |
-  Constructs a 'RawSql' from a 'Text' value using utf8 encoding.
+  Constructs a 'RawSql' from a 'T.Text' value using utf8 encoding.
 
   Note that because the text is treated as raw sql it completely up to the
   caller to protected againt sql-injections attacks when using this function.
@@ -338,7 +338,7 @@ fromText =
   SqlSection . TextEnc.encodeUtf8Builder
 
 {- |
-  Constructs a 'RawSql' from a 'ByteString' value, which is assumed to be
+  Constructs a 'RawSql' from a 'BS.ByteString' value, which is assumed to be
   encoded sensibly for the database to handle.
 
   Note that because the string is treated as raw sql it completely up to the
