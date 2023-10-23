@@ -16,7 +16,6 @@ module Orville.PostgreSQL.Execution.Cursor
   , withCursor
   , declareCursor
   , closeCursor
-  , newCursorName
   , fetch
   , move
   , Expr.CursorDirection
