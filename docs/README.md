@@ -17,14 +17,14 @@ minimally complicated.
 ## Why Orville?
 
 Orville is not meant to replace existing PostgreSQL libraries in the Haskell
-ecosystem, but to complement them. It has the power to satsify most experienced
+ecosystem, but to complement them. It has the power to satisfy most experienced
 Haskell developers but strives to remain approachable to newcomers despite
 this. Orville's API is rich enough to be used in production on large and
 sophisticated applications, but avoids complicated type-level programming. If
 your application is too large to reasonably write all your SQL statements by
 hand yet doesn't require absolute type-safety between your custom SQL
-statements result sets and the Haskell types they decode into, Orville may be
-the right choice for you.
+statements, their result sets and the Haskell types they decode into, Orville
+may be the right choice for you.
 
 ## Feature Overview
 
@@ -48,7 +48,8 @@ Additional documentation is available in the Haddocks.
 
 ## Just show me some code!
 
-Ok! Here's a very simple application that inserts to entities of a `Pet` model and finds one of them based on its name.
+Ok! Here's a very simple application that inserts some entities of a `Pet`
+model and finds one of them based on its name.
 
 ```haskell
 module Main (main) where
@@ -69,8 +70,8 @@ data Pet =
     }
 
 {- |
-  It's good practice to create newtype specific to each entity to hold its
-  primary key value
+  It's good practice to create a newtype specific to each entity to hold its
+  primary key value.
 -}
 newtype PetId = PetId Int32
 
@@ -100,8 +101,8 @@ nameField =
   O.unboundedTextField "name"
 
 {- |
-  Marshaller above is associated with the @pet@ table. The marshallers fields
-  will define the column of the table.
+  Marshaller above is associated with the @pet@ table. The marshaller's fields
+  will define the columns of the table.
 -}
 petTable :: O.TableDefinition (O.HasKey PetId) Pet Pet
 petTable =
