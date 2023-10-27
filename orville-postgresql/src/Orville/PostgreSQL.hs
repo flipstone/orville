@@ -59,10 +59,11 @@ module Orville.PostgreSQL
     , connectionNoticeReporting
     , connectionPoolStripes
     , connectionPoolLingerTime
-    , connectionPoolMaxConnectionsPerStripe
+    , connectionPoolMaxConnections
     )
   , Connection.createConnectionPool
   , Connection.NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
+  , Connection.MaxConnections (MaxConnectionsTotal, MaxConnectionsPerStripe)
   , Connection.StripeOption (OneStripePerCapability, StripeCount)
   , Connection.Connection
   , Connection.ConnectionPool

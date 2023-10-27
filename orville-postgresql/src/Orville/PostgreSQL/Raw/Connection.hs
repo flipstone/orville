@@ -15,9 +15,10 @@ module Orville.PostgreSQL.Raw.Connection
       , connectionNoticeReporting
       , connectionPoolStripes
       , connectionPoolLingerTime
-      , connectionPoolMaxConnectionsPerStripe
+      , connectionPoolMaxConnections
       )
   , NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
+  , MaxConnections (MaxConnectionsTotal, MaxConnectionsPerStripe)
   , StripeOption (OneStripePerCapability, StripeCount)
   , ConnectionPool
   , createConnectionPool
@@ -85,13 +86,23 @@ createConnectionPool options = do
         (connectionNoticeReporting options)
         (B8.pack $ connectionString options)
 
-    connPerStripe =
-      connectionPoolMaxConnectionsPerStripe options
-
     linger =
       connectionPoolLingerTime options
 
+    maxConns =
+      connectionPoolMaxConnections options
+
   stripes <- determineStripeCount (connectionPoolStripes options)
+
+  connPerStripe <-
+    case determineConnectionsPerStripe stripes maxConns of
+      Right conns -> pure conns
+      Left err ->
+        throwIO $
+          ConnectionError
+            { connectionErrorMessage = err
+            , connectionErrorLibPQMessage = Nothing
+            }
 
 #if MIN_VERSION_resource_pool(0,4,0)
   fmap ConnectionPool . newPool . setNumStripes (Just stripes) $
@@ -127,6 +138,24 @@ data StripeOption
     StripeCount Int
 
 {- |
+Values for the 'connectionMaxConnections' field of 'ConnectionOptions'
+
+@since 1.0.0.0
+-}
+data MaxConnections
+  = -- | 'MaxConnectionsTotal' creates a connection pool that will never
+    -- allocate more than the specified number of connections. The total count
+    -- of connections will be spread evenly across the all the stripes in the
+    -- pool. If the number of stripes does not divide the total count evenly,
+    -- any remainder will be unused.
+    MaxConnectionsTotal Int
+  | -- | 'MaxConnectionsPerStripe' creates a connection pool that will
+    -- allocate up to the specified number of connections in each stripe.
+    -- In this case the total possible number of simulaneous connections will
+    -- be this value multiplied by the number of stripes.
+    MaxConnectionsPerStripe Int
+
+{- |
 Configuration options to pass to 'createConnectionPool' to specify the
 parameters for the pool and the connections that it creates.
 
@@ -134,15 +163,15 @@ parameters for the pool and the connections that it creates.
 -}
 data ConnectionOptions = ConnectionOptions
   { connectionString :: String
-  -- ^ A PostgreSQL connection string
+  -- ^ A PostgreSQL connection string.
   , connectionNoticeReporting :: NoticeReporting
-  -- ^ Whether or not notice reporting from LibPQ should be enabled
+  -- ^ Whether or not notice reporting from LibPQ should be enabled.
   , connectionPoolStripes :: StripeOption
-  -- ^ Number of stripes in the connection pool
+  -- ^ Number of stripes in the connection pool.
   , connectionPoolLingerTime :: NominalDiffTime
-  -- ^ Linger time before closing an idle connection
-  , connectionPoolMaxConnectionsPerStripe :: Int
-  -- ^ Max number of connections to allocate per stripe
+  -- ^ Linger time before closing an idle connection.
+  , connectionPoolMaxConnections :: MaxConnections
+  -- ^ Controls the number of connections available in the 'ConnectionPool'.
   }
 
 {- |
@@ -155,8 +184,31 @@ determineStripeCount stripeOption =
     StripeCount n -> pure n
 
 {- |
+  INTERNAL: Resolves the 'MaxConnections' to the actual number of connections
+  to use per stripe.
+-}
+determineConnectionsPerStripe :: Int -> MaxConnections -> Either String Int
+determineConnectionsPerStripe stripes maxConnections =
+  case maxConnections of
+    MaxConnectionsPerStripe n ->
+      Right n
+    MaxConnectionsTotal n ->
+      if n >= stripes
+        then Right (n `div` stripes)
+        else
+          Left $
+            "Invalid connection pool options. There must be at least "
+              <> " 1 connection per stripe, but MaxConnectionsTotal was "
+              <> show n
+              <> " for "
+              <> show stripes
+              <> " stripes."
+
+{- |
   Allocates a connection from the pool and performs an action with it. This
   function will block if the maximum number of connections is reached.
+
+@since 1.0.0.0
 -}
 withPoolConnection :: ConnectionPool -> (Connection -> IO a) -> IO a
 withPoolConnection (ConnectionPool pool) =
@@ -167,8 +219,8 @@ withPoolConnection (ConnectionPool pool) =
 
  All handling of stepping through the result set is left to the caller.  This
  potentially leaves connections open much longer than one would expect if all
-                                                                          of the results are not iterated through immediately *and* the data copied.
-                                                                            Use with caution.
+ of the results are not iterated through immediately *and* the data copied.
+ Use with caution.
 
 @since 1.0.0.0
 -}

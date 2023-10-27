@@ -96,7 +96,7 @@ createTestConnectionPool = do
       , Orville.connectionNoticeReporting = Orville.DisableNoticeReporting
       , Orville.connectionPoolStripes = Orville.OneStripePerCapability
       , Orville.connectionPoolLingerTime = 10
-      , Orville.connectionPoolMaxConnectionsPerStripe = 2
+      , Orville.connectionPoolMaxConnections = Orville.MaxConnectionsPerStripe 2
       }
 
 recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
