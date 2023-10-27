@@ -8,7 +8,7 @@ name:           orville-postgresql
 version:        1.0.0.0
 synopsis:       A Haskell library for PostgreSQL
 description:    Orville's goal is to provide a powerful API for applications to access PostgreSQL databases with minimal use of sophisticated language techniques or extensions. See https://github.com/flipstone/orville for more details.
-category:       Database
+category:       database, library, postgresql
 author:         Flipstone Technology Partners
 maintainer:     maintainers@flipstone.com
 license:        MIT
@@ -16,6 +16,8 @@ license-file:   LICENSE
 build-type:     Simple
 tested-with:
     GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.7, GHC == 9.6.3
+extra-source-files:
+    CHANGELOG.md
 
 source-repository head
   type: git
