@@ -70,8 +70,8 @@ data Pet =
     }
 
 {- |
-  It's good practice to create a newtype specific to each entity to hold its
-  primary key value.
+  It's good practice to create newtype specific to each entity to hold its
+  primary key value
 -}
 newtype PetId = PetId Int32
 
@@ -101,8 +101,8 @@ nameField =
   O.unboundedTextField "name"
 
 {- |
-  Marshaller above is associated with the @pet@ table. The marshaller's fields
-  will define the columns of the table.
+  Marshaller above is associated with the @pet@ table. The marshallers fields
+  will define the column of the table.
 -}
 petTable :: O.TableDefinition (O.HasKey PetId) Pet Pet
 petTable =
@@ -123,7 +123,7 @@ main = do
         { O.connectionString = "host=localhost user=orville password=orville"
         , O.connectionNoticeReporting = O.DisableNoticeReporting
         , O.connectionPoolStripes = O.OneStripePerCapability
-        , O.connectionPoolMaxConnectionsPerStripe = 1
+        , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
         , O.connectionPoolLingerTime = 10
         }
 
