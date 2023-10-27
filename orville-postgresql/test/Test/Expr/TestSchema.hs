@@ -21,7 +21,6 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
@@ -29,6 +28,7 @@ import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
@@ -95,13 +95,13 @@ nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
 nullOr = maybe SqlValue.sqlNull
 
 withFooBarData ::
-  Pool.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   [FooBar] ->
   (Orville.Connection -> IO a) ->
   HH.PropertyT IO a
 withFooBarData pool fooBars action =
   MIO.liftIO $
-    Pool.withResource pool $ \connection -> do
+    Conn.withPoolConnection pool $ \connection -> do
       dropAndRecreateTestTable connection
 
       RawSql.executeVoid connection $

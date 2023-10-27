@@ -21,7 +21,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-timeTests :: Orville.Pool Orville.Connection -> Property.Group
+timeTests :: Orville.ConnectionPool -> Property.Group
 timeTests pool =
   Property.group
     "Expr - Time"

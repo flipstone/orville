@@ -5,7 +5,6 @@ module Main
 where
 
 import qualified Control.Monad as Monad
-import qualified Data.ByteString.Char8 as B8
 import qualified Hedgehog as HH
 import qualified System.Environment as Env
 import qualified System.Exit as SE
@@ -86,22 +85,30 @@ main = do
 
   Monad.unless (Property.allPassed summary) SE.exitFailure
 
-createTestConnectionPool :: IO (Orville.Pool Orville.Connection)
+createTestConnectionPool :: IO Orville.ConnectionPool
 createTestConnectionPool = do
   connStr <- lookupConnStr
   -- Some tests use more than one connection, so the pool size must be greater
-  Orville.createConnectionPool Orville.DisableNoticeReporting 1 10 2 connStr
+  -- than 1
+  Orville.createConnectionPool $
+    Orville.ConnectionOptions
+      { Orville.connectionString = connStr
+      , Orville.connectionNoticeReporting = Orville.DisableNoticeReporting
+      , Orville.connectionPoolStripes = Orville.OneStripePerCapability
+      , Orville.connectionPoolLingerTime = 10
+      , Orville.connectionPoolMaxConnectionsPerStripe = 2
+      }
 
 recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
 recheckDBProperty size seed namedProperty = do
   pool <- createTestConnectionPool
   HH.recheck size seed (snd $ namedProperty pool)
 
-lookupConnStr :: IO B8.ByteString
+lookupConnStr :: IO String
 lookupConnStr = do
   mbConnHostStr <- Env.lookupEnv "TEST_CONN_HOST"
   let
     connStrUserPass = " user=orville_test password=orville"
   case mbConnHostStr of
     Nothing -> fail "TEST_CONN_HOST not set, so we don't know what database to connect to!"
-    Just connHost -> pure . B8.pack $ connHost <> connStrUserPass
+    Just connHost -> pure $ connHost <> connStrUserPass

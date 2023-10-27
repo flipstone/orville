@@ -6,12 +6,12 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
@@ -23,7 +23,7 @@ data FooBar = FooBar
   , bar :: String
   }
 
-groupByOrderByTests :: Orville.Pool Orville.Connection -> Property.Group
+groupByOrderByTests :: Orville.ConnectionPool -> Property.Group
 groupByOrderByTests pool =
   Property.group
     "Expr - GroupBy and OrderBy"
@@ -76,7 +76,7 @@ mkGroupByOrderByTestExpectedRows test =
 groupByOrderByTest :: String -> GroupByOrderByTest -> Property.NamedDBProperty
 groupByOrderByTest testName test =
   Property.singletonNamedDBProperty testName $ \pool -> do
-    rows <- MIO.liftIO . Pool.withResource pool $ \connection -> do
+    rows <- MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       dropAndRecreateTestTable connection
 
       RawSql.executeVoid connection $

@@ -11,7 +11,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.Property as Property
 
-sequenceTests :: Orville.Pool Orville.Connection -> Property.Group
+sequenceTests :: Orville.ConnectionPool -> Property.Group
 sequenceTests pool =
   Property.group
     "Sequence"

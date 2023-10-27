@@ -13,7 +13,7 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
-sequenceDefinitionTests :: Orville.Pool Orville.Connection -> Property.Group
+sequenceDefinitionTests :: Orville.ConnectionPool -> Property.Group
 sequenceDefinitionTests pool =
   Property.group
     "Expr - SequenceDefinition"

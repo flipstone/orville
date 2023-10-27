@@ -9,23 +9,30 @@ Stability : Stable
 @since 1.0.0.0
 -}
 module Orville.PostgreSQL.Raw.Connection
-  ( -- * Orville definitions
-    Connection
-  , createConnectionPool
+  ( ConnectionOptions
+      ( ConnectionOptions
+      , connectionString
+      , connectionNoticeReporting
+      , connectionPoolStripes
+      , connectionPoolLingerTime
+      , connectionPoolMaxConnectionsPerStripe
+      )
   , NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
+  , StripeOption (OneStripePerCapability, StripeCount)
+  , ConnectionPool
+  , createConnectionPool
+  , Connection
+  , withPoolConnection
   , executeRaw
   , quoteStringLiteral
   , quoteIdentifier
   , ConnectionUsedAfterCloseError
   , ConnectionError
   , SqlExecutionError (..)
-
-    -- * Re-exports from "Data.Pool" for convenience
-  , Pool
   )
 where
 
-import Control.Concurrent (threadWaitRead, threadWaitWrite)
+import Control.Concurrent (getNumCapabilities, threadWaitRead, threadWaitWrite)
 import Control.Concurrent.MVar (MVar, newMVar, tryReadMVar, tryTakeMVar)
 import Control.Exception (Exception, mask, throwIO)
 import Control.Monad (void)
@@ -34,9 +41,9 @@ import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as B8
 import Data.Maybe (fromMaybe)
 #if MIN_VERSION_resource_pool(0,4,0)
-import Data.Pool (Pool, newPool, defaultPoolConfig, setNumStripes)
+import Data.Pool (Pool, newPool, defaultPoolConfig, setNumStripes, withResource)
 #else
-import Data.Pool (Pool, createPool)
+import Data.Pool (Pool, createPool, withResource)
 #endif
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
@@ -56,42 +63,112 @@ data NoticeReporting
   | DisableNoticeReporting
 
 {- |
+Orville always uses a connection pool to manage the number of open connections
+to the database. See 'ConnectionConfig' and 'createConnectionPool' to find how
+to create a 'ConnectionPool'.
+
+@since 1.0.0.0
+-}
+newtype ConnectionPool
+  = ConnectionPool (Pool Connection)
+
+{- |
  'createConnectionPool' allocates a pool of connections to a PostgreSQL server.
 
 @since 1.0.0.0
 -}
-createConnectionPool ::
-  -- | Whether or not notice reporting from LibPQ should be enabled
-  NoticeReporting ->
-  -- | Number of stripes in the connection pool
-  Int ->
-  -- | Linger time before closing an idle connection
-  NominalDiffTime ->
-  -- | Max number of connections to allocate per stripe
-  Int ->
-  -- | A PostgreSQL connection string
-  BS.ByteString ->
-  IO (Pool Connection)
+createConnectionPool :: ConnectionOptions -> IO ConnectionPool
+createConnectionPool options = do
+  let
+    open =
+      connect
+        (connectionNoticeReporting options)
+        (B8.pack $ connectionString options)
+
+    connPerStripe =
+      connectionPoolMaxConnectionsPerStripe options
+
+    linger =
+      connectionPoolLingerTime options
+
+  stripes <- determineStripeCount (connectionPoolStripes options)
+
 #if MIN_VERSION_resource_pool(0,4,0)
-createConnectionPool noticeReporting stripes linger maxRes connectionString =
-  newPool . setNumStripes (Just stripes) $
+  fmap ConnectionPool . newPool . setNumStripes (Just stripes) $
     defaultPoolConfig
-      (connect noticeReporting connectionString)
+      open
       close
       (realToFrac linger)
-      (stripes * maxRes)
+      (stripes * connPerStripe)
 #else
-createConnectionPool noticeReporting stripes linger maxRes connectionString =
-  createPool (connect noticeReporting connectionString) close stripes linger maxRes
+  ConnectionPool <$>
+    createPool
+      open
+      close
+      stripes
+      linger
+      connPerStripe
 #endif
 
 {- |
- 'executeRaw' runs a given SQL statement returning the raw underlying result.
+Values for the 'connectionPoolStripes' field of 'ConnectionOptions'
+
+@since 1.0.0.0
+-}
+data StripeOption
+  = -- | 'OneStripePerCapability' will cause the connection pool to be set up
+    -- with one stripe for each capability (processor thread) available to the
+    -- runtime. This is the best option for multi-threaded connectin pool
+    -- performance.
+    OneStripePerCapability
+  | -- | 'StripeCount' will cause the connection pool to be set up with
+    -- the specified number of stripes, regardless of how many capabilities
+    -- the runtime has
+    StripeCount Int
+
+{- |
+Configuration options to pass to 'createConnectionPool' to specify the
+parameters for the pool and the connections that it creates.
+
+@since 1.0.0.0
+-}
+data ConnectionOptions = ConnectionOptions
+  { connectionString :: String
+  -- ^ A PostgreSQL connection string
+  , connectionNoticeReporting :: NoticeReporting
+  -- ^ Whether or not notice reporting from LibPQ should be enabled
+  , connectionPoolStripes :: StripeOption
+  -- ^ Number of stripes in the connection pool
+  , connectionPoolLingerTime :: NominalDiffTime
+  -- ^ Linger time before closing an idle connection
+  , connectionPoolMaxConnectionsPerStripe :: Int
+  -- ^ Max number of connections to allocate per stripe
+  }
+
+{- |
+  INTERNAL: Resolves the 'StripeOption' to the actual number of stripes to use.
+-}
+determineStripeCount :: StripeOption -> IO Int
+determineStripeCount stripeOption =
+  case stripeOption of
+    OneStripePerCapability -> getNumCapabilities
+    StripeCount n -> pure n
+
+{- |
+  Allocates a connection from the pool and performs an action with it. This
+  function will block if the maximum number of connections is reached.
+-}
+withPoolConnection :: ConnectionPool -> (Connection -> IO a) -> IO a
+withPoolConnection (ConnectionPool pool) =
+  withResource pool
+
+{- |
+  'executeRaw' runs a given SQL statement returning the raw underlying result.
 
  All handling of stepping through the result set is left to the caller.  This
  potentially leaves connections open much longer than one would expect if all
- of the results are not iterated through immediately *and* the data copied.
- Use with caution.
+                                                                          of the results are not iterated through immediately *and* the data copied.
+                                                                            Use with caution.
 
 @since 1.0.0.0
 -}
@@ -115,7 +192,7 @@ executeRaw connection bs params =
 newtype Connection = Connection (MVar LibPQ.Connection)
 
 {- |
- 'connect' is the internal, primitive connection function.
+  'connect' is the internal, primitive connection function.
 
  This should not be exposed to end users, but instead wrapped in something to create a pool.
 
@@ -125,7 +202,7 @@ newtype Connection = Connection (MVar LibPQ.Connection)
 @since 1.0.0.0
 -}
 connect :: NoticeReporting -> BS.ByteString -> IO Connection
-connect noticeReporting connectionString =
+connect noticeReporting connString =
   let
     checkSocketAndThreadWait conn threadWaitFn = do
       fd <- LibPQ.socket conn
@@ -150,7 +227,7 @@ connect noticeReporting connectionString =
           pure (Connection connectionHandle)
   in
     do
-      connection <- LibPQ.connectStart connectionString
+      connection <- LibPQ.connectStart connString
       case noticeReporting of
         DisableNoticeReporting -> LibPQ.disableNoticeReporting connection
         EnableNoticeReporting -> LibPQ.enableNoticeReporting connection

@@ -14,11 +14,11 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Function (on)
 import Data.Int (Int32)
 import qualified Data.List as List
-import Data.Pool (withResource)
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 
 import qualified Test.Entities.Foo as Foo
 import qualified Test.PgGen as PgGen
@@ -66,10 +66,10 @@ generateList range foos =
     (List.nubBy ((==) `on` fooChildId))
     (Gen.list range $ generate foos)
 
-withTables :: MonadIO m => Orville.Pool Orville.Connection -> Orville.Orville a -> m a
+withTables :: MonadIO m => Orville.ConnectionPool -> Orville.Orville a -> m a
 withTables pool operation =
   liftIO $ do
-    withResource pool $ \connection -> do
+    Conn.withPoolConnection pool $ \connection -> do
       TestTable.dropAndRecreateTableDef connection Foo.table
       TestTable.dropAndRecreateTableDef connection table
     Orville.runOrville pool operation

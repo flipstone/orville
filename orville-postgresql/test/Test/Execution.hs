@@ -12,7 +12,7 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-executionTests :: Orville.Pool Orville.Connection -> Property.Group
+executionTests :: Orville.ConnectionPool -> Property.Group
 executionTests pool =
   Property.group
     "Execution"

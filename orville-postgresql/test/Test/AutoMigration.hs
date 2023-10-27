@@ -36,7 +36,7 @@ import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-autoMigrationTests :: Orville.Pool Orville.Connection -> Property.Group
+autoMigrationTests :: Orville.ConnectionPool -> Property.Group
 autoMigrationTests pool =
   Property.group
     "AutoMigration"
@@ -416,7 +416,7 @@ prop_respectsImplicitDefaultOnSerialFields =
     migrationPlanStepStrings secondTimePlan === []
 
 assertDefaultValuesMigrateProperly ::
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   HH.Gen SomeField ->
   HH.PropertyT IO ()
 assertDefaultValuesMigrateProperly pool genSomeField = do
@@ -835,7 +835,7 @@ prop_altersModifiedSequences =
 
 assertSequenceExistsMatching ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   Orville.SequenceDefinition ->
   m ()
 assertSequenceExistsMatching pool sequenceDef = do
@@ -886,7 +886,7 @@ prop_arbitrarySchemaInitialMigration =
 
 assertTableStructure ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   TestTable ->
   m ()
 assertTableStructure pool testTable = do

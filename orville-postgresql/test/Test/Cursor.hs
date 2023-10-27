@@ -17,7 +17,7 @@ import qualified Orville.PostgreSQL.Execution as Exec
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
-cursorTests :: Orville.Pool Orville.Connection -> Property.Group
+cursorTests :: Orville.ConnectionPool -> Property.Group
 cursorTests pool =
   Property.group "Cursor" $
     [ prop_withCursorFetch pool

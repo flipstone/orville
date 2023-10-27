@@ -8,20 +8,19 @@ where
 import qualified Control.Exception as E
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
-import qualified Data.Pool as Pool
 import qualified Data.Text.Encoding as Enc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
-import qualified Orville.PostgreSQL.Raw.Connection as Connection
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
-connectionTests :: Pool.Pool Connection.Connection -> Property.Group
+connectionTests :: Conn.ConnectionPool -> Property.Group
 connectionTests pool =
   Property.Group "Connection" $
     [ prop_safeOrUnsafeNonNullBytes pool
@@ -40,9 +39,9 @@ prop_safeOrUnsafeNonNullBytes =
         Enc.encodeUtf8 text
 
     value <-
-      MIO.liftIO . Pool.withResource pool $ \connection -> do
+      MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
         result <-
-          Connection.executeRaw
+          Conn.executeRaw
             connection
             (B8.pack "SELECT $1::text = $2::text")
             [ Just $ PgTextFormatValue.fromByteString notNulBytes
@@ -68,8 +67,8 @@ prop_errorOnSafeNulByte =
           ]
 
     result <-
-      MIO.liftIO . E.try . Pool.withResource pool $ \connection ->
-        Connection.executeRaw
+      MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection ->
+        Conn.executeRaw
           connection
           (B8.pack "SELECT $1::text")
           [ Just $ PgTextFormatValue.fromByteString bytesWithNul
@@ -100,9 +99,9 @@ prop_truncateValuesAtUnsafeNulByte =
           ]
 
     value <-
-      MIO.liftIO . Pool.withResource pool $ \connection -> do
+      MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
         result <-
-          Connection.executeRaw
+          Conn.executeRaw
             connection
             (B8.pack "SELECT $1::text")
             [ Just $ PgTextFormatValue.unsafeFromByteString bytesWithNul
@@ -122,20 +121,20 @@ prop_errorOnInvalidSql =
     randomText <- HH.forAll $ PgGen.pgText (Range.constant 1 16)
 
     result <-
-      MIO.liftIO . E.try . Pool.withResource pool $ \connection ->
-        Connection.executeRaw
+      MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection ->
+        Conn.executeRaw
           connection
           (Enc.encodeUtf8 randomText)
           []
 
     case result of
       Left err -> do
-        Connection.sqlExecutionErrorExecStatus err === Just LibPQ.FatalError
+        Conn.sqlExecutionErrorExecStatus err === Just LibPQ.FatalError
 
         let
           syntaxErrorState = B8.pack "42601"
 
-        Connection.sqlExecutionErrorSqlState err === Just syntaxErrorState
+        Conn.sqlExecutionErrorSqlState err === Just syntaxErrorState
       Right _ -> do
         HH.footnote "Expected 'executeRow' to return failure, but it did not"
         HH.failure

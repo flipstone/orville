@@ -7,7 +7,6 @@ import qualified Control.Exception as E
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import qualified Data.Pool as Pool
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -26,7 +25,7 @@ import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-tableDefinitionTests :: Pool.Pool Orville.Connection -> Property.Group
+tableDefinitionTests :: Orville.ConnectionPool -> Property.Group
 tableDefinitionTests pool =
   Property.group
     "TableDefinition"
@@ -97,7 +96,7 @@ prop_primaryKey =
           Foo.table
           (originalFoo :| [conflictingFoo])
 
-    result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
+    result <- MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection -> do
       TestTable.dropAndRecreateTableDef connection Foo.table
       RawSql.executeVoid connection insertFoos
 
@@ -128,7 +127,7 @@ prop_uniqueConstraint =
           Foo.table
           (originalFoo :| [conflictingFoo])
 
-    result <- MIO.liftIO . E.try . Pool.withResource pool $ \connection -> do
+    result <- MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection -> do
       TestTable.dropAndRecreateTableDef connection fooTableWithUniqueNameConstraint
       RawSql.executeVoid connection insertFoos
 

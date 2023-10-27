@@ -16,7 +16,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
-countTests :: Orville.Pool Orville.Connection -> Property.Group
+countTests :: Orville.ConnectionPool -> Property.Group
 countTests pool =
   Property.group
     "Expr - Count"

@@ -53,10 +53,19 @@ module Orville.PostgreSQL
   , Orville.runOrvilleWithState
 
     -- * Creating a connection pool
+  , Connection.ConnectionOptions
+    ( ConnectionOptions
+    , connectionString
+    , connectionNoticeReporting
+    , connectionPoolStripes
+    , connectionPoolLingerTime
+    , connectionPoolMaxConnectionsPerStripe
+    )
   , Connection.createConnectionPool
-  , Connection.Connection
-  , Connection.Pool
   , Connection.NoticeReporting (EnableNoticeReporting, DisableNoticeReporting)
+  , Connection.StripeOption (OneStripePerCapability, StripeCount)
+  , Connection.Connection
+  , Connection.ConnectionPool
 
     -- * Opening transactions and savepoints
   , Transaction.withTransaction

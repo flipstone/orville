@@ -7,7 +7,6 @@ import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
 import qualified Data.Map.Strict as Map
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -15,6 +14,7 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 
@@ -28,7 +28,7 @@ import Test.Expr.TestSchema
   )
 import qualified Test.Property as Property
 
-sqlCommenterTests :: Orville.Pool Orville.Connection -> Property.Group
+sqlCommenterTests :: Orville.ConnectionPool -> Property.Group
 sqlCommenterTests pool =
   Property.group
     "SqlCommenterAttributes"
@@ -66,7 +66,7 @@ prop_sqlCommenterInsertExpr =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           let

@@ -5,17 +5,17 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List.NonEmpty as NE
-import qualified Data.Pool as Pool
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-orderByTests :: Orville.Pool Orville.Connection -> Property.Group
+orderByTests :: Orville.ConnectionPool -> Property.Group
 orderByTests pool =
   Property.group
     "Expr - OrderBy"
@@ -120,7 +120,7 @@ orderByTest testName test =
   Property.singletonNamedDBProperty testName $ \pool -> do
     rows <-
       MIO.liftIO $ do
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $

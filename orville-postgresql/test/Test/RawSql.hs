@@ -5,19 +5,19 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-rawSqlTests :: Orville.Pool Orville.Connection -> Property.Group
+rawSqlTests :: Orville.ConnectionPool -> Property.Group
 rawSqlTests pool =
   Property.group
     "RawSql"
@@ -127,7 +127,7 @@ prop_escapesStringLiteralsForConnections =
 
     (actualBytes, _) <-
       HH.evalIO $
-        Pool.withResource pool $ \conn ->
+        Conn.withPoolConnection pool $ \conn ->
           RawSql.toBytesAndParams (RawSql.connectionQuoting conn) rawSql
 
     actualBytes === expectedBytes
@@ -144,7 +144,7 @@ prop_escapesIdentifiersForConnections =
 
     (actualBytes, _) <-
       HH.evalIO $
-        Pool.withResource pool $ \conn ->
+        Conn.withPoolConnection pool $ \conn ->
           RawSql.toBytesAndParams (RawSql.connectionQuoting conn) rawSql
 
     actualBytes === expectedBytes

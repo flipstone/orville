@@ -17,13 +17,12 @@ where
 import qualified Control.Exception.Safe as ExSafe
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
-import Data.Pool (Pool)
 
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Monad.HasOrvilleState as HasOrvilleState
 import qualified Orville.PostgreSQL.Monad.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
-import Orville.PostgreSQL.Raw.Connection (Connection)
+import Orville.PostgreSQL.Raw.Connection (ConnectionPool)
 
 {- |
   The 'Orville' Monad provides a easy starter implementation of
@@ -61,7 +60,7 @@ newtype Orville a = Orville
 
 @since 1.0.0.0
 -}
-runOrville :: Pool Connection -> Orville a -> IO a
+runOrville :: ConnectionPool -> Orville a -> IO a
 runOrville =
   runOrvilleWithState
     . OrvilleState.newOrvilleState ErrorDetailLevel.defaultErrorDetailLevel

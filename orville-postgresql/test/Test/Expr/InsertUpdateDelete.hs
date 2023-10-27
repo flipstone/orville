@@ -5,19 +5,19 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, findAllFooBars, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-insertUpdateDeleteTests :: Orville.Pool Orville.Connection -> Property.Group
+insertUpdateDeleteTests :: Orville.ConnectionPool -> Property.Group
 insertUpdateDeleteTests pool =
   Property.group
     "Expr - Insert/Update/Delete"
@@ -39,7 +39,7 @@ prop_insertExpr =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
@@ -59,7 +59,7 @@ prop_insertExprWithReturning =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           result <-
@@ -90,7 +90,7 @@ prop_updateExpr =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
@@ -120,7 +120,7 @@ prop_updateExprWithWhere =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
@@ -150,7 +150,7 @@ prop_updateExprWithReturning =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
@@ -176,7 +176,7 @@ prop_deleteExpr =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
@@ -205,7 +205,7 @@ prop_deleteExprWithWhere =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
@@ -233,7 +233,7 @@ prop_deleteExprWithReturning =
 
     rows <-
       MIO.liftIO $
-        Pool.withResource pool $ \connection -> do
+        Conn.withPoolConnection pool $ \connection -> do
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $

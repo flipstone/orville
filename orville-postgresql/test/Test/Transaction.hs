@@ -6,7 +6,6 @@ where
 import qualified Control.Monad as Monad
 import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
-import qualified Data.Pool as Pool
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -15,13 +14,14 @@ import qualified Hedgehog.Gen as Gen
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 import qualified Test.Transaction.Util as TransactionUtil
 
-transactionTests :: Orville.Pool Orville.Connection -> Property.Group
+transactionTests :: Orville.ConnectionPool -> Property.Group
 transactionTests pool =
   Property.group "Transaction" $
     [ prop_transactionsWithoutExceptionsCommit pool
@@ -39,7 +39,7 @@ prop_transactionsWithoutExceptionsCommit =
 
     tracers <-
       HH.evalIO $ do
-        Pool.withResource pool $ \connection ->
+        Conn.withPoolConnection pool $ \connection ->
           TestTable.dropAndRecreateTableDef connection tracerTable
 
         Orville.runOrville pool $ do
@@ -56,7 +56,7 @@ prop_exceptionsLeadToTransactionRollback =
 
     tracers <-
       HH.evalIO $ do
-        Pool.withResource pool $ \connection ->
+        Conn.withPoolConnection pool $ \connection ->
           TestTable.dropAndRecreateTableDef connection tracerTable
 
         Orville.runOrville pool $ do
@@ -89,7 +89,7 @@ prop_savepointsRollbackInnerTransactions =
 
     tracers <-
       HH.evalIO $ do
-        Pool.withResource pool $ \connection ->
+        Conn.withPoolConnection pool $ \connection ->
           TestTable.dropAndRecreateTableDef connection tracerTable
 
         Orville.runOrville pool $ do
@@ -163,7 +163,7 @@ prop_usesCustomBeginTransactionSql =
           ]
 
 captureTransactionCallbackEvents ::
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   Orville.Orville () ->
   HH.PropertyT IO [Orville.TransactionEvent]
 captureTransactionCallbackEvents pool actions = do
@@ -217,7 +217,7 @@ tracerMarshaller =
     <$> Orville.marshallField (const $ T.pack "tracer") (Orville.unboundedTextField "tracer")
 
 captureSqlTrace ::
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   Orville.Orville () ->
   HH.PropertyT IO [(Orville.QueryType, BS.ByteString)]
 captureSqlTrace pool actions = do

@@ -7,7 +7,6 @@ import qualified Control.Exception.Safe as ExSafe
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import qualified Data.Pool as Pool
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
@@ -21,7 +20,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (FooBar, assertEqualFooBarRows, findAllFooBars, mkFooBar, withFooBarData)
 import qualified Test.Property as Property
 
-cursorTests :: Orville.Pool Orville.Connection -> Property.Group
+cursorTests :: Orville.ConnectionPool -> Property.Group
 cursorTests pool =
   Property.group
     "Expr - Cursor"
@@ -70,7 +69,7 @@ prop_cursorOutsideTransactionWithHold =
 prop_cursorCloseAll :: Property.NamedDBProperty
 prop_cursorCloseAll =
   Property.singletonNamedDBProperty "Close all cursors" $ \pool -> do
-    MIO.liftIO . Pool.withResource pool $ \connection -> do
+    MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       let
         cursorName :: Expr.CursorName
         cursorName = Expr.fromIdentifier $ Expr.identifier "testcursor"
@@ -277,7 +276,7 @@ row :: Int.Int32 -> FooBar
 row n = mkFooBar n ("row " <> show n)
 
 runFetchDirectionsOnData ::
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   Maybe Expr.ScrollExpr ->
   [FooBar] ->
   [Expr.CursorDirection] ->

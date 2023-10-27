@@ -6,7 +6,6 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Time as Time
@@ -17,12 +16,13 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-sqlTypeTests :: Orville.Pool Orville.Connection -> Property.Group
+sqlTypeTests :: Orville.ConnectionPool -> Property.Group
 sqlTypeTests pool =
   Property.group "SqlType" $
     integerTests pool
@@ -40,7 +40,7 @@ sqlTypeTests pool =
       <> timestampTests pool
       <> jsonbTests pool
 
-integerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+integerTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 integerTests pool =
   [
     ( String.fromString "Testing the decode of INTEGER with value 0"
@@ -74,7 +74,7 @@ integerTests pool =
     )
   ]
 
-smallIntegerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+smallIntegerTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 smallIntegerTests pool =
   [
     ( String.fromString "Testing the decode of SMALLINT with value 0"
@@ -108,7 +108,7 @@ smallIntegerTests pool =
     )
   ]
 
-bigIntegerTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+bigIntegerTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 bigIntegerTests pool =
   [
     ( String.fromString "Testing the decode of BIGINT with value 0"
@@ -132,7 +132,7 @@ bigIntegerTests pool =
     )
   ]
 
-serialTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+serialTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 serialTests pool =
   [
     ( String.fromString "Testing the decode of SERIAL with value 0"
@@ -166,7 +166,7 @@ serialTests pool =
     )
   ]
 
-bigSerialTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+bigSerialTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 bigSerialTests pool =
   [
     ( String.fromString "Testing the decode of BIGSERIAL with value 0"
@@ -190,7 +190,7 @@ bigSerialTests pool =
     )
   ]
 
-doubleTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+doubleTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 doubleTests pool =
   [
     ( String.fromString "Testing the decode of DOUBLE PRECISION with value 0"
@@ -214,7 +214,7 @@ doubleTests pool =
     )
   ]
 
-boolTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+boolTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 boolTests pool =
   [
     ( String.fromString "Testing the decode of BOOL with value False"
@@ -238,7 +238,7 @@ boolTests pool =
     )
   ]
 
-unboundedTextTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+unboundedTextTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 unboundedTextTests pool =
   [
     ( String.fromString "Testing the decode of TEXT with value abcde"
@@ -252,7 +252,7 @@ unboundedTextTests pool =
     )
   ]
 
-fixedTextTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+fixedTextTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 fixedTextTests pool =
   [
     ( String.fromString "Testing the decode of CHAR(5) with value 'abcde'"
@@ -276,7 +276,7 @@ fixedTextTests pool =
     )
   ]
 
-boundedTextTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+boundedTextTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 boundedTextTests pool =
   [
     ( String.fromString "Testing the decode of VARCHAR(5) with value 'abcde'"
@@ -300,7 +300,7 @@ boundedTextTests pool =
     )
   ]
 
-textSearchVectorTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+textSearchVectorTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 textSearchVectorTests pool =
   [
     ( String.fromString "Testing the decode of TSVECTOR with value 'abcde'"
@@ -324,7 +324,7 @@ textSearchVectorTests pool =
     )
   ]
 
-jsonbTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+jsonbTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 jsonbTests pool =
   [
     ( String.fromString "Testing the decode of graph '{\"key\": \"value\"}'"
@@ -338,7 +338,7 @@ jsonbTests pool =
     )
   ]
 
-dateTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+dateTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 dateTests pool =
   [
     ( String.fromString "Testing the decode of DATE with value 2020-12-21"
@@ -372,7 +372,7 @@ dateTests pool =
     )
   ]
 
-timestampTests :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+timestampTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 timestampTests pool =
   [
     ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '2020-12-21 00:00:32-00'"
@@ -523,10 +523,10 @@ data DecodingTest a = DecodingTest
   , expectedValue :: a
   }
 
-runDecodingTest :: (Show a, Eq a) => Orville.Pool Orville.Connection -> DecodingTest a -> HH.Property
+runDecodingTest :: (Show a, Eq a) => Orville.ConnectionPool -> DecodingTest a -> HH.Property
 runDecodingTest pool test =
   Property.singletonProperty $ do
-    rows <- MIO.liftIO . Pool.withResource pool $ \connection -> do
+    rows <- MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       dropAndRecreateTable connection "decoding_test" (sqlTypeDDL test)
 
       let

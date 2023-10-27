@@ -25,13 +25,13 @@ import Data.Function (on)
 import Data.Int (Int32)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
-import Data.Pool (Pool, withResource)
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 
 import qualified Test.PgGen as PgGen
 import qualified Test.TestTable as TestTable
@@ -132,9 +132,9 @@ generateNonEmpty range =
     (NEL.nubBy ((==) `on` fooId))
     (Gen.nonEmpty range generate)
 
-withTable :: MonadIO m => Pool Orville.Connection -> Orville.Orville a -> m a
+withTable :: MonadIO m => Orville.ConnectionPool -> Orville.Orville a -> m a
 withTable pool operation =
   liftIO $ do
-    withResource pool $ \connection ->
+    Conn.withPoolConnection pool $ \connection ->
       TestTable.dropAndRecreateTableDef connection table
     Orville.runOrville pool operation

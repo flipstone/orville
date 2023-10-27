@@ -15,7 +15,7 @@ import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-postgreSQLAxiomTests :: Orville.Pool Orville.Connection -> Property.Group
+postgreSQLAxiomTests :: Orville.ConnectionPool -> Property.Group
 postgreSQLAxiomTests pool =
   Property.group
     "PostgreSQL Axioms"
@@ -44,7 +44,7 @@ prop_bigIntegerBounds =
 
 assertPostgreSQLMinValueMatchesHaskell ::
   (Eq a, Show a, Bounded a, HH.MonadTest m, MIO.MonadIO m, ExSafe.MonadCatch m) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   SqlType.SqlType a ->
   m ()
 assertPostgreSQLMinValueMatchesHaskell pool sqlType = do
@@ -59,7 +59,7 @@ assertPostgreSQLMinValueMatchesHaskell pool sqlType = do
 
 assertPostgreSQLMaxValueMatchesHaskell ::
   (Eq a, Show a, Bounded a, HH.MonadTest m, MIO.MonadIO m, ExSafe.MonadCatch m) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   SqlType.SqlType a ->
   m ()
 assertPostgreSQLMaxValueMatchesHaskell pool sqlType = do
@@ -83,7 +83,7 @@ evalEitherMLeft =
 
 selectValue ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   a ->
   SqlType.SqlType a ->
   m (Either Conn.SqlExecutionError a)
@@ -92,7 +92,7 @@ selectValue pool inputValue sqlType =
 
 selectValueWithModifier ::
   (HH.MonadTest m, MIO.MonadIO m) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   a ->
   RawSql.RawSql ->
   SqlType.SqlType a ->

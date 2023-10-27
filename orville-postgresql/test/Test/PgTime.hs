@@ -13,7 +13,7 @@ import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
 
 import qualified Test.Property as Property
 
-pgTimeTests :: Orville.Pool Orville.Connection -> Property.Group
+pgTimeTests :: Orville.ConnectionPool -> Property.Group
 pgTimeTests _pool =
   Property.group "PgTime" $
     [

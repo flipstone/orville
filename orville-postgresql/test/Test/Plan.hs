@@ -38,7 +38,7 @@ import qualified Test.Property as Property
 
 {- ORMOLU_DISABLE -}
 {- disable formatting so fourmolu doesn't go haywire with the cpp within the list -}
-planTests :: Orville.Pool Orville.Connection -> Property.Group
+planTests :: Orville.ConnectionPool -> Property.Group
 planTests pool =
   Property.group "Plan" $
     [ prop_askParam pool

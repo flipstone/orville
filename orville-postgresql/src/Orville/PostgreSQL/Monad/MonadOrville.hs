@@ -20,7 +20,6 @@ where
 import Control.Exception (Exception)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Reader (ReaderT (ReaderT), mapReaderT, runReaderT)
-import Data.Pool (withResource)
 
 import Orville.PostgreSQL.Internal.OrvilleState
   ( ConnectedState (ConnectedState, connectedConnection, connectedTransaction)
@@ -31,7 +30,7 @@ import Orville.PostgreSQL.Internal.OrvilleState
   , orvilleConnectionState
   )
 import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
-import Orville.PostgreSQL.Raw.Connection (Connection)
+import Orville.PostgreSQL.Raw.Connection (Connection, withPoolConnection)
 
 {- |
   'MonadOrville' is the typeclass that most Orville operations require to
@@ -188,7 +187,7 @@ withConnectedState connectedAction = do
       let
         pool = orvilleConnectionPool state
       in
-        liftWithConnection (withResource pool) $ \conn ->
+        liftWithConnection (withPoolConnection pool) $ \conn ->
           let
             connectedState =
               ConnectedState

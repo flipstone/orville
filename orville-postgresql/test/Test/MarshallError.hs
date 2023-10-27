@@ -19,7 +19,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-marshallErrorTests :: Orville.Pool Orville.Connection -> Property.Group
+marshallErrorTests :: Orville.ConnectionPool -> Property.Group
 marshallErrorTests pool =
   Property.group
     "MarshallError"

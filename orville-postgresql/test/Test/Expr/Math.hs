@@ -18,7 +18,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-mathTests :: Orville.Pool Orville.Connection -> Property.Group
+mathTests :: Orville.ConnectionPool -> Property.Group
 mathTests pool =
   Property.group
     "Expr - Math"
@@ -183,7 +183,7 @@ intExpression n =
   Expr.cast (Expr.valueExpression (SqlValue.fromInt n)) Expr.int
 
 evaluateIntegerExpression ::
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   Expr.ValueExpression ->
   HH.PropertyT IO Int32
 evaluateIntegerExpression pool expression = do

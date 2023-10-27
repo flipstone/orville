@@ -18,7 +18,7 @@ import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-pgCatalogTests :: Orville.Pool Orville.Connection -> Property.Group
+pgCatalogTests :: Orville.ConnectionPool -> Property.Group
 pgCatalogTests pool =
   Property.group
     "PgCatalog"

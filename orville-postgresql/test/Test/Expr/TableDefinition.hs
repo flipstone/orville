@@ -12,7 +12,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
-tableDefinitionTests :: Orville.Pool Orville.Connection -> Property.Group
+tableDefinitionTests :: Orville.ConnectionPool -> Property.Group
 tableDefinitionTests pool =
   Property.group
     "Expr - TableDefinition"

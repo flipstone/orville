@@ -4,17 +4,17 @@ module Test.ReservedWords
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Raw.Connection as Conn
 
 import qualified Test.Entities.User as User
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-reservedWordsTests :: Orville.Pool Orville.Connection -> Property.Group
+reservedWordsTests :: Orville.ConnectionPool -> Property.Group
 reservedWordsTests pool =
   Property.group "ReservedWords" $
     [
@@ -24,7 +24,7 @@ reservedWordsTests pool =
 
           usersFromDB <-
             MIO.liftIO $ do
-              Pool.withResource pool $ \connection ->
+              Conn.withPoolConnection pool $ \connection ->
                 TestTable.dropAndRecreateTableDef connection User.table
 
               Orville.runOrville pool $ do

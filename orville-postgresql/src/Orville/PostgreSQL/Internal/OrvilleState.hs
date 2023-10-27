@@ -40,12 +40,11 @@ module Orville.PostgreSQL.Internal.OrvilleState
 where
 
 import qualified Data.Map.Strict as Map
-import Data.Pool (Pool)
 
 import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Raw.Connection (Connection)
+import Orville.PostgreSQL.Raw.Connection (Connection, ConnectionPool)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 
@@ -57,7 +56,7 @@ import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 @since 1.0.0.0
 -}
 data OrvilleState = OrvilleState
-  { _orvilleConnectionPool :: Pool Connection
+  { _orvilleConnectionPool :: ConnectionPool
   , _orvilleConnectionState :: ConnectionState
   , _orvilleErrorDetailLevel :: ErrorDetailLevel
   , _orvilleTransactionCallback :: TransactionEvent -> IO ()
@@ -71,7 +70,7 @@ data OrvilleState = OrvilleState
 
 @since 1.0.0.0
 -}
-orvilleConnectionPool :: OrvilleState -> Pool Connection
+orvilleConnectionPool :: OrvilleState -> ConnectionPool
 orvilleConnectionPool =
   _orvilleConnectionPool
 
@@ -166,7 +165,7 @@ addTransactionCallback newCallback state =
 
 @since 1.0.0.0
 -}
-newOrvilleState :: ErrorDetailLevel -> Pool Connection -> OrvilleState
+newOrvilleState :: ErrorDetailLevel -> ConnectionPool -> OrvilleState
 newOrvilleState errorDetailLevel pool =
   OrvilleState
     { _orvilleConnectionPool = pool

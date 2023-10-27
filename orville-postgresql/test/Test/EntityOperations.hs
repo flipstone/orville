@@ -20,7 +20,7 @@ import qualified Test.Entities.CompositeKeyEntity as CompositeKeyEntity
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
-entityOperationsTests :: Orville.Pool Orville.Connection -> Property.Group
+entityOperationsTests :: Orville.ConnectionPool -> Property.Group
 entityOperationsTests pool =
   Property.group "EntityOperations" $
     [ prop_insertEntitiesFindEntitiesByRoundTrip pool

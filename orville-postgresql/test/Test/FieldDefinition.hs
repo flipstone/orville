@@ -6,7 +6,6 @@ where
 import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Maybe as Maybe
-import qualified Data.Pool as Pool
 import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.UUID as UUID
@@ -27,7 +26,7 @@ import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
-fieldDefinitionTests :: Orville.Pool Orville.Connection -> Property.Group
+fieldDefinitionTests :: Orville.ConnectionPool -> Property.Group
 fieldDefinitionTests pool =
   Property.group "FieldDefinition" $
     integerField pool
@@ -44,7 +43,7 @@ fieldDefinitionTests pool =
       <> localTimestampField pool
       <> jsonbField pool
 
-integerField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+integerField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 integerField pool =
   testFieldProperties pool "integerField" $
     FieldDefinitionTest
@@ -53,7 +52,7 @@ integerField pool =
       , roundTripGen = PgGen.pgInt32
       }
 
-bigIntegerField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+bigIntegerField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 bigIntegerField pool =
   testFieldProperties pool "bigIntegerField" $
     FieldDefinitionTest
@@ -62,7 +61,7 @@ bigIntegerField pool =
       , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
       }
 
-doubleField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+doubleField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 doubleField pool =
   testFieldProperties pool "doubleField" $
     FieldDefinitionTest
@@ -71,7 +70,7 @@ doubleField pool =
       , roundTripGen = PgGen.pgDouble
       }
 
-booleanField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+booleanField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 booleanField pool =
   testFieldProperties pool "booleanField" $
     FieldDefinitionTest
@@ -80,7 +79,7 @@ booleanField pool =
       , roundTripGen = Gen.bool
       }
 
-unboundedTextField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+unboundedTextField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 unboundedTextField pool =
   testFieldProperties pool "unboundedTextField" $
     FieldDefinitionTest
@@ -89,7 +88,7 @@ unboundedTextField pool =
       , roundTripGen = PgGen.pgText (Range.constant 0 1024)
       }
 
-boundedTextField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+boundedTextField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 boundedTextField pool =
   testFieldProperties pool "boundedTextField" $
     FieldDefinitionTest
@@ -98,7 +97,7 @@ boundedTextField pool =
       , roundTripGen = PgGen.pgText (Range.constant 0 4)
       }
 
-fixedTextField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+fixedTextField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 fixedTextField pool =
   testFieldProperties pool "fixedTextField" $
     FieldDefinitionTest
@@ -107,7 +106,7 @@ fixedTextField pool =
       , roundTripGen = PgGen.pgText (Range.constant 4 4)
       }
 
-textSearchVectorField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+textSearchVectorField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 textSearchVectorField pool =
   testFieldProperties pool "textSearchVectorField" $
     FieldDefinitionTest
@@ -116,7 +115,7 @@ textSearchVectorField pool =
       , roundTripGen = tsVectorGen
       }
 
-uuidField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+uuidField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 uuidField pool =
   testFieldProperties pool "uuidField" $
     FieldDefinitionTest
@@ -125,7 +124,7 @@ uuidField pool =
       , roundTripGen = uuidGen
       }
 
-dateField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+dateField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 dateField pool =
   testFieldProperties pool "dateField" $
     FieldDefinitionTest
@@ -137,7 +136,7 @@ dateField pool =
       , roundTripGen = PgGen.pgDay
       }
 
-utcTimestampField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+utcTimestampField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 utcTimestampField pool =
   testFieldProperties pool "utcTimestampField" $
     FieldDefinitionTest
@@ -149,7 +148,7 @@ utcTimestampField pool =
       , roundTripGen = PgGen.pgUTCTime
       }
 
-localTimestampField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+localTimestampField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 localTimestampField pool =
   testFieldProperties pool "localTimestampField" $
     FieldDefinitionTest
@@ -161,7 +160,7 @@ localTimestampField pool =
       , roundTripGen = PgGen.pgLocalTime
       }
 
-jsonbField :: Orville.Pool Orville.Connection -> [(HH.PropertyName, HH.Property)]
+jsonbField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 jsonbField pool =
   testFieldProperties pool "jsonbField" $
     FieldDefinitionTest
@@ -172,7 +171,7 @@ jsonbField pool =
 
 testFieldProperties ::
   (Show a, Eq a) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   String ->
   FieldDefinitionTest a ->
   [(HH.PropertyName, HH.Property)]
@@ -191,7 +190,7 @@ testFieldProperties pool fieldDefName roundTripTest =
 
 testDefaultValueProperties ::
   (Show a, Eq a) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   String ->
   FieldDefinitionTest a ->
   DefaultValueTest a ->
@@ -236,13 +235,13 @@ data DefaultValueTest a
   = RoundTripDefaultTest (a -> Marshall.DefaultValue a)
   | InsertOnlyDefaultTest (Marshall.DefaultValue a)
 
-runRoundTripTest :: (Show a, Eq a) => Orville.Pool Orville.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
+runRoundTripTest :: (Show a, Eq a) => Orville.ConnectionPool -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runRoundTripTest pool testCase = do
   let
     fieldDef = roundTripFieldDef testCase
 
   value <- HH.forAll (roundTripGen testCase)
-  rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
+  rows <- HH.evalIO . Conn.withPoolConnection pool $ \connection -> do
     dropAndRecreateTestTable fieldDef connection
 
     RawSql.executeVoid connection $
@@ -271,7 +270,7 @@ runRoundTripTest pool testCase = do
 
   roundTripResult === Right value
 
-runNullableRoundTripTest :: (Show a, Eq a) => Orville.Pool Orville.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
+runNullableRoundTripTest :: (Show a, Eq a) => Orville.ConnectionPool -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runNullableRoundTripTest pool testCase = do
   let
     fieldDef = Marshall.nullableField (roundTripFieldDef testCase)
@@ -286,7 +285,7 @@ runNullableRoundTripTest pool testCase = do
   HH.cover 1 (String.fromString "Nothing") (Maybe.isNothing value)
   HH.cover 20 (String.fromString "Just") (Maybe.isJust value)
 
-  rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
+  rows <- HH.evalIO . Conn.withPoolConnection pool $ \connection -> do
     dropAndRecreateTestTable fieldDef connection
 
     RawSql.executeVoid connection $
@@ -315,9 +314,9 @@ runNullableRoundTripTest pool testCase = do
 
   roundTripResult === Right value
 
-runNullCounterExampleTest :: Orville.Pool Orville.Connection -> FieldDefinitionTest a -> HH.PropertyT IO ()
+runNullCounterExampleTest :: Orville.ConnectionPool -> FieldDefinitionTest a -> HH.PropertyT IO ()
 runNullCounterExampleTest pool testCase = do
-  result <- HH.evalIO . Pool.withResource pool $ \connection -> do
+  result <- HH.evalIO . Conn.withPoolConnection pool $ \connection -> do
     let
       fieldDef = roundTripFieldDef testCase
 
@@ -340,7 +339,7 @@ runNullCounterExampleTest pool testCase = do
 
 runDefaultValueFieldDefinitionTest ::
   (Show a, Eq a) =>
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   FieldDefinitionTest a ->
   (a -> Marshall.DefaultValue a) ->
   HH.PropertyT IO ()
@@ -354,7 +353,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
     fieldDef =
       Marshall.setDefaultValue defaultValue $ roundTripFieldDef testCase
 
-  rows <- HH.evalIO . Pool.withResource pool $ \connection -> do
+  rows <- HH.evalIO . Conn.withPoolConnection pool $ \connection -> do
     dropAndRecreateTestTable fieldDef connection
 
     RawSql.executeVoid connection $
@@ -384,12 +383,12 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
   roundTripResult === Right value
 
 runDefaultValueInsertOnlyTest ::
-  Orville.Pool Orville.Connection ->
+  Orville.ConnectionPool ->
   FieldDefinitionTest a ->
   Marshall.DefaultValue a ->
   HH.PropertyT IO ()
 runDefaultValueInsertOnlyTest pool testCase defaultValue =
-  HH.evalIO . Pool.withResource pool $ \connection -> do
+  HH.evalIO . Conn.withPoolConnection pool $ \connection -> do
     let
       fieldDef =
         Marshall.setDefaultValue defaultValue $ roundTripFieldDef testCase
