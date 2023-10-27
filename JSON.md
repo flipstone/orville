@@ -15,13 +15,13 @@ dependencies like Aeson have been added. Aeson is a JSON library for Haskell.
 mkdir orville-json
 cd orville-json
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, aeson, bytestring, postgresql-libpq, resource-pool, text, vector,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, aeson, postgresql-libpq, text, vector,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
   subdir: orville-postgresql
 EOF
 cat << 'EOF' > app/Main.hs
@@ -35,7 +35,6 @@ import           Data.Aeson (Value, eitherDecodeStrict')
 import           Data.Aeson.Text (encodeToLazyText)
 import qualified Data.Aeson as Aeson
 import qualified Data.Int as Int
-import           Data.String (IsString(fromString))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Text.Lazy as LazyText
@@ -119,9 +118,18 @@ of the `SqlType` during migration.
 cat << 'EOF' >> app/Main.hs
 main :: IO ()
 main = do
-  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
+  pool <-
+    O.createConnectionPool
+        O.ConnectionOptions
+          { O.connectionString = "host=pg user=orville_docs password=orville"
+          , O.connectionNoticeReporting = O.DisableNoticeReporting
+          , O.connectionPoolStripes = O.OneStripePerCapability
+          , O.connectionPoolLingerTime = 10
+          , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+          }
+
   O.runOrville pool $ do
-    AutoMigration.autoMigrateSchema [ AutoMigration.SchemaTable table ]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ AutoMigration.SchemaTable table ]
     _ <- O.deleteEntity table 0
 EOF
 ```

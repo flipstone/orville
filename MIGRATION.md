@@ -15,13 +15,13 @@ tutorials.
 mkdir orville-migration
 cd orville-migration
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, resource-pool, text,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, text,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
   subdir: orville-postgresql
 EOF
 cat << 'EOF' > app/Main.hs
@@ -31,7 +31,6 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import           Control.Monad.IO.Class (MonadIO(liftIO))
 import qualified Data.Int as Int
-import           Data.String (IsString(fromString))
 
 data Foo1 = Foo1
   { foo1Id :: Int.Int32
@@ -107,14 +106,23 @@ EOF
 cat << 'EOF' >> app/Main.hs
 main :: IO ()
 main = do
-  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
+  pool <-
+    O.createConnectionPool
+        O.ConnectionOptions
+          { O.connectionString = "host=pg user=orville_docs password=orville"
+          , O.connectionNoticeReporting = O.DisableNoticeReporting
+          , O.connectionPoolStripes = O.OneStripePerCapability
+          , O.connectionPoolLingerTime = 10
+          , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+          }
+
   O.runOrville pool $ do
     O.executeVoid O.DDLQuery (RawSql.fromString "DROP TABLE IF EXISTS migration_demo1")
-    AutoMigration.autoMigrateSchema [ AutoMigration.SchemaTable table1 ]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ AutoMigration.SchemaTable table1 ]
     _ <- O.insertEntity table1 Foo1 { foo1Id = 0 }
-    AutoMigration.autoMigrateSchema [ AutoMigration.SchemaTable table2 ]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ AutoMigration.SchemaTable table2 ]
     _ <- O.updateEntity table2 0 Foo2 { foo2Id = 0, foo2Age = Just 91 }
-    AutoMigration.autoMigrateSchema [ AutoMigration.SchemaTable table3 ]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ AutoMigration.SchemaTable table3 ]
     liftIO . print =<< O.findEntity table3 0
 EOF
 ```
@@ -129,7 +137,7 @@ This is done using the `dropColumns` combinator:
 
 ```shell
 cat << 'EOF' >> app/Main.hs
-    AutoMigration.autoMigrateSchema [ AutoMigration.SchemaTable $ O.dropColumns ["age"] table1 ]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ AutoMigration.SchemaTable $ O.dropColumns ["age"] table1 ]
     liftIO . print =<< O.findEntity table1 0
 EOF
 ```

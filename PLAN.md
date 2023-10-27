@@ -25,13 +25,13 @@ GETTING-STARTED guide, so we'll avoid explaining it here.
 mkdir orville-plan
 cd orville-plan
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, resource-pool, text,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, text,/' *.cabal
 cat << 'EOF' > cabal.project
 packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
   subdir: orville-postgresql
 EOF
 ```
@@ -47,7 +47,6 @@ import qualified Orville.PostgreSQL.Plan as Plan
 import           Data.List (sort)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Int as Int
-import           Data.String (IsString(fromString))
 import qualified Data.Text as T
 
 -------------
@@ -169,9 +168,18 @@ constraint.
 cat << 'EOF' >> app/Main.hs
 main :: IO ()
 main = do
-  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
+  pool <-
+    O.createConnectionPool
+        O.ConnectionOptions
+          { O.connectionString = "host=pg user=orville_docs password=orville"
+          , O.connectionNoticeReporting = O.DisableNoticeReporting
+          , O.connectionPoolStripes = O.OneStripePerCapability
+          , O.connectionPoolLingerTime = 10
+          , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+          }
+
   O.runOrville pool $ do
-    AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable studentTable, AutoMigration.SchemaTable classTable, AutoMigration.SchemaTable studentClassTable]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable studentTable, AutoMigration.SchemaTable classTable, AutoMigration.SchemaTable studentClassTable]
     _ <- O.deleteEntity studentClassTable 0
     _ <- O.deleteEntity studentClassTable 1
     _ <- O.deleteEntity studentClassTable 2
@@ -180,11 +188,11 @@ main = do
     _ <- O.deleteEntity classTable 2
     _ <- O.deleteEntity studentTable 0
     _ <- O.deleteEntity studentTable 1
-    _ <- O.insertEntity studentTable Student { studentId = 0, studentName = fromString "Name", studentAge = 91 }
-    _ <- O.insertEntity studentTable Student { studentId = 1, studentName = fromString "Other Name", studentAge = 42 }
-    _ <- O.insertEntity classTable Class { classId = 0, classSubject = fromString "Painting" }
-    _ <- O.insertEntity classTable Class { classId = 1, classSubject = fromString "Cooking" }
-    _ <- O.insertEntity classTable Class { classId = 2, classSubject = fromString "Swimming" }
+    _ <- O.insertEntity studentTable Student { studentId = 0, studentName = T.pack "Name", studentAge = 91 }
+    _ <- O.insertEntity studentTable Student { studentId = 1, studentName = T.pack "Other Name", studentAge = 42 }
+    _ <- O.insertEntity classTable Class { classId = 0, classSubject = T.pack "Painting" }
+    _ <- O.insertEntity classTable Class { classId = 1, classSubject = T.pack "Cooking" }
+    _ <- O.insertEntity classTable Class { classId = 2, classSubject = T.pack "Swimming" }
     _ <- O.insertEntity studentClassTable $ StudentClass {studentClassId=0, studentClassClassId=0, studentClassStudentId=0}
     _ <- O.insertEntity studentClassTable $ StudentClass {studentClassId=1, studentClassClassId=2, studentClassStudentId=0}
     _ <- O.insertEntity studentClassTable $ StudentClass {studentClassId=2, studentClassClassId=1, studentClassStudentId=1}
@@ -215,7 +223,7 @@ type-level checks for whether there is an index on the field.
 
 ```shell
 cat << 'EOF' >> app/Main.hs
-  print =<< O.runOrville pool (Plan.execute (Plan.findMaybeOne studentTable studentNameField) (fromString "Other Name"))
+  print =<< O.runOrville pool (Plan.execute (Plan.findMaybeOne studentTable studentNameField) (T.pack "Other Name"))
 EOF
 ```
 
@@ -224,7 +232,7 @@ Note how `execute` now takes a list instead of just a single value.
 
 ```shell
 cat << 'EOF' >> app/Main.hs
-  print =<< O.runOrville pool (Plan.execute (Plan.planList (Plan.findMaybeOne studentTable studentNameField)) [fromString "Other Name", fromString "Name"])
+  print =<< O.runOrville pool (Plan.execute (Plan.planList (Plan.findMaybeOne studentTable studentNameField)) [T.pack "Other Name", T.pack "Name"])
 EOF
 ```
 
@@ -255,7 +263,7 @@ cat << 'EOF' >> app/Main.hs
       `Plan.chain` Plan.focusParam studentId (Plan.findOne studentClassTable studentClassStudentIdField)
       `Plan.chain` Plan.focusParam studentClassClassId (Plan.findOne classTable classIdField)
     )
-    (fromString "Other Name")
+    (T.pack "Other Name")
 EOF
 ```
 
@@ -305,7 +313,7 @@ cat << 'EOF' >> app/Main.hs
     ( Plan.findAll studentTable studentNameField
       `Plan.chain` Plan.planList studentToClassesPlan
     )
-    (fromString "Name")
+    (T.pack "Name")
 EOF
 ```
 

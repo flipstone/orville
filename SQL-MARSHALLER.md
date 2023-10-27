@@ -14,13 +14,13 @@ GETTING-STARTED guide, so we'll avoid explaining it here.
 mkdir orville-sql-marshaller
 cd orville-sql-marshaller
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, resource-pool, text,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql, text,/' *.cabal
 cat << EOF > cabal.project
 packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
   subdir: orville-postgresql
 EOF
 ```
@@ -35,7 +35,6 @@ import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 
 import qualified Data.Int as Int
-import           Data.String (IsString(fromString))
 import qualified Data.Text as T
 EOF
 ```
@@ -123,11 +122,20 @@ Now let's write the main function, which does the following:
 cat << EOF >> app/Main.hs
 main :: IO ()
 main = do
-  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
+  pool <-
+    O.createConnectionPool
+        O.ConnectionOptions
+          { O.connectionString = "host=pg user=orville_docs password=orville"
+          , O.connectionNoticeReporting = O.DisableNoticeReporting
+          , O.connectionPoolStripes = O.OneStripePerCapability
+          , O.connectionPoolLingerTime = 10
+          , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+          }
+
   mFoo <- O.runOrville pool $ do
-    AutoMigration.autoMigrateSchema [AutoMigration.SchemaTable table]
+    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable table]
     _ <- O.deleteEntity table 0
-    _ <- O.insertEntity table Foo { fooId = 0, fooName = fromString "Name", fooAge = 91 }
+    _ <- O.insertEntity table Foo { fooId = 0, fooName = T.pack "Name", fooAge = 91 }
     O.findEntity table 0
   print mFoo
 EOF

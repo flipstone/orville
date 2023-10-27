@@ -12,10 +12,10 @@ cd orville-getting-started
 cabal init -n --exe
 ```
 
-Make it depend on Orville (the LibPQ variant, which is preferred!), resource-pool and bytestring, which Orville integrates with:
+Make it depend on Orville.
 
 ```shell
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, bytestring, resource-pool,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql,/' *.cabal
 ```
 
 Here is a minimal program that simply computes 1+1 on the database:
@@ -24,16 +24,23 @@ Here is a minimal program that simply computes 1+1 on the database:
 cat <<EOF > app/Main.hs
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.Execution as Execution
+import qualified Orville.PostgreSQL.Raw.Connection as Connection
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-import qualified Data.Pool as Pool
-import           Data.String (IsString(fromString))
-
 main :: IO ()
 main = do
-  pool <- O.createConnectionPool O.DisableNoticeReporting 1 10 1 (fromString "host=pg user=orville_docs password=orville")
-  Pool.withResource pool $ \connection -> do
+  pool <-
+    O.createConnectionPool
+        O.ConnectionOptions
+          { O.connectionString = "host=pg user=orville_docs password=orville"
+          , O.connectionNoticeReporting = O.DisableNoticeReporting
+          , O.connectionPoolStripes = O.OneStripePerCapability
+          , O.connectionPoolLingerTime = 10
+          , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+          }
+
+  Connection.withPoolConnection pool $ \connection -> do
     result <- RawSql.execute connection (RawSql.fromString "SELECT 1+1")
     [[(_, sqlValue)]] <- Execution.readRows result
     print (SqlValue.toInt sqlValue)
@@ -48,7 +55,7 @@ packages: .
 source-repository-package
   type: git
   location: https://github.com/flipstone/orville.git
-  tag: 82fc9d4d93a24440fe3c9d34a75a4a83acde131b
+  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
   subdir: orville-postgresql
 EOF
 ```
