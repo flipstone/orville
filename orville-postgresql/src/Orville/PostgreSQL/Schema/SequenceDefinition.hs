@@ -72,7 +72,7 @@ mkSequenceDefinition name =
     }
 
 {- |
-  Sets the sequence's schema to the name in the given string, which will be
+  Sets the sequence's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a sequence has a schema name set, it will be
   included as a qualifier on the sequence name for all queries involving the
   sequence.
@@ -121,8 +121,8 @@ sequenceIncrement = i_sequenceIncrement
   @0@ (PostgreSQL will raise an error when trying to create or modify the
   sequence in this case).
 
-  If the increment is negative the sequence will be descending. When no
-  explicit start is set a descending sequence begins at the max value.
+  If the increment is negative, the sequence will be descending. When no
+  explicit start is set, a descending sequence begins at the max value.
 
 @since 1.0.0.0
 -}
@@ -131,7 +131,7 @@ setSequenceIncrement n sequenceDef =
   sequenceDef {i_sequenceIncrement = n}
 
 {- |
-  Retrieves the min value of the sequence. If no explicit minimum has been set
+  Retrieves the min value of the sequence. If no explicit minimum has been set,
   this returns @1@ for ascending sequences and 'minBound' for 'Int64' for
   descending sequences.
 
@@ -156,7 +156,7 @@ setSequenceMinValue n sequenceDef =
   sequenceDef {i_sequenceMinValue = Just n}
 
 {- |
-  Retrieves the max value of the sequence. If no explicit maximum has been set
+  Retrieves the max value of the sequence. If no explicit maximum has been set,
   this returns 'maxBound' for 'Int64' for ascending sequences and @-1@ for
   descending sequences.
 
@@ -182,7 +182,7 @@ setSequenceMaxValue n sequenceDef =
 
 {- |
   Retrieves the start value for the sequence. If no explicit start value has
-  been set this returns 'sequenceMinValue' for ascending sequences and
+  been set, this returns 'sequenceMinValue' for ascending sequences and
   'sequenceMaxValue' for descending sequences.
 
 @since 1.0.0.0
@@ -198,7 +198,7 @@ sequenceStart sequenceDef =
 
 {- |
   Sets the sequence start value. The start value must be at least the
-  minimum value and no greater than the max value.
+  minimum value and no greater than the maximum value.
 
 @since 1.0.0.0
 -}

@@ -7,7 +7,7 @@ Stability : Stable
 
 You can import "Orville.PostgreSQL.Monad" to get access to all the functions
 related to managing Orville context within an application Monad. This includes
-a number of lowel-level items not exported by "Orville.PostgreSQL" that give
+a number of lower-level items not exported by "Orville.PostgreSQL" that give
 you more control (and therefore responsibility) over the Monad context.
 
 @since 1.0.0.0

@@ -39,9 +39,9 @@ import qualified Orville.PostgreSQL.Internal.FieldName as FieldName
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- |
-  A collection of constraints to be able to a table. This collection is indexed
-  by 'ConstraintMigrationKey'. If multiple constraints with the same
-  'ConstraintMigrationKey' are added the most recently added one will be kept
+  A collection of constraints to be added to a table. This collection is
+  indexed by 'ConstraintMigrationKey'. If multiple constraints with the same
+  'ConstraintMigrationKey' are added, the most recently-added one will be kept
   and the previous one dropped.
 
 @since 1.0.0.0
@@ -51,7 +51,7 @@ newtype TableConstraints
   deriving (Semigroup, Monoid)
 
 {- |
-  Constructs an empty 'TableConstraints'
+  Constructs an empty 'TableConstraints'.
 
 @since 1.0.0.0
 -}
@@ -60,7 +60,7 @@ emptyTableConstraints = TableConstraints Map.empty
 
 {- |
   Adds a 'ConstraintDefinition' to an existing 'TableConstraints'. If a
-  constraint already exists with the same 'ConstraintMigrationKey' it is
+  constraint already exists with the same 'ConstraintMigrationKey', it is
   replaced with the new constraint.
 
 @since 1.0.0.0
@@ -75,7 +75,7 @@ addConstraint constraint (TableConstraints constraintMap) =
 
 {- |
   Gets the list of 'ConstraintDefinition's that have been added to the
-  'TableConstraints'
+  'TableConstraints'.
 
 @since 1.0.0.0
 -}
@@ -85,7 +85,7 @@ tableConstraintKeys (TableConstraints constraints) =
 
 {- |
   Gets the list of 'ConstraintDefinition's that have been added to the
-  'TableConstraints'
+  'TableConstraints'.
 
 @since 1.0.0.0
 -}
@@ -110,7 +110,7 @@ data ConstraintDefinition = ConstraintDefinition
 
 {- |
   The key used by Orville to determine whether a constraint should be added to
-  a table when performing auto migrations. For most use cases the constructor
+  a table when performing auto-migrations. For most use cases, the constructor
   functions that build a 'ConstraintDefinition' will create this automatically
   for you.
 
@@ -127,7 +127,8 @@ data ConstraintMigrationKey = ConstraintMigrationKey
   deriving (Eq, Ord, Show)
 
 {- |
-  The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g. unique, foreign key).
+  The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g.
+  unique, foreign key).
 
 @since 1.0.0.0
 -}
@@ -197,9 +198,9 @@ data ForeignReference = ForeignReference
 @since 1.0.0.0
 -}
 foreignReference ::
-  -- | The name of the field in the table with the constraint
+  -- | The name of the field in the table with the constraint.
   FieldName.FieldName ->
-  -- | The name of the field in the foreign table that the local field references
+  -- | The name of the field in the foreign table that the local field references.
   FieldName.FieldName ->
   ForeignReference
 foreignReference localName foreignName =
@@ -209,9 +210,8 @@ foreignReference localName foreignName =
     }
 
 {- |
-  Defines the options for a foreign key constraint.
-  To construct 'ForeignKeyOptions', perform a record update on
-  'defaultForeignKeyOptions'.
+  Defines the options for a foreign key constraint. To construct
+  'ForeignKeyOptions', perform a record update on 'defaultForeignKeyOptions'.
 
 @since 1.0.0.0
 -}
@@ -262,24 +262,24 @@ foreignKeyActionToExpr action = case action of
 @since 1.0.0.0
 -}
 foreignKeyConstraint ::
-  -- | Identifier of the table referenced by the foreign key
+  -- | Identifier of the table referenced by the foreign key.
   TableIdentifier.TableIdentifier ->
-  -- | The columns constrained by the foreign key and those that they reference in the foreign table
+  -- | The columns constrained by the foreign key and those that they reference in the foreign table.
   NonEmpty ForeignReference ->
   ConstraintDefinition
 foreignKeyConstraint foreignTableId foreignReferences =
   foreignKeyConstraintWithOptions foreignTableId foreignReferences defaultForeignKeyOptions
 
 {- |
-  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with ON UPDATE and
-  ON DELETE actions.
+  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with
+  ON UPDATE and ON DELETE actions.
 
 @since 1.0.0.0
 -}
 foreignKeyConstraintWithOptions ::
-  -- | Identifier of the table referenced by the foreign key
+  -- | Identifier of the table referenced by the foreign key.
   TableIdentifier.TableIdentifier ->
-  -- | The columns constrained by the foreign key and those that they reference in the foreign table
+  -- | The columns constrained by the foreign key and those that they reference in the foreign table.
   NonEmpty ForeignReference ->
   ForeignKeyOptions ->
   ConstraintDefinition

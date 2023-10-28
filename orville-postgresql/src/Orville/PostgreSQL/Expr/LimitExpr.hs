@@ -35,7 +35,7 @@ newtype LimitExpr
     )
 
 {- | Create a 'LimitExpr' for the given 'Int'. This ensures that the input value is used
-as parameters in the generated SQL.
+as a parameter in the generated SQL.
 
 @since 1.0.0.0
 -}

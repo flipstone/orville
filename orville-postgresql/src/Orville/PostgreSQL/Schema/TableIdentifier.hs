@@ -47,7 +47,7 @@ unqualifiedNameToTableId name =
 
 {- |
   Sets the schema of the 'TableIdentifier'. Wherever applicable, references to
-  the table will be qualified by the given scheme name.
+  the table will be qualified by the given schema name.
 
 @since 1.0.0.0
 -}
@@ -58,8 +58,8 @@ setTableIdSchema schema tableId =
     }
 
 {- |
-  Returns the 'Expr.Qualified Expr.TableName' that should be used to refer to the
-  table in SQL queries.
+  Returns the 'Expr.Qualified Expr.TableName' that should be used to refer to
+  the table in SQL queries.
 
 @since 1.0.0.0
 -}
@@ -90,7 +90,7 @@ tableIdSchemaName =
   fmap Expr.schemaName . i_tableIdSchema
 
 {- |
-  Retrieves the unqualified name of the table as a string.
+  Retrieves the unqualified name of the table as a 'String'.
 
 @since 1.0.0.0
 -}
@@ -99,7 +99,7 @@ tableIdUnqualifiedNameString =
   i_tableIdName
 
 {- |
-  Retrieves the schema name of the table as a string
+  Retrieves the schema name of the table as a 'String'.
 
 @since 1.0.0.0
 -}
@@ -108,7 +108,7 @@ tableIdSchemaNameString =
   i_tableIdSchema
 
 {- |
-  Converts a 'TableIdentifier' to a string for descriptive purposes. The
+  Converts a 'TableIdentifier' to a 'String' for descriptive purposes. The
   name will be qualified if a schema name has been set for the identifier.
 
   Note: You should not use this function for building SQL expressions. Use

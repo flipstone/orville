@@ -38,7 +38,7 @@ newtype IndexName
     )
 
 {- |
-Construct a 'IndexName' from a 'String' with proper escaping as part of the generated SQL.
+Construct an 'IndexName' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.0.0.0
 -}

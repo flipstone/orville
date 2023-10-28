@@ -45,7 +45,7 @@ data PrimaryKey key
 {- |
   A 'PrimaryKeyPart' describes one field of a composite primary key. Values
   are built using 'primaryKeyPart' and then used with 'compositePrimaryKey'
-  to build a 'PrimaryKey'
+  to build a 'PrimaryKey'.
 
 @since 1.0.0.0
 -}
@@ -82,7 +82,7 @@ primaryKeyFieldNames =
 
 {- |
   'primaryKeyToSql' converts a Haskell value for a primary key into the
-  (possibly multiple) sql values that represent the primary key in the
+  (possibly multiple) SQL values that represent the primary key in the
   database.
 
 @since 1.0.0.0
@@ -114,7 +114,7 @@ primaryKey fieldDef =
 
 {- |
   'compositePrimaryKey' constructs a multi-field primary key from the given
-  parts, each of which corresponds to one field in the primary key.  You should
+  parts, each of which corresponds to one field in the primary key. You should
   use this while building a 'Orville.PostgreSQL.TableDefinition' for a table
   that you want to have a multi-column primary key. See 'primaryKeyPart' for
   how to build the parts to be passed as parameters. Note: there is no special
@@ -151,7 +151,7 @@ primaryKeyPart =
   definition to extract information. The given function will be called on
   each part of the primary key in order and the list of results is returned.
   Note that single-field and multi-field primary keys are treated the same by
-  this function, with the single-field case simply behaving as composite key
+  this function, with the single-field case simply behaving as a composite key
   with just one part.
 
 @since 1.0.0.0
@@ -187,9 +187,9 @@ mkPrimaryKeyExpr keyDef =
 
 {- |
   'primaryKeyEquals' builds a 'Expr.BooleanExpr' that will match the row where
-  the primary key is equal to the given value. For single-field primary keys
-  this is equivalent to 'fieldEquals', but 'primaryKeyEquals' also handles composite
-  primary keys.
+  the primary key is equal to the given value. For single-field primary keys,
+  this is equivalent to 'fieldEquals', but 'primaryKeyEquals' also handles
+  composite primary keys.
 
 @since 1.0.0.0
 -}
@@ -200,8 +200,8 @@ primaryKeyEquals keyDef key =
     (mapPrimaryKeyParts (partEquals key) keyDef)
 
 {- |
-  'primaryKeyIn' builds a 'Expr.BooleanExpr' that will match rows where
-  the primary key is contained the given list. For single-field primary keys
+  'primaryKeyIn' builds a 'Expr.BooleanExpr' that will match rows where the
+  primary key is contained in the given list. For single-field primary keys,
   this is equivalent to 'fieldIn', but 'primaryKeyIn' also handles composite
   primary keys.
 

@@ -54,7 +54,7 @@ import qualified Orville.PostgreSQL.Schema as Schema
   You only need to care about this type if you want to create new custom
   operations to include in a 'Database.Orville.PostgreSQL.Plan.Plan' beyond
   those already provided in the 'Database.Orville.PostgreSQL.Plan.Plan'
-  api.
+  API.
 
   You can build your own custom 'Operation' values either directly, or using
   the function and types in this module, such as 'WherePlanner' (via 'findAll',
@@ -68,14 +68,14 @@ data Operation param result = Operation
       Monad.MonadOrville m =>
       param ->
       m (Either AssertionFailed result)
-  -- ^ 'executeOperationOne' will be called when an plan is
-  -- executed with a single input parameter
+  -- ^ 'executeOperationOne' will be called when a plan is
+  -- executed with a single input parameter.
   , executeOperationMany ::
       forall m.
       Monad.MonadOrville m =>
       NonEmpty param ->
       m (Either AssertionFailed (Many param result))
-  -- ^ 'executeOperationMany' will be called when an plan is executed with
+  -- ^ 'executeOperationMany' will be called when a plan is executed with
   -- multiple input parameters (via 'Orville.PostgreSQL.Plan.planMany').
   , explainOperationOne :: Exp.Explanation
   -- ^ 'explainOperationOne' will be called when producing an explanation
@@ -94,7 +94,7 @@ data Operation param result = Operation
   'Operation' to indicate that some expected invariant has failed. For example,
   following a foreign key that is enforced by the database only to find that no
   record exists. When an 'Operation' returns an 'AssertionFailed' value during
-  plan execution the error is thrown as an exception using the
+  plan execution, the error is thrown as an exception using the
   'Control.Monad.Catch.MonadThrow' instance for whatever monad the plan is
   executing in.
 
@@ -116,7 +116,7 @@ mkAssertionFailed =
 instance Exception AssertionFailed
 
 {- |
-  'askParam' simply returns the paremeter given from the plan.
+  'askParam' simply returns the parameter given from the plan.
 
 @since 1.0.0.0
 -}
@@ -132,7 +132,7 @@ askParam =
 {- |
   'assertRight' returns the value on the 'Right' side of an 'Either'. If
   the 'Either' is a 'Left', it raises 'AssertionFailed' with the message
-  from the left side of the either.
+  from the 'Left' side of the 'Either'.
 
 @since 1.0.0.0
 -}
@@ -172,15 +172,15 @@ assertRight =
 {- |
   The functions below ('findOne', 'findAll', etc) accept a 'WherePlanner'
   to determine how to build the where conditions for executing a 'Exec.Select'
-  statement as part of a the plan operation.
+  statement as part of a plan operation.
 
-  For simple queries you can use the functions such as 'byField' that are
+  For simple queries, you can use the functions such as 'byField' that are
   provided here to build a 'WherePlanner', but you may also build your own
   custom 'WherePlanner' for more advanced use cases.
 
-  If you need to execute a custom query that cannot be build by providing
+  If you need to execute a custom query that cannot be built by providing a
   custom where clause via 'WherePlanner', you may want to use more
-  direct 'selectOperation' function.
+  direct 'selectOperation' functions.
 
 @since 1.0.0.0
 -}
@@ -196,17 +196,17 @@ data WherePlanner param = WherePlanner
   -- ^ 'executeManyWhereCondition' must build a where condition that will
   -- match only those rows that match any (not all!) of the input parameters.
   , explainOneWhereCondition :: Expr.BooleanExpr
-  -- ^ 'explainOneWhereCondition' must build a where condition that is
-  -- suitable to be used as an example of 'executeManyWhereCondition' would
-  -- return when given a parameter.  This where condition will be used for
-  -- when producing explanations of plans. For example, this could fill in
-  -- either an example or dummy value.
+  -- ^ 'explainOneWhereCondition' must build a where condition that is suitable
+  -- to be used as an example of what 'executeManyWhereCondition' would return
+  -- when given a parameter. This where condition will be used when producing
+  -- explanations of plans. For example, this could fill in either an example
+  -- or dummy value.
   , explainManyWhereCondition :: Expr.BooleanExpr
   -- ^ 'explainManyWhereCondition' must build a where condition that is
-  -- suitable to be used as an example of 'executeOneWhereCondition' would
-  -- return when given a list of parameters.  This where condition will be
-  -- used for when producing explanations of plans. For example, this could
-  -- fill in either an example or dummy value.
+  -- suitable to be used as an example of what 'executeOneWhereCondition' would
+  -- return when given a list of parameters. This where condition will be
+  -- used when producing explanations of plans. For example, this could fill in
+  -- either an example or dummy value.
   }
 
 {- |
@@ -294,10 +294,10 @@ dedupeFieldValues (first :| rest) =
 
 {- |
   'findOne' builds a planning primitive that finds (at most) one row from the
-  given table where the column value for the provided 'Core.FieldDefinition' matches
-  the plan's input parameter. When executed on multiple parameters it fetches
-  all rows where the field matches the inputs and arbitrarily picks at most one
-  of those rows to use as the result for each input.
+  given table where the column value for the provided 'Core.FieldDefinition'
+  matches the plan's input parameter. When executed on multiple parameters, it
+  fetches all rows where the field matches the inputs and arbitrarily picks at
+  most one of those rows to use as the result for each input.
 
 @since 1.0.0.0
 -}
@@ -326,7 +326,7 @@ findOneWhere tableDef wherePlanner cond =
   findOneWithOpts tableDef wherePlanner (Exec.where_ cond)
 
 {- |
-  'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'
+  'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'.
 
 @since 1.0.0.0
 -}
@@ -368,11 +368,11 @@ findOneWithOpts tableDef wherePlanner opts =
       (Schema.tableMarshaller tableDef)
 
 {- |
-  'findAll' builds a planning primitive that finds all the rows from the
-  given table where the column value for the provided field matches the
-  plan's input parameter. Where executed on multiple parameters all rows
-  are fetch in a single query and then associated with their respective
-  inputs after being fetched.
+  'findAll' builds a planning primitive that finds all the rows from the given
+  table where the column value for the provided field matches the plan's input
+  parameter. When executed on multiple parameters, all rows are fetched in a
+  single query and then associated with their respective inputs after being
+  fetched.
 
 @since 1.0.0.0
 -}
@@ -401,7 +401,7 @@ findAllWhere tableDef wherePlanner cond =
   findAllWithOpts tableDef wherePlanner (Exec.where_ cond)
 
 {- |
-  'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'
+  'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'.
 
 @since 1.0.0.0
 -}
@@ -461,7 +461,7 @@ stringifyField =
   'SelectOperation' is a helper type for building 'Operation' primitives that
   run 'Ex.cSelect' queries. Specifying the fields of 'SelectOperation' and then
   using the 'selectOperation' function to build an 'Operation' is more
-  convenient that building functions to execute the queries thate are required
+  convenient than building functions to execute the queries that are required
   by the 'Operation' type.
 
   Note: If you only need to build a custom where clause based on the
@@ -469,7 +469,7 @@ stringifyField =
   of the existing 'findOne' or 'findAll' functions.
 
   If you cannot respresent your custom operation using 'SelectOperation' then
-  you need build the 'Operation' value directly yourself.
+  you need to build the 'Operation' value directly yourself.
 
 @since 1.0.0.0
 -}
@@ -478,14 +478,14 @@ data SelectOperation param row result = SelectOperation
   -- ^ 'selectOne' will be called to build the 'Exec.Select' query that should
   -- be run when there is a single input parameter while executing a plan.
   -- Note that the "One-ness" here refers to the single input parameter
-  -- rather than result. See 'produceResult' below for more information
-  -- about returning one values vs. many from a 'SelectOperation'.
+  -- rather than the result. See 'produceResult' below for more information
+  -- about returning one value vs. many from a 'SelectOperation'.
   , selectMany :: NonEmpty param -> Exec.Select row
   -- ^ 'selectMany' will be called to build the 'Exec.Select' query that should
   -- be run when there are multiple parameters while executing a plan.
   -- Note that the "Many-ness" here refers to the multiple input parameters
-  -- rather than result. See 'produceResult' below for more information
-  -- about returning one values vs. many from a 'SelectOperation'.
+  -- rather than the result. See 'produceResult' below for more information
+  -- about returning one value vs. many from a 'SelectOperation'.
   , explainSelectOne :: Exec.Select row
   -- ^ 'explainSelectOne' should show a representative query of what will
   -- be returned when 'selectOne' is used. No input parameter is available
@@ -501,12 +501,12 @@ data SelectOperation param row result = SelectOperation
   -- parameters to determine which input parameter the row should be
   -- associated with.
   , produceResult :: [row] -> result
-  -- ^ 'produceResult' will be used convert the @row@ type returned by the
-  -- 'Exec.Select' queries for the operation input the @result@ type that is
+  -- ^ 'produceResult' will be used to convert the @row@ type returned by the
+  -- 'Exec.Select' queries for the operation input to the @result@ type that is
   -- present as the output of the operation. The input rows will be all the
-  -- inputs associated with a single parameter. The @result@ type
-  -- constructed here need not be a single value. For instance, 'findAll'
-  -- uses the list type as the @result@ type and 'findOne' uses 'Maybe'.
+  -- inputs associated with a single parameter. The @result@ type constructed
+  -- here need not be a single value. For instance, 'findAll' uses the list
+  -- type as the @result@ type and 'findOne' uses 'Maybe'.
   }
 
 {- |

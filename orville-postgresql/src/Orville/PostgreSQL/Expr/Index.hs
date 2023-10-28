@@ -69,7 +69,7 @@ createIndexExpr uniqueness mbConcurrently tableName columns =
 
 {- |
 Construct a SQL CREATE INDEX from an indicator of if the index should be
-unique, a table, a name for the index, and some sql representing the rest of
+unique, a table, a name for the index, and some SQL representing the rest of
 the index creation.
 
 @since 1.0.0.0
@@ -113,7 +113,7 @@ newtype ConcurrentlyExpr
 
 {- |
 The @CONCURRENTLY@ keyword indicates to PostgreSQL that an index should be
-create concurrently.
+created concurrently.
 
 @since 1.0.0.0
 -}
@@ -122,7 +122,7 @@ concurrently =
   RawSql.unsafeSqlExpression "CONCURRENTLY"
 
 {- |
-Type to represent if the body of an index definition E.G.
+Type to represent the body of an index definition E.G.
 
 > (foo, bar)
 
@@ -131,7 +131,7 @@ in
 > CREATE some_index ON some_table (foo, bar)
 
 'IndexBodyExpr' provides a 'RawSql.SqlExpression' instance. See
-'Rawsql.unsafeSqlExpression' for how to construct a value with your own custom
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
 @since 1.0.0.0

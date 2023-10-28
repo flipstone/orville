@@ -49,11 +49,10 @@ data IndexDefinition = IndexDefinition
   }
 
 {- |
-  Sets the 'IndexCreationStrategy' strategy to be used when creating the index
-  described by the 'IndexDefinition'. By default all indexes are created using
-  the 'Transactional' strategy, but some tables are too large for this to
-  be feasible. See the 'Concurrent' creation strategy for how to work around
-  this.
+  Sets the 'IndexCreationStrategy' to be used when creating the index described
+  by the 'IndexDefinition'. By default, all indexes are created using the
+  'Transactional' strategy, but some tables are too large for this to be
+  feasible. See the 'Concurrent' creation strategy for how to work around this.
 
 @since 1.0.0.0
 -}
@@ -67,9 +66,9 @@ setIndexCreationStrategy strategy indexDef =
     }
 
 {- |
-  Gets the 'IndexCreationStrategy' strategy to be used when creating the index
-  described by the 'IndexDefinition'. By default all indexes are created using
-  the 'Transactional' strategy.
+  Gets the 'IndexCreationStrategy' to be used when creating the index described
+  by the 'IndexDefinition'. By default, all indexes are created using the
+  'Transactional' strategy.
 
 @since 1.0.0.0
 -}
@@ -81,22 +80,22 @@ indexCreationStrategy =
 
 {- |
   Defines how an 'IndexDefinition' will be executed to add an index to a table.
-  By default all indexes are created using the 'Transactional' strategy.
+  By default, all indexes are created using the 'Transactional' strategy.
 
 @since 1.0.0.0
 -}
 data IndexCreationStrategy
   = -- |
-    --       The default strategy. The index will be added as part of a database
-    --       transaction along with all the other DDL being executed to migrate the
-    --       database schema. If any migration should fail the index creation will be
-    --       rolled back as part of the transaction. This is how schema migrations
-    --       work in general in Orville.
+    --       The default strategy. The index will be added as part of a
+    --       database transaction along with all the other DDL being executed
+    --       to migrate the database schema. If any migration should fail, the
+    --       index creation will be rolled back as part of the transaction.
+    --       This is how schema migrations work in general in Orville.
     Transactional
   | -- |
     --       Creates the index using the @CONCURRENTLY@ keyword in PostgreSQL.
     --       Index creation will not lock the table during creation, allowing
-    --       the application access the table normally while the index is
+    --       the application to access the table normally while the index is
     --       created. Concurrent index creation cannot be done in a
     --       transaction, so indexes created using @CONCURRENTLY@ are created
     --       outside the normal schema transaction. Index creation may fail
@@ -111,7 +110,7 @@ data IndexCreationStrategy
     --       details about how to work around this if it is a problem for you.
     --       Also, it a good idea to read the PostgreSQL docs about creating
     --       indexes concurrently before you use this strategy. See
-    --       https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY
+    --       https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY.
     Concurrent
   deriving (Eq, Show)
 
@@ -176,8 +175,7 @@ indexCreateExpr indexDef =
     (i_indexCreationStrategy indexDef)
 
 {- |
-  Constructs an 'IndexDefinition' for a non-unique index on the given
-  columns.
+  Constructs an 'IndexDefinition' for a non-unique index on the given columns.
 
 @since 1.0.0.0
 -}
@@ -196,8 +194,7 @@ nonUniqueNamedIndex =
   mkNamedIndexDefinition Expr.NonUniqueIndex
 
 {- |
-  Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given
-  columns.
+  Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given columns.
 
 @since 1.0.0.0
 -}
@@ -206,8 +203,8 @@ uniqueIndex =
   mkIndexDefinition Expr.UniqueIndex
 
 {- |
-  Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given
-  columns.
+  Constructs an 'IndexDefinition' for a @UNIQUE@ index with given SQL and index
+  name.
 
 @since 1.0.0.0
 -}

@@ -46,8 +46,8 @@ unqualifiedNameToSequenceId name =
     }
 
 {- |
-  Sets the schema of the 'SequenceIdentifier'. Wherever applicable, references to
-  the sequence will be qualified by the given scheme name.
+  Sets the schema of the 'SequenceIdentifier'. Wherever applicable, references
+  to the sequence will be qualified by the given schema name.
 
 @since 1.0.0.0
 -}
@@ -90,7 +90,7 @@ sequenceIdSchemaName =
   fmap Expr.schemaName . i_sequenceIdSchema
 
 {- |
-  Retrieves the unqualified name of the sequence as a string.
+  Retrieves the unqualified name of the sequence as a 'String'.
 
 @since 1.0.0.0
 -}
@@ -99,7 +99,7 @@ sequenceIdUnqualifiedNameString =
   i_sequenceIdName
 
 {- |
-  Retrieves the schema name of the sequence as a string.
+  Retrieves the schema name of the sequence as a 'String'.
 
 @since 1.0.0.0
 -}
@@ -108,7 +108,7 @@ sequenceIdSchemaNameString =
   i_sequenceIdSchema
 
 {- |
-  Converts a 'SequenceIdentifier' for a string for descriptive purposes. The
+  Converts a 'SequenceIdentifier' for a 'String' for descriptive purposes. The
   name will be qualified if a schema name has been set for the identifier.
 
   Note: You should not use this function for building SQL expressions. Use

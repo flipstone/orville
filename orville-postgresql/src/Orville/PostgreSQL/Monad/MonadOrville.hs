@@ -35,7 +35,7 @@ import Orville.PostgreSQL.Raw.Connection (Connection, withPoolConnection)
 {- |
   'MonadOrville' is the typeclass that most Orville operations require to
   do anything that connects to the database. 'MonadOrville' itself is empty,
-  but it lists all the required typeclasses as superclass contraints so that
+  but it lists all the required typeclasses as superclass constraints so that
   it can be used instead of listing all the constraints on every function.
 
   If you want to be able to run Orville operations directly in your own
@@ -144,8 +144,8 @@ instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleStat
   Orville.  For the "outermost" call of 'withConnection', a connection will be
   acquired from the resource pool. Additional calls to 'withConnection' that
   happen inside the 'm a' that uses the connection will return the same
-  'Connection'. When the 'm a' finishes the connection will be returned to the
-  pool. If 'm a' throws an exception the pool's exception handling will take
+  'Connection'. When the 'm a' finishes, the connection will be returned to the
+  pool. If 'm a' throws an exception, the pool's exception handling will take
   effect, generally destroying the connection in case it was the source of the
   error.
 
@@ -161,8 +161,8 @@ withConnection connectedAction = do
   even without using the handle because it ensures that all the Orville
   operations performed by the action passed to it occur on the same connection.
   Orville uses connection pooling, so unless you use either 'withConnection' or
-  'Orville.PostgreSQL.withTransaction' each database operation may be performed
-  on a different connection.
+  'Orville.PostgreSQL.withTransaction', each database operation may be
+  performed on a different connection.
 
 @since 1.0.0.0
 -}

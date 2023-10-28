@@ -5,7 +5,7 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-Provides a type representing sql operators with exactly two arguments, as well
+Provides a type representing SQL operators with exactly two arguments, as well
 as values of that type for many common operators.
 
 @since 1.0.0.0
@@ -46,7 +46,7 @@ Type to represent any SQL operator of two arguments. E.G.
 
 > AND
 
-'BinaryOperator' provides' a 'RawSql.SqlExpression' instance. See
+'BinaryOperator' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -59,8 +59,8 @@ newtype BinaryOperator
       RawSql.SqlExpression
     )
 
-{- | Construct a binary operator, note that this does not include any check to determine if the
-operator is valid either by being a native SQL operator, or a custom defined operator in the
+{- | Construct a binary operator. Note that this does not include any check to determine if the
+operator is valid, either by being a native SQL operator, or a custom-defined operator in the
 database.
 
 @since 1.0.0.0

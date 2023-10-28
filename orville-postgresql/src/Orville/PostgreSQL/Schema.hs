@@ -6,7 +6,7 @@ License   : MIT
 Stability : Stable
 
 You can import "Orville.PostgreSQL.Schema" to get access to all the functions
-related to representing a SQL schema. This includes a number of lowel-level
+related to representing a SQL schema. This includes a number of lower-level
 items not exported by "Orville.PostgreSQL" that give you more control (and
 therefore responsibility) over the definition of the schema.
 

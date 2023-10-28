@@ -25,7 +25,7 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberParser, attributeNumberTextBuilder)
 
 {- |
-  The Haskell representation of data read from the @pg_catalog.pg_index@ tale.
+  The Haskell representation of data read from the @pg_catalog.pg_index@ table.
   Rows in this table contain extended information about indices. Information
   about indices is also contained in the @pg_catalog.pg_class@ table as well.
 
@@ -38,25 +38,25 @@ data PgIndex = PgIndex
   -- ^ The PostgreSQL @oid@ of the @pg_class@ entry for the table that this
   -- index is for.
   , pgIndexAttributeNumbers :: [AttributeNumber]
-  -- ^ An array of attribute numbers references the columns the table that
-  -- are included in the index. An attribute number of @0@ indicates an
+  -- ^ An array of attribute number references for the columns of the table
+  -- that are included in the index. An attribute number of @0@ indicates an
   -- expression over the table's columns rather than just a reference to a
   -- column.
   --
-  -- In PostgreSQL 11+ this includes both key columns and non-key
-  -- included columns. Orville is currently not aware of this distinction,
-  -- however.
+  -- In PostgreSQL 11+ this includes both key columns and non-key-included
+  -- columns. Orville is currently not aware of this distinction, however.
   , pgIndexIsUnique :: Bool
-  -- ^ Indicates whether this is a unique index
+  -- ^ Indicates whether this is a unique index.
   , pgIndexIsPrimary :: Bool
-  -- ^ Indicates whether this is the primary key index for the table
+  -- ^ Indicates whether this is the primary key index for the table.
   , pgIndexIsLive :: Bool
-  -- ^ When @False@, indicates that this index is in the process of being dropped and should be ignored
+  -- ^ When @False@, indicates that this index is in the process of being
+  -- dropped and should be ignored.
   }
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
-  @pg_catalog.pg_index@ table
+  @pg_catalog.pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -78,7 +78,7 @@ pgIndexMarshaller =
     <*> Orville.marshallField pgIndexIsLive indexIsLiveField
 
 {- |
-  The @indexrelid@ column of the @pg_index@ table
+  The @indexrelid@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -87,7 +87,7 @@ indexPgClassOidField =
   oidTypeField "indexrelid"
 
 {- |
-  The @indrelid@ column of the @pg_index@ table
+  The @indrelid@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -96,7 +96,7 @@ indexRelationOidField =
   oidTypeField "indrelid"
 
 {- |
-  The @indkey@ column of the @pg_index@ table
+  The @indkey@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -107,7 +107,7 @@ indexAttributeNumbersField =
     (Orville.unboundedTextField "indkey")
 
 {- |
-  The @indisunique@ column of the @pg_index@ table
+  The @indisunique@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -116,7 +116,7 @@ indexIsUniqueField =
   Orville.booleanField "indisunique"
 
 {- |
-  The @indisprimary@ column of the @pg_index@ table
+  The @indisprimary@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -125,7 +125,7 @@ indexIsPrimaryField =
   Orville.booleanField "indisprimary"
 
 {- |
-  The @indislive@ column of the @pg_index@ table
+  The @indislive@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}

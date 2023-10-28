@@ -5,7 +5,7 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-Funtions and types for working with PostgreSQL cursors. You can use cursors to
+Functions and types for working with PostgreSQL cursors. You can use cursors to
 execute a query and consume rows from the result set incrementally. Rows that
 you do not consume will never be sent from the database to the client.
 

@@ -40,7 +40,7 @@ newtype GroupByClause
       RawSql.SqlExpression
     )
 
-{- | Create a full sql GROUP BY clause with the given expression.
+{- | Create a full SQL GROUP BY clause with the given expression.
 
 @since 1.0.0.0
 -}
@@ -48,8 +48,8 @@ groupByClause :: GroupByExpr -> GroupByClause
 groupByClause expr = GroupByClause (RawSql.fromString "GROUP BY " <> RawSql.toRawSql expr)
 
 {- |
-Type to represent a SQL group by expression (the part that follows the @GROUP
-BY@ in sql). E.G.
+Type to represent a SQL group by expression (the part that follows the
+@GROUP BY@ in SQL). E.G.
 
 > team_name
 

@@ -68,7 +68,7 @@ beginTransaction maybeTransactionMode =
       )
 
 {- |
-Type to represent the a transaction mode. E.G.
+Type to represent the transaction mode. E.G.
 
 > ISOLATION LEVEL SERIALIZABLE
 
@@ -129,7 +129,7 @@ isolationLevel level =
     (RawSql.fromString "ISOLATION LEVEL " <> RawSql.toRawSql level)
 
 {- |
-Type to represent the a transaction isolation level. E.G.
+Type to represent the transaction isolation level. E.G.
 
 > SERIALIZABLE
 
@@ -195,7 +195,7 @@ newtype CommitExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  A @COMMIT@ transaction statement
+  A @COMMIT@ transaction statement.
 
   @since 1.0.0.0
 -}
@@ -219,7 +219,7 @@ newtype RollbackExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  A @ROLLBACK@ transaction statement
+  A @ROLLBACK@ transaction statement.
 
   @since 1.0.0.0
 -}

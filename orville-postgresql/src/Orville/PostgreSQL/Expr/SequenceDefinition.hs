@@ -85,19 +85,19 @@ newtype CreateSequenceExpr
   @since 1.0.0.0
 -}
 createSequenceExpr ::
-  -- | The name to be used for the sequence
+  -- | The name to be used for the sequence.
   Qualified SequenceName ->
-  -- | An optional @INCREMENT@ expression
+  -- | An optional @INCREMENT@ expression.
   Maybe IncrementByExpr ->
-  -- | An optional @MINVALUE@ expression
+  -- | An optional @MINVALUE@ expression.
   Maybe MinValueExpr ->
-  -- | An optional @MAXVALUE@ expression
+  -- | An optional @MAXVALUE@ expression.
   Maybe MaxValueExpr ->
-  -- | An optional @START WITH@ expression
+  -- | An optional @START WITH@ expression.
   Maybe StartWithExpr ->
-  -- | An optional @CACHE@ expression
+  -- | An optional @CACHE@ expression.
   Maybe CacheExpr ->
-  -- | An optional @CYCLE@ expression
+  -- | An optional @CYCLE@ expression.
   Maybe CycleExpr ->
   CreateSequenceExpr
 createSequenceExpr sequenceName mbIncrementBy mbMinValue mbMaxValue mbStartWith mbCache mbCycle =
@@ -184,7 +184,7 @@ alterSequenceExpr sequenceName mbIncrementBy mbMinValue mbMaxValue mbStartWith m
       ]
 
 {- |
-Type to represent a @INCREMENT BY@ expression for sequences. E.G.
+Type to represent an @INCREMENT BY@ expression for sequences. E.G.
 
 > INCREMENT BY 0
 
@@ -200,7 +200,7 @@ newtype IncrementByExpr
 
 {- |
   Constructs an 'IncrementByExpr' that will make the sequence increment by
-  the given value
+  the given value.
 
   @since 1.0.0.0
 -}
@@ -226,8 +226,8 @@ newtype MinValueExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs an 'MinValueExpr' which gives the sequence the specified minimum
-  value
+  Constructs a 'MinValueExpr' which gives the sequence the specified minimum
+  value.
 
   @since 1.0.0.0
 -}
@@ -238,8 +238,8 @@ minValue n =
       <> RawSql.int64DecLiteral n
 
 {- |
-  Constructs an 'MinValueExpr' which gives the sequence no minimum value (i.e.
-  @NO MINVALUE@)
+  Constructs a 'MinValueExpr' which gives the sequence no minimum value (i.e.
+  @NO MINVALUE@).
 
   @since 1.0.0.0
 -}
@@ -263,8 +263,8 @@ newtype MaxValueExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs an 'MaxValueExpr' which gives the sequence the specified maximum
-  value
+  Constructs a 'MaxValueExpr' which gives the sequence the specified maximum
+  value.
 
   @since 1.0.0.0
 -}
@@ -275,8 +275,8 @@ maxValue n =
       <> RawSql.int64DecLiteral n
 
 {- |
-  Constructs an 'MinValueExpr' which gives the sequence no maximum value (i.e.
-  @NO MAXVALUE@)
+  Constructs a 'MaxValueExpr' which gives the sequence no maximum value (i.e.
+  @NO MAXVALUE@).
 
   @since 1.0.0.0
 -}
@@ -301,7 +301,7 @@ newtype StartWithExpr
 
 {- |
   Constructs a 'StartWithExpr' which gives the sequence the specified start
-  value
+  value.
 
   @since 1.0.0.0
 -}
@@ -312,7 +312,7 @@ startWith n =
       <> RawSql.int64DecLiteral n
 
 {- |
-Type to represent a @CACHE @ expression for sequences. E.G.
+Type to represent a @CACHE@ expression for sequences. E.G.
 
 > CACHE 16
 
@@ -358,7 +358,7 @@ newtype CycleExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'CycleExpr' that indicate that the sequence should cycle.
+  Constructs a 'CycleExpr' that indicates that the sequence should cycle.
 
   @since 1.0.0.0
 -}
@@ -366,7 +366,7 @@ cycle :: CycleExpr
 cycle = CycleExpr $ RawSql.fromString "CYCLE"
 
 {- |
-  Constructs a 'CycleExpr' that indicate that the sequence should not cycle.
+  Constructs a 'CycleExpr' that indicates that the sequence should not cycle.
 
   @since 1.0.0.0
 -}
@@ -374,8 +374,8 @@ noCycle :: CycleExpr
 noCycle = CycleExpr $ RawSql.fromString "NO CYCLE"
 
 {- |
-  Constructs a 'CycleExpr' will cause the sequence to cycle if the flag passed
-  is @True@.
+  Constructs a 'CycleExpr' that will cause the sequence to cycle if the flag
+  passed is @True@.
 
   @since 1.0.0.0
 -}
@@ -402,8 +402,8 @@ newtype DropSequenceExpr
 
 {- |
   Constructs a 'DropSequenceExpr' that will drop sequence with the given name.
-  You maybe specific an 'IfExists' argument if you want to include an @IF
-  EXISTS@ condition in the statement.
+  You may specify an 'IfExists' argument if you want to include an @IF EXISTS@
+  condition in the statement.
 
   @since 1.0.0.0
 -}
@@ -422,7 +422,7 @@ dropSequenceExpr maybeIfExists sequenceName =
 {- |
   Constructs a 'ValueExpression' that will use the @nextval@ PostgreSQL
   function to get the next value from the given sequence. If you're trying to
-  construct your own @SELECT@ to get the value of the sequnce, you can use the
+  construct your own @SELECT@ to get the value of the sequence, you can use the
   constructed 'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs'
   to build the item to select.
 
@@ -446,7 +446,7 @@ nextValFunction =
 {- |
   Constructs a 'ValueExpression' that will use the @currval@ PostgreSQL
   function to get the current value from the given sequence. If you're trying to
-  construct your own @SELECT@ to get the value of the sequnce, you can use the
+  construct your own @SELECT@ to get the value of the sequence, you can use the
   constructed 'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs'
   to build the item to select.
 
@@ -470,7 +470,7 @@ currValFunction =
 {- |
   Constructs a 'ValueExpression' that will use the @setval@ PostgreSQL function
   to set the value from the given sequence. If you're trying to construct your
-  own @SELECT@ to set the value of the sequnce, you can use the constructed
+  own @SELECT@ to set the value of the sequence, you can use the constructed
   'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs' to build the
   item to select.
 

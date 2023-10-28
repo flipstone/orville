@@ -54,7 +54,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Orville.PostgreSQL.Raw.PgTextFormatValue (NULByteFoundError (NULByteFoundError), PgTextFormatValue, toBytesForLibPQ)
 
 {- |
-  An option for 'createConnectionPool' that indicates whether the LibPQ should
+  An option for 'createConnectionPool' that indicates whether LibPQ should
   print notice reports for warnings to the console.
 
 @since 1.0.0.0
@@ -122,23 +122,23 @@ createConnectionPool options = do
 #endif
 
 {- |
-Values for the 'connectionPoolStripes' field of 'ConnectionOptions'
+Values for the 'connectionPoolStripes' field of 'ConnectionOptions'.
 
 @since 1.0.0.0
 -}
 data StripeOption
   = -- | 'OneStripePerCapability' will cause the connection pool to be set up
     -- with one stripe for each capability (processor thread) available to the
-    -- runtime. This is the best option for multi-threaded connectin pool
+    -- runtime. This is the best option for multi-threaded connection pool
     -- performance.
     OneStripePerCapability
   | -- | 'StripeCount' will cause the connection pool to be set up with
     -- the specified number of stripes, regardless of how many capabilities
-    -- the runtime has
+    -- the runtime has.
     StripeCount Int
 
 {- |
-Values for the 'connectionMaxConnections' field of 'ConnectionOptions'
+Values for the 'connectionMaxConnections' field of 'ConnectionOptions'.
 
 @since 1.0.0.0
 -}
@@ -151,7 +151,7 @@ data MaxConnections
     MaxConnectionsTotal Int
   | -- | 'MaxConnectionsPerStripe' creates a connection pool that will
     -- allocate up to the specified number of connections in each stripe.
-    -- In this case the total possible number of simulaneous connections will
+    -- In this case the total possible number of simultaneous connections will
     -- be this value multiplied by the number of stripes.
     MaxConnectionsPerStripe Int
 
@@ -217,7 +217,7 @@ withPoolConnection (ConnectionPool pool) =
 {- |
   'executeRaw' runs a given SQL statement returning the raw underlying result.
 
- All handling of stepping through the result set is left to the caller.  This
+ All handling of stepping through the result set is left to the caller. This
  potentially leaves connections open much longer than one would expect if all
  of the results are not iterated through immediately *and* the data copied.
  Use with caution.
@@ -237,7 +237,7 @@ executeRaw connection bs params =
       underlyingExecute bs paramBytes connection
 
 {- |
-  An Orville handle for a LibPQ connection.
+  An Orville handler for a LibPQ connection.
 
 @since 1.0.0.0
 -}
@@ -248,7 +248,7 @@ newtype Connection = Connection (MVar LibPQ.Connection)
 
  This should not be exposed to end users, but instead wrapped in something to create a pool.
 
- Note that handling the libpq connection with the polling is described at
+ Note that handling the LibPQ connection with the polling is described at
  <https://hackage.haskell.org/package/postgresql-libpq-0.9.4.2/docs/Database-PostgreSQL-LibPQ.html>.
 
 @since 1.0.0.0
@@ -347,15 +347,15 @@ underlyingExecute bs params connection = do
 
 {- |
   Escapes and quotes a string for use as a literal within a SQL command that
-  will be execute on the given connection. This uses the @PQescapeStringConn@
-  function from libpq, which takes the character encoding of the connection
-  into account. Not that while @PQescapeStringConn@ does not surround the
+  will be executed on the given connection. This uses the @PQescapeStringConn@
+  function from LibPQ, which takes the character encoding of the connection
+  into account. Note that while @PQescapeStringConn@ does not surround the
   literal with quotes, this function does for the sake of symmetry with
   'quoteIdentifier'.
 
-  This function returns a `BSB.Buider` so that the result can be included in
+  This function returns a `BSB.Builder` so that the result can be included in
   a builder being constructed for the surrounding SQL command without making
-  an additional copy of the `BS.Bytestring` returned by LibPQ for the sake of
+  an additional copy of the `BS.ByteString` returned by LibPQ for the sake of
   adding the surrounding quotes.
 
 @since 1.0.0.0
@@ -377,8 +377,8 @@ quoteStringLiteral connection unquotedString = do
 
 {- |
   Escapes and quotes a string for use as an identifier within a SQL command
-  that will be execute on the given connection. This uses the
-  @PQescapeIdentifier@ function from libpq, which takes the character encoding
+  that will be executed on the given connection. This uses the
+  @PQescapeIdentifier@ function from LibPQ, which takes the character encoding
   of the connection into account and also applies the quotes.
 
   Although this function does not need to copy the `BS.ByteString` returned by
@@ -520,14 +520,14 @@ instance Exception ConnectionError
 -}
 data SqlExecutionError = SqlExecutionError
   { sqlExecutionErrorExecStatus :: Maybe LibPQ.ExecStatus
-  -- ^ The underlying LibPQ execution status
+  -- ^ The underlying LibPQ execution status.
   , sqlExecutionErrorMessage :: BS.ByteString
-  -- ^ Error message reported by PostgreSQL
+  -- ^ Error message reported by PostgreSQL.
   , sqlExecutionErrorSqlState :: Maybe BS.ByteString
   -- ^ Any SQL state value reported by PostgreSQL. This can be used to
-  -- programming determine what kind of error happening without needing to
-  -- parse the error message. See
-  -- https://www.postgresql.org/docs/current/errcodes-appendix.html
+  -- determine what kind of error happened without needing to parse the error
+  -- message. See
+  -- https://www.postgresql.org/docs/current/errcodes-appendix.html.
   , sqlExecutionErrorSqlQuery :: BS.ByteString
   -- ^ The SQL query that was being run when the error occurred.
   }

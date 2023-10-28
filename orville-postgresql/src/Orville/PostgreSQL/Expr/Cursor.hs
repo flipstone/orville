@@ -59,7 +59,7 @@ See PostgreSQL [cursor declare
 documentation](https://www.postgresql.org/docs/current/sql-declare.html) for
 more information.
 
-'DeclareExpr' provides' a 'RawSql.SqlExpression' instance. See
+'DeclareExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -72,8 +72,8 @@ newtype DeclareExpr
       RawSql.SqlExpression
     )
 
-{- | A smart constructor for setting up a 'DeclareExpr'. This, along with other functions provided
-   allow to more safely declare a cursor.
+{- | A smart constructor for setting up a 'DeclareExpr'. This, along with other functions provided,
+   allows users to more safely declare a cursor.
 
 @since 1.0.0.0
 -}
@@ -108,7 +108,7 @@ nonsequential fetches under some, but not all, circumstances.
 See PostgreSQL [cursor declare
 documentation](https://www.postgresql.org/docs/current/sql-declare.html) for more information.
 
-'ScrollExpr' provides' a 'RawSql.SqlExpression' instance. See
+'ScrollExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -139,14 +139,14 @@ noScroll =
 
 {- |
 'HoldExpr' is used to determine if a cursor should be available for use after
-the transaction that created it has been comitted. E.G.
+the transaction that created it has been committed. E.G.
 
 > WITH HOLD
 
 See PostgreSQL [cursor documentation](https://www.postgresql.org/docs/current/sql-declare.html) for
 more information.
 
-'HoldExpr' provides' a 'RawSql.SqlExpression' instance. See
+'HoldExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -183,7 +183,7 @@ withoutHold =
 See PostgreSQL [close documentation](https://www.postgresql.org/docs/current/sql-close.html) for
 more information.
 
-'HoldExpr' provides' a 'RawSql.SqlExpression' instance. See
+'HoldExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -196,7 +196,7 @@ newtype CloseExpr
       RawSql.SqlExpression
     )
 
-{- | A smart constructor for setting up a 'CloseExpr' either closing all cursors or the given named
+{- | A smart constructor for setting up a 'CloseExpr', either closing all cursors or the given named
    cursor.
 
 @since 1.0.0.0
@@ -225,7 +225,7 @@ newtype AllCursors
       RawSql.SqlExpression
     )
 
-{- | Specify closing all open cursors, for use with a 'CloseExpr'
+{- | Specify closing all open cursors, for use with a 'CloseExpr'.
 
 @since 1.0.0.0
 -}
@@ -235,7 +235,7 @@ allCursors =
 
 {- |
 'FetchExpr' corresponds to the SQL FETCH statement, for retrieving rows from a
-previously created cursor. E.G.
+previously-created cursor. E.G.
 
 > FETCH NEXT FOO
 

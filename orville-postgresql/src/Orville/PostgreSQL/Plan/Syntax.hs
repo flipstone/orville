@@ -30,9 +30,9 @@ findFooFamily = PlanSyntax.do $
   fooPets <- Plan.findAll fooPetTable fooIdField
 
   FooFamily
-    <$> Plan.use fooHeader
-    <*> Plan.use fooChildren
-    <*> Plan.use fooPets
+    \<$\> Plan.use fooHeader
+    \<*\> Plan.use fooChildren
+    \<*\> Plan.use fooPets
 @
 
 @since 1.0.0.0

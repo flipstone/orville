@@ -250,7 +250,7 @@ currentLocalTimestampDefault =
 {- |
   Coerces a 'DefaultValue' so that it can be used with field definitions of
   a different Haskell type. The coercion will always succeed, and is safe as
-  far as Haskell itself it concerned. As long as the 'DefaultValue' is used
+  far as Haskell itself is concerned. As long as the 'DefaultValue' is used
   with a column whose database type is the same as the one the 'DefaultValue'
   was originally intended for, everything will work as expected.
 
@@ -261,7 +261,7 @@ coerceDefaultValue (DefaultValue expression) =
   DefaultValue expression
 
 {- |
-  Returns database value expression for the default value.
+  Returns a database value expression for the default value.
 
 @since 1.0.0.0
 -}

@@ -45,7 +45,7 @@ import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, rowValueConstru
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a @WHERE@ clause restriction an a @SELECT@, @UPDATE@ or
+Type to represent a @WHERE@ clause restriction on a @SELECT@, @UPDATE@ or
 @DELETE@ statement. E.G.
 
 > WHERE (foo > 10)
@@ -73,7 +73,7 @@ whereClause booleanExpr =
     RawSql.fromString "WHERE " <> RawSql.toRawSql booleanExpr
 
 {- |
-Type to represent a SQL value expression that evaluates to a boolean and thereforce
+Type to represent a SQL value expression that evaluates to a boolean and therefore
 can used with boolean logic functions. E.G.
 
 > foo > 10
@@ -89,7 +89,7 @@ newtype BooleanExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'BooleanExpr' whose value the SQL literal @TRUE@ or @FALSE@
+  Constructs a 'BooleanExpr' whose value is the SQL literal @TRUE@ or @FALSE@
   depending on the argument given.
 
   @since 1.0.0.0
@@ -114,7 +114,7 @@ booleanValueExpression (BooleanExpr rawSql) =
 {- |
   The SQL @OR@ operator. The arguments will be surrounded with parentheses
   to ensure that the associativity of expression in the resulting SQL matches
-  the associtivity implied by this Haskell function.
+  the associativity implied by this Haskell function.
 
   @since 1.0.0.0
 -}
@@ -138,7 +138,7 @@ infixr 8 .||
 {- |
   The SQL @AND@ operator. The arguments will be surrounded with parentheses
   to ensure that the associativity of expression in the resulting SQL matches
-  the associtivity implied by this Haskell function.
+  the associativity implied by this Haskell function.
 
   @since 1.0.0.0
 -}
@@ -170,7 +170,7 @@ valueIn needle haystack =
   inPredicate needle (inValueList haystack)
 
 {- |
-  The SQL @IN@ operator. The result will be @TRUE@ if the given value
+  The SQL @NOT IN@ operator. The result will be @TRUE@ if the given value
   does not appear in the list of values given.
 
   @since 1.0.0.0
@@ -206,9 +206,9 @@ tupleNotIn needle haystack =
     (inValueList (fmap rowValueConstructor haystack))
 
 {- |
-  Lowel lever access to the the SQL @IN@ operator. This takes any
-  'ValueExpression' and 'InValuePredicate'. It is up to the caller to ensure
-  the expressions given makes sense together.
+  Lower-level access to the SQL @IN@ operator. This takes any 'ValueExpression'
+  and 'InValuePredicate'. It is up to the caller to ensure the expressions
+  given make sense together.
 
   @since 1.0.0.0
 -}
@@ -220,9 +220,9 @@ inPredicate predicand predicate =
       <> RawSql.toRawSql predicate
 
 {- |
-  Lowel lever access to the the SQL @NOT IN@ operator. This takes any
+  Lower-level access to the SQL @NOT IN@ operator. This takes any
   'ValueExpression' and 'InValuePredicate'. It is up to the caller to ensure
-  the expressions given makes sense together.
+  the expressions given make sense together.
 
   @since 1.0.0.0
 -}
@@ -250,7 +250,7 @@ newtype InValuePredicate
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs an 'InValuePredicate' from the given list of 'ValueExpression'
+  Constructs an 'InValuePredicate' from the given list of 'ValueExpression'.
 
   @since 1.0.0.0
 -}

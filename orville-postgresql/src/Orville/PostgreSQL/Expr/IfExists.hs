@@ -34,7 +34,7 @@ newtype IfExists
     )
 
 {- |
-A value of the SQL "IF EXISTS"
+A value of the SQL "IF EXISTS".
 
 @since 1.0.0.0
 -}

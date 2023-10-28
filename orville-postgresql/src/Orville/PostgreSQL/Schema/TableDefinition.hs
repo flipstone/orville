@@ -157,7 +157,7 @@ mkTableDefinitionWithoutKey name marshaller =
 
 {- |
   Annotates a 'TableDefinition' with a direction to drop columns if they are
-  found in the database. Orville does not drop columns during auto migration
+  found in the database. Orville does not drop columns during auto-migration
   unless they are explicitly requested to be dropped via 'dropColumns'.
 
   If you remove a reference to a column from the table's 'SqlMarshaller'
@@ -209,7 +209,7 @@ tableName =
   tableIdQualifiedName . i_tableIdentifier
 
 {- |
-  Sets the table's schema to the name in the given string, which will be
+  Sets the table's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a table has a schema name set, it will be
   included as a qualifier on the table name for all queries involving the
   table.
@@ -243,7 +243,7 @@ tableConstraints =
 {- |
   Retrieves all the table constraints that have been added to the table via
   'addTableConstraints'. This does NOT include any table constraints from the
-  table's 'SqlMarshaller'
+  table's 'SqlMarshaller'.
 
 @since 1.0.0.0
 -}
@@ -256,7 +256,7 @@ tableConstraintsFromTable =
 {- |
   Retrieves all the table constraints that were included in the table's
   'SqlMarshaller' when it was created. This does NOT include any table
-  constraints add via 'addTableConstraints'.
+  constraints added via 'addTableConstraints'.
 
 @since 1.0.0.0
 -}
@@ -279,7 +279,7 @@ tableConstraintsFromMarshaller =
 
   Note: If multiple constraints are added with the same
   'Orville.PostgreSQL.Schema.ConstraintMigrationKey', only the last one that is
-  added will be part of the 'TableDefinition'. Any previously added constraint
+  added will be part of the 'TableDefinition'. Any previously-added constraint
   with the same key is replaced by the new one.
 
 @since 1.0.0.0
@@ -314,7 +314,7 @@ tableIndexes =
 
   Note: If multiple indexes are added with the same 'IndexMigrationKey', only
   the last one that is added will be part of the 'TableDefinition'. Any
-  previously added index with the same key is replaced by the new one.
+  previously-added index with the same key is replaced by the new one.
 
 @since 1.0.0.0
 -}
@@ -332,7 +332,8 @@ addTableIndexes indexDefs tableDef =
       }
 
 {- |
-  Returns the primary key for the table, as defined at construction via 'mkTableDefinition'.
+  Returns the primary key for the table, as defined at construction via
+  'mkTableDefinition'.
 
 @since 1.0.0.0
 -}
@@ -342,7 +343,8 @@ tablePrimaryKey def =
     TableHasKey primaryKey -> primaryKey
 
 {- |
-  Returns the marshaller for the table, as defined at construction via 'mkTableDefinition'.
+  Returns the marshaller for the table, as defined at construction via
+  'mkTableDefinition'.
 
 @since 1.0.0.0
 -}
@@ -350,7 +352,8 @@ tableMarshaller :: TableDefinition key writeEntity readEntity -> AnnotatedSqlMar
 tableMarshaller = i_tableMarshaller
 
 {- |
-  Applies the provided function to the underlying 'SqlMarshaller' of the 'TableDefinition'
+  Applies the provided function to the underlying 'SqlMarshaller' of the
+  'TableDefinition'.
 
 @since 1.0.0.0
 -}
@@ -410,7 +413,7 @@ mkTablePrimaryKeyExpr tableDef =
 
 {- |
   When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
-  return all the columns in the given table definition.
+  return all the columns in the given 'TableDefinition'.
 
 @since 1.0.0.0
 -}
@@ -433,8 +436,8 @@ mkTableReturningClause returningOption tableDef =
 
 {- |
   Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
-  table when it is executed. A @RETURNING@ clause with either be included to
-  return the insert rows or not, depending on the 'ReturningOption' given.
+  table when it is executed. A @RETURNING@ clause will either be included to
+  return the inserted rows or not, depending on the 'ReturningOption' given.
 
 @since 1.0.0.0
 -}
@@ -465,7 +468,7 @@ mkInsertExpr returningOption tableDef entities =
   insert statement in the order that they appear in the given 'SqlMarshaller'.
 
   In normal circumstances you will want to build the complete insert statement
-  via 'mkInsertExpr', but this is exported in case you are a composing SQL
+  via 'mkInsertExpr', but this is exported in case you are composing SQL
   yourself and need the column list of an insert as a fragment.
 
 @since 1.0.0.0
@@ -484,7 +487,7 @@ mkInsertColumnList marshaller =
   'mkInsertColumnList').
 
   In normal circumstances you will want to build the complete insert statement
-  via 'mkInsertExpr', but this is exported in case you are a composing SQL
+  via 'mkInsertExpr', but this is exported in case you are composing SQL
   yourself and need the column list of an insert as a fragment.
 
 @since 1.0.0.0

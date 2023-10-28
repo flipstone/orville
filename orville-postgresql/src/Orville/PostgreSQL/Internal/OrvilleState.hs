@@ -66,7 +66,7 @@ data OrvilleState = OrvilleState
   }
 
 {- |
-  Get the connection pool being used for the 'OrvilleState'
+  Get the connection pool being used for the 'OrvilleState'.
 
 @since 1.0.0.0
 -}
@@ -75,8 +75,8 @@ orvilleConnectionPool =
   _orvilleConnectionPool
 
 {- |
-  INTERNAL: The 'ConnectionState' indicates whether Orville currently has a connection
-  open, and contains the connection if it does.
+  INTERNAL: The 'ConnectionState' indicates whether Orville currently has a
+  connection open, and contains the connection if it does.
 
 @since 1.0.0.0
 -}
@@ -86,7 +86,8 @@ orvilleConnectionState =
 
 {- |
   The 'ErrorDetailLevel' controls how much information Orville includes in
-  error messages it generates when data cannot be decoded rows in the database.
+  error messages it generates when data cannot be decoded from rows in the
+  database.
 
 @since 1.0.0.0
 -}
@@ -96,7 +97,7 @@ orvilleErrorDetailLevel =
 
 {- |
   Orville will call the transaction callback any time a transaction event
-  occurrs. You can register a callback with 'addTransactionCallback'.
+  occurs. You can register a callback with 'addTransactionCallback'.
 
 @since 1.0.0.0
 -}
@@ -106,7 +107,7 @@ orvilleTransactionCallback =
 
 {- |
   The SQL expression that Orville will use to begin a transaction. You can set
-  this via 'setBeginTransactionExpr' to have fine grained control over the
+  this via 'setBeginTransactionExpr' to have fine-grained control over the
   transaction parameters, such as isolation level.
 
 @since 1.0.0.0
@@ -134,10 +135,10 @@ orvilleSqlCommenterAttributes =
   in the order they are added.
 
   Note: There is no specialized error handling for these callbacks. This means
-  that if a callback raises an exception no further callbacks will be called
+  that if a callback raises an exception, no further callbacks will be called
   and the exception will propagate up until it is caught elsewhere. In
   particular, if an exception is raised by a callback upon opening the
-  transaction it will cause the transaction to be rolled-back the same as any
+  transaction, it will cause the transaction to be rolled-back the same as any
   other exception that might happen during the transaction. In general, we
   recommend only using callbacks that either raise no exceptions or can handle
   their own exceptions cleanly.
@@ -276,8 +277,8 @@ initialSavepoint =
   Savepoint 1
 
 {- |
-  Determines identifier for the next savepoint in a transaction after the
-  given saveponit>
+  Determines the identifier for the next savepoint in a transaction after the
+  given savepoint.
 
 @since 1.0.0.0
 -}
@@ -297,7 +298,7 @@ savepointNestingLevel (Savepoint n) = n
 {- |
   Describes an event in the lifecycle of a database transaction. You can use
   'addTransactionCallback' to register a callback to respond to these events.
-  The callback will be called after the event in question has been succesfully
+  The callback will be called after the event in question has been successfully
   executed.
 
 @since 1.0.0.0
@@ -450,7 +451,8 @@ setBeginTransactionExpr expr state =
     }
 
 {- |
-  Sets the SqlCommenterAttributes that Orville will then add to any following statement executions.
+  Sets the SqlCommenterAttributes that Orville will then add to any following
+  statement executions.
 
 @since 1.0.0.0
 -}

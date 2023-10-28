@@ -124,7 +124,7 @@ keys (Many ks _) =
   ks
 
 {- |
-  'elems' returns all the values that correspond the keys of the 'Many'. The
+  'elems' returns all the values that correspond to the keys of the 'Many'. The
   values will be returned in the same order that the keys were present at the
   time of creation, though if you truly care about this it's probably better to
   use 'lookup' to make that correspondence explicit.

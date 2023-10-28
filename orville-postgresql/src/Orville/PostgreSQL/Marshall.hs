@@ -7,7 +7,7 @@ Stability : Stable
 
 You can import "Orville.PostgreSQL.Marshall" to get access to all the functions
 related to marshalling Haskell values to and from their SQL representations.
-This includes a number of lowel-level items not exported by
+This includes a number of lower-level items not exported by
 "Orville.PostgreSQL" that give you more control (and therefore responsibility)
 over how the marshalling is performed.
 

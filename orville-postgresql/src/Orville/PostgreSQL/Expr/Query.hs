@@ -54,7 +54,7 @@ newtype QueryExpr
 
 {- |
   Builds a 'QueryExpr' from the given 'SelectClause', 'SelectList' and
-  'TableExpr'. The resulting 'QueryExpr' is suitable execution via the SQL
+  'TableExpr'. The resulting 'QueryExpr' is suitable for execution via the SQL
   execution functions in "Orville.PostgreSQL.Execution" and
   "Orville.PostgreSQL.Raw.RawSql".
 
@@ -190,17 +190,17 @@ newtype TableExpr
 @since 1.0.0.0
 -}
 tableExpr ::
-  -- | The list of tables to query from
+  -- | The list of tables to query from.
   TableReferenceList ->
-  -- | An optional @WHERE@ clause to limit the results returned
+  -- | An optional @WHERE@ clause to limit the results returned.
   Maybe WhereClause ->
-  -- | An optional @GROUP BY@ clause to group the result set rows
+  -- | An optional @GROUP BY@ clause to group the result set rows.
   Maybe GroupByClause ->
-  -- | An optional @ORDER BY@ clause to order the result set rows
+  -- | An optional @ORDER BY@ clause to order the result set rows.
   Maybe OrderByClause ->
-  -- | An optional @LIMIT@ to apply to the result set
+  -- | An optional @LIMIT@ to apply to the result set.
   Maybe LimitExpr ->
-  -- | An optional @OFFSET@ to apply to the result set
+  -- | An optional @OFFSET@ to apply to the result set.
   Maybe OffsetExpr ->
   TableExpr
 tableExpr

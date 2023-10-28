@@ -49,7 +49,7 @@ orderByClause expr = OrderByClause (RawSql.fromString "ORDER BY " <> RawSql.toRa
 
 {- |
 Type to represent a SQL order by expression (the part that follows the @ORDER
-BY@ in sql). E.G.
+BY@ in SQL). E.G.
 
 > foo, bar
 
@@ -80,9 +80,9 @@ appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
   OrderByExpr (a <> RawSql.commaSpace <> b)
 
 {- |
-Create a 'OrderByExpr' from some 'RawSql.RawSql' and a 'OrderByDirection'. Note
+Create an 'OrderByExpr' from some 'RawSql.RawSql' and a 'OrderByDirection'. Note
 that it is up to the caller to ensure that the given value can actually be used
-for a 'OrderByExpr'
+for an 'OrderByExpr'
 
 @since 1.0.0.0
 -}
@@ -90,7 +90,7 @@ orderByExpr :: RawSql.RawSql -> OrderByDirection -> OrderByExpr
 orderByExpr sql orderSql =
   OrderByExpr $ sql <> RawSql.space <> RawSql.toRawSql orderSql
 
-{- | Create a 'OrderByExpr' for 'ColumnName' and 'OrderByDirection' pairs, ensuring commas as
+{- | Create an 'OrderByExpr' for 'ColumnName' and 'OrderByDirection' pairs, ensuring commas as
   needed.
 
 @since 1.0.0.0

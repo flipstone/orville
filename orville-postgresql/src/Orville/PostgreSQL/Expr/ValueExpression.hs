@@ -72,7 +72,7 @@ columnReference = ValueExpression . RawSql.toRawSql
   Uses the given 'SqlValue' as a constant expression. The value will be passed
   as a statement parameter, not as a literal expression, so there is not need
   to worry about escaping. However, there are a few places (usually in DDL)
-  where PostgreSQL does not support values passed as paremeters where this
+  where PostgreSQL does not support values passed as parameters where this
   cannot be used.
 
   @since 1.0.0.0
@@ -112,7 +112,7 @@ functionCall functionName parameters =
       <> RawSql.rightParen
 
 {- |
-Type to represent the name of a name parameter in PostgreSQL function call.
+Type to represent the name of a name parameter in a PostgreSQL function call.
 E.G.
 
 > foo

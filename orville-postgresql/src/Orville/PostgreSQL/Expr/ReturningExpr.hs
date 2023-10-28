@@ -33,7 +33,7 @@ newtype ReturningExpr
 
 {- |
   Constructs a 'ReturningExpr' that returns the items given in the
-  'SelectList'. Essentialy this retults @RETURNING <SelectList items>@
+  'SelectList'. Essentialy this retults @RETURNING <SelectList items>@.
 
 @since 1.0.0.0
 -}

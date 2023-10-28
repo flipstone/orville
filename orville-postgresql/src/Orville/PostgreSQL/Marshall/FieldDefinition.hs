@@ -114,7 +114,7 @@ import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDef
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- |
-  'FieldDefinition' determines the SQL constsruction of a column in the
+  'FieldDefinition' determines the SQL construction of a column in the
   database, comprising the name, SQL type and whether the field is nullable.
   A 'FieldDefinition' is matched to a particular Haskell type, which it knows
   how to marshall to and from the database representation of SQL type for
@@ -228,7 +228,7 @@ fieldIsNotNullable field =
     NotNullGADT -> True
 
 {- |
-  A list a table constraints that will be included on any table that uses this
+  A list of table constraints that will be included on any table that uses this
   field definition.
 
 @since 1.0.0.0
@@ -252,7 +252,7 @@ fieldTableConstraints fieldDef =
 {- |
   Adds the given table constraints to the field definition. These constraints
   will then be included on any table where the field is used. The constraints
-  are passed a functions that will take the name of the field definition an
+  are passed a function that will take the name of the field definition and
   construct the constraints. This allows the
   'ConstraintDefinition.ConstraintDefinition's to use the correct name of the
   field in the case where 'setFieldName' is used after constraints are added.
@@ -282,9 +282,9 @@ addFieldTableConstraints constraintDefs fieldDef =
 @since 1.0.0.0
 -}
 addForeignKeyConstraint ::
-  -- | Identifier of the table referenced by the foreign key
+  -- | Identifier of the table referenced by the foreign key.
   TableIdentifier.TableIdentifier ->
-  -- | The field name that this field definition references in the foreign table
+  -- | The field name that this field definition references in the foreign table.
   FieldName ->
   FieldDefinition nullability a ->
   FieldDefinition nullability a
@@ -301,9 +301,9 @@ addForeignKeyConstraint foreignTableId foreignFieldName =
 @since 1.0.0.0
 -}
 addForeignKeyConstraintWithOptions ::
-  -- | Identifier of the table referenced by the foreign key
+  -- | Identifier of the table referenced by the foreign key.
   TableIdentifier.TableIdentifier ->
-  -- | The field name that this field definition references in the foreign table
+  -- | The field name that this field definition references in the foreign table.
   FieldName ->
   ConstraintDefinition.ForeignKeyOptions ->
   FieldDefinition nullability a ->
@@ -341,8 +341,8 @@ addUniqueConstraint fieldDef =
     addFieldTableConstraints [constraintToAdd] fieldDef
 
 {- |
-  Mashalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
-  representation and packages the resul as a 'Expr.ValueExression' so that
+  Marshalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
+  representation and packages the result as a 'Expr.ValueExpression' so that
   it can be easily used with other @Expr@ functions.
 
 @since 1.0.0.0
@@ -352,7 +352,7 @@ fieldValueToExpression field =
   Expr.valueExpression . fieldValueToSqlValue field
 
 {- |
-  Mashalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
+  Marshalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
   representation.
 
 @since 1.0.0.0
@@ -392,7 +392,7 @@ fieldColumnReference =
   Expr.columnReference . fieldColumnName
 
 {- |
-  Constructs the equivalant 'Expr.FieldDefinition' as a SQL expression,
+  Constructs the equivalent 'Expr.FieldDefinition' as a SQL expression,
   generally for use in DDL for creating columns in a table.
 
 @since 1.0.0.0
@@ -440,7 +440,7 @@ data NullabilityGADT nullability where
 
 {- |
 
-  'NotNull' is a value-less type used to track that a 'FieldDefinition'
+  'NotNull' is a valueless type used to track that a 'FieldDefinition'
   represents a field that is marked not-null in the database schema. See the
   'FieldNullability' type for the value-level representation of field nullability.
 
@@ -449,7 +449,7 @@ data NullabilityGADT nullability where
 data NotNull
 
 {- |
-  'Nullable' is a value-less type used to track that a 'FieldDefinition'
+  'Nullable' is a valueless type used to track that a 'FieldDefinition'
   represents a field that is marked nullable in the database schema. See the
   'FieldNullability' type for the value-level representation of field nullability.
 
@@ -464,7 +464,7 @@ data Nullable
 @since 1.0.0.0
 -}
 integerField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Int32
 integerField = fieldOfType SqlType.integer
@@ -476,7 +476,7 @@ integerField = fieldOfType SqlType.integer
 @since 1.0.0.0
 -}
 smallIntegerField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Int16
 smallIntegerField = fieldOfType SqlType.smallInteger
@@ -488,7 +488,7 @@ smallIntegerField = fieldOfType SqlType.smallInteger
 @since 1.0.0.0
 -}
 serialField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Int32
 serialField = fieldOfType SqlType.serial
@@ -500,7 +500,7 @@ serialField = fieldOfType SqlType.serial
 @since 1.0.0.0
 -}
 bigIntegerField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Int64
 bigIntegerField = fieldOfType SqlType.bigInteger
@@ -512,7 +512,7 @@ bigIntegerField = fieldOfType SqlType.bigInteger
 @since 1.0.0.0
 -}
 bigSerialField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Int64
 bigSerialField = fieldOfType SqlType.bigSerial
@@ -526,7 +526,7 @@ bigSerialField = fieldOfType SqlType.bigSerial
 @since 1.0.0.0
 -}
 doubleField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Double
 doubleField = fieldOfType SqlType.double
@@ -538,7 +538,7 @@ doubleField = fieldOfType SqlType.double
 @since 1.0.0.0
 -}
 booleanField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Bool
 booleanField = fieldOfType SqlType.boolean
@@ -551,7 +551,7 @@ booleanField = fieldOfType SqlType.boolean
 @since 1.0.0.0
 -}
 unboundedTextField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull T.Text
 unboundedTextField = fieldOfType SqlType.unboundedText
@@ -564,9 +564,9 @@ unboundedTextField = fieldOfType SqlType.unboundedText
 @since 1.0.0.0
 -}
 boundedTextField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
-  -- | Maximum length of text in the field
+  -- | Maximum length of text in the field.
   Int32 ->
   FieldDefinition NotNull T.Text
 boundedTextField name len = fieldOfType (SqlType.boundedText len) name
@@ -580,9 +580,9 @@ boundedTextField name len = fieldOfType (SqlType.boundedText len) name
 @since 1.0.0.0
 -}
 fixedTextField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
-  -- | Maximum length of text in the field
+  -- | Maximum length of text in the field.
   Int32 ->
   FieldDefinition NotNull T.Text
 fixedTextField name len = fieldOfType (SqlType.fixedText len) name
@@ -618,7 +618,7 @@ jsonbField = fieldOfType SqlType.jsonb
 @since 1.0.0.0
 -}
 dateField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Time.Day
 dateField = fieldOfType SqlType.date
@@ -630,7 +630,7 @@ dateField = fieldOfType SqlType.date
 @since 1.0.0.0
 -}
 utcTimestampField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Time.UTCTime
 utcTimestampField = fieldOfType SqlType.timestamp
@@ -642,7 +642,7 @@ utcTimestampField = fieldOfType SqlType.timestamp
 @since 1.0.0.0
 -}
 localTimestampField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull Time.LocalTime
 localTimestampField = fieldOfType SqlType.timestampWithoutZone
@@ -654,7 +654,7 @@ localTimestampField = fieldOfType SqlType.timestampWithoutZone
 @since 1.0.0.0
 -}
 uuidField ::
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull UUID.UUID
 uuidField = fieldOfType SqlType.uuid
@@ -669,9 +669,9 @@ uuidField = fieldOfType SqlType.uuid
 @since 1.0.0.0
 -}
 fieldOfType ::
-  -- | 'SqlType.SqlType' that represents the PostgreSQL data type for the field
+  -- | 'SqlType.SqlType' that represents the PostgreSQL data type for the field.
   SqlType.SqlType a ->
-  -- | Name of the field in the database
+  -- | Name of the field in the database.
   String ->
   FieldDefinition NotNull a
 fieldOfType sqlType name =
@@ -771,7 +771,7 @@ convertField conversion fieldDef =
 
 {- |
   A specialization of 'convertField' that can be used with types that implement
-  'Coere.Coercible'. This is particularly useful for newtype wrappers around
+  'Coerce.Coercible'. This is particularly useful for newtype wrappers around
   primitive types.
 
 @since 1.0.0.0
@@ -787,7 +787,7 @@ coerceField =
 {- |
   Sets a default value for the field. The default value will be added as part
   of the column definition in the database. Because the default value is
-  ultimately provided by the database this can be used to add a not-null column
+  ultimately provided by the database, this can be used to add a not-null column
   safely to an existing table as long as a reasonable default value is
   available to use.
 
@@ -1078,7 +1078,7 @@ fieldTupleNotIn fieldDefA fieldDefB values =
     (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
 
 {- |
-  Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two fields
+  Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two fields.
 
 @since 1.0.0.0
 -}
@@ -1093,7 +1093,7 @@ toSqlValueTuple fieldDefA fieldDefB (a, b) =
 
 {- |
   Constructs a field-based 'Expr.BooleanExpr' using a function that
-  builds a 'Expr.BooleanExpr'
+  builds a 'Expr.BooleanExpr'.
 
 @since 1.0.0.0
 -}

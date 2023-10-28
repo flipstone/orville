@@ -17,7 +17,7 @@ import Orville.PostgreSQL.Expr.Name (Qualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent the tables references in the @FROM@ clause of a @SELECT
+Type to represent the table's references in the @FROM@ clause of a @SELECT
 statement. E.G. just the
 
 > foo

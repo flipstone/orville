@@ -27,7 +27,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
-Type to represent the transaction a SQL @UPDATE@ statement. E.G.
+Type to represent a SQL @UPDATE@ statement. E.G.
 
 > UPDATE foo
 > SET id = 1
@@ -49,13 +49,13 @@ newtype UpdateExpr
   @since 1.0.0.0
 -}
 updateExpr ::
-  -- | The name of the table to be updated
+  -- | The name of the table to be updated.
   Qualified TableName ->
-  -- | The updates to be made to the table
+  -- | The updates to be made to the table.
   SetClauseList ->
-  -- | An optional where clause to limit the rows updated
+  -- | An optional where clause to limit the rows updated.
   Maybe WhereClause ->
-  -- | An optional returning clause to return data from the updated rows
+  -- | An optional returning clause to return data from the updated rows.
   Maybe ReturningExpr ->
   UpdateExpr
 updateExpr tableName setClause maybeWhereClause maybeReturningExpr =
@@ -71,7 +71,7 @@ updateExpr tableName setClause maybeWhereClause maybeReturningExpr =
         ]
 
 {- |
-Type to represent the list of updates to be made in a @UPDATE@ statament. E.G.
+Type to represent the list of updates to be made in an @UPDATE@ statement. E.G.
 
 > foo = 1,
 > bar = 2
@@ -87,7 +87,7 @@ newtype SetClauseList
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'SetClauseList' with the specified set clauses
+  Constructs a 'SetClauseList' with the specified set clauses.
 
   @since 1.0.0.0
 -}
@@ -96,7 +96,7 @@ setClauseList =
   SetClauseList . RawSql.intercalate RawSql.comma
 
 {- |
-Type to represent a single updates to be made in a @UPDATE@ statament. E.G.
+Type to represent a single update to be made in an @UPDATE@ statement. E.G.
 
 > foo = 1
 

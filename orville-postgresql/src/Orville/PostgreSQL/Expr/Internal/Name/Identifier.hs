@@ -56,7 +56,7 @@ identifierFromBytes :: B8.ByteString -> Identifier
 identifierFromBytes =
   Identifier . RawSql.identifier
 
-{- | This class aids in giving additional polymorphism and so that many different identifiers can be
+{- | This class aids in giving additional polymorphism so that many different identifiers can be
 created without being forced to only use the `Identifier` type.
 
 @since 1.0.0.0

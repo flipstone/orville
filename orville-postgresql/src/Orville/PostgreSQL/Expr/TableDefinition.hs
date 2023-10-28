@@ -64,13 +64,13 @@ newtype CreateTableExpr
   @since 1.0.0.0
 -}
 createTableExpr ::
-  -- | The name to be use for the table
+  -- | The name to be used for the table.
   Qualified TableName ->
-  -- | The columns to include in the table
+  -- | The columns to include in the table.
   [ColumnDefinition] ->
-  -- | A primary key expression for the table
+  -- | A primary key expression for the table.
   Maybe PrimaryKeyExpr ->
-  -- | Any table constraints to include with the table
+  -- | Any table constraints to include with the table.
   [TableConstraint] ->
   CreateTableExpr
 createTableExpr tableName columnDefs mbPrimaryKey constraints =
@@ -99,7 +99,7 @@ createTableExpr tableName columnDefs mbPrimaryKey constraints =
         ]
 
 {- |
-Type to represent a the primary key of a table. E.G.
+Type to represent the primary key of a table. E.G.
 
 > PRIMARY KEY (id)
 
@@ -114,7 +114,7 @@ newtype PrimaryKeyExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'PrimaryKeyExpr' with the given columns
+  Constructs a 'PrimaryKeyExpr' with the given columns.
 
   @since 1.0.0.0
 -}
@@ -129,7 +129,7 @@ primaryKeyExpr columnNames =
       ]
 
 {- |
-Type to represent a @ALTER TABLE@ statement. E.G.
+Type to represent an @ALTER TABLE@ statement. E.G.
 
 > ALTER TABLE foo ADD COLUMN bar integer
 
@@ -222,9 +222,9 @@ dropConstraint constraintName =
   @since 1.0.0.0
 -}
 alterColumnType ::
-  -- | The name of the column whose type willbe altered
+  -- | The name of the column whose type will be altered.
   ColumnName ->
-  -- | The new type to use for the column
+  -- | The new type to use for the column.
   DataType ->
   -- | An optional 'UsingClause' to indicate to the database how data from the
   -- old type should be converted to the new type.
@@ -302,7 +302,7 @@ newtype AlterNotNull
   deriving (RawSql.SqlExpression)
 
 {- |
-  Sets the column to not null via @SET NOT NULL@
+  Sets the column to not null via @SET NOT NULL@.
 
   @since 1.0.0.0
 -}
@@ -311,7 +311,7 @@ setNotNull =
   AlterNotNull $ RawSql.fromString "SET NOT NULL"
 
 {- |
-  Sets the column to allow null via @DROP NOT NULL@
+  Sets the column to allow null via @DROP NOT NULL@.
 
   @since 1.0.0.0
 -}
@@ -372,7 +372,7 @@ newtype DropTableExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs an 'DropTableExpr' that will drop the specified table.
+  Constructs a 'DropTableExpr' that will drop the specified table.
 
   @since 1.0.0.0
 -}

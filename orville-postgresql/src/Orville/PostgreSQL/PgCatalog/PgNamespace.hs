@@ -39,7 +39,7 @@ data PgNamespace = PgNamespace
   }
 
 {- |
-  A Haskell type for the name of a namespace
+  A Haskell type for the name of a namespace.
 
 @since 1.0.0.0
 -}
@@ -48,7 +48,7 @@ newtype NamespaceName
   deriving (Show, Eq, Ord, String.IsString)
 
 {- |
-  Convert a 'NamespaceName to a plain 'String'
+  Convert a 'NamespaceName' to a plain 'String'.
 
 @since 1.0.0.0
 -}
@@ -58,7 +58,7 @@ namespaceNameToString (NamespaceName text) =
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
-  @pg_catalog.pg_namespace@ table
+  @pg_catalog.pg_namespace@ table.
 
 @since 1.0.0.0
 -}
@@ -77,7 +77,7 @@ pgNamespaceMarshaller =
     <*> Orville.marshallField pgNamespaceName namespaceNameField
 
 {- |
-  The @nspname@ column of the @pg_catalog.pg_namespace@ table
+  The @nspname@ column of the @pg_catalog.pg_namespace@ table.
 
 @since 1.0.0.0
 -}

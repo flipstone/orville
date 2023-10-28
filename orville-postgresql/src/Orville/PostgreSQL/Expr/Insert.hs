@@ -99,7 +99,7 @@ insertColumnList columnNames =
       <> RawSql.rightParen
 
 {- |
-Type to represent the SQL for the source of data for an insert statement E.G.
+Type to represent the SQL for the source of data for an insert statement. E.G.
 
 > VALUES ('Bob',32),('Cindy',33)
 
@@ -117,7 +117,7 @@ newtype InsertSource
     )
 
 {- | Create an 'InsertSource' for the given 'RowValues'. This ensures that all input values are used
-as parameters and comma separated in the generated SQL.
+as parameters and comma-separated in the generated SQL.
 
 @since 1.0.0.0
 -}
@@ -128,7 +128,7 @@ insertRowValues rows =
       <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql rows)
 
 {- | Create an 'InsertSource' for the given 'SqlValue's. This ensures that all input values are used
-as parameters and comma separated in the generated SQL.
+as parameters and comma-separated in the generated SQL.
 
 @since 1.0.0.0
 -}
@@ -156,7 +156,7 @@ newtype RowValues
     )
 
 {- | Create a 'RowValues' for the given 'SqlValue's. This ensures that all input values are used as
-parameters and comma separated in the generated SQL.
+parameters and comma-separated in the generated SQL.
 
 @since 1.0.0.0
 -}

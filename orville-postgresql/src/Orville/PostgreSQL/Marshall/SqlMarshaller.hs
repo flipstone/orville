@@ -9,9 +9,9 @@ Stability : Stable
 This module provides functions for constructing a mapping between Haskell data
 types and SQL column schemas. The 'SqlMarshaller' that represents this mapping
 can be used to serialize Haskell values both to and from SQL column sets. In
-most cases you construct a 'SqlMarshaller' as part of building you
+most cases, you construct a 'SqlMarshaller' as part of building your
 'Orville.PostgreSQL.Schema.TableDefinition' and Orville handles the rest. In
-other cases you might use a 'SqlMarshaller' with a lower-level Orville
+other cases, you might use a 'SqlMarshaller' with a lower-level Orville
 function. For instance, to decode the result set of a custom SQL query.
 
 @since 1.0.0.0
@@ -71,7 +71,7 @@ import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDef
   An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
   annotations which cannot necessarily be determined from the data in the
   marshaller itself. In particular, it includes the names of fields that can be
-  used to identify a row in the database when an error is encoutered during
+  used to identify a row in the database when an error is encountered during
   decoding.
 
   Normally you will not need to interact with this type directly -- the
@@ -129,8 +129,8 @@ mapSqlMarshaller f (AnnotatedSqlMarshaller rowIdFields marshaller) =
   AnnotatedSqlMarshaller rowIdFields (f marshaller)
 
 {- |
-  'SqlMarshaller' is how we group the lowest level translation of single fields
-  into a higher level marshalling of full SQL records into Haskell records.
+  'SqlMarshaller' is how we group the lowest-level translation of single fields
+  into a higher-level marshalling of full SQL records into Haskell records.
   This is a flexible abstraction that allows us to ultimately model SQL tables
   and work with them as potentially nested Haskell records. We can then
   "marshall" the data as we want to model it in SQL and Haskell.
@@ -138,23 +138,23 @@ mapSqlMarshaller f (AnnotatedSqlMarshaller rowIdFields marshaller) =
 @since 1.0.0.0
 -}
 data SqlMarshaller a b where
-  -- | Our representation of 'pure' in the 'Applicative' sense
+  -- | Our representation of 'pure' in the 'Applicative' sense.
   MarshallPure :: b -> SqlMarshaller a b
-  -- | Representation of application like '<*>' from 'Applicative'
+  -- | Representation of application like '<*>' from 'Applicative'.
   MarshallApply :: SqlMarshaller a (b -> c) -> SqlMarshaller a b -> SqlMarshaller a c
-  -- | Nest an arbitrary function, this is used when modeling a SQL table as nested Haskell records
+  -- | Nest an arbitrary function; this is used when modeling a SQL table as nested Haskell records.
   MarshallNest :: (a -> b) -> SqlMarshaller b c -> SqlMarshaller a c
-  -- | Marshall a SQL column using the given 'FieldDefinition'
+  -- | Marshall a SQL column using the given 'FieldDefinition'.
   MarshallField :: FieldDefinition nullability a -> SqlMarshaller a a
   -- | Marshall a SQL expression on selecting using the given 'SyntheticField'
   -- to generate selects. SyntheticFields are implicitly read-only, as they
-  -- do not represent a column that can be inserted in to.
+  -- do not represent a column that can be inserted into.
   MarshallSyntheticField :: SyntheticField a -> SqlMarshaller b a
-  -- | Tag a maybe-mapped marshaller so we don't map it twice
+  -- | Tag a maybe-mapped marshaller so we don't map it twice.
   MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)
-  -- | Marshall a column with a possibility of error
+  -- | Marshall a column with a possibility of error.
   MarshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
-  -- | Marshall a column that is read-only, like auto-incrementing ids
+  -- | Marshall a column that is read-only, like auto-incrementing ids.
   MarshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
 
 instance Functor (SqlMarshaller a) where
@@ -220,8 +220,8 @@ marshallerTableConstraints marshaller =
 
 {- |
   Represents a primitive entry in a 'SqlMarshaller'. This type is used with
-  'foldMarshallerFields' to provided the entry from the mashaller to the
-  folding function to be incorporate in the result of the fold.
+  'foldMarshallerFields' to provided the entry from the marshaller to the
+  folding function to be incorporated in the result of the fold.
 
 @since 1.0.0.0
 -}
@@ -258,9 +258,9 @@ collectFromField readOnlyColumnOption fromField entry results =
       results
 
 {- |
-  Uses the field defintions in the marshaller to construct SQL expressions
-  that will set columns of the field defintions to their corresponding value
-  found in the Haskell @writeEntity@  value.
+  Uses the field definitions in the marshaller to construct SQL expressions
+  that will set columns of the field definitions to their corresponding values
+  found in the Haskell @writeEntity@ value.
 
 @since 1.0.0.0
 -}
@@ -295,7 +295,7 @@ collectSetClauses entity entry clauses =
       clauses
 
 {- |
-  Specifies whether read-only fields should be included when the function
+  Specifies whether read-only fields should be included when using functions
   such as 'collectFromField'.
 
 @since 1.0.0.0
@@ -358,11 +358,11 @@ foldMarshallerFieldsPart marshaller getPart currentResult addToResult =
       foldMarshallerFieldsPart m Nothing currentResult addToResult
 
 {- |
-  Decodes all the rows found in a execution result at once. The first row that
+  Decodes all the rows found in an execution result at once. The first row that
   fails to decode will return the 'MarshallError.MarshallErrorDetails' that
   results, otherwise all decoded rows will be returned.
 
-  Note that this function loads are decoded rows into memory at once, so it
+  Note that this function loads all decoded rows into memory at once, so it
   should only be used with result sets that you know will fit into memory.
 
 @since 1.0.0.0
@@ -387,7 +387,7 @@ marshallResultFromSql errorDetailLevel marshallerWithMeta result =
   while decoding a row, the 'RowIdentityExtractor' will be used to extract
   values to identify the row in the error details.
 
-  Note that this function loads are decoded rows into memory at once, so it
+  Note that this function loads all decoded rows into memory at once, so it
   should only be used with result sets that you know will fit into memory.
 
 @since 1.0.0.0
@@ -462,7 +462,7 @@ decodeRow errorDetailLevel (RowSource source) (RowIdentityExtractor getRowId) ro
 {- |
   A 'RowSource' can fetch and decode rows from a database result set. Using
   a 'RowSource' gives random access to the rows in the result set, only
-  attempting to decode them when they are requested by the use via 'decodeRow'.
+  attempting to decode them when they are requested by the user via 'decodeRow'.
 
   Note that even though the rows are not decoded into Haskell until 'decodeRow'
   is called, all the rows returned from the query are held in memory on the
@@ -504,7 +504,7 @@ constRowSource =
 
 {- |
   Applies a function that will be decoded from the result set to another
-  value decode from the result set.
+  value decoded from the result set.
 
 @since 1.0.0.0
 -}
@@ -731,8 +731,8 @@ newtype RowIdentityExtractor
 
 {- |
   Constructs a 'RowIdentityExtractor' that will extract values for the given
-  fields from the result set to indentify rows in decoding errors. Any of the
-  named fields that are missing from the result set not be included in the
+  fields from the result set to identify rows in decoding errors. Any of the
+  named fields that are missing from the result set will not be included in the
   extracted row identity.
 
 @since 1.0.0.0
@@ -770,8 +770,8 @@ mkRowIdentityExtractor fields result =
 
 {- |
   Builds a 'SqlMarshaller' that maps a single field of a Haskell entity to
-  a single column in the database. That value to store in the database will
-  be retried from the entity using a provided accessor function. This function
+  a single column in the database. That value to store in the database will be
+  retrieved from the entity using a provided accessor function. This function
   is intended to be used inside of a stanza of 'Applicative' syntax that will
   pass values read from the database to a constructor function to rebuild the
   entity containing the field, like so:
@@ -783,8 +783,8 @@ mkRowIdentityExtractor fields result =
   fooMarshaller :: SqlMarshaller Foo Foo
   fooMarshaller =
     Foo
-      <$> marshallField bar (integerField "bar")
-      <*> marshallField baz (unboundedTextField "baz")
+      \<$\> marshallField bar (integerField "bar")
+      \<*\> marshallField baz (unboundedTextField "baz")
 
   @
 
@@ -812,7 +812,7 @@ marshallField accessor fieldDef =
   fooMarshaller :: SqlMarshaller Void AgeCheck
   fooMarshaller =
     AgeCheck
-      <*> Orville.marshallSyntheticField atLeast21Field
+      \<*\> Orville.marshallSyntheticField atLeast21Field
 
   atLeast21Field :: SyntheticField Bool
   atLeast21Field =
@@ -854,14 +854,14 @@ marshallSyntheticField =
   personMarshaller :: SqlMarshaller Person Person
   personMarshaller =
     Person
-      <$> marshallField personId personIdField
-      <*> marshallNested personName nameMarshaller
+      \<$\> marshallField personId personIdField
+      \<*\> marshallNested personName nameMarshaller
 
   nameMarshaller :: SqlMarshaller Name Name
   nameMarshaller =
     Name
-      <$> marshallField firstName firstNameField
-      <*> marshallField lastName lastNameField
+      \<$\> marshallField firstName firstNameField
+      \<*\> marshallField lastName lastNameField
   @
 
 @since 1.0.0.0
@@ -956,7 +956,7 @@ marshallReadOnly = MarshallReadOnly
 
 {- |
   A version of 'marshallField' that uses 'marshallReadOnly' to make a single
-  read-only field. You will usually use this in conjuction with a
+  read-only field. You will usually use this in conjunction with a
   'FieldDefinition' like @serialField@ where the value is populated by the
   database.
 

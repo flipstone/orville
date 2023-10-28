@@ -30,7 +30,7 @@ Represent a complete definition of a column. E.G.
 
 > foo INTEGER
 
-'ColumnDefinition' provides' a 'RawSql.SqlExpression' instance. See
+'ColumnDefinition' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -43,18 +43,18 @@ newtype ColumnDefinition
       RawSql.SqlExpression
     )
 
-{- | Smart constructor for ensuring a 'ColumnDefinition' is setup correctly.
+{- | Smart constructor for ensuring a 'ColumnDefinition' is set up correctly.
 
 @since 1.0.0.0
 -}
 columnDefinition ::
   -- | The name the resulting column should have.
   ColumnName ->
-  -- | The SQL type of the column
+  -- | The SQL type of the column.
   DataType ->
-  -- | The constraint on the column if any
+  -- | The constraint on the column, if any.
   Maybe ColumnConstraint ->
-  -- | The default value for the column if any
+  -- | The default value for the column, if any.
   Maybe ColumnDefault ->
   ColumnDefinition
 columnDefinition columnName dataType maybeColumnConstraint maybeColumnDefault =
@@ -72,7 +72,7 @@ Represent constraints, such as nullability, on a column. E.G.
 
 > NOT NULL
 
-'ColumnConstraint' provides' a 'RawSql.SqlExpression' instance. See
+'ColumnConstraint' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
@@ -119,7 +119,7 @@ newtype ColumnDefault
       RawSql.SqlExpression
     )
 
-{- | Given a 'ValueExpression' use that as a 'ColumnDefault'. This is the preferred path to creating a
+{- | Given a 'ValueExpression', use that as a 'ColumnDefault'. This is the preferred path to creating a
    column default. Note that it is up to the caller to ensure the 'ValueExpression' makes sense for
    the resulting 'ColumnDefinition' this will be a part of.
 

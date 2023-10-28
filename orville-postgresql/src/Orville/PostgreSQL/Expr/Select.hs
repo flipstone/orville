@@ -19,7 +19,7 @@ where
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent the @SELECT@ part of SQL query E.G.
+Type to represent the @SELECT@ part of a SQL query. E.G.
 
 > SELECT
 
@@ -46,7 +46,7 @@ selectClause :: SelectExpr -> SelectClause
 selectClause expr = SelectClause (RawSql.fromString "SELECT " <> RawSql.toRawSql expr)
 
 {- |
-Type to represent the any expression modifying the @SELECT@ part of a SQL. E.G.
+Type to represent any expression modifying the @SELECT@ part of a SQL. E.G.
 
 > DISTINCT
 
@@ -60,7 +60,7 @@ newtype SelectExpr = SelectExpr RawSql.RawSql
 
 {- |
   A simple value type used to indicate that a @SELECT@ should be distinct when
-  constructing a 'SelectExpr'
+  constructing a 'SelectExpr'.
 
 @since 1.0.0.0
 -}
@@ -68,7 +68,7 @@ data Distinct = Distinct
 
 {- |
   Constructs a 'SelectExpr' that may or may not make the @SELECT@ distinct,
-  dependending on whether 'Just Distinct' is passed or not.
+  depending on whether 'Just Distinct' is passed or not.
 
 @since 1.0.0.0
 -}

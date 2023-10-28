@@ -30,7 +30,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
 Type to represent a table constraint that would be part of a @CREATE TABLE@ or
-@ALTER TABLE@ statement. For instances, the @UNIQUE@ constraint in
+@ALTER TABLE@ statement. For instance, the @UNIQUE@ constraint in
 
 > CREATE TABLE FOO
 >  ( id integer
@@ -111,7 +111,7 @@ setDefaultExpr :: ForeignKeyActionExpr
 setDefaultExpr = ForeignKeyActionExpr $ RawSql.fromString "SET DEFAULT"
 
 {- |
-Type to represent an foreign key update action on a @FOREIGN KEY@ constraint. E.G.
+Type to represent a foreign key update action on a @FOREIGN KEY@ constraint. E.G.
 the @ON UPDATE RESTRICT@ in
 
 > FOREIGN KEY (foo_id) REFERENCES foo (id) ON UPDATE RESTRICT
@@ -127,7 +127,7 @@ newtype ForeignKeyUpdateActionExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'ForeignKeyActionExpr' that use the given 'ForeignKeyActionExpr'
+  Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
   in an @ON UPDATE@ clause for a foreign key.
 
   @since 1.0.0.0
@@ -140,7 +140,7 @@ foreignKeyUpdateActionExpr action =
       <> RawSql.toRawSql action
 
 {- |
-Type to represent an foreign key update action on a @FOREIGN KEY@ constraint. E.G.
+Type to represent a foreign key update action on a @FOREIGN KEY@ constraint. E.G.
 the @ON DELETE RESTRICT@ in
 
 > FOREIGN KEY (foo_id) REFERENCES foo (id) ON DELETE RESTRICT
@@ -156,7 +156,7 @@ newtype ForeignKeyDeleteActionExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'ForeignKeyActionExpr' that use the given 'ForeignKeyActionExpr'
+  Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
   in an @ON UPDATE@ clause for a foreign key.
 
   @since 1.0.0.0
@@ -174,15 +174,15 @@ foreignKeyDeleteActionExpr action =
   @since 1.0.0.0
 -}
 foreignKeyConstraint ::
-  -- | The names of the columns in the source table that form the foreign key
+  -- | The names of the columns in the source table that form the foreign key.
   NonEmpty ColumnName ->
-  -- | The table of the table that the foreign key references
+  -- | The name of the table that the foreign key references.
   Qualified TableName ->
-  -- | The names of the columns in the foreign table that the foreign key references
+  -- | The names of the columns in the foreign table that the foreign key references.
   NonEmpty ColumnName ->
-  -- | An optional @ON UPDATE@ foreign key action to perform
+  -- | An optional @ON UPDATE@ foreign key action to perform.
   Maybe ForeignKeyUpdateActionExpr ->
-  -- | An optional @ON DELETE@ foreign key action to perform
+  -- | An optional @ON DELETE@ foreign key action to perform.
   Maybe ForeignKeyDeleteActionExpr ->
   TableConstraint
 foreignKeyConstraint columnNames foreignTableName foreignColumnNames mbUpdateAction mbDeleteAction =

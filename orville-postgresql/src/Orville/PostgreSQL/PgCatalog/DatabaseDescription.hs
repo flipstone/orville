@@ -101,7 +101,7 @@ data RelationDescription = RelationDescription
   }
 
 {- |
-  Find an attribute by name from the 'RelationDescription'
+  Find an attribute by name from the 'RelationDescription'.
 
 @since 1.0.0.0
 -}
@@ -113,7 +113,7 @@ lookupAttribute key =
   Map.lookup key . relationAttributes
 
 {- |
-  Find an attribute default from the 'RelationDescription'
+  Find an attribute default from the 'RelationDescription'.
 
 @since 1.0.0.0
 -}
@@ -162,7 +162,7 @@ data IndexDescription = IndexDescription
   }
 
 {- |
-  A description of an index member in the PostgreSQL database. If they member
+  A description of an index member in the PostgreSQL database. If the member
   is a simple attribute, the 'PgAttribute' for that is provided. If it is an
   index over an expression, no further description is currently provided.
 

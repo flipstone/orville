@@ -5,9 +5,9 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-This module provides function that can be used to implement
+This module provides functions that can be used to implement
 'Orville.PostgreSQL.MonadOrvilleControl' for monads that implement
-'UL.MonadUnliftIO'. For example,
+'UL.MonadUnliftIO'. For example:
 
 @
 module MyMonad
@@ -40,7 +40,7 @@ where
 import qualified Control.Monad.IO.Unlift as UL
 
 {- |
-  liftWithConnectionViaUnliftIO can be use as the implementation of
+  'liftWithConnectionViaUnliftIO' can be used as the implementation of
   'Orville.PostgreSQL.liftWithConnection' for
   'Orville.PostgreSQL.MonadOrvilleControl' when the 'Monad' implements
   'UL.MonadUnliftIO'.
@@ -56,7 +56,7 @@ liftWithConnectionViaUnliftIO ioWithConn action =
   UL.withRunInIO $ \runInIO -> ioWithConn (runInIO . action)
 
 {- |
-  liftCatchViaUnliftIO can be use as the implementation of
+  'liftCatchViaUnliftIO' can be used as the implementation of
   'Orville.PostgreSQL.liftCatch' for 'Orville.PostgreSQL.MonadOrvilleControl'
   when the 'Monad' implements 'UL.MonadUnliftIO'.
 
@@ -76,8 +76,8 @@ liftCatchViaUnliftIO ioCatch action handler = do
       (\ex -> UL.unliftIO unlio (handler ex))
 
 {- |
-  liftMaskViaUnliftIO can be use as the implementation of
-  'Orville.PostgreSQL.liftMask for 'Orville.PostgreSQL.MonadOrvilleControl'
+  'liftMaskViaUnliftIO' can be used as the implementation of
+  'Orville.PostgreSQL.liftMask' for 'Orville.PostgreSQL.MonadOrvilleControl'
   when the 'Monad' implements 'UL.MonadUnliftIO'.
 
   @since 1.0.0.0

@@ -95,7 +95,7 @@ data SqlType a = SqlType
   -- an error if the conversion is impossible. Otherwise it should return
   -- a 'Right' of the corresponding @a@ value.
   , sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
-  -- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pesudo types that
+  -- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pseudo-types that
   -- create an implicit default value. This flag tells Orville's auto-migration
   -- logic to ignore the default value rather than drop it as it normally would.
   }
@@ -189,8 +189,8 @@ smallInteger =
     }
 
 {- |
-  'double' defines a floating point numeric type. This corresponds to the "DOUBLE
-  PRECISION" type in SQL.
+  'double' defines a floating point numeric type. This corresponds to the
+  "DOUBLE PRECISION" type in SQL.
 
 @since 1.0.0.0
 -}
@@ -225,7 +225,7 @@ boolean =
     }
 
 {- |
-  'unboundedText' defines a unbounded length text field type. This corresponds to a
+  'unboundedText' defines an unbounded length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -401,7 +401,7 @@ jsonb =
 
 {- |
   'oid' corresponds to the type used in PostgreSQL for identifying system
-  objects
+  objects.
 
 @since 1.0.0.0
 -}
@@ -419,7 +419,7 @@ oid =
 
 {- |
   'foreignRefType' creates a 'SqlType' suitable for columns that will be
-  foreign keys referencing a column of the given 'SqlType'. For most types the
+  foreign keys referencing a column of the given 'SqlType'. For most types, the
   underlying SQL type will be identical, but for special types (such as
   auto-incrementing primary keys), the type constructed by 'foreignRefType' will
   have a regular underlying SQL type. Each 'SqlType' definition must specify any
@@ -436,7 +436,7 @@ foreignRefType sqlType =
 
 {- |
   'tryConvertSqlType' changes the Haskell type used by a 'SqlType' which
-  changing the column type that will be used in the database schema. The
+  changes the column type that will be used in the database schema. The
   functions given will be used to convert the now Haskell type to and from the
   original type when reading and writing values from the database. When reading
   an @a@ value from the database, the conversion function should produce 'Left'

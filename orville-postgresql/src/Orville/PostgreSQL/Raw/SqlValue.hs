@@ -4,7 +4,7 @@ Copyright : Flipstone Technology Partners 2023
 License   : MIT
 Stability : Stable
 
-The funtions in this module are named with the intent that it is imported
+The functions in this module are named with the intent that it is imported
 qualified as 'SqlValue'.
 
 @since 1.0.0.0
@@ -70,9 +70,9 @@ import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
 
 {- |
   'SqlValue' represents a value that is in encoded format for use with LibPQ.
-  It is used both for values passed to LibPQ and values parse from LibPQ. The
-  conversions functions in "Orville.PostgreSQL.Raw.SqlValue" can be used
-  to convert to and from the value.
+  It is used both for values passed to LibPQ and values parsed from LibPQ. The
+  conversion functions in "Orville.PostgreSQL.Raw.SqlValue" can be used to
+  convert to and from the value.
 
 @since 1.0.0.0
 -}
@@ -82,7 +82,7 @@ data SqlValue
   deriving (Eq)
 
 {- |
-  Checks whether the 'SqlValue' represents a sql NULL value in the database.
+  Checks whether the 'SqlValue' represents a SQL NULL value in the database.
 
 @since 1.0.0.0
 -}
@@ -93,8 +93,8 @@ isSqlNull sqlValue =
     SqlNull -> True
 
 {- |
-  A value of 'SqlValue' that will be interpreted as a sql NULL value when
-  pasesed to the database.
+  A value of 'SqlValue' that will be interpreted as a SQL NULL value when
+  passed to the database.
 
 @since 1.0.0.0
 -}
@@ -105,8 +105,8 @@ sqlNull =
 {- |
   Converts a 'SqlValue' to its underlying raw bytes as it will be represented
   when sent to the database. The output should be recognizable as similar to
-  to values you would write in query. If the value represents a sql NULL
-  value, 'Nothing' is returned
+  values you would write in a query. If the value represents a SQL NULL value,
+  'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -119,12 +119,12 @@ toPgValue sqlValue =
       Nothing
 
 {- |
-  Creates a 'SqlValue' from a raw byte string as if the bytes had returned
-  by the database. This function does not interpret the bytes in any way,
-  but the using decode functions on them might fail depending on whether the
-  bytes can be parsed as the requested type.
+  Creates a 'SqlValue' from a raw bytestring as if the bytes had been returned
+  by the database. This function does not interpret the bytes in any way, but
+  using decode functions on them might fail depending on whether the bytes can
+  be parsed as the requested type.
 
-  Note: A value to represent a sql NULL cannot be constructed using this
+  Note: A value to represent a SQL NULL cannot be constructed using this
   function. See 'fromRawBytesNullable' for how to represent a nullable
   raw value.
 
@@ -135,9 +135,9 @@ fromRawBytes =
   SqlValue . PgTextFormatValue.fromByteString
 
 {- |
-  Creates a 'SqlValue' from a raw byte string. If 'Nothing' is specified as the
+  Creates a 'SqlValue' from a raw bytestring. If 'Nothing' is specified as the
   input parameter then the resulting 'SqlValue' will represent a NULL value in
-  sql. Otherwise the bytes given are used in the same way as 'fromRawBytes'
+  SQL. Otherwise, the bytes given are used in the same way as 'fromRawBytes'.
 
 @since 1.0.0.0
 -}
@@ -146,7 +146,7 @@ fromRawBytesNullable =
   maybe sqlNull fromRawBytes
 
 {- |
-  Encodes an 'Int8' value for usage with database
+  Encodes an 'Int8' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -155,7 +155,7 @@ fromInt8 =
   fromBSBuilderWithNoNULs BSB.int8Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Int8' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int8' value. If decoding fails,
   'Nothing' is returned.
 
 @since 1.0.0.0
@@ -165,7 +165,7 @@ toInt8 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Int16' value for usage with database
+  Encodes an 'Int16' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -174,8 +174,8 @@ fromInt16 =
   fromBSBuilderWithNoNULs BSB.int16Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Int16' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Int16' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -184,7 +184,7 @@ toInt16 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Int32' value for usage with database
+  Encodes an 'Int32' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -193,8 +193,8 @@ fromInt32 =
   fromBSBuilderWithNoNULs BSB.int32Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Int32' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Int32' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -203,7 +203,7 @@ toInt32 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Int64' value for usage with database
+  Encodes an 'Int64' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -212,7 +212,7 @@ fromInt64 =
   fromBSBuilderWithNoNULs BSB.int64Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails,
   'Nothing' is returned.
 
 @since 1.0.0.0
@@ -222,7 +222,7 @@ toInt64 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Int' value for usage with database
+  Encodes an 'Int' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -231,7 +231,7 @@ fromInt =
   fromBSBuilderWithNoNULs BSB.intDec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Int' value. If decoding fails,
   'Nothing' is returned.
 
 @since 1.0.0.0
@@ -241,7 +241,7 @@ toInt =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Word8' value for usage with database
+  Encodes a 'Word8' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -250,8 +250,8 @@ fromWord8 =
   fromBSBuilderWithNoNULs BSB.word8Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Word8' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Word8' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -260,7 +260,7 @@ toWord8 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Word16' value for usage with database
+  Encodes a 'Word16' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -269,8 +269,8 @@ fromWord16 =
   fromBSBuilderWithNoNULs BSB.word16Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Word16' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Word16' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -279,7 +279,7 @@ toWord16 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Word32' value for usage with database
+  Encodes a 'Word32' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -288,8 +288,8 @@ fromWord32 =
   fromBSBuilderWithNoNULs BSB.word32Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Word32' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Word32' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -298,7 +298,7 @@ toWord32 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Word64' value for usage with database
+  Encodes a 'Word64' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -307,8 +307,8 @@ fromWord64 =
   fromBSBuilderWithNoNULs BSB.word64Dec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Word64' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Word64' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -317,7 +317,7 @@ toWord64 =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes an 'Word' value for usage with database
+  Encodes a 'Word' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -326,7 +326,7 @@ fromWord =
   fromBSBuilderWithNoNULs BSB.wordDec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Word' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Word' value. If decoding fails,
   'Nothing' is returned.
 
 @since 1.0.0.0
@@ -336,7 +336,7 @@ toWord =
   toParsedValue (AttoB8.signed AttoB8.decimal)
 
 {- |
-  Encodes a 'Double' value for usage with database
+  Encodes a 'Double' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -345,8 +345,8 @@ fromDouble =
   fromBSBuilderWithNoNULs BSB.doubleDec
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Double' value. If decoding fails
-  'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a Haskell 'Double' value. If decoding
+  fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -355,7 +355,7 @@ toDouble =
   toParsedValue (AttoB8.signed AttoB8.double)
 
 {- |
-  Encodes a 'Bool' value for usage with database
+  Encodes a 'Bool' value for use with the database.
 
 @since 1.0.0.0
 -}
@@ -367,7 +367,7 @@ fromBool =
       False -> BSB.char8 'f'
 
 {- |
-  Attempts to decode a 'SqlValue' as a Haskell 'Bool' value. If decoding fails
+  Attempts to decode a 'SqlValue' as a Haskell 'Bool' value. If decoding fails,
   'Nothing' is returned.
 
 @since 1.0.0.0
@@ -382,7 +382,7 @@ toBool =
       _ -> fail "Invalid boolean character value"
 
 {- |
-  Encodes a 'T.Text' value as utf8 so that it can be used with the database.
+  Encodes a 'T.Text' value as UTF-8 so that it can be used with the database.
 
 @since 1.0.0.0
 -}
@@ -395,7 +395,7 @@ fromText =
   'Nothing' is returned.
 
   Note: This decoding _only_ fails if the bytes returned from the database
-  are not a value UTF-8 sequence of bytes. Otherwise it always succeeds.
+  are not a valid UTF-8 sequence of bytes. Otherwise it always succeeds.
 
 @since 1.0.0.0
 -}
@@ -418,7 +418,7 @@ fromDay =
 
 {- |
   Attempts to decode a 'SqlValue' as into a 'Time.Day' value by parsing it
-  from YYYY-MM-DD format. If the decoding fails 'Nothing' is returned.
+  from YYYY-MM-DD format. If the decoding fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -427,7 +427,7 @@ toDay =
   toParsedValue PgTime.day
 
 {- |
-  Encodes a 'Time.UTCTime' in ISO 8601 format for usage with the database.
+  Encodes a 'Time.UTCTime' in ISO-8601 format for use with the database.
 
 @since 1.0.0.0
 -}
@@ -438,7 +438,7 @@ fromUTCTime =
     . PgTime.utcTimeToPostgreSQL
 
 {- |
-  Encodes a 'Time.LocalTime' in ISO 8601 format for usage with the database.
+  Encodes a 'Time.LocalTime' in ISO-8601 format for use with the database.
 
 @since 1.0.0.0
 -}
@@ -449,8 +449,8 @@ fromLocalTime =
     . PgTime.localTimeToPostgreSQL
 
 {- |
-  Attempts to decode a 'SqlValue' as a 'Time.LocalTime' formatted in iso8601
-  format in the default Local. If the decoding fails, 'Nothing' is returned.
+  Attempts to decode a 'SqlValue' as a 'Time.LocalTime' formatted in ISO-8601
+  format in the default locale. If the decoding fails, 'Nothing' is returned.
 
 @since 1.0.0.0
 -}
@@ -459,7 +459,7 @@ toLocalTime =
   toParsedValue PgTime.localTime
 
 {- |
-  Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in iso8601
+  Attempts to decode a 'SqlValue' as a 'Time.UTCTime' formatted in ISO-8601
   format with time zone. If the decoding fails, 'Nothing' is returned.
 
 @since 1.0.0.0
@@ -469,7 +469,8 @@ toUTCTime =
   toParsedValue PgTime.utcTime
 
 {- |
-  A internal helper function that constructs a 'SqlValue' via a byte string builder
+  An internal helper function that constructs a 'SqlValue' via a bytestring
+  'BS8.Builder'.
 
 @since 1.0.0.0
 -}
@@ -482,7 +483,7 @@ fromBSBuilderWithNoNULs builder =
     . builder
 
 {- |
-  A internal helper function that parses 'SqlValue' via an Attoparsec parser.
+  An internal helper function that parses 'SqlValue' via an Attoparsec parser.
 
 @since 1.0.0.0
 -}

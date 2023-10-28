@@ -35,18 +35,18 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 -}
 data PgClass = PgClass
   { pgClassOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ for the relation
+  -- ^ The PostgreSQL @oid@ for the relation.
   , pgClassNamespaceOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
   -- References @pg_namespace.oid@.
   , pgClassRelationName :: RelationName
-  -- ^ The name of relation
+  -- ^ The name of the relation.
   , pgClassRelationKind :: RelationKind
-  -- ^ The kind of relation (table, view, etc)
+  -- ^ The kind of relation (table, view, etc).
   }
 
 {- |
-  A Haskell type for the name of the relation represented by a 'PgClass'
+  A Haskell type for the name of the relation represented by a 'PgClass'.
 
 @since 1.0.0.0
 -}
@@ -55,7 +55,7 @@ newtype RelationName
   deriving (Show, Eq, Ord, String.IsString)
 
 {- |
-  Convert a 'RelationName' to a plain 'String'
+  Convert a 'RelationName' to a plain 'String'.
 
 @since 1.0.0.0
 -}
@@ -84,7 +84,7 @@ data RelationKind
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
-  @pg_catalog.pg_class@ table
+  @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -105,7 +105,7 @@ pgClassMarshaller =
     <*> Orville.marshallField pgClassRelationKind relationKindField
 
 {- |
-  The @relnamespace@ column of the @pg_catalog.pg_class@ table
+  The @relnamespace@ column of the @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -114,7 +114,7 @@ namespaceOidField =
   oidTypeField "relnamespace"
 
 {- |
-  The @relname@ column of the @pg_catalog.pg_class@ table
+  The @relname@ column of the @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -124,7 +124,7 @@ relationNameField =
     Orville.unboundedTextField "relname"
 
 {- |
-  The @relkind@ column of the @pg_catalog.pg_class@ table
+  The @relkind@ column of the @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -159,7 +159,7 @@ relationKindToPgText kind =
 
 {- |
   Attempts to parse a PostgreSQL single character textual value as a
-  'RelationKind'
+  'RelationKind'.
 
   See also 'relationKindToPgText'
 

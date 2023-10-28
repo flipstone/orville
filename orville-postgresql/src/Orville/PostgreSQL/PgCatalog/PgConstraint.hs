@@ -31,46 +31,47 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
 
 {- |
   The Haskell representation of data read from the @pg_catalog.pg_constraint@
-  tale. Rows in this table correspond to check, primary key, unique, foreign
+  table. Rows in this table correspond to check, primary key, unique, foreign
   key and exclusion constraints on tables.
 
 @since 1.0.0.0
 -}
 data PgConstraint = PgConstraint
   { pgConstraintOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ for the constraint
+  -- ^ The PostgreSQL @oid@ for the constraint.
   , pgConstraintName :: ConstraintName
-  -- ^ The constraint name (which may not be unique)
+  -- ^ The constraint name (which may not be unique).
   , pgConstraintNamespaceOid :: LibPQ.Oid
-  -- ^ The oid of the namespace that contains the constraint
+  -- ^ The oid of the namespace that contains the constraint.
   , pgConstraintType :: ConstraintType
-  -- ^ The type of constraint
+  -- ^ The type of constraint.
   , pgConstraintRelationOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ of the table that the constraint is on
-  -- (or @0@ if not a table constraint)
+  -- (or @0@ if not a table constraint).
   , pgConstraintIndexOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
   -- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
   , pgConstraintKey :: Maybe [AttributeNumber]
   -- ^ For table constraints, the attribute numbers of the constrained columns.
-  -- These correspond to them 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber'
+  -- These correspond to the 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber'
   -- field of 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
   , pgConstraintForeignRelationOid :: LibPQ.Oid
   -- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the
-  -- foreign key references
+  -- foreign key references.
   , pgConstraintForeignKey :: Maybe [AttributeNumber]
-  -- ^ For foreignkey constraints, the attribute numbers of the referenced
+  -- ^ For foreign key constraints, the attribute numbers of the referenced
   -- columns. These correspond to the
   -- 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber' field of
   -- 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
   , pgConstraintForeignKeyOnUpdateType :: Maybe Orville.ForeignKeyAction
-  -- ^ For foreignkey constraints, the on update action type
+  -- ^ For foreign key constraints, the on update action type.
   , pgConstraintForeignKeyOnDeleteType :: Maybe Orville.ForeignKeyAction
-  -- ^ For foreignkey constraints, the on delete action type
+  -- ^ For foreign key constraints, the on delete action type.
   }
 
 {- |
-  A Haskell type for the name of the constraint represented by a 'PgConstraint'
+  A Haskell type for the name of the constraint represented by a
+  'PgConstraint'.
 
 @since 1.0.0.0
 -}
@@ -79,7 +80,7 @@ newtype ConstraintName
   deriving (Show, Eq, Ord, String.IsString)
 
 {- |
-  Converts an 'ConstraintName' to a plain old string
+  Converts a 'ConstraintName' to a plain 'String'.
 
 @since 1.0.0.0
 -}
@@ -89,7 +90,7 @@ constraintNameToString (ConstraintName txt) =
 
 {- |
   The type of constraint that a 'PgConstraint' represents, as described at
-  https://www.postgresql.org/docs/13/catalog-pg-constraint.html
+  https://www.postgresql.org/docs/13/catalog-pg-constraint.html.
 
 @since 1.0.0.0
 -}
@@ -180,7 +181,7 @@ pgTextToForeignKeyAction text =
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the
-  @pg_catalog.pg_constraint@ table
+  @pg_catalog.pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -208,7 +209,7 @@ pgConstraintMarshaller =
     <*> Orville.marshallField pgConstraintForeignKeyOnDeleteType constraintForeignKeyOnDeleteTypeField
 
 {- |
-  The @conname@ column of the @pg_constraint@ table
+  The @conname@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -218,7 +219,7 @@ constraintNameField =
     Orville.unboundedTextField "conname"
 
 {- |
-  The @connamespace@ column of the @pg_constraint@ table
+  The @connamespace@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -227,7 +228,7 @@ constraintNamespaceOidField =
   oidTypeField "connamespace"
 
 {- |
-  The @contype@ column of the @pg_constraint@ table
+  The @contype@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -238,7 +239,7 @@ constraintTypeField =
     (Orville.unboundedTextField "contype")
 
 {- |
-  The @conrelid@ column of the @pg_constraint@ table
+  The @conrelid@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -247,7 +248,7 @@ constraintRelationOidField =
   oidTypeField "conrelid"
 
 {- |
-  The @conindid@ column of the @pg_constraint@ table
+  The @conindid@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -256,7 +257,7 @@ constraintIndexOidField =
   oidTypeField "conindid"
 
 {- |
-  The @conkey@ column of the @pg_constraint@ table
+  The @conkey@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -268,7 +269,7 @@ constraintKeyField =
       (Orville.unboundedTextField "conkey")
 
 {- |
-  The @confrelid@ column of the @pg_constraint@ table
+  The @confrelid@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -277,7 +278,7 @@ constraintForeignRelationOidField =
   oidTypeField "confrelid"
 
 {- |
-  The @confkey@ column of the @pg_constraint@ table
+  The @confkey@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
