@@ -13,7 +13,6 @@ module Orville.PostgreSQL.Expr.OrderBy
   , OrderByExpr
   , appendOrderByExpr
   , orderByColumnName
-  , orderByExpr
   , orderByColumnsExpr
   , OrderByDirection
   , NullsOrder (NullsFirst, NullsLast)
@@ -24,7 +23,7 @@ module Orville.PostgreSQL.Expr.OrderBy
   )
 where
 
-import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NEL
 
 import Orville.PostgreSQL.Expr.Name (ColumnName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -79,23 +78,12 @@ appendOrderByExpr :: OrderByExpr -> OrderByExpr -> OrderByExpr
 appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
   OrderByExpr (a <> RawSql.commaSpace <> b)
 
-{- |
-Create an 'OrderByExpr' from some 'RawSql.RawSql' and a 'OrderByDirection'. Note
-that it is up to the caller to ensure that the given value can actually be used
-for an 'OrderByExpr'
-
-@since 1.0.0.0
--}
-orderByExpr :: RawSql.RawSql -> OrderByDirection -> OrderByExpr
-orderByExpr sql orderSql =
-  OrderByExpr $ sql <> RawSql.space <> RawSql.toRawSql orderSql
-
 {- | Create an 'OrderByExpr' for 'ColumnName' and 'OrderByDirection' pairs, ensuring commas as
   needed.
 
 @since 1.0.0.0
 -}
-orderByColumnsExpr :: NonEmpty (ColumnName, OrderByDirection) -> OrderByExpr
+orderByColumnsExpr :: NEL.NonEmpty (ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr =
   OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
  where
@@ -110,7 +98,7 @@ orderByColumnsExpr =
 -}
 orderByColumnName :: ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName =
-  orderByExpr . RawSql.toRawSql
+  curry (orderByColumnsExpr . pure)
 
 {- |
 Type to represent a SQL order by direction expression. E.G.

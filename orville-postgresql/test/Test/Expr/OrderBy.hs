@@ -35,9 +35,7 @@ prop_ascendingExpr =
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog", mkFooBar 3 "dog"]
       , orderByClause =
           Just . Expr.orderByClause $
-            Expr.orderByExpr
-              (RawSql.toRawSql barColumn)
-              Expr.ascendingOrder
+            Expr.orderByColumnName barColumn Expr.ascendingOrder
       }
 
 prop_descendingExpr :: Property.NamedDBProperty
@@ -48,9 +46,7 @@ prop_descendingExpr =
       , orderByExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "dog", mkFooBar 2 "dingo"]
       , orderByClause =
           Just . Expr.orderByClause $
-            Expr.orderByExpr
-              (RawSql.toRawSql barColumn)
-              Expr.descendingOrder
+            Expr.orderByColumnName barColumn Expr.descendingOrder
       }
 
 prop_appendOrderByExpr :: Property.NamedDBProperty
@@ -62,8 +58,8 @@ prop_appendOrderByExpr =
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
-              (Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder)
-              (Expr.orderByExpr (RawSql.toRawSql fooColumn) Expr.descendingOrder)
+              (Expr.orderByColumnName barColumn Expr.ascendingOrder)
+              (Expr.orderByColumnName fooColumn Expr.descendingOrder)
       }
 
 prop_orderByColumnsExpr :: Property.NamedDBProperty
@@ -90,8 +86,8 @@ prop_ascendingOrderWithExpr =
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
-              (Expr.orderByExpr (RawSql.toRawSql fooColumn) $ Expr.ascendingOrderWith Expr.NullsFirst)
-              (Expr.orderByExpr (RawSql.toRawSql barColumn) $ Expr.ascendingOrderWith Expr.NullsLast)
+              (Expr.orderByColumnName fooColumn $ Expr.ascendingOrderWith Expr.NullsFirst)
+              (Expr.orderByColumnName barColumn $ Expr.ascendingOrderWith Expr.NullsLast)
       }
 
 prop_descendingOrderWithExpr :: Property.NamedDBProperty
@@ -105,8 +101,8 @@ prop_descendingOrderWithExpr =
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
-              (Expr.orderByExpr (RawSql.toRawSql fooColumn) $ Expr.descendingOrderWith Expr.NullsFirst)
-              (Expr.orderByExpr (RawSql.toRawSql barColumn) $ Expr.descendingOrderWith Expr.NullsLast)
+              (Expr.orderByColumnName fooColumn $ Expr.descendingOrderWith Expr.NullsFirst)
+              (Expr.orderByColumnName barColumn $ Expr.descendingOrderWith Expr.NullsLast)
       }
 
 data OrderByTest = OrderByTest

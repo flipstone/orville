@@ -6,7 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import qualified Data.List.NonEmpty as NE
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
@@ -41,7 +41,7 @@ prop_groupByColumnsExpr =
       , groupByClause =
           Just . Expr.groupByClause $
             Expr.groupByColumnsExpr $
-              barColumn NE.:| [fooColumn]
+              barColumn :| [fooColumn]
       }
 
 prop_appendGroupByExpr :: Property.NamedDBProperty
@@ -53,8 +53,8 @@ prop_appendGroupByExpr =
       , groupByClause =
           Just . Expr.groupByClause $
             Expr.appendGroupByExpr
-              (Expr.groupByExpr $ RawSql.toRawSql barColumn)
-              (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
+              (Expr.groupByColumnsExpr . pure $ barColumn)
+              (Expr.groupByColumnsExpr . pure $ fooColumn)
       }
 
 data GroupByTest = GroupByTest

@@ -39,11 +39,11 @@ prop_groupByOrderByExpr =
       , groupByClause =
           Just . Expr.groupByClause $
             Expr.appendGroupByExpr
-              (Expr.groupByExpr $ RawSql.toRawSql barColumn)
-              (Expr.groupByExpr $ RawSql.toRawSql fooColumn)
+              (Expr.groupByColumnsExpr . pure $ barColumn)
+              (Expr.groupByColumnsExpr . pure $ fooColumn)
       , orderByClause =
           Just . Expr.orderByClause $
-            Expr.orderByExpr (RawSql.toRawSql barColumn) Expr.ascendingOrder
+            Expr.orderByColumnName barColumn Expr.ascendingOrder
       }
 
 data GroupByOrderByTest = GroupByOrderByTest

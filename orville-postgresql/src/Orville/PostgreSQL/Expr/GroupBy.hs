@@ -12,7 +12,6 @@ module Orville.PostgreSQL.Expr.GroupBy
   , groupByClause
   , GroupByExpr
   , appendGroupByExpr
-  , groupByExpr
   , groupByColumnsExpr
   )
 where
@@ -79,16 +78,6 @@ instance Semigroup GroupByExpr where
 appendGroupByExpr :: GroupByExpr -> GroupByExpr -> GroupByExpr
 appendGroupByExpr (GroupByExpr a) (GroupByExpr b) =
   GroupByExpr (a <> RawSql.commaSpace <> b)
-
-{- |
-Create a 'GroupByExpr' from some 'RawSql.RawSql'. Note that it is up to the
-caller to ensure that the given value can actually be used for a 'GroupByExpr'.
-
-@since 1.0.0.0
--}
-groupByExpr :: RawSql.RawSql -> GroupByExpr
-groupByExpr =
-  GroupByExpr
 
 {- | Create a 'GroupByExpr' from the given 'ColumnName's.
 

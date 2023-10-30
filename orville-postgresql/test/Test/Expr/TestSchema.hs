@@ -64,9 +64,7 @@ barColumnRef =
 orderByFoo :: Expr.OrderByClause
 orderByFoo =
   Expr.orderByClause $
-    Expr.orderByExpr
-      (RawSql.toRawSql fooColumn)
-      Expr.ascendingOrder
+    Expr.orderByColumnName fooColumn Expr.ascendingOrder
 
 findAllFooBars :: Expr.QueryExpr
 findAllFooBars =

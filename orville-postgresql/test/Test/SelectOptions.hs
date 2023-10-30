@@ -317,8 +317,8 @@ prop_groupByCombined =
   Property.singletonNamedProperty "groupBy generates expected sql with multiple selectOptions" $
     assertGroupByClauseEquals
       (Just "GROUP BY foo, \"bar\"")
-      ( (O.groupBy . Expr.groupByExpr $ RawSql.fromString "foo")
-          <> (O.groupBy . Expr.groupByExpr . RawSql.toRawSql $ FieldDef.fieldColumnName barField)
+      ( (O.groupBy . RawSql.unsafeSqlExpression $ "foo")
+          <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName barField :| []))
       )
 
 assertDistinctEquals :: (HH.MonadTest m, HasCallStack) => String -> O.SelectOptions -> m ()
