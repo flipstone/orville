@@ -602,10 +602,9 @@ executeSelectMany selectOp params = do
 
 {- |
   'findSelect' builds a plan 'Operation' where the select that is run does not
-  use the input parameters for the plan in any way. If the
-  'executeOperationMany' function of the resulting 'Operation' will run the
-  query once and use the entire result set as the result each of the input
-  parameters in turn.
+  use the input parameters for the plan in any way. The 'executeOperationMany'
+  function of the resulting 'Operation' will run the query once and use the
+  entire result set as the result each of the input parameters in turn.
 
 @since 1.0.0.0
 -}
