@@ -125,6 +125,7 @@ library
       Orville.PostgreSQL.Internal.FieldName
       Orville.PostgreSQL.Internal.IndexDefinition
       Orville.PostgreSQL.Internal.MigrationLock
+      Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.RowCountExpectation
       Orville.PostgreSQL.PgCatalog.DatabaseDescription

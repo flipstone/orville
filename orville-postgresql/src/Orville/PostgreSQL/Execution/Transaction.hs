@@ -19,6 +19,7 @@ import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
+import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -40,7 +41,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 -}
 withTransaction :: Monad.MonadOrville m => m a -> m a
 withTransaction action =
-  Monad.withConnectedState $ \connectedState -> do
+  MonadOrville.withConnectedState $ \connectedState -> do
     let
       conn = OrvilleState.connectedConnection connectedState
       transaction = OrvilleState.newTransaction (OrvilleState.connectedTransaction connectedState)
