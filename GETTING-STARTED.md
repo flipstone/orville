@@ -15,7 +15,7 @@ cabal init -n --exe
 Make it depend on Orville.
 
 ```shell
-sed -i -re 's/build-depends:/build-depends: orville-postgresql,/' *.cabal
+sed -i -re 's/build-depends:/build-depends: orville-postgresql ^>=1.0.0.0,/' *.cabal
 ```
 
 Here is a minimal program that simply computes 1+1 on the database:
@@ -47,23 +47,14 @@ main = do
 EOF
 ```
 
-We need to tell Cabal how to find Orville:
-
-```shell
-cat << EOF > cabal.project
-packages: .
-source-repository-package
-  type: git
-  location: https://github.com/flipstone/orville.git
-  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
-  subdir: orville-postgresql
-EOF
-```
-
-To compile Orville, you need the libpq headers installed. On Debian-based distributions, this can be done using:
-
 ```shell
 apt -y install libpq-dev
+```
+
+We need to update the package index for Cabal to find orville
+
+```shell
+cabal update
 ```
 
 Now, we can finally compile the demo project:

@@ -14,15 +14,8 @@ GETTING-STARTED guide, so we'll avoid explaining it here.
 mkdir orville-sql-marshaller
 cd orville-sql-marshaller
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, text,/' *.cabal
-cat << EOF > cabal.project
-packages: .
-source-repository-package
-  type: git
-  location: https://github.com/flipstone/orville.git
-  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
-  subdir: orville-postgresql
-EOF
+sed -i -re 's/build-depends:/build-depends: orville-postgresql ^>=1.0.0.0, text,/' *.cabal
+cabal update
 ```
 
 Now, let's import the necessary modules. We use less 'internal' imports here

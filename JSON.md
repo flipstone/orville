@@ -15,15 +15,9 @@ dependencies like Aeson have been added. Aeson is a JSON library for Haskell.
 mkdir orville-json
 cd orville-json
 cabal init -n --exe
-sed -i -re 's/build-depends:/build-depends: orville-postgresql, aeson, postgresql-libpq, text, vector,/' *.cabal
-cat << 'EOF' > cabal.project
-packages: .
-source-repository-package
-  type: git
-  location: https://github.com/flipstone/orville.git
-  tag: c3bdcebac4beb8ef50715439ea24562ed2b95b36
-  subdir: orville-postgresql
-EOF
+sed -i -re 's/build-depends:/build-depends: orville-postgresql ^>=1.0.0.0, aeson, postgresql-libpq, text, vector,/' *.cabal
+cabal update
+
 cat << 'EOF' > app/Main.hs
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
