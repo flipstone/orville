@@ -1,0 +1,4 @@
+22c22
+<   build-depends:       base >= 4.7 && < 5
+---
+>   build-depends:       base >= 4.7 && < 5, orville-postgresql ^>= 1.0.0.0

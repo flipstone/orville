@@ -1,0 +1,2 @@
+Just (Foo {fooId = 0, fooTags = Array [Number 1.0,Number 2.0,Number 3.0]})
+[(0,Number 1.0),(0,Number 2.0),(0,Number 3.0)]

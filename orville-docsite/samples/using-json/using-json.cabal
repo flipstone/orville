@@ -1,0 +1,34 @@
+cabal-version:       2.2
+
+name:                using-json
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/flipstone/using-json#readme
+license:             BSD-3-Clause
+author:              Flipstone Technology Partners, Inc
+maintainer:          maintainers@flipstone.com
+copyright:           
+category:            sample
+build-type:          Simple
+
+executable using-json
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+
+  build-depends:       base >= 4.7 && < 5,
+                       orville-postgresql,
+                       aeson,
+                       vector,
+                       text
+
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns
+                       -Wmissing-export-lists
+                       -Wmissing-home-modules
+                       -Wpartial-fields
+                       -Wredundant-constraints

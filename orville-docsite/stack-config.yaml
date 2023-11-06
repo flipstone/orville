@@ -1,0 +1,7 @@
+templates:
+  params:
+    author-email: maintainers@flipstone.com
+    author-name: Flipstone Technology Partners, Inc
+    category: sample
+    copyright: ""
+    github-username: flipstone

@@ -1,0 +1,12 @@
+resolver:
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/19.yaml
+
+system-ghc: true
+install-ghc: false
+
+packages:
+  - site-builder
+
+extra-deps:
+  - hakyll-4.16.2.0
+  - non-empty-text-0.2.0

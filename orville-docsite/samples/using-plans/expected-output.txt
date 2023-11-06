@@ -1,0 +1,7 @@
+Just (Student {studentId = 0, studentName = "Name", studentAge = 91})
+Just (Student {studentId = 1, studentName = "Other Name", studentAge = 42})
+[Just (Student {studentId = 1, studentName = "Other Name", studentAge = 42}),Just (Student {studentId = 0, studentName = "Name", studentAge = 91})]
+Class {classId = 1, classSubject = "Cooking"}
+["SELECT \"student_id\",\"id\",\"class_id\",\"student_id\" FROM \"plan_demo_student_class\" WHERE (\"student_id\") = ($1)","SELECT \"id\",\"id\",\"subject\" FROM \"plan_demo_class\" WHERE (\"id\") IN ($1, $2)"]
+["SELECT \"student_id\",\"id\",\"class_id\",\"student_id\" FROM \"plan_demo_student_class\" WHERE (\"student_id\") IN ($1, $2)","SELECT \"id\",\"id\",\"subject\" FROM \"plan_demo_class\" WHERE (\"id\") IN ($1, $2)"]
+[[Class {classId = 0, classSubject = "Painting"},Class {classId = 2, classSubject = "Swimming"}]]

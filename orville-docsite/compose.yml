@@ -1,0 +1,20 @@
+version: "3"
+services:
+  dev:
+    build: .
+    environment:
+      STACK_ROOT: /stack-root
+    volumes:
+      - .:/orville-docsite
+      - stack-root:/stack-root
+      - ./stack-config.yaml:/stack-root/config.yaml
+    working_dir: /orville-docsite
+    # A TTY is required for the test-loop script to use
+    # stack test. stdin_open would be sufficient, but
+    # allocating a tty provides colorful test output :)
+    tty: true
+    ports:
+      - 8000:8000
+
+volumes:
+  stack-root:

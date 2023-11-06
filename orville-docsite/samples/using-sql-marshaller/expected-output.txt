@@ -1,0 +1,1 @@
+Just (Foo {fooId = 0, fooName = "Name", fooAge = 91})

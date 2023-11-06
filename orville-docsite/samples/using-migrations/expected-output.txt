@@ -1,0 +1,2 @@
+Just (Foo3 {foo3Id = 0, foo3Age = 91})
+Just (Foo1 {foo1Id = 0})

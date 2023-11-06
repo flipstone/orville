@@ -27,3 +27,10 @@ instantclient*
 # We use a ci compose file that keeps some extra bits locally to cache
 # They are ignored below to avoid them being included in various operations, locally and in ci
 .stack-root
+
+# Ignore Hakyll build directories
+orville-docsite/site-builder/_cache
+orville-docsite/site-builder/_site
+
+# Ignore directories created by samples
+orville-docsite/samples/getting-started/orville-getting-started
