@@ -13,7 +13,7 @@
         <header>
           <h1 class="logo">
             <a href="/">
-              <img alt="Orville Logo" src="images/orville-waving-pennant.svg"/>
+              <img alt="Orville Logo" src="/images/orville-waving-pennant.svg"/>
             </a>
           </h1>
         </header>
@@ -25,6 +25,19 @@
           $for(tutorials)$
             <a href="$url$">$title$</a>
           $endfor$
+
+          <h3>How-To Guides</h3>
+          $for(how-tos)$
+            <a href="$url$">$title$</a>
+          $endfor$
+
+          <h3>Futher Explanation</h3>
+          $for(explanations)$
+            <a href="$url$">$title$</a>
+          $endfor$
+
+          <h3>API Reference</h3>
+          <a href="https://hackage.haskell.org/package/orville-postgresql">See Hackage</a>
 
           <h3>Other Links</h3>
           <a href="/contact.html">Contact</a>

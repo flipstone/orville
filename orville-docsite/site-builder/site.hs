@@ -45,10 +45,29 @@ renderPandocInStyle =
       { writerHighlightStyle = Just pandocCodeStyle
       })
 
+data Section =
+  Section
+    { sectionName :: String
+    , sectionPattern :: Pattern
+    }
+
+sections :: [Section]
+sections =
+  [ Section "tutorials" "tutorials/**"
+  , Section "how-tos" "how-tos/**"
+  , Section "explanations" "explanations/**"
+  ]
+
+sectionFiles :: Pattern
+sectionFiles =
+  foldr (.||.) (complement mempty) (map sectionPattern sections)
+
 main :: IO ()
 main = do
   hakyllWith config $ do
     snippetCache <- preprocess newSnippetCache
+    let
+      navContext = mkNavContext snippetCache
 
     match "images/*" $ do
       route   idRoute
@@ -65,34 +84,27 @@ main = do
     match "contact.md" $ do
       route   $ setExtension "html"
       compile $ pandocCompiler
-          >>= applyDefaultLayout snippetCache defaultContext
+          >>= applyDefaultLayout navContext defaultContext
           >>= relativizeUrls
 
-    let
-      tutorialsRoute =
-        composeRoutes
-          (gsubRoute "tutorials/" (const ""))
-          (setExtension "html")
-
-    match "tutorials/**" $ do
-      route tutorialsRoute
+    match sectionFiles $ do
+      route (setExtension "html")
       compile $
         getResourceBody
           >>= applyAsTemplate (pageCtx snippetCache)
           >>= renderPandocInStyle
           >>= loadAndApplyTemplate "templates/post.html" (pageCtx snippetCache)
           >>= saveSnapshot navLinksSnapshot
-          >>= applyDefaultLayout snippetCache (pageCtx snippetCache)
+          >>= applyDefaultLayout navContext (pageCtx snippetCache)
           >>= relativizeUrls
 
     match "index.md" $ do
       route   $ setExtension "html"
       compile $ do
-        navContext <- loadNavContex snippetCache
         getResourceBody
           >>= applyAsTemplate (mconcat [navContext, pageCtx snippetCache])
           >>= renderPandocInStyle
-          >>= applyDefaultLayout snippetCache defaultContext
+          >>= applyDefaultLayout navContext defaultContext
           >>= relativizeUrls
 
     match "templates/*" $ compile templateBodyCompiler
@@ -110,15 +122,14 @@ main = do
 
 --------------------------------------------------------------------------------
 applyDefaultLayout ::
-  SnippetCache ->
+  Context a ->
   Context a ->
   Item a ->
   Compiler (Item String)
-applyDefaultLayout snippetCache itemContext item = do
-  navContext <- loadNavContex snippetCache
+applyDefaultLayout navContext itemContext item = do
   loadAndApplyTemplate
     "templates/default.html"
-    (mappend navContext itemContext)
+    (navContext <> itemContext)
     item
 
 {- |
@@ -130,11 +141,18 @@ navLinksSnapshot :: String
 navLinksSnapshot =
   "navLinks"
 
-loadNavContex :: SnippetCache -> Compiler (Context a)
-loadNavContex snippetCache = do
-  tutorials <- inNavOrder =<< loadAllSnapshots "tutorials/*" navLinksSnapshot
-  pure $
-    listField "tutorials" (pageCtx snippetCache) (return tutorials)
+mkNavContext :: SnippetCache -> Context a
+mkNavContext snippetCache = do
+  foldMap (sectionContext snippetCache) sections
+
+sectionContext :: SnippetCache -> Section -> Context a
+sectionContext snippetCache section =
+  listField (sectionName section) (pageCtx snippetCache) $
+    inNavOrder =<<
+      loadAllSnapshots
+        (sectionPattern section)
+        navLinksSnapshot
+
 
 inNavOrder :: (MonadMetadata m, MonadFail m) => [Item a] -> m [Item a]
 inNavOrder =
