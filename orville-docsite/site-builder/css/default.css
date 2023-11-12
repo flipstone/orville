@@ -85,3 +85,7 @@ div.sourceCode {
   padding: 3px 10px;
 }
 
+
+code:not(.sourceCode code) {
+  color: #e0a619;
+}

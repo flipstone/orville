@@ -79,8 +79,8 @@ $sample("using-json/src/Main.hs", "selectJSONArray")$
 
 This concludes this tutorial. You can build an execute this as usual:
 
-$sample("using-json/run.sh","buildAndExecute")$
+$sample("using-json/run.sh","buildAndExecute", "filename=")$
 
 And you should see the following output:
 
-$sample("using-json/expected-output.txt")$
+$sample("using-json/expected-output.txt", "filename=output")$

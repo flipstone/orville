@@ -42,4 +42,4 @@ Additional documentation is available in the Haddocks.
 Ok! Here's a very simple application that inserts some entities of a `Pet`
 model and finds one of them based on its name.
 
-$sample("hero/src/Main.hs")$
+$sample("hero/src/Main.hs", "filename=")$

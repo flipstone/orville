@@ -60,8 +60,8 @@ $sample("using-sql-marshaller/src/Main.hs","mainFunction")$
 
 The program is now complete, let's compile and run!
 
-$sample("using-sql-marshaller/run.sh","buildAndExecute")$
+$sample("using-sql-marshaller/run.sh","buildAndExecute", "filename=")$
 
 Once it builds and runs successfully you should see the following output:
 
-$sample("using-sql-marshaller/expected-output.txt")$
+$sample("using-sql-marshaller/expected-output.txt", "filename=output")$

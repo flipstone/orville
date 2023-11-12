@@ -51,8 +51,8 @@ $sample("using-migrations/src/Main.hs", "droppingColumns")$
 
 This concludes this tutorial. You can build an execute this as usual:
 
-$sample("using-migrations/run.sh","buildAndExecute")$
+$sample("using-migrations/run.sh","buildAndExecute", "filename=")$
 
 And you should see the following output:
 
-$sample("using-migrations/expected-output.txt")$
+$sample("using-migrations/expected-output.txt", "filename=output")$

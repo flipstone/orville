@@ -117,8 +117,8 @@ $sample("using-plans/src/Main.hs", "executeStudentsToClassesPlan")$
 
 You can build an execute this as usual:
 
-$sample("using-plans/run.sh","buildAndExecute")$
+$sample("using-plans/run.sh","buildAndExecute", "filename=")$
 
 And you should see the following output:
 
-$sample("using-plans/expected-output.txt")$
+$sample("using-plans/expected-output.txt", "filename=output")$

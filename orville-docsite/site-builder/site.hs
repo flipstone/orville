@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
 import qualified Control.Concurrent.MVar as MVar
+import qualified Control.Monad as Monad
 import qualified Data.ByteString.Lazy as BSL
 import Data.Default (def)
 import qualified Data.Foldable as Fold
@@ -168,34 +169,98 @@ sampleField :: SnippetCache -> Context a
 sampleField snippetCache =
   functionField "sample" $ \args item -> do
     case args of
-      [path] ->
-        mkMarkdownCodeBlock path =<<
-          recompilingUnsafeCompiler (TIO.readFile ("../samples/" <> path))
+      (path:rest) -> do
+        options <- failOnLeft (parseOptions rest)
+        sample <-
+          failOnLeft =<<
+            recompilingUnsafeCompiler
+              (readSample
+                snippetCache
+                ("../samples/" <> path)
+                options)
 
-      [path, snippetName] -> do
-        case NET.fromText (T.pack snippetName) of
-          Nothing ->
-            fail $ "Snippet name may not be empty"
-          Just nonEmptySnippetName -> do
-            errOrSnippet <-
-              recompilingUnsafeCompiler $
-                lookupSnippet
-                  snippetCache
-                  ("../samples/" <> path)
-                  nonEmptySnippetName
+        mkMarkdownCodeBlock path options sample
 
-            case errOrSnippet of
-              Left err -> fail $ "Error loading snippet from " <> path <> ": " <> err
-              Right snippet -> mkMarkdownCodeBlock path snippet
+failOnLeft :: Either String a -> Compiler a
+failOnLeft = either fail pure
 
-      _ -> fail "Wrong number of arguments passed to function sample()"
+readSample :: SnippetCache -> FilePath -> SampleOptions -> IO (Either String T.Text)
+readSample snippetCache fullPath options =
+  case sampleSnippets options of
+    [] ->
+      fmap Right . TIO.readFile $ fullPath
+    snippetNames ->
+      fmap (fmap T.unlines . sequence)
+        . traverse (lookupSnippet snippetCache fullPath)
+        $ snippetNames
 
-mkMarkdownCodeBlock :: FilePath -> T.Text -> Compiler String
-mkMarkdownCodeBlock path body = do
+
+data SampleOptions =
+  SampleOptions
+    { sampleSnippets :: [NET.NonEmptyText]
+    , sampleFilename :: Maybe FilePath
+    }
+
+emptySampleOptions :: SampleOptions
+emptySampleOptions =
+  SampleOptions
+    { sampleSnippets = []
+    , sampleFilename = Nothing
+    }
+
+parseOptions :: [String] -> Either String SampleOptions
+parseOptions =
+  Monad.foldM parseOption emptySampleOptions
+
+parseOption :: SampleOptions -> String -> Either String SampleOptions
+parseOption options newOption =
+  case T.splitOn "=" (T.pack newOption) of
+    [snippetName] -> do
+      neSnippetName <- mustBeNonEmpty "snippetName" snippetName
+      pure (options { sampleSnippets = sampleSnippets options <> [neSnippetName] })
+
+    ["filename", filename] -> do
+      pure (options { sampleFilename = Just (T.unpack filename) })
+
+    [otherOption, _value] -> Left ("Unrecognized option: " <> T.unpack otherOption)
+    _ -> Left ("Invalid option format: " <> newOption)
+
+mustBeNonEmpty :: String -> T.Text -> Either String NET.NonEmptyText
+mustBeNonEmpty name value =
+  case NET.fromText value of
+    Nothing -> Left (name <> " cannot be empty")
+    Just nonEmptyValue -> Right nonEmptyValue
+
+mkMarkdownCodeBlock :: FilePath -> SampleOptions -> T.Text -> Compiler String
+mkMarkdownCodeBlock path options body = do
   lang <- either fail pure (guessLang path)
+
+  let
+    labelAnnotation =
+      case lang of
+        "sh" -> "shell"
+        "txt" -> "plaintext"
+        otherLang -> otherLang
+
+    filename =
+      case sampleFilename options of
+        Just filename -> filename
+        Nothing ->
+          -- drop the leading directory since that is generally a name for
+          -- the example itself
+          FilePath.joinPath
+            . drop 1
+            . FilePath.splitPath
+            $ path
+
+    label =
+      case filename of
+        "" -> labelAnnotation
+        _ -> filename <> " : " <> labelAnnotation
+
   pure $
     unlines
-      [ "<div class=\"codeblock-label\">" <> lang <> "</div>"
+      [ "<div class=\"codeblock-label\">" <> label <> "</div>"
       , "```" <> lang
       , T.unpack body
       , "```"
