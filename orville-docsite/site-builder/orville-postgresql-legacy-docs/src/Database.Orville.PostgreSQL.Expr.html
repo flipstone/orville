@@ -1,0 +1,24 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+Module    : Database.Orville.PostgreSQL.Expr
+Copyright : Flipstone Technology Partners 2016-2018
+License   : MIT
+-}</span><span>
+</span><a name="line-6"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Database.Orville.PostgreSQL.Expr</span><span>
+</span><a name="line-7"></a><span>  </span><span class="hs-special">(</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.Expr.html#RawExpr"><span class="hs-identifier hs-type">RawExpr</span></a><span>
+</span><a name="line-8"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.Expr.html#rawSql"><span class="hs-identifier hs-var">rawSql</span></a><span>
+</span><a name="line-9"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.Expr.html#GenerateSql"><span class="hs-identifier hs-type">GenerateSql</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-10"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.Expr.html#Expr"><span class="hs-identifier hs-type">Expr</span></a><span>
+</span><a name="line-11"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.Expr.html#rawSqlExpr"><span class="hs-identifier hs-var">rawSqlExpr</span></a><span>
+</span><a name="line-12"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.Expr.html#expr"><span class="hs-identifier hs-var">expr</span></a><span>
+</span><a name="line-13"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.NameExpr.html#NameExpr"><span class="hs-identifier hs-type">NameExpr</span></a><span>
+</span><a name="line-14"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.NameExpr.html#NameForm"><span class="hs-identifier hs-type">NameForm</span></a><span>
+</span><a name="line-15"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.NameExpr.html#unescapedName"><span class="hs-identifier hs-var">unescapedName</span></a><span>
+</span><a name="line-16"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.SelectExpr.html#SelectExpr"><span class="hs-identifier hs-type">SelectExpr</span></a><span>
+</span><a name="line-17"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.SelectExpr.html#SelectForm"><span class="hs-identifier hs-type">SelectForm</span></a><span class="hs-special">(</span><span class="hs-glyph">..</span><span class="hs-special">)</span><span>
+</span><a name="line-18"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.SelectExpr.html#selectColumn"><span class="hs-identifier hs-var">selectColumn</span></a><span>
+</span><a name="line-19"></a><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-keyword">qualified</span><span>
+</span><a name="line-20"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.SelectExpr.html#aliased"><span class="hs-identifier hs-var">aliased</span></a><span>
+</span><a name="line-21"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-22"></a><span>
+</span><a name="line-23"></a><span class="hs-keyword">import</span><span> </span><a href="Database.Orville.PostgreSQL.Internal.Expr.html"><span class="hs-identifier">Database.Orville.PostgreSQL.Internal.Expr</span></a><span>
+</span><a name="line-24"></a></pre></body></html>
