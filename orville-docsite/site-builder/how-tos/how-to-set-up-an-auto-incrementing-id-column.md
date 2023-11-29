@@ -1,6 +1,6 @@
 ---
 title: How To Set Up An Auto-incrementing Id Column (Upcoming)
-navOrder: 3
+navOrder: 5
 ---
 
 Coming Soon
