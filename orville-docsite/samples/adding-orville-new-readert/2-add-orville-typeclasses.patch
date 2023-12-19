@@ -1,0 +1,10 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 16,17 ****
+--- 16,20 ----
+      , MIO.MonadIO
++     , O.MonadOrville
++     , O.MonadOrvilleControl
++     , O.HasOrvilleState
+      )

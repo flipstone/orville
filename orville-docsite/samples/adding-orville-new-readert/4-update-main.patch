@@ -1,0 +1,21 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 36,38 ****
+  main :: IO ()
+! main =
+!   runApplication myApplication
+--- 36,48 ----
+  main :: IO ()
+! main = do
+!   pool <-
+!     O.createConnectionPool
+!         O.ConnectionOptions
+!           { O.connectionString = "host=localhost user=postgres password=postgres"
+!           , O.connectionNoticeReporting = O.DisableNoticeReporting
+!           , O.connectionPoolStripes = O.OneStripePerCapability
+!           , O.connectionPoolLingerTime = 10
+!           , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+!           }
+! 
+!   runApplication pool myApplication

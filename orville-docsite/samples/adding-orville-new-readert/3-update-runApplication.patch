@@ -1,0 +1,21 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 21,25 ****
+  
+! runApplication :: Application a -> IO a
+! runApplication (Application io) =
+!   io
+  
+--- 21,31 ----
+  
+! runApplication :: O.ConnectionPool -> Application a -> IO a
+! runApplication pool (Application reader) =
+!   let
+!     orvilleState =
+!       O.newOrvilleState
+!         O.defaultErrorDetailLevel
+!         pool
+!   in
+!     Reader.runReaderT reader orvilleState
+  

@@ -1,0 +1,24 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 9,10 ****
+--- 9,11 ----
+  import qualified Orville.PostgreSQL as O
++ import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
+  
+***************
+*** 44,45 ****
+--- 45,51 ----
+  
++ schema :: [AutoMigration.SchemaItem]
++ schema =
++   [ AutoMigration.SchemaTable messagesTable
++   ]
++ 
+  main :: IO ()
+***************
+*** 56,57 ****
+--- 62,64 ----
+  
++   runApplication pool (AutoMigration.autoMigrateSchema AutoMigration.defaultOptions schema)
+    runApplication pool myApplication

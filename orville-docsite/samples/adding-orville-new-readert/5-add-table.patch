@@ -1,0 +1,29 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 7,8 ****
+--- 7,9 ----
+  import qualified Control.Monad.IO.Class as MIO
++ import qualified Data.Text as T
+  import qualified Orville.PostgreSQL as O
+***************
+*** 31,35 ****
+  
+  myApplication :: Application ()
+! myApplication =
+!   MIO.liftIO . putStrLn $ "Hello Application"
+  
+--- 32,44 ----
+  
++ messagesTable :: O.TableDefinition O.NoKey T.Text T.Text
++ messagesTable =
++   O.mkTableDefinitionWithoutKey
++     "messages"
++     (O.marshallField id (O.unboundedTextField "message"))
++ 
+  myApplication :: Application ()
+! myApplication = do
+!   O.insertEntity messagesTable (T.pack "Hello Orville")
+!   messages <- O.findEntitiesBy messagesTable mempty
+!   MIO.liftIO . print $ messages
+  

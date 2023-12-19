@@ -34,3 +34,4 @@ orville-docsite/site-builder/_site
 
 # Ignore directories created by samples
 orville-docsite/samples/getting-started/orville-getting-started
+orville-docsite/samples/adding-orville-new-readert/src

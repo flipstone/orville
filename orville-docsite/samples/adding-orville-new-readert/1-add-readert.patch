@@ -1,0 +1,19 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 5,10 ****
+  
+  import qualified Control.Monad.IO.Class as MIO
+  
+  newtype Application a =
+!   Application (IO a)
+    deriving
+--- 5,12 ----
+  
++ import qualified Control.Monad.Reader as Reader
+  import qualified Control.Monad.IO.Class as MIO
++ import qualified Orville.PostgreSQL as O
+  
+  newtype Application a =
+!   Application (Reader.ReaderT O.OrvilleState IO a)
+    deriving
