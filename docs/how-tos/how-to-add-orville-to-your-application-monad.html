@@ -38,6 +38,8 @@
           
             <a href="../how-tos/how-to-add-orville-to-your-application-monad.html">How To Add Orville to Your Application Monad</a>
           
+            <a href="../how-tos/how-to-add-orville-to-an-existing-reader-context.html">How To Add Orville to an Existing Reader Context</a>
+          
             <a href="../how-tos/how-to-marshall-a-haskell-record.html">How To Marshall a Haskell Record (Upcoming)</a>
           
             <a href="../how-tos/how-to-add-custom-marshalling-validations.html">How Add Custom Marshalling Validations (Upcoming)</a>
@@ -145,9 +147,9 @@ job. In order to use functions from the Orville package directly in your monad
 it will need to provide instances for the three typeclasses that make up a
 complete Orville monad - <code>MonadOrville</code>, <code>MonadOrvilleControl</code> and
 <code>HasOrvilleState</code>. Luckily, it’s a simple matter of adding these three
-typeclasses the the deriving list for <code>Application</code>. If you’re not using
-<code>GHC2021</code> you’ll need the <code>GeneralizedNewtypeDeriving</code> language extension, as
-in the example in this guide.</p>
+typeclasses the deriving list for <code>Application</code>. If you’re not using <code>GHC2021</code>
+you’ll need the <code>GeneralizedNewtypeDeriving</code> language extension, as in the
+example in this guide.</p>
 <div class="codeblock-label">
 Main.hs : diff
 </div>

@@ -28,9 +28,9 @@ job. In order to use functions from the Orville package directly in your monad
 it will need to provide instances for the three typeclasses that make up a
 complete Orville monad - `MonadOrville`, `MonadOrvilleControl` and
 `HasOrvilleState`. Luckily, it's a simple matter of adding these three
-typeclasses the the deriving list for `Application`. If you're not using
-`GHC2021` you'll need the `GeneralizedNewtypeDeriving` language extension, as
-in the example in this guide.
+typeclasses the deriving list for `Application`. If you're not using `GHC2021`
+you'll need the `GeneralizedNewtypeDeriving` language extension, as in the
+example in this guide.
 
 $sample("adding-orville-new-readert/2-add-orville-typeclasses.patch", "filename=Main.hs")$
 

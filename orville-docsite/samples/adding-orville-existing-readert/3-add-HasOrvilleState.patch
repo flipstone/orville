@@ -1,0 +1,21 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 24,25 ****
+--- 24,39 ----
+  
++ instance O.HasOrvilleState Application where
++   askOrvilleState =
++     Application (Reader.asks applicationOrvilleState)
++ 
++   localOrvilleState f (Application reader) =
++     let
++       mkLocalContext :: ApplicationContext -> ApplicationContext
++       mkLocalContext ctx =
++         ctx
++           { applicationOrvilleState = f (applicationOrvilleState ctx)
++           }
++     in
++       Application (Reader.local mkLocalContext reader)
++ 
+  getGreeting :: Application String

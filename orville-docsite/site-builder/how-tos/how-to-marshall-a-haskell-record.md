@@ -1,6 +1,6 @@
 ---
 title: How To Marshall a Haskell Record (Upcoming)
-navOrder: 2
+navOrder: 3
 ---
 
 Coming Soon

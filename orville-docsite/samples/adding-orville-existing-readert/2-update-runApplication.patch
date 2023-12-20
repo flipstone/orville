@@ -1,0 +1,45 @@
+*** Main.hs (Old)
+--- Main.hs (New)
+***************
+*** 28,32 ****
+  
+! runApplication :: String -> Application a -> IO a
+! runApplication greeting (Application io) =
+    let
+      context =
+--- 28,37 ----
+  
+! runApplication :: O.ConnectionPool -> String -> Application a -> IO a
+! runApplication pool greeting (Application io) =
+    let
++     orvilleState =
++       O.newOrvilleState
++         O.defaultErrorDetailLevel
++         pool
++ 
+      context =
+***************
+*** 34,35 ****
+--- 39,41 ----
+          { applicationGreeting = greeting
++         , applicationOrvilleState = orvilleState
+          }
+***************
+*** 44,46 ****
+  main :: IO ()
+! main =
+!   runApplication "Hello Application" myApplication
+--- 50,62 ----
+  main :: IO ()
+! main = do
+!   pool <-
+!     O.createConnectionPool
+!         O.ConnectionOptions
+!           { O.connectionString = "host=localhost user=postgres password=postgres"
+!           , O.connectionNoticeReporting = O.DisableNoticeReporting
+!           , O.connectionPoolStripes = O.OneStripePerCapability
+!           , O.connectionPoolLingerTime = 10
+!           , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1
+!           }
+! 
+!   runApplication pool "Hello Application" myApplication

@@ -1,6 +1,6 @@
 ---
 title: How To Marshall a Haskell Sum Type (Upcoming)
-navOrder: 4
+navOrder: 5
 ---
 
 Coming Soon

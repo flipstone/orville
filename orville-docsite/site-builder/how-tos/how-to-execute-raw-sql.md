@@ -1,6 +1,6 @@
 ---
 title: How To Execute Raw SQL (Upcoming)
-navOrder: 6
+navOrder: 7
 ---
 
 Coming Soon
