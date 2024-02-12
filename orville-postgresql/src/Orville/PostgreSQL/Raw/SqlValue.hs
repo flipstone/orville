@@ -47,6 +47,7 @@ module Orville.PostgreSQL.Raw.SqlValue
   , toLocalTime
   , fromRawBytes
   , fromRawBytesNullable
+  , toRawBytes
   , toPgValue
   )
 where
@@ -144,6 +145,25 @@ fromRawBytes =
 fromRawBytesNullable :: Maybe BS.ByteString -> SqlValue
 fromRawBytesNullable =
   maybe sqlNull fromRawBytes
+
+{- |
+  Get the raw ByteString of an SqlValue as returned by the database.
+
+  This function will return Left when given a SQL NULL value.
+
+  This function does not interpret the bytes in any way.
+
+  @since 1.1.0.0
+-}
+toRawBytes
+  :: SqlValue
+  -> Either String BS.ByteString
+toRawBytes sqlValue =
+  case sqlValue of
+    SqlNull ->
+      Left "Unexpected SQL NULL value"
+    SqlValue bytes ->
+      Right (PgTextFormatValue.toByteString bytes)
 
 {- |
   Encodes an 'Int8' value for use with the database.
@@ -510,12 +530,7 @@ toBytesValue ::
   Either String a
 toBytesValue byteParser sqlValue =
   let
-    result =
-      case sqlValue of
-        SqlNull ->
-          Left "Unexpected SQL NULL value"
-        SqlValue bytes ->
-          byteParser (PgTextFormatValue.toByteString bytes)
+    result = byteParser =<< toRawBytes sqlValue
 
     typeRepOfA =
       -- result is the 'proxy a' for typeRep
