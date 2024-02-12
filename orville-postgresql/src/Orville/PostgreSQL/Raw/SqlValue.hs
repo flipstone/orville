@@ -155,9 +155,9 @@ fromRawBytesNullable =
 
   @since 1.1.0.0
 -}
-toRawBytes
-  :: SqlValue
-  -> Either String BS.ByteString
+toRawBytes ::
+  SqlValue ->
+  Either String BS.ByteString
 toRawBytes sqlValue =
   case sqlValue of
     SqlNull ->
