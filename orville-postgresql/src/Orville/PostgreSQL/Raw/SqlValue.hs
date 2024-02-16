@@ -128,8 +128,9 @@ toPgValue sqlValue =
   function. See 'fromRawBytesNullable' for how to represent a nullable
   raw value.
 
-  Warning: You can't use this to e.g. insert into a BYTEA column.
-  See https://www.postgresql.org/docs/current/datatype-binary.html#DATATYPE-BINARY-BYTEA-HEX-FORMAT
+  Warning: Will throw NULByteFoundError if there is a NULL byte. For arbitrary
+           binary data see:
+           https://www.postgresql.org/docs/current/datatype-binary.html#DATATYPE-BINARY-BYTEA-HEX-FORMAT
 
 @since 1.0.0.0
 -}
