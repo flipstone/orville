@@ -3,7 +3,42 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: liquidhaskell-0.9.4.7.0@sha256:31866a28d6f3ef540ba8da75ec0459223b8ab445e0b6873075bd21b4ed76f6df,3559
+    pantry-tree:
+      sha256: 4ce2d1af2f25a60139e772b3492a76c05b2b698a10c150fc8f9df68b042b6990
+      size: 3367
+  original:
+    hackage: liquidhaskell-0.9.4.7.0
+- completed:
+    hackage: liquidhaskell-boot-0.9.4.7.0@sha256:0de0c907e361d491454efc7e824ce72fb066ec8cc6b435766fc5beb9139ef22e,9835
+    pantry-tree:
+      sha256: 7f3f00a09178d52e99650b0b0f43fc307de4cd5cb33c0096961c589b451bb16b
+      size: 7768
+  original:
+    hackage: liquidhaskell-boot-0.9.4.7.0@sha256:0de0c907e361d491454efc7e824ce72fb066ec8cc6b435766fc5beb9139ef22e,9835
+- completed:
+    hackage: liquid-fixpoint-0.9.4.7@sha256:63926bdb1f780c827c235e00358d0dfbe624d748670a694db6cd5c01c17ca55a,9478
+    pantry-tree:
+      sha256: 03b2d32a0c0dc822e40865ecdfbd58baaa4954bb495c229c8db644b987cee9b9
+      size: 16089
+  original:
+    hackage: liquid-fixpoint-0.9.4.7@sha256:63926bdb1f780c827c235e00358d0dfbe624d748670a694db6cd5c01c17ca55a,9478
+- completed:
+    hackage: smtlib-backends-0.3@sha256:69977f97a8db2c11e97bde92fff7e86e793c1fb23827b284bf89938ee463fbf0,1211
+    pantry-tree:
+      sha256: d7c614eab0f3f256b22724ca2d7ac41651f22209242af1d24f052f41d7a7541f
+      size: 275
+  original:
+    hackage: smtlib-backends-0.3@sha256:69977f97a8db2c11e97bde92fff7e86e793c1fb23827b284bf89938ee463fbf0,1211
+- completed:
+    hackage: smtlib-backends-process-0.3@sha256:3eee93e91f41c8a2fb2699e95b502a24d8053485ccf7749e2766683d1ebfe11d,1676
+    pantry-tree:
+      sha256: 579580c8067b4c6640261187fc5d2ac0a02923db4633e0027067de72f947083c
+      size: 461
+  original:
+    hackage: smtlib-backends-process-0.3@sha256:3eee93e91f41c8a2fb2699e95b502a24d8053485ccf7749e2766683d1ebfe11d,1676
 snapshots:
 - completed:
     sha256: 9313df78f49519315342f4c51ffc5da12659d3735f8ac3c54a1fb98ff874474e

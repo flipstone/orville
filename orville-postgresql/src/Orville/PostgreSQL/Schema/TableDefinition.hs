@@ -112,6 +112,12 @@ data TablePrimaryKey key where
 
 @since 1.0.0.0
 -}
+{-@ mkTableDefinition ::
+      {tableName:String | len tableName <= 63} ->
+      PrimaryKey key ->
+      SqlMarshaller writeEntity readEntity ->
+      TableDefinition (HasKey key) writeEntity readEntity
+@-}
 mkTableDefinition ::
   -- | The name of the table
   String ->

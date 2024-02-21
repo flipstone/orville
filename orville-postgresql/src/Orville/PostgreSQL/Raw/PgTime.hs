@@ -5,6 +5,7 @@ Stability : Stable
 
 @since 1.0.0.0
 -}
+-- {-@ LIQUID "--skip-module" @-}
 module Orville.PostgreSQL.Raw.PgTime
   ( dayToPostgreSQL
   , day

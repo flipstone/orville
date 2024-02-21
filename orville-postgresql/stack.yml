@@ -3,3 +3,9 @@ resolver: lts-21.12
 packages:
   - .
 allow-different-user: true
+extra-deps:
+  - liquidhaskell-0.9.4.7.0
+  - liquidhaskell-boot-0.9.4.7.0@sha256:0de0c907e361d491454efc7e824ce72fb066ec8cc6b435766fc5beb9139ef22e,9835
+  - liquid-fixpoint-0.9.4.7@sha256:63926bdb1f780c827c235e00358d0dfbe624d748670a694db6cd5c01c17ca55a,9478
+  - smtlib-backends-0.3@sha256:69977f97a8db2c11e97bde92fff7e86e793c1fb23827b284bf89938ee463fbf0,1211
+  - smtlib-backends-process-0.3@sha256:3eee93e91f41c8a2fb2699e95b502a24d8053485ccf7749e2766683d1ebfe11d,1676

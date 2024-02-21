@@ -5,6 +5,7 @@ cabal.sandbox.config
 .stack-work/
 test-all-logs
 dist-newstyle
+.liquid
 
 # Ignore TAGS file produced by emacs and vim.
 TAGS

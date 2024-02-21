@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
-
+{-@ LIQUID "--no-termination" @-}
 {- |
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
@@ -177,6 +177,7 @@ data ConnectionOptions = ConnectionOptions
 {- |
   INTERNAL: Resolves the 'StripeOption' to the actual number of stripes to use.
 -}
+{-@ assume determineStripeCount :: StripeOption -> IO {stripeCount:Int | stripeCount >=1} @-}
 determineStripeCount :: StripeOption -> IO Int
 determineStripeCount stripeOption =
   case stripeOption of
@@ -187,6 +188,7 @@ determineStripeCount stripeOption =
   INTERNAL: Resolves the 'MaxConnections' to the actual number of connections
   to use per stripe.
 -}
+{-@ determineConnectionsPerStripe :: {stripes:Int | stripes >= 1} -> MaxConnections -> Either String Int @-}
 determineConnectionsPerStripe :: Int -> MaxConnections -> Either String Int
 determineConnectionsPerStripe stripes maxConnections =
   case maxConnections of
