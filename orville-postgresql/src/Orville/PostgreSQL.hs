@@ -144,6 +144,10 @@ module Orville.PostgreSQL
   , IndexDefinition.IndexCreationStrategy (Transactional, Concurrent)
   , IndexDefinition.setIndexCreationStrategy
   , IndexDefinition.indexCreationStrategy
+  , IndexDefinition.IndexMigrationKey (AttributeBasedIndexKey, NamedIndexKey)
+  , IndexDefinition.AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns)
+  , IndexDefinition.NamedIndexMigrationKey
+  , IndexDefinition.indexMigrationKey
   , PrimaryKey.PrimaryKey
   , PrimaryKey.primaryKey
   , PrimaryKey.compositePrimaryKey

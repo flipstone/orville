@@ -18,6 +18,10 @@ module Orville.PostgreSQL.Schema.IndexDefinition
   , Expr.IndexUniqueness (UniqueIndex, NonUniqueIndex)
   , IndexDefinition.indexCreateExpr
   , IndexDefinition.IndexCreationStrategy (Transactional, Concurrent)
+  , IndexDefinition.IndexMigrationKey (AttributeBasedIndexKey, NamedIndexKey)
+  , IndexDefinition.AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns)
+  , IndexDefinition.NamedIndexMigrationKey
+  , IndexDefinition.indexMigrationKey
   )
 where
 
