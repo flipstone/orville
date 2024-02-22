@@ -80,7 +80,7 @@ groupByOrderByTest testName test =
       dropAndRecreateTestTable connection
 
       RawSql.executeVoid connection $
-        Expr.insertExpr testTable Nothing (mkGroupByOrderByTestInsertSource test) Nothing
+        Expr.insertExpr testTable Nothing (mkGroupByOrderByTestInsertSource test) Nothing Nothing
 
       result <-
         RawSql.execute connection $

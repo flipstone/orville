@@ -103,7 +103,7 @@ withFooBarData pool fooBars action =
       dropAndRecreateTestTable connection
 
       RawSql.executeVoid connection $
-        Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
+        Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing Nothing
 
       action connection
 

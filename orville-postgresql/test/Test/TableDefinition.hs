@@ -46,6 +46,7 @@ prop_roundTrip =
         TableDefinition.mkInsertExpr
           ReturningOption.WithoutReturning
           Foo.table
+          Nothing
           (originalFoo :| [])
 
       selectFoos =
@@ -67,7 +68,7 @@ prop_readOnlyFields =
 
     let
       insertBar =
-        TableDefinition.mkInsertExpr ReturningOption.WithoutReturning Bar.table (originalBar :| [])
+        TableDefinition.mkInsertExpr ReturningOption.WithoutReturning Bar.table Nothing (originalBar :| [])
 
       selectBars =
         Select.selectTable Bar.table mempty
@@ -94,6 +95,7 @@ prop_primaryKey =
         TableDefinition.mkInsertExpr
           ReturningOption.WithoutReturning
           Foo.table
+          Nothing
           (originalFoo :| [conflictingFoo])
 
     result <- MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection -> do
@@ -125,6 +127,7 @@ prop_uniqueConstraint =
         TableDefinition.mkInsertExpr
           ReturningOption.WithoutReturning
           Foo.table
+          Nothing
           (originalFoo :| [conflictingFoo])
 
     result <- MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection -> do

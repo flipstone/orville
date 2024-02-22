@@ -250,6 +250,7 @@ runRoundTripTest pool testCase = do
         Nothing
         (Expr.insertSqlValues [[Marshall.fieldValueToSqlValue fieldDef value]])
         Nothing
+        Nothing
 
     result <-
       RawSql.execute connection $
@@ -294,6 +295,7 @@ runNullableRoundTripTest pool testCase = do
         Nothing
         (Expr.insertSqlValues [[Marshall.fieldValueToSqlValue fieldDef value]])
         Nothing
+        Nothing
 
     result <-
       RawSql.execute connection $
@@ -329,6 +331,7 @@ runNullCounterExampleTest pool testCase = do
           Nothing
           (Expr.insertSqlValues [[SqlValue.sqlNull]])
           Nothing
+          Nothing
 
   case result of
     Left err ->
@@ -361,6 +364,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
         testTable
         Nothing
         (RawSql.unsafeSqlExpression "VALUES(DEFAULT)")
+        Nothing
         Nothing
 
     result <-
@@ -400,6 +404,7 @@ runDefaultValueInsertOnlyTest pool testCase defaultValue =
         testTable
         Nothing
         (RawSql.unsafeSqlExpression "VALUES(DEFAULT)")
+        Nothing
         Nothing
 
 testTable :: Expr.Qualified Expr.TableName

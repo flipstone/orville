@@ -22,6 +22,7 @@ insertUpdateDeleteTests pool =
   Property.group
     "Expr - Insert/Update/Delete"
     [ prop_insertExpr pool
+    , prop_insertExprWithOnConflictDoNothing pool
     , prop_insertExprWithReturning pool
     , prop_updateExpr pool
     , prop_updateExprWithWhere pool
@@ -43,7 +44,32 @@ prop_insertExpr =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing Nothing
+
+          result <- RawSql.execute connection findAllFooBars
+
+          Execution.readRows result
+
+    assertEqualFooBarRows rows fooBars
+
+prop_insertExprWithOnConflictDoNothing :: Property.NamedDBProperty
+prop_insertExprWithOnConflictDoNothing =
+  Property.singletonNamedDBProperty "insertExpr with on conflict do nothing does not modify table" $ \pool -> do
+    let
+      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
+
+    rows <-
+      MIO.liftIO $
+        Conn.withPoolConnection pool $ \connection -> do
+          dropAndRecreateTestTable connection
+          RawSql.executeVoid connection addIndex
+
+          RawSql.executeVoid connection $
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing Nothing
+
+          RawSql.executeVoid connection $
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) (Just Expr.onConflictDoNothing) Nothing
 
           result <- RawSql.execute connection findAllFooBars
 
@@ -68,6 +94,7 @@ prop_insertExprWithReturning =
                 fooBarTable
                 Nothing
                 (insertFooBarSource fooBars)
+                Nothing
                 (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
           Execution.readRows result
@@ -94,7 +121,7 @@ prop_updateExpr =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing Nothing
 
           RawSql.executeVoid connection setBarToFerret
 
@@ -124,7 +151,7 @@ prop_updateExprWithWhere =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing Nothing
 
           RawSql.executeVoid connection updateDogToForret
 
@@ -154,7 +181,7 @@ prop_updateExprWithReturning =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing Nothing
 
           result <- RawSql.execute connection setBarToFerret
 
@@ -180,7 +207,7 @@ prop_deleteExpr =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing Nothing
 
           RawSql.executeVoid connection deleteRows
 
@@ -209,7 +236,7 @@ prop_deleteExprWithWhere =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing Nothing
 
           RawSql.executeVoid connection deleteDogs
 
@@ -237,7 +264,7 @@ prop_deleteExprWithReturning =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource oldFooBars) Nothing Nothing
 
           result <- RawSql.execute connection deleteDogs
 

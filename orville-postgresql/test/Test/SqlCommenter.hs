@@ -70,7 +70,7 @@ prop_sqlCommenterInsertExpr =
           dropAndRecreateTestTable connection
 
           let
-            insertExpr = Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing
+            insertExpr = Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing Nothing
           RawSql.executeVoid connection $
             SqlCommenter.addSqlCommenterAttributes staticSqlCommenterAttributes insertExpr
 

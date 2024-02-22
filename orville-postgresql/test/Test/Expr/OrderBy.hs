@@ -120,7 +120,7 @@ orderByTest testName test =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource $ orderByValuesToInsert test) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource $ orderByValuesToInsert test) Nothing Nothing
 
           result <-
             RawSql.execute connection $

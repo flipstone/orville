@@ -538,6 +538,7 @@ runDecodingTest pool test =
           Nothing
           (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
           Nothing
+          Nothing
 
       result <-
         RawSql.execute connection $

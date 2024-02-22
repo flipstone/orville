@@ -16,6 +16,8 @@ module Orville.PostgreSQL.Expr.Insert
   , insertSqlValues
   , RowValues
   , rowValues
+  , OnConflictExpr
+  , onConflictDoNothing
   )
 where
 
@@ -55,9 +57,10 @@ insertExpr ::
   Qualified TableName ->
   Maybe InsertColumnList ->
   InsertSource ->
+  Maybe OnConflictExpr ->
   Maybe ReturningExpr ->
   InsertExpr
-insertExpr target maybeInsertColumns source maybeReturning =
+insertExpr target maybeInsertColumns source maybeOnConflict maybeReturning =
   InsertExpr
     . RawSql.intercalate RawSql.space
     $ catMaybes
@@ -65,6 +68,7 @@ insertExpr target maybeInsertColumns source maybeReturning =
       , Just $ RawSql.toRawSql target
       , fmap RawSql.toRawSql maybeInsertColumns
       , Just $ RawSql.toRawSql source
+      , fmap RawSql.toRawSql maybeOnConflict
       , fmap RawSql.toRawSql maybeReturning
       ]
 
@@ -168,3 +172,26 @@ rowValues values =
       , RawSql.intercalate RawSql.comma (fmap RawSql.parameter values)
       , RawSql.rightParen
       ]
+
+{- |
+Type to represent the SQL for the 'ON CONFLICT' clause.
+
+'OnConflict' provides a 'RawSql.SqlExpression' instance. See 'RawSql.unsafeSqlExpression' for how to
+construct a value with your own custom SQL.
+
+@since 1.1.0.0
+-}
+newtype OnConflictExpr
+  = OnConflictExpr RawSql.RawSql
+  deriving
+    ( -- | @since 1.0.1.0
+      RawSql.SqlExpression
+    )
+
+{- | Create an 'OnConflict' that specifies no action is to be taken during a conflicting insert.
+
+@since 1.1.0.0
+-}
+onConflictDoNothing :: OnConflictExpr
+onConflictDoNothing =
+  OnConflictExpr $ RawSql.fromString "ON CONFLICT DO NOTHING"

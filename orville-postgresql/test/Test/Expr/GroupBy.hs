@@ -90,7 +90,7 @@ groupByTest testName test =
       dropAndRecreateTestTable connection
 
       RawSql.executeVoid connection $
-        Expr.insertExpr testTable Nothing (mkGroupByTestInsertSource test) Nothing
+        Expr.insertExpr testTable Nothing (mkGroupByTestInsertSource test) Nothing Nothing
 
       result <-
         RawSql.execute connection $

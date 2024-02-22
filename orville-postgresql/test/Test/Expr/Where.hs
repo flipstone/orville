@@ -204,7 +204,7 @@ whereConditionTest testName test =
           dropAndRecreateTestTable connection
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource $ whereValuesToInsert test) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource $ whereValuesToInsert test) Nothing Nothing
 
           result <-
             RawSql.execute connection $

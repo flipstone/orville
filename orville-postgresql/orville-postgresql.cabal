@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           orville-postgresql
-version:        1.0.0.0
+version:        1.1.0.0
 synopsis:       A Haskell library for PostgreSQL
 description:    Orville's goal is to provide a powerful API for applications to access PostgreSQL databases with minimal use of sophisticated language techniques or extensions. See https://github.com/flipstone/orville for more details.
 category:       database, library, postgresql

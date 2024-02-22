@@ -444,9 +444,10 @@ mkTableReturningClause returningOption tableDef =
 mkInsertExpr ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
+  Maybe Expr.OnConflictExpr ->
   NonEmpty writeEntity ->
   Expr.InsertExpr
-mkInsertExpr returningOption tableDef entities =
+mkInsertExpr returningOption tableDef maybeOnConflict entities =
   let
     marshaller =
       unannotatedSqlMarshaller $ tableMarshaller tableDef
@@ -461,6 +462,7 @@ mkInsertExpr returningOption tableDef entities =
       (tableName tableDef)
       (Just insertColumnList)
       insertSource
+      maybeOnConflict
       (mkTableReturningClause returningOption tableDef)
 
 {- |

@@ -125,7 +125,7 @@ insertTable ::
   NonEmpty writeEntity ->
   Insert readEntity returningClause
 insertTable returningOption tableDef entities =
-  rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef entities)
+  rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef Nothing entities)
 
 {- |
   Builds an 'Insert' that will execute the specified query and use the given
