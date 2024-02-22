@@ -19,6 +19,8 @@ module Orville.PostgreSQL.Expr.WhereClause
   , parenthesized
   , equals
   , notEquals
+  , isDistinctFrom
+  , isNotDistinctFrom
   , greaterThan
   , lessThan
   , greaterThanOrEqualTo
@@ -40,7 +42,7 @@ where
 
 import qualified Data.List.NonEmpty as NE
 
-import Orville.PostgreSQL.Expr.BinaryOperator (andOp, binaryOpExpression, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp, orOp)
+import Orville.PostgreSQL.Expr.BinaryOperator (andOp, binaryOpExpression, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, isDistinctFromOp, isNotDistinctFromOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp, orOp)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, rowValueConstructor)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -288,6 +290,24 @@ equals =
 notEquals :: ValueExpression -> ValueExpression -> BooleanExpr
 notEquals =
   binaryOpExpression notEqualsOp
+
+{- |
+  The SQL @IS DISTINCT FROM@ binary comparison.
+
+  @since 1.1.0.0
+-}
+isDistinctFrom :: ValueExpression -> ValueExpression -> BooleanExpr
+isDistinctFrom =
+  binaryOpExpression isDistinctFromOp
+
+{- |
+  The SQL @IS NOT DISTINCT FROM@ binary comparison.
+
+  @since 1.1.0.0
+-}
+isNotDistinctFrom :: ValueExpression -> ValueExpression -> BooleanExpr
+isNotDistinctFrom =
+  binaryOpExpression isNotDistinctFromOp
 
 {- |
   The SQL @>@ operator.

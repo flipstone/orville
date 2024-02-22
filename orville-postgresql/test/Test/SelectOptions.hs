@@ -26,6 +26,8 @@ selectOptionsTests =
     , prop_fieldEqualsOperator
     , prop_fieldNotEquals
     , prop_fieldNotEqualsOperator
+    , prop_fieldIsDistinctFrom
+    , prop_fieldIsNotDistinctFrom
     , prop_fieldLessThan
     , prop_fieldLessThanOperator
     , prop_fieldGreaterThan
@@ -83,6 +85,20 @@ prop_fieldNotEquals =
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") <> ($1)")
       (O.where_ $ O.fieldNotEquals fooField 0)
+
+prop_fieldIsDistinctFrom :: Property.NamedProperty
+prop_fieldIsDistinctFrom =
+  Property.singletonNamedProperty "fieldIsDistinctFrom generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") IS DISTINCT FROM ($1)")
+      (O.where_ $ O.fieldIsDistinctFrom fooField 0)
+
+prop_fieldIsNotDistinctFrom :: Property.NamedProperty
+prop_fieldIsNotDistinctFrom =
+  Property.singletonNamedProperty "fieldIsNotDistinctFrom generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") IS NOT DISTINCT FROM ($1)")
+      (O.where_ $ O.fieldIsNotDistinctFrom fooField 0)
 
 prop_fieldNotEqualsOperator :: Property.NamedProperty
 prop_fieldNotEqualsOperator =

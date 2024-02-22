@@ -33,6 +33,8 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , (.==)
   , fieldNotEquals
   , (./=)
+  , fieldIsDistinctFrom
+  , fieldIsNotDistinctFrom
   , fieldGreaterThan
   , (.>)
   , fieldLessThan
@@ -888,6 +890,24 @@ fieldNotEquals =
 (./=) = fieldNotEquals
 
 infixl 9 ./=
+
+{- |
+  Checks that the value in a field is distinct from a particular value.
+
+@since 1.1.0.0
+-}
+fieldIsDistinctFrom :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldIsDistinctFrom =
+  whereColumnComparison Expr.isDistinctFrom
+
+{- |
+  Checks that the value in a field is not distinct from a particular value.
+
+@since 1.1.0.0
+-}
+fieldIsNotDistinctFrom :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldIsNotDistinctFrom =
+  whereColumnComparison Expr.isNotDistinctFrom
 
 {- |
   Checks that the value in a field is greater than a particular value.

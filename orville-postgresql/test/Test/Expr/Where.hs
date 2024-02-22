@@ -23,6 +23,8 @@ whereTests pool =
   Property.group "Expr - WhereClause" $
     [ prop_noWhereClauseSpecified pool
     , prop_equalsOp pool
+    , prop_isDistinctFromOp pool
+    , prop_isNotDistinctFromOp pool
     , prop_greaterThanOp pool
     , prop_greaterThanOrEqualsOp pool
     , prop_lessThanOp pool
@@ -54,6 +56,31 @@ prop_equalsOp =
           Just . Expr.whereClause $
             Expr.equals fooColumnRef (int32ValueExpr 2)
       }
+
+prop_isDistinctFromOp :: Property.NamedDBProperty
+prop_isDistinctFromOp =
+  whereConditionTest "isDistinctFromOp matches on null correctly" $
+    WhereConditionTest
+      { whereValuesToInsert = [FooBar Nothing (Just "ant"), mkFooBar 2 "bee", FooBar Nothing (Just "chihuahua")]
+      , whereExpectedQueryResults = [mkFooBar 2 "bee"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.isDistinctFrom fooColumnRef (Expr.valueExpression SqlValue.sqlNull)
+      }
+
+prop_isNotDistinctFromOp :: Property.NamedDBProperty
+prop_isNotDistinctFromOp =
+  whereConditionTest "isNotDistinctFromOp matches on null correctly" $
+    let
+      expectedResults = [FooBar Nothing (Just "ant"), FooBar Nothing (Just "chihuahua")]
+    in
+      WhereConditionTest
+        { whereValuesToInsert = [mkFooBar 2 "bee"] <> expectedResults
+        , whereExpectedQueryResults = expectedResults
+        , whereClause =
+            Just . Expr.whereClause $
+              Expr.isNotDistinctFrom fooColumnRef (Expr.valueExpression SqlValue.sqlNull)
+        }
 
 prop_greaterThanOp :: Property.NamedDBProperty
 prop_greaterThanOp =

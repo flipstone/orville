@@ -15,6 +15,8 @@ module Orville.PostgreSQL.Expr.BinaryOperator
   , binaryOperator
   , binaryOpExpression
   , equalsOp
+  , isDistinctFromOp
+  , isNotDistinctFromOp
   , notEqualsOp
   , greaterThanOp
   , lessThanOp
@@ -84,6 +86,20 @@ equalsOp =
 notEqualsOp :: BinaryOperator
 notEqualsOp =
   binaryOperator "<>"
+
+{- | The SQL 'IS DISTINCT FROM' binary 'operator'.
+
+@since 1.1.0.0
+-}
+isDistinctFromOp :: BinaryOperator
+isDistinctFromOp = binaryOperator "IS DISTINCT FROM"
+
+{- | The SQL 'IS NOT DISTINCT FROM' binary 'operator'.
+
+@since 1.1.0.0
+-}
+isNotDistinctFromOp :: BinaryOperator
+isNotDistinctFromOp = binaryOperator "IS NOT DISTINCT FROM"
 
 {- | The SQL strictly greater than binary operator.
 

@@ -258,6 +258,8 @@ module Orville.PostgreSQL
   , (FieldDefinition..==)
   , FieldDefinition.fieldNotEquals
   , (FieldDefinition../=)
+  , FieldDefinition.fieldIsDistinctFrom
+  , FieldDefinition.fieldIsNotDistinctFrom
   , FieldDefinition.fieldGreaterThan
   , (FieldDefinition..>)
   , FieldDefinition.fieldLessThan
