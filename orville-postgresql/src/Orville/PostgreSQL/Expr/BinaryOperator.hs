@@ -269,8 +269,8 @@ binaryOpExpression ::
 binaryOpExpression op left right =
   binaryOpExpressionUnparenthenizedArguments
     op
-    (RawSql.unsafeFromRawSql (RawSql.leftParen <> RawSql.toRawSql left <> RawSql.rightParen))
-    (RawSql.unsafeFromRawSql (RawSql.leftParen <> RawSql.toRawSql right <> RawSql.rightParen))
+    (RawSql.unsafeFromRawSql (RawSql.parenthesized left))
+    (RawSql.unsafeFromRawSql (RawSql.parenthesized right))
 
 -- internal helper function
 binaryOpExpressionUnparenthenizedArguments ::

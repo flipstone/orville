@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -16,6 +16,7 @@ module Orville.PostgreSQL.Expr.WhereClause
   , (.&&)
   , orExpr
   , (.||)
+  , notExpr
   , parenthesized
   , equals
   , notEquals
@@ -160,6 +161,19 @@ andExpr left right =
 (.&&) = andExpr
 
 infixr 8 .&&
+
+{- |
+  The SQL @NOT@ operator. The argument will be surrounded with parentheses
+  to ensure that the associativity of expression in the resulting SQL matches
+  the associativity implied by this Haskell function.
+
+  @since 1.1.0.0
+-}
+notExpr :: BooleanExpr -> BooleanExpr
+notExpr bool =
+  BooleanExpr $
+    RawSql.fromString "NOT "
+      <> RawSql.parenthesized bool
 
 {- |
   The SQL @IN@ operator. The result will be @TRUE@ if the given value

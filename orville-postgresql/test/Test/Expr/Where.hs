@@ -31,6 +31,7 @@ whereTests pool =
     , prop_lessThanOrEqualsToOp pool
     , prop_andExpr pool
     , prop_orExpr pool
+    , prop_notExpr pool
     , prop_valueIn pool
     , prop_valueNotIn pool
     , prop_tupleIn pool
@@ -150,6 +151,19 @@ prop_orExpr =
             Expr.orExpr
               (Expr.equals fooColumnRef (int32ValueExpr 3))
               (Expr.equals barColumnRef (textValueExpr "dingo"))
+      }
+
+prop_notExpr :: Property.NamedDBProperty
+prop_notExpr =
+  whereConditionTest "notExpr inverts condition" $
+    WhereConditionTest
+      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      , whereExpectedQueryResults = [mkFooBar 2 "dingo"]
+      , whereClause =
+          Just . Expr.whereClause . Expr.notExpr $
+            Expr.orExpr
+              (Expr.equals fooColumnRef (int32ValueExpr 3))
+              (Expr.equals barColumnRef (textValueExpr "dog"))
       }
 
 prop_valueIn :: Property.NamedDBProperty
