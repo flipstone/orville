@@ -18,6 +18,7 @@ tableDefinitionTests pool =
     "Expr - TableDefinition"
     [ prop_createWithOneColumn pool
     , prop_createWithMultipleColumns pool
+    , prop_renameTable pool
     , prop_addOneColumn pool
     , prop_addMultipleColumns pool
     ]
@@ -43,6 +44,23 @@ prop_createWithMultipleColumns =
 
     tableDesc <- PgAssert.assertTableExists pool tableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
+
+prop_renameTable :: Property.NamedDBProperty
+prop_renameTable =
+  Property.singletonNamedDBProperty "Rename table results in the new name existing and the old name not" $ \pool -> do
+    let
+      newTableNameString = "renamed_" <> tableNameString
+      newTableName = Expr.qualifyTable Nothing $ Expr.tableName newTableNameString
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
+        Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) newTableName
+        Orville.executeVoid Orville.DDLQuery $ Expr.createTableExpr exprTableName [column1Definition] Nothing []
+        Orville.executeVoid Orville.DDLQuery $ Expr.renameTableExpr exprTableName newTableName
+
+    PgAssert.assertTableDoesNotExist pool tableNameString
+    tableDesc <- PgAssert.assertTableExists pool newTableNameString
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString]
 
 prop_addOneColumn :: Property.NamedDBProperty
 prop_addOneColumn =

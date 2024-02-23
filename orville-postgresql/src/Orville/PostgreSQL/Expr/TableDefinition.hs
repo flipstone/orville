@@ -14,6 +14,7 @@ module Orville.PostgreSQL.Expr.TableDefinition
   , primaryKeyExpr
   , AlterTableExpr
   , alterTableExpr
+  , renameTableExpr
   , AlterTableAction
   , addColumn
   , dropColumn
@@ -157,6 +158,15 @@ alterTableExpr tableName actions =
       <> RawSql.toRawSql tableName
       <> RawSql.space
       <> RawSql.intercalate RawSql.commaSpace actions
+
+{- |
+  Given an existing table name and the desired name, construct an 'AlterTableExpr' that will rename to desired.
+
+  @since 1.1.0.0
+-}
+renameTableExpr :: Qualified TableName -> Qualified TableName -> AlterTableExpr
+renameTableExpr existingTableName newTableName =
+  alterTableExpr existingTableName . pure . AlterTableAction $ RawSql.fromString "RENAME TO " <> RawSql.toRawSql newTableName
 
 {- |
 Type to represent an action as part of an @ALTER TABLE@ statement. E.G.
