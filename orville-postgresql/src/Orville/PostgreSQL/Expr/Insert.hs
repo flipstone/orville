@@ -184,7 +184,7 @@ construct a value with your own custom SQL.
 newtype OnConflictExpr
   = OnConflictExpr RawSql.RawSql
   deriving
-    ( -- | @since 1.0.1.0
+    ( -- | @since 1.1.0.0
       RawSql.SqlExpression
     )
 
