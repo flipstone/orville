@@ -30,6 +30,8 @@ module Orville.PostgreSQL.Expr.TableDefinition
   , dropNotNull
   , DropTableExpr
   , dropTableExpr
+  , TruncateTableExpr
+  , truncateTablesExpr
   )
 where
 
@@ -386,4 +388,34 @@ dropTableExpr maybeIfExists tableName =
           , fmap RawSql.toRawSql maybeIfExists
           , Just (RawSql.toRawSql tableName)
           ]
+      )
+
+{- |
+Type to represent a @TRUNCATE TABLE@ statement. E.G.
+
+> TRUNCATE TABLE FOO
+
+'TruncateTableExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0
+-}
+newtype TruncateTableExpr
+  = TruncateTableExpr RawSql.RawSql
+  deriving (RawSql.SqlExpression)
+
+{- |
+  Constructs a 'TruncateTableExpr' that will truncate the specified tables.
+
+  @since 1.1.0.0
+-}
+truncateTablesExpr :: NonEmpty (Qualified TableName) -> TruncateTableExpr
+truncateTablesExpr tableNames =
+  TruncateTableExpr $
+    RawSql.intercalate
+      RawSql.space
+      ( [ RawSql.fromString "TRUNCATE TABLE"
+        , RawSql.intercalate RawSql.commaSpace tableNames
+        ]
       )

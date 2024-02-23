@@ -2,6 +2,7 @@ module Test.Expr.TestSchema
   ( FooBar (..)
   , mkFooBar
   , findAllFooBars
+  , findAllFooBarsInTable
   , fooBarTable
   , fooColumn
   , fooColumnRef
@@ -68,10 +69,14 @@ orderByFoo =
 
 findAllFooBars :: Expr.QueryExpr
 findAllFooBars =
+  findAllFooBarsInTable fooBarTable
+
+findAllFooBarsInTable :: Expr.Qualified Expr.TableName -> Expr.QueryExpr
+findAllFooBarsInTable tableName =
   Expr.queryExpr
     (Expr.selectClause $ Expr.selectExpr Nothing)
     (Expr.selectColumns [fooColumn, barColumn])
-    (Just $ Expr.tableExpr (Expr.referencesTable fooBarTable) Nothing Nothing (Just orderByFoo) Nothing Nothing)
+    (Just $ Expr.tableExpr (Expr.referencesTable tableName) Nothing Nothing (Just orderByFoo) Nothing Nothing)
 
 encodeFooBar :: FooBar -> [(Maybe B8.ByteString, SqlValue.SqlValue)]
 encodeFooBar fooBar =
