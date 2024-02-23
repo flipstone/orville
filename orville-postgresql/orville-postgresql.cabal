@@ -120,6 +120,7 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.SchemaName
       Orville.PostgreSQL.Expr.Internal.Name.SequenceName
       Orville.PostgreSQL.Expr.Internal.Name.TableName
+      Orville.PostgreSQL.Expr.Vacuum
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
@@ -187,6 +188,7 @@ test-suite spec
       Test.Expr.TableDefinition
       Test.Expr.TestSchema
       Test.Expr.Time
+      Test.Expr.Vacuum
       Test.Expr.Where
       Test.FieldDefinition
       Test.MarshallError

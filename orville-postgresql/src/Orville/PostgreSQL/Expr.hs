@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -62,6 +62,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Update
   , module Orville.PostgreSQL.Expr.ValueExpression
   , module Orville.PostgreSQL.Expr.WhereClause
+  , module Orville.PostgreSQL.Expr.Vacuum
   )
 where
 
@@ -93,5 +94,6 @@ import Orville.PostgreSQL.Expr.TableReferenceList
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
 import Orville.PostgreSQL.Expr.Update
+import Orville.PostgreSQL.Expr.Vacuum
 import Orville.PostgreSQL.Expr.ValueExpression
 import Orville.PostgreSQL.Expr.WhereClause

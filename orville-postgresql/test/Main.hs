@@ -26,6 +26,7 @@ import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Time as ExprTime
+import qualified Test.Expr.Vacuum as ExprVacuum
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.MarshallError as MarshallError
@@ -66,6 +67,7 @@ main = do
       , ExprCount.countTests pool
       , ExprMath.mathTests pool
       , ExprTime.timeTests pool
+      , ExprVacuum.vacuumTests
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool
