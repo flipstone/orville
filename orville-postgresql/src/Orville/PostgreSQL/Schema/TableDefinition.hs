@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -479,8 +479,9 @@ mkInsertColumnList ::
   SqlMarshaller writeEntity readEntity ->
   Expr.InsertColumnList
 mkInsertColumnList marshaller =
-  Expr.insertColumnList $
-    foldMarshallerFields marshaller [] (collectFromField ExcludeReadOnlyColumns fieldColumnName)
+  Expr.insertColumnList
+    . foldMarshallerFields marshaller []
+    $ collectFromField ExcludeReadOnlyColumns fieldColumnName
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their
@@ -519,9 +520,9 @@ collectSqlValue ::
   [SqlValue]
 collectSqlValue entry encodeRest entity =
   case entry of
-    Natural fieldDef (Just accessor) ->
+    Natural _ fieldDef (Just accessor) ->
       fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
-    Natural _ Nothing ->
+    Natural _ _ Nothing ->
       encodeRest entity
     Synthetic _ ->
       encodeRest entity

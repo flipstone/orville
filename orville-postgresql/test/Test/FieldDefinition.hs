@@ -256,7 +256,7 @@ runRoundTripTest pool testCase = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
+          (Expr.selectColumns [Marshall.fieldColumnName Nothing fieldDef])
           (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
@@ -301,7 +301,7 @@ runNullableRoundTripTest pool testCase = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
+          (Expr.selectColumns [Marshall.fieldColumnName Nothing fieldDef])
           (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
@@ -371,7 +371,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
+          (Expr.selectColumns [Marshall.fieldColumnName Nothing fieldDef])
           (Just $ Expr.tableExpr (Expr.referencesTable testTable) Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
@@ -416,4 +416,4 @@ dropAndRecreateTestTable fieldDef connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
 
   RawSql.executeVoid connection $
-    Expr.createTableExpr testTable [Marshall.fieldColumnDefinition fieldDef] Nothing []
+    Expr.createTableExpr testTable [Marshall.fieldColumnDefinition Nothing fieldDef] Nothing []

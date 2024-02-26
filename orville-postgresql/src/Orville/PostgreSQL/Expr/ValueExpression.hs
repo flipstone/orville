@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -22,7 +22,7 @@ where
 import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
-import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
@@ -65,7 +65,7 @@ is the equivalent of simply writing the column name as the expression. E.G.
 
 @since 1.0.0.0
 -}
-columnReference :: ColumnName -> ValueExpression
+columnReference :: Qualified ColumnName -> ValueExpression
 columnReference = ValueExpression . RawSql.toRawSql
 
 {- |
