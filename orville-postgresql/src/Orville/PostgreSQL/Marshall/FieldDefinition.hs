@@ -56,12 +56,14 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , setField
   , (.:=)
   , orderByField
+  , orderByFieldWithAlias
   , FieldNullability (..)
   , fieldValueToExpression
   , fieldValueToSqlValue
   , fieldValueFromSqlValue
   , fieldColumnName
   , fieldColumnReference
+  , fieldColumnReferenceWithAlias
   , fieldColumnDefinition
   , FieldName
   , stringToFieldName
@@ -379,9 +381,9 @@ fieldValueFromSqlValue =
 
 @since 1.0.0.0
 -}
-fieldColumnName :: FieldDefinition nullability a -> Expr.ColumnName
-fieldColumnName =
-  fieldNameToColumnName . fieldName
+fieldColumnName :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
+fieldColumnName mbAlias =
+  Expr.aliasQualifyColumn mbAlias . fieldNameToColumnName . fieldName
 
 {- |
   Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
@@ -391,7 +393,18 @@ fieldColumnName =
 -}
 fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReference =
-  Expr.columnReference . fieldColumnName
+  fieldColumnReferenceWithAlias Nothing
+
+{- |
+  Constructs the 'Expr.ValueExpression' for a, maybe aliased, field for use in SQL expressions
+  from the "Orville.PostgreSQL.Expr" module.
+
+@since 1.1.0.0
+-}
+fieldColumnReferenceWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.ValueExpression
+fieldColumnReferenceWithAlias mbAlias =
+  Expr.columnReference . fieldColumnName mbAlias
+
 
 {- |
   Constructs the equivalent 'Expr.FieldDefinition' as a SQL expression,
@@ -399,10 +412,10 @@ fieldColumnReference =
 
 @since 1.0.0.0
 -}
-fieldColumnDefinition :: FieldDefinition nullability a -> Expr.ColumnDefinition
-fieldColumnDefinition fieldDef =
+fieldColumnDefinition :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.ColumnDefinition
+fieldColumnDefinition mbAlias fieldDef =
   Expr.columnDefinition
-    (fieldColumnName fieldDef)
+    (fieldColumnName mbAlias fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
     (Just $ fieldColumnConstraint fieldDef)
     (fmap (Expr.columnDefault . DefaultValue.defaultValueExpression) $ i_fieldDefaultValue fieldDef)
@@ -839,19 +852,20 @@ prefixField prefix fieldDef =
 
 @since 1.0.0.0
 -}
-setField :: FieldDefinition nullability a -> a -> Expr.SetClause
-setField fieldDef value =
+setField :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.SetClause
+setField mbAlias fieldDef value =
   Expr.setColumn
-    (fieldColumnName fieldDef)
+    (fieldColumnName mbAlias fieldDef)
     (fieldValueToSqlValue fieldDef value)
 
 {- |
-  Operator alias for 'setField'.
+  Operator alias for 'setField'. Note that this will not work for aliased fields. If you need to
+  use aliases, you should use 'setField' directly.
 
 @since 1.0.0.0
 -}
 (.:=) :: FieldDefinition nullability a -> a -> Expr.SetClause
-(.:=) = setField
+(.:=) = setField Nothing
 
 {- |
   Checks that the value in a field equals a particular value.
@@ -1125,12 +1139,27 @@ whereColumnComparison columnComparison fieldDef a =
     (fieldColumnReference fieldDef)
     (fieldValueToExpression fieldDef a)
 
-{-- |
+{- |
   Orders a query by the column name for the given field.
---}
+
+@since 1.0.0.0
+-}
 orderByField ::
   FieldDefinition nullability value ->
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByField =
-  Expr.orderByColumnName . fieldColumnName
+  orderByFieldWithAlias Nothing
+
+{- |
+  Orders a query by the, maybe aliased, column name for the given field.
+
+@since 1.1.0.0
+-}
+orderByFieldWithAlias ::
+  Maybe Expr.Alias ->
+  FieldDefinition nullability value ->
+  Expr.OrderByDirection ->
+  Expr.OrderByExpr
+orderByFieldWithAlias mbAlias =
+  Expr.orderByColumnName . fieldColumnName mbAlias

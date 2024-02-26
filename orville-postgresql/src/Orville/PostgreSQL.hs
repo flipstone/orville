@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -165,6 +165,7 @@ module Orville.PostgreSQL
   , SqlMarshaller.marshallReadOnlyField
   , SqlMarshaller.marshallPartial
   , SqlMarshaller.marshallMaybe
+  , SqlMarshaller.marshallAlias
   , SqlMarshaller.prefixMarshaller
   , SqlMarshaller.foldMarshallerFields
   , SqlMarshaller.collectFromField
@@ -205,6 +206,7 @@ module Orville.PostgreSQL
   , FieldDefinition.fieldOfType
   , FieldDefinition.fieldColumnName
   , FieldDefinition.fieldColumnReference
+  , FieldDefinition.fieldColumnReferenceWithAlias
   , FieldDefinition.fieldName
   , FieldDefinition.setFieldName
   , FieldDefinition.fieldDescription
@@ -285,6 +287,7 @@ module Orville.PostgreSQL
   , Expr.descendingOrder
   , Expr.descendingOrderWith
   , FieldDefinition.orderByField
+  , FieldDefinition.orderByFieldWithAlias
   , Expr.orderByColumnName
   , Expr.andExpr
   , Expr.orExpr

@@ -97,7 +97,7 @@ tableNameString =
 column1Definition :: Expr.ColumnDefinition
 column1Definition =
   Expr.columnDefinition
-    (Expr.columnName column1NameString)
+    (Expr.aliasQualifyColumn Nothing (Expr.columnName column1NameString))
     Expr.text
     Nothing
     Nothing
@@ -109,7 +109,7 @@ column1NameString =
 column2Definition :: Expr.ColumnDefinition
 column2Definition =
   Expr.columnDefinition
-    (Expr.columnName column2NameString)
+    (Expr.aliasQualifyColumn Nothing (Expr.columnName column2NameString))
     Expr.text
     Nothing
     Nothing

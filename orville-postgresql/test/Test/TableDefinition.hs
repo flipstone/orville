@@ -19,6 +19,7 @@ import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
+import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.Entities.Bar as Bar
 import qualified Test.Entities.Foo as Foo
@@ -30,6 +31,7 @@ tableDefinitionTests pool =
   Property.group
     "TableDefinition"
     [ prop_roundTrip pool
+    , prop_roundTripWithAlias pool
     , prop_readOnlyFields pool
     , prop_primaryKey pool
     , prop_uniqueConstraint pool
@@ -60,6 +62,32 @@ prop_roundTrip =
         Select.executeSelect selectFoos
 
     foosFromDB === [originalFoo]
+
+prop_roundTripWithAlias :: Property.NamedDBProperty
+prop_roundTripWithAlias =
+  Property.namedDBProperty "Creates a table with an alias that can round trip an entity through it" $ \pool -> do
+    originalFoo <- HH.forAll Foo.generate
+
+    let
+      insertFoo =
+        TableDefinition.mkInsertExpr
+          ReturningOption.WithoutReturning
+          Foo.table
+          Nothing
+          (originalFoo :| [])
+
+      selectFoos =
+        Select.selectTableWithAlias (Expr.alias "some_alias") Foo.table mempty
+
+    foosFromDB <-
+      MIO.liftIO . Orville.runOrville pool $ do
+        Orville.withConnection $ \connection -> do
+          MIO.liftIO $ TestTable.dropAndRecreateTableDef connection Foo.table
+        Orville.executeVoid Orville.InsertQuery insertFoo
+        Select.executeSelect selectFoos
+
+    foosFromDB === [originalFoo]
+
 
 prop_readOnlyFields :: Property.NamedDBProperty
 prop_readOnlyFields =

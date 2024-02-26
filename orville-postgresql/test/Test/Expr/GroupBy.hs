@@ -107,13 +107,13 @@ testTable :: Expr.Qualified Expr.TableName
 testTable =
   Expr.qualifyTable Nothing (Expr.tableName "expr_test")
 
-fooColumn :: Expr.ColumnName
+fooColumn :: Expr.Qualified Expr.ColumnName
 fooColumn =
-  Expr.columnName "foo"
+  Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")
 
-barColumn :: Expr.ColumnName
+barColumn :: Expr.Qualified Expr.ColumnName
 barColumn =
-  Expr.columnName "bar"
+  Expr.aliasQualifyColumn Nothing (Expr.columnName "bar")
 
 dropAndRecreateTestTable :: Orville.Connection -> IO ()
 dropAndRecreateTestTable connection = do

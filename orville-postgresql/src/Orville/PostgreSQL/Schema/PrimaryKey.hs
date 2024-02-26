@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -181,7 +181,7 @@ mkPrimaryKeyExpr :: PrimaryKey key -> Expr.PrimaryKeyExpr
 mkPrimaryKeyExpr keyDef =
   let
     names =
-      mapPrimaryKeyParts (\_ field -> fieldColumnName field) keyDef
+      mapPrimaryKeyParts (\_ field -> fieldColumnName Nothing field) keyDef
   in
     Expr.primaryKeyExpr names
 

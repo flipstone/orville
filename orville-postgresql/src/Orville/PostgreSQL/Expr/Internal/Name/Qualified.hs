@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -12,15 +12,31 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   , qualifyTable
   , qualifySequence
   , qualifyColumn
+  , Alias
+  , aliasQualifyColumn
+  , alias
   )
 where
 
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
-import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
+import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier), Identifier, identifier)
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
 import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
 import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+
+newtype Alias
+  = Alias Identifier
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    , -- | @since 1.1.0.0
+      IdentifierExpression
+    )
+
+alias :: String -> Alias
+alias =
+  Alias . identifier
 
 {- |
 Type to represent a qualified SQL name. E.G.
@@ -81,6 +97,14 @@ qualifyColumn mbSchemaName tableName unqualifiedName =
   unsafeSchemaQualify mbSchemaName
     . RawSql.unsafeFromRawSql
     $ RawSql.toRawSql (toIdentifier tableName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
+
+aliasQualifyColumn :: Maybe Alias -> ColumnName -> Qualified ColumnName
+aliasQualifyColumn mbAliasName unqualifiedName =
+  Qualified $ case mbAliasName of
+    Nothing ->
+      RawSql.toRawSql $ toIdentifier unqualifiedName
+    Just aliasName ->
+      RawSql.toRawSql (toIdentifier aliasName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
 
 -- Note: Not everything actually makes sense to be qualified by _only_ a schema name, such as
 -- columns, as in 'qualifyColumn'. But this does give us a nice uniform way to provide the

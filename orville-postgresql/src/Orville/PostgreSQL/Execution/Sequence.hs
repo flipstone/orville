@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -66,7 +66,7 @@ selectInt64Value caller valueExpression = do
       Expr.queryExpr
         (Expr.selectClause (Expr.selectExpr Nothing))
         ( Expr.selectDerivedColumns
-            [Expr.deriveColumnAs valueExpression (Expr.columnName "result")]
+            [Expr.deriveColumnAs valueExpression (Expr.aliasQualifyColumn Nothing (Expr.columnName "result"))]
         )
         Nothing
 

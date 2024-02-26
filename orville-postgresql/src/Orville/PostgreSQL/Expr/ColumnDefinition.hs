@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -21,7 +21,7 @@ where
 import qualified Data.Maybe as Maybe
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
-import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -49,7 +49,7 @@ newtype ColumnDefinition
 -}
 columnDefinition ::
   -- | The name the resulting column should have.
-  ColumnName ->
+  Qualified ColumnName ->
   -- | The SQL type of the column.
   DataType ->
   -- | The constraint on the column, if any.
