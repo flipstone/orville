@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -20,6 +20,7 @@ module Orville.PostgreSQL.Marshall
   , module Orville.PostgreSQL.Marshall.SyntheticField
   , module Orville.PostgreSQL.Marshall.MarshallError
   , module Orville.PostgreSQL.Marshall.SqlType
+  , module Orville.PostgreSQL.Marshall.SqlComparable
   )
 where
 
@@ -29,6 +30,7 @@ where
 import Orville.PostgreSQL.Marshall.DefaultValue
 import Orville.PostgreSQL.Marshall.FieldDefinition
 import Orville.PostgreSQL.Marshall.MarshallError
+import Orville.PostgreSQL.Marshall.SqlComparable
 import Orville.PostgreSQL.Marshall.SqlMarshaller
 import Orville.PostgreSQL.Marshall.SqlType
 import Orville.PostgreSQL.Marshall.SyntheticField

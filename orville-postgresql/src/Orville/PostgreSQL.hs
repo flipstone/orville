@@ -178,6 +178,7 @@ module Orville.PostgreSQL
   , SqlMarshaller.marshallReadOnlyField
   , SqlMarshaller.marshallPartial
   , SqlMarshaller.marshallMaybe
+  , SqlMarshaller.marshallAlias
   , SqlMarshaller.prefixMarshaller
   , SqlMarshaller.foldMarshallerFields
   , SqlMarshaller.collectFromField
@@ -238,6 +239,10 @@ module Orville.PostgreSQL
   , FieldDefinition.setField
   , (FieldDefinition..:=)
   , FieldDefinition.FieldNullability (NotNullField, NullableField)
+  , FieldDefinition.AliasedFieldDefinition
+  , FieldDefinition.getFieldDefinition
+  , FieldDefinition.getAlias
+  , FieldDefinition.buildAliasedFieldDefinition
   , DefaultValue.DefaultValue
   , DefaultValue.integerDefault
   , DefaultValue.smallIntegerDefault
@@ -299,6 +304,8 @@ module Orville.PostgreSQL
   , Expr.descendingOrder
   , Expr.descendingOrderWith
   , FieldDefinition.orderByField
+  , FieldDefinition.orderByAliasedField
+  , Marshall.SqlComparable (toComparableSqlValue, referenceValueExpression)
   , Expr.orderByColumnName
   , Expr.andExpr
   , Expr.orExpr
@@ -417,6 +424,7 @@ import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Execution.Sequence as Sequence
 import qualified Orville.PostgreSQL.Execution.Transaction as Transaction
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
 import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
 import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller

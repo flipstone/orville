@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -16,13 +16,14 @@ module Orville.PostgreSQL.Expr.ValueExpression
   , rowValueConstructor
   , functionCall
   , functionCallNamedParams
+  , aliasReference
   )
 where
 
 import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
-import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName)
+import Orville.PostgreSQL.Expr.Name (Alias, ColumnName, FunctionName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
@@ -65,8 +66,19 @@ is the equivalent of simply writing the column name as the expression. E.G.
 
 @since 1.0.0.0
 -}
-columnReference :: ColumnName -> ValueExpression
+columnReference :: Qualified ColumnName -> ValueExpression
 columnReference = ValueExpression . RawSql.toRawSql
+
+{- |
+Uses an 'Alias' to reference an aliased expression as a 'ValueExpression'. This
+is the equivalent of simply writing the alias as the expression. E.G.
+
+> foo
+
+@since 1.1.0.0
+-}
+aliasReference :: Alias -> ValueExpression
+aliasReference = ValueExpression . RawSql.toRawSql
 
 {- |
   Uses the given 'SqlValue' as a constant expression. The value will be passed

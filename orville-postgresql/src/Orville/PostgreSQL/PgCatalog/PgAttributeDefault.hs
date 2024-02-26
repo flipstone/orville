@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -16,10 +16,10 @@ import qualified Data.Text as T
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberTypeField)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
   The Haskell representation of data read from the @pg_catalog.pg_attrdef@
@@ -93,4 +93,4 @@ attributeDefaultExpressionField =
   Orville.syntheticField
     (RawSql.unsafeSqlExpression "pg_get_expr(adbin,adrelid)")
     "expression"
-    SqlValue.toText
+    Marshall.unboundedText

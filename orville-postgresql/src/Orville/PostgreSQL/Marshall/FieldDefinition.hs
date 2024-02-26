@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -56,6 +58,7 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , setField
   , (.:=)
   , orderByField
+  , orderByAliasedField
   , FieldNullability (..)
   , fieldValueToExpression
   , fieldValueToSqlValue
@@ -96,6 +99,10 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , jsonbField
   , fieldOfType
   , whereColumnComparison
+  , AliasedFieldDefinition
+  , getFieldDefinition
+  , getAlias
+  , buildAliasedFieldDefinition
   )
 where
 
@@ -110,6 +117,8 @@ import qualified Data.UUID as UUID
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, fieldNameToString, stringToFieldName)
 import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
+import Orville.PostgreSQL.Marshall.SqlComparable (SqlComparable (referenceValueExpression, toComparableSqlValue))
+import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
@@ -132,6 +141,15 @@ data FieldDefinition nullability a = FieldDefinition
   , i_fieldDescription :: Maybe String
   , i_fieldTableConstraints :: [FieldName -> ConstraintDefinition.ConstraintDefinition]
   }
+
+{- | Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
+  from the "Orville.PostgreSQL.Expr" module.
+
+@since 1.1.0.0
+-}
+instance SqlComparable.SqlComparable (FieldDefinition nullability a) a where
+  toComparableSqlValue = fieldValueToSqlValue
+  referenceValueExpression = fieldColumnReference
 
 {- |
   The name used in database queries to reference the field.
@@ -360,8 +378,7 @@ fieldValueToExpression field =
 @since 1.0.0.0
 -}
 fieldValueToSqlValue :: FieldDefinition nullability a -> a -> SqlValue.SqlValue
-fieldValueToSqlValue =
-  SqlType.sqlTypeToSql . fieldType
+fieldValueToSqlValue = SqlType.sqlTypeToSql . fieldType
 
 {- |
   Marshalls a 'SqlValue.SqlValue' from the database into the Haskell value that represents it.
@@ -379,19 +396,22 @@ fieldValueFromSqlValue =
 
 @since 1.0.0.0
 -}
-fieldColumnName :: FieldDefinition nullability a -> Expr.ColumnName
-fieldColumnName =
-  fieldNameToColumnName . fieldName
+fieldColumnName :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
+fieldColumnName mbAlias =
+  Expr.aliasQualifyColumn mbAlias . fieldNameToColumnName . fieldName
 
 {- |
-  Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
-  from the "Orville.PostgreSQL.Expr" module.
+  Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
+  "Orville.PostgreSQL.Expr" module.
 
 @since 1.0.0.0
 -}
 fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReference =
-  Expr.columnReference . fieldColumnName
+  Expr.columnReference
+    . Expr.aliasQualifyColumn Nothing
+    . fieldNameToColumnName
+    . fieldName
 
 {- |
   Constructs the equivalent 'Expr.FieldDefinition' as a SQL expression,
@@ -402,7 +422,7 @@ fieldColumnReference =
 fieldColumnDefinition :: FieldDefinition nullability a -> Expr.ColumnDefinition
 fieldColumnDefinition fieldDef =
   Expr.columnDefinition
-    (fieldColumnName fieldDef)
+    (fieldNameToColumnName $ fieldName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
     (Just $ fieldColumnConstraint fieldDef)
     (fmap (Expr.columnDefault . DefaultValue.defaultValueExpression) $ i_fieldDefaultValue fieldDef)
@@ -840,10 +860,10 @@ prefixField prefix fieldDef =
 @since 1.0.0.0
 -}
 setField :: FieldDefinition nullability a -> a -> Expr.SetClause
-setField fieldDef value =
+setField fieldDef =
   Expr.setColumn
-    (fieldColumnName fieldDef)
-    (fieldValueToSqlValue fieldDef value)
+    (fieldColumnName Nothing fieldDef)
+    . fieldValueToSqlValue fieldDef
 
 {- |
   Operator alias for 'setField'.
@@ -859,8 +879,7 @@ setField fieldDef value =
 @since 1.0.0.0
 -}
 fieldEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldEquals =
-  whereColumnComparison Expr.equals
+fieldEquals = SqlComparable.equals
 
 {- |
   Operator alias for 'fieldEquals'.
@@ -878,8 +897,7 @@ infixl 9 .==
 @since 1.0.0.0
 -}
 fieldNotEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldNotEquals =
-  whereColumnComparison Expr.notEquals
+fieldNotEquals = SqlComparable.notEquals
 
 {- |
   Operator alias for 'fieldNotEquals'.
@@ -897,8 +915,7 @@ infixl 9 ./=
 @since 1.1.0.0
 -}
 fieldIsDistinctFrom :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldIsDistinctFrom =
-  whereColumnComparison Expr.isDistinctFrom
+fieldIsDistinctFrom = SqlComparable.isDistinctFrom
 
 {- |
   Checks that the value in a field is not distinct from a particular value.
@@ -906,8 +923,7 @@ fieldIsDistinctFrom =
 @since 1.1.0.0
 -}
 fieldIsNotDistinctFrom :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldIsNotDistinctFrom =
-  whereColumnComparison Expr.isNotDistinctFrom
+fieldIsNotDistinctFrom = SqlComparable.isNotDistinctFrom
 
 {- |
   Checks that the value in a field is greater than a particular value.
@@ -915,8 +931,7 @@ fieldIsNotDistinctFrom =
 @since 1.0.0.0
 -}
 fieldGreaterThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldGreaterThan =
-  whereColumnComparison Expr.greaterThan
+fieldGreaterThan = SqlComparable.greaterThan
 
 {- |
   Operator alias for 'fieldGreaterThan'.
@@ -934,8 +949,7 @@ infixl 9 .>
 @since 1.0.0.0
 -}
 fieldLessThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldLessThan =
-  whereColumnComparison Expr.lessThan
+fieldLessThan = SqlComparable.lessThan
 
 {- |
   Operator alias for 'fieldLessThan'.
@@ -953,8 +967,7 @@ infixl 9 .<
 @since 1.0.0.0
 -}
 fieldGreaterThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldGreaterThanOrEqualTo =
-  whereColumnComparison Expr.greaterThanOrEqualTo
+fieldGreaterThanOrEqualTo = SqlComparable.greaterThanOrEqualTo
 
 {- |
   Operator alias for 'fieldGreaterThanOrEqualTo'.
@@ -972,8 +985,7 @@ infixl 9 .>=
 @since 1.0.0.0
 -}
 fieldLessThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldLessThanOrEqualTo =
-  whereColumnComparison Expr.lessThanOrEqualTo
+fieldLessThanOrEqualTo = SqlComparable.lessThanOrEqualTo
 
 {- |
   Operator alias for 'fieldLessThanOrEqualTo'.
@@ -991,10 +1003,7 @@ infixl 9 .<=
 @since 1.0.0.0
 -}
 fieldLike :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
-fieldLike fieldDef likePattern =
-  Expr.like
-    (fieldColumnReference fieldDef)
-    (Expr.valueExpression (SqlValue.fromText likePattern))
+fieldLike = SqlComparable.like
 
 {- |
   Checks that the value in a field matches a like pattern case insensitively.
@@ -1002,10 +1011,7 @@ fieldLike fieldDef likePattern =
 @since 1.0.0.0
 -}
 fieldLikeInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
-fieldLikeInsensitive fieldDef likePattern =
-  Expr.likeInsensitive
-    (fieldColumnReference fieldDef)
-    (Expr.valueExpression (SqlValue.fromText likePattern))
+fieldLikeInsensitive = SqlComparable.likeInsensitive
 
 {- |
   Checks that the value in a field is null.
@@ -1013,8 +1019,7 @@ fieldLikeInsensitive fieldDef likePattern =
 @since 1.0.0.0
 -}
 fieldIsNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
-fieldIsNull =
-  Expr.isNull . fieldColumnReference
+fieldIsNull = SqlComparable.isNull
 
 {- |
   Checks that the value in a field is not null.
@@ -1022,8 +1027,7 @@ fieldIsNull =
 @since 1.0.0.0
 -}
 fieldIsNotNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
-fieldIsNotNull =
-  Expr.isNotNull . fieldColumnReference
+fieldIsNotNull = SqlComparable.isNotNull
 
 {- |
   Checks that a field matches a list of values.
@@ -1031,10 +1035,7 @@ fieldIsNotNull =
 @since 1.0.0.0
 -}
 fieldIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
-fieldIn fieldDef values =
-  Expr.valueIn
-    (fieldColumnReference fieldDef)
-    (fmap (fieldValueToExpression fieldDef) values)
+fieldIn = SqlComparable.isIn
 
 {- |
   Operator alias for 'fieldIn'.
@@ -1052,10 +1053,7 @@ infixl 9 .<-
 @since 1.0.0.0
 -}
 fieldNotIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
-fieldNotIn fieldDef values =
-  Expr.valueNotIn
-    (fieldColumnReference fieldDef)
-    (fmap (fieldValueToExpression fieldDef) values)
+fieldNotIn = SqlComparable.isNotIn
 
 {- |
   Operator alias for 'fieldNotIn'.
@@ -1077,10 +1075,8 @@ fieldTupleIn ::
   FieldDefinition nullabilityB b ->
   NonEmpty (a, b) ->
   Expr.BooleanExpr
-fieldTupleIn fieldDefA fieldDefB values =
-  Expr.tupleIn
-    (fieldColumnReference fieldDefA :| [fieldColumnReference fieldDefB])
-    (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
+fieldTupleIn =
+  SqlComparable.tupleIn
 
 {- |
   Checks that a tuple of two fields is not in the list of specified tuples.
@@ -1092,24 +1088,7 @@ fieldTupleNotIn ::
   FieldDefinition nullabilityB b ->
   NonEmpty (a, b) ->
   Expr.BooleanExpr
-fieldTupleNotIn fieldDefA fieldDefB values =
-  Expr.tupleNotIn
-    (fieldColumnReference fieldDefA :| [fieldColumnReference fieldDefB])
-    (fmap (toSqlValueTuple fieldDefA fieldDefB) values)
-
-{- |
-  Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two fields.
-
-@since 1.0.0.0
--}
-toSqlValueTuple ::
-  FieldDefinition nullabilityA a ->
-  FieldDefinition nullabilityB b ->
-  (a, b) ->
-  NonEmpty Expr.ValueExpression
-toSqlValueTuple fieldDefA fieldDefB (a, b) =
-  fieldValueToExpression fieldDefA a
-    :| [fieldValueToExpression fieldDefB b]
+fieldTupleNotIn = SqlComparable.tupleNotIn
 
 {- |
   Constructs a field-based 'Expr.BooleanExpr' using a function that
@@ -1120,10 +1099,10 @@ toSqlValueTuple fieldDefA fieldDefB (a, b) =
 whereColumnComparison ::
   (Expr.ValueExpression -> Expr.ValueExpression -> Expr.BooleanExpr) ->
   (FieldDefinition nullability a -> a -> Expr.BooleanExpr)
-whereColumnComparison columnComparison fieldDef a =
+whereColumnComparison columnComparison fieldDef =
   columnComparison
-    (fieldColumnReference fieldDef)
-    (fieldValueToExpression fieldDef a)
+    (SqlComparable.referenceValueExpression fieldDef)
+    . fieldValueToExpression fieldDef
 
 {- |
   Orders a query by the column name for the given field.
@@ -1135,4 +1114,64 @@ orderByField ::
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByField =
-  Expr.orderByColumnName . fieldColumnName
+  Expr.orderByColumnName . fieldColumnName Nothing
+
+{- | Orders a query by the column name for the given field, taking into account the alias, if any.
+
+@since 1.1.0.0
+-}
+orderByAliasedField ::
+  AliasedFieldDefinition nullability value ->
+  Expr.OrderByDirection ->
+  Expr.OrderByExpr
+orderByAliasedField aliasedFieldDef =
+  Expr.orderByColumnName (fieldColumnName (getAlias aliasedFieldDef) (getFieldDefinition aliasedFieldDef))
+
+{- | A 'FieldDefinition' that might have been aliased. This is equivalent to a tuple of the field
+definition and 'Maybe Expr.Alias'.
+
+@since 1.1.0.0
+-}
+data AliasedFieldDefinition nullability a = AliasedFieldDefinition
+  { i_alias :: Maybe Expr.Alias
+  , i_fieldDef :: FieldDefinition nullability a
+  }
+
+{- |
+
+@since 1.1.0.0
+-}
+instance SqlComparable.SqlComparable (AliasedFieldDefinition nullability a) a where
+  toComparableSqlValue (AliasedFieldDefinition _ fieldDef) =
+    toComparableSqlValue fieldDef
+
+  referenceValueExpression (AliasedFieldDefinition mbAlias fieldDef) =
+    Expr.columnReference
+      . Expr.aliasQualifyColumn mbAlias
+      . fieldNameToColumnName
+      $ fieldName fieldDef
+
+{- |
+Obtains the alias used with the field definition.
+
+@since 1.1.0.0
+-}
+getAlias :: AliasedFieldDefinition nullability a -> Maybe Expr.Alias
+getAlias = i_alias
+
+{- |
+Obtains the field definition as it was prior to being aliased.
+
+@since 1.1.0.0
+-}
+getFieldDefinition :: AliasedFieldDefinition nullability a -> FieldDefinition nullability a
+getFieldDefinition = i_fieldDef
+
+{- |
+Alias an existing field definition.
+
+@since 1.1.0.0
+-}
+buildAliasedFieldDefinition :: FieldDefinition nullability a -> Maybe Expr.Alias -> AliasedFieldDefinition nullability a
+buildAliasedFieldDefinition f ma =
+  AliasedFieldDefinition ma f

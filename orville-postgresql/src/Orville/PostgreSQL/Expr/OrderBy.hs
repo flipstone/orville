@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -14,6 +14,8 @@ module Orville.PostgreSQL.Expr.OrderBy
   , appendOrderByExpr
   , orderByColumnName
   , orderByColumnsExpr
+  , orderByAlias
+  , orderByAliasesExpr
   , OrderByDirection
   , NullsOrder (NullsFirst, NullsLast)
   , ascendingOrder
@@ -25,7 +27,7 @@ where
 
 import qualified Data.List.NonEmpty as NEL
 
-import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.Name (Alias, ColumnName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -43,6 +45,11 @@ newtype OrderByClause
   = OrderByClause RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
+{- |
+Builds a full 'OrderByClause' with the given ordering described in the 'OrderByExpr'
+
+@since 1.0.0.0
+-}
 orderByClause :: OrderByExpr -> OrderByClause
 orderByClause expr = OrderByClause (RawSql.fromString "ORDER BY " <> RawSql.toRawSql expr)
 
@@ -83,22 +90,43 @@ appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
 
 @since 1.0.0.0
 -}
-orderByColumnsExpr :: NEL.NonEmpty (ColumnName, OrderByDirection) -> OrderByExpr
+orderByColumnsExpr :: NEL.NonEmpty (Qualified ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr =
   OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
  where
-  columnOrdering :: (ColumnName, OrderByDirection) -> RawSql.RawSql
+  columnOrdering :: (Qualified ColumnName, OrderByDirection) -> RawSql.RawSql
   columnOrdering (columnName, orderByDirection) =
     RawSql.toRawSql columnName <> RawSql.space <> RawSql.toRawSql orderByDirection
 
-{-- |
+{- |
   Orders a query by the given column name in the given order direction.
 
 @since 1.0.0.0
 -}
-orderByColumnName :: ColumnName -> OrderByDirection -> OrderByExpr
+orderByColumnName :: Qualified ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName =
   curry (orderByColumnsExpr . pure)
+
+{- | Create an 'OrderByExpr' for 'Alias' and 'OrderByDirection' pairs, ensuring commas as needed. For basic queries involving columns on some table(s), use 'orderByColumnsExpr'. This
+
+@since 1.1.0.0
+-}
+orderByAliasesExpr :: NEL.NonEmpty (Alias, OrderByDirection) -> OrderByExpr
+orderByAliasesExpr =
+  OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
+ where
+  columnOrdering :: (Alias, OrderByDirection) -> RawSql.RawSql
+  columnOrdering (alias, orderByDirection) =
+    RawSql.toRawSql alias <> RawSql.space <> RawSql.toRawSql orderByDirection
+
+{- |
+  Orders a query by the given alias in the given order direction. This is useful for ordering by synthetic fields or sub queries.
+
+@since 1.1.0.0
+-}
+orderByAlias :: Alias -> OrderByDirection -> OrderByExpr
+orderByAlias =
+  curry (orderByAliasesExpr . pure)
 
 {- |
 Type to represent a SQL order by direction expression. E.G.

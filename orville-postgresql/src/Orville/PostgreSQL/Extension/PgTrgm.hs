@@ -28,7 +28,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- | Create a named GIN index over the given fields for fast text searching.
 
@@ -103,9 +102,9 @@ trigramSimilaritySyntheticField ::
   Marshall.SyntheticField Double
 trigramSimilaritySyntheticField colname compareVal fieldAlias =
   Marshall.syntheticField
-    (trigramSimilarity (Expr.columnReference colname) compareVal)
+    (trigramSimilarity (Expr.columnReference $ Expr.aliasQualifyColumn Nothing colname) compareVal)
     fieldAlias
-    SqlValue.toDouble
+    Marshall.double
 
 {- | Create a synthetic field using the word_similarity function provided by pg_trgm.
 
@@ -122,9 +121,9 @@ trigramWordSimilaritySyntheticField ::
   Marshall.SyntheticField Double
 trigramWordSimilaritySyntheticField colname compareVal fieldAlias =
   Marshall.syntheticField
-    (trigramWordSimilarity (Expr.columnReference colname) compareVal)
+    (trigramWordSimilarity (Expr.columnReference $ Expr.aliasQualifyColumn Nothing colname) compareVal)
     fieldAlias
-    SqlValue.toDouble
+    Marshall.double
 
 {- | Create a synthetic field using the strict_word_similarity function provided by pg_trgm.
 
@@ -141,9 +140,9 @@ trigramStrictWordSimilaritySyntheticField ::
   Marshall.SyntheticField Double
 trigramStrictWordSimilaritySyntheticField colname compareVal fieldAlias =
   Marshall.syntheticField
-    (trigramStrictWordSimilarity (Expr.columnReference colname) compareVal)
+    (trigramStrictWordSimilarity (Expr.columnReference $ Expr.aliasQualifyColumn Nothing colname) compareVal)
     fieldAlias
-    SqlValue.toDouble
+    Marshall.double
 
 {- | Call the similarity function provided by pg_trgm, comparing the pair of values.
 

@@ -53,6 +53,7 @@ selectOptionsTests =
     , prop_fieldNotInOperator
     , prop_distinct
     , prop_orderBy
+    , prop_orderByAliased
     , prop_orderByCombined
     , prop_groupBy
     , prop_groupByCombined
@@ -310,12 +311,23 @@ prop_orderBy =
           )
       )
 
+prop_orderByAliased :: Property.NamedProperty
+prop_orderByAliased =
+  Property.singletonNamedProperty "orderBy generates expected sql" $
+    assertOrderByClauseEquals
+      (Just "ORDER BY \"f\".\"foo\" ASC, \"bar\" DESC")
+      ( O.orderBy
+          ( O.orderByAliasedField (O.buildAliasedFieldDefinition fooField (Just $ Expr.stringToAlias "f")) Expr.ascendingOrder
+              <> O.orderByField barField Expr.descendingOrder
+          )
+      )
+
 prop_orderByCombined :: Property.NamedProperty
 prop_orderByCombined =
   Property.singletonNamedProperty "orderBy generates expected sql with multiple selectOptions" $
     assertOrderByClauseEquals
       (Just "ORDER BY \"foo\" ASC, \"bar\" DESC")
-      ( (O.orderBy $ O.orderByColumnName (Expr.columnName "foo") O.ascendingOrder)
+      ( (O.orderBy $ O.orderByColumnName (Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")) O.ascendingOrder)
           <> (O.orderBy $ O.orderByField barField O.descendingOrder)
       )
 
@@ -325,7 +337,7 @@ prop_groupBy =
     assertGroupByClauseEquals
       (Just "GROUP BY \"foo\", \"bar\"")
       ( O.groupBy . Expr.groupByColumnsExpr $
-          FieldDef.fieldColumnName fooField :| [FieldDef.fieldColumnName barField]
+          FieldDef.fieldColumnName Nothing fooField :| [FieldDef.fieldColumnName Nothing barField]
       )
 
 prop_groupByCombined :: Property.NamedProperty
@@ -334,7 +346,7 @@ prop_groupByCombined =
     assertGroupByClauseEquals
       (Just "GROUP BY foo, \"bar\"")
       ( (O.groupBy . RawSql.unsafeSqlExpression $ "foo")
-          <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName barField :| []))
+          <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName Nothing barField :| []))
       )
 
 assertDistinctEquals :: (HH.MonadTest m, HasCallStack) => String -> O.SelectOptions -> m ()

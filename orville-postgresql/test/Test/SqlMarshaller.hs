@@ -18,6 +18,7 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
@@ -35,6 +36,7 @@ sqlMarshallerTests =
     , prop_marshallField_missingColumn
     , prop_marshallField_decodeValueFailure
     , prop_marshallResultFromSql_Foo
+    , prop_marshallResultFromSql_FooWithAlias
     , prop_marshallResultFromSql_Bar
     , prop_foldMarshallerFields
     , prop_passMaybeThrough
@@ -161,6 +163,26 @@ prop_marshallResultFromSql_Foo =
     result <- marshallTestRowFromSql fooMarshaller input
     Bifunctor.first show result === Right foos
 
+prop_marshallResultFromSql_FooWithAlias :: Property.NamedProperty
+prop_marshallResultFromSql_FooWithAlias =
+  Property.namedProperty "marshallResultFromSql decodes all rows in Foo result set, when given an alias for each field" $ do
+    foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
+
+    let
+      mkRowValues foo =
+        [ SqlValue.fromText (fooName foo)
+        , SqlValue.fromInt32 (fooSize foo)
+        , maybe SqlValue.sqlNull SqlValue.fromBool (fooOption foo)
+        ]
+
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "name", B8.pack "size", B8.pack "option"]
+          (map mkRowValues foos)
+
+    result <- marshallTestRowFromSql fooMarshallerWithAliasOnEachField input
+    Bifunctor.first show result === Right foos
+
 prop_marshallResultFromSql_Bar :: Property.NamedProperty
 prop_marshallResultFromSql_Bar =
   Property.namedProperty "marshallResultFromSql decodes all rows in Bar result set" $ do
@@ -189,9 +211,9 @@ prop_foldMarshallerFields =
     let
       addField entry fields =
         case entry of
-          Marshall.Natural fieldDef (Just getValue) ->
+          Marshall.Natural _ fieldDef (Just getValue) ->
             (Marshall.fieldName fieldDef, Marshall.fieldValueToSqlValue fieldDef (getValue foo)) : fields
-          Marshall.Natural _ Nothing ->
+          Marshall.Natural _ _ Nothing ->
             fields
           Marshall.Synthetic _ ->
             fields
@@ -291,6 +313,14 @@ fooMarshaller =
     <$> Marshall.marshallField fooName (Marshall.unboundedTextField "name")
     <*> Marshall.marshallField fooSize (Marshall.integerField "size")
     <*> Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option")
+
+fooMarshallerWithAliasOnEachField :: Marshall.SqlMarshaller Foo Foo
+fooMarshallerWithAliasOnEachField =
+  Marshall.marshallAlias (Expr.stringToAlias "f") $
+    Foo
+      <$> Marshall.marshallAlias (Expr.stringToAlias "f") (Marshall.marshallField fooName (Marshall.unboundedTextField "name"))
+      <*> Marshall.marshallAlias (Expr.stringToAlias "f") (Marshall.marshallField fooSize (Marshall.integerField "size"))
+      <*> Marshall.marshallAlias (Expr.stringToAlias "f") (Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option"))
 
 generateFoo :: HH.Gen Foo
 generateFoo =

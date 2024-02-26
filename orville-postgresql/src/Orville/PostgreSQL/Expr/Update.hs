@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -116,7 +116,7 @@ newtype SetClause
 
   @since 1.0.0.0
 -}
-setColumn :: ColumnName -> SqlValue.SqlValue -> SetClause
+setColumn :: Qualified ColumnName -> SqlValue.SqlValue -> SetClause
 setColumn columnName value =
   SetClause $
     RawSql.toRawSql columnName

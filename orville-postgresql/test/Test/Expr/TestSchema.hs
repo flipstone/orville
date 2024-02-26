@@ -46,17 +46,21 @@ fooBarTable :: Expr.Qualified Expr.TableName
 fooBarTable =
   Expr.qualifyTable Nothing (Expr.tableName "foobar")
 
-fooColumn :: Expr.ColumnName
+fooColumn :: Expr.Qualified Expr.ColumnName
 fooColumn =
-  Expr.columnName "foo"
+  Expr.aliasQualifyColumn Nothing $ Expr.columnName "foo"
 
 fooColumnRef :: Expr.ValueExpression
 fooColumnRef =
   Expr.columnReference fooColumn
 
-barColumn :: Expr.ColumnName
+barColumn :: Expr.Qualified Expr.ColumnName
 barColumn =
-  Expr.columnName "bar"
+  Expr.aliasQualifyColumn Nothing $ Expr.columnName "bar"
+
+barColumnAliased :: Expr.Qualified Expr.ColumnName
+barColumnAliased =
+  Expr.aliasQualifyColumn (Just $ Expr.stringToAlias "b") $ Expr.columnName "bar"
 
 barColumnRef :: Expr.ValueExpression
 barColumnRef =
@@ -73,10 +77,13 @@ findAllFooBars =
 
 findAllFooBarsInTable :: Expr.Qualified Expr.TableName -> Expr.QueryExpr
 findAllFooBarsInTable tableName =
-  Expr.queryExpr
-    (Expr.selectClause $ Expr.selectExpr Nothing)
-    (Expr.selectColumns [fooColumn, barColumn])
-    (Just $ Expr.tableExpr (Expr.referencesTable tableName) Nothing Nothing (Just orderByFoo) Nothing Nothing)
+  let
+    tableRef = Expr.referencesTableWithAlias (Expr.stringToAlias "b") tableName
+  in
+    Expr.queryExpr
+      (Expr.selectClause $ Expr.selectExpr Nothing)
+      (Expr.selectColumns [fooColumn, barColumnAliased])
+      (Just $ Expr.tableExpr tableRef Nothing Nothing (Just orderByFoo) Nothing Nothing)
 
 encodeFooBar :: FooBar -> [(Maybe B8.ByteString, SqlValue.SqlValue)]
 encodeFooBar fooBar =

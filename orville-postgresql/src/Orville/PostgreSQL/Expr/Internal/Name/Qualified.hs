@@ -13,9 +13,11 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   , qualifySequence
   , qualifyFunction
   , qualifyColumn
+  , aliasQualifyColumn
   )
 where
 
+import Orville.PostgreSQL.Expr.Internal.Name.Alias (Alias)
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
 import Orville.PostgreSQL.Expr.Internal.Name.FunctionName (FunctionName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
@@ -98,6 +100,19 @@ qualifyColumn mbSchemaName tableName unqualifiedName =
   unsafeSchemaQualify mbSchemaName
     . RawSql.unsafeFromRawSql
     $ RawSql.toRawSql (toIdentifier tableName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
+
+{- | Qualifies a 'ColumnName' optionally with an 'Alias'. This should be used to refer to the column
+in SQL queries where an aliased reference is appropriate.
+
+@since 1.1.0.0
+-}
+aliasQualifyColumn :: Maybe Alias -> ColumnName -> Qualified ColumnName
+aliasQualifyColumn mbAliasName unqualifiedName =
+  Qualified $ case mbAliasName of
+    Nothing ->
+      RawSql.toRawSql $ toIdentifier unqualifiedName
+    Just aliasName ->
+      RawSql.toRawSql (toIdentifier aliasName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
 
 -- Note: Not everything actually makes sense to be qualified by _only_ a schema name, such as
 -- columns, as in 'qualifyColumn'. But this does give us a nice uniform way to provide the

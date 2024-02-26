@@ -439,7 +439,7 @@ mkTableColumnDefinitions tableDef =
   foldMarshallerFields
     (unannotatedSqlMarshaller $ tableMarshaller tableDef)
     []
-    (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
+    (collectFromField IncludeReadOnlyColumns (const fieldColumnDefinition))
 
 {- |
   Builds the 'Expr.PrimaryKeyExpr' for this table, or none if this table has no
@@ -525,8 +525,9 @@ mkInsertColumnList ::
   SqlMarshaller writeEntity readEntity ->
   Expr.InsertColumnList
 mkInsertColumnList marshaller =
-  Expr.insertColumnList $
-    foldMarshallerFields marshaller [] (collectFromField ExcludeReadOnlyColumns fieldColumnName)
+  Expr.insertColumnList
+    . foldMarshallerFields marshaller []
+    $ collectFromField ExcludeReadOnlyColumns fieldColumnName
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their
@@ -565,9 +566,9 @@ collectSqlValue ::
   [SqlValue]
 collectSqlValue entry encodeRest entity =
   case entry of
-    Natural fieldDef (Just accessor) ->
+    Natural _ fieldDef (Just accessor) ->
       fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
-    Natural _ Nothing ->
+    Natural _ _ Nothing ->
       encodeRest entity
     Synthetic _ ->
       encodeRest entity

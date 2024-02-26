@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -15,6 +15,7 @@ module Orville.PostgreSQL.Expr.Query
   , DerivedColumn
   , deriveColumn
   , deriveColumnAs
+  , deriveColumnAsAlias
   , selectDerivedColumns
   , selectStar
   , TableExpr
@@ -26,7 +27,7 @@ import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
-import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.Name (Alias, ColumnName, Qualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
@@ -110,7 +111,7 @@ selectStar =
 
   @since 1.0.0.0
 -}
-selectColumns :: [ColumnName] -> SelectList
+selectColumns :: [Qualified ColumnName] -> SelectList
 selectColumns =
   selectDerivedColumns . map (deriveColumn . columnReference)
 
@@ -162,6 +163,20 @@ deriveColumnAs valueExpr asColumn =
     ( RawSql.toRawSql valueExpr
         <> RawSql.fromString " AS "
         <> RawSql.toRawSql asColumn
+    )
+
+{- |
+  Constructs a 'DerivedColumn' that will select the given value and give it
+  the specified alias in the result set.
+
+@since 1.1.0.0
+-}
+deriveColumnAsAlias :: ValueExpression -> Alias -> DerivedColumn
+deriveColumnAsAlias valueExpr asAlias =
+  DerivedColumn
+    ( RawSql.toRawSql valueExpr
+        <> RawSql.fromString " AS "
+        <> RawSql.toRawSql asAlias
     )
 
 {- |

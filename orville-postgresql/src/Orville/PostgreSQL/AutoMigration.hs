@@ -691,7 +691,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
         Orville.foldMarshallerFields
           (Orville.unannotatedSqlMarshaller $ Orville.tableMarshaller tableDef)
           []
-          (Orville.collectFromField Orville.IncludeReadOnlyColumns (mkAddAlterColumnActions relationDesc))
+          (Orville.collectFromField Orville.IncludeReadOnlyColumns (const (mkAddAlterColumnActions relationDesc)))
 
     dropColumnActions =
       concatMap
@@ -857,7 +857,7 @@ mkAddAlterColumnActions relationDesc fieldDef =
                   || (Orville.sqlTypeMaximumLength sqlType /= PgCatalog.pgAttributeMaxLength attr)
 
               columnName =
-                Orville.fieldColumnName fieldDef
+                Orville.fieldNameToColumnName $ Orville.fieldName fieldDef
 
               dataType =
                 Orville.sqlTypeExpr sqlType
@@ -876,7 +876,7 @@ mkAddAlterColumnActions relationDesc fieldDef =
 
               alterNullability = do
                 guard nullabilityIsChanged
-                [Expr.alterColumnNullability (Orville.fieldColumnName fieldDef) nullabilityAction]
+                [Expr.alterColumnNullability columnName nullabilityAction]
 
               maybeExistingDefault =
                 PgCatalog.lookupAttributeDefault attr relationDesc
@@ -1512,7 +1512,7 @@ currentNamespaceQuery =
             -- put it in quotes it tries to treat it as a regular column name,
             -- which then can't be found as a column in the query.
             (RawSql.unsafeSqlExpression "current_schema")
-            (Orville.fieldColumnName PgCatalog.namespaceNameField)
+            (Orville.fieldNameToColumnName $ Orville.fieldName PgCatalog.namespaceNameField)
         ]
     )
     Nothing

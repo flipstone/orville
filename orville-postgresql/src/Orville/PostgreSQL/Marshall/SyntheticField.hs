@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
@@ -22,6 +24,8 @@ where
 import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, stringToFieldName)
+import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
+import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
@@ -32,10 +36,20 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 @since 1.0.0.0
 -}
 data SyntheticField a = SyntheticField
-  { _syntheticFieldExpression :: Expr.ValueExpression
-  , _syntheticFieldAlias :: FieldName
-  , _syntheticFieldValueFromSqlValue :: SqlValue.SqlValue -> Either String a
+  { i_syntheticFieldExpression :: Expr.ValueExpression
+  , i_syntheticFieldAlias :: FieldName
+  , i_syntheticFieldType :: SqlType.SqlType a
   }
+
+{- |
+  Marshalls a Haskell value to be in the field to its 'SqlValue.SqlValue'
+  representation.
+
+@since 1.1.0.0
+-}
+instance SqlComparable.SqlComparable (SyntheticField a) a where
+  toComparableSqlValue field = SqlType.sqlTypeToSql (syntheticFieldType field)
+  referenceValueExpression = syntheticFieldExpression
 
 {- |
   Returns the SQL expression that should be used in select statements to
@@ -45,7 +59,7 @@ data SyntheticField a = SyntheticField
 -}
 syntheticFieldExpression :: SyntheticField a -> Expr.ValueExpression
 syntheticFieldExpression =
-  _syntheticFieldExpression
+  i_syntheticFieldExpression
 
 {- |
   Returns the alias that should be used in select statements to name the
@@ -55,7 +69,7 @@ syntheticFieldExpression =
 -}
 syntheticFieldAlias :: SyntheticField a -> FieldName
 syntheticFieldAlias =
-  _syntheticFieldAlias
+  i_syntheticFieldAlias
 
 {- |
   Decodes a calculated value selected from the database to its expected
@@ -65,7 +79,17 @@ syntheticFieldAlias =
 -}
 syntheticFieldValueFromSqlValue :: SyntheticField a -> SqlValue.SqlValue -> Either String a
 syntheticFieldValueFromSqlValue =
-  _syntheticFieldValueFromSqlValue
+  SqlType.sqlTypeFromSql . syntheticFieldType
+
+{- |
+  The 'SqlType.SqlType' for the 'SyntheticField' determines the PostgreSQL
+  data type used to define the field as well as how to marshall Haskell values
+  from the database.
+
+@since 1.1.0.0
+-}
+syntheticFieldType :: SyntheticField a -> SqlType.SqlType a
+syntheticFieldType = i_syntheticFieldType
 
 {- |
   Constructs a 'SyntheticField' that will select a SQL expression using
@@ -78,14 +102,14 @@ syntheticField ::
   Expr.ValueExpression ->
   -- | The alias to be used to name the calculation in SQL expressions.
   String ->
-  -- | A function to decode the expression result from a 'SqlValue.SqlValue'.
-  (SqlValue.SqlValue -> Either String a) ->
+  -- | The 'SqlType.SqlType' to be used for comparisons
+  SqlType.SqlType a ->
   SyntheticField a
-syntheticField expression alias fromSqlValue =
+syntheticField expression alias sqlType =
   SyntheticField
-    { _syntheticFieldExpression = expression
-    , _syntheticFieldAlias = stringToFieldName alias
-    , _syntheticFieldValueFromSqlValue = fromSqlValue
+    { i_syntheticFieldExpression = expression
+    , i_syntheticFieldAlias = stringToFieldName alias
+    , i_syntheticFieldType = sqlType
     }
 
 {- |
@@ -95,12 +119,21 @@ syntheticField expression alias fromSqlValue =
 -}
 nullableSyntheticField :: SyntheticField a -> SyntheticField (Maybe a)
 nullableSyntheticField synthField =
-  synthField
-    { _syntheticFieldValueFromSqlValue = \sqlValue ->
-        if SqlValue.isSqlNull sqlValue
-          then Right Nothing
-          else Just <$> syntheticFieldValueFromSqlValue synthField sqlValue
-    }
+  let
+    nullableType :: SqlType.SqlType a -> SqlType.SqlType (Maybe a)
+    nullableType sqlType =
+      sqlType
+        { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
+        , SqlType.sqlTypeFromSql =
+            \sqlValue ->
+              if SqlValue.isSqlNull sqlValue
+                then Right Nothing
+                else fmap Just $ SqlType.sqlTypeFromSql sqlType sqlValue
+        }
+  in
+    synthField
+      { i_syntheticFieldType = nullableType (syntheticFieldType synthField)
+      }
 
 {- |
   Adds a prefix, followed by an underscore, to the alias used to name the
@@ -114,7 +147,7 @@ prefixSyntheticField ::
   SyntheticField a
 prefixSyntheticField prefix synthField =
   synthField
-    { _syntheticFieldAlias = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (syntheticFieldAlias synthField))
+    { i_syntheticFieldAlias = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (syntheticFieldAlias synthField))
     }
 
 {- |
@@ -124,4 +157,4 @@ prefixSyntheticField prefix synthField =
 -}
 orderBySyntheticField :: SyntheticField a -> Expr.OrderByDirection -> Expr.OrderByExpr
 orderBySyntheticField =
-  Expr.orderByColumnName . fieldNameToColumnName . syntheticFieldAlias
+  Expr.orderByColumnName . Expr.aliasQualifyColumn Nothing . fieldNameToColumnName . syntheticFieldAlias

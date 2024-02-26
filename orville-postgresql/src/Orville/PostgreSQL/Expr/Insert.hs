@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -95,7 +95,7 @@ parens and commas are used to separate.
 
 @since 1.0.0.0
 -}
-insertColumnList :: [ColumnName] -> InsertColumnList
+insertColumnList :: [Qualified ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
     RawSql.leftParen

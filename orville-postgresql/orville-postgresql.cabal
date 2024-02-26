@@ -80,6 +80,7 @@ library
       Orville.PostgreSQL.Marshall.DefaultValue
       Orville.PostgreSQL.Marshall.FieldDefinition
       Orville.PostgreSQL.Marshall.MarshallError
+      Orville.PostgreSQL.Marshall.SqlComparable
       Orville.PostgreSQL.Marshall.SqlMarshaller
       Orville.PostgreSQL.Marshall.SqlType
       Orville.PostgreSQL.Marshall.SyntheticField
@@ -113,6 +114,7 @@ library
       Orville.PostgreSQL.Expr.Extension
       Orville.PostgreSQL.Expr.Function
       Orville.PostgreSQL.Expr.IfNotExists
+      Orville.PostgreSQL.Expr.Internal.Name.Alias
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
       Orville.PostgreSQL.Expr.Internal.Name.CursorName

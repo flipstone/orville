@@ -76,6 +76,7 @@ library:
     - Orville.PostgreSQL.Marshall.DefaultValue
     - Orville.PostgreSQL.Marshall.FieldDefinition
     - Orville.PostgreSQL.Marshall.MarshallError
+    - Orville.PostgreSQL.Marshall.SqlComparable
     - Orville.PostgreSQL.Marshall.SqlMarshaller
     - Orville.PostgreSQL.Marshall.SqlType
     - Orville.PostgreSQL.Marshall.SyntheticField
