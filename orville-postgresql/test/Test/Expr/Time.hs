@@ -37,7 +37,7 @@ prop_now =
         Expr.queryExpr
           (Expr.selectClause (Expr.selectExpr Nothing))
           ( Expr.selectDerivedColumns
-              [ Expr.deriveColumnAs Expr.now (Expr.aliasQualifyColumn Nothing (Expr.columnName "result"))
+              [ Expr.deriveColumnAs Expr.now (Expr.columnName "result")
               ]
           )
           Nothing
@@ -87,7 +87,7 @@ prop_makeInterval =
         Expr.queryExpr
           (Expr.selectClause (Expr.selectExpr Nothing))
           ( Expr.selectDerivedColumns
-              [ Expr.deriveColumnAs intervalExpression (Expr.aliasQualifyColumn Nothing (Expr.columnName "result"))
+              [ Expr.deriveColumnAs intervalExpression (Expr.columnName "result")
               ]
           )
           Nothing

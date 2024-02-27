@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -31,30 +31,45 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , addUniqueConstraint
   , fieldEquals
   , (.==)
+  , fieldEqualsWithAlias
   , fieldNotEquals
   , (./=)
+  , fieldNotEqualsWithAlias
   , fieldIsDistinctFrom
+  , fieldIsDistinctFromWithAlias
   , fieldIsNotDistinctFrom
+  , fieldIsNotDistinctFromWithAlias
   , fieldGreaterThan
   , (.>)
+  , fieldGreaterThanWithAlias
   , fieldLessThan
   , (.<)
+  , fieldLessThanWithAlias
   , fieldGreaterThanOrEqualTo
   , (.>=)
+  , fieldGreaterThanOrEqualToWithAlias
   , fieldLessThanOrEqualTo
   , (.<=)
+  , fieldLessThanOrEqualToWithAlias
   , fieldIsNull
+  , fieldIsNullWithAlias
   , fieldIsNotNull
+  , fieldIsNotNullWithAlias
   , fieldLike
+  , fieldLikeWithAlias
   , fieldLikeInsensitive
+  , fieldLikeInsensitiveWithAlias
   , fieldIn
+  , fieldInWithAlias
   , (.<-)
   , fieldNotIn
+  , fieldNotInWithAlias
   , (.</-)
   , fieldTupleIn
   , fieldTupleNotIn
   , setField
   , (.:=)
+  , setFieldWithAlias
   , orderByField
   , orderByFieldWithAlias
   , FieldNullability (..)
@@ -404,7 +419,6 @@ fieldColumnReference =
 fieldColumnReferenceWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReferenceWithAlias mbAlias =
   Expr.columnReference . fieldColumnName mbAlias
-
 
 {- |
   Constructs the equivalent 'Expr.FieldDefinition' as a SQL expression,
@@ -852,20 +866,29 @@ prefixField prefix fieldDef =
 
 @since 1.0.0.0
 -}
-setField :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.SetClause
-setField mbAlias fieldDef value =
-  Expr.setColumn
-    (fieldColumnName mbAlias fieldDef)
-    (fieldValueToSqlValue fieldDef value)
+setField :: FieldDefinition nullability a -> a -> Expr.SetClause
+setField = setFieldWithAlias Nothing
 
 {- |
-  Operator alias for 'setField'. Note that this will not work for aliased fields. If you need to
-  use aliases, you should use 'setField' directly.
+  Operator alias for 'setField'.
 
 @since 1.0.0.0
 -}
 (.:=) :: FieldDefinition nullability a -> a -> Expr.SetClause
-(.:=) = setField Nothing
+(.:=) = setField
+
+{- |
+  Constructs a 'Expr.SetClause' that will set the column named in the field definition, with the
+  given alias to the given value. The value is converted to a SQL value using
+  'fieldValueToSqlValue'.
+
+@since 1.1.0.0
+-}
+setFieldWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.SetClause
+setFieldWithAlias mbAlias fieldDef value =
+  Expr.setColumn
+    (fieldColumnName mbAlias fieldDef)
+    (fieldValueToSqlValue fieldDef value)
 
 {- |
   Checks that the value in a field equals a particular value.
@@ -873,8 +896,7 @@ setField mbAlias fieldDef value =
 @since 1.0.0.0
 -}
 fieldEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldEquals =
-  whereColumnComparison Expr.equals
+fieldEquals = fieldEqualsWithAlias Nothing
 
 {- |
   Operator alias for 'fieldEquals'.
@@ -887,13 +909,21 @@ fieldEquals =
 infixl 9 .==
 
 {- |
+  Checks that the value in an aliased field equals a particular value.
+
+@since 1.0.0.0
+-}
+fieldEqualsWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldEqualsWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.equals
+
+{- |
   Checks that the value in a field does not equal a particular value.
 
 @since 1.0.0.0
 -}
 fieldNotEquals :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldNotEquals =
-  whereColumnComparison Expr.notEquals
+fieldNotEquals = fieldNotEqualsWithAlias Nothing
 
 {- |
   Operator alias for 'fieldNotEquals'.
@@ -906,13 +936,30 @@ fieldNotEquals =
 infixl 9 ./=
 
 {- |
+  Checks that the value in an aliased field does not equal a particular value.
+
+@since 1.0.0.0
+-}
+fieldNotEqualsWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldNotEqualsWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.notEquals
+
+{- |
   Checks that the value in a field is distinct from a particular value.
 
 @since 1.1.0.0
 -}
 fieldIsDistinctFrom :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldIsDistinctFrom =
-  whereColumnComparison Expr.isDistinctFrom
+fieldIsDistinctFrom = fieldIsDistinctFromWithAlias Nothing
+
+{- |
+  Checks that the value in an aliased field is distinct from a particular value.
+
+@since 1.1.0.0
+-}
+fieldIsDistinctFromWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldIsDistinctFromWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.isDistinctFrom
 
 {- |
   Checks that the value in a field is not distinct from a particular value.
@@ -921,7 +968,16 @@ fieldIsDistinctFrom =
 -}
 fieldIsNotDistinctFrom :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldIsNotDistinctFrom =
-  whereColumnComparison Expr.isNotDistinctFrom
+  fieldIsNotDistinctFromWithAlias Nothing
+
+{- |
+  Checks that the value in an aliased field is not distinct from a particular value.
+
+@since 1.1.0.0
+-}
+fieldIsNotDistinctFromWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldIsNotDistinctFromWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.isNotDistinctFrom
 
 {- |
   Checks that the value in a field is greater than a particular value.
@@ -929,8 +985,7 @@ fieldIsNotDistinctFrom =
 @since 1.0.0.0
 -}
 fieldGreaterThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldGreaterThan =
-  whereColumnComparison Expr.greaterThan
+fieldGreaterThan = fieldGreaterThanWithAlias Nothing
 
 {- |
   Operator alias for 'fieldGreaterThan'.
@@ -943,13 +998,21 @@ fieldGreaterThan =
 infixl 9 .>
 
 {- |
+  Checks that the value in an aliased field is greater than a particular value.
+
+@since 1.1.0.0
+-}
+fieldGreaterThanWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldGreaterThanWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.greaterThan
+
+{- |
   Checks that the value in a field is less than a particular value.
 
 @since 1.0.0.0
 -}
 fieldLessThan :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldLessThan =
-  whereColumnComparison Expr.lessThan
+fieldLessThan = fieldLessThanWithAlias Nothing
 
 {- |
   Operator alias for 'fieldLessThan'.
@@ -962,13 +1025,22 @@ fieldLessThan =
 infixl 9 .<
 
 {- |
+  Checks that the value in a field is less than a particular value.
+
+@since 1.1.0.0
+-}
+fieldLessThanWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldLessThanWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.lessThan
+
+{- |
   Checks that the value in a field is greater than or equal to a particular value.
 
 @since 1.0.0.0
 -}
 fieldGreaterThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
 fieldGreaterThanOrEqualTo =
-  whereColumnComparison Expr.greaterThanOrEqualTo
+  fieldGreaterThanOrEqualToWithAlias Nothing
 
 {- |
   Operator alias for 'fieldGreaterThanOrEqualTo'.
@@ -981,13 +1053,21 @@ fieldGreaterThanOrEqualTo =
 infixl 9 .>=
 
 {- |
+  Checks that the value in an aliased field is greater than or equal to a particular value.
+
+@since 1.1.0.0
+-}
+fieldGreaterThanOrEqualToWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldGreaterThanOrEqualToWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.greaterThanOrEqualTo
+
+{- |
   Checks that the value in a field is less than or equal to a particular value.
 
 @since 1.0.0.0
 -}
 fieldLessThanOrEqualTo :: FieldDefinition nullability a -> a -> Expr.BooleanExpr
-fieldLessThanOrEqualTo =
-  whereColumnComparison Expr.lessThanOrEqualTo
+fieldLessThanOrEqualTo = fieldLessThanOrEqualToWithAlias Nothing
 
 {- |
   Operator alias for 'fieldLessThanOrEqualTo'.
@@ -1000,14 +1080,31 @@ fieldLessThanOrEqualTo =
 infixl 9 .<=
 
 {- |
+  Checks that the value in an aliased field is less than or equal to a particular value.
+
+@since 1.1.0.0
+-}
+fieldLessThanOrEqualToWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> a -> Expr.BooleanExpr
+fieldLessThanOrEqualToWithAlias mbAlias =
+  whereColumnComparisonWithAlias mbAlias Expr.lessThanOrEqualTo
+
+{- |
   Checks that the value in a field matches a like pattern.
 
 @since 1.0.0.0
 -}
 fieldLike :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
-fieldLike fieldDef likePattern =
+fieldLike = fieldLikeWithAlias Nothing
+
+{- |
+  Checks that the value in an aliased field matches a like pattern.
+
+@since 1.1.0.0
+-}
+fieldLikeWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldLikeWithAlias mbAlias fieldDef likePattern =
   Expr.like
-    (fieldColumnReference fieldDef)
+    (fieldColumnReferenceWithAlias mbAlias fieldDef)
     (Expr.valueExpression (SqlValue.fromText likePattern))
 
 {- |
@@ -1016,9 +1113,17 @@ fieldLike fieldDef likePattern =
 @since 1.0.0.0
 -}
 fieldLikeInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
-fieldLikeInsensitive fieldDef likePattern =
+fieldLikeInsensitive = fieldLikeInsensitiveWithAlias Nothing
+
+{- |
+  Checks that the value in an aliased field matches a like pattern case insensitively.
+
+@since 1.1.0.0
+-}
+fieldLikeInsensitiveWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldLikeInsensitiveWithAlias mbAlias fieldDef likePattern =
   Expr.likeInsensitive
-    (fieldColumnReference fieldDef)
+    (fieldColumnReferenceWithAlias mbAlias fieldDef)
     (Expr.valueExpression (SqlValue.fromText likePattern))
 
 {- |
@@ -1027,8 +1132,16 @@ fieldLikeInsensitive fieldDef likePattern =
 @since 1.0.0.0
 -}
 fieldIsNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
-fieldIsNull =
-  Expr.isNull . fieldColumnReference
+fieldIsNull = fieldIsNullWithAlias Nothing
+
+{- |
+  Checks that the value in an aliased field is null.
+
+@since 1.1.0.0
+-}
+fieldIsNullWithAlias :: Maybe Expr.Alias -> FieldDefinition Nullable a -> Expr.BooleanExpr
+fieldIsNullWithAlias mbAlias =
+  Expr.isNull . fieldColumnReferenceWithAlias mbAlias
 
 {- |
   Checks that the value in a field is not null.
@@ -1037,7 +1150,16 @@ fieldIsNull =
 -}
 fieldIsNotNull :: FieldDefinition Nullable a -> Expr.BooleanExpr
 fieldIsNotNull =
-  Expr.isNotNull . fieldColumnReference
+  fieldIsNotNullWithAlias Nothing
+
+{- |
+  Checks that the value in an aliased field is not null.
+
+@since 1.1.0.0
+-}
+fieldIsNotNullWithAlias :: Maybe Expr.Alias -> FieldDefinition Nullable a -> Expr.BooleanExpr
+fieldIsNotNullWithAlias mbAlias =
+  Expr.isNotNull . fieldColumnReferenceWithAlias mbAlias
 
 {- |
   Checks that a field matches a list of values.
@@ -1045,10 +1167,8 @@ fieldIsNotNull =
 @since 1.0.0.0
 -}
 fieldIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
-fieldIn fieldDef values =
-  Expr.valueIn
-    (fieldColumnReference fieldDef)
-    (fmap (fieldValueToExpression fieldDef) values)
+fieldIn =
+  fieldInWithAlias Nothing
 
 {- |
   Operator alias for 'fieldIn'.
@@ -1061,15 +1181,23 @@ fieldIn fieldDef values =
 infixl 9 .<-
 
 {- |
+  Checks that an aliased field matches a list of values.
+
+@since 1.1.0.0
+-}
+fieldInWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
+fieldInWithAlias mbAlias fieldDef values =
+  Expr.valueIn
+    (fieldColumnReferenceWithAlias mbAlias fieldDef)
+    (fmap (fieldValueToExpression fieldDef) values)
+
+{- |
   Checks that a field does not match a list of values.
 
 @since 1.0.0.0
 -}
 fieldNotIn :: FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
-fieldNotIn fieldDef values =
-  Expr.valueNotIn
-    (fieldColumnReference fieldDef)
-    (fmap (fieldValueToExpression fieldDef) values)
+fieldNotIn = fieldNotInWithAlias Nothing
 
 {- |
   Operator alias for 'fieldNotIn'.
@@ -1080,6 +1208,17 @@ fieldNotIn fieldDef values =
 (.</-) = fieldNotIn
 
 infixl 9 .</-
+
+{- |
+  Checks that an aliased field does not match a list of values.
+
+@since 1.1.0.0
+-}
+fieldNotInWithAlias :: Maybe Expr.Alias -> FieldDefinition nullability a -> NonEmpty a -> Expr.BooleanExpr
+fieldNotInWithAlias mbAlias fieldDef values =
+  Expr.valueNotIn
+    (fieldColumnReferenceWithAlias mbAlias fieldDef)
+    (fmap (fieldValueToExpression fieldDef) values)
 
 {- |
   Checks that a tuple of two fields is in the list of specified tuples.
@@ -1134,9 +1273,21 @@ toSqlValueTuple fieldDefA fieldDefB (a, b) =
 whereColumnComparison ::
   (Expr.ValueExpression -> Expr.ValueExpression -> Expr.BooleanExpr) ->
   (FieldDefinition nullability a -> a -> Expr.BooleanExpr)
-whereColumnComparison columnComparison fieldDef a =
+whereColumnComparison = whereColumnComparisonWithAlias Nothing
+
+{- |
+  Constructs an, aliased, field-based 'Expr.BooleanExpr' using a function that
+  builds a 'Expr.BooleanExpr'.
+
+@since 1.1.0.0
+-}
+whereColumnComparisonWithAlias ::
+  Maybe Expr.Alias ->
+  (Expr.ValueExpression -> Expr.ValueExpression -> Expr.BooleanExpr) ->
+  (FieldDefinition nullability a -> a -> Expr.BooleanExpr)
+whereColumnComparisonWithAlias mbAlias columnComparison fieldDef a =
   columnComparison
-    (fieldColumnReference fieldDef)
+    (fieldColumnReferenceWithAlias mbAlias fieldDef)
     (fieldValueToExpression fieldDef a)
 
 {- |

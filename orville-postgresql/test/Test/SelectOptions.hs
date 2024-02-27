@@ -346,7 +346,7 @@ prop_groupByCombined =
     assertGroupByClauseEquals
       (Just "GROUP BY foo, \"bar\"")
       ( (O.groupBy . RawSql.unsafeSqlExpression $ "foo")
-          <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName Nothing  barField :| []))
+          <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName Nothing barField :| []))
       )
 
 assertDistinctEquals :: (HH.MonadTest m, HasCallStack) => String -> O.SelectOptions -> m ()

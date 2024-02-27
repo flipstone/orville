@@ -14,7 +14,7 @@ module Orville.PostgreSQL.Expr.TableReferenceList
   )
 where
 
-import Orville.PostgreSQL.Expr.Name (Qualified, TableName, Alias)
+import Orville.PostgreSQL.Expr.Name (Alias, Qualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -56,9 +56,9 @@ referencesTable qualifiedTableName =
 referencesTableWithAlias :: Alias -> Qualified TableName -> TableReferenceList
 referencesTableWithAlias alias qualifiedTableName =
   TableReferenceList $
-  RawSql.intercalate
+    RawSql.intercalate
       RawSql.space
-  [ RawSql.toRawSql qualifiedTableName
-  , RawSql.fromString "AS"
-  , RawSql.toRawSql alias
-  ]
+      [ RawSql.toRawSql qualifiedTableName
+      , RawSql.fromString "AS"
+      , RawSql.toRawSql alias
+      ]

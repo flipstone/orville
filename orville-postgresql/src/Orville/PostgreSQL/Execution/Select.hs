@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -33,7 +33,7 @@ import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller, marshallAlias)
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallAlias, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
 
@@ -159,10 +159,9 @@ selectMarshalledColumnsWithAlias ::
 selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptions =
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
-      (Expr.selectDerivedColumns (marshallerDerivedColumns .  marshallAlias alias $ unannotatedSqlMarshaller marshaller))
+      (Expr.selectDerivedColumns (marshallerDerivedColumns . marshallAlias alias $ unannotatedSqlMarshaller marshaller))
       (Expr.referencesTableWithAlias alias qualifiedTableName)
       selectOptions
-
 
 {- |
   Builds a 'Select' that will execute the specified query and use the given

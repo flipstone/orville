@@ -409,7 +409,7 @@ prop_updateFields =
         Orville.insertEntities Foo.table foos
         Orville.updateFields
           Foo.table
-          (Orville.setField Nothing Foo.fooNameField updatedName :| [])
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
         Orville.findEntitiesBy
           Foo.table
@@ -432,7 +432,7 @@ prop_updateFields_NoMatch =
         Orville.insertEntities Foo.table foos
         Orville.updateFields
           Foo.table
-          (Orville.setField Nothing Foo.fooNameField updatedName :| [])
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
         Orville.findEntitiesBy Foo.table mempty
 
@@ -452,7 +452,7 @@ prop_updateFieldsAffectedRows =
         Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnRowCount
           Foo.table
-          (Orville.setField Nothing Foo.fooNameField updatedName :| [])
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
 
     affectedRows === length foos
@@ -471,7 +471,7 @@ prop_updateFieldsAndReturnEntities =
         Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
-          (Orville.setField Nothing Foo.fooNameField updatedName :| [])
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
 
     fmap Foo.fooName updatedFoos === fmap (const updatedName) (NEL.toList foos)
@@ -491,7 +491,7 @@ prop_updateFieldsAndReturnEntities_NoMatch =
         Orville.insertEntities Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
-          (Orville.setField Nothing Foo.fooNameField updatedName :| [])
+          (Orville.setField Foo.fooNameField updatedName :| [])
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
 
     updatedFoos === []

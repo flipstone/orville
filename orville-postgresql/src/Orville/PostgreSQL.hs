@@ -280,6 +280,20 @@ module Orville.PostgreSQL
   , (FieldDefinition..</-)
   , FieldDefinition.fieldTupleIn
   , FieldDefinition.fieldTupleNotIn
+  , FieldDefinition.fieldEqualsWithAlias
+  , FieldDefinition.fieldNotEqualsWithAlias
+  , FieldDefinition.fieldIsDistinctFromWithAlias
+  , FieldDefinition.fieldIsNotDistinctFromWithAlias
+  , FieldDefinition.fieldGreaterThanWithAlias
+  , FieldDefinition.fieldLessThanWithAlias
+  , FieldDefinition.fieldGreaterThanOrEqualToWithAlias
+  , FieldDefinition.fieldLessThanOrEqualToWithAlias
+  , FieldDefinition.fieldLikeWithAlias
+  , FieldDefinition.fieldLikeInsensitiveWithAlias
+  , FieldDefinition.fieldIsNullWithAlias
+  , FieldDefinition.fieldIsNotNullWithAlias
+  , FieldDefinition.fieldInWithAlias
+  , FieldDefinition.fieldNotInWithAlias
   , Expr.OrderByDirection
   , Expr.NullsOrder (..)
   , Expr.ascendingOrder

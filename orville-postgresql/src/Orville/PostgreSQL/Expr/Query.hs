@@ -156,7 +156,7 @@ deriveColumn =
 
 @since 1.0.0.0
 -}
-deriveColumnAs :: ValueExpression -> Qualified ColumnName -> DerivedColumn --TODO This should not be allowed to take a qualified column name, it isn't valid sql to have the qualifier
+deriveColumnAs :: ValueExpression -> ColumnName -> DerivedColumn
 deriveColumnAs valueExpr asColumn =
   DerivedColumn
     ( RawSql.toRawSql valueExpr

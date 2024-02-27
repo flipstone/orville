@@ -62,7 +62,7 @@ import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setFieldWithAlias)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
@@ -158,7 +158,7 @@ data SqlMarshaller a b where
   -- | Marshall a column that is read-only, like auto-incrementing ids.
   MarshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
   -- | Apply an alias to a marshaller
-  MarshallAlias :: Expr.Alias -> SqlMarshaller a b  -> SqlMarshaller a b
+  MarshallAlias :: Expr.Alias -> SqlMarshaller a b -> SqlMarshaller a b
 
 instance Functor (SqlMarshaller a) where
   fmap f marsh = MarshallApply (MarshallPure f) marsh
@@ -191,7 +191,7 @@ marshallerDerivedColumns marshaller =
         Synthetic synthField ->
           Expr.deriveColumnAs
             (syntheticFieldExpression synthField)
-            (Expr.aliasQualifyColumn Nothing (fieldNameToColumnName $ syntheticFieldAlias synthField))
+            (fieldNameToColumnName $ syntheticFieldAlias synthField)
             : columns
   in
     foldMarshallerFields marshaller [] collectDerivedColumn
@@ -291,7 +291,7 @@ collectSetClauses ::
 collectSetClauses entity entry clauses =
   case entry of
     Natural mbAlias fieldDef (Just accessor) ->
-      setField mbAlias fieldDef (accessor entity) : clauses
+      setFieldWithAlias mbAlias fieldDef (accessor entity) : clauses
     Natural _ _ Nothing ->
       clauses
     Synthetic _ ->
@@ -339,29 +339,29 @@ foldMarshallerFieldsPart ::
   (MarshallerField writeEntity -> result -> result) ->
   result
 foldMarshallerFieldsPart mbAlias marshaller getPart currentResult addToResult =
-      case marshaller of
-        MarshallPure _ ->
-          currentResult
-        MarshallApply submarshallerA submarshallerB ->
-          let
-            subresultB =
-              foldMarshallerFieldsPart mbAlias submarshallerB getPart currentResult addToResult
-          in
-            foldMarshallerFieldsPart mbAlias submarshallerA getPart subresultB addToResult
-        MarshallNest nestingFunction submarshaller ->
-          foldMarshallerFieldsPart mbAlias submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
-        MarshallField fieldDefinition ->
-          addToResult (Natural mbAlias fieldDefinition getPart) currentResult
-        MarshallSyntheticField syntheticField ->
-          addToResult (Synthetic syntheticField) currentResult
-        MarshallMaybeTag m ->
-          foldMarshallerFieldsPart mbAlias m getPart currentResult addToResult
-        MarshallPartial m ->
-          foldMarshallerFieldsPart mbAlias m getPart currentResult addToResult
-        MarshallReadOnly m ->
-          foldMarshallerFieldsPart mbAlias m Nothing currentResult addToResult
-        MarshallAlias a m ->
-          foldMarshallerFieldsPart (Just a) m getPart currentResult addToResult
+  case marshaller of
+    MarshallPure _ ->
+      currentResult
+    MarshallApply submarshallerA submarshallerB ->
+      let
+        subresultB =
+          foldMarshallerFieldsPart mbAlias submarshallerB getPart currentResult addToResult
+      in
+        foldMarshallerFieldsPart mbAlias submarshallerA getPart subresultB addToResult
+    MarshallNest nestingFunction submarshaller ->
+      foldMarshallerFieldsPart mbAlias submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
+    MarshallField fieldDefinition ->
+      addToResult (Natural mbAlias fieldDefinition getPart) currentResult
+    MarshallSyntheticField syntheticField ->
+      addToResult (Synthetic syntheticField) currentResult
+    MarshallMaybeTag m ->
+      foldMarshallerFieldsPart mbAlias m getPart currentResult addToResult
+    MarshallPartial m ->
+      foldMarshallerFieldsPart mbAlias m getPart currentResult addToResult
+    MarshallReadOnly m ->
+      foldMarshallerFieldsPart mbAlias m Nothing currentResult addToResult
+    MarshallAlias a m ->
+      foldMarshallerFieldsPart (Just a) m getPart currentResult addToResult
 
 {- |
   Decodes all the rows found in an execution result at once. The first row that
@@ -588,7 +588,7 @@ mkRowSource marshaller result = do
             fieldNames =
               foldMarshallerFields m [] $ \marshallerField names ->
                 case marshallerField of
-                  Natural _ field _ -> -- FIXME Use alias if we have it.
+                  Natural _ field _ ->
                     fieldName field : names
                   Synthetic field ->
                     syntheticFieldAlias field : names

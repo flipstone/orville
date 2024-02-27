@@ -78,12 +78,12 @@ findAllFooBars =
 findAllFooBarsInTable :: Expr.Qualified Expr.TableName -> Expr.QueryExpr
 findAllFooBarsInTable tableName =
   let
-    tableRef = Expr.referencesTableWithAlias  (Expr.alias "b") tableName
+    tableRef = Expr.referencesTableWithAlias (Expr.alias "b") tableName
   in
-  Expr.queryExpr
-    (Expr.selectClause $ Expr.selectExpr Nothing)
-    (Expr.selectColumns [fooColumn, barColumnAliased])
-    (Just $ Expr.tableExpr tableRef Nothing Nothing (Just orderByFoo) Nothing Nothing)
+    Expr.queryExpr
+      (Expr.selectClause $ Expr.selectExpr Nothing)
+      (Expr.selectColumns [fooColumn, barColumnAliased])
+      (Just $ Expr.tableExpr tableRef Nothing Nothing (Just orderByFoo) Nothing Nothing)
 
 encodeFooBar :: FooBar -> [(Maybe B8.ByteString, SqlValue.SqlValue)]
 encodeFooBar fooBar =

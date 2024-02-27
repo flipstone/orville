@@ -192,7 +192,7 @@ evaluateIntegerExpression pool expression = do
       Expr.queryExpr
         (Expr.selectClause (Expr.selectExpr Nothing))
         ( Expr.selectDerivedColumns
-            [ Expr.deriveColumnAs expression (Expr.aliasQualifyColumn Nothing (Expr.columnName "result"))
+            [ Expr.deriveColumnAs expression (Expr.columnName "result")
             ]
         )
         Nothing

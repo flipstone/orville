@@ -19,7 +19,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
 where
 
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
-import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier), Identifier, identifier)
+import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression (toIdentifier), identifier)
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
 import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
 import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)

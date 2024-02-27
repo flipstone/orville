@@ -15,11 +15,11 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Execution.Select as Select
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
-import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.Entities.Bar as Bar
 import qualified Test.Entities.Foo as Foo
@@ -87,7 +87,6 @@ prop_roundTripWithAlias =
         Select.executeSelect selectFoos
 
     foosFromDB === [originalFoo]
-
 
 prop_readOnlyFields :: Property.NamedDBProperty
 prop_readOnlyFields =

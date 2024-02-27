@@ -66,7 +66,7 @@ selectInt64Value caller valueExpression = do
       Expr.queryExpr
         (Expr.selectClause (Expr.selectExpr Nothing))
         ( Expr.selectDerivedColumns
-            [Expr.deriveColumnAs valueExpression (Expr.aliasQualifyColumn Nothing (Expr.columnName "result"))]
+            [Expr.deriveColumnAs valueExpression (Expr.columnName "result")]
         )
         Nothing
 

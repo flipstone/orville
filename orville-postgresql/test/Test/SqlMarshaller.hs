@@ -317,11 +317,10 @@ fooMarshaller =
 fooMarshallerWithAliasOnEachField :: Marshall.SqlMarshaller Foo Foo
 fooMarshallerWithAliasOnEachField =
   Marshall.marshallAlias (Expr.alias "f") $
-  Foo
-    <$> Marshall.marshallAlias (Expr.alias "f") (Marshall.marshallField fooName (Marshall.unboundedTextField "name"))
-    <*> Marshall.marshallAlias (Expr.alias "f") (Marshall.marshallField fooSize (Marshall.integerField "size"))
-    <*> Marshall.marshallAlias (Expr.alias "f") (Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option"))
-
+    Foo
+      <$> Marshall.marshallAlias (Expr.alias "f") (Marshall.marshallField fooName (Marshall.unboundedTextField "name"))
+      <*> Marshall.marshallAlias (Expr.alias "f") (Marshall.marshallField fooSize (Marshall.integerField "size"))
+      <*> Marshall.marshallAlias (Expr.alias "f") (Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option"))
 
 generateFoo :: HH.Gen Foo
 generateFoo =

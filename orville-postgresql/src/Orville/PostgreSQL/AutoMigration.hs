@@ -1192,7 +1192,7 @@ currentNamespaceQuery =
             -- put it in quotes it tries to treat it as a regular column name,
             -- which then can't be found as a column in the query.
             (RawSql.unsafeSqlExpression "current_schema")
-            (Orville.fieldColumnName Nothing PgCatalog.namespaceNameField)
+            (Orville.fieldNameToColumnName $ Orville.fieldName PgCatalog.namespaceNameField)
         ]
     )
     Nothing

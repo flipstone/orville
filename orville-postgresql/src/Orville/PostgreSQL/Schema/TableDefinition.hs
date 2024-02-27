@@ -479,8 +479,9 @@ mkInsertColumnList ::
   SqlMarshaller writeEntity readEntity ->
   Expr.InsertColumnList
 mkInsertColumnList marshaller =
-  Expr.insertColumnList .
-    foldMarshallerFields marshaller [] $ collectFromField ExcludeReadOnlyColumns fieldColumnName
+  Expr.insertColumnList
+    . foldMarshallerFields marshaller []
+    $ collectFromField ExcludeReadOnlyColumns fieldColumnName
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their
