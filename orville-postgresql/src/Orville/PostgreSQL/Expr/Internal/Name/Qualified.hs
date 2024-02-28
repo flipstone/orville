@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -11,11 +11,13 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   ( Qualified
   , qualifyTable
   , qualifySequence
+  , qualifyFunction
   , qualifyColumn
   )
 where
 
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
+import Orville.PostgreSQL.Expr.Internal.Name.FunctionName (FunctionName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
 import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
@@ -68,6 +70,21 @@ qualifySequence ::
   SequenceName ->
   Qualified SequenceName
 qualifySequence = unsafeSchemaQualify
+
+{- |
+Optionally qualifies a 'FunctionName' with a 'SchemaName'.
+
+Note: If you already have a 'Orville.PostgreSQL.Schema.FunctionIdentifier' in
+hand you should probably use
+'Orville.PostgreSQL.Schema.functionIdQualifiedName' instead.
+
+@since 1.1.0.0
+-}
+qualifyFunction ::
+  Maybe SchemaName ->
+  FunctionName ->
+  Qualified FunctionName
+qualifyFunction = unsafeSchemaQualify
 
 {- |
 Qualifies a 'ColumnName' with a 'TableName' and, optionally, a 'SchemaName'.

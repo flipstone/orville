@@ -15,10 +15,17 @@ module Test.PgAssert
   , assertUniqueConstraintExists
   , assertForeignKeyConstraintExists
   , assertIndexExists
+  , assertFunctionExists
+  , assertFunctionExistsInSchema
+  , assertFunctionDoesNotExist
+  , assertFunctionDoesNotExistInSchema
+  , assertTriggerExists
+  , assertTriggerDoesNotExist
   , ForeignKeyInfo (..)
   )
 where
 
+import qualified Control.Exception.Safe as SafeEx
 import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List as List
@@ -126,8 +133,9 @@ assertRelationExistsInSchema pool schemaName relationName relationKind = do
   dbDesc <-
     MIO.liftIO $
       Orville.runOrville pool $ do
-        PgCatalog.describeDatabaseRelations
+        PgCatalog.describeDatabase
           [(String.fromString schemaName, String.fromString relationName)]
+          []
 
   case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString relationName) dbDesc of
     Nothing -> do
@@ -148,9 +156,10 @@ assertRelationDoesNotExistInSchema ::
 assertRelationDoesNotExistInSchema pool schemaName tableName relationKind = do
   dbDesc <-
     MIO.liftIO $
-      Orville.runOrville pool $ do
-        PgCatalog.describeDatabaseRelations
+      Orville.runOrville pool $
+        PgCatalog.describeDatabase
           [(String.fromString schemaName, String.fromString tableName)]
+          []
 
   case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString tableName) dbDesc of
     Nothing ->
@@ -371,3 +380,131 @@ isMatchingIndexPresent predicate relationDesc =
   List.any
     predicate
     (PgCatalog.relationIndexes relationDesc)
+
+assertFunctionExists ::
+  (HH.MonadTest m, MIO.MonadIO m, SafeEx.MonadCatch m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m PgCatalog.PgProc
+assertFunctionExists pool =
+  assertFunctionExistsInSchema pool "public"
+
+assertFunctionExistsInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, SafeEx.MonadCatch m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  String ->
+  m PgCatalog.PgProc
+assertFunctionExistsInSchema pool schemaName functionName = do
+  namespaceOid <-
+    HH.evalMaybeM
+      . MIO.liftIO
+      . Orville.runOrville pool
+      . fmap (fmap PgCatalog.pgNamespaceOid)
+      $ Orville.findFirstEntityBy
+        PgCatalog.pgNamespaceTable
+        ( Orville.where_
+            (Orville.fieldEquals PgCatalog.namespaceNameField (String.fromString schemaName))
+        )
+
+  mbProc <-
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        Orville.findFirstEntityBy
+          PgCatalog.pgProcTable
+          ( Orville.where_
+              ( Orville.andExpr
+                  (Orville.fieldEquals PgCatalog.procNamespaceOidField namespaceOid)
+                  (Orville.fieldEquals PgCatalog.procNameField (String.fromString functionName))
+              )
+          )
+
+  case mbProc of
+    Nothing -> do
+      withFrozenCallStack $ do
+        HH.annotate $ functionName <> " function not found"
+        HH.failure
+    Just proc -> do
+      pure proc
+
+assertFunctionDoesNotExist ::
+  (HH.MonadTest m, MIO.MonadIO m, SafeEx.MonadCatch m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m ()
+assertFunctionDoesNotExist pool =
+  assertFunctionDoesNotExistInSchema pool "public"
+
+assertFunctionDoesNotExistInSchema ::
+  (HH.MonadTest m, MIO.MonadIO m, SafeEx.MonadCatch m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  String ->
+  m ()
+assertFunctionDoesNotExistInSchema pool schemaName functionName = do
+  namespaceOid <-
+    HH.evalMaybeM
+      . MIO.liftIO
+      . Orville.runOrville pool
+      . fmap (fmap PgCatalog.pgNamespaceOid)
+      $ Orville.findFirstEntityBy
+        PgCatalog.pgNamespaceTable
+        ( Orville.where_
+            (Orville.fieldEquals PgCatalog.namespaceNameField (String.fromString schemaName))
+        )
+
+  mbProc <-
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        Orville.findFirstEntityBy
+          PgCatalog.pgProcTable
+          ( Orville.where_
+              ( Orville.andExpr
+                  (Orville.fieldEquals PgCatalog.procNamespaceOidField namespaceOid)
+                  (Orville.fieldEquals PgCatalog.procNameField (String.fromString functionName))
+              )
+          )
+
+  case mbProc of
+    Nothing -> do
+      pure ()
+    Just _proc -> do
+      withFrozenCallStack $ do
+        HH.annotate $ functionName <> " function was found, but was not expected"
+        HH.failure
+
+assertTriggerExists ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  String ->
+  m ()
+assertTriggerExists relationDesc triggerName =
+  let
+    nameMatches trigger =
+      PgCatalog.pgTriggerName trigger == String.fromString triggerName
+  in
+    case List.find nameMatches (PgCatalog.relationTriggers relationDesc) of
+      Nothing ->
+        withFrozenCallStack $ do
+          HH.annotate $ triggerName <> " trigger not found"
+          HH.failure
+      Just _trigger ->
+        pure ()
+
+assertTriggerDoesNotExist ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  String ->
+  m ()
+assertTriggerDoesNotExist relationDesc triggerName =
+  let
+    nameMatches trigger =
+      PgCatalog.pgTriggerName trigger == String.fromString triggerName
+  in
+    case List.find nameMatches (PgCatalog.relationTriggers relationDesc) of
+      Nothing ->
+        pure ()
+      Just _trigger ->
+        withFrozenCallStack $ do
+          HH.annotate $ triggerName <> " trigger was found, but was note xpected"
+          HH.failure

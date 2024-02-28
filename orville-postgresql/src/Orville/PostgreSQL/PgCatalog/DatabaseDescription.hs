@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -18,7 +18,8 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   , lookupRelationOfKind
   , lookupAttribute
   , lookupAttributeDefault
-  , describeDatabaseRelations
+  , lookupProcedure
+  , describeDatabase
   )
 where
 
@@ -37,20 +38,25 @@ import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgCla
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
 import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
+import Orville.PostgreSQL.PgCatalog.PgProc (PgProc, ProcName, pgProcTable, procNameField, procNamespaceOidField)
 import Orville.PostgreSQL.PgCatalog.PgSequence (PgSequence, pgSequenceTable, sequencePgClassOidField)
+import Orville.PostgreSQL.PgCatalog.PgTrigger (PgTrigger, pgTriggerTable, triggerRelationOidField)
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Plan.Operation as Op
 
 {- |
   A description of selected items from a single PostgreSQL database.
-  'describeDatabaseRelations' can be used to load the descriptions of request
+  'describeDatabase' can be used to load the descriptions of request
   items.
 
 @since 1.0.0.0
 -}
 data DatabaseDescription = DatabaseDescription
   { databaseRelations :: Map.Map (NamespaceName, RelationName) RelationDescription
+  -- ^ @since 1.0.0.0
+  , databaseProcedures :: Map.Map (NamespaceName, ProcName) PgProc
+  -- ^ @since 1.1.0.0
   }
 
 {- |
@@ -64,6 +70,18 @@ lookupRelation ::
   Maybe RelationDescription
 lookupRelation key =
   Map.lookup key . databaseRelations
+
+{- |
+  Lookup a procedure by its qualified name in the @pg_catalog@ schema.
+
+@since 1.0.0.0
+-}
+lookupProcedure ::
+  (NamespaceName, ProcName) ->
+  DatabaseDescription ->
+  Maybe PgProc
+lookupProcedure key =
+  Map.lookup key . databaseProcedures
 
 {- |
   Lookup a relation by its qualified name in the @pg_catalog@ schema. If the
@@ -93,11 +111,19 @@ lookupRelationOfKind kind key dbDesc =
 -}
 data RelationDescription = RelationDescription
   { relationRecord :: PgClass
+  -- ^ @ since 1.0.0.0
   , relationAttributes :: Map.Map AttributeName PgAttribute
+  -- ^ @ since 1.0.0.0
   , relationAttributeDefaults :: Map.Map AttributeNumber PgAttributeDefault
+  -- ^ @ since 1.0.0.0
   , relationConstraints :: [ConstraintDescription]
+  -- ^ @ since 1.0.0.0
   , relationIndexes :: [IndexDescription]
+  -- ^ @ since 1.0.0.0
+  , relationTriggers :: [PgTrigger]
+  -- ^ @ since 1.1.0.0
   , relationSequence :: Maybe PgSequence
+  -- ^ @ since 1.0.0.0
   }
 
 {- |
@@ -180,27 +206,33 @@ data IndexMember
   Each 'RelationDescription' will contain all the attributes that currently
   exist for that relation, according to the @pg_catalog@ tables.
 
-@since 1.0.0.0
+@since 1.1.0.0
 -}
-describeDatabaseRelations ::
+describeDatabase ::
   Orville.MonadOrville m =>
   [(NamespaceName, RelationName)] ->
+  [(NamespaceName, ProcName)] ->
   m DatabaseDescription
-describeDatabaseRelations relations = do
+describeDatabase relations procedures = do
   manyRelations <-
     Plan.execute
       (Plan.planMany describeRelationByName)
       relations
 
+  manyProcedures <-
+    Plan.execute
+      (Plan.planMany describeProcedureByName)
+      procedures
+
   let
-    relationsMap =
-      Map.mapMaybe id
-        . Many.toMap
-        $ manyRelations
+    mkMap :: Ord k => Many.Many k (Maybe v) -> Map.Map k v
+    mkMap =
+      Map.mapMaybe id . Many.toMap
 
   pure $
     DatabaseDescription
-      { databaseRelations = relationsMap
+      { databaseRelations = mkMap manyRelations
+      , databaseProcedures = mkMap manyProcedures
       }
 
 describeRelationByName :: Plan.Plan scope (NamespaceName, RelationName) (Maybe RelationDescription)
@@ -231,6 +263,7 @@ describeRelationByClass =
           <*> fmap (indexBy pgAttributeDefaultAttributeNumber) findClassAttributeDefaults
           <*> Plan.chain classAndAttributes findClassConstraints
           <*> Plan.chain classAndAttributes findClassIndexes
+          <*> Plan.using pgClass findClassTriggers
           <*> Plan.using pgClass findClassSequence
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
@@ -429,6 +462,32 @@ findClassSequence :: Plan.Plan scope PgClass (Maybe PgSequence)
 findClassSequence =
   Plan.focusParam pgClassOid $
     Plan.findMaybeOne pgSequenceTable sequencePgClassOidField
+
+findClassTriggers :: Plan.Plan scope PgClass [PgTrigger]
+findClassTriggers =
+  Plan.focusParam pgClassOid $
+    Plan.findAll pgTriggerTable triggerRelationOidField
+
+describeProcedureByName :: Plan.Plan scope (NamespaceName, ProcName) (Maybe PgProc)
+describeProcedureByName =
+  Plan.bind (fst <$> Plan.askParam) $ \namespaceName ->
+    Plan.bind (snd <$> Plan.askParam) $ \procName ->
+      Plan.bind (Plan.using namespaceName findNamespace) $ \namespace ->
+        let
+          namespaceAndProcName =
+            (,) <$> Plan.use namespace <*> Plan.use procName
+        in
+          Plan.chain namespaceAndProcName findProc
+
+findProc :: Plan.Plan scope (PgNamespace, ProcName) (Maybe PgProc)
+findProc =
+  Plan.focusParam (\(ns, procName) -> (pgNamespaceOid ns, procName)) $
+    Plan.planOperation $
+      Op.findOne pgProcTable byNamespaceOidAndProcName
+
+byNamespaceOidAndProcName :: Op.WherePlanner (LibPQ.Oid, ProcName)
+byNamespaceOidAndProcName =
+  Op.byFieldTuple procNamespaceOidField procNameField
 
 indexBy :: Ord key => (row -> key) -> [row] -> Map.Map key row
 indexBy rowKey =

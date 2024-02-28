@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -20,4 +20,6 @@ import Orville.PostgreSQL.PgCatalog.PgClass as Export
 import Orville.PostgreSQL.PgCatalog.PgConstraint as Export
 import Orville.PostgreSQL.PgCatalog.PgIndex as Export
 import Orville.PostgreSQL.PgCatalog.PgNamespace as Export
+import Orville.PostgreSQL.PgCatalog.PgProc as Export
 import Orville.PostgreSQL.PgCatalog.PgSequence as Export
+import Orville.PostgreSQL.PgCatalog.PgTrigger as Export

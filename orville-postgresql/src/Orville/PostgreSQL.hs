@@ -101,6 +101,8 @@ module Orville.PostgreSQL
   , TableDefinition.addTableConstraints
   , TableDefinition.tableIndexes
   , TableDefinition.addTableIndexes
+  , TableDefinition.tableTriggers
+  , TableDefinition.addTableTriggers
   , TableDefinition.dropColumns
   , TableDefinition.columnsToDrop
   , TableDefinition.tableIdentifier
@@ -148,6 +150,12 @@ module Orville.PostgreSQL
   , IndexDefinition.AttributeBasedIndexMigrationKey (AttributeBasedIndexMigrationKey, indexKeyUniqueness, indexKeyColumns)
   , IndexDefinition.NamedIndexMigrationKey
   , IndexDefinition.indexMigrationKey
+  , TriggerDefinition.TriggerDefinition
+  , TriggerDefinition.beforeInsert
+  , TriggerDefinition.mkTriggerDefinition
+  , TriggerDefinition.mkCreateTriggerExpr
+  , TriggerDefinition.TriggerMigrationKey (NamedTriggerKey)
+  , TriggerDefinition.triggerMigrationKey
   , PrimaryKey.PrimaryKey
   , PrimaryKey.primaryKey
   , PrimaryKey.compositePrimaryKey
@@ -325,6 +333,23 @@ module Orville.PostgreSQL
   , SequenceIdentifier.sequenceIdSchemaNameString
   , SequenceIdentifier.sequenceIdToString
 
+    -- * Functions for defining and working with PostgreSQL functions
+  , FunctionDefinition.FunctionDefinition
+  , FunctionDefinition.setFunctionSchema
+  , FunctionDefinition.mkTriggerFunction
+  , FunctionDefinition.mkCreateFunctionExpr
+  , FunctionDefinition.functionName
+  , FunctionDefinition.functionIdentifier
+  , FunctionDefinition.functionSource
+  , FunctionIdentifier.FunctionIdentifier
+  , FunctionIdentifier.unqualifiedNameToFunctionId
+  , FunctionIdentifier.functionIdUnqualifiedNameString
+  , FunctionIdentifier.functionIdQualifiedName
+  , FunctionIdentifier.setFunctionIdSchema
+  , FunctionIdentifier.functionIdSchemaNameString
+  , FunctionIdentifier.functionIdToString
+  , Expr.plpgsql
+
     -- * Numeric types
   , SqlType.integer
   , SqlType.serial
@@ -392,9 +417,12 @@ import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Raw.Connection as Connection
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
+import qualified Orville.PostgreSQL.Schema.FunctionDefinition as FunctionDefinition
+import qualified Orville.PostgreSQL.Schema.FunctionIdentifier as FunctionIdentifier
 import qualified Orville.PostgreSQL.Schema.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Schema.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Schema.SequenceDefinition as SequenceDefinition
 import qualified Orville.PostgreSQL.Schema.SequenceIdentifier as SequenceIdentifier
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
+import qualified Orville.PostgreSQL.Schema.TriggerDefinition as TriggerDefinition

@@ -3,7 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -42,6 +42,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.String as String
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
@@ -88,6 +89,19 @@ data SchemaItem where
   SchemaDropSequence ::
     Orville.SequenceIdentifier ->
     SchemaItem
+  -- |
+  --    Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
+  -- @since 1.1.0.0
+  SchemaFunction ::
+    Orville.FunctionDefinition ->
+    SchemaItem
+  -- |
+  --    Constructs a 'SchemaItem' that will drop the specified table if it is
+  --    found in the database.
+  -- @since 1.1.0.0
+  SchemaDropFunction ::
+    Orville.FunctionIdentifier ->
+    SchemaItem
 
 {- |
   Returns a one-line string describing the 'SchemaItem', suitable for a human
@@ -109,6 +123,10 @@ schemaItemSummary item =
       "Sequence " <> Orville.sequenceIdToString (Orville.sequenceIdentifier sequenceDef)
     SchemaDropSequence sequenceId ->
       "Drop sequence " <> Orville.sequenceIdToString sequenceId
+    SchemaFunction functionDef ->
+      "Function " <> Orville.functionIdToString (Orville.functionIdentifier functionDef)
+    SchemaDropFunction functionId ->
+      "Drop function " <> Orville.functionIdToString functionId
 
 {- |
 A 'MigrationPlan' contains an ordered list of migration steps. Each one is a
@@ -197,7 +215,11 @@ isMigrationStepTransactional stepWithType =
     DropForeignKeys -> True
     DropUniqueConstraints -> True
     DropIndexes -> True
+    DropTriggers -> True
+    DropFunctions -> True
     AddRemoveTablesAndColumns -> True
+    AddFunctions -> True
+    AddTriggers -> True
     AddIndexesTransactionally -> True
     AddUniqueConstraints -> True
     AddForeignKeys -> True
@@ -215,7 +237,11 @@ data StepType
   = DropForeignKeys
   | DropUniqueConstraints
   | DropIndexes
+  | DropTriggers
+  | DropFunctions
   | AddRemoveTablesAndColumns
+  | AddFunctions
+  | AddTriggers
   | AddIndexesTransactionally
   | AddUniqueConstraints
   | AddForeignKeys
@@ -346,9 +372,17 @@ generateMigrationPlanWithoutLock schemaItems =
     currentNamespace <- findCurrentNamespace
 
     let
-      pgCatalogRelations = fmap (schemaItemPgCatalogRelation currentNamespace) schemaItems
+      pgCatalogRelations =
+        Maybe.mapMaybe
+          (schemaItemPgCatalogRelation currentNamespace)
+          schemaItems
 
-    dbDesc <- PgCatalog.describeDatabaseRelations pgCatalogRelations
+      pgCatalogFunctions =
+        Maybe.mapMaybe
+          (schemaItemPgCatalogFunction currentNamespace)
+          schemaItems
+
+    dbDesc <- PgCatalog.describeDatabase pgCatalogRelations pgCatalogFunctions
 
     case traverse (calculateMigrationSteps currentNamespace dbDesc) schemaItems of
       Left err ->
@@ -482,6 +516,40 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
                   AddRemoveTablesAndColumns
                   (Expr.dropSequenceExpr Nothing (Orville.sequenceIdQualifiedName sequenceId))
               ]
+    SchemaFunction functionDef ->
+      Right $
+        let
+          (schemaName, procName) =
+            functionIdToPgCatalogNames currentNamespace (Orville.functionIdentifier functionDef)
+        in
+          case PgCatalog.lookupProcedure (schemaName, procName) dbDesc of
+            Nothing ->
+              [ mkMigrationStepWithType
+                  AddFunctions
+                  (Orville.mkCreateFunctionExpr Nothing functionDef)
+              ]
+            Just proc ->
+              if PgCatalog.pgProcSource proc == T.pack (Orville.functionSource functionDef)
+                then []
+                else
+                  [ mkMigrationStepWithType
+                      AddFunctions
+                      (Orville.mkCreateFunctionExpr (Just Expr.orReplace) functionDef)
+                  ]
+    SchemaDropFunction functionId ->
+      Right $
+        let
+          (schemaName, procName) =
+            functionIdToPgCatalogNames currentNamespace functionId
+        in
+          case PgCatalog.lookupProcedure (schemaName, procName) dbDesc of
+            Nothing ->
+              []
+            Just _proc ->
+              [ mkMigrationStepWithType
+                  DropFunctions
+                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId))
+              ]
 
 {- |
   Builds 'MigrationStep's that will perform table creation. This function
@@ -520,10 +588,16 @@ mkCreateTableSteps currentNamespace tableDef =
       concatMap
         (mkAddIndexSteps Set.empty tableName)
         (Orville.tableIndexes tableDef)
+
+    addTriggerSteps =
+      concatMap
+        (mkAddTriggerSteps Set.empty tableName)
+        (Orville.tableTriggers tableDef)
   in
     mkMigrationStepWithType AddRemoveTablesAndColumns createTableExpr
       : mkConstraintSteps tableName addConstraintActions
         <> addIndexSteps
+        <> addTriggerSteps
 
 {- |
   Builds migration steps that are required to create or alter the table's
@@ -609,6 +683,27 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
         (mkDropIndexSteps indexesToKeep systemIndexOids)
         (PgCatalog.relationIndexes relationDesc)
 
+    existingTriggers =
+      Set.fromList
+        . fmap pgTriggerMigrationKey
+        . PgCatalog.relationTriggers
+        $ relationDesc
+
+    triggersToKeep =
+      Map.keysSet
+        . Orville.tableTriggers
+        $ tableDef
+
+    addTriggerSteps =
+      concatMap
+        (mkAddTriggerSteps existingTriggers tableName)
+        (Orville.tableTriggers tableDef)
+
+    dropTriggerSteps =
+      concatMap
+        (mkDropTriggerSteps triggersToKeep tableName)
+        (PgCatalog.relationTriggers relationDesc)
+
     tableName =
       Orville.tableName tableDef
   in
@@ -616,6 +711,8 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
       <> mkConstraintSteps tableName (addConstraintActions <> dropConstraintActions)
       <> addIndexSteps
       <> dropIndexSteps
+      <> addTriggerSteps
+      <> dropTriggerSteps
 
 {- |
   Consolidates alter table actions (which should all be related to adding and
@@ -999,6 +1096,50 @@ mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
           else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr indexName)]
 
 {- |
+  Builds migration steps to create a trigger if it does not exist.
+
+@since 1.1.0.0
+-}
+mkAddTriggerSteps ::
+  Set.Set Schema.TriggerMigrationKey ->
+  Expr.Qualified Expr.TableName ->
+  Orville.TriggerDefinition ->
+  [MigrationStepWithType]
+mkAddTriggerSteps existingTriggers tableName triggerDef =
+  let
+    triggerKey =
+      Schema.triggerMigrationKey triggerDef
+  in
+    if Set.member triggerKey existingTriggers
+      then []
+      else [mkMigrationStepWithType AddTriggers (Orville.mkCreateTriggerExpr triggerDef Nothing tableName)]
+
+{- |
+  Builds migration steps to drop an trigger if it should not exist.
+
+@since 1.1.0.0
+-}
+mkDropTriggerSteps ::
+  Set.Set Schema.TriggerMigrationKey ->
+  Expr.Qualified Expr.TableName ->
+  PgCatalog.PgTrigger ->
+  [MigrationStepWithType]
+mkDropTriggerSteps triggersToKeep tableName pgTrigger =
+  let
+    migrationKey =
+      pgTriggerMigrationKey pgTrigger
+
+    triggerName =
+      Expr.triggerName
+        . PgCatalog.triggerNameToString
+        . PgCatalog.pgTriggerName
+        $ pgTrigger
+  in
+    if Set.member migrationKey triggersToKeep || PgCatalog.pgTriggerIsInternal pgTrigger
+      then []
+      else [mkMigrationStepWithType DropTriggers (Expr.dropTrigger Nothing triggerName tableName)]
+
+{- |
   Primary Key, Unique, and Exclusion constraints automatically create indexes
   that we don't want orville to consider for the purposes of migrations. This
   function checks the constraint type and returns the OID of the supporting
@@ -1079,20 +1220,70 @@ pgAttributeBasedIndexMigrationKey indexDesc = do
       , IndexDefinition.indexKeyColumns = fieldNames
       }
 
+{- |
+  Builds the orville migration key given a description of an existing trigger
+  so that it can be compared with triggers found in a table definition.
+
+  If the description includes expressions as members of the trigger rather than
+  simple attributes, 'Nothing' is returned.
+
+@since 1.1.0.0
+-}
+pgTriggerMigrationKey ::
+  PgCatalog.PgTrigger ->
+  Schema.TriggerMigrationKey
+pgTriggerMigrationKey =
+  Schema.NamedTriggerKey
+    . PgCatalog.triggerNameToString
+    . PgCatalog.pgTriggerName
+
+{- |
+  Retrieves from a 'SchemaItem' the relation (if any) that the schema item relates to
+  so that the migration infrastructure can look up data about it in the PostgreSQL
+  catalog for planning migration steps.
+-}
 schemaItemPgCatalogRelation ::
   PgCatalog.NamespaceName ->
   SchemaItem ->
-  (PgCatalog.NamespaceName, PgCatalog.RelationName)
+  Maybe (PgCatalog.NamespaceName, PgCatalog.RelationName)
 schemaItemPgCatalogRelation currentNamespace item =
   case item of
     SchemaTable tableDef ->
-      tableIdToPgCatalogNames currentNamespace (Orville.tableIdentifier tableDef)
+      Just $ tableIdToPgCatalogNames currentNamespace (Orville.tableIdentifier tableDef)
     SchemaDropTable tableId ->
-      tableIdToPgCatalogNames currentNamespace tableId
+      Just $ tableIdToPgCatalogNames currentNamespace tableId
     SchemaSequence sequenceDef ->
-      sequenceIdToPgCatalogNames currentNamespace (Orville.sequenceIdentifier sequenceDef)
+      Just $ sequenceIdToPgCatalogNames currentNamespace (Orville.sequenceIdentifier sequenceDef)
     SchemaDropSequence sequenceId ->
-      sequenceIdToPgCatalogNames currentNamespace sequenceId
+      Just $ sequenceIdToPgCatalogNames currentNamespace sequenceId
+    SchemaFunction _functionDef ->
+      Nothing
+    SchemaDropFunction _functionId ->
+      Nothing
+
+{- |
+  Retrieves from a 'SchemaItem' the function (if any) that the schema item relates to
+  so that the migration infrastructure can look up data about it in the PostgreSQL
+  catalog for planning migration steps.
+-}
+schemaItemPgCatalogFunction ::
+  PgCatalog.NamespaceName ->
+  SchemaItem ->
+  Maybe (PgCatalog.NamespaceName, PgCatalog.ProcName)
+schemaItemPgCatalogFunction currentNamespace item =
+  case item of
+    SchemaTable _tableDef ->
+      Nothing
+    SchemaDropTable _tableId ->
+      Nothing
+    SchemaSequence _sequenceDef ->
+      Nothing
+    SchemaDropSequence _sequenceId ->
+      Nothing
+    SchemaFunction functionDef ->
+      Just $ functionIdToPgCatalogNames currentNamespace (Orville.functionIdentifier functionDef)
+    SchemaDropFunction functionId ->
+      Just $ functionIdToPgCatalogNames currentNamespace functionId
 
 tableIdToPgCatalogNames ::
   PgCatalog.NamespaceName ->
@@ -1109,6 +1300,24 @@ tableIdToPgCatalogNames currentNamespace tableId =
       String.fromString
         . Orville.tableIdUnqualifiedNameString
         $ tableId
+  in
+    (actualNamespace, relationName)
+
+functionIdToPgCatalogNames ::
+  PgCatalog.NamespaceName ->
+  Orville.FunctionIdentifier ->
+  (PgCatalog.NamespaceName, PgCatalog.ProcName)
+functionIdToPgCatalogNames currentNamespace functionId =
+  let
+    actualNamespace =
+      maybe currentNamespace String.fromString
+        . Orville.functionIdSchemaNameString
+        $ functionId
+
+    relationName =
+      String.fromString
+        . Orville.functionIdUnqualifiedNameString
+        $ functionId
   in
     (actualNamespace, relationName)
 
