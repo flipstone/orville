@@ -152,6 +152,11 @@ module Orville.PostgreSQL
   , IndexDefinition.indexMigrationKey
   , TriggerDefinition.TriggerDefinition
   , TriggerDefinition.beforeInsert
+  , TriggerDefinition.afterInsert
+  , TriggerDefinition.beforeUpdate
+  , TriggerDefinition.afterUpdate
+  , TriggerDefinition.beforeDelete
+  , TriggerDefinition.afterDelete
   , TriggerDefinition.mkTriggerDefinition
   , TriggerDefinition.mkCreateTriggerExpr
   , TriggerDefinition.TriggerMigrationKey (NamedTriggerKey)
