@@ -123,12 +123,10 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
       (Expr.referencesTable qualifiedTableName)
       selectOptions
 
-{- |
-  Builds a 'Select' that will select all the columns described in the
-  'TableDefinition'. This is the safest way to build a 'Select', because table
-  name and columns are all read from the 'TableDefinition'. If the table is
-  being managed with Orville auto-migrations, this will match the schema in the
-  database.
+{- | Builds a 'Select' that will select all the columns described in the 'TableDefinition', ensuring
+  they are qualified with the given alias. This is the safest way to build a 'Select', because table
+  name and columns are all read from the 'TableDefinition'. If the table is being managed with
+  Orville auto-migrations, this will match the schema in the database.
 
 @since 1.1.0.0
 -}
