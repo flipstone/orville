@@ -55,7 +55,7 @@ setFunctionSchema schemaName functionDef =
     }
 
 {- |
-  Retrieves the 'FunctionIdentifier' for this sequence, which is set by the
+  Retrieves the 'FunctionIdentifier' for this function, which is set by the
   name provided to 'mkTriggerFunction' and any calls made to
   'setFunctionSchema' thereafter.
 @since 1.1.0.0
@@ -65,7 +65,7 @@ functionIdentifier =
   i_functionIdentifier
 
 {- |
-  Retrieves the 'Expr.Qualified' 'Expr.FunctionName' for the sequence that
+  Retrieves the 'Expr.Qualified' 'Expr.FunctionName' for the function that
   should be used to build SQL expressions involving it.
 
 @since 1.1.0.0
@@ -104,7 +104,7 @@ mkTriggerFunction name language source =
     }
 
 {- |
-  Builds a 'Expr.CreateFunctionExpr' that will create a SQL sequence matching
+  Builds a 'Expr.CreateFunctionExpr' that will create a SQL function matching
   the given 'FunctionDefinition' when it is executed.
 
 @since 1.1.0.0
