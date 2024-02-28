@@ -121,7 +121,7 @@ newtype PrimaryKeyExpr
 
   @since 1.0.0.0
 -}
-primaryKeyExpr :: NonEmpty (Qualified ColumnName) -> PrimaryKeyExpr
+primaryKeyExpr :: NonEmpty ColumnName -> PrimaryKeyExpr
 primaryKeyExpr columnNames =
   PrimaryKeyExpr $
     mconcat
@@ -235,7 +235,7 @@ dropConstraint constraintName =
 -}
 alterColumnType ::
   -- | The name of the column whose type will be altered.
-  Qualified ColumnName ->
+  ColumnName ->
   -- | The new type to use for the column.
   DataType ->
   -- | An optional 'UsingClause' to indicate to the database how data from the
@@ -274,7 +274,7 @@ newtype UsingClause
 
   @since 1.0.0.0
 -}
-usingCast :: Qualified ColumnName -> DataType -> UsingClause
+usingCast :: ColumnName -> DataType -> UsingClause
 usingCast columnName dataType =
   UsingClause $
     RawSql.fromString "USING "
@@ -288,7 +288,7 @@ usingCast columnName dataType =
 
   @since 1.0.0.0
 -}
-alterColumnNullability :: Qualified ColumnName -> AlterNotNull -> AlterTableAction
+alterColumnNullability :: ColumnName -> AlterNotNull -> AlterTableAction
 alterColumnNullability columnName alterNotNull =
   AlterTableAction $
     RawSql.intercalate
@@ -337,7 +337,7 @@ dropNotNull =
 
   @since 1.0.0.0
 -}
-alterColumnDropDefault :: Qualified ColumnName -> AlterTableAction
+alterColumnDropDefault :: ColumnName -> AlterTableAction
 alterColumnDropDefault columnName =
   AlterTableAction $
     RawSql.intercalate
@@ -355,7 +355,7 @@ alterColumnDropDefault columnName =
 -}
 alterColumnSetDefault ::
   RawSql.SqlExpression valueExpression =>
-  Qualified ColumnName ->
+  ColumnName ->
   valueExpression ->
   AlterTableAction
 alterColumnSetDefault columnName defaultValue =

@@ -29,7 +29,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)), toList)
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldColumnName, fieldEquals, fieldIn, fieldName, fieldNameToString, fieldValueToSqlValue)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldEquals, fieldIn, fieldName,fieldNameToColumnName, fieldNameToString, fieldValueToSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
@@ -181,7 +181,7 @@ mkPrimaryKeyExpr :: PrimaryKey key -> Expr.PrimaryKeyExpr
 mkPrimaryKeyExpr keyDef =
   let
     names =
-      mapPrimaryKeyParts (\_ field -> fieldColumnName Nothing field) keyDef
+      mapPrimaryKeyParts (\_ field -> fieldNameToColumnName $ fieldName field) keyDef
   in
     Expr.primaryKeyExpr names
 

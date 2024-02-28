@@ -416,4 +416,4 @@ dropAndRecreateTestTable fieldDef connection = do
   RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql testTable)
 
   RawSql.executeVoid connection $
-    Expr.createTableExpr testTable [Marshall.fieldColumnDefinition Nothing fieldDef] Nothing []
+    Expr.createTableExpr testTable [Marshall.fieldColumnDefinition fieldDef] Nothing []

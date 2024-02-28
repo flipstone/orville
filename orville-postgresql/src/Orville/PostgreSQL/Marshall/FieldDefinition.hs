@@ -426,10 +426,10 @@ fieldColumnReferenceWithAlias mbAlias =
 
 @since 1.0.0.0
 -}
-fieldColumnDefinition :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.ColumnDefinition
-fieldColumnDefinition mbAlias fieldDef =
+fieldColumnDefinition :: FieldDefinition nullability a -> Expr.ColumnDefinition
+fieldColumnDefinition fieldDef =
   Expr.columnDefinition
-    (fieldColumnName mbAlias fieldDef)
+    (fieldNameToColumnName $ fieldName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
     (Just $ fieldColumnConstraint fieldDef)
     (fmap (Expr.columnDefault . DefaultValue.defaultValueExpression) $ i_fieldDefaultValue fieldDef)

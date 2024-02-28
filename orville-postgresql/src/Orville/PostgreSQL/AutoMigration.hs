@@ -690,7 +690,7 @@ mkAddAlterColumnActions relationDesc fieldDef =
                   || (Orville.sqlTypeMaximumLength sqlType /= PgCatalog.pgAttributeMaxLength attr)
 
               columnName =
-                Orville.fieldColumnName Nothing fieldDef
+                Orville.fieldNameToColumnName $ Orville.fieldName fieldDef
 
               dataType =
                 Orville.sqlTypeExpr sqlType
@@ -760,7 +760,7 @@ mkAddAlterColumnActions relationDesc fieldDef =
         -- must rely on the database to raise the error because the table
         -- does not yet exist for us to discover a conflict with system
         -- attributes.
-        [Expr.addColumn (Orville.fieldColumnDefinition Nothing fieldDef)]
+        [Expr.addColumn (Orville.fieldColumnDefinition fieldDef)]
 
 {- |
   Builds 'Expr.AlterTableAction' expressions for the given attribute to make

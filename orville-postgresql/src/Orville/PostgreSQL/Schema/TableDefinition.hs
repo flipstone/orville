@@ -393,7 +393,7 @@ mkTableColumnDefinitions tableDef =
   foldMarshallerFields
     (unannotatedSqlMarshaller $ tableMarshaller tableDef)
     []
-    (collectFromField IncludeReadOnlyColumns fieldColumnDefinition)
+    (collectFromField IncludeReadOnlyColumns (const fieldColumnDefinition))
 
 {- |
   Builds the 'Expr.PrimaryKeyExpr' for this table, or none if this table has no

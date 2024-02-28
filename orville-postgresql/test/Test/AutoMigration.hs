@@ -245,7 +245,7 @@ data SomeField where
 
 describeField :: SomeField -> String
 describeField (SomeField field) =
-  B8.unpack (RawSql.toExampleBytes $ Orville.fieldColumnDefinition Nothing field)
+  B8.unpack (RawSql.toExampleBytes $ Orville.fieldColumnDefinition field)
 
 prop_altersColumnDataType :: Property.NamedDBProperty
 prop_altersColumnDataType =
