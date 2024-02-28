@@ -74,7 +74,7 @@ lookupRelation key =
 {- |
   Lookup a procedure by its qualified name in the @pg_catalog@ schema.
 
-@since 1.0.0.0
+@since 1.1.0.0
 -}
 lookupProcedure ::
   (NamespaceName, ProcName) ->
