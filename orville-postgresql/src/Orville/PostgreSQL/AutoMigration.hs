@@ -534,7 +534,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
                 else
                   [ mkMigrationStepWithType
                       AddFunctions
-                      (Orville.mkCreateFunctionExpr funcitonDef (Just Expr.orReplace))
+                      (Orville.mkCreateFunctionExpr functionDef (Just Expr.orReplace))
                   ]
     SchemaDropFunction functionId ->
       Right $
