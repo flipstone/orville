@@ -110,10 +110,10 @@ mkTriggerFunction name language source =
 @since 1.1.0.0
 -}
 mkCreateFunctionExpr ::
-  Maybe Expr.OrReplace ->
   FunctionDefinition ->
+  Maybe Expr.OrReplace ->
   Expr.CreateFunctionExpr
-mkCreateFunctionExpr maybeOrReplace functionDef =
+mkCreateFunctionExpr functionDef maybeOrReplace =
   Expr.createFunction
     maybeOrReplace
     (functionName functionDef)

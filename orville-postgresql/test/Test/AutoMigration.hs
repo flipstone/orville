@@ -981,7 +981,7 @@ prop_dropsRequestedFunctions =
     firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateFunctionExpr (Just Expr.orReplace) functionDef
+          Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateFunctionExpr functionDef (Just Expr.orReplace)
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaDropFunction functionId]
 
     secondTimePlan <-

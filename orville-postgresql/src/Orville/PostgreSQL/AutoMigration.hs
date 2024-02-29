@@ -526,7 +526,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
             Nothing ->
               [ mkMigrationStepWithType
                   AddFunctions
-                  (Orville.mkCreateFunctionExpr Nothing functionDef)
+                  (Orville.mkCreateFunctionExpr functionDef Nothing)
               ]
             Just pgProc ->
               if PgCatalog.pgProcSource pgProc == T.pack (Orville.functionSource functionDef)
@@ -534,7 +534,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
                 else
                   [ mkMigrationStepWithType
                       AddFunctions
-                      (Orville.mkCreateFunctionExpr (Just Expr.orReplace) functionDef)
+                      (Orville.mkCreateFunctionExpr funcitonDef (Just Expr.orReplace))
                   ]
     SchemaDropFunction functionId ->
       Right $
