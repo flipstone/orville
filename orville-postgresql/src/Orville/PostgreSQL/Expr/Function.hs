@@ -89,6 +89,8 @@ newtype CreateFunctionExpr
 Constructs a SQL @CREATE FUNCTION@ statement from a function name, return type,
 language and definiton.
 
+Note: Orville does not currently support creating functions with arguments.
+
 @since 1.1.0.0
 -}
 createFunction ::

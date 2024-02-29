@@ -98,6 +98,10 @@ newtype CreateTriggerExpr
 Constructs a SQL @CREATE TRIGGER@ statement from the trigger name and its defining
 attributes.
 
+Note: Before PostgreSQL 14, there is no @CREATE OR REPLACE TRIGGER@ syntax in
+PsotgreSQL. If you're using a version of PostgreSQL prior to 14 then you must
+specify 'Nothing' for the 'OrReplace' property.
+
 @since 1.1.0.0
 -}
 createTrigger ::

@@ -29,7 +29,7 @@ SQL.
 newtype OrReplace
   = OrReplace RawSql.RawSql
   deriving
-    ( -- | @since 1.0.0.0
+    ( -- | @since 1.1.0.0
       RawSql.SqlExpression
     )
 
