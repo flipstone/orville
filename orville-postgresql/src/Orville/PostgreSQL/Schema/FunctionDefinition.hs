@@ -22,7 +22,7 @@ import Orville.PostgreSQL.Schema.FunctionIdentifier (FunctionIdentifier, functio
   Contains the definition of a PostgreSQL function for Orville to use when creating
   the function. Currently only functionality for creating trigger functions for use
   with 'Orville.PostgreSQL.Schema.TriggerDefinition' is supported. You can create a
-  'FunctionDefintion' with for a trigger via 'mkTriggerFunction'.
+  'FunctionDefintion' for a trigger via 'mkTriggerFunction'.
 
   When a 'FunctionDefinition' is included in a schema item list for auto-migration
   the function will be created if it does not exist, or recreated if the source
@@ -43,7 +43,7 @@ data FunctionDefinition = FunctionDefinition
   included as a qualifier on the function name for all queries involving the
   function.
 
-@since 1.0.0.0
+@since 1.1.0.0
 -}
 setFunctionSchema ::
   String ->

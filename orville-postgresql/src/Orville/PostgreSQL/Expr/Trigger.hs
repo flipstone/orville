@@ -98,6 +98,8 @@ newtype CreateTriggerExpr
 Constructs a SQL @CREATE TRIGGER@ statement from the trigger name and its defining
 attributes.
 
+Note: Orville does not currently support creating triggers with arguments.
+
 Note: Before PostgreSQL 14, there is no @CREATE OR REPLACE TRIGGER@ syntax in
 PsotgreSQL. If you're using a version of PostgreSQL prior to 14 then you must
 specify 'Nothing' for the 'OrReplace' property.
@@ -128,7 +130,7 @@ createTrigger maybeOrReplace name timing events tableName fireScope functionName
       , RawSql.toRawSql fireScope
       , RawSql.fromString "EXECUTE FUNCTION"
       , RawSql.toRawSql functionName
-      , RawSql.fromString "()" -- we don't currently support objects
+      , RawSql.fromString "()" -- we don't currently support arguments
       ]
 
 {- |
