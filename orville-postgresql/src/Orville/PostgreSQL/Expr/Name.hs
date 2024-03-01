@@ -12,6 +12,7 @@ module Orville.PostgreSQL.Expr.Name
   )
 where
 
+import Orville.PostgreSQL.Expr.Internal.Name.Alias as Export
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.ConstraintName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.CursorName as Export

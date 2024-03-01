@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -26,7 +26,7 @@ import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
-import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
@@ -110,7 +110,7 @@ selectStar =
 
   @since 1.0.0.0
 -}
-selectColumns :: [ColumnName] -> SelectList
+selectColumns :: [Qualified ColumnName] -> SelectList
 selectColumns =
   selectDerivedColumns . map (deriveColumn . columnReference)
 

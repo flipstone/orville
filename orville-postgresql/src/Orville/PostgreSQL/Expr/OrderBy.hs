@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -25,7 +25,7 @@ where
 
 import qualified Data.List.NonEmpty as NEL
 
-import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -83,11 +83,11 @@ appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
 
 @since 1.0.0.0
 -}
-orderByColumnsExpr :: NEL.NonEmpty (ColumnName, OrderByDirection) -> OrderByExpr
+orderByColumnsExpr :: NEL.NonEmpty (Qualified ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr =
   OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
  where
-  columnOrdering :: (ColumnName, OrderByDirection) -> RawSql.RawSql
+  columnOrdering :: (Qualified ColumnName, OrderByDirection) -> RawSql.RawSql
   columnOrdering (columnName, orderByDirection) =
     RawSql.toRawSql columnName <> RawSql.space <> RawSql.toRawSql orderByDirection
 
@@ -96,7 +96,7 @@ orderByColumnsExpr =
 
 @since 1.0.0.0
 -}
-orderByColumnName :: ColumnName -> OrderByDirection -> OrderByExpr
+orderByColumnName :: Qualified ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName =
   curry (orderByColumnsExpr . pure)
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -18,7 +18,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -83,6 +83,6 @@ appendGroupByExpr (GroupByExpr a) (GroupByExpr b) =
 
 @since 1.0.0.0
 -}
-groupByColumnsExpr :: NonEmpty ColumnName -> GroupByExpr
+groupByColumnsExpr :: NonEmpty (Qualified ColumnName) -> GroupByExpr
 groupByColumnsExpr =
   GroupByExpr . RawSql.intercalate RawSql.commaSpace

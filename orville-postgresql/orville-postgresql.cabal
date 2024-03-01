@@ -109,6 +109,7 @@ library
       Orville.PostgreSQL.Schema.TableIdentifier
       Orville.PostgreSQL.UnliftIO
   other-modules:
+      Orville.PostgreSQL.Expr.Internal.Name.Alias
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
       Orville.PostgreSQL.Expr.Internal.Name.CursorName

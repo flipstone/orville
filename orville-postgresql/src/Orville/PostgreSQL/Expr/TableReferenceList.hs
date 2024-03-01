@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -10,10 +10,11 @@ Stability : Stable
 module Orville.PostgreSQL.Expr.TableReferenceList
   ( TableReferenceList
   , referencesTable
+  , referencesTableWithAlias
   )
 where
 
-import Orville.PostgreSQL.Expr.Name (Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (Alias, Qualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -46,3 +47,18 @@ referencesTable :: Qualified TableName -> TableReferenceList
 referencesTable qualifiedTableName =
   TableReferenceList $
     RawSql.toRawSql qualifiedTableName
+
+{- |
+  Constructs a 'TableReferenceList' consisting of the specified table AS the given alias.
+
+  @since 1.1.0.0
+-}
+referencesTableWithAlias :: Alias -> Qualified TableName -> TableReferenceList
+referencesTableWithAlias alias qualifiedTableName =
+  TableReferenceList $
+    RawSql.intercalate
+      RawSql.space
+      [ RawSql.toRawSql qualifiedTableName
+      , RawSql.fromString "AS"
+      , RawSql.toRawSql alias
+      ]
