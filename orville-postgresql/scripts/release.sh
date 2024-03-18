@@ -2,8 +2,8 @@
 
 case "$1" in
   prepare-candidate)
-    docker-compose run --rm dev cabal sdist
-    docker-compose run --rm dev \
+    docker compose run --rm dev cabal sdist
+    docker compose run --rm dev \
       sh -c \
       'cabal update && \
          cabal \
@@ -20,7 +20,7 @@ case "$1" in
       echo "Please specify the version number to upload."
       exit 1
     else
-      docker-compose run --rm dev \
+      docker compose run --rm dev \
         sh -c \
         "cabal upload dist-newstyle/sdist/orville-postgresql-$version.tar.gz && \
          cabal upload -d dist-newstyle/docs/orville-postgresql-$version-docs.tar.gz"

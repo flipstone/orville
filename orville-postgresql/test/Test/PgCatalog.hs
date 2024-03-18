@@ -4,6 +4,7 @@ module Test.PgCatalog
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.String as String
@@ -12,6 +13,7 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 
 import qualified Test.Entities.Foo as Foo
@@ -26,6 +28,8 @@ pgCatalogTests pool =
     , prop_queryPgAttribute pool
     , prop_queryPgAttributeDefault pool
     , prop_queryPgConstraint pool
+    , prop_queryPgTrigger pool
+    , prop_queryPgProc pool
     , prop_describeDatabaseRelations pool
     ]
 
@@ -128,6 +132,80 @@ prop_queryPgConstraint =
     map PgCatalog.pgConstraintType constraints === [PgCatalog.PrimaryKeyConstraint]
     map PgCatalog.pgConstraintKey constraints === [Just [1]]
 
+prop_queryPgTrigger :: Property.NamedDBProperty
+prop_queryPgTrigger =
+  Property.singletonNamedDBProperty "Can query the pg_trigger table to find out about a trigger" $ \pool -> do
+    let
+      triggerFunctionName =
+        Expr.qualifyFunction Nothing $ Expr.functionName "test_trigger_function"
+
+      createTriggerFunction =
+        Expr.createFunction
+          (Just Expr.orReplace)
+          triggerFunctionName
+          (Expr.returns Expr.returnTypeTrigger)
+          (Expr.language Expr.plpgsql)
+          (Expr.asDefinition "BEGIN return NEW; END")
+
+      createTrigger =
+        Expr.createTrigger
+          Nothing
+          (Expr.triggerName "test_trigger")
+          Expr.triggerBefore
+          (Expr.triggerOnInsert :| [])
+          (Orville.tableIdQualifiedName (Orville.tableIdentifier Foo.table))
+          Expr.triggerForEachRow
+          triggerFunctionName
+
+    maybePgClassRecord <-
+      HH.evalIO . Foo.withTable pool $ do
+        Orville.executeVoid Orville.DDLQuery createTriggerFunction
+        Orville.executeVoid Orville.DDLQuery createTrigger
+        Orville.findFirstEntityBy
+          PgCatalog.pgClassTable
+          (Orville.where_ $ Orville.fieldEquals PgCatalog.relationNameField fooRelation)
+
+    pgClassOid <-
+      case maybePgClassRecord of
+        Nothing -> do
+          HH.annotate "Expected to find pg_class table, but did not"
+          HH.failure
+        Just pgClassRecord ->
+          pure $ PgCatalog.pgClassOid pgClassRecord
+
+    triggers <- HH.evalIO . Orville.runOrville pool $ do
+      Orville.findEntitiesBy
+        PgCatalog.pgTriggerTable
+        (Orville.where_ $ Orville.fieldEquals PgCatalog.triggerRelationOidField pgClassOid)
+
+    fmap PgCatalog.pgTriggerName triggers === [String.fromString "test_trigger"]
+
+prop_queryPgProc :: Property.NamedDBProperty
+prop_queryPgProc =
+  Property.singletonNamedDBProperty "Can query the pg_proc table to find out about a proc" $ \pool -> do
+    let
+      procFunctionName =
+        Expr.qualifyFunction Nothing $ Expr.functionName "test_proc"
+
+      procName =
+        String.fromString "test_proc"
+
+      createProcFunction =
+        Expr.createFunction
+          (Just Expr.orReplace)
+          procFunctionName
+          (Expr.returns Expr.returnTypeTrigger)
+          (Expr.language Expr.plpgsql)
+          (Expr.asDefinition "BEGIN return NEW; END")
+
+    procs <- HH.evalIO . Orville.runOrville pool $ do
+      Orville.executeVoid Orville.DDLQuery createProcFunction
+      Orville.findEntitiesBy
+        PgCatalog.pgProcTable
+        (Orville.where_ $ Orville.fieldEquals PgCatalog.procNameField procName)
+
+    fmap PgCatalog.pgProcName procs === [procName]
+
 prop_describeDatabaseRelations :: Property.NamedDBProperty
 prop_describeDatabaseRelations =
   Property.singletonNamedDBProperty "Can describe relations from different schemas at once" $ \pool -> do
@@ -139,7 +217,7 @@ prop_describeDatabaseRelations =
         ]
 
     desc <- HH.evalIO . Orville.runOrville pool $ do
-      PgCatalog.describeDatabaseRelations relationsToDescribe
+      PgCatalog.describeDatabase relationsToDescribe []
 
     Map.keysSet (PgCatalog.databaseRelations desc) === Set.fromList relationsToDescribe
 

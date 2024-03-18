@@ -17,6 +17,7 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Maybe as Maybe
 import qualified Data.String as String
+import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
@@ -58,6 +59,11 @@ autoMigrationTests pool =
     , prop_altersModifiedSequences pool
     , prop_addsAndRemovesMixedIndexes pool
     , prop_arbitrarySchemaInitialMigration pool
+    , prop_createsMissingFunctions pool
+    , prop_recreatesAlteredFunctions pool
+    , prop_dropsRequestedFunctions pool
+    , prop_createsMissingTriggers pool
+    , prop_dropsUnrequestedTriggers pool
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -727,7 +733,7 @@ prop_createsMissingSequences =
 
 prop_dropsRequestedSequences :: Property.NamedDBProperty
 prop_dropsRequestedSequences =
-  Property.singletonNamedDBProperty "Drops requested tables" $ \pool -> do
+  Property.singletonNamedDBProperty "Drops requested sequences" $ \pool -> do
     let
       sequenceDef =
         Orville.mkSequenceDefinition "migration_test_sequence"
@@ -883,6 +889,203 @@ prop_arbitrarySchemaInitialMigration =
 
     migrationPlanStepStrings migrationPlanAfterMigration === []
     Fold.traverse_ (assertTableStructure pool) testTables
+
+prop_createsMissingFunctions :: Property.NamedDBProperty
+prop_createsMissingFunctions =
+  Property.singletonNamedDBProperty "Creates missing functions" $ \pool -> do
+    let
+      functionDef =
+        Orville.mkTriggerFunction
+          "test_create_function"
+          Orville.plpgsql
+          "BEGIN return NEW; END"
+
+      functionId =
+        Orville.functionIdentifier functionDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $
+            Expr.dropFunction
+              (Just Expr.ifExists)
+              (Orville.functionName functionDef)
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaFunction functionDef]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaFunction functionDef]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+
+    proc <- PgAssert.assertFunctionExists pool (Orville.functionIdUnqualifiedNameString functionId)
+    PgCatalog.pgProcSource proc === T.pack "BEGIN return NEW; END"
+
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_recreatesAlteredFunctions :: Property.NamedDBProperty
+prop_recreatesAlteredFunctions =
+  Property.singletonNamedDBProperty "Recreates functions with altered source code" $ \pool -> do
+    let
+      oldFunctionDef =
+        Orville.mkTriggerFunction
+          "test_recreate_function"
+          Orville.plpgsql
+          "BEGIN return OLD; END"
+
+      newFunctionDef =
+        Orville.mkTriggerFunction
+          "test_recreate_function"
+          Orville.plpgsql
+          "BEGIN return NEW; END"
+
+      functionId =
+        Orville.functionIdentifier oldFunctionDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $
+            Expr.dropFunction (Just Expr.ifExists) (Orville.functionName oldFunctionDef)
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaFunction oldFunctionDef]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaFunction newFunctionDef]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaFunction newFunctionDef]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+
+    proc <- PgAssert.assertFunctionExists pool (Orville.functionIdUnqualifiedNameString functionId)
+    PgCatalog.pgProcSource proc === T.pack "BEGIN return NEW; END"
+
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_dropsRequestedFunctions :: Property.NamedDBProperty
+prop_dropsRequestedFunctions =
+  Property.singletonNamedDBProperty "Drops requested functions" $ \pool -> do
+    let
+      functionDef =
+        Orville.mkTriggerFunction
+          "test_drop_function"
+          Orville.plpgsql
+          "BEGIN return NEW; END"
+
+      functionId =
+        Orville.functionIdentifier functionDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateFunctionExpr functionDef (Just Expr.orReplace)
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaDropFunction functionId]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaDropFunction functionId]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    PgAssert.assertFunctionDoesNotExist pool (Orville.functionIdUnqualifiedNameString functionId)
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_createsMissingTriggers :: Property.NamedDBProperty
+prop_createsMissingTriggers =
+  Property.singletonNamedDBProperty "Creates missing triggers" $ \pool -> do
+    let
+      functionDef =
+        Orville.mkTriggerFunction
+          "test_create_trigger_function"
+          Orville.plpgsql
+          "BEGIN return NEW; END"
+
+      testTrigger =
+        Orville.beforeInsert
+          "before_insert_trigger"
+          (Orville.functionName functionDef)
+
+      tableWithTrigger =
+        Orville.addTableTriggers [testTrigger] Foo.table
+
+      schemaItems =
+        [ AutoMigration.SchemaFunction functionDef
+        , AutoMigration.SchemaTable tableWithTrigger
+        ]
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableWithTrigger
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropFunction (Just Expr.ifExists) (Orville.functionName functionDef)
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 3
+
+    fooRelation <- PgAssert.assertTableExists pool "foo"
+    _ <- PgAssert.assertTriggerExists fooRelation "before_insert_trigger"
+
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_dropsUnrequestedTriggers :: Property.NamedDBProperty
+prop_dropsUnrequestedTriggers =
+  Property.singletonNamedDBProperty "Drops unrequested triggers" $ \pool -> do
+    let
+      functionDef =
+        Orville.mkTriggerFunction
+          "test_drop_trigger_function"
+          Orville.plpgsql
+          "BEGIN return NEW; END"
+
+      testTrigger =
+        Orville.beforeInsert
+          "before_insert_trigger"
+          (Orville.functionName functionDef)
+
+      tableWithoutTrigger =
+        Foo.table
+
+      tableWithTrigger =
+        Orville.addTableTriggers [testTrigger] tableWithoutTrigger
+
+      schemaItemsWithTrigger =
+        [ AutoMigration.SchemaFunction functionDef
+        , AutoMigration.SchemaTable tableWithTrigger
+        ]
+
+      schemaItemsWithoutTrigger =
+        [ AutoMigration.SchemaFunction functionDef
+        , AutoMigration.SchemaTable tableWithoutTrigger
+        ]
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableWithoutTrigger
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropFunction (Just Expr.ifExists) (Orville.functionName functionDef)
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions schemaItemsWithTrigger
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItemsWithoutTrigger
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItemsWithoutTrigger
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    fooRelation <- PgAssert.assertTableExists pool "foo"
+    _ <- PgAssert.assertTriggerDoesNotExist fooRelation "before_insert_trigger"
+    migrationPlanStepStrings secondTimePlan === []
 
 assertTableStructure ::
   (HH.MonadTest m, MIO.MonadIO m) =>

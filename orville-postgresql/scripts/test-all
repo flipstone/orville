@@ -10,7 +10,7 @@
 # development.
 #
 # You can run it via docker by running:
-#   docker-compose run --rm dev ./test-all
+#   docker compose run --rm dev ./test-all
 #
 
 rm -rf test-all-logs

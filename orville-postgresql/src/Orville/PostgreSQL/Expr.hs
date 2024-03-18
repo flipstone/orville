@@ -62,6 +62,9 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Update
   , module Orville.PostgreSQL.Expr.ValueExpression
   , module Orville.PostgreSQL.Expr.WhereClause
+  , module Orville.PostgreSQL.Expr.Trigger
+  , module Orville.PostgreSQL.Expr.Function
+  , module Orville.PostgreSQL.Expr.OrReplace
   , module Orville.PostgreSQL.Expr.Vacuum
   )
 where
@@ -75,6 +78,7 @@ import Orville.PostgreSQL.Expr.Count
 import Orville.PostgreSQL.Expr.Cursor
 import Orville.PostgreSQL.Expr.DataType
 import Orville.PostgreSQL.Expr.Delete
+import Orville.PostgreSQL.Expr.Function
 import Orville.PostgreSQL.Expr.GroupBy
 import Orville.PostgreSQL.Expr.IfExists
 import Orville.PostgreSQL.Expr.Index
@@ -83,6 +87,7 @@ import Orville.PostgreSQL.Expr.LimitExpr
 import Orville.PostgreSQL.Expr.Math
 import Orville.PostgreSQL.Expr.Name
 import Orville.PostgreSQL.Expr.OffsetExpr
+import Orville.PostgreSQL.Expr.OrReplace
 import Orville.PostgreSQL.Expr.OrderBy
 import Orville.PostgreSQL.Expr.Query
 import Orville.PostgreSQL.Expr.ReturningExpr
@@ -93,6 +98,7 @@ import Orville.PostgreSQL.Expr.TableDefinition
 import Orville.PostgreSQL.Expr.TableReferenceList
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
+import Orville.PostgreSQL.Expr.Trigger
 import Orville.PostgreSQL.Expr.Update
 import Orville.PostgreSQL.Expr.Vacuum
 import Orville.PostgreSQL.Expr.ValueExpression

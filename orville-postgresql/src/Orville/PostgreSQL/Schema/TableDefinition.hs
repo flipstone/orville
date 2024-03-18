@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -23,6 +23,8 @@ module Orville.PostgreSQL.Schema.TableDefinition
   , addTableConstraints
   , tableIndexes
   , addTableIndexes
+  , tableTriggers
+  , addTableTriggers
   , tablePrimaryKey
   , tableMarshaller
   , mapTableMarshaller
@@ -49,6 +51,7 @@ import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
+import Orville.PostgreSQL.Schema.TriggerDefinition (TriggerDefinition, TriggerMigrationKey, triggerMigrationKey)
 
 {- |
   Contains the definition of a SQL table for Orville to use for generating
@@ -73,6 +76,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , i_tableColumnsToDrop :: Set.Set String
   , i_tableConstraintsFromTable :: TableConstraints
   , i_tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
+  , i_tableTriggers :: Map.Map TriggerMigrationKey TriggerDefinition
   }
 
 {- |
@@ -128,6 +132,7 @@ mkTableDefinition name primaryKey marshaller =
     , i_tableColumnsToDrop = Set.empty
     , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
+    , i_tableTriggers = Map.empty
     }
 
 {- |
@@ -153,6 +158,7 @@ mkTableDefinitionWithoutKey name marshaller =
     , i_tableColumnsToDrop = Set.empty
     , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
+    , i_tableTriggers = Map.empty
     }
 
 {- |
@@ -329,6 +335,46 @@ addTableIndexes indexDefs tableDef =
   in
     tableDef
       { i_tableIndexes = foldr addIndex (i_tableIndexes tableDef) indexDefs
+      }
+
+{- |
+  Retrieves all the table indexes that have been added to the table via
+  'addTableTriggers'.
+
+@since 1.1.0.0
+-}
+tableTriggers ::
+  TableDefinition key writeEntity readEntity ->
+  Map.Map TriggerMigrationKey TriggerDefinition
+tableTriggers =
+  i_tableTriggers
+
+{- |
+  Adds the given table triggers to the table definition.
+
+  Note: If multiple wriggers are added with the same 'Expr.TriggerName', only
+  the last one that is added will be part of the 'TableDefinition'. Any
+  previously-added constraint with the same key is replaced by the new one.
+
+  Also Note: Orville does not currently support migrating triggers based on
+  their definition structure. If a trigger with the same name already exists
+  on the table at the time of migration nothing will be done to updated it.
+  To cause Orville to create a new trigger matching the definition in the code,
+  you need to change the name of the trigger.
+
+@since 1.1.0.0
+-}
+addTableTriggers ::
+  [TriggerDefinition] ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+addTableTriggers triggerDefs tableDef =
+  let
+    addTrigger trigger triggerMap =
+      Map.insert (triggerMigrationKey trigger) trigger triggerMap
+  in
+    tableDef
+      { i_tableTriggers = foldr addTrigger (i_tableTriggers tableDef) triggerDefs
       }
 
 {- |
