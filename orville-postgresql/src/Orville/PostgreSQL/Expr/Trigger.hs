@@ -119,19 +119,21 @@ createTrigger maybeOrReplace name timing events tableName fireScope functionName
   CreateTriggerExpr $
     RawSql.intercalate
       RawSql.space
-      [ RawSql.fromString "CREATE"
-      , maybe mempty RawSql.toRawSql maybeOrReplace
-      , RawSql.fromString "TRIGGER"
-      , RawSql.toRawSql name
-      , RawSql.toRawSql timing
-      , RawSql.intercalate (RawSql.fromString " OR ") events
-      , RawSql.fromString "ON"
-      , RawSql.toRawSql tableName
-      , RawSql.toRawSql fireScope
-      , RawSql.fromString "EXECUTE FUNCTION"
-      , RawSql.toRawSql functionName
-      , RawSql.fromString "()" -- we don't currently support arguments
-      ]
+      ( catMaybes
+          [ Just $ RawSql.fromString "CREATE"
+          , RawSql.toRawSql <$> maybeOrReplace
+          , Just $ RawSql.fromString "TRIGGER"
+          , Just $ RawSql.toRawSql name
+          , Just $ RawSql.toRawSql timing
+          , Just $ RawSql.intercalate (RawSql.fromString " OR ") events
+          , Just $ RawSql.fromString "ON"
+          , Just $ RawSql.toRawSql tableName
+          , Just $ RawSql.toRawSql fireScope
+          , Just $ RawSql.fromString "EXECUTE FUNCTION"
+          , Just $ RawSql.toRawSql functionName
+          , Just $ RawSql.fromString "()" -- we don't currently support arguments
+          ]
+      )
 
 {- |
 Type to represent the time at which a trigger will fire in releation to the

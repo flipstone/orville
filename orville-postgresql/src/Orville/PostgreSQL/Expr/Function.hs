@@ -104,15 +104,17 @@ createFunction maybeOrReplace name functionReturns functionLanguage definition =
   CreateFunctionExpr $
     RawSql.intercalate
       RawSql.space
-      [ RawSql.fromString "CREATE"
-      , maybe mempty RawSql.toRawSql maybeOrReplace
-      , RawSql.fromString "FUNCTION"
-      , RawSql.toRawSql name
-      , RawSql.fromString "()" -- currently we don't support specifying arguments
-      , RawSql.toRawSql functionReturns
-      , RawSql.toRawSql functionLanguage
-      , RawSql.toRawSql definition
-      ]
+      ( catMaybes
+          [ Just $ RawSql.fromString "CREATE"
+          , RawSql.toRawSql <$> maybeOrReplace
+          , Just $ RawSql.fromString "FUNCTION"
+          , Just $ RawSql.toRawSql name
+          , Just $ RawSql.fromString "()" -- currently we don't support specifying arguments
+          , Just $ RawSql.toRawSql functionReturns
+          , Just $ RawSql.toRawSql functionLanguage
+          , Just $ RawSql.toRawSql definition
+          ]
+      )
 
 {- |
 Type to represent the return specifier given as part of a SQL "CREATE
