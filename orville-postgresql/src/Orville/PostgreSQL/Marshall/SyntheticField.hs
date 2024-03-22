@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -15,12 +15,13 @@ module Orville.PostgreSQL.Marshall.SyntheticField
   , syntheticField
   , nullableSyntheticField
   , prefixSyntheticField
+  , orderBySyntheticField
   )
 where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, stringToFieldName)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, stringToFieldName)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 {- |
@@ -115,3 +116,12 @@ prefixSyntheticField prefix synthField =
   synthField
     { _syntheticFieldAlias = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (syntheticFieldAlias synthField))
     }
+
+{- |
+  Orders a query by the alias for the given synthetic field.
+
+@since 1.1.0.0
+-}
+orderBySyntheticField :: SyntheticField a -> Expr.OrderByDirection -> Expr.OrderByExpr
+orderBySyntheticField =
+  Expr.orderByColumnName . fieldNameToColumnName . syntheticFieldAlias

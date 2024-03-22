@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -15,6 +15,7 @@ where
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.ConstraintName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.CursorName as Export
+import Orville.PostgreSQL.Expr.Internal.Name.ExtensionName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.FunctionName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier as Export
 import Orville.PostgreSQL.Expr.Internal.Name.IndexName as Export

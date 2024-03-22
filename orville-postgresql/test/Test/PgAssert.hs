@@ -21,6 +21,8 @@ module Test.PgAssert
   , assertFunctionDoesNotExistInSchema
   , assertTriggerExists
   , assertTriggerDoesNotExist
+  , assertExtensionLoaded
+  , assertExtensionNotLoaded
   , ForeignKeyInfo (..)
   )
 where
@@ -136,6 +138,7 @@ assertRelationExistsInSchema pool schemaName relationName relationKind = do
         PgCatalog.describeDatabase
           [(String.fromString schemaName, String.fromString relationName)]
           []
+          []
 
   case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString relationName) dbDesc of
     Nothing -> do
@@ -159,6 +162,7 @@ assertRelationDoesNotExistInSchema pool schemaName tableName relationKind = do
       Orville.runOrville pool $
         PgCatalog.describeDatabase
           [(String.fromString schemaName, String.fromString tableName)]
+          []
           []
 
   case PgCatalog.lookupRelation (String.fromString schemaName, String.fromString tableName) dbDesc of
@@ -506,5 +510,49 @@ assertTriggerDoesNotExist relationDesc triggerName =
         pure ()
       Just _trigger ->
         withFrozenCallStack $ do
-          HH.annotate $ triggerName <> " trigger was found, but was note xpected"
+          HH.annotate $ triggerName <> " trigger was found, but was not expected"
           HH.failure
+
+assertExtensionLoaded ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m PgCatalog.PgExtension
+assertExtensionLoaded pool extensionName = do
+  dbDesc <-
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        PgCatalog.describeDatabase
+          []
+          []
+          [String.fromString extensionName]
+
+  case PgCatalog.lookupExtension (String.fromString extensionName) dbDesc of
+    Nothing -> do
+      withFrozenCallStack $ do
+        HH.annotate $ extensionName <> " extension not found"
+        HH.failure
+    Just ext ->
+      pure ext
+
+assertExtensionNotLoaded ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m ()
+assertExtensionNotLoaded pool extensionName = do
+  dbDesc <-
+    MIO.liftIO $
+      Orville.runOrville pool $ do
+        PgCatalog.describeDatabase
+          []
+          []
+          [String.fromString extensionName]
+
+  case PgCatalog.lookupExtension (String.fromString extensionName) dbDesc of
+    Nothing ->
+      pure ()
+    Just _ ->
+      withFrozenCallStack $ do
+        HH.annotate $ extensionName <> " was found but not expected"
+        HH.failure

@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -189,6 +189,7 @@ module Orville.PostgreSQL
   , SyntheticField.syntheticField
   , SyntheticField.nullableSyntheticField
   , SyntheticField.prefixSyntheticField
+  , SyntheticField.orderBySyntheticField
   , FieldDefinition.FieldDefinition
   , FieldDefinition.NotNull
   , FieldDefinition.Nullable
@@ -355,6 +356,12 @@ module Orville.PostgreSQL
   , FunctionIdentifier.functionIdToString
   , Expr.plpgsql
 
+    -- * Functions for working with PostgreSQL extensions
+  , ExtensionIdentifier.ExtensionIdentifier
+  , ExtensionIdentifier.nameToExtensionId
+  , ExtensionIdentifier.extensionIdName
+  , ExtensionIdentifier.extensionIdToString
+
     -- * Numeric types
   , SqlType.integer
   , SqlType.serial
@@ -422,6 +429,7 @@ import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Raw.Connection as Connection
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
+import qualified Orville.PostgreSQL.Schema.ExtensionIdentifier as ExtensionIdentifier
 import qualified Orville.PostgreSQL.Schema.FunctionDefinition as FunctionDefinition
 import qualified Orville.PostgreSQL.Schema.FunctionIdentifier as FunctionIdentifier
 import qualified Orville.PostgreSQL.Schema.IndexDefinition as IndexDefinition

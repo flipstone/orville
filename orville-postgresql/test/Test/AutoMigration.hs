@@ -64,6 +64,8 @@ autoMigrationTests pool =
     , prop_dropsRequestedFunctions pool
     , prop_createsMissingTriggers pool
     , prop_dropsUnrequestedTriggers pool
+    , prop_loadsMissingExtensions pool
+    , prop_unloadsPresentExtensions pool
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -1085,6 +1087,61 @@ prop_dropsUnrequestedTriggers =
     length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     fooRelation <- PgAssert.assertTableExists pool "foo"
     _ <- PgAssert.assertTriggerDoesNotExist fooRelation "before_insert_trigger"
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_loadsMissingExtensions :: Property.NamedDBProperty
+prop_loadsMissingExtensions =
+  Property.singletonNamedDBProperty "Loads missing extensions" $ \pool -> do
+    let
+      schemaItems =
+        [ AutoMigration.SchemaExtension $ Orville.nameToExtensionId "pg_trgm"
+        ]
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropExtensionExpr (Expr.extensionName "pg_trgm") (Just Expr.ifExists) Nothing
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    _ <- PgAssert.assertExtensionLoaded pool "pg_trgm"
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_unloadsPresentExtensions :: Property.NamedDBProperty
+prop_unloadsPresentExtensions =
+  Property.singletonNamedDBProperty "Unloads present extensions" $ \pool -> do
+    let
+      pgtrgmExtension = Orville.nameToExtensionId "pg_trgm"
+
+      schemaItemsLoadExtension =
+        [ AutoMigration.SchemaExtension pgtrgmExtension
+        ]
+
+      schemaItemsUnloadExtension =
+        [ AutoMigration.SchemaDropExtension pgtrgmExtension
+        ]
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions schemaItemsLoadExtension
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItemsUnloadExtension
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItemsUnloadExtension
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    PgAssert.assertExtensionNotLoaded pool "pg_trgm"
+
     migrationPlanStepStrings secondTimePlan === []
 
 assertTableStructure ::

@@ -19,6 +19,7 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   , lookupAttribute
   , lookupAttributeDefault
   , lookupProcedure
+  , lookupExtension
   , describeDatabase
   )
 where
@@ -36,6 +37,7 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, AttributeNumber,
 import Orville.PostgreSQL.PgCatalog.PgAttributeDefault (PgAttributeDefault (pgAttributeDefaultAttributeNumber), attributeDefaultRelationOidField, pgAttributeDefaultTable)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationKind, RelationName, namespaceOidField, pgClassRelationKind, pgClassTable, relationNameField, relationNameToString)
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
+import Orville.PostgreSQL.PgCatalog.PgExtension (ExtensionName, PgExtension, extensionNameField, pgExtensionTable)
 import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
 import Orville.PostgreSQL.PgCatalog.PgProc (PgProc, ProcName, pgProcTable, procNameField, procNamespaceOidField)
@@ -56,6 +58,8 @@ data DatabaseDescription = DatabaseDescription
   { databaseRelations :: Map.Map (NamespaceName, RelationName) RelationDescription
   -- ^ @since 1.0.0.0
   , databaseProcedures :: Map.Map (NamespaceName, ProcName) PgProc
+  -- ^ @since 1.1.0.0
+  , databaseExtensions :: Map.Map ExtensionName PgExtension
   -- ^ @since 1.1.0.0
   }
 
@@ -82,6 +86,18 @@ lookupProcedure ::
   Maybe PgProc
 lookupProcedure key =
   Map.lookup key . databaseProcedures
+
+{- |
+  Lookup an extension by its name in the @pg_catalog@ schema.
+
+@since 1.1.0.0
+-}
+lookupExtension ::
+  ExtensionName ->
+  DatabaseDescription ->
+  Maybe PgExtension
+lookupExtension key =
+  Map.lookup key . databaseExtensions
 
 {- |
   Lookup a relation by its qualified name in the @pg_catalog@ schema. If the
@@ -212,8 +228,9 @@ describeDatabase ::
   Orville.MonadOrville m =>
   [(NamespaceName, RelationName)] ->
   [(NamespaceName, ProcName)] ->
+  [ExtensionName] ->
   m DatabaseDescription
-describeDatabase relations procedures = do
+describeDatabase relations procedures extensions = do
   manyRelations <-
     Plan.execute
       (Plan.planMany describeRelationByName)
@@ -224,6 +241,11 @@ describeDatabase relations procedures = do
       (Plan.planMany describeProcedureByName)
       procedures
 
+  manyExtensions <-
+    Plan.execute
+      (Plan.planMany describeExtensionByName)
+      extensions
+
   let
     mkMap :: Ord k => Many.Many k (Maybe v) -> Map.Map k v
     mkMap =
@@ -233,6 +255,7 @@ describeDatabase relations procedures = do
     DatabaseDescription
       { databaseRelations = mkMap manyRelations
       , databaseProcedures = mkMap manyProcedures
+      , databaseExtensions = mkMap manyExtensions
       }
 
 describeRelationByName :: Plan.Plan scope (NamespaceName, RelationName) (Maybe RelationDescription)
@@ -488,6 +511,10 @@ findProc =
 byNamespaceOidAndProcName :: Op.WherePlanner (LibPQ.Oid, ProcName)
 byNamespaceOidAndProcName =
   Op.byFieldTuple procNamespaceOidField procNameField
+
+describeExtensionByName :: Plan.Plan scope ExtensionName (Maybe PgExtension)
+describeExtensionByName =
+  Plan.findMaybeOne pgExtensionTable extensionNameField
 
 indexBy :: Ord key => (row -> key) -> [row] -> Map.Map key row
 indexBy rowKey =

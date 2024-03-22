@@ -32,6 +32,7 @@ library
   exposed-modules:
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
+      Orville.PostgreSQL.Extension.PgTrgm
       Orville.PostgreSQL.Execution
       Orville.PostgreSQL.Execution.Cursor
       Orville.PostgreSQL.Execution.Delete
@@ -109,10 +110,13 @@ library
       Orville.PostgreSQL.Schema.TableIdentifier
       Orville.PostgreSQL.UnliftIO
   other-modules:
+      Orville.PostgreSQL.Expr.Extension
       Orville.PostgreSQL.Expr.Function
+      Orville.PostgreSQL.Expr.IfNotExists
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
       Orville.PostgreSQL.Expr.Internal.Name.CursorName
+      Orville.PostgreSQL.Expr.Internal.Name.ExtensionName
       Orville.PostgreSQL.Expr.Internal.Name.FunctionName
       Orville.PostgreSQL.Expr.Internal.Name.Identifier
       Orville.PostgreSQL.Expr.Internal.Name.IndexName
@@ -139,11 +143,13 @@ library
       Orville.PostgreSQL.PgCatalog.PgAttributeDefault
       Orville.PostgreSQL.PgCatalog.PgClass
       Orville.PostgreSQL.PgCatalog.PgConstraint
+      Orville.PostgreSQL.PgCatalog.PgExtension
       Orville.PostgreSQL.PgCatalog.PgIndex
       Orville.PostgreSQL.PgCatalog.PgNamespace
       Orville.PostgreSQL.PgCatalog.PgProc
       Orville.PostgreSQL.PgCatalog.PgSequence
       Orville.PostgreSQL.PgCatalog.PgTrigger
+      Orville.PostgreSQL.Schema.ExtensionIdentifier
       Orville.PostgreSQL.Schema.FunctionDefinition
       Orville.PostgreSQL.Schema.FunctionIdentifier
       Orville.PostgreSQL.Schema.TriggerDefinition

@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -1125,9 +1125,11 @@ whereColumnComparison columnComparison fieldDef a =
     (fieldColumnReference fieldDef)
     (fieldValueToExpression fieldDef a)
 
-{-- |
+{- |
   Orders a query by the column name for the given field.
---}
+
+@since 1.0.0.0
+-}
 orderByField ::
   FieldDefinition nullability value ->
   Expr.OrderByDirection ->

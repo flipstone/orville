@@ -65,6 +65,7 @@ import qualified Orville.PostgreSQL.Schema as Schema
 data SchemaItem where
   -- |
   --    Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
+  --
   -- @since 1.0.0.0
   SchemaTable ::
     Orville.TableDefinition key writeEntity readEntity ->
@@ -72,12 +73,14 @@ data SchemaItem where
   -- |
   --    Constructs a 'SchemaItem' that will drop the specified table if it is
   --    found in the database.
+  --
   -- @since 1.0.0.0
   SchemaDropTable ::
     Orville.TableIdentifier ->
     SchemaItem
   -- |
   --    Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
+  --
   -- @since 1.0.0.0
   SchemaSequence ::
     Orville.SequenceDefinition ->
@@ -85,12 +88,14 @@ data SchemaItem where
   -- |
   --    Constructs a 'SchemaItem' that will drop the specified table if it is
   --    found in the database.
+  --
   -- @since 1.0.0.0
   SchemaDropSequence ::
     Orville.SequenceIdentifier ->
     SchemaItem
   -- |
   --    Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
+  --
   -- @since 1.1.0.0
   SchemaFunction ::
     Orville.FunctionDefinition ->
@@ -98,9 +103,24 @@ data SchemaItem where
   -- |
   --    Constructs a 'SchemaItem' that will drop the specified table if it is
   --    found in the database.
+  --
   -- @since 1.1.0.0
   SchemaDropFunction ::
     Orville.FunctionIdentifier ->
+    SchemaItem
+  -- |
+  --    Constructs a 'SchemaItem' from a 'Orville.ExtensionName', that will load the extension.
+  --
+  -- @since 1.1.0.0
+  SchemaExtension ::
+    Orville.ExtensionIdentifier ->
+    SchemaItem
+  -- | Constructs a 'SchemaItem' that will unload the postgresql extension if it is found in the
+  --   database.
+  --
+  -- @since 1.1.0.0
+  SchemaDropExtension ::
+    Orville.ExtensionIdentifier ->
     SchemaItem
 
 {- |
@@ -127,6 +147,10 @@ schemaItemSummary item =
       "Function " <> Orville.functionIdToString (Orville.functionIdentifier functionDef)
     SchemaDropFunction functionId ->
       "Drop function " <> Orville.functionIdToString functionId
+    SchemaExtension extension ->
+      "Extension " <> Orville.extensionIdToString extension
+    SchemaDropExtension extension ->
+      "Drop Extension " <> Orville.extensionIdToString extension
 
 {- |
 A 'MigrationPlan' contains an ordered list of migration steps. Each one is a
@@ -217,6 +241,8 @@ isMigrationStepTransactional stepWithType =
     DropIndexes -> True
     DropTriggers -> True
     DropFunctions -> True
+    DropExtensions -> True
+    AddExtensions -> True
     AddRemoveTablesAndColumns -> True
     AddFunctions -> True
     AddTriggers -> True
@@ -234,18 +260,34 @@ isMigrationStepTransactional stepWithType =
 @since 1.0.0.0
 -}
 data StepType
-  = DropForeignKeys
-  | DropUniqueConstraints
-  | DropIndexes
-  | DropTriggers
-  | DropFunctions
-  | AddRemoveTablesAndColumns
-  | AddFunctions
-  | AddTriggers
-  | AddIndexesTransactionally
-  | AddUniqueConstraints
-  | AddForeignKeys
-  | AddIndexesConcurrently
+  = -- | @since 1.0.0.0
+    DropForeignKeys
+  | -- | @since 1.0.0.0
+    DropUniqueConstraints
+  | -- | @since 1.0.0.0
+    DropIndexes
+  | -- | @since 1.1.0.0
+    DropTriggers
+  | -- | @since 1.1.0.0
+    DropFunctions
+  | -- | @since 1.1.0.0
+    DropExtensions
+  | -- | @since 1.1.0.0
+    AddExtensions
+  | -- | @since 1.0.0.0
+    AddRemoveTablesAndColumns
+  | -- | @since 1.1.0.0
+    AddFunctions
+  | -- | @since 1.1.0.0
+    AddTriggers
+  | -- | @since 1.0.0.0
+    AddIndexesTransactionally
+  | -- | @since 1.0.0.0
+    AddUniqueConstraints
+  | -- | @since 1.0.0.0
+    AddForeignKeys
+  | -- | @since 1.0.0.0
+    AddIndexesConcurrently
   deriving
     ( -- | @since 1.0.0.0
       Eq
@@ -381,8 +423,10 @@ generateMigrationPlanWithoutLock schemaItems =
         Maybe.mapMaybe
           (schemaItemPgCatalogFunction currentNamespace)
           schemaItems
+      pgCatalogExtensions =
+        Maybe.mapMaybe schemaItemPgCatalogExtension schemaItems
 
-    dbDesc <- PgCatalog.describeDatabase pgCatalogRelations pgCatalogFunctions
+    dbDesc <- PgCatalog.describeDatabase pgCatalogRelations pgCatalogFunctions pgCatalogExtensions
 
     case traverse (calculateMigrationSteps currentNamespace dbDesc) schemaItems of
       Left err ->
@@ -549,6 +593,32 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
               [ mkMigrationStepWithType
                   DropFunctions
                   (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId))
+              ]
+    SchemaExtension extension ->
+      Right $
+        let
+          catalogExtensionName = extensionIdToPgCatalogName extension
+        in
+          case PgCatalog.lookupExtension catalogExtensionName dbDesc of
+            Nothing ->
+              [ mkMigrationStepWithType
+                  AddExtensions
+                  (Expr.createExtensionExpr (Orville.extensionIdName extension) Nothing (Just Expr.extensionCascadeExpr))
+              ]
+            Just _pgExtension ->
+              []
+    SchemaDropExtension extension ->
+      Right $
+        let
+          catalogExtensionName = extensionIdToPgCatalogName extension
+        in
+          case PgCatalog.lookupExtension catalogExtensionName dbDesc of
+            Nothing ->
+              []
+            Just _pgExtension ->
+              [ mkMigrationStepWithType
+                  DropExtensions
+                  (Expr.dropExtensionExpr (Orville.extensionIdName extension) Nothing Nothing)
               ]
 
 {- |
@@ -1260,6 +1330,10 @@ schemaItemPgCatalogRelation currentNamespace item =
       Nothing
     SchemaDropFunction _functionId ->
       Nothing
+    SchemaExtension _extension ->
+      Nothing
+    SchemaDropExtension _extension ->
+      Nothing
 
 {- |
   Retrieves from a 'SchemaItem' the function (if any) that the schema item relates to
@@ -1284,6 +1358,37 @@ schemaItemPgCatalogFunction currentNamespace item =
       Just $ functionIdToPgCatalogNames currentNamespace (Orville.functionIdentifier functionDef)
     SchemaDropFunction functionId ->
       Just $ functionIdToPgCatalogNames currentNamespace functionId
+    SchemaExtension _extension ->
+      Nothing
+    SchemaDropExtension _extension ->
+      Nothing
+
+{- |
+  Retrieves from a 'SchemaItem' the extension (if any) that the schema item relates to
+  so that the migration infrastructure can look up data about it in the PostgreSQL
+  catalog for planning migration steps.
+-}
+schemaItemPgCatalogExtension ::
+  SchemaItem ->
+  Maybe PgCatalog.ExtensionName
+schemaItemPgCatalogExtension item =
+  case item of
+    SchemaTable _tableDef ->
+      Nothing
+    SchemaDropTable _tableId ->
+      Nothing
+    SchemaSequence _sequenceDef ->
+      Nothing
+    SchemaDropSequence _sequenceId ->
+      Nothing
+    SchemaFunction _functionDef ->
+      Nothing
+    SchemaDropFunction _functionId ->
+      Nothing
+    SchemaExtension extension ->
+      Just $ extensionIdToPgCatalogName extension
+    SchemaDropExtension extension ->
+      Just $ extensionIdToPgCatalogName extension
 
 tableIdToPgCatalogNames ::
   PgCatalog.NamespaceName ->
@@ -1320,6 +1425,12 @@ functionIdToPgCatalogNames currentNamespace functionId =
         $ functionId
   in
     (actualNamespace, relationName)
+
+extensionIdToPgCatalogName ::
+  Orville.ExtensionIdentifier ->
+  PgCatalog.ExtensionName
+extensionIdToPgCatalogName =
+  String.fromString . Orville.extensionIdToString
 
 mkAlterSequenceSteps ::
   Orville.SequenceDefinition ->

@@ -217,7 +217,7 @@ prop_describeDatabaseRelations =
         ]
 
     desc <- HH.evalIO . Orville.runOrville pool $ do
-      PgCatalog.describeDatabase relationsToDescribe []
+      PgCatalog.describeDatabase relationsToDescribe [] []
 
     Map.keysSet (PgCatalog.databaseRelations desc) === Set.fromList relationsToDescribe
 
