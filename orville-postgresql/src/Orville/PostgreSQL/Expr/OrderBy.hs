@@ -14,6 +14,7 @@ module Orville.PostgreSQL.Expr.OrderBy
   , appendOrderByExpr
   , orderByColumnName
   , orderByColumnsExpr
+  , orderByValueExpression
   , OrderByDirection
   , NullsOrder (NullsFirst, NullsLast)
   , ascendingOrder
@@ -26,6 +27,7 @@ where
 import qualified Data.List.NonEmpty as NEL
 
 import Orville.PostgreSQL.Expr.Name (ColumnName)
+import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -99,6 +101,16 @@ orderByColumnsExpr =
 orderByColumnName :: ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName =
   curry (orderByColumnsExpr . pure)
+
+{-- |
+  Orders a query by the given 'ValueExpression' in the given order direction. The caller must
+  ensure that the 'ValueExpression' is valid as a sort expression.
+
+@since 1.1.0.0
+-}
+orderByValueExpression :: ValueExpression -> OrderByDirection -> OrderByExpr
+orderByValueExpression value direction =
+  OrderByExpr $ RawSql.toRawSql value <> RawSql.space <> RawSql.toRawSql direction
 
 {- |
 Type to represent a SQL order by direction expression. E.G.
