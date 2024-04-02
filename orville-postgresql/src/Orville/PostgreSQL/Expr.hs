@@ -36,6 +36,7 @@ added @SOME NEW ISOLATION LEVEL@ and Orville did not yet support it.
 -}
 module Orville.PostgreSQL.Expr
   ( module Orville.PostgreSQL.Expr.BinaryOperator
+  , module Orville.PostgreSQL.Expr.Coalesce
   , module Orville.PostgreSQL.Expr.ColumnDefinition
   , module Orville.PostgreSQL.Expr.Count
   , module Orville.PostgreSQL.Expr.Cursor
@@ -75,6 +76,7 @@ where
 -- appear in the generated haddock documentation.
 
 import Orville.PostgreSQL.Expr.BinaryOperator
+import Orville.PostgreSQL.Expr.Coalesce
 import Orville.PostgreSQL.Expr.ColumnDefinition
 import Orville.PostgreSQL.Expr.Count
 import Orville.PostgreSQL.Expr.Cursor

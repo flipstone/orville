@@ -46,6 +46,7 @@ library:
     - Orville.PostgreSQL.ErrorDetailLevel
     - Orville.PostgreSQL.Expr
     - Orville.PostgreSQL.Expr.BinaryOperator
+    - Orville.PostgreSQL.Expr.Coalesce
     - Orville.PostgreSQL.Expr.ColumnDefinition
     - Orville.PostgreSQL.Expr.Count
     - Orville.PostgreSQL.Expr.Cursor
