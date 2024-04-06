@@ -68,6 +68,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.OrReplace
   , module Orville.PostgreSQL.Expr.Vacuum
   , module Orville.PostgreSQL.Expr.Extension
+  , module Orville.PostgreSQL.Expr.RowLocking
   )
 where
 
@@ -95,6 +96,7 @@ import Orville.PostgreSQL.Expr.OrReplace
 import Orville.PostgreSQL.Expr.OrderBy
 import Orville.PostgreSQL.Expr.Query
 import Orville.PostgreSQL.Expr.ReturningExpr
+import Orville.PostgreSQL.Expr.RowLocking
 import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
 import Orville.PostgreSQL.Expr.TableConstraint

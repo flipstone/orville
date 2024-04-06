@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2024
 License   : MIT
 Stability : Stable
 
@@ -15,12 +15,14 @@ module Orville.PostgreSQL.Execution.SelectOptions
   , selectGroupByClause
   , selectLimitExpr
   , selectOffsetExpr
+  , selectRowLockingClause
   , distinct
   , where_
   , orderBy
   , limit
   , offset
   , groupBy
+  , forRowLock
   , selectOptionsQueryExpr
   )
 where
@@ -44,6 +46,7 @@ data SelectOptions = SelectOptions
   , i_limitExpr :: First Expr.LimitExpr
   , i_offsetExpr :: First Expr.OffsetExpr
   , i_groupByExpr :: Maybe Expr.GroupByExpr
+  , i_rowLockingClause :: First Expr.RowLockingClause
   }
 
 -- | @since 1.0.0.0
@@ -68,6 +71,7 @@ emptySelectOptions =
     , i_limitExpr = mempty
     , i_offsetExpr = mempty
     , i_groupByExpr = mempty
+    , i_rowLockingClause = mempty
     }
 
 {- |
@@ -86,6 +90,7 @@ appendSelectOptions left right =
     (i_limitExpr left <> i_limitExpr right)
     (i_offsetExpr left <> i_offsetExpr right)
     (i_groupByExpr left <> i_groupByExpr right)
+    (i_rowLockingClause left <> i_rowLockingClause right)
 
 unionMaybeWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 unionMaybeWith f mbLeft mbRight =
@@ -172,6 +177,15 @@ selectOffsetExpr =
   getFirst . i_offsetExpr
 
 {- |
+  Builds an 'Expr.RowLockingClause' that will apply the locking rules specified in the 'SelectOptions' (if any).
+
+@since 1.1.0.0
+-}
+selectRowLockingClause :: SelectOptions -> Maybe Expr.RowLockingClause
+selectRowLockingClause =
+  getFirst . i_rowLockingClause
+
+{- |
   Constructs a 'SelectOptions' with just the given 'Expr.BooleanExpr'.
 
 @since 1.0.0.0
@@ -216,7 +230,7 @@ offset offsetValue =
     }
 
 {- |
-  Constructs a 'SelectOptions' with just the given 'Expr.GroupByClause'.
+  Constructs a 'SelectOptions' with just the given 'Expr.GroupByExpr'.
 
 @since 1.0.0.0
 -}
@@ -224,6 +238,17 @@ groupBy :: Expr.GroupByExpr -> SelectOptions
 groupBy groupByExpr =
   emptySelectOptions
     { i_groupByExpr = Just groupByExpr
+    }
+
+{- |
+  Constructs a 'SelectOptions' with just the given 'Expr.RowLockingClause'.
+
+@since 1.1.0.0
+-}
+forRowLock :: Expr.RowLockingClause -> SelectOptions
+forRowLock rowLockingClause =
+  emptySelectOptions
+    { i_rowLockingClause = First $ Just rowLockingClause
     }
 
 {- |
@@ -260,4 +285,5 @@ selectOptionsQueryExpr selectList tableReferenceList selectOptions =
           (selectOrderByClause selectOptions)
           (selectLimitExpr selectOptions)
           (selectOffsetExpr selectOptions)
+          (selectRowLockingClause selectOptions)
     )
