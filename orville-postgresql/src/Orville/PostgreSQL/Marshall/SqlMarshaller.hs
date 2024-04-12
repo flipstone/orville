@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -44,9 +46,6 @@ module Orville.PostgreSQL.Marshall.SqlMarshaller
   , marshallerTableConstraints
   , mkRowSource
   , RowSource
-  , mapRowSource
-  , applyRowSource
-  , constRowSource
   , failRowSource
   )
 where
@@ -56,6 +55,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
+import Data.Functor.Compose (Compose(..))
 
 import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
@@ -474,51 +474,7 @@ decodeRow errorDetailLevel (RowSource source) (RowIdentityExtractor getRowId) ro
 -}
 newtype RowSource readEntity
   = RowSource (Row -> IO (Either MarshallError.MarshallErrorDetails readEntity))
-
-instance Functor RowSource where
-  fmap = mapRowSource
-
-instance Applicative RowSource where
-  pure = constRowSource
-  (<*>) = applyRowSource
-
-{- |
-  Adds a function to the decoding proocess to transform the value returned
-  by a 'RowSource'.
-
-@since 1.0.0.0
--}
-mapRowSource :: (a -> b) -> RowSource a -> RowSource b
-mapRowSource f (RowSource decodeA) =
-  RowSource $ \row -> fmap (fmap f) (decodeA row)
-
-{- |
-  Creates a 'RowSource' that always returns the value given, rather than
-  attempting to access the result set and decoding anything.
-
-@since 1.0.0.0
--}
-constRowSource :: readEntity -> RowSource readEntity
-constRowSource =
-  RowSource . const . pure . Right
-
-{- |
-  Applies a function that will be decoded from the result set to another
-  value decoded from the result set.
-
-@since 1.0.0.0
--}
-applyRowSource :: RowSource (a -> b) -> RowSource a -> RowSource b
-applyRowSource (RowSource decodeAtoB) (RowSource decodeA) =
-  RowSource $ \row -> do
-    eitherAToB <- decodeAtoB row
-
-    case eitherAToB of
-      Left err ->
-        pure (Left err)
-      Right aToB -> do
-        eitherA <- decodeA row
-        pure (fmap aToB eitherA)
+  deriving (Functor, Applicative) via Compose ((->) Row) (Compose IO (Either MarshallError.MarshallErrorDetails))
 
 {- |
   Creates a 'RowSource' that will always fail to decode by returning the
@@ -558,7 +514,7 @@ mkRowSource marshaller result = do
       -- operation is build and re-used when decoding many rows.
       case marshallerPart of
         MarshallPure readEntity ->
-          constRowSource readEntity
+          pure readEntity
         MarshallApply marshallAToB marshallA ->
           mkSource marshallAToB <*> mkSource marshallA
         MarshallNest _ someMarshaller ->
