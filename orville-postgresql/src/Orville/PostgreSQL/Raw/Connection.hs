@@ -242,14 +242,14 @@ data ConnectionState
 
 data ConnectionContext = ConnectionContext
   { i_connUtilizationLock :: MVar ()
-    -- ^ Used to serialize access to the connection for the purpose of issuing commands
+  -- ^ Used to serialize access to the connection for the purpose of issuing commands
   , i_connCloseLock :: MVar ()
-    -- ^ Used to guarantee that only one thread will close the connection. This
-    -- is separate from the utilization lock because a connection should still
-    -- be closeable if it is in use by another thread but should not be closed
-    -- by multiple threads simultaneously.
+  -- ^ Used to guarantee that only one thread will close the connection. This
+  -- is separate from the utilization lock because a connection should still
+  -- be closeable if it is in use by another thread but should not be closed
+  -- by multiple threads simultaneously.
   , i_connState :: ConnectionState
-    -- ^ The underlying connection, if open
+  -- ^ The underlying connection, if open
   }
 
 {- |
@@ -293,12 +293,13 @@ connect noticeReporting connString =
         LibPQ.PollingOk -> do
           connUseLock <- newMVar ()
           connCloseLock <- newMVar ()
-          connectionHandle <- newIORef
-            ConnectionContext
-              { i_connUtilizationLock = connUseLock
-              , i_connCloseLock = connCloseLock
-              , i_connState = OpenConnection conn
-              }
+          connectionHandle <-
+            newIORef
+              ConnectionContext
+                { i_connUtilizationLock = connUseLock
+                , i_connCloseLock = connCloseLock
+                , i_connState = OpenConnection conn
+                }
           pure (Connection connectionHandle)
   in
     do
@@ -335,7 +336,7 @@ close (Connection handle) =
       mCloseLock <- tryTakeMVar $ i_connCloseLock connCtx
       case (mCloseLock, i_connState connCtx) of
         (Just (), OpenConnection underlyingConnection) -> do
-          writeIORef handle connCtx { i_connState = ClosedConnection }
+          writeIORef handle connCtx {i_connState = ClosedConnection}
           restore (LibPQ.finish underlyingConnection)
         _ -> pure ()
   in
