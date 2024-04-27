@@ -116,6 +116,7 @@ import qualified Data.UUID as UUID
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, fieldNameToString, stringToFieldName)
+import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameToAliasExpr)
 import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
 import Orville.PostgreSQL.Marshall.SqlComparable (SqlComparable (referenceValueExpression, toComparableSqlValue))
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
@@ -396,9 +397,9 @@ fieldValueFromSqlValue =
 
 @since 1.0.0.0
 -}
-fieldColumnName :: Maybe Expr.Alias -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
+fieldColumnName :: Maybe AliasName -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
 fieldColumnName mbAlias =
-  Expr.aliasQualifyColumn mbAlias . fieldNameToColumnName . fieldName
+  Expr.aliasQualifyColumn (fmap aliasNameToAliasExpr mbAlias) . fieldNameToColumnName . fieldName
 
 {- |
   Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
@@ -1133,7 +1134,7 @@ definition and 'Maybe Expr.Alias'.
 @since 1.1.0.0
 -}
 data AliasedFieldDefinition nullability a = AliasedFieldDefinition
-  { i_alias :: Maybe Expr.Alias
+  { i_alias :: Maybe AliasName
   , i_fieldDef :: FieldDefinition nullability a
   }
 
@@ -1146,17 +1147,15 @@ instance SqlComparable.SqlComparable (AliasedFieldDefinition nullability a) a wh
     toComparableSqlValue fieldDef
 
   referenceValueExpression (AliasedFieldDefinition mbAlias fieldDef) =
-    Expr.columnReference
-      . Expr.aliasQualifyColumn mbAlias
-      . fieldNameToColumnName
-      $ fieldName fieldDef
+    Expr.columnReference $
+      fieldColumnName mbAlias fieldDef
 
 {- |
 Obtains the alias used with the field definition.
 
 @since 1.1.0.0
 -}
-getAlias :: AliasedFieldDefinition nullability a -> Maybe Expr.Alias
+getAlias :: AliasedFieldDefinition nullability a -> Maybe AliasName
 getAlias = i_alias
 
 {- |
@@ -1172,6 +1171,6 @@ Alias an existing field definition.
 
 @since 1.1.0.0
 -}
-buildAliasedFieldDefinition :: FieldDefinition nullability a -> Maybe Expr.Alias -> AliasedFieldDefinition nullability a
+buildAliasedFieldDefinition :: FieldDefinition nullability a -> Maybe AliasName -> AliasedFieldDefinition nullability a
 buildAliasedFieldDefinition f ma =
   AliasedFieldDefinition ma f

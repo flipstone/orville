@@ -18,7 +18,6 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
-import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
@@ -316,11 +315,11 @@ fooMarshaller =
 
 fooMarshallerWithAliasOnEachField :: Marshall.SqlMarshaller Foo Foo
 fooMarshallerWithAliasOnEachField =
-  Marshall.marshallAlias (Expr.stringToAlias "f") $
+  Marshall.marshallAlias (Marshall.stringToAliasName "f") $
     Foo
-      <$> Marshall.marshallAlias (Expr.stringToAlias "f") (Marshall.marshallField fooName (Marshall.unboundedTextField "name"))
-      <*> Marshall.marshallAlias (Expr.stringToAlias "f") (Marshall.marshallField fooSize (Marshall.integerField "size"))
-      <*> Marshall.marshallAlias (Expr.stringToAlias "f") (Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option"))
+      <$> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooName (Marshall.unboundedTextField "name"))
+      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooSize (Marshall.integerField "size"))
+      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option"))
 
 generateFoo :: HH.Gen Foo
 generateFoo =

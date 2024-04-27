@@ -23,7 +23,7 @@ where
 import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
-import Orville.PostgreSQL.Expr.Name (Alias, ColumnName, FunctionName, Qualified)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, FunctionName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
@@ -70,14 +70,14 @@ columnReference :: Qualified ColumnName -> ValueExpression
 columnReference = ValueExpression . RawSql.toRawSql
 
 {- |
-Uses an 'Alias' to reference an aliased expression as a 'ValueExpression'. This
+Uses an 'AliasExpr' to reference an aliased expression as a 'ValueExpression'. This
 is the equivalent of simply writing the alias as the expression. E.G.
 
 > foo
 
 @since 1.1.0.0
 -}
-aliasReference :: Alias -> ValueExpression
+aliasReference :: AliasExpr -> ValueExpression
 aliasReference = ValueExpression . RawSql.toRawSql
 
 {- |

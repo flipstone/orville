@@ -139,6 +139,7 @@ library
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.RowCountExpectation
+      Orville.PostgreSQL.Marshall.AliasName
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField
       Orville.PostgreSQL.PgCatalog.PgAttribute

@@ -13,6 +13,7 @@ import qualified Hedgehog as HH
 import Orville.PostgreSQL ((.&&), (./=), (.<), (.<-), (.</-), (.<=), (.==), (.>), (.>=), (.||))
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
@@ -317,7 +318,7 @@ prop_orderByAliased =
     assertOrderByClauseEquals
       (Just "ORDER BY \"f\".\"foo\" ASC, \"bar\" DESC")
       ( O.orderBy
-          ( O.orderByAliasedField (O.buildAliasedFieldDefinition fooField (Just $ Expr.stringToAlias "f")) Expr.ascendingOrder
+          ( O.orderByAliasedField (O.buildAliasedFieldDefinition fooField (Just $ Marshall.stringToAliasName "f")) Expr.ascendingOrder
               <> O.orderByField barField Expr.descendingOrder
           )
       )

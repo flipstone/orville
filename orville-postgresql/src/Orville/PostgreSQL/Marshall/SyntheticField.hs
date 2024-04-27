@@ -23,7 +23,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, stringToFieldName)
+import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameToByteString, byteStringToAliasName, stringToAliasName)
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
@@ -37,7 +37,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 -}
 data SyntheticField a = SyntheticField
   { i_syntheticFieldExpression :: Expr.ValueExpression
-  , i_syntheticFieldAlias :: FieldName
+  , i_syntheticFieldAlias :: AliasName
   , i_syntheticFieldType :: SqlType.SqlType a
   }
 
@@ -67,7 +67,7 @@ syntheticFieldExpression =
 
 @since 1.0.0.0
 -}
-syntheticFieldAlias :: SyntheticField a -> FieldName
+syntheticFieldAlias :: SyntheticField a -> AliasName
 syntheticFieldAlias =
   i_syntheticFieldAlias
 
@@ -108,7 +108,7 @@ syntheticField ::
 syntheticField expression alias sqlType =
   SyntheticField
     { i_syntheticFieldExpression = expression
-    , i_syntheticFieldAlias = stringToFieldName alias
+    , i_syntheticFieldAlias = stringToAliasName alias
     , i_syntheticFieldType = sqlType
     }
 
@@ -147,7 +147,7 @@ prefixSyntheticField ::
   SyntheticField a
 prefixSyntheticField prefix synthField =
   synthField
-    { i_syntheticFieldAlias = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (syntheticFieldAlias synthField))
+    { i_syntheticFieldAlias = byteStringToAliasName (B8.pack prefix <> "_" <> aliasNameToByteString (syntheticFieldAlias synthField))
     }
 
 {- |
@@ -157,4 +157,4 @@ prefixSyntheticField prefix synthField =
 -}
 orderBySyntheticField :: SyntheticField a -> Expr.OrderByDirection -> Expr.OrderByExpr
 orderBySyntheticField =
-  Expr.orderByColumnName . Expr.aliasQualifyColumn Nothing . fieldNameToColumnName . syntheticFieldAlias
+  Expr.orderByColumnName . Expr.aliasQualifyColumn Nothing . Expr.fromIdentifier . Expr.identifierFromBytes . aliasNameToByteString . syntheticFieldAlias

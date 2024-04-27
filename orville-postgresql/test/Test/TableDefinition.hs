@@ -15,7 +15,7 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Execution.Select as Select
-import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
@@ -77,7 +77,7 @@ prop_roundTripWithAlias =
           (originalFoo :| [])
 
       selectFoos =
-        Select.selectTableWithAlias (Expr.stringToAlias "some_alias") Foo.table mempty
+        Select.selectTableWithAlias (Marshall.stringToAliasName "some_alias") Foo.table mempty
 
     foosFromDB <-
       MIO.liftIO . Orville.runOrville pool $ do

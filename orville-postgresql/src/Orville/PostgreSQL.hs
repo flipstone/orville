@@ -243,6 +243,13 @@ module Orville.PostgreSQL
   , FieldDefinition.getFieldDefinition
   , FieldDefinition.getAlias
   , FieldDefinition.buildAliasedFieldDefinition
+  , Marshall.AliasName
+  , Marshall.stringToAliasName
+  , Marshall.aliasNameToString
+  , Marshall.aliasNameToAliasExpr
+  , Marshall.aliasNameAndFieldNameToColumnName
+  , Marshall.aliasNameToByteString
+  , Marshall.byteStringToAliasName
   , DefaultValue.DefaultValue
   , DefaultValue.integerDefault
   , DefaultValue.smallIntegerDefault

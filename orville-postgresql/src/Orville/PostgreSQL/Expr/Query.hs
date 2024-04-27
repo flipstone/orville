@@ -27,7 +27,7 @@ import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
-import Orville.PostgreSQL.Expr.Name (Alias, ColumnName, Qualified)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
@@ -171,7 +171,7 @@ deriveColumnAs valueExpr asColumn =
 
 @since 1.1.0.0
 -}
-deriveColumnAsAlias :: ValueExpression -> Alias -> DerivedColumn
+deriveColumnAsAlias :: ValueExpression -> AliasExpr -> DerivedColumn
 deriveColumnAsAlias valueExpr asAlias =
   DerivedColumn
     ( RawSql.toRawSql valueExpr

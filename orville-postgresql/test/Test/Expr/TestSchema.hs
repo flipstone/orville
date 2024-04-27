@@ -60,7 +60,7 @@ barColumn =
 
 barColumnAliased :: Expr.Qualified Expr.ColumnName
 barColumnAliased =
-  Expr.aliasQualifyColumn (Just $ Expr.stringToAlias "b") $ Expr.columnName "bar"
+  Expr.aliasQualifyColumn (Just $ Expr.stringToAliasExpr "b") $ Expr.columnName "bar"
 
 barColumnRef :: Expr.ValueExpression
 barColumnRef =
@@ -78,7 +78,7 @@ findAllFooBars =
 findAllFooBarsInTable :: Expr.Qualified Expr.TableName -> Expr.QueryExpr
 findAllFooBarsInTable tableName =
   let
-    tableRef = Expr.referencesTableWithAlias (Expr.stringToAlias "b") tableName
+    tableRef = Expr.referencesTableWithAlias (Expr.stringToAliasExpr "b") tableName
   in
     Expr.queryExpr
       (Expr.selectClause $ Expr.selectExpr Nothing)

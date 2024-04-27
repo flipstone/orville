@@ -27,7 +27,7 @@ where
 
 import qualified Data.List.NonEmpty as NEL
 
-import Orville.PostgreSQL.Expr.Name (Alias, ColumnName, Qualified)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -107,15 +107,15 @@ orderByColumnName :: Qualified ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName =
   curry (orderByColumnsExpr . pure)
 
-{- | Create an 'OrderByExpr' for 'Alias' and 'OrderByDirection' pairs, ensuring commas as needed. For basic queries involving columns on some table(s), use 'orderByColumnsExpr'. This
+{- | Create an 'OrderByExpr' for 'AliasExpr' and 'OrderByDirection' pairs, ensuring commas as needed. For basic queries involving columns on some table(s), use 'orderByColumnsExpr'.
 
 @since 1.1.0.0
 -}
-orderByAliasesExpr :: NEL.NonEmpty (Alias, OrderByDirection) -> OrderByExpr
+orderByAliasesExpr :: NEL.NonEmpty (AliasExpr, OrderByDirection) -> OrderByExpr
 orderByAliasesExpr =
   OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
  where
-  columnOrdering :: (Alias, OrderByDirection) -> RawSql.RawSql
+  columnOrdering :: (AliasExpr, OrderByDirection) -> RawSql.RawSql
   columnOrdering (alias, orderByDirection) =
     RawSql.toRawSql alias <> RawSql.space <> RawSql.toRawSql orderByDirection
 
@@ -124,7 +124,7 @@ orderByAliasesExpr =
 
 @since 1.1.0.0
 -}
-orderByAlias :: Alias -> OrderByDirection -> OrderByExpr
+orderByAlias :: AliasExpr -> OrderByDirection -> OrderByExpr
 orderByAlias =
   curry (orderByAliasesExpr . pure)
 

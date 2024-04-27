@@ -33,6 +33,7 @@ import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Expr as Expr
+import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameToAliasExpr)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallAlias, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
@@ -131,7 +132,7 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
 @since 1.1.0.0
 -}
 selectTableWithAlias ::
-  Expr.Alias ->
+  AliasName ->
   TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   Select readEntity
@@ -149,7 +150,7 @@ selectTableWithAlias alias tableDef =
 @since 1.1.0.0
 -}
 selectMarshalledColumnsWithAlias ::
-  Expr.Alias ->
+  AliasName ->
   AnnotatedSqlMarshaller writeEntity readEntity ->
   Expr.Qualified Expr.TableName ->
   SelectOptions.SelectOptions ->
@@ -158,7 +159,7 @@ selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptio
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . marshallAlias alias $ unannotatedSqlMarshaller marshaller))
-      (Expr.referencesTableWithAlias alias qualifiedTableName)
+      (Expr.referencesTableWithAlias (aliasNameToAliasExpr alias) qualifiedTableName)
       selectOptions
 
 {- |

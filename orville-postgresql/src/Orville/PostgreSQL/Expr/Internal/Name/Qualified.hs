@@ -17,7 +17,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   )
 where
 
-import Orville.PostgreSQL.Expr.Internal.Name.Alias (Alias)
+import Orville.PostgreSQL.Expr.Internal.Name.Alias (AliasExpr)
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
 import Orville.PostgreSQL.Expr.Internal.Name.FunctionName (FunctionName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
@@ -101,14 +101,14 @@ qualifyColumn mbSchemaName tableName unqualifiedName =
     . RawSql.unsafeFromRawSql
     $ RawSql.toRawSql (toIdentifier tableName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
 
-{- | Qualifies a 'ColumnName' optionally with an 'Alias'. This should be used to refer to the column
+{- | Qualifies a 'ColumnName' optionally with an 'AliasExpr'. This should be used to refer to the column
 in SQL queries where an aliased reference is appropriate.
 
 @since 1.1.0.0
 -}
-aliasQualifyColumn :: Maybe Alias -> ColumnName -> Qualified ColumnName
-aliasQualifyColumn mbAliasName unqualifiedName =
-  Qualified $ case mbAliasName of
+aliasQualifyColumn :: Maybe AliasExpr -> ColumnName -> Qualified ColumnName
+aliasQualifyColumn mbAliasExprName unqualifiedName =
+  Qualified $ case mbAliasExprName of
     Nothing ->
       RawSql.toRawSql $ toIdentifier unqualifiedName
     Just aliasName ->

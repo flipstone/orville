@@ -8,9 +8,9 @@ Stability : Stable
 @since 1.1.0.0
 -}
 module Orville.PostgreSQL.Expr.Internal.Name.Alias
-  ( Alias
-  , stringToAlias
-  , aliasToColumnName
+  ( AliasExpr
+  , stringToAliasExpr
+  , aliasExprToColumnName
   )
 where
 
@@ -19,20 +19,20 @@ import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierE
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
-Type to represent a SQL alias. 'Alias' values constructed
+Type to represent a SQL alias. 'AliasExpr' values constructed
 via the 'alias' function will be properly escaped as part of the
 generated SQL. E.G.
 
 > "some_alias"
 
-'Alias' provides a 'RawSql.SqlExpression' instance. See
+'AliasExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
 @since 1.1.0.0
 -}
-newtype Alias
-  = Alias Identifier
+newtype AliasExpr
+  = AliasExpr Identifier
   deriving
     ( -- | @since 1.1.0.0
       RawSql.SqlExpression
@@ -41,19 +41,19 @@ newtype Alias
     )
 
 {- |
-Construct an 'Alias' from a 'String' with proper escaping as part of the generated SQL.
+Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.1.0.0
 -}
-stringToAlias :: String -> Alias
-stringToAlias =
-  Alias . identifier
+stringToAliasExpr :: String -> AliasExpr
+stringToAliasExpr =
+  AliasExpr . identifier
 
 {- |
-It is occasionally appropriate to treat Construct an 'Alias' from a 'String' with proper escaping as part of the generated SQL.
+It is occasionally appropriate to treat Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.1.0.0
 -}
-aliasToColumnName :: Alias -> ColumnName
-aliasToColumnName =
+aliasExprToColumnName :: AliasExpr -> ColumnName
+aliasExprToColumnName =
   fromIdentifier . toIdentifier

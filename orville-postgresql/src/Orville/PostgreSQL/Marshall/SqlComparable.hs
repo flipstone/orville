@@ -182,9 +182,6 @@ greaterThanOrEqualTo a =
     . Expr.valueExpression
     . toComparableSqlValue a
 
--- like
--- likeInsensitive
-
 {- | Checks that the referenced item from the first argument is in the list of the SQL values
   of the second argument. This is commonly used with columns as you might in a @WHERE@ clause such
   as @WHERE foo IN (1,2)@. Frequently you would not want to use this directly, but instead use

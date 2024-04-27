@@ -34,8 +34,8 @@ newtype FieldName
 @since 1.0.0.0
 -}
 fieldNameToColumnName :: FieldName -> Expr.ColumnName
-fieldNameToColumnName (FieldName name) =
-  Expr.fromIdentifier (Expr.identifierFromBytes name)
+fieldNameToColumnName =
+  Expr.fromIdentifier . Expr.identifierFromBytes . fieldNameToByteString
 
 {- |
   Constructs a 'FieldName' from a 'String'.

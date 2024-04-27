@@ -62,6 +62,7 @@ import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
+import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameAsFieldName)
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
@@ -158,7 +159,7 @@ data SqlMarshaller a b where
   -- | Marshall a column that is read-only, like auto-incrementing ids.
   MarshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
   -- | Apply an alias to a marshaller
-  MarshallAlias :: Expr.Alias -> SqlMarshaller a b -> SqlMarshaller a b
+  MarshallAlias :: AliasName -> SqlMarshaller a b -> SqlMarshaller a b
 
 instance Functor (SqlMarshaller a) where
   fmap f marsh = MarshallApply (MarshallPure f) marsh
@@ -191,7 +192,7 @@ marshallerDerivedColumns marshaller =
         Synthetic synthField ->
           Expr.deriveColumnAs
             (syntheticFieldExpression synthField)
-            (fieldNameToColumnName $ syntheticFieldAlias synthField)
+            (fieldNameToColumnName . aliasNameAsFieldName $ syntheticFieldAlias synthField)
             : columns
   in
     foldMarshallerFields marshaller [] collectDerivedColumn
@@ -229,7 +230,7 @@ marshallerTableConstraints marshaller =
 @since 1.0.0.0
 -}
 data MarshallerField writeEntity where
-  Natural :: Maybe Expr.Alias -> FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
+  Natural :: Maybe AliasName -> FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
   Synthetic :: SyntheticField a -> MarshallerField writeEntity
 
 {- |
@@ -245,7 +246,7 @@ data MarshallerField writeEntity where
 -}
 collectFromField ::
   ReadOnlyColumnOption ->
-  (forall nullability a. Maybe Expr.Alias -> FieldDefinition nullability a -> result) ->
+  (forall nullability a. Maybe AliasName -> FieldDefinition nullability a -> result) ->
   MarshallerField entity ->
   [result] ->
   [result]
@@ -332,7 +333,7 @@ foldMarshallerFields marshaller =
 @since 1.0.0.0
 -}
 foldMarshallerFieldsPart ::
-  Maybe Expr.Alias ->
+  Maybe AliasName ->
   SqlMarshaller entityPart readEntity ->
   Maybe (writeEntity -> entityPart) ->
   result ->
@@ -557,7 +558,7 @@ mkRowSource marshaller result = do
   columnMap <- prepareColumnMap result
 
   let
-    mkSource :: Maybe Expr.Alias -> SqlMarshaller a b -> RowSource b
+    mkSource :: Maybe AliasName -> SqlMarshaller a b -> RowSource b
     mkSource mbAlias marshallerPart =
       -- Note, this case statement is evaluated before the row argument is
       -- ever passed to a 'RowSource' to ensure that a single 'RowSource'
@@ -577,7 +578,7 @@ mkRowSource marshaller result = do
             result
         MarshallSyntheticField syntheticField ->
           mkFieldNameSource
-            (syntheticFieldAlias syntheticField)
+            (aliasNameAsFieldName $ syntheticFieldAlias syntheticField)
             (syntheticFieldValueFromSqlValue syntheticField)
             columnMap
             result
@@ -591,7 +592,7 @@ mkRowSource marshaller result = do
                   Natural _ field _ ->
                     fieldName field : names
                   Synthetic field ->
-                    syntheticFieldAlias field : names
+                    aliasNameAsFieldName (syntheticFieldAlias field) : names
           in
             partialRowSource fieldNames columnMap result (mkSource mbAlias m)
         MarshallReadOnly m ->
@@ -933,7 +934,7 @@ marshallPartial = MarshallPartial
 @since 1.1.0.0
 -}
 marshallAlias ::
-  Expr.Alias ->
+  AliasName ->
   SqlMarshaller a b ->
   SqlMarshaller a b
 marshallAlias =
