@@ -15,7 +15,7 @@ jobs:
       max-parallel: 5
       matrix:
         pg-version: ["pg12", "pg13", "pg14", "pg15", "pg16"]
-        stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yml","stack-lts-19.33-ghc-9.0.2.yml","stack-lts-20.26-ghc-9.2.8.yml","stack-nightly-2023-10-01-ghc-9.6.3.yml","stack.yml"]
+        stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yml","stack-lts-19.33-ghc-9.0.2.yml","stack-lts-20.26-ghc-9.2.8.yml","stack-lts-21.22-ghc-9.4.8.yml","stack-nightly-2024-04-06-ghc-9.8.2.yml","stack.yml"]
     permissions:
       packages: write
       contents: read

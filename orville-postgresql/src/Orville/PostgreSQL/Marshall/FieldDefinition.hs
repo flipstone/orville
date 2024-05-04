@@ -800,7 +800,7 @@ convertField conversion fieldDef =
 @since 1.0.0.0
 -}
 coerceField ::
-  (Coerce.Coercible a b, Coerce.Coercible b a) =>
+  Coerce.Coercible a b =>
   FieldDefinition nullability a ->
   FieldDefinition nullability b
 coerceField =
