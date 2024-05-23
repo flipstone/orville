@@ -10,6 +10,12 @@ Stability : Stable
 module Orville.PostgreSQL.Expr.Query
   ( QueryExpr
   , queryExpr
+  , existsSubquery
+  , queryValueExpression
+  , inSubquery
+  , notInSubquery
+  , anySubquery
+  , allSubquery
   , SelectList
   , selectColumns
   , DerivedColumn
@@ -25,6 +31,7 @@ where
 
 import Data.Maybe (catMaybes, fromMaybe)
 
+import Orville.PostgreSQL.Expr.BinaryOperator (BinaryOperator)
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
 import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
@@ -33,7 +40,7 @@ import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
 import Orville.PostgreSQL.Expr.TableReferenceList (TableReferenceList)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference)
-import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
+import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr, InValuePredicate, WhereClause, inPredicate, notInPredicate)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
@@ -74,6 +81,77 @@ queryExpr querySelectClause selectList maybeTableExpr =
         , RawSql.toRawSql selectList
         , fromMaybe (RawSql.fromString "") maybeFromClause
         ]
+
+{- | The SQL @EXISTS@ subquery expression. This builds a 'BooleanExpr' that checks if the given
+   'QueryExpr' returns at least one row. The resuling SQL will correctly be parenthesized.
+
+@since 1.1.0.0
+-}
+existsSubquery :: QueryExpr -> BooleanExpr
+existsSubquery (QueryExpr queryRawSql) =
+  RawSql.unsafeFromRawSql $
+    RawSql.fromString "EXISTS "
+      <> RawSql.parenthesized queryRawSql
+
+{- | Treat a 'QueryExpr' as a 'ValueExpression' to make it suitable for use as subquery.
+
+@since 1.1.0.0
+-}
+queryValueExpression :: QueryExpr -> ValueExpression
+queryValueExpression =
+  RawSql.unsafeFromRawSql . RawSql.toRawSql
+
+-- Internal helper to treat a 'QueryExpr' as an 'InValuePredicate' for building @IN@ and @NOT IN@
+-- subquery expressions.
+queryInValuePredicate :: QueryExpr -> InValuePredicate
+queryInValuePredicate =
+  RawSql.unsafeFromRawSql . RawSql.parenthesized . RawSql.toRawSql
+
+{- | The SQL @IN@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
+   returns exactly one column.
+
+@since 1.1.0.0
+-}
+inSubquery :: ValueExpression -> QueryExpr -> BooleanExpr
+inSubquery valExpr =
+  inPredicate valExpr . queryInValuePredicate
+
+{- | The SQL @NOT IN@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
+   returns exactly one column.
+
+@since 1.1.0.0
+-}
+notInSubquery :: ValueExpression -> QueryExpr -> BooleanExpr
+notInSubquery valExpr =
+  notInPredicate valExpr . queryInValuePredicate
+
+{- | The SQL @ANY@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
+   returns exactly one column and that the operator results in a boolean.
+
+@since 1.1.0.0
+-}
+anySubquery :: BinaryOperator -> ValueExpression -> QueryExpr -> BooleanExpr
+anySubquery =
+  operatorSubquery (RawSql.fromString " ANY ")
+
+{- | The SQL @ALL@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
+   returns exactly one column and that the operator results in a boolean.
+
+@since 1.1.0.0
+-}
+allSubquery :: BinaryOperator -> ValueExpression -> QueryExpr -> BooleanExpr
+allSubquery =
+  operatorSubquery (RawSql.fromString " ALL ")
+
+-- Internal helper to build any/all subquery
+operatorSubquery :: RawSql.RawSql -> BinaryOperator -> ValueExpression -> QueryExpr -> BooleanExpr
+operatorSubquery querySpecificRawSql binOp valExpr (QueryExpr queryRawSql) =
+  RawSql.unsafeFromRawSql $
+    RawSql.parenthesized valExpr
+      <> RawSql.space
+      <> RawSql.toRawSql binOp
+      <> querySpecificRawSql
+      <> RawSql.parenthesized queryRawSql
 
 {- |
 Type to represent the list of items to be selected in a @SELECT@ clause.
