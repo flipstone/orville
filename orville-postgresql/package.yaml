@@ -66,7 +66,7 @@ library:
     - Orville.PostgreSQL.Expr.SequenceDefinition
     - Orville.PostgreSQL.Expr.TableConstraint
     - Orville.PostgreSQL.Expr.TableDefinition
-    - Orville.PostgreSQL.Expr.TableReferenceList
+    - Orville.PostgreSQL.Expr.FromItemExpr
     - Orville.PostgreSQL.Expr.Time
     - Orville.PostgreSQL.Expr.Transaction
     - Orville.PostgreSQL.Expr.Update

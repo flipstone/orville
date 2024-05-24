@@ -545,7 +545,7 @@ runDecodingTest pool test =
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             Expr.selectStar
-            (Just $ Expr.tableExpr (Expr.referencesTable tableName) Nothing Nothing Nothing Nothing Nothing)
+            (Just $ Expr.tableExpr (Expr.tableFromItem tableName) Nothing Nothing Nothing Nothing Nothing)
 
       Execution.readRows result
 

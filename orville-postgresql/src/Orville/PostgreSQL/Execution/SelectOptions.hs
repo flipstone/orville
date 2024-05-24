@@ -245,7 +245,7 @@ groupBy groupByExpr =
 -}
 selectOptionsQueryExpr ::
   Expr.SelectList ->
-  Expr.TableReferenceList ->
+  Expr.FromItemExpr ->
   SelectOptions ->
   Expr.QueryExpr
 selectOptionsQueryExpr selectList tableReferenceList selectOptions =

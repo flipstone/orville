@@ -42,10 +42,12 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.DataType
   , module Orville.PostgreSQL.Expr.Delete
   , module Orville.PostgreSQL.Expr.GroupBy
+  , module Orville.PostgreSQL.Expr.FromItemExpr
   , module Orville.PostgreSQL.Expr.IfExists
   , module Orville.PostgreSQL.Expr.IfNotExists
   , module Orville.PostgreSQL.Expr.Index
   , module Orville.PostgreSQL.Expr.Insert
+  , module Orville.PostgreSQL.Expr.Join
   , module Orville.PostgreSQL.Expr.LimitExpr
   , module Orville.PostgreSQL.Expr.Math
   , module Orville.PostgreSQL.Expr.Name
@@ -57,7 +59,6 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.SequenceDefinition
   , module Orville.PostgreSQL.Expr.TableConstraint
   , module Orville.PostgreSQL.Expr.TableDefinition
-  , module Orville.PostgreSQL.Expr.TableReferenceList
   , module Orville.PostgreSQL.Expr.Time
   , module Orville.PostgreSQL.Expr.Transaction
   , module Orville.PostgreSQL.Expr.Update
@@ -81,12 +82,14 @@ import Orville.PostgreSQL.Expr.Cursor
 import Orville.PostgreSQL.Expr.DataType
 import Orville.PostgreSQL.Expr.Delete
 import Orville.PostgreSQL.Expr.Extension
+import Orville.PostgreSQL.Expr.FromItemExpr
 import Orville.PostgreSQL.Expr.Function
 import Orville.PostgreSQL.Expr.GroupBy
 import Orville.PostgreSQL.Expr.IfExists
 import Orville.PostgreSQL.Expr.IfNotExists
 import Orville.PostgreSQL.Expr.Index
 import Orville.PostgreSQL.Expr.Insert
+import Orville.PostgreSQL.Expr.Join
 import Orville.PostgreSQL.Expr.LimitExpr
 import Orville.PostgreSQL.Expr.Math
 import Orville.PostgreSQL.Expr.Name
@@ -99,7 +102,6 @@ import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
 import Orville.PostgreSQL.Expr.TableConstraint
 import Orville.PostgreSQL.Expr.TableDefinition
-import Orville.PostgreSQL.Expr.TableReferenceList
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
 import Orville.PostgreSQL.Expr.Trigger

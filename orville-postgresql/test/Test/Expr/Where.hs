@@ -252,7 +252,7 @@ whereConditionTest testName test =
               Expr.queryExpr
                 (Expr.selectClause $ Expr.selectExpr Nothing)
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Just $ Expr.tableExpr (Expr.referencesTable fooBarTable) (whereClause test) Nothing Nothing Nothing Nothing)
+                (Just $ Expr.tableExpr (Expr.tableFromItem fooBarTable) (whereClause test) Nothing Nothing Nothing Nothing)
 
           Execution.readRows result
 

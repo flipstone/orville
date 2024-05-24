@@ -78,7 +78,7 @@ findAllFooBars =
 findAllFooBarsInTable :: Expr.Qualified Expr.TableName -> Expr.QueryExpr
 findAllFooBarsInTable tableName =
   let
-    tableRef = Expr.referencesTableWithAlias (Expr.stringToAliasExpr "b") tableName
+    tableRef = Expr.tableFromItemWithAlias (Expr.stringToAliasExpr "b") tableName
   in
     Expr.queryExpr
       (Expr.selectClause $ Expr.selectExpr Nothing)

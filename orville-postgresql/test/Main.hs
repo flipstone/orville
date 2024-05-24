@@ -21,6 +21,7 @@ import qualified Test.Expr.Cursor as ExprCursor
 import qualified Test.Expr.GroupBy as ExprGroupBy
 import qualified Test.Expr.GroupByOrderBy as ExprGroupByOrderBy
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
+import qualified Test.Expr.Join as ExprJoin
 import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
@@ -70,6 +71,7 @@ main = do
       , ExprTime.timeTests pool
       , ExprTrigger.triggerTests pool
       , ExprVacuum.vacuumTests
+      , ExprJoin.joinTests
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool

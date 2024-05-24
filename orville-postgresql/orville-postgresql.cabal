@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -70,7 +70,7 @@ library
       Orville.PostgreSQL.Expr.SequenceDefinition
       Orville.PostgreSQL.Expr.TableConstraint
       Orville.PostgreSQL.Expr.TableDefinition
-      Orville.PostgreSQL.Expr.TableReferenceList
+      Orville.PostgreSQL.Expr.FromItemExpr
       Orville.PostgreSQL.Expr.Time
       Orville.PostgreSQL.Expr.Transaction
       Orville.PostgreSQL.Expr.Update
@@ -128,6 +128,7 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.SequenceName
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
+      Orville.PostgreSQL.Expr.Join
       Orville.PostgreSQL.Expr.OrReplace
       Orville.PostgreSQL.Expr.Trigger
       Orville.PostgreSQL.Expr.Vacuum
@@ -200,6 +201,7 @@ test-suite spec
       Test.Expr.GroupBy
       Test.Expr.GroupByOrderBy
       Test.Expr.InsertUpdateDelete
+      Test.Expr.Join
       Test.Expr.Math
       Test.Expr.OrderBy
       Test.Expr.SequenceDefinition
