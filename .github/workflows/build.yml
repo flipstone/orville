@@ -129,4 +129,4 @@ jobs:
           docker-compose run \
             --rm \
             dev \
-            cabal check
+            ghcup install cabal && cabal check
