@@ -16,6 +16,7 @@ module Orville.PostgreSQL.Expr.OrderBy
   , orderByColumnsExpr
   , orderByAlias
   , orderByAliasesExpr
+  , orderByValueExpression
   , OrderByDirection
   , NullsOrder (NullsFirst, NullsLast)
   , ascendingOrder
@@ -28,6 +29,8 @@ where
 import qualified Data.List.NonEmpty as NEL
 
 import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
+import qualified Orville.PostgreSQL.Expr.ValueExpression as ValueExpression
+import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -91,12 +94,7 @@ appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
 @since 1.0.0.0
 -}
 orderByColumnsExpr :: NEL.NonEmpty (Qualified ColumnName, OrderByDirection) -> OrderByExpr
-orderByColumnsExpr =
-  OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
- where
-  columnOrdering :: (Qualified ColumnName, OrderByDirection) -> RawSql.RawSql
-  columnOrdering (columnName, orderByDirection) =
-    RawSql.toRawSql columnName <> RawSql.space <> RawSql.toRawSql orderByDirection
+orderByColumnsExpr = ExtraNonEmpty.foldMap1' (uncurry orderByColumnName)
 
 {- |
   Orders a query by the given column name in the given order direction.
@@ -104,20 +102,14 @@ orderByColumnsExpr =
 @since 1.0.0.0
 -}
 orderByColumnName :: Qualified ColumnName -> OrderByDirection -> OrderByExpr
-orderByColumnName =
-  curry (orderByColumnsExpr . pure)
+orderByColumnName = orderByValueExpression . ValueExpression.columnReference
 
 {- | Create an 'OrderByExpr' for 'AliasExpr' and 'OrderByDirection' pairs, ensuring commas as needed. For basic queries involving columns on some table(s), use 'orderByColumnsExpr'.
 
 @since 1.1.0.0
 -}
 orderByAliasesExpr :: NEL.NonEmpty (AliasExpr, OrderByDirection) -> OrderByExpr
-orderByAliasesExpr =
-  OrderByExpr . RawSql.intercalate RawSql.commaSpace . fmap columnOrdering
- where
-  columnOrdering :: (AliasExpr, OrderByDirection) -> RawSql.RawSql
-  columnOrdering (alias, orderByDirection) =
-    RawSql.toRawSql alias <> RawSql.space <> RawSql.toRawSql orderByDirection
+orderByAliasesExpr = ExtraNonEmpty.foldMap1' (uncurry orderByAlias)
 
 {- |
   Orders a query by the given alias in the given order direction. This is useful for ordering by synthetic fields or sub queries.
@@ -125,8 +117,15 @@ orderByAliasesExpr =
 @since 1.1.0.0
 -}
 orderByAlias :: AliasExpr -> OrderByDirection -> OrderByExpr
-orderByAlias =
-  curry (orderByAliasesExpr . pure)
+orderByAlias = orderByValueExpression . ValueExpression.aliasReference
+
+{-- | Create an 'OrderByExpr' for the given 'ValueExpression.ValueExpression' and 'OrderByDirection'. The caller must ensure that the 'ValueExpression.ValueExpression' is valid as an order by expression.
+
+@since 1.1.0.0
+-}
+orderByValueExpression :: ValueExpression.ValueExpression -> OrderByDirection -> OrderByExpr
+orderByValueExpression value direction =
+  OrderByExpr $ RawSql.toRawSql value <> RawSql.space <> RawSql.toRawSql direction
 
 {- |
 Type to represent a SQL order by direction expression. E.G.

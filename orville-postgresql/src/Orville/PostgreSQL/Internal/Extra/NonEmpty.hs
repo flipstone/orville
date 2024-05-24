@@ -7,6 +7,7 @@ Stability : Stable
 -}
 module Orville.PostgreSQL.Internal.Extra.NonEmpty
   ( foldl1'
+  , foldMap1'
   )
 where
 
@@ -16,3 +17,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 foldl1' :: (a -> a -> a) -> NonEmpty a -> a
 foldl1' f (first :| rest) =
   Fold.foldl' f first rest
+
+foldMap1' :: Semigroup m => (a -> m) -> NonEmpty a -> m
+foldMap1' f (first :| rest) =
+  Fold.foldl' (\m a -> m <> f a) (f first) rest
