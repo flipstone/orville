@@ -8,7 +8,9 @@ Stability : Stable
 @since 1.0.0.0
 -}
 module Orville.PostgreSQL.Internal.MigrationLock
-  ( MigrationLockId
+  ( MigrationLockOptions (migrationLockId, maxLockAttempts, delayBetweenLockAttemptsMicros, lockDelayVariationMicros)
+  , defaultLockOptions
+  , MigrationLockId
   , defaultLockId
   , nextLockId
   , withMigrationLock
@@ -21,6 +23,7 @@ import Control.Exception (Exception, throwIO)
 import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as MIO
 import Data.Int (Int32)
+import qualified System.Random as Rand
 
 import qualified Orville.PostgreSQL.Execution as Exec
 import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
@@ -28,6 +31,59 @@ import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
+
+{- |
+  'MigrationLockOptions' controls how Orville acquires its PostgreSQL advisory lock
+  to ensure that only one process is attempting to make schema changes at a time.
+  See the descriptions of each of the options for more detail:
+
+  * 'migrationLockId'
+  * 'maxLockAttempts'
+  * 'delayBetweenLockAttemptsMicros'
+  * 'lockDelayVariationMicros'
+
+@since 1.1.0.0
+-}
+data MigrationLockOptions = MigrationLockOptions
+  { migrationLockId :: MigrationLockId
+  -- ^ Specifies the 'MigrationLockId' for the lock that will be acquired to ensure
+  -- only one process is attempting to migrate the schema at a time.
+  --
+  -- @since 1.1.0.0
+  , maxLockAttempts :: Int
+  -- ^ The maximum number of times Orville will attempt to acquire the migration
+  -- lock. If the lock has not bene acquired after this many attempts, a
+  -- 'MigrationLockError' will be thrown as an exception.
+  --
+  -- @since 1.1.0.0
+  , delayBetweenLockAttemptsMicros :: Int
+  -- ^ The minimum number of microseconds Orville will wait after a failed attempt to
+  -- acquire the lock before it tries again. A random variation will be added to this
+  -- to determine the delay after each failed attempt. See 'lockDelayVariationMicros'
+  --
+  -- @since 1.1.0.0
+  , lockDelayVariationMicros :: Int
+  -- ^ The maximum variation to add to the delay before attempting to acquire the lock
+  -- again. The actual variation at each delay will be a pseudo-random number between
+  -- @0@ and 'lockDelayVariationMicros'.
+  --
+  -- @since 1.1.0.0
+  }
+
+{- |
+The default lock options use the 'defaultLockId', 25 attempts and randomized delay
+between 100 and 125 milliseconds.
+
+@since 1.1.0.0
+-}
+defaultLockOptions :: MigrationLockOptions
+defaultLockOptions =
+  MigrationLockOptions
+    { migrationLockId = defaultLockId
+    , maxLockAttempts = 25
+    , delayBetweenLockAttemptsMicros = 100000
+    , lockDelayVariationMicros = 25000
+    }
 
 {- |
 Identifies a PostgreSQL advisory lock to to be aquired by the application. Use
@@ -79,23 +135,35 @@ orvilleLockScope = 17772
 -}
 withMigrationLock ::
   Monad.MonadOrville m =>
-  MigrationLockId ->
+  MigrationLockOptions ->
   m a ->
   m a
-withMigrationLock lockId action =
+withMigrationLock options action =
   Monad.withConnection_ $
     Bracket.bracketWithResult
-      (accquireTransactionLock lockId)
-      (\() _bracketResult -> releaseTransactionLock lockId)
+      (accquireTransactionLock options)
+      (\() _bracketResult -> releaseTransactionLock options)
       (\() -> action)
 
 accquireTransactionLock ::
   forall m.
   Monad.MonadOrville m =>
-  MigrationLockId ->
+  MigrationLockOptions ->
   m ()
-accquireTransactionLock lockId =
+accquireTransactionLock options =
   let
+    lockId =
+      migrationLockId options
+
+    maxAttempts =
+      maxLockAttempts options
+
+    delayMicros =
+      delayBetweenLockAttemptsMicros options
+
+    delayVariationMicros =
+      lockDelayVariationMicros options
+
     go :: Int -> m ()
     go attempts = do
       locked <- attemptLockAcquisition
@@ -103,11 +171,13 @@ accquireTransactionLock lockId =
         then pure ()
         else do
           MIO.liftIO $ do
-            Monad.when (attempts >= 25) $ do
+            Monad.when (attempts >= maxAttempts) $ do
               throwIO $
                 MigrationLockError
-                  "Giving up after 25 attempts to aquire the migration lock."
-            threadDelay 10000
+                  ("Giving up after " <> show maxAttempts <> " attempts to aquire the migration lock.")
+
+            variation <- Rand.randomRIO (0, delayVariationMicros)
+            threadDelay (delayMicros + variation)
 
           go $ attempts + 1
 
@@ -124,9 +194,9 @@ accquireTransactionLock lockId =
   in
     go 0
 
-releaseTransactionLock :: Monad.MonadOrville m => MigrationLockId -> m ()
+releaseTransactionLock :: Monad.MonadOrville m => MigrationLockOptions -> m ()
 releaseTransactionLock =
-  Exec.executeVoid Exec.OtherQuery . releaseLockExpr
+  Exec.executeVoid Exec.OtherQuery . releaseLockExpr . migrationLockId
 
 lockedMarshaller :: Marshall.AnnotatedSqlMarshaller Bool Bool
 lockedMarshaller =

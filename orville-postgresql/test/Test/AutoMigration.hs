@@ -71,15 +71,23 @@ autoMigrationTests pool =
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
 prop_raisesErrorIfMigrationLockIsLocked =
   Property.singletonNamedDBProperty "Raises an error when the migration lock is hold" $ \pool -> do
+    let
+      testLockOptions =
+        AutoMigration.defaultLockOptions
+          { AutoMigration.maxLockAttempts = 3
+          , AutoMigration.delayBetweenLockAttemptsMicros = 1000
+          , AutoMigration.lockDelayVariationMicros = 0
+          }
+
     errOrSuccess <-
       HH.evalIO $
         Orville.runOrville pool $
-          AutoMigration.withMigrationLock AutoMigration.defaultLockId $
+          AutoMigration.withMigrationLock testLockOptions $
             MIO.liftIO $
               ExSafe.try $
                 Orville.runOrville pool $
                   AutoMigration.withMigrationLock
-                    AutoMigration.defaultLockId
+                    testLockOptions
                     (pure ())
 
     case errOrSuccess of
@@ -103,14 +111,14 @@ prop_releasesMigrationLockOnError =
             Orville.runOrville pool $
               ExSafe.handle (\SimulatedError -> pure ()) $
                 AutoMigration.withMigrationLock
-                  AutoMigration.defaultLockId
+                  AutoMigration.defaultLockOptions
                   (ExSafe.throwM SimulatedError)
 
           -- If the lock is not released by the previous 'withMigrationLock'
           -- this second call will fail to acquire the lock and the test will
           -- fail
           AutoMigration.withMigrationLock
-            AutoMigration.defaultLockId
+            AutoMigration.defaultLockOptions
             (pure ())
 
 data SimulatedError = SimulatedError

@@ -13,7 +13,7 @@ See 'autoMigrateSchema' as a primary, high-level entry point.
 @since 1.0.0.0
 -}
 module Orville.PostgreSQL.AutoMigration
-  ( MigrationOptions (runSchemaChanges, runConcurrentIndexCreations, migrationLockId)
+  ( MigrationOptions (runSchemaChanges, runConcurrentIndexCreations, migrationLockOptions)
   , defaultOptions
   , autoMigrateSchema
   , SchemaItem (..)
@@ -24,6 +24,12 @@ module Orville.PostgreSQL.AutoMigration
   , executeMigrationPlan
   , MigrationStep
   , MigrationDataError
+  , MigrationLock.MigrationLockOptions
+  , MigrationLock.defaultLockOptions
+  , MigrationLock.migrationLockId
+  , MigrationLock.maxLockAttempts
+  , MigrationLock.delayBetweenLockAttemptsMicros
+  , MigrationLock.lockDelayVariationMicros
   , MigrationLock.MigrationLockId
   , MigrationLock.defaultLockId
   , MigrationLock.nextLockId
@@ -336,15 +342,17 @@ data MigrationOptions = MigrationOptions
   --       rest of the schema changes.
   --
   --       @since 1.0.0.0
-  , migrationLockId :: MigrationLock.MigrationLockId
+  , migrationLockOptions :: MigrationLock.MigrationLockOptions
   -- ^
-  --       The 'MigrationLock.MigrationLockId' that will be use to ensure only
+  --       The 'MigrationLock.MigrationLockOptions' that will be used to ensure only
   --       one application is running migrations at a time. The default value
-  --       is 'MigrationLock.defaultLockId'. You may want to change this if you
-  --       want to run concurrent index creations separately from the rest of
-  --       the schema changes without blocking one another.
+  --       is 'MigrationLock.defaultLockOptions'. You may want to change these if you
+  --       your application has special migration needs. For instance, you might specify
+  --       a custom lock id along with migrating just concurrent indexes to allow them
+  --       to run separately from the rest of the schema changes without blocking one
+  --       another.
   --
-  --       @since 1.0.0.0
+  --       @since 1.1.0.0
   }
 
 {- |
@@ -358,7 +366,7 @@ defaultOptions =
   MigrationOptions
     { runSchemaChanges = True
     , runConcurrentIndexCreations = True
-    , migrationLockId = MigrationLock.defaultLockId
+    , migrationLockOptions = MigrationLock.defaultLockOptions
     }
 
 {- |
@@ -380,7 +388,7 @@ autoMigrateSchema ::
   [SchemaItem] ->
   m ()
 autoMigrateSchema options schemaItems =
-  MigrationLock.withMigrationLock (migrationLockId options) $ do
+  MigrationLock.withMigrationLock (migrationLockOptions options) $ do
     plan <- generateMigrationPlanWithoutLock schemaItems
     executeMigrationPlanWithoutLock options plan
 
@@ -405,7 +413,7 @@ generateMigrationPlan ::
   [SchemaItem] ->
   m MigrationPlan
 generateMigrationPlan options =
-  MigrationLock.withMigrationLock (migrationLockId options)
+  MigrationLock.withMigrationLock (migrationLockOptions options)
     . generateMigrationPlanWithoutLock
 
 generateMigrationPlanWithoutLock :: Orville.MonadOrville m => [SchemaItem] -> m MigrationPlan
@@ -459,7 +467,7 @@ executeMigrationPlan ::
   MigrationPlan ->
   m ()
 executeMigrationPlan options =
-  MigrationLock.withMigrationLock (migrationLockId options)
+  MigrationLock.withMigrationLock (migrationLockOptions options)
     . executeMigrationPlanWithoutLock options
 
 executeMigrationPlanWithoutLock ::
