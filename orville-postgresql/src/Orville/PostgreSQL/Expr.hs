@@ -67,6 +67,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Trigger
   , module Orville.PostgreSQL.Expr.Function
   , module Orville.PostgreSQL.Expr.OrReplace
+  , module Orville.PostgreSQL.Expr.ConditionalExpr
   , module Orville.PostgreSQL.Expr.Vacuum
   , module Orville.PostgreSQL.Expr.Extension
   , module Orville.PostgreSQL.Expr.RowLocking
@@ -78,6 +79,7 @@ where
 
 import Orville.PostgreSQL.Expr.BinaryOperator
 import Orville.PostgreSQL.Expr.ColumnDefinition
+import Orville.PostgreSQL.Expr.ConditionalExpr
 import Orville.PostgreSQL.Expr.Count
 import Orville.PostgreSQL.Expr.Cursor
 import Orville.PostgreSQL.Expr.DataType

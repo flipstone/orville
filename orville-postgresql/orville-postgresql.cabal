@@ -111,6 +111,7 @@ library
       Orville.PostgreSQL.Schema.TableIdentifier
       Orville.PostgreSQL.UnliftIO
   other-modules:
+      Orville.PostgreSQL.Expr.ConditionalExpr
       Orville.PostgreSQL.Expr.Extension
       Orville.PostgreSQL.Expr.Function
       Orville.PostgreSQL.Expr.IfNotExists
