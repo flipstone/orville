@@ -42,6 +42,7 @@ import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
 import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
+import Orville.PostgreSQL.Expr.RowLocking (RowLockingClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr, InValuePredicate, WhereClause, inPredicate, notInPredicate)
@@ -336,6 +337,8 @@ tableExpr ::
   Maybe LimitExpr ->
   -- | An optional @OFFSET@ to apply to the result set.
   Maybe OffsetExpr ->
+  -- | An optional locking clause to apply to the result set.
+  Maybe RowLockingClause ->
   TableExpr
 tableExpr
   tableReferenceList
@@ -343,7 +346,8 @@ tableExpr
   maybeGroupByClause
   maybeOrderByClause
   maybeLimitExpr
-  maybeOffsetExpr =
+  maybeOffsetExpr
+  maybeRowLockingClause =
     TableExpr
       . RawSql.intercalate RawSql.space
       $ RawSql.toRawSql tableReferenceList
@@ -353,4 +357,5 @@ tableExpr
           , RawSql.toRawSql <$> maybeOrderByClause
           , RawSql.toRawSql <$> maybeLimitExpr
           , RawSql.toRawSql <$> maybeOffsetExpr
+          , RawSql.toRawSql <$> maybeRowLockingClause
           ]

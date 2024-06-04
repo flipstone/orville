@@ -58,6 +58,7 @@ selectOptionsTests =
     , prop_orderByCombined
     , prop_groupBy
     , prop_groupByCombined
+    , prop_forRowLock
     ]
 
 prop_emptyWhereClause :: Property.NamedProperty
@@ -350,6 +351,13 @@ prop_groupByCombined =
           <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName Nothing barField :| []))
       )
 
+prop_forRowLock :: Property.NamedProperty
+prop_forRowLock =
+  Property.singletonNamedProperty "forRowLock generates expected sql" $
+    assertRowLockingClauseEquals
+      (Just "FOR UPDATE SKIP LOCKED")
+      (O.forRowLock $ Expr.rowLockingClause Expr.updateStrength Nothing (Just Expr.skipLockedRowLockingOption))
+
 assertDistinctEquals :: (HH.MonadTest m, HasCallStack) => String -> O.SelectOptions -> m ()
 assertDistinctEquals mbDistinct selectOptions =
   withFrozenCallStack $
@@ -369,6 +377,11 @@ assertGroupByClauseEquals :: (HH.MonadTest m, HasCallStack) => Maybe String -> O
 assertGroupByClauseEquals mbGroupByClause selectOptions =
   withFrozenCallStack $
     fmap RawSql.toExampleBytes (O.selectGroupByClause selectOptions) HH.=== fmap B8.pack mbGroupByClause
+
+assertRowLockingClauseEquals :: (HH.MonadTest m, HasCallStack) => Maybe String -> O.SelectOptions -> m ()
+assertRowLockingClauseEquals mbRowLockingClause selectOptions =
+  withFrozenCallStack $
+    fmap RawSql.toExampleBytes (O.selectRowLockingClause selectOptions) HH.=== fmap B8.pack mbRowLockingClause
 
 fooField :: FieldDef.FieldDefinition FieldDef.NotNull Int.Int32
 fooField =

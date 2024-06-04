@@ -130,6 +130,7 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Join
       Orville.PostgreSQL.Expr.OrReplace
+      Orville.PostgreSQL.Expr.RowLocking
       Orville.PostgreSQL.Expr.Trigger
       Orville.PostgreSQL.Expr.Vacuum
       Orville.PostgreSQL.Internal.Bracket
