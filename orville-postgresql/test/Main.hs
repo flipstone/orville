@@ -16,6 +16,7 @@ import qualified Test.Connection as Connection
 import qualified Test.Cursor as Cursor
 import qualified Test.EntityOperations as EntityOperations
 import qualified Test.Execution as Execution
+import qualified Test.Expr.ConditionalExpr as ExprConditional
 import qualified Test.Expr.Count as ExprCount
 import qualified Test.Expr.Cursor as ExprCursor
 import qualified Test.Expr.GroupBy as ExprGroupBy
@@ -72,6 +73,7 @@ main = do
       , ExprTrigger.triggerTests pool
       , ExprVacuum.vacuumTests
       , ExprJoin.joinTests
+      , ExprConditional.conditionalTests
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool

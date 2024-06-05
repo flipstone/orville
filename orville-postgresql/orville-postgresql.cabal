@@ -198,6 +198,7 @@ test-suite spec
       Test.Entities.User
       Test.EntityOperations
       Test.Execution
+      Test.Expr.ConditionalExpr
       Test.Expr.Count
       Test.Expr.Cursor
       Test.Expr.GroupBy

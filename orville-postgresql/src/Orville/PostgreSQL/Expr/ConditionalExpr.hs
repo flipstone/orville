@@ -78,6 +78,7 @@ caseExpr ::
 caseExpr whens mbElse =
   RawSql.unsafeFromRawSql $
     RawSql.fromString "CASE"
+      <> RawSql.space
       <> RawSql.intercalate RawSql.space (fmap RawSql.toRawSql whens)
       <> RawSql.space
       <> case mbElse of
@@ -100,8 +101,7 @@ nullIf leftVal rightVal =
     RawSql.fromString "NULLIF"
       <> RawSql.leftParen
       <> RawSql.toRawSql leftVal
-      <> RawSql.comma
-      <> RawSql.space
+      <> RawSql.commaSpace
       <> RawSql.toRawSql rightVal
       <> RawSql.rightParen
 
