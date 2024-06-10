@@ -24,6 +24,8 @@ module Test.PgAssert
   , assertExtensionLoaded
   , assertExtensionNotLoaded
   , ForeignKeyInfo (..)
+  , assertTableHasComment
+  , assertTableDoesNotHaveComment
   )
 where
 
@@ -34,6 +36,7 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
 import qualified Data.String as String
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
@@ -556,3 +559,22 @@ assertExtensionNotLoaded pool extensionName = do
       withFrozenCallStack $ do
         HH.annotate $ extensionName <> " was found but not expected"
         HH.failure
+
+assertTableHasComment ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  T.Text ->
+  m ()
+assertTableHasComment pool tableName expectedComment = do
+  relationDesc <- assertTableExists pool tableName
+  PgCatalog.relationComment relationDesc HH.=== Just expectedComment
+
+assertTableDoesNotHaveComment ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m ()
+assertTableDoesNotHaveComment pool tableName = do
+  relationDesc <- assertTableExists pool tableName
+  PgCatalog.relationComment relationDesc HH.=== Nothing

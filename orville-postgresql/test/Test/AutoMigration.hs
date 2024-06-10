@@ -66,6 +66,9 @@ autoMigrationTests pool =
     , prop_dropsUnrequestedTriggers pool
     , prop_loadsMissingExtensions pool
     , prop_unloadsPresentExtensions pool
+    , prop_addsTableComment pool
+    , prop_removesTableComment pool
+    , prop_modifiesTableComment pool
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -174,6 +177,95 @@ prop_dropsRequestedTables =
 
     length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     PgAssert.assertTableDoesNotExist pool (Orville.tableIdUnqualifiedNameString fooTableId)
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_addsTableComment :: Property.NamedDBProperty
+prop_addsTableComment =
+  Property.singletonNamedDBProperty "Adds a comment to a table" $ \pool -> do
+    let
+      comment = String.fromString "This is a comment"
+
+      fooTableWithComment = Orville.setTableComment comment Foo.table
+
+      fooTableId =
+        Orville.tableIdentifier fooTableWithComment
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql fooTableWithComment
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable fooTableWithComment]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable fooTableWithComment]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 2
+    PgAssert.assertTableHasComment pool (Orville.tableIdUnqualifiedNameString fooTableId) comment
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_removesTableComment :: Property.NamedDBProperty
+prop_removesTableComment =
+  Property.singletonNamedDBProperty "Removes a comment from a table" $ \pool -> do
+    let
+      comment = String.fromString "This is a comment"
+
+      fooTableId =
+        Orville.tableIdentifier Foo.table
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr Foo.table
+          Orville.executeVoid Orville.DDLQuery $ Expr.commentTableExpr (Orville.tableName Foo.table) (Just $ Expr.commentText comment)
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable Foo.table]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable Foo.table]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    PgAssert.assertTableDoesNotHaveComment pool (Orville.tableIdUnqualifiedNameString fooTableId)
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_modifiesTableComment :: Property.NamedDBProperty
+prop_modifiesTableComment =
+  Property.singletonNamedDBProperty "Modifies the comment on a table" $ \pool -> do
+    let
+      oldComment = String.fromString "This is a comment"
+      newComment = String.fromString "This is a new comment"
+
+      fooTableId =
+        Orville.tableIdentifier Foo.table
+
+      fooTableWithNewComment = Orville.setTableComment newComment Foo.table
+
+    HH.evalIO $
+      Orville.runOrville pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
+        Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr Foo.table
+        Orville.executeVoid Orville.DDLQuery $ Expr.commentTableExpr (Orville.tableName Foo.table) (Just $ Expr.commentText oldComment)
+
+    PgAssert.assertTableHasComment pool (Orville.tableIdUnqualifiedNameString fooTableId) oldComment
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable fooTableWithNewComment]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable fooTableWithNewComment]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    PgAssert.assertTableHasComment pool (Orville.tableIdUnqualifiedNameString fooTableId) newComment
     migrationPlanStepStrings secondTimePlan === []
 
 prop_addsAndRemovesColumns :: Property.NamedDBProperty

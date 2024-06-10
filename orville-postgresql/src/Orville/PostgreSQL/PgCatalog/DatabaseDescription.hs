@@ -29,6 +29,7 @@ where
 import Control.Applicative (liftA2)
 #endif
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
@@ -37,6 +38,7 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, AttributeNumber,
 import Orville.PostgreSQL.PgCatalog.PgAttributeDefault (PgAttributeDefault (pgAttributeDefaultAttributeNumber), attributeDefaultRelationOidField, pgAttributeDefaultTable)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationKind, RelationName, namespaceOidField, pgClassRelationKind, pgClassTable, relationNameField, relationNameToString)
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
+import Orville.PostgreSQL.PgCatalog.PgDescription (objOidField, objSubIdField, pgDescriptionDescription, pgDescriptionTable)
 import Orville.PostgreSQL.PgCatalog.PgExtension (ExtensionName, PgExtension, extensionNameField, pgExtensionTable)
 import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
@@ -140,6 +142,7 @@ data RelationDescription = RelationDescription
   -- ^ @ since 1.1.0.0
   , relationSequence :: Maybe PgSequence
   -- ^ @ since 1.0.0.0
+  , relationComment :: Maybe T.Text
   }
 
 {- |
@@ -288,6 +291,7 @@ describeRelationByClass =
           <*> Plan.chain classAndAttributes findClassIndexes
           <*> Plan.using pgClass findClassTriggers
           <*> Plan.using pgClass findClassSequence
+          <*> Plan.using pgClass findClassTableDescription
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
@@ -485,6 +489,12 @@ findClassSequence :: Plan.Plan scope PgClass (Maybe PgSequence)
 findClassSequence =
   Plan.focusParam pgClassOid $
     Plan.findMaybeOne pgSequenceTable sequencePgClassOidField
+
+findClassTableDescription :: Plan.Plan scope PgClass (Maybe T.Text)
+findClassTableDescription =
+  (fmap . fmap) pgDescriptionDescription
+    . Plan.focusParam pgClassOid
+    $ Plan.findMaybeOneWhere pgDescriptionTable objOidField (Orville.fieldEquals objSubIdField 0)
 
 findClassTriggers :: Plan.Plan scope PgClass [PgTrigger]
 findClassTriggers =

@@ -37,6 +37,7 @@ added @SOME NEW ISOLATION LEVEL@ and Orville did not yet support it.
 module Orville.PostgreSQL.Expr
   ( module Orville.PostgreSQL.Expr.BinaryOperator
   , module Orville.PostgreSQL.Expr.ColumnDefinition
+  , module Orville.PostgreSQL.Expr.Comment
   , module Orville.PostgreSQL.Expr.Count
   , module Orville.PostgreSQL.Expr.Cursor
   , module Orville.PostgreSQL.Expr.DataType
@@ -79,6 +80,7 @@ where
 
 import Orville.PostgreSQL.Expr.BinaryOperator
 import Orville.PostgreSQL.Expr.ColumnDefinition
+import Orville.PostgreSQL.Expr.Comment
 import Orville.PostgreSQL.Expr.ConditionalExpr
 import Orville.PostgreSQL.Expr.Count
 import Orville.PostgreSQL.Expr.Cursor

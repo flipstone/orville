@@ -97,6 +97,8 @@ module Orville.PostgreSQL
   , TableDefinition.mkTableDefinition
   , TableDefinition.mkTableDefinitionWithoutKey
   , TableDefinition.setTableSchema
+  , TableDefinition.setTableComment
+  , TableDefinition.tableComment
   , TableDefinition.tableConstraints
   , TableDefinition.addTableConstraints
   , TableDefinition.tableIndexes

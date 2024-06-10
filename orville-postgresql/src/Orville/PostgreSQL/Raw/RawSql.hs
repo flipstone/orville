@@ -32,6 +32,7 @@ module Orville.PostgreSQL.Raw.RawSql
   , stringLiteral
   , identifier
   , parenthesized
+  , nullLiteral
 
     -- * Integer values as literals
   , intDecLiteral
@@ -518,6 +519,14 @@ int64DecLiteral =
 intDecLiteral :: Int -> RawSql
 intDecLiteral =
   SqlSection . BSB.intDec
+
+{- |
+  Constructs a 'RawSql' representing the SQL @NULL@ literal.
+
+@since 1.1.0.0
+-}
+nullLiteral :: RawSql
+nullLiteral = fromString "NULL"
 
 {- |
   Constructs a 'RawSql' by putting parentheses around an arbitrary expression.

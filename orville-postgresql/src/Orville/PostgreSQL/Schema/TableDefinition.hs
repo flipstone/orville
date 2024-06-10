@@ -18,7 +18,9 @@ module Orville.PostgreSQL.Schema.TableDefinition
   , columnsToDrop
   , tableIdentifier
   , tableName
+  , tableComment
   , setTableSchema
+  , setTableComment
   , tableConstraints
   , addTableConstraints
   , tableIndexes
@@ -41,6 +43,7 @@ where
 import Data.List.NonEmpty (NonEmpty, toList)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import qualified Data.Text as T
 
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -77,6 +80,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , i_tableConstraintsFromTable :: TableConstraints
   , i_tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
   , i_tableTriggers :: Map.Map TriggerMigrationKey TriggerDefinition
+  , i_tableComment :: Maybe T.Text
   }
 
 {- |
@@ -133,6 +137,7 @@ mkTableDefinition name primaryKey marshaller =
     , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
     , i_tableTriggers = Map.empty
+    , i_tableComment = Nothing
     }
 
 {- |
@@ -159,6 +164,7 @@ mkTableDefinitionWithoutKey name marshaller =
     , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
     , i_tableTriggers = Map.empty
+    , i_tableComment = Nothing
     }
 
 {- |
@@ -215,6 +221,15 @@ tableName =
   tableIdQualifiedName . i_tableIdentifier
 
 {- |
+  Returns 'Just' the comment of the table, or 'Nothing' if it has not been set.
+
+@since 1.1.0.0
+-}
+tableComment :: TableDefinition key writeEntity readEntity -> Maybe T.Text
+tableComment =
+  i_tableComment
+
+{- |
   Sets the table's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a table has a schema name set, it will be
   included as a qualifier on the table name for all queries involving the
@@ -229,6 +244,20 @@ setTableSchema ::
 setTableSchema schemaName tableDef =
   tableDef
     { i_tableIdentifier = setTableIdSchema schemaName (i_tableIdentifier tableDef)
+    }
+
+{- |
+  Sets the table's comment.
+
+@since 1.1.0.0
+-}
+setTableComment ::
+  T.Text ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+setTableComment comment tableDef =
+  tableDef
+    { i_tableComment = Just comment
     }
 
 {- |

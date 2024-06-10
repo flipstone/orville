@@ -111,6 +111,7 @@ library
       Orville.PostgreSQL.Schema.TableIdentifier
       Orville.PostgreSQL.UnliftIO
   other-modules:
+      Orville.PostgreSQL.Expr.Comment
       Orville.PostgreSQL.Expr.ConditionalExpr
       Orville.PostgreSQL.Expr.Extension
       Orville.PostgreSQL.Expr.Function
@@ -149,6 +150,7 @@ library
       Orville.PostgreSQL.PgCatalog.PgAttributeDefault
       Orville.PostgreSQL.PgCatalog.PgClass
       Orville.PostgreSQL.PgCatalog.PgConstraint
+      Orville.PostgreSQL.PgCatalog.PgDescription
       Orville.PostgreSQL.PgCatalog.PgExtension
       Orville.PostgreSQL.PgCatalog.PgIndex
       Orville.PostgreSQL.PgCatalog.PgNamespace

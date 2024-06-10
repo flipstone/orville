@@ -256,6 +256,7 @@ isMigrationStepTransactional stepWithType =
     AddUniqueConstraints -> True
     AddForeignKeys -> True
     AddIndexesConcurrently -> False
+    SetComments -> True
 
 {- |
   Indicates the kind of operation being performed by a 'MigrationStep' so
@@ -294,6 +295,8 @@ data StepType
     AddForeignKeys
   | -- | @since 1.0.0.0
     AddIndexesConcurrently
+  | -- | @since 1.1.0.0
+    SetComments
   deriving
     ( -- | @since 1.0.0.0
       Eq
@@ -484,8 +487,7 @@ executeMigrationPlanWithoutLock options plan = do
 
   when (runConcurrentIndexCreations options)
     . executeMigrationStepsWithoutTransaction
-    $ i_concurrentIndexSteps
-    $ plan
+    $ i_concurrentIndexSteps plan
 
 executeMigrationStepsWithoutTransaction :: Orville.MonadOrville m => [MigrationStep] -> m ()
 executeMigrationStepsWithoutTransaction =
@@ -657,6 +659,16 @@ mkCreateTableSteps currentNamespace tableDef =
         (Orville.mkTablePrimaryKeyExpr tableDef)
         []
 
+    commentSteps =
+      Maybe.maybeToList $
+        fmap
+          ( mkMigrationStepWithType SetComments
+              . Expr.commentTableExpr tableName
+              . Just
+              . Expr.commentText
+          )
+          (Schema.tableComment tableDef)
+
     addConstraintActions =
       concatMap
         (mkAddConstraintActions currentNamespace Set.empty)
@@ -676,6 +688,7 @@ mkCreateTableSteps currentNamespace tableDef =
       : mkConstraintSteps tableName addConstraintActions
         <> addIndexSteps
         <> addTriggerSteps
+        <> commentSteps
 
 {- |
   Builds migration steps that are required to create or alter the table's
@@ -782,6 +795,8 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
         (mkDropTriggerSteps triggersToKeep tableName)
         (PgCatalog.relationTriggers relationDesc)
 
+    commentSteps = mkCommentSteps relationDesc tableDef
+
     tableName =
       Orville.tableName tableDef
   in
@@ -791,6 +806,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
       <> dropIndexSteps
       <> addTriggerSteps
       <> dropTriggerSteps
+      <> commentSteps
 
 {- |
   Consolidates alter table actions (which should all be related to adding and
@@ -810,7 +826,7 @@ mkConstraintSteps tableName actions =
       (StepType, Expr.AlterTableAction) ->
       (StepType, NonEmpty Expr.AlterTableAction)
     mkMapEntry (keyType, action) =
-      (keyType, (action :| []))
+      (keyType, action :| [])
 
     addStep stepType actionExprs steps =
       mkMigrationStepWithType stepType (Expr.alterTableExpr tableName actionExprs) : steps
@@ -1216,6 +1232,28 @@ mkDropTriggerSteps triggersToKeep tableName pgTrigger =
     if Set.member migrationKey triggersToKeep || PgCatalog.pgTriggerIsInternal pgTrigger
       then []
       else [mkMigrationStepWithType DropTriggers (Expr.dropTrigger Nothing triggerName tableName)]
+
+mkCommentSteps ::
+  PgCatalog.RelationDescription ->
+  Orville.TableDefinition key writeEntity readEntity ->
+  [MigrationStepWithType]
+mkCommentSteps relationDesc tableDef =
+  let
+    tableName = Orville.tableName tableDef
+
+    commentTableStep =
+      if PgCatalog.relationComment relationDesc == Schema.tableComment tableDef
+        then []
+        else
+          [ mkMigrationStepWithType
+              SetComments
+              ( Expr.commentTableExpr
+                  tableName
+                  (fmap Expr.commentText (Schema.tableComment tableDef))
+              )
+          ]
+  in
+    commentTableStep
 
 {- |
   Primary Key, Unique, and Exclusion constraints automatically create indexes
