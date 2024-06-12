@@ -19,6 +19,7 @@ module Orville.PostgreSQL.Raw.RawSql
   , execute
   , executeVoid
   , connectionQuoting
+  , appendWithCommaSpace
 
     -- * Fragments provided for convenience
   , space
@@ -84,6 +85,7 @@ data RawSql
   | StringLiteral BS.ByteString
   | Identifier BS.ByteString
   | Append RawSql RawSql
+  | Empty
 
 instance Semigroup RawSql where
   (SqlSection builderA) <> (SqlSection builderB) =
@@ -92,7 +94,19 @@ instance Semigroup RawSql where
     Append otherA otherB
 
 instance Monoid RawSql where
-  mempty = SqlSection mempty
+  mempty = Empty
+
+{- |
+  Append two 'RawSql' values together with 'commaSpace' in between, unless
+  either of the values are empty.
+
+@since 1.1.0.0
+-}
+appendWithCommaSpace :: RawSql -> RawSql -> RawSql
+appendWithCommaSpace a b = case (a, b) of
+  (Empty, x) -> x
+  (x, Empty) -> x
+  (x, y) -> x <> commaSpace <> y
 
 {- |
  'SqlExpression' provides a common interface for converting types to and from
@@ -308,6 +322,8 @@ buildSqlWithProgress quoting progress rawSql =
       (firstBuilder, nextProgress) <- buildSqlWithProgress quoting progress first
       (secondBuilder, finalProgress) <- buildSqlWithProgress quoting nextProgress second
       pure (firstBuilder <> secondBuilder, finalProgress)
+    Empty ->
+      pure (mempty, progress)
 
 {- |
   Constructs a 'RawSql' from a 'String' value using UTF-8 encoding.

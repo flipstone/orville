@@ -37,6 +37,15 @@ newtype FromItemExpr
   = FromItemExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
+-- | @since 1.1.0.0
+instance Semigroup FromItemExpr where
+  FromItemExpr a <> FromItemExpr b =
+    FromItemExpr $ RawSql.appendWithCommaSpace a b
+
+-- | @since 1.1.0.0
+instance Monoid FromItemExpr where
+  mempty = FromItemExpr mempty
+
 {- |
   Constructs a 'FromItemExpr' consisting of just the specified table
   name.
