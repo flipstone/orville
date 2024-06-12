@@ -90,6 +90,8 @@ data RawSql
 instance Semigroup RawSql where
   (SqlSection builderA) <> (SqlSection builderB) =
     SqlSection (builderA <> builderB)
+  Empty <> otherB = otherB
+  otherA <> Empty = otherA
   otherA <> otherB =
     Append otherA otherB
 
