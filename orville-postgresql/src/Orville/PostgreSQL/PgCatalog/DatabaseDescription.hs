@@ -129,20 +129,21 @@ lookupRelationOfKind kind key dbDesc =
 -}
 data RelationDescription = RelationDescription
   { relationRecord :: PgClass
-  -- ^ @ since 1.0.0.0
+  -- ^ @since 1.0.0.0
   , relationAttributes :: Map.Map AttributeName PgAttribute
-  -- ^ @ since 1.0.0.0
+  -- ^ @since 1.0.0.0
   , relationAttributeDefaults :: Map.Map AttributeNumber PgAttributeDefault
-  -- ^ @ since 1.0.0.0
+  -- ^ @since 1.0.0.0
   , relationConstraints :: [ConstraintDescription]
-  -- ^ @ since 1.0.0.0
+  -- ^ @since 1.0.0.0
   , relationIndexes :: [IndexDescription]
-  -- ^ @ since 1.0.0.0
+  -- ^ @since 1.0.0.0
   , relationTriggers :: [PgTrigger]
-  -- ^ @ since 1.1.0.0
+  -- ^ @since 1.1.0.0
   , relationSequence :: Maybe PgSequence
-  -- ^ @ since 1.0.0.0
+  -- ^ @since 1.0.0.0
   , relationComment :: Maybe T.Text
+  -- ^ @since 1.1.0.0
   }
 
 {- |
@@ -291,7 +292,7 @@ describeRelationByClass =
           <*> Plan.chain classAndAttributes findClassIndexes
           <*> Plan.using pgClass findClassTriggers
           <*> Plan.using pgClass findClassSequence
-          <*> Plan.using pgClass findClassTableDescription
+          <*> Plan.using pgClass findClassDescription
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
@@ -490,8 +491,9 @@ findClassSequence =
   Plan.focusParam pgClassOid $
     Plan.findMaybeOne pgSequenceTable sequencePgClassOidField
 
-findClassTableDescription :: Plan.Plan scope PgClass (Maybe T.Text)
-findClassTableDescription =
+-- Find the description set by a @COMMENT@ statement in the @pg_description@ table.
+findClassDescription :: Plan.Plan scope PgClass (Maybe T.Text)
+findClassDescription =
   (fmap . fmap) pgDescriptionDescription
     . Plan.focusParam pgClassOid
     $ Plan.findMaybeOneWhere pgDescriptionTable objOidField (Orville.fieldEquals objSubIdField 0)
