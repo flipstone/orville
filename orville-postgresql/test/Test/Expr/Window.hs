@@ -4,7 +4,6 @@ module Test.Expr.Window
 where
 
 import qualified Data.ByteString.Char8 as B8
-import qualified Data.List.NonEmpty as NE
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Hedgehog as HH
 
@@ -36,7 +35,7 @@ prop_windowClauseSingleDef =
       . assertWindowEquals
         "WINDOW \"a\" AS (PARTITION BY $1 ORDER BY \"bar\" ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING EXCLUDE TIES)"
       . Expr.windowClause
-      $ pure (windowDefName, windowDef)
+      $ Expr.namedWindowDefinition windowDefName windowDef
 
 prop_windowClauseMultiDef :: Property.NamedProperty
 prop_windowClauseMultiDef =
@@ -52,7 +51,8 @@ prop_windowClauseMultiDef =
     Property.singletonNamedProperty "window clause with two window definitions, where the second \"copies\" the first,  generates expected sql."
       . assertWindowEquals
         "WINDOW \"a\" AS (PARTITION BY $1), \"b\" AS (\"a\" ORDER BY \"bar\" ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING EXCLUDE TIES)"
-      $ Expr.windowClause ((windowDef1Name, windowDef1) NE.:| pure (windowDef2Name, windowDef2))
+      . Expr.windowClause
+      $ Expr.namedWindowDefinition windowDef1Name windowDef1 <> Expr.namedWindowDefinition windowDef2Name windowDef2
 
 assertWindowEquals :: (HH.MonadTest m, HasCallStack) => String -> Expr.WindowClause -> m ()
 assertWindowEquals windowClauseStr windowClause =

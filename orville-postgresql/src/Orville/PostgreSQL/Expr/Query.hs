@@ -46,6 +46,7 @@ import Orville.PostgreSQL.Expr.RowLocking (RowLockingClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr, InValuePredicate, WhereClause, inPredicate, notInPredicate)
+import Orville.PostgreSQL.Expr.Window (WindowClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
@@ -339,6 +340,8 @@ tableExpr ::
   Maybe OffsetExpr ->
   -- | An optional locking clause to apply to the result set.
   Maybe RowLockingClause ->
+  -- | An optional @WINDOW@ clause to apply to the result set.
+  Maybe WindowClause ->
   TableExpr
 tableExpr
   tableReferenceList
@@ -347,13 +350,15 @@ tableExpr
   maybeOrderByClause
   maybeLimitExpr
   maybeOffsetExpr
-  maybeRowLockingClause =
+  maybeRowLockingClause
+  maybeWindowClause =
     TableExpr
       . RawSql.intercalate RawSql.space
       $ RawSql.toRawSql tableReferenceList
         : catMaybes
           [ RawSql.toRawSql <$> maybeWhereClause
           , RawSql.toRawSql <$> maybeGroupByClause
+          , RawSql.toRawSql <$> maybeWindowClause
           , RawSql.toRawSql <$> maybeOrderByClause
           , RawSql.toRawSql <$> maybeLimitExpr
           , RawSql.toRawSql <$> maybeOffsetExpr

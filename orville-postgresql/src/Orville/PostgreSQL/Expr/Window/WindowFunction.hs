@@ -12,7 +12,6 @@ module Orville.PostgreSQL.Expr.Window.WindowFunction
   , rank
   , denseRank
   , percentRank
-  , WindowFunctionExpr
   , windowFunction
   )
 where
@@ -28,7 +27,7 @@ The @row_number@ window function
 
 @since 1.1.0.0
 -}
-rowNumber :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> WindowFunctionExpr
+rowNumber :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 rowNumber = windowFunction (functionName "row_number") []
 
 {- |
@@ -36,7 +35,7 @@ The @rank@ window function
 
 @since 1.1.0.0
 -}
-rank :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> WindowFunctionExpr
+rank :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 rank = windowFunction (functionName "rank") []
 
 {- |
@@ -44,7 +43,7 @@ The @dense_rank@ window function
 
 @since 1.1.0.0
 -}
-denseRank :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> WindowFunctionExpr
+denseRank :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 denseRank = windowFunction (functionName "dense_rank") []
 
 {- |
@@ -52,31 +51,15 @@ The @percent_rank@ window function
 
 @since 1.1.0.0
 -}
-percentRank :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> WindowFunctionExpr
+percentRank :: Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 percentRank = windowFunction (functionName "percent_rank") []
 
-{- |
-Type to represent a SQL window expression (the part that follows the @WINDOW@ in SQL). E.G.
-
-> foo, bar
-
-'WindowFunctionExpr' provides a 'RawSql.SqlExpression' instance. See
-'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
+{- | Build a 'ValueExpression' that represents a window function call. It is up to the caller to
+ensure this makes sense as windowing functions are not allowed in all places.
 
 @since 1.1.0.0
 -}
-newtype WindowFunctionExpr = WindowFunctionExpr RawSql.RawSql
-  deriving
-    ( -- | @since 1.1.0.0
-      RawSql.SqlExpression
-    )
-
-{- |
-Build a 'WindowFunctionExpr'.
-
-@since 1.1.0.0
--}
-windowFunction :: FunctionName -> [ValueExpression.ValueExpression] -> Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> WindowFunctionExpr
+windowFunction :: FunctionName -> [ValueExpression.ValueExpression] -> Maybe WhereClause.WhereClause -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 windowFunction function parameters mbWhereClause windowDef =
   let
     filtering =
@@ -86,7 +69,7 @@ windowFunction function parameters mbWhereClause windowDef =
           RawSql.fromString "FILTER"
             <> RawSql.parenthesized (RawSql.toRawSql whereClause)
   in
-    WindowFunctionExpr $
+    RawSql.unsafeFromRawSql $
       RawSql.toRawSql (ValueExpression.functionCall function parameters)
         <> RawSql.space
         <> filtering
