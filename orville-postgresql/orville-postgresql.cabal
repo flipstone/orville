@@ -130,11 +130,16 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.SequenceName
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
+      Orville.PostgreSQL.Expr.Internal.Name.WindowName
       Orville.PostgreSQL.Expr.Join
       Orville.PostgreSQL.Expr.OrReplace
       Orville.PostgreSQL.Expr.RowLocking
       Orville.PostgreSQL.Expr.Trigger
       Orville.PostgreSQL.Expr.Vacuum
+      Orville.PostgreSQL.Expr.Window
+      Orville.PostgreSQL.Expr.Window.WindowClause
+      Orville.PostgreSQL.Expr.Window.WindowDefinitionExpr
+      Orville.PostgreSQL.Expr.Window.WindowFunction
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
@@ -217,6 +222,7 @@ test-suite spec
       Test.Expr.Trigger
       Test.Expr.Vacuum
       Test.Expr.Where
+      Test.Expr.Window
       Test.FieldDefinition
       Test.MarshallError
       Test.PgAssert

@@ -32,6 +32,7 @@ import qualified Test.Expr.Time as ExprTime
 import qualified Test.Expr.Trigger as ExprTrigger
 import qualified Test.Expr.Vacuum as ExprVacuum
 import qualified Test.Expr.Where as ExprWhere
+import qualified Test.Expr.Window as ExprWindow
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.MarshallError as MarshallError
 import qualified Test.PgCatalog as PgCatalog
@@ -76,6 +77,7 @@ main = do
       , ExprJoin.joinTests
       , ExprFromItem.fromItemExprTests
       , ExprConditional.conditionalTests
+      , ExprWindow.windowTests
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool

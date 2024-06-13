@@ -16,6 +16,7 @@ module Orville.PostgreSQL.Execution.SelectOptions
   , selectLimitExpr
   , selectOffsetExpr
   , selectRowLockingClause
+  , selectWindowClause
   , distinct
   , where_
   , orderBy
@@ -23,6 +24,7 @@ module Orville.PostgreSQL.Execution.SelectOptions
   , offset
   , groupBy
   , forRowLock
+  , window
   , selectOptionsQueryExpr
   )
 where
@@ -47,6 +49,7 @@ data SelectOptions = SelectOptions
   , i_offsetExpr :: First Expr.OffsetExpr
   , i_groupByExpr :: Maybe Expr.GroupByExpr
   , i_rowLockingClause :: First Expr.RowLockingClause
+  , i_windowExpr :: Maybe Expr.NamedWindowDefinitionExpr
   }
 
 -- | @since 1.0.0.0
@@ -72,6 +75,7 @@ emptySelectOptions =
     , i_offsetExpr = mempty
     , i_groupByExpr = mempty
     , i_rowLockingClause = mempty
+    , i_windowExpr = Nothing
     }
 
 {- |
@@ -91,6 +95,7 @@ appendSelectOptions left right =
     (i_offsetExpr left <> i_offsetExpr right)
     (i_groupByExpr left <> i_groupByExpr right)
     (i_rowLockingClause left <> i_rowLockingClause right)
+    (i_windowExpr left <> i_windowExpr right)
 
 unionMaybeWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 unionMaybeWith f mbLeft mbRight =
@@ -186,6 +191,15 @@ selectRowLockingClause =
   getFirst . i_rowLockingClause
 
 {- |
+  Builds an 'Expr.WindowClause' that will apply the windowing rules specified in the 'SelectOptions' (if any).
+
+@since 1.1.0.0
+-}
+selectWindowClause :: SelectOptions -> Maybe Expr.WindowClause
+selectWindowClause =
+  fmap Expr.windowClause . i_windowExpr
+
+{- |
   Constructs a 'SelectOptions' with just the given 'Expr.BooleanExpr'.
 
 @since 1.0.0.0
@@ -252,6 +266,17 @@ forRowLock rowLockingClause =
     }
 
 {- |
+  Constructs a 'SelectOptions' with just the given 'Expr.NamedWindowDefinitionExpr'.
+
+@since 1.1.0.0
+-}
+window :: Expr.NamedWindowDefinitionExpr -> SelectOptions
+window namedWindow =
+  emptySelectOptions
+    { i_windowExpr = Just namedWindow
+    }
+
+{- |
   Builds a 'Expr.QueryExpr' that will use the specified 'Expr.SelectList' when
   building the @SELECT@ statement to execute. It is up to the caller to make
   sure that the 'Expr.SelectList' expression makes sense for the table being
@@ -286,4 +311,5 @@ selectOptionsQueryExpr selectList tableReferenceList selectOptions =
           (selectLimitExpr selectOptions)
           (selectOffsetExpr selectOptions)
           (selectRowLockingClause selectOptions)
+          (selectWindowClause selectOptions)
     )

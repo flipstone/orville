@@ -69,6 +69,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Function
   , module Orville.PostgreSQL.Expr.OrReplace
   , module Orville.PostgreSQL.Expr.ConditionalExpr
+  , module Orville.PostgreSQL.Expr.Window
   , module Orville.PostgreSQL.Expr.Vacuum
   , module Orville.PostgreSQL.Expr.Extension
   , module Orville.PostgreSQL.Expr.RowLocking
@@ -115,3 +116,4 @@ import Orville.PostgreSQL.Expr.Update
 import Orville.PostgreSQL.Expr.Vacuum
 import Orville.PostgreSQL.Expr.ValueExpression
 import Orville.PostgreSQL.Expr.WhereClause
+import Orville.PostgreSQL.Expr.Window

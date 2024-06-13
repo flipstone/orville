@@ -26,3 +26,4 @@ import Orville.PostgreSQL.Expr.Internal.Name.SchemaName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.SequenceName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.TableName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.TriggerName as Export
+import Orville.PostgreSQL.Expr.Internal.Name.WindowName as Export

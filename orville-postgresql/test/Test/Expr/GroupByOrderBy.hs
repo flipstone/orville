@@ -87,7 +87,7 @@ groupByOrderByTest testName test =
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectColumns [fooColumn, barColumn])
-            (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing (groupByClause test) (orderByClause test) Nothing Nothing Nothing)
+            (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing (groupByClause test) (orderByClause test) Nothing Nothing Nothing Nothing)
 
       Execution.readRows result
 
