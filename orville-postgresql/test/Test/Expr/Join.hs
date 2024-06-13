@@ -15,9 +15,8 @@ import qualified Test.Property as Property
 joinTests :: Property.Group
 joinTests =
   Property.group
-    "Expr - Join"
+    "Expr - Join and FromItemExpr"
     [ prop_leftJoinOnTrue
-    , prop_appendJoin
     ]
 
 prop_leftJoinOnTrue :: Property.NamedProperty
@@ -27,24 +26,10 @@ prop_leftJoinOnTrue =
       "LEFT JOIN \"foo\" ON TRUE"
     $ Expr.joinExpr Expr.leftJoinType fooFromItem joinOnTrue
 
-prop_appendJoin :: Property.NamedProperty
-prop_appendJoin =
-  Property.singletonNamedProperty "appending a single joinExpr with left join lateral and trivial on clause to another FromItemExpr generates expected sql"
-    $ assertFromItemEquals
-      "\"bar\" LEFT JOIN LATERAL \"foo\" ON TRUE"
-      . Expr.appendJoinFromItem barFromItem
-      . pure
-    $ Expr.joinExpr Expr.leftLateralJoinType fooFromItem joinOnTrue
-
 assertJoinEquals :: (HH.MonadTest m, HasCallStack) => String -> Expr.JoinExpr -> m ()
 assertJoinEquals mbJoinStr joinExpr =
   withFrozenCallStack $
     RawSql.toExampleBytes joinExpr HH.=== B8.pack mbJoinStr
-
-assertFromItemEquals :: (HH.MonadTest m, HasCallStack) => String -> Expr.FromItemExpr -> m ()
-assertFromItemEquals mbFromItemStr fromItemExpr =
-  withFrozenCallStack $
-    RawSql.toExampleBytes fromItemExpr HH.=== B8.pack mbFromItemStr
 
 joinOnTrue :: Expr.JoinConstraint
 joinOnTrue =
@@ -52,6 +37,3 @@ joinOnTrue =
 
 fooFromItem :: Expr.FromItemExpr
 fooFromItem = Expr.tableFromItem . Expr.qualifyTable Nothing $ Expr.tableName "foo"
-
-barFromItem :: Expr.FromItemExpr
-barFromItem = Expr.tableFromItem . Expr.qualifyTable Nothing $ Expr.tableName "bar"

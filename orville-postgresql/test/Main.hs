@@ -19,6 +19,7 @@ import qualified Test.Execution as Execution
 import qualified Test.Expr.ConditionalExpr as ExprConditional
 import qualified Test.Expr.Count as ExprCount
 import qualified Test.Expr.Cursor as ExprCursor
+import qualified Test.Expr.FromItemExpr as ExprFromItem
 import qualified Test.Expr.GroupBy as ExprGroupBy
 import qualified Test.Expr.GroupByOrderBy as ExprGroupByOrderBy
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
@@ -73,6 +74,7 @@ main = do
       , ExprTrigger.triggerTests pool
       , ExprVacuum.vacuumTests
       , ExprJoin.joinTests
+      , ExprFromItem.fromItemExprTests
       , ExprConditional.conditionalTests
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests

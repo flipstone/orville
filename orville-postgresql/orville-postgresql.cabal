@@ -203,6 +203,7 @@ test-suite spec
       Test.Expr.ConditionalExpr
       Test.Expr.Count
       Test.Expr.Cursor
+      Test.Expr.FromItemExpr
       Test.Expr.GroupBy
       Test.Expr.GroupByOrderBy
       Test.Expr.InsertUpdateDelete
