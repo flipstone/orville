@@ -12,12 +12,13 @@ module Orville.PostgreSQL.Expr.Comment
   , commentText
   , CommentExpr
   , commentTableExpr
+  , commentColumnExpr
   ) where
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TEnc
 
-import Orville.PostgreSQL.Expr.Name (Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, SchemaName, TableName, qualifyColumn)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -56,6 +57,22 @@ commentTableExpr tableName mbComment =
       RawSql.space
       [ RawSql.fromString "COMMENT ON TABLE"
       , RawSql.toRawSql tableName
+      , RawSql.fromString "IS"
+      , maybe RawSql.nullLiteral RawSql.toRawSql mbComment
+      ]
+
+{- |
+Construct a 'CommentExpr' for a @COMMENT ON COLUMN@ statement.
+
+@since 1.1.0.0
+-}
+commentColumnExpr :: Maybe SchemaName -> TableName -> ColumnName -> Maybe Comment -> CommentExpr
+commentColumnExpr mbSchema tableName colName mbComment =
+  CommentExpr $
+    RawSql.intercalate
+      RawSql.space
+      [ RawSql.fromString "COMMENT ON COLUMN"
+      , RawSql.toRawSql $ qualifyColumn mbSchema tableName colName
       , RawSql.fromString "IS"
       , maybe RawSql.nullLiteral RawSql.toRawSql mbComment
       ]

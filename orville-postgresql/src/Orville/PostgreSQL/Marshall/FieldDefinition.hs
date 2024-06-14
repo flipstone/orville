@@ -180,8 +180,8 @@ fieldDescription :: FieldDefinition nullability a -> Maybe String
 fieldDescription = i_fieldDescription
 
 {- |
-  Sets the description for the field. This description is not currently used
-  anywhere by Orville itself, but users can retrieve the description via
+  Sets the description for the field. This description will be used to add
+  a comment to the column, and users can retrieve the description via
   'fieldDescription' for their own purposes (e.g. generating documentation).
 
 @since 1.0.0.0

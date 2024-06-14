@@ -659,15 +659,7 @@ mkCreateTableSteps currentNamespace tableDef =
         (Orville.mkTablePrimaryKeyExpr tableDef)
         []
 
-    commentSteps =
-      Maybe.maybeToList $
-        fmap
-          ( mkMigrationStepWithType SetComments
-              . Expr.commentTableExpr tableName
-              . Just
-              . Expr.commentText
-          )
-          (Schema.tableComment tableDef)
+    commentSteps = mkCreateTableCommentSteps tableDef
 
     addConstraintActions =
       concatMap
@@ -689,6 +681,49 @@ mkCreateTableSteps currentNamespace tableDef =
         <> addIndexSteps
         <> addTriggerSteps
         <> commentSteps
+
+mkCreateTableCommentSteps ::
+  Orville.TableDefinition key writeEntity readEntity ->
+  [MigrationStepWithType]
+mkCreateTableCommentSteps tableDef =
+  let
+    mbCommentTableStep =
+      fmap
+        ( mkMigrationStepWithType SetComments
+            . Expr.commentTableExpr (Schema.tableName tableDef)
+            . Just
+            . Expr.commentText
+        )
+        (Schema.tableComment tableDef)
+
+    tableId = Orville.tableIdentifier tableDef
+
+    mbCommentColumnStep colName =
+      fmap
+        ( mkMigrationStepWithType SetComments
+            . Expr.commentColumnExpr
+              (Schema.tableIdSchemaName tableId)
+              (Schema.tableIdUnqualifiedName tableId)
+              colName
+            . Just
+            . Expr.commentText
+            . T.pack
+        )
+
+    mbCommentColumnsSteps =
+      Orville.foldMarshallerFields
+        (Orville.unannotatedSqlMarshaller $ Schema.tableMarshaller tableDef)
+        []
+        ( Orville.collectFromField
+            Orville.IncludeReadOnlyColumns
+            ( const $ \fieldDef ->
+                mbCommentColumnStep
+                  (Orville.fieldNameToColumnName $ Orville.fieldName fieldDef)
+                  (Orville.fieldDescription fieldDef)
+            )
+        )
+  in
+    Maybe.catMaybes (mbCommentTableStep : mbCommentColumnsSteps)
 
 {- |
   Builds migration steps that are required to create or alter the table's
@@ -1252,8 +1287,47 @@ mkCommentSteps relationDesc tableDef =
                   (fmap Expr.commentText (Schema.tableComment tableDef))
               )
           ]
+
+    commentColumnsSteps =
+      Maybe.catMaybes $
+        Orville.foldMarshallerFields
+          (Orville.unannotatedSqlMarshaller $ Orville.tableMarshaller tableDef)
+          []
+          ( Orville.collectFromField
+              Orville.IncludeReadOnlyColumns
+              (const . mkCommentColumnStep relationDesc $ Orville.tableIdentifier tableDef)
+          )
   in
-    commentTableStep
+    commentTableStep <> commentColumnsSteps
+
+mkCommentColumnStep ::
+  PgCatalog.RelationDescription ->
+  Schema.TableIdentifier ->
+  Orville.FieldDefinition n a ->
+  Maybe MigrationStepWithType
+mkCommentColumnStep relationDesc tableId fieldDef =
+  let
+    fieldAttributeName =
+      String.fromString (Orville.fieldNameToString $ Orville.fieldName fieldDef)
+
+    currentFieldComment =
+      PgCatalog.lookupAttributeComment fieldAttributeName relationDesc
+
+    targetFieldComment =
+      fmap T.pack (Orville.fieldDescription fieldDef)
+  in
+    if currentFieldComment == targetFieldComment
+      then Nothing
+      else
+        Just $
+          mkMigrationStepWithType
+            SetComments
+            ( Expr.commentColumnExpr
+                (Schema.tableIdSchemaName tableId)
+                (Schema.tableIdUnqualifiedName tableId)
+                (Orville.fieldNameToColumnName $ Orville.fieldName fieldDef)
+                (fmap Expr.commentText targetFieldComment)
+            )
 
 {- |
   Primary Key, Unique, and Exclusion constraints automatically create indexes
@@ -1310,7 +1384,7 @@ pgIndexMigrationKeys indexDesc =
         Nothing ->
           []
   in
-    [mkNamedIndexKey] ++ mkAttributeBasedIndexKey
+    mkNamedIndexKey : mkAttributeBasedIndexKey
 
 pgAttributeBasedIndexMigrationKey ::
   PgCatalog.IndexDescription ->

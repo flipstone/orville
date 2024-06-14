@@ -69,6 +69,8 @@ autoMigrationTests pool =
     , prop_addsTableComment pool
     , prop_removesTableComment pool
     , prop_modifiesTableComment pool
+    , prop_addsColumnCommmentsOnCreateTable pool
+    , prop_modifiesColumnComments pool
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -268,9 +270,65 @@ prop_modifiesTableComment =
     PgAssert.assertTableHasComment pool (Orville.tableIdUnqualifiedNameString fooTableId) newComment
     migrationPlanStepStrings secondTimePlan === []
 
+prop_addsColumnCommmentsOnCreateTable :: Property.NamedDBProperty
+prop_addsColumnCommmentsOnCreateTable =
+  Property.singletonNamedDBProperty "Adds column comments when creating table" $ \pool -> do
+    let
+      columnsAndComments = [("foo", Just "foo comment"), ("bar", Nothing), ("baz", Just "baz comment")]
+      tableName = "migration_test"
+      tableDef = mkIntListTableWithComments tableName columnsAndComments
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableDef
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableDef]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableDef]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 3
+    PgAssert.assertTableColumnsHaveOrDoNotHaveComments pool tableName columnsAndComments
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_modifiesColumnComments :: Property.NamedDBProperty
+prop_modifiesColumnComments =
+  Property.singletonNamedDBProperty "Modifies column comments" $ \pool -> do
+    let
+      initialColumnsAndComments = [("foo", Just "foo comment"), ("bar", Nothing), ("baz", Nothing)]
+      finalColumnsAndComments = [("foo", Nothing), ("bar", Just "bar comment"), ("baz", Just "baz comment")]
+      tableName = "migration_test"
+      initialTableDef = mkIntListTableWithComments tableName initialColumnsAndComments
+      finalTableDef = mkIntListTableWithComments tableName finalColumnsAndComments
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql initialTableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr initialTableDef
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable initialTableDef]
+
+    MIO.liftIO . Orville.runOrville pool $
+      AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+    PgAssert.assertTableColumnsHaveOrDoNotHaveComments pool tableName initialColumnsAndComments
+
+    secondTimePlan <-
+      HH.evalIO . Orville.runOrville pool $
+        AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable finalTableDef]
+
+    MIO.liftIO . Orville.runOrville pool $
+      AutoMigration.executeMigrationPlan AutoMigration.defaultOptions secondTimePlan
+    PgAssert.assertTableColumnsHaveOrDoNotHaveComments pool tableName finalColumnsAndComments
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    length (AutoMigration.migrationPlanSteps secondTimePlan) === 3
+
 prop_addsAndRemovesColumns :: Property.NamedDBProperty
 prop_addsAndRemovesColumns =
-  Property.namedDBProperty "Adds and removes columns columns" $ \pool -> do
+  Property.namedDBProperty "Adds and removes columns" $ \pool -> do
     let
       genColumnList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -1265,8 +1323,8 @@ assertTableStructure pool testTable = do
     (testTableUniqueConstraints testTable)
 
   Fold.traverse_
-    (PgAssert.assertForeignKeyConstraintExists tableDesc)
-    (map mkForeignKeyInfo . testTableForeignKeys $ testTable)
+    (PgAssert.assertForeignKeyConstraintExists tableDesc . mkForeignKeyInfo)
+    (testTableForeignKeys testTable)
 
 mkForeignKeyInfo :: TestForeignKey -> PgAssert.ForeignKeyInfo
 mkForeignKeyInfo testForeignKey =
@@ -1351,9 +1409,8 @@ generateTestTable = do
 
   tableName <- PgGen.pgIdentifierWithPrefix "t_" 1
 
-  TestTable tableName
-    <$> pure columns
-    <*> Gen.subsequence columns
+  TestTable tableName columns
+    <$> Gen.subsequence columns
     <*> generateTestIndexes columns tableName
     <*> generateTestUniqueConstraints columns
     <*> pure [] -- No foreign keys can be generated until we've generate test tables
@@ -1526,14 +1583,23 @@ generateTestTableColumns =
   List.nub <$> Gen.list (Range.constant 0 10) PgGen.pgIdentifier
 
 mkIntListTable :: String -> [String] -> Orville.TableDefinition Orville.NoKey [Int32] [Int32]
-mkIntListTable tableName columns =
-  Orville.mkTableDefinitionWithoutKey tableName (intColumnsMarshaller columns)
+mkIntListTable tableName =
+  mkIntListTableWithComments tableName . fmap (\c -> (c, Nothing))
+
+mkIntListTableWithComments :: String -> [(String, Maybe String)] -> Orville.TableDefinition Orville.NoKey [Int32] [Int32]
+mkIntListTableWithComments tableName columnsAndComments =
+  Orville.mkTableDefinitionWithoutKey tableName (intColumnsMarshallerWithComments columnsAndComments)
 
 intColumnsMarshaller :: [String] -> Orville.SqlMarshaller [Int32] [Int32]
-intColumnsMarshaller columns =
+intColumnsMarshaller = intColumnsMarshallerWithComments . fmap (\c -> (c, Nothing))
+
+intColumnsMarshallerWithComments :: [(String, Maybe String)] -> Orville.SqlMarshaller [Int32] [Int32]
+intColumnsMarshallerWithComments columns =
   let
-    field (idx, column) =
-      Orville.marshallField (!! idx) $ Orville.integerField column
+    field (idx, (column, mbComment)) =
+      Orville.marshallField (!! idx)
+        . maybe id Orville.setFieldDescription mbComment
+        $ Orville.integerField column
   in
     traverse field (zip [0 ..] columns)
 

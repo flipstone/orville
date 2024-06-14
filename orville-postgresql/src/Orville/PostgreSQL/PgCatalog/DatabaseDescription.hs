@@ -18,6 +18,7 @@ module Orville.PostgreSQL.PgCatalog.DatabaseDescription
   , lookupRelationOfKind
   , lookupAttribute
   , lookupAttributeDefault
+  , lookupAttributeComment
   , lookupProcedure
   , lookupExtension
   , describeDatabase
@@ -38,7 +39,7 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeName, AttributeNumber,
 import Orville.PostgreSQL.PgCatalog.PgAttributeDefault (PgAttributeDefault (pgAttributeDefaultAttributeNumber), attributeDefaultRelationOidField, pgAttributeDefaultTable)
 import Orville.PostgreSQL.PgCatalog.PgClass (PgClass (pgClassNamespaceOid, pgClassOid, pgClassRelationName), RelationKind, RelationName, namespaceOidField, pgClassRelationKind, pgClassTable, relationNameField, relationNameToString)
 import Orville.PostgreSQL.PgCatalog.PgConstraint (PgConstraint (pgConstraintForeignKey, pgConstraintForeignRelationOid, pgConstraintKey), constraintRelationOidField, pgConstraintTable)
-import Orville.PostgreSQL.PgCatalog.PgDescription (objOidField, objSubIdField, pgDescriptionDescription, pgDescriptionTable)
+import Orville.PostgreSQL.PgCatalog.PgDescription (ObjectSubId, PgDescription (pgDescriptionObjSubId), objOidField, objectSubIdFromAttributeNumber, objectSubIdZero, pgDescriptionDescription, pgDescriptionTable)
 import Orville.PostgreSQL.PgCatalog.PgExtension (ExtensionName, PgExtension, extensionNameField, pgExtensionTable)
 import Orville.PostgreSQL.PgCatalog.PgIndex (PgIndex (pgIndexAttributeNumbers, pgIndexPgClassOid), indexIsLiveField, indexRelationOidField, pgIndexTable)
 import Orville.PostgreSQL.PgCatalog.PgNamespace (NamespaceName, PgNamespace (pgNamespaceOid), namespaceNameField, pgNamespaceTable)
@@ -144,6 +145,8 @@ data RelationDescription = RelationDescription
   -- ^ @since 1.0.0.0
   , relationComment :: Maybe T.Text
   -- ^ @since 1.1.0.0
+  , relationAttributeComments :: Map.Map AttributeName T.Text
+  -- ^ @since 1.1.0.0
   }
 
 {- |
@@ -169,6 +172,18 @@ lookupAttributeDefault ::
   Maybe PgAttributeDefault
 lookupAttributeDefault attr =
   Map.lookup (pgAttributeNumber attr) . relationAttributeDefaults
+
+{- |
+  Find an attribute comment by name from the 'RelationDescription'
+
+@since 1.1.0.0
+-}
+lookupAttributeComment ::
+  AttributeName ->
+  RelationDescription ->
+  Maybe T.Text
+lookupAttributeComment key =
+  Map.lookup key . relationAttributeComments
 
 {- |
   A description of a particular constraint in the PostgreSQL database, including
@@ -278,21 +293,23 @@ describeRelationByClass :: Plan.Plan scope PgClass RelationDescription
 describeRelationByClass =
   Plan.bind Plan.askParam $ \pgClass ->
     Plan.bind findClassAttributes $ \attributes ->
-      let
-        classAndAttributes =
-          mkPgClassAndAttributes
+      Plan.bind findClassDescriptions $ \descriptions ->
+        let
+          classAndAttributes =
+            mkPgClassAndAttributes
+              <$> Plan.use pgClass
+              <*> Plan.use attributes
+        in
+          RelationDescription
             <$> Plan.use pgClass
-            <*> Plan.use attributes
-      in
-        RelationDescription
-          <$> Plan.use pgClass
-          <*> Plan.use (fmap (indexBy pgAttributeName) attributes)
-          <*> fmap (indexBy pgAttributeDefaultAttributeNumber) findClassAttributeDefaults
-          <*> Plan.chain classAndAttributes findClassConstraints
-          <*> Plan.chain classAndAttributes findClassIndexes
-          <*> Plan.using pgClass findClassTriggers
-          <*> Plan.using pgClass findClassSequence
-          <*> Plan.using pgClass findClassDescription
+            <*> Plan.use (fmap (indexBy pgAttributeName) attributes)
+            <*> fmap (indexBy pgAttributeDefaultAttributeNumber) findClassAttributeDefaults
+            <*> Plan.chain classAndAttributes findClassConstraints
+            <*> Plan.chain classAndAttributes findClassIndexes
+            <*> Plan.using pgClass findClassTriggers
+            <*> Plan.using pgClass findClassSequence
+            <*> fmap (Map.lookup objectSubIdZero) (Plan.use descriptions)
+            <*> liftA2 mkAttributeCommentMap (Plan.use descriptions) (Plan.use attributes)
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
@@ -491,12 +508,30 @@ findClassSequence =
   Plan.focusParam pgClassOid $
     Plan.findMaybeOne pgSequenceTable sequencePgClassOidField
 
--- Find the description set by a @COMMENT@ statement in the @pg_description@ table.
-findClassDescription :: Plan.Plan scope PgClass (Maybe T.Text)
-findClassDescription =
-  (fmap . fmap) pgDescriptionDescription
-    . Plan.focusParam pgClassOid
-    $ Plan.findMaybeOneWhere pgDescriptionTable objOidField (Orville.fieldEquals objSubIdField 0)
+findClassDescriptions :: Plan.Plan scope PgClass (Map.Map ObjectSubId T.Text)
+findClassDescriptions =
+  let
+    mkObjectSubIdMap =
+      Map.fromList
+        . fmap
+          ( \pgDescription ->
+              (pgDescriptionObjSubId pgDescription, pgDescriptionDescription pgDescription)
+          )
+  in
+    fmap mkObjectSubIdMap . Plan.focusParam pgClassOid $ Plan.findAll pgDescriptionTable objOidField
+
+mkAttributeCommentMap :: Map.Map ObjectSubId T.Text -> [PgAttribute] -> Map.Map AttributeName T.Text
+mkAttributeCommentMap descriptionMap =
+  foldMap
+    ( \attribute ->
+        maybe
+          mempty
+          (Map.singleton (pgAttributeName attribute))
+          ( Map.lookup
+              (objectSubIdFromAttributeNumber $ pgAttributeNumber attribute)
+              descriptionMap
+          )
+    )
 
 findClassTriggers :: Plan.Plan scope PgClass [PgTrigger]
 findClassTriggers =

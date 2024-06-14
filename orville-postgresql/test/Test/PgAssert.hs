@@ -26,12 +26,14 @@ module Test.PgAssert
   , ForeignKeyInfo (..)
   , assertTableHasComment
   , assertTableDoesNotHaveComment
+  , assertTableColumnsHaveOrDoNotHaveComments
   )
 where
 
 import qualified Control.Exception.Safe as SafeEx
 import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.Foldable as Fold
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
@@ -578,3 +580,37 @@ assertTableDoesNotHaveComment ::
 assertTableDoesNotHaveComment pool tableName = do
   relationDesc <- assertTableExists pool tableName
   PgCatalog.relationComment relationDesc HH.=== Nothing
+
+assertTableColumnHasComment ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  String ->
+  T.Text ->
+  m ()
+assertTableColumnHasComment pool tableName fieldName expectedComment = do
+  relationDesc <- assertTableExists pool tableName
+  PgCatalog.lookupAttributeComment (String.fromString fieldName) relationDesc HH.=== Just expectedComment
+
+assertTableColumnDoesNotHaveComment ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  String ->
+  m ()
+assertTableColumnDoesNotHaveComment pool tableName fieldName = do
+  relationDesc <- assertTableExists pool tableName
+  PgCatalog.lookupAttributeComment (String.fromString fieldName) relationDesc HH.=== Nothing
+
+assertTableColumnsHaveOrDoNotHaveComments ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  [(String, Maybe String)] ->
+  m ()
+assertTableColumnsHaveOrDoNotHaveComments pool tableName =
+  Fold.traverse_
+    ( \(colName, mbComment) -> case mbComment of
+        Just comment -> assertTableColumnHasComment pool tableName colName (T.pack comment)
+        Nothing -> assertTableColumnDoesNotHaveComment pool tableName colName
+    )
