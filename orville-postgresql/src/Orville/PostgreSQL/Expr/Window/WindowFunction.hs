@@ -75,5 +75,4 @@ windowFunction function parameters mbWhereClause windowDef =
         <> filtering
         <> RawSql.space
         <> RawSql.fromString "OVER"
-        <> RawSql.space
-        <> RawSql.toRawSql windowDef
+        <> RawSql.parenthesized (RawSql.toRawSql windowDef)
