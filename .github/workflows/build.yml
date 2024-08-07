@@ -45,7 +45,7 @@ jobs:
         run: |
           set -e
           cd orville-postgresql
-          docker-compose build -q
+          docker compose build -q
 
       - name: Run Tests
         run: |
@@ -53,7 +53,7 @@ jobs:
           cd orville-postgresql
           PG_VERSION=${{ matrix.pg-version }}
           cp compose.override.github.yml compose.override.yml
-          docker-compose run \
+          docker compose run \
             --rm \
             dev \
             stack --stack-yaml ${{ matrix.stack-yaml }} test \
@@ -81,7 +81,7 @@ jobs:
         run: |
           set -e
           cd orville-postgresql
-          docker-compose build -q
+          docker compose build -q
 
       - name: Format and Check for Diff
         run: |
@@ -89,7 +89,7 @@ jobs:
 
           cd orville-postgresql
           cp compose.override.github.yml compose.override.yml
-          docker-compose run \
+          docker compose run \
             --rm \
             dev \
             sh -c ./scripts/format-repo.sh
@@ -118,7 +118,7 @@ jobs:
         run: |
           set -e
           cd orville-postgresql
-          docker-compose build -q
+          docker compose build -q
 
       - name: Format and Check for Diff
         run: |
@@ -126,7 +126,7 @@ jobs:
 
           cd orville-postgresql
           cp compose.override.github.yml compose.override.yml
-          docker-compose run \
+          docker compose run \
             --rm \
             dev \
             ghcup install cabal && cabal check
