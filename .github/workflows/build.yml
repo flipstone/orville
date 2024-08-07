@@ -10,7 +10,7 @@ defaults:
 jobs:
   test:
     name: Build and Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       max-parallel: 5
       matrix:
@@ -61,7 +61,7 @@ jobs:
 
   formatting-check:
     name: Formatting Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -98,7 +98,7 @@ jobs:
 
   cabal-check:
     name: Cabal Check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
