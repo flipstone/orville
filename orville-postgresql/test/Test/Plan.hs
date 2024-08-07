@@ -11,11 +11,13 @@ module Test.Plan
 where
 
 import qualified Control.Exception as Exception
+import qualified Control.Monad as Monad
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Either as Either
 import Data.Foldable (traverse_)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
+import qualified Data.Map.Strict as Map
 import qualified Data.String as String
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -49,6 +51,7 @@ planTests pool =
     , prop_planMany_findMaybeOne pool
     , prop_planMany_findMaybeOneWhere pool
     , prop_planMany_findAll pool
+    , prop_planTraversable_Map_findAll pool
     , prop_planMany_findAllWhere pool
     , prop_planEither pool
     , prop_planMany_planEither pool
@@ -195,7 +198,7 @@ prop_findAll =
 
 prop_planMany_findAll :: Property.NamedDBProperty
 prop_planMany_findAll =
-  Property.namedDBProperty "(planMany findAll) finds all rows where the field matches for each list of inputs" $ \pool -> do
+  Property.namedDBProperty "(planMany findAll) finds all rows where the field matches for each element in a list of inputs" $ \pool -> do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
       plan = Plan.planMany (Plan.findAll Foo.table Foo.fooNameField)
@@ -212,6 +215,33 @@ prop_planMany_findAll =
     coverSearchResultCases isMatch foos
     assertEachManyResult targetNames results $ \targetName foundFoos ->
       assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName targetName foo && isMatch foo) foos
+
+prop_planTraversable_Map_findAll :: Property.NamedDBProperty
+prop_planTraversable_Map_findAll =
+  Property.namedDBProperty "(planTraversable findAll) finds all rows where the field matches for each element in a map of inputs" $ \pool -> do
+    let
+      plan :: Plan.Plan scope (Map.Map Foo.FooName Foo.FooName) (Map.Map Foo.FooName [Foo.Foo])
+      plan = Plan.planTraversable (Plan.findAll Foo.table Foo.fooNameField)
+
+    (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    let
+      targetNamesMap = Map.fromList $ Monad.join zip targetNames
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan targetNamesMap
+
+    let
+      isMatch foo = elem (Foo.fooName foo) targetNames
+
+    coverSearchResultCases isMatch foos
+    length targetNamesMap === length results
+    traverse_
+      ( \targetName -> do
+          Just foundFoos <- pure $ Map.lookup targetName results
+          assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName targetName foo && isMatch foo) foos
+      )
+      targetNames
 
 prop_findAllWhere :: Property.NamedDBProperty
 prop_findAllWhere =
@@ -238,7 +268,7 @@ prop_findAllWhere =
 
 prop_planMany_findAllWhere :: Property.NamedDBProperty
 prop_planMany_findAllWhere =
-  Property.namedDBProperty "(planMany findAllWhere) finds all rows where the field matches for each list of inputs, with the given condition" $ \pool -> do
+  Property.namedDBProperty "(planMany findAllWhere) finds all rows where the field matches for each element in a list of inputs, with the given condition" $ \pool -> do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
       plan =

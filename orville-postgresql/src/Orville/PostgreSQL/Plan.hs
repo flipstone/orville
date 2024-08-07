@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
 Copyright : Flipstone Technology Partners 2023
@@ -38,6 +39,7 @@ module Orville.PostgreSQL.Plan
   , apply
   , planMany
   , planList
+  , planTraversable
   , focusParam
   , planEither
   , planMaybe
@@ -53,7 +55,9 @@ where
 import Control.Exception (throwIO)
 import Control.Monad (join)
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.Bifunctor as Bifunctor
 import Data.Either (partitionEithers)
+import qualified Data.Foldable as Foldable
 import qualified Data.List.NonEmpty as NEL
 
 import Orville.PostgreSQL.Execution (Select)
@@ -434,6 +438,24 @@ planList ::
   Plan listScope [param] [result]
 planList plan =
   Many.elems <$> planMany plan
+
+{- |
+  Similar to 'planList', but generalized to work with any 'Traversable'.
+
+@since 1.1.0.0
+-}
+planTraversable ::
+  forall t tScope param result.
+  Traversable t =>
+  (forall scope. Plan scope param result) ->
+  Plan tScope (t param) (t result)
+planTraversable plan =
+  let
+    lookupAll :: t param -> Many param result -> Either String (t result)
+    lookupAll t m =
+      traverse (Bifunctor.first (const "planTraversable invariant violated: Missing Key") . flip Many.lookup m) t
+  in
+    assert lookupAll $ chain (fmap Foldable.toList askParam) (planMany plan)
 
 {- |
   'focusParam' builds a plan from a function and an existing plan, taking the
