@@ -224,16 +224,18 @@ prop_planTraversable_Map_findAll =
       plan = Plan.planTraversable (Plan.findAll Foo.table Foo.fooNameField)
 
     (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    let
+      targetNamesMap = Map.fromList $ Monad.join zip targetNames
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
-        Plan.execute plan (Map.fromList $ Monad.join zip targetNames)
+        Plan.execute plan targetNamesMap
 
     let
       isMatch foo = elem (Foo.fooName foo) targetNames
 
     coverSearchResultCases isMatch foos
-    length targetNames === length results
+    length targetNamesMap === length results
     traverse_
       ( \targetName -> do
           Just foundFoos <- pure $ Map.lookup targetName results
