@@ -35,6 +35,7 @@ module Orville.PostgreSQL.AutoMigration
   , MigrationLock.nextLockId
   , MigrationLock.withMigrationLock
   , MigrationLock.MigrationLockError
+  , schemaTableUntrackedFields
   )
 where
 
@@ -444,6 +445,89 @@ generateMigrationPlanWithoutLock schemaItems =
         liftIO . throwIO $ err
       Right migrationSteps ->
         pure . mkMigrationPlan . concat $ migrationSteps
+
+{- |
+  Helper function to obtain the set of fields in each table in a list of 'SchemaItem' that
+  are present in the database but not tracked by the Orville 'TableDefinition' associated
+  with the 'SchemaItem'. This can be used to identify columns to drop or start tracking.
+
+@since 1.1.0.0
+-}
+schemaTableUntrackedFields ::
+  Orville.MonadOrville m =>
+  [SchemaItem] ->
+  m (Map.Map Orville.TableIdentifier (Set.Set Orville.FieldName))
+schemaTableUntrackedFields schemaItems = do
+  currentNamespace <- findCurrentNamespace
+
+  let
+    schemaTableInfo =
+      foldMap
+        ( maybe
+            mempty
+            (uncurry Map.singleton)
+            . schemaItemTableInfo currentNamespace
+        )
+        schemaItems
+    namespaceAndRelationNameToTableId ns =
+      Orville.setTableIdSchema (PgCatalog.namespaceNameToString ns)
+        . Orville.unqualifiedNameToTableId
+        . PgCatalog.relationNameToString
+
+  fmap
+    ( Map.mapKeys (uncurry namespaceAndRelationNameToTableId)
+        . Map.unionWith (flip Set.difference) schemaTableInfo
+        . databaseDescriptionTableRelationFieldNames
+    )
+    (PgCatalog.describeDatabase (Map.keys schemaTableInfo) [] [])
+
+databaseDescriptionTableRelationFieldNames ::
+  PgCatalog.DatabaseDescription ->
+  Map.Map (PgCatalog.NamespaceName, PgCatalog.RelationName) (Set.Set Orville.FieldName)
+databaseDescriptionTableRelationFieldNames =
+  Map.foldMapWithKey
+    ( \k ->
+        maybe mempty (Map.singleton k) . tableRelationFieldNames
+    )
+    . PgCatalog.databaseRelations
+
+tableRelationFieldNames :: PgCatalog.RelationDescription -> Maybe (Set.Set Orville.FieldName)
+tableRelationFieldNames relationDescription =
+  let
+    relationKind = PgCatalog.pgClassRelationKind $ PgCatalog.relationRecord relationDescription
+    columnAttributeToFieldName attribute =
+      if PgCatalog.isOrdinaryColumn attribute
+        then Just . Orville.stringToFieldName . PgCatalog.attributeNameToString $ PgCatalog.pgAttributeName attribute
+        else Nothing
+  in
+    case relationKind of
+      PgCatalog.OrdinaryTable ->
+        Just
+          . foldMap (maybe mempty Set.singleton . columnAttributeToFieldName)
+          $ PgCatalog.relationAttributes relationDescription
+      _ -> Nothing
+
+schemaItemTableInfo ::
+  PgCatalog.NamespaceName ->
+  SchemaItem ->
+  Maybe ((PgCatalog.NamespaceName, PgCatalog.RelationName), Set.Set Orville.FieldName)
+schemaItemTableInfo currentNamespace item = case item of
+  SchemaTable tableDef ->
+    Just
+      ( tableIdToPgCatalogNames currentNamespace (Orville.tableIdentifier tableDef)
+      , Set.fromList (tableFieldNames tableDef)
+      )
+  _ -> Nothing
+
+tableFieldNames :: Orville.TableDefinition k w r -> [Orville.FieldName]
+tableFieldNames tableDef =
+  Orville.foldMarshallerFields
+    (Orville.unannotatedSqlMarshaller $ Orville.tableMarshaller tableDef)
+    []
+    ( Orville.collectFromField
+        Orville.IncludeReadOnlyColumns
+        (\_ fieldDef -> Orville.fieldName fieldDef)
+    )
 
 {- |
   Executes a 'MigrationPlan' that has been previously devised via

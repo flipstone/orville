@@ -15,7 +15,9 @@ import Data.Int (Int32)
 import Data.List ((\\))
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
+import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
+import qualified Data.Set as Set
 import qualified Data.String as String
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -71,6 +73,7 @@ autoMigrationTests pool =
     , prop_modifiesTableComment pool
     , prop_addsColumnCommmentsOnCreateTable pool
     , prop_modifiesColumnComments pool
+    , prop_schemaTableUntrackedFields pool
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -1301,6 +1304,31 @@ prop_unloadsPresentExtensions =
     PgAssert.assertExtensionNotLoaded pool "pg_trgm"
 
     migrationPlanStepStrings secondTimePlan === []
+
+prop_schemaTableUntrackedFields :: Property.NamedDBProperty
+prop_schemaTableUntrackedFields =
+  Property.singletonNamedDBProperty "schemaTableUntrackedFields lists fields not tracked by Orville" $ \pool -> do
+    let
+      trackedColumns = ["a", "b", "c"]
+      untrackedColumns = ["d", "e", "f"]
+      fullTableDef =
+        Orville.setTableSchema "public" $ mkIntListTable "t" (trackedColumns <> untrackedColumns)
+      trackedTableDef =
+        Orville.setTableSchema "public" $ mkIntListTable "t" trackedColumns
+
+    untracked <- HH.evalIO $
+      Orville.runOrville pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql fullTableDef
+        Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateTableExpr fullTableDef
+        AutoMigration.schemaTableUntrackedFields [AutoMigration.SchemaTable trackedTableDef]
+
+    let
+      expected =
+        Map.singleton
+          (Orville.tableIdentifier trackedTableDef)
+          (Set.fromList $ fmap Orville.stringToFieldName untrackedColumns)
+
+    untracked === expected
 
 assertTableStructure ::
   (HH.MonadTest m, MIO.MonadIO m) =>
