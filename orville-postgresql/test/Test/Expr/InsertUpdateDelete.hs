@@ -31,6 +31,7 @@ insertUpdateDeleteTests pool =
     , prop_deleteExprWithWhere pool
     , prop_deleteExprWithReturning pool
     , prop_truncateTablesExpr pool
+    , prop_insertExprWithOnConflictDoUpdate pool
     ]
 
 prop_insertExpr :: Property.NamedDBProperty
@@ -77,6 +78,39 @@ prop_insertExprWithOnConflictDoNothing =
           Execution.readRows result
 
     assertEqualFooBarRows rows fooBars
+
+prop_insertExprWithOnConflictDoUpdate :: Property.NamedDBProperty
+prop_insertExprWithOnConflictDoUpdate =
+  Property.singletonNamedDBProperty "insertExpr with on conflict do update updates conflicting row" $ \pool -> do
+    let
+      fooBars0 = [mkFooBar 1 "dog"]
+      fooBars1 = [mkFooBar 1 "eagel"]
+      addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
+      fooColumnName = Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")
+      barColumnName = Expr.aliasQualifyColumn Nothing (Expr.columnName "bar")
+      conflictTarget0 = Expr.conflictTargetColumnName fooColumnName
+      excludedColumn0 = Expr.excludedColumnName barColumnName
+      setExcludedColumn0 = Expr.setExcludedColumn barColumnName excludedColumn0
+      setExcludedClauseList0 = Expr.setExcludedClauseList (setExcludedColumn0 :| [])
+      onConflictDoUpdate0 = Expr.onConflictDoUpdate conflictTarget0 setExcludedClauseList0 Nothing
+
+    rows <-
+      MIO.liftIO $
+        Conn.withPoolConnection pool $ \connection -> do
+          dropAndRecreateTestTable connection
+          RawSql.executeVoid connection addIndex
+
+          RawSql.executeVoid connection $
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars0) (Just onConflictDoUpdate0) Nothing
+
+          RawSql.executeVoid connection $
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars1) (Just onConflictDoUpdate0) Nothing
+
+          result <- RawSql.execute connection findAllFooBars
+
+          Execution.readRows result
+
+    assertEqualFooBarRows rows fooBars1
 
 prop_insertExprWithReturning :: Property.NamedDBProperty
 prop_insertExprWithReturning =
