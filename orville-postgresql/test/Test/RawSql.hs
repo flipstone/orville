@@ -5,6 +5,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -58,24 +59,32 @@ prop_tracksPlaceholders =
           <> RawSql.fromString "WHERE id = "
           <> RawSql.parameter (SqlValue.fromInt32 1)
           <> RawSql.fromString " AND "
-          <> RawSql.fromString "bar IN ("
+          <> RawSql.fromString "(bar, baz, id) IN ("
           <> RawSql.intercalate RawSql.comma bars
           <> RawSql.fromString ")"
 
       bars =
         map
-          RawSql.parameter
-          [ SqlValue.fromText (T.pack "pants")
-          , SqlValue.fromText (T.pack "cheese")
+          (RawSql.parameter . SqlValue.fromRow . NE.fromList)
+          [ [SqlValue.fromText (T.pack "pants"), SqlValue.fromText (T.pack "ants"), SqlValue.fromInt32 2]
+          , [SqlValue.fromText (T.pack "cheese"), SqlValue.fromText (T.pack "louise"), SqlValue.fromInt32 3]
+          , [SqlValue.fromText (T.pack "lasagna"), SqlValue.fromText (T.pack "banana"), SqlValue.fromInt32 4]
           ]
 
       expectedBytes =
-        B8.pack "SELECT * FROM foo WHERE id = $1 AND bar IN ($2,$3)"
+        B8.pack "SELECT * FROM foo WHERE id = $1 AND (bar, baz, id) IN (($2,$3,$4),($5,$6,$7),($8,$9,$10))"
 
       expectedParams =
-        [ Just . PgTextFormatValue.fromByteString . B8.pack $ "1"
-        , Just . PgTextFormatValue.fromByteString . B8.pack $ "pants"
-        , Just . PgTextFormatValue.fromByteString . B8.pack $ "cheese"
+        [ Just . PgTextFormatValue.fromByteString $ B8.pack "1"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "pants"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "ants"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "2"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "cheese"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "louise"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "3"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "lasagna"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "banana"
+        , Just . PgTextFormatValue.fromByteString $ B8.pack "4"
         ]
 
       (actualBytes, actualParams) =

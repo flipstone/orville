@@ -20,6 +20,7 @@ where
 import Control.Exception (Exception)
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Set as Set
 
 import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel, redactErrorMessage, redactIdentifierValue, redactNonIdentifierValue, redactSchemaName)
@@ -102,11 +103,11 @@ presentSqlColumnValue detailLevel redacter (columnName, sqlValue) =
   let
     sqlValueString =
       redacter detailLevel $
-        case SqlValue.toPgValue sqlValue of
-          Nothing ->
-            "NULL"
-          Just pgValue ->
-            B8.unpack . PgTextFormatValue.toByteString $ pgValue
+        SqlValue.foldSqlValue
+          (B8.unpack . PgTextFormatValue.toByteString)
+          (\vals -> "(" <> List.intercalate ", " (NE.toList vals) <> ")")
+          "NULL"
+          sqlValue
   in
     redactSchemaName detailLevel (B8.unpack columnName)
       <> " = "

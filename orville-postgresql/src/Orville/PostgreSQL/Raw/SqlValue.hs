@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 {- |
 
 Copyright : Flipstone Technology Partners 2023
@@ -11,6 +13,7 @@ qualified as 'SqlValue'.
 -}
 module Orville.PostgreSQL.Raw.SqlValue
   ( SqlValue
+  , foldSqlValue
   , isSqlNull
   , sqlNull
   , fromInt8
@@ -45,9 +48,9 @@ module Orville.PostgreSQL.Raw.SqlValue
   , toUTCTime
   , fromLocalTime
   , toLocalTime
+  , fromRow
   , fromRawBytes
   , fromRawBytesNullable
-  , toPgValue
   )
 where
 
@@ -58,6 +61,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Lazy as LBS
 import Data.Int (Int16, Int32, Int64, Int8)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
@@ -78,8 +82,26 @@ import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
 -}
 data SqlValue
   = SqlValue PgTextFormatValue
+  | SqlRowValue (NE.NonEmpty SqlValue)
   | SqlNull
   deriving (Eq)
+
+foldSqlValue ::
+  (PgTextFormatValue -> r) ->
+  (NE.NonEmpty r -> r) ->
+  r ->
+  SqlValue ->
+  r
+foldSqlValue onValue onRow onNull = go
+ where
+  go sqlValue =
+    case sqlValue of
+      SqlValue value ->
+        onValue value
+      SqlRowValue values ->
+        onRow $ fmap go values
+      SqlNull ->
+        onNull
 
 {- |
   Checks whether the 'SqlValue' represents a SQL NULL value in the database.
@@ -90,6 +112,7 @@ isSqlNull :: SqlValue -> Bool
 isSqlNull sqlValue =
   case sqlValue of
     SqlValue _ -> False
+    SqlRowValue _ -> False
     SqlNull -> True
 
 {- |
@@ -101,22 +124,6 @@ isSqlNull sqlValue =
 sqlNull :: SqlValue
 sqlNull =
   SqlNull
-
-{- |
-  Converts a 'SqlValue' to its underlying raw bytes as it will be represented
-  when sent to the database. The output should be recognizable as similar to
-  values you would write in a query. If the value represents a SQL NULL value,
-  'Nothing' is returned.
-
-@since 1.0.0.0
--}
-toPgValue :: SqlValue -> Maybe PgTextFormatValue
-toPgValue sqlValue =
-  case sqlValue of
-    SqlValue value ->
-      Just value
-    SqlNull ->
-      Nothing
 
 {- |
   Creates a 'SqlValue' from a raw bytestring as if the bytes had been returned
@@ -473,6 +480,15 @@ toUTCTime =
   toParsedValue PgTime.utcTime
 
 {- |
+  Construct a 'SqlValue' representing a Postgres row value comprising the values in the list.
+
+@since 1.1.0.0
+-}
+fromRow :: NE.NonEmpty SqlValue -> SqlValue
+fromRow =
+  SqlRowValue
+
+{- |
   An internal helper function that constructs a 'SqlValue' via a bytestring
   'BS8.Builder'.
 
@@ -518,6 +534,8 @@ toBytesValue byteParser sqlValue =
       case sqlValue of
         SqlNull ->
           Left "Unexpected SQL NULL value"
+        SqlRowValue _ ->
+          Left "Unexpected SQL row value"
         SqlValue bytes ->
           byteParser (PgTextFormatValue.toByteString bytes)
 

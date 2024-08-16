@@ -1,13 +1,18 @@
+{-# LANGUAGE CPP #-}
+
 module Test.Entities.Foo
   ( Foo (..)
   , FooId
   , FooName
+  , FooAge
   , table
   , generate
   , generateFooWithName
+  , generateFooWithNameAndAge
   , generateFooWithId
   , generateFooId
   , generateFooName
+  , generateFooAge
   , generateList
   , generateListUsing
   , generateNonEmpty
@@ -16,10 +21,16 @@ module Test.Entities.Foo
   , fooNameField
   , fooAgeField
   , hasName
+  , hasAge
   , averageFooAge
+  , nameAndAgeMarshaller
   )
 where
 
+#if MIN_VERSION_base(4,18,0)
+#else
+import Control.Applicative (liftA2)
+#endif
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Function (on)
 import Data.Int (Int32)
@@ -90,6 +101,13 @@ generateFooWithName name =
     <*> pure name
     <*> generateFooAge
 
+generateFooWithNameAndAge :: FooName -> FooAge -> HH.Gen Foo
+generateFooWithNameAndAge name age =
+  Foo
+    <$> generateFooId
+    <*> pure name
+    <*> pure age
+
 generateFooId :: HH.Gen FooId
 generateFooId =
   PgGen.pgInt32
@@ -116,6 +134,10 @@ hasName :: FooName -> Foo -> Bool
 hasName name foo =
   fooName foo == name
 
+hasAge :: FooAge -> Foo -> Bool
+hasAge age foo =
+  fooAge foo == age
+
 generateList :: HH.Range Int -> HH.Gen [Foo]
 generateList =
   flip generateListUsing generate
@@ -138,3 +160,10 @@ withTable pool operation =
     Conn.withPoolConnection pool $ \connection ->
       TestTable.dropAndRecreateTableDef connection table
     Orville.runOrville pool operation
+
+nameAndAgeMarshaller :: Orville.SqlMarshaller (FooName, FooAge) (FooName, FooAge)
+nameAndAgeMarshaller =
+  liftA2
+    (,)
+    (Orville.marshallField fst fooNameField)
+    (Orville.marshallField snd fooAgeField)

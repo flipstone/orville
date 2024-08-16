@@ -15,6 +15,7 @@ module Orville.PostgreSQL.Plan.Operation
   , WherePlanner (..)
   , byField
   , byFieldTuple
+  , byMarshaller
   , findOne
   , findOneWhere
   , findAll
@@ -281,6 +282,33 @@ byFieldTuple fieldDefA fieldDefB =
             (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
       }
 
+{- |
+  Builds a 'WherePlanner' that will match on the writable fields of a
+  'Marshall.SqlMarshaller'. The resulting 'WherePlanner' can be used with
+  functions such as 'findOne' and 'findAll' to construct an 'Operation'.
+
+@since 1.1.0.0
+-}
+byMarshaller ::
+  Ord param =>
+  Marshall.SqlMarshaller param param ->
+  WherePlanner param
+byMarshaller marshaller =
+  let
+    (fieldCount, stringyMarshaller) = stringifyMarshaller marshaller
+    examples = fmap (\i -> T.pack $ "EXAMPLE VALUE " <> show i) [1 .. fieldCount]
+  in
+    WherePlanner
+      { paramMarshaller = flip Marshall.marshallNested marshaller
+      , executeOneWhereCondition = Marshall.marshallerEquals marshaller
+      , executeManyWhereCondition = Marshall.marshallerIn marshaller . dedupeFieldValues
+      , explainOneWhereCondition = Marshall.marshallerEquals stringyMarshaller examples
+      , explainManyWhereCondition =
+          Marshall.marshallerIn
+            stringyMarshaller
+            (fmap (<> T.pack " A") examples :| [fmap (<> T.pack " B") examples])
+      }
+
 dedupeFieldValues :: Ord a => NonEmpty a -> NonEmpty a
 dedupeFieldValues (first :| rest) =
   let
@@ -456,6 +484,36 @@ stringifyField ::
   Marshall.FieldDefinition nullability T.Text
 stringifyField =
   Marshall.convertField (const Marshall.unboundedText)
+
+{- |
+  'stringifyMarshaller' arbitrarily re-labels the 'Marshall.SqlType' of all the
+  writable fields in a marshaller as 'T.Text'. Used internally to generate SQL
+  for explanations. Also returns the number of re-labled fields to facilitate
+  generating a list of example values.
+
+@since 1.1.0.0
+-}
+stringifyMarshaller ::
+  Marshall.SqlMarshaller a b ->
+  (Int, Marshall.SqlMarshaller [T.Text] [T.Text])
+stringifyMarshaller marshaller =
+  let
+    fieldNames =
+      Marshall.foldMarshallerFields marshaller [] $
+        Marshall.collectFromField
+          Marshall.ExcludeReadOnlyColumns
+          (\mbAlias fieldDef -> (mbAlias, Marshall.fieldNameToString $ Marshall.fieldName fieldDef))
+
+    stringyFields = (fmap . fmap) Marshall.unboundedTextField fieldNames
+
+    marshallField ::
+      Int ->
+      (Maybe Marshall.AliasName, Marshall.FieldDefinition Marshall.NotNull T.Text) ->
+      Marshall.SqlMarshaller [T.Text] T.Text
+    marshallField idx (mbAlias, fieldDef) =
+      maybe id Marshall.marshallAlias mbAlias $ Marshall.marshallField (!! idx) fieldDef
+  in
+    (length stringyFields, traverse (uncurry marshallField) (zip [(0 :: Int) ..] stringyFields))
 
 {- |
   'SelectOperation' is a helper type for building 'Operation' primitives that

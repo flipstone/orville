@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 
 {- |
@@ -49,11 +51,22 @@ module Orville.PostgreSQL.Marshall.SqlMarshaller
   , applyRowSource
   , constRowSource
   , failRowSource
+  , marshallerEquals
+  , marshallerNotEquals
+  , marshallerIsDistinctFrom
+  , marshallerIsNotDistinctFrom
+  , marshallerLessThan
+  , marshallerLessThanOrEqualTo
+  , marshallerGreaterThan
+  , marshallerGreaterThanOrEqualTo
+  , marshallerIn
+  , marshallerNotIn
   )
 where
 
 import Control.Monad (join)
 import qualified Data.ByteString.Char8 as B8
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
@@ -63,8 +76,9 @@ import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionR
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameAsFieldName)
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, buildAliasedFieldDefinition, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
+import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
@@ -167,6 +181,44 @@ instance Functor (SqlMarshaller a) where
 instance Applicative (SqlMarshaller a) where
   pure = MarshallPure
   (<*>) = MarshallApply
+
+{- |
+  Marshallers with no natural columns will result in @null@ 'SqlValue.SqlValue' and
+  'Expr.ValueExpression' as the outputs of 'SqlComparable.toComparableSqlValue' and
+  'SqlComparable.referenceValueExpression', respectively.
+
+  Both methods exclude columns marshalled with 'marshallReadOnly'.
+
+@since 1.1.0.0
+-}
+instance SqlComparable.SqlComparable (SqlMarshaller writeEntity readEntity) writeEntity where
+  toComparableSqlValue marshaller writeEntity =
+    let
+      collectSqlVals marshallerField vals =
+        case marshallerField of
+          Natural _ fieldDef (Just getField) ->
+            SqlComparable.toComparableSqlValue fieldDef (getField writeEntity) : vals
+          _ -> vals
+    in
+      maybe
+        SqlValue.sqlNull
+        SqlValue.fromRow
+        (NE.nonEmpty $ foldMarshallerFields marshaller [] collectSqlVals)
+
+  referenceValueExpression marshaller =
+    let
+      colValExprs =
+        foldMarshallerFields marshaller [] $
+          collectFromField
+            ExcludeReadOnlyColumns
+            ( \mbAlias fieldDef ->
+                SqlComparable.referenceValueExpression $ buildAliasedFieldDefinition fieldDef mbAlias
+            )
+    in
+      maybe
+        (Expr.valueExpression SqlValue.sqlNull)
+        Expr.rowValueConstructor
+        (NE.nonEmpty colValExprs)
 
 {- |
   Returns a list of 'Expr.DerivedColumn' expressions that can be used in a
@@ -990,3 +1042,93 @@ marshallReadOnlyField ::
   FieldDefinition nullability fieldValue ->
   SqlMarshaller writeEntity fieldValue
 marshallReadOnlyField = MarshallReadOnly . MarshallField
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is equal to the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerEquals :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerEquals = SqlComparable.equals
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is not equal to the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerNotEquals :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerNotEquals = SqlComparable.notEquals
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is distinct from the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerIsDistinctFrom :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerIsDistinctFrom = SqlComparable.isDistinctFrom
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is not distinct from the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerIsNotDistinctFrom :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerIsNotDistinctFrom = SqlComparable.isNotDistinctFrom
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is less than the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerLessThan :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerLessThan = SqlComparable.lessThan
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is less than or equal to the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerLessThanOrEqualTo :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerLessThanOrEqualTo = SqlComparable.lessThanOrEqualTo
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is greater than the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerGreaterThan :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerGreaterThan = SqlComparable.greaterThan
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is greater than or equal to the given value encoded as a row.
+
+@since 1.1.0.0
+-}
+marshallerGreaterThanOrEqualTo :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
+marshallerGreaterThanOrEqualTo = SqlComparable.greaterThanOrEqualTo
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is in the given list of values encoded as a list of rows.
+
+@since 1.1.0.0
+-}
+marshallerIn :: SqlMarshaller writeEntity x -> NE.NonEmpty writeEntity -> Expr.BooleanExpr
+marshallerIn = SqlComparable.isIn
+
+{- |
+  Checks that the row value containing the write fields of the
+  'SqlMarshaller' is not in the given list of values encoded as a list of rows.
+
+@since 1.1.0.0
+-}
+marshallerNotIn :: SqlMarshaller writeEntity x -> NE.NonEmpty writeEntity -> Expr.BooleanExpr
+marshallerNotIn = SqlComparable.isNotIn

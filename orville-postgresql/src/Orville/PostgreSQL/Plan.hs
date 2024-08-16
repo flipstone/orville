@@ -22,13 +22,21 @@ module Orville.PostgreSQL.Plan
 
     -- * Making a Plan to find rows in the database
   , findMaybeOne
+  , findMaybeOneByMarshaller
   , findMaybeOneWhere
+  , findMaybeOneWhereByMarshaller
   , findOne
+  , findOneByMarshaller
   , findOneShowVia
+  , findOneShowViaByMarshaller
   , findOneWhere
+  , findOneWhereByMarshaller
   , findOneWhereShowVia
+  , findOneWhereShowViaByMarshaller
   , findAll
+  , findAllByMarshaller
   , findAllWhere
+  , findAllWhereByMarshaller
 
     -- * Creating a multi-step Plan from other Plan values
   , bind
@@ -262,6 +270,20 @@ findMaybeOne tableDef fieldDef =
   planOperation (Op.findOne tableDef (Op.byField fieldDef))
 
 {- |
+  Construct a plan that will find at most one row from the given table where
+  the plan's input value matches the fields in the provided 'Marshall.SqlMarshaller'.
+
+@since 1.1.0.0
+-}
+findMaybeOneByMarshaller ::
+  Ord param =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Plan scope param (Maybe readEntity)
+findMaybeOneByMarshaller tableDef paramMarshaller =
+  planOperation (Op.findOne tableDef (Op.byMarshaller paramMarshaller))
+
+{- |
   'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a
   'Expr.BooleanExpr' to be specified to restrict which rows are matched by the
   database query.
@@ -276,6 +298,21 @@ findMaybeOneWhere ::
   Plan scope fieldValue (Maybe readEntity)
 findMaybeOneWhere tableDef fieldDef cond =
   planOperation (Op.findOneWhere tableDef (Op.byField fieldDef) cond)
+
+{- |
+  Similar to 'findMaybeOneByMarshaller', but allows a 'Expr.BooleanExpr' to be
+  specified to restrict which rows are matched by the database query.
+
+@since 1.1.0.0
+-}
+findMaybeOneWhereByMarshaller ::
+  Ord param =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Expr.BooleanExpr ->
+  Plan scope param (Maybe readEntity)
+findMaybeOneWhereByMarshaller tableDef paramMarshaller cond =
+  planOperation (Op.findOneWhere tableDef (Op.byMarshaller paramMarshaller) cond)
 
 {- |
   'findOneShowVia' is similar to 'findMaybeOne', but it expects that there will
@@ -298,6 +335,26 @@ findOneShowVia showParam tableDef fieldDef =
     (findMaybeOne tableDef fieldDef)
 
 {- |
+  Similar to 'findMaybeOneByMarshaller', but expects that there will always be
+  a row found matching the plan's input value. If no row is found, an
+  'Op.AssertionFailed' exception will be thrown. This is a useful convenience
+  when looking up foreign-key associations that are expected to be enforced by
+  the database itself.
+
+@since 1.1.0.0
+-}
+findOneShowViaByMarshaller ::
+  Ord param =>
+  (param -> String) ->
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Plan scope param readEntity
+findOneShowViaByMarshaller showParam tableDef paramMarshaller =
+  assert
+    (assertFoundByMarshaller showParam tableDef)
+    (findMaybeOneByMarshaller tableDef paramMarshaller)
+
+{- |
   'findOne' is an alias to 'findOneShowVia' that uses the 'Show' instance of
   @fieldValue@ when producing a failure message in the event that the entity
   cannot be found.
@@ -310,6 +367,20 @@ findOne ::
   Marshall.FieldDefinition nullability fieldValue ->
   Plan scope fieldValue readEntity
 findOne = findOneShowVia show
+
+{- |
+  An alias for 'findOneShowViaByMarshaller' that uses the 'Show' instance of
+  @param@ when producing a failure message in the event that the entity cannot
+  be found.
+
+@since 1.1.0.0
+-}
+findOneByMarshaller ::
+  (Show param, Ord param) =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Plan scope param readEntity
+findOneByMarshaller = findOneShowViaByMarshaller show
 
 {- |
   'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a
@@ -331,6 +402,24 @@ findOneWhereShowVia showParam tableDef fieldDef cond =
     (findMaybeOneWhere tableDef fieldDef cond)
 
 {- |
+  Similar to 'findOneShowViaByMarshaller', but allows a 'Expr.BooleanExpr' to be
+  specified to restrict which rows are matched by the database query.
+
+@since 1.1.0.0
+-}
+findOneWhereShowViaByMarshaller ::
+  Ord param =>
+  (param -> String) ->
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Expr.BooleanExpr ->
+  Plan scope param readEntity
+findOneWhereShowViaByMarshaller showParam tableDef paramMarshaller cond =
+  assert
+    (assertFoundByMarshaller showParam tableDef)
+    (findMaybeOneWhereByMarshaller tableDef paramMarshaller cond)
+
+{- |
   'findOneWhere' is an alias to 'findOneWhereShowVia' that uses the 'Show'
   instance of @fieldValue@ when producing a failure message in the event that
   the entity cannot be found.
@@ -344,6 +433,21 @@ findOneWhere ::
   Expr.BooleanExpr ->
   Plan scope fieldValue readEntity
 findOneWhere = findOneWhereShowVia show
+
+{- |
+  An alias for 'findOneWhereShowViaByMarshaller' that uses the 'Show' instance
+  of @param@ when producing a failure message in the event that the entity
+  cannot be found.
+
+@since 1.1.0.0
+-}
+findOneWhereByMarshaller ::
+  (Show param, Ord param) =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Expr.BooleanExpr ->
+  Plan scope param readEntity
+findOneWhereByMarshaller = findOneWhereShowViaByMarshaller show
 
 {- |
   'assertFound' is an internal helper that checks that row was found where
@@ -374,6 +478,31 @@ assertFound showParam tableDef fieldDef param maybeRecord =
           ]
 
 {- |
+  An internal helper that checks that a row was found and produces
+  an error message otherwise.
+
+@since 1.1.0.0
+-}
+assertFoundByMarshaller ::
+  (param -> String) ->
+  Schema.TableDefinition key writeEntity readEntity ->
+  param ->
+  Maybe result ->
+  Either String result
+assertFoundByMarshaller showParam tableDef param maybeRecord =
+  case maybeRecord of
+    Just a ->
+      Right a
+    Nothing ->
+      Left $
+        unwords
+          [ "Failed to find record in table "
+          , Schema.tableIdToString $ Schema.tableIdentifier tableDef
+          , " where param marshaller fields = "
+          , showParam param
+          ]
+
+{- |
   'findAll' constructs a 'Plan' that will find all the rows from the given
   table where the plan's input value matches the given database field.
 
@@ -386,6 +515,20 @@ findAll ::
   Plan scope fieldValue [readEntity]
 findAll tableDef fieldDef =
   planOperation (Op.findAll tableDef (Op.byField fieldDef))
+
+{- |
+  Construct a 'Plan' that will find all the rows from the given table where
+  the plan's input value matches the fields in the provided 'Marshall.SqlMarshaller'.
+
+@since 1.1.0.0
+-}
+findAllByMarshaller ::
+  Ord param =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Plan scope param [readEntity]
+findAllByMarshaller tableDef paramMarshaller =
+  planOperation (Op.findAll tableDef (Op.byMarshaller paramMarshaller))
 
 {- |
   'findAllWhere' is similar to 'findAll', but allows a 'Expr.BooleanExpr' to be
@@ -401,6 +544,21 @@ findAllWhere ::
   Plan scope fieldValue [readEntity]
 findAllWhere tableDef fieldDef cond =
   planOperation (Op.findAllWhere tableDef (Op.byField fieldDef) cond)
+
+{- |
+  Similar to 'findAllByMarshaller', but allows a 'Expr.BooleanExpr' to be
+  specified to restrict which rows are matched by the database query.
+
+@since 1.1.0.0
+-}
+findAllWhereByMarshaller ::
+  Ord param =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.SqlMarshaller param param ->
+  Expr.BooleanExpr ->
+  Plan scope param [readEntity]
+findAllWhereByMarshaller tableDef paramMarshaller cond =
+  planOperation (Op.findAllWhere tableDef (Op.byMarshaller paramMarshaller) cond)
 
 {- |
   'planMany' adapts a plan that takes a single input parameter to work on

@@ -225,6 +225,7 @@ test-suite spec
       Test.Expr.Window
       Test.FieldDefinition
       Test.MarshallError
+      Test.Orphans
       Test.PgAssert
       Test.PgCatalog
       Test.PgGen

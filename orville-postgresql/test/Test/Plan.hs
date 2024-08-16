@@ -45,14 +45,22 @@ planTests pool =
   Property.group "Plan" $
     [ prop_askParam pool
     , prop_findMaybeOne pool
+    , prop_findMaybeOneByMarshaller pool
     , prop_findMaybeOneWhere pool
+    , prop_findMaybeOneWhereByMarshaller pool
     , prop_findAll pool
+    , prop_findAllByMarshaller pool
     , prop_findAllWhere pool
+    , prop_findAllWhereByMarshaller pool
     , prop_planMany_findMaybeOne pool
+    , prop_planMany_findMaybeOneByMarshaller pool
     , prop_planMany_findMaybeOneWhere pool
+    , prop_planMany_findMaybeOneWhereByMarshaller pool
     , prop_planMany_findAll pool
     , prop_planTraversable_Map_findAll pool
+    , prop_planMany_findAllByMarshaller pool
     , prop_planMany_findAllWhere pool
+    , prop_planMany_findAllWhereByMarshaller pool
     , prop_planEither pool
     , prop_planMany_planEither pool
     , prop_bindAndUse pool
@@ -87,7 +95,7 @@ prop_findMaybeOne =
       plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
       plan = Plan.findMaybeOne Foo.table Foo.fooNameField
 
-    (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
+    (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -99,6 +107,25 @@ prop_findMaybeOne =
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
 
+prop_findMaybeOneByMarshaller :: Property.NamedDBProperty
+prop_findMaybeOneByMarshaller =
+  Property.namedDBProperty "findMaybeOneByMarshaller finds a row where the marshaller matches (if any)" $ \pool -> do
+    let
+      plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo)
+      plan = Plan.findMaybeOneByMarshaller Foo.table Foo.nameAndAgeMarshaller
+
+    (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
+    maybeResult <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan (targetName, targetAge)
+
+    let
+      isMatch foo = Foo.hasName targetName foo && Foo.hasAge targetAge foo
+
+    coverSearchResultCases isMatch foos
+    assertMatchIsFromPredicate maybeResult isMatch foos
+
 prop_planMany_findMaybeOne :: Property.NamedDBProperty
 prop_planMany_findMaybeOne =
   Property.namedDBProperty "(planMany findMaybeOne) finds a row where the field matches for each input" $ \pool -> do
@@ -106,7 +133,7 @@ prop_planMany_findMaybeOne =
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
       plan = Plan.planMany $ Plan.findMaybeOne Foo.table Foo.fooNameField
 
-    (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -123,6 +150,32 @@ prop_planMany_findMaybeOne =
         (\foo -> Foo.hasName targetName foo && isMatch foo)
         foos
 
+prop_planMany_findMaybeOneByMarshaller :: Property.NamedDBProperty
+prop_planMany_findMaybeOneByMarshaller =
+  Property.namedDBProperty "(planMany findMaybeOneByMarshaller) finds a row where the marshaller matches for each input" $ \pool -> do
+    let
+      plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo))
+      plan = Plan.planMany $ Plan.findMaybeOneByMarshaller Foo.table Foo.nameAndAgeMarshaller
+
+    (targetNames, targetAges, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    let
+      target = zip targetNames targetAges
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan target
+
+    let
+      isMatch foo = elem (Foo.fooName foo, Foo.fooAge foo) target
+
+    coverSearchResultCases isMatch foos
+
+    assertEachManyResult target results $ \(name, age) maybeFoo ->
+      assertMatchIsFromPredicate
+        maybeFoo
+        (\foo -> Foo.hasName name foo && Foo.hasAge age foo && isMatch foo)
+        foos
+
 prop_findMaybeOneWhere :: Property.NamedDBProperty
 prop_findMaybeOneWhere =
   Property.namedDBProperty "findMaybeOneWhere finds a row where the field matches (if any), with the given condition" $ \pool -> do
@@ -134,7 +187,7 @@ prop_findMaybeOneWhere =
           Foo.fooNameField
           (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
-    (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
+    (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -142,6 +195,29 @@ prop_findMaybeOneWhere =
 
     let
       isMatch foo = Foo.hasName targetName foo && Foo.fooAge foo > Foo.averageFooAge
+
+    coverSearchResultCases isMatch foos
+    assertMatchIsFromPredicate maybeResult isMatch foos
+
+prop_findMaybeOneWhereByMarshaller :: Property.NamedDBProperty
+prop_findMaybeOneWhereByMarshaller =
+  Property.namedDBProperty "findMaybeOneWhereByMarshaller finds a row where the marshaller matches (if any), with the given condition" $ \pool -> do
+    let
+      plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo)
+      plan =
+        Plan.findMaybeOneWhereByMarshaller
+          Foo.table
+          Foo.nameAndAgeMarshaller
+          (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+
+    (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
+    maybeResult <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan (targetName, targetAge)
+
+    let
+      isMatch foo = Foo.hasName targetName foo && Foo.hasAge targetAge foo && Foo.fooAge foo > Foo.averageFooAge
 
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
@@ -158,7 +234,7 @@ prop_planMany_findMaybeOneWhere =
             Foo.fooNameField
             (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
-    (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -177,6 +253,41 @@ prop_planMany_findMaybeOneWhere =
         (\foo -> Foo.hasName targetName foo && isMatch foo)
         foos
 
+prop_planMany_findMaybeOneWhereByMarshaller :: Property.NamedDBProperty
+prop_planMany_findMaybeOneWhereByMarshaller =
+  Property.namedDBProperty "(planMany findMaybeOneWhereByMarshaller) finds a row where the marshaller matches for each input, with the given condition" $ \pool -> do
+    let
+      plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo))
+      plan =
+        Plan.planMany $
+          Plan.findMaybeOneWhereByMarshaller
+            Foo.table
+            Foo.nameAndAgeMarshaller
+            (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+
+    (targetNames, targetAges, foos) <- HH.forAll generateSearchTargetListAndSubjects
+
+    let
+      target = zip targetNames targetAges
+
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan target
+
+    let
+      isMatch foo =
+        elem (Foo.fooName foo, Foo.fooAge foo) target
+          && Foo.fooAge foo > Foo.averageFooAge
+
+    coverSearchResultCases isMatch foos
+
+    assertEachManyResult target results $ \(name, age) maybeFoo ->
+      assertMatchIsFromPredicate
+        maybeFoo
+        (\foo -> Foo.hasName name foo && Foo.hasAge age foo && isMatch foo)
+        foos
+
 prop_findAll :: Property.NamedDBProperty
 prop_findAll =
   Property.namedDBProperty "findAll finds all rows where the field matches" $ \pool -> do
@@ -184,7 +295,7 @@ prop_findAll =
       plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
       plan = Plan.findAll Foo.table Foo.fooNameField
 
-    (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
+    (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -196,6 +307,25 @@ prop_findAll =
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
 
+prop_findAllByMarshaller :: Property.NamedDBProperty
+prop_findAllByMarshaller =
+  Property.namedDBProperty "findAllByMarshaller finds all rows where the marshaller matches" $ \pool -> do
+    let
+      plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) [Foo.Foo]
+      plan = Plan.findAllByMarshaller Foo.table Foo.nameAndAgeMarshaller
+
+    (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan (targetName, targetAge)
+
+    let
+      isMatch foo = Foo.hasName targetName foo && Foo.hasAge targetAge foo
+
+    coverSearchResultCases isMatch foos
+    assertAllMatchesFound Foo.fooId results isMatch foos
+
 prop_planMany_findAll :: Property.NamedDBProperty
 prop_planMany_findAll =
   Property.namedDBProperty "(planMany findAll) finds all rows where the field matches for each element in a list of inputs" $ \pool -> do
@@ -203,7 +333,7 @@ prop_planMany_findAll =
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
       plan = Plan.planMany (Plan.findAll Foo.table Foo.fooNameField)
 
-    (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -223,7 +353,7 @@ prop_planTraversable_Map_findAll =
       plan :: Plan.Plan scope (Map.Map Foo.FooName Foo.FooName) (Map.Map Foo.FooName [Foo.Foo])
       plan = Plan.planTraversable (Plan.findAll Foo.table Foo.fooNameField)
 
-    (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     let
       targetNamesMap = Map.fromList $ Monad.join zip targetNames
     results <-
@@ -243,6 +373,28 @@ prop_planTraversable_Map_findAll =
       )
       targetNames
 
+prop_planMany_findAllByMarshaller :: Property.NamedDBProperty
+prop_planMany_findAllByMarshaller =
+  Property.namedDBProperty "(planMany findAllByMarshaller) finds all rows where the marshaller matches for each list of inputs" $ \pool -> do
+    let
+      plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) [Foo.Foo])
+      plan = Plan.planMany (Plan.findAllByMarshaller Foo.table Foo.nameAndAgeMarshaller)
+
+    (targetNames, targetAges, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    let
+      target = zip targetNames targetAges
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan target
+
+    let
+      isMatch foo = elem (Foo.fooName foo, Foo.fooAge foo) target
+
+    coverSearchResultCases isMatch foos
+    assertEachManyResult target results $ \(name, age) foundFoos ->
+      assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName name foo && Foo.hasAge age foo) foos
+
 prop_findAllWhere :: Property.NamedDBProperty
 prop_findAllWhere =
   Property.namedDBProperty "findAllWhere finds all rows where the field matches, with the given condition" $ \pool -> do
@@ -254,7 +406,7 @@ prop_findAllWhere =
           Foo.fooNameField
           (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
-    (targetName, foos) <- HH.forAll generateSearchTargetAndSubjects
+    (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -262,6 +414,29 @@ prop_findAllWhere =
 
     let
       isMatch foo = Foo.hasName targetName foo && Foo.fooAge foo > Foo.averageFooAge
+
+    coverSearchResultCases isMatch foos
+    assertAllMatchesFound Foo.fooId results isMatch foos
+
+prop_findAllWhereByMarshaller :: Property.NamedDBProperty
+prop_findAllWhereByMarshaller =
+  Property.namedDBProperty "findAllWhereByMarshaller finds all rows where the marshaller matches, with the given condition" $ \pool -> do
+    let
+      plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) [Foo.Foo]
+      plan =
+        Plan.findAllWhereByMarshaller
+          Foo.table
+          Foo.nameAndAgeMarshaller
+          (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+
+    (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan (targetName, targetAge)
+
+    let
+      isMatch foo = Foo.hasName targetName foo && Foo.hasAge targetAge foo && Foo.fooAge foo > Foo.averageFooAge
 
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
@@ -278,7 +453,7 @@ prop_planMany_findAllWhere =
             Foo.fooNameField
             (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
 
-    (targetNames, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
         traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
@@ -290,6 +465,33 @@ prop_planMany_findAllWhere =
     coverSearchResultCases isMatch foos
     assertEachManyResult targetNames results $ \targetName foundFoos ->
       assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName targetName foo && isMatch foo) foos
+
+prop_planMany_findAllWhereByMarshaller :: Property.NamedDBProperty
+prop_planMany_findAllWhereByMarshaller =
+  Property.namedDBProperty "(planMany findAllWhereByMarshaller) finds all rows where the marshaller matches for each list of inputs, with the given condition" $ \pool -> do
+    let
+      plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) [Foo.Foo])
+      plan =
+        Plan.planMany $
+          Plan.findAllWhereByMarshaller
+            Foo.table
+            Foo.nameAndAgeMarshaller
+            (Orville.fieldGreaterThan Foo.fooAgeField Foo.averageFooAge)
+
+    (targetNames, targetAges, foos) <- HH.forAll generateSearchTargetListAndSubjects
+    let
+      target = zip targetNames targetAges
+    results <-
+      Foo.withTable pool $ do
+        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Plan.execute plan target
+
+    let
+      isMatch foo = elem (Foo.fooName foo, Foo.fooAge foo) target && Foo.fooAge foo > Foo.averageFooAge
+
+    coverSearchResultCases isMatch foos
+    assertEachManyResult target results $ \(name, age) foundFoos ->
+      assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName name foo && Foo.hasAge age foo && isMatch foo) foos
 
 prop_planEither :: Property.NamedDBProperty
 prop_planEither =
@@ -525,24 +727,25 @@ prop_explain =
           ]
 
 {- |
-  Generates a list of Foos that along with FooName that could plausibly be
+  Generates a list of Foos that along with FooName and FooAge that could plausibly be
   found in the list zero, one or more times.
 
 @since 1.0.0.0
 -}
-generateSearchTargetAndSubjects :: HH.Gen (Foo.FooName, [Foo.Foo])
+generateSearchTargetAndSubjects :: HH.Gen (Foo.FooName, Foo.FooAge, [Foo.Foo])
 generateSearchTargetAndSubjects = do
   targetName <- Foo.generateFooName
+  targetAge <- Foo.generateFooAge
 
   let
     generatePossibleTargetFoo =
       Gen.choice
-        [ Foo.generateFooWithName targetName
+        [ Foo.generateFooWithNameAndAge targetName targetAge
         , Foo.generate
         ]
 
   foos <- Foo.generateListUsing (Range.linear 0 5) generatePossibleTargetFoo
-  pure (targetName, foos)
+  pure (targetName, targetAge, foos)
 
 {- |
   Generates a list of Foos that along with FooName that could plausibly be
@@ -550,16 +753,17 @@ generateSearchTargetAndSubjects = do
 
 @since 1.0.0.0
 -}
-generateSearchTargetListAndSubjects :: HH.Gen ([Foo.FooName], [Foo.Foo])
+generateSearchTargetListAndSubjects :: HH.Gen ([Foo.FooName], [Foo.FooAge], [Foo.Foo])
 generateSearchTargetListAndSubjects = do
   targetNames <- Gen.list (Range.linear 0 5) Foo.generateFooName
+  targetAges <- Gen.list (Range.linear 0 5) Foo.generateFooAge
 
   let
     generatePossibleTargetFoo =
-      Gen.choice (Foo.generate : fmap Foo.generateFooWithName targetNames)
+      Gen.choice (Foo.generate : fmap (uncurry Foo.generateFooWithNameAndAge) (zip targetNames targetAges))
 
   foos <- Foo.generateListUsing (Range.linear 0 5) generatePossibleTargetFoo
-  pure (targetNames, foos)
+  pure (targetNames, targetAges, foos)
 
 {- |
   Uses Hedgehog's cover function to make sure common edge cases are covered

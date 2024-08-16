@@ -8,6 +8,7 @@ import qualified Data.Bifunctor as Bifunctor
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Either as Either
 import qualified Data.Int as Int
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Set as Set
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -18,10 +19,13 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import Test.Expr.TestSchema (assertEqualSqlRows)
+import Test.Orphans ()
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
@@ -40,6 +44,8 @@ sqlMarshallerTests =
     , prop_foldMarshallerFields
     , prop_passMaybeThrough
     , prop_partialMap
+    , prop_toComparableSqlValue
+    , prop_referenceValueExpression
     ]
 
 property_returnPureValue :: Property.NamedProperty
@@ -292,6 +298,36 @@ prop_partialMap =
     result <- marshallTestRowFromSql marshaller input
     Bifunctor.first show result === expected
 
+prop_toComparableSqlValue :: Property.NamedProperty
+prop_toComparableSqlValue =
+  Property.namedProperty "toComparableSqlValue encodes the marshaller's write entity as a row value" $ do
+    foo <- HH.forAll generateFoo
+
+    let
+      nameVal = SqlValue.fromText $ fooName foo
+      sizeVal = SqlValue.fromInt32 $ fooSize foo
+      optionVal = maybe SqlValue.sqlNull SqlValue.fromBool $ fooOption foo
+      expected = SqlValue.fromRow $ NE.fromList [nameVal, sizeVal, optionVal]
+      actual = Marshall.toComparableSqlValue fooMarshaller foo
+
+    actual === expected
+
+prop_referenceValueExpression :: Property.NamedProperty
+prop_referenceValueExpression =
+  Property.singletonNamedProperty "referenceValueExpression returns a row value containing references to the marshaller's write fields" $ do
+    let
+      alias = Marshall.stringToAliasName "f"
+      expected =
+        Expr.rowValueConstructor $
+          NE.fromList
+            [ Expr.columnReference $ Marshall.fieldColumnName (Just alias) nameField
+            , Expr.columnReference $ Marshall.fieldColumnName (Just alias) sizeField
+            , Expr.columnReference $ Marshall.fieldColumnName (Just alias) optionField
+            ]
+      actual = Marshall.referenceValueExpression (Marshall.marshallAlias alias fooMarshaller)
+
+    RawSql.toExampleBytes actual === RawSql.toExampleBytes expected
+
 data Foo = Foo
   { fooName :: T.Text
   , fooSize :: Int.Int32
@@ -309,17 +345,29 @@ data Bar = Bar
 fooMarshaller :: Marshall.SqlMarshaller Foo Foo
 fooMarshaller =
   Foo
-    <$> Marshall.marshallField fooName (Marshall.unboundedTextField "name")
-    <*> Marshall.marshallField fooSize (Marshall.integerField "size")
-    <*> Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option")
+    <$> Marshall.marshallField fooName nameField
+    <*> Marshall.marshallField fooSize sizeField
+    <*> Marshall.marshallField fooOption optionField
 
 fooMarshallerWithAliasOnEachField :: Marshall.SqlMarshaller Foo Foo
 fooMarshallerWithAliasOnEachField =
   Marshall.marshallAlias (Marshall.stringToAliasName "f") $
     Foo
-      <$> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooName (Marshall.unboundedTextField "name"))
-      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooSize (Marshall.integerField "size"))
-      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooOption (Marshall.nullableField $ Marshall.booleanField "option"))
+      <$> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooName nameField)
+      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooSize sizeField)
+      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooOption optionField)
+
+nameField :: Marshall.FieldDefinition Marshall.NotNull T.Text
+nameField =
+  Marshall.unboundedTextField "name"
+
+sizeField :: Marshall.FieldDefinition Marshall.NotNull Int.Int32
+sizeField =
+  Marshall.integerField "size"
+
+optionField :: Marshall.FieldDefinition Marshall.Nullable (Maybe Bool)
+optionField =
+  Marshall.nullableField $ Marshall.booleanField "option"
 
 generateFoo :: HH.Gen Foo
 generateFoo =

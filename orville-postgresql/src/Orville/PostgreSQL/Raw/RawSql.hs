@@ -63,6 +63,7 @@ import qualified Data.Foldable as Fold
 import Data.Functor.Identity (Identity (Identity, runIdentity))
 import qualified Data.Int as Int
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Database.PostgreSQL.LibPQ as LibPQ
@@ -315,18 +316,54 @@ buildSqlWithProgress quoting progress rawSql =
     Identifier unquotedIdentifier -> do
       quotedIdentifier <- quoteIdentifier quoting unquotedIdentifier
       pure (quotedIdentifier, progress)
-    Parameter value ->
-      let
-        newProgress = snocParam progress (SqlValue.toPgValue value)
-        placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
-      in
-        pure (placeholder, newProgress)
+    Parameter value -> pure $ buildParameterSql value progress
     Append first second -> do
       (firstBuilder, nextProgress) <- buildSqlWithProgress quoting progress first
       (secondBuilder, finalProgress) <- buildSqlWithProgress quoting nextProgress second
       pure (firstBuilder <> secondBuilder, finalProgress)
     Empty ->
       pure (mempty, progress)
+
+buildParameterSql ::
+  SqlValue.SqlValue ->
+  ParamsProgress ->
+  (BSB.Builder, ParamsProgress)
+buildParameterSql =
+  let
+    mkSingleValue mbPgVal currentProgress =
+      let
+        newProgress = snocParam currentProgress mbPgVal
+        placeholder = BSB.stringUtf8 "$" <> BSB.intDec (paramCount newProgress)
+      in
+        (placeholder, newProgress)
+
+    mkRowValue ::
+      NE.NonEmpty (ParamsProgress -> (BSB.Builder, ParamsProgress)) ->
+      ParamsProgress ->
+      (BSB.Builder, ParamsProgress)
+    mkRowValue (mkFirstRowVal NE.:| mkRowVals) currentProgress =
+      let
+        (firstRowVal, firstRowProgress) = mkFirstRowVal currentProgress
+        (remainingRowVals, newProgress) =
+          foldr
+            ( \mkNextRow mkRemainingRows rowProgress ->
+                let
+                  (valBuilder, newRowProgress) = mkNextRow rowProgress
+                  (remainingBuilder, remainingProgress) = mkRemainingRows newRowProgress
+                in
+                  (BSB.stringUtf8 "," <> valBuilder <> remainingBuilder, remainingProgress)
+            )
+            (\p -> (mempty, p))
+            mkRowVals
+            firstRowProgress
+        placeholder = BSB.stringUtf8 "(" <> firstRowVal <> remainingRowVals <> BSB.stringUtf8 ")"
+      in
+        (placeholder, newProgress)
+  in
+    SqlValue.foldSqlValue
+      (mkSingleValue . Just)
+      mkRowValue
+      (mkSingleValue Nothing)
 
 {- |
   Constructs a 'RawSql' from a 'String' value using UTF-8 encoding.
