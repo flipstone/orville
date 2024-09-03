@@ -88,11 +88,9 @@ prop_insertExprWithOnConflictDoUpdate =
       addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
       fooColumnName = Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")
       barColumnName = Expr.aliasQualifyColumn Nothing (Expr.columnName "bar")
-      conflictTarget0 = Expr.conflictTargetColumnName fooColumnName
-      excludedColumn0 = Expr.excludedColumnName barColumnName
-      setExcludedColumn0 = Expr.setExcludedColumn barColumnName excludedColumn0
-      setExcludedClauseList0 = Expr.setExcludedClauseList (setExcludedColumn0 :| [])
-      onConflictDoUpdate0 = Expr.onConflictDoUpdate conflictTarget0 setExcludedClauseList0 Nothing
+      conflictTarget = Expr.conflictTargetForIndexColumn fooColumnName Nothing
+      setExcludedColumn = Expr.setColumnNameExcluded barColumnName
+      onConflictDoUpdate = Expr.onConflictDoUpdate (Just conflictTarget) (pure setExcludedColumn) Nothing
 
     rows <-
       MIO.liftIO $
@@ -101,10 +99,10 @@ prop_insertExprWithOnConflictDoUpdate =
           RawSql.executeVoid connection addIndex
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars0) (Just onConflictDoUpdate0) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars0) (Just onConflictDoUpdate) Nothing
 
           RawSql.executeVoid connection $
-            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars1) (Just onConflictDoUpdate0) Nothing
+            Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars1) (Just onConflictDoUpdate) Nothing
 
           result <- RawSql.execute connection findAllFooBars
 
