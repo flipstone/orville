@@ -48,6 +48,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.IfNotExists
   , module Orville.PostgreSQL.Expr.Index
   , module Orville.PostgreSQL.Expr.Insert
+  , module Orville.PostgreSQL.Expr.OnConflict
   , module Orville.PostgreSQL.Expr.Join
   , module Orville.PostgreSQL.Expr.LimitExpr
   , module Orville.PostgreSQL.Expr.Math
@@ -100,6 +101,7 @@ import Orville.PostgreSQL.Expr.LimitExpr
 import Orville.PostgreSQL.Expr.Math
 import Orville.PostgreSQL.Expr.Name
 import Orville.PostgreSQL.Expr.OffsetExpr
+import Orville.PostgreSQL.Expr.OnConflict
 import Orville.PostgreSQL.Expr.OrReplace
 import Orville.PostgreSQL.Expr.OrderBy
 import Orville.PostgreSQL.Expr.Query

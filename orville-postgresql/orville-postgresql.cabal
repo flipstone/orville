@@ -63,6 +63,7 @@ library
       Orville.PostgreSQL.Expr.Math
       Orville.PostgreSQL.Expr.Name
       Orville.PostgreSQL.Expr.OffsetExpr
+      Orville.PostgreSQL.Expr.OnConflict
       Orville.PostgreSQL.Expr.OrderBy
       Orville.PostgreSQL.Expr.Query
       Orville.PostgreSQL.Expr.ReturningExpr
