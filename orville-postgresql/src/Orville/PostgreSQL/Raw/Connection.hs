@@ -496,6 +496,10 @@ isRowReadableStatus status =
     LibPQ.BadResponse -> False
     LibPQ.NonfatalError -> False -- NonfatalError never returned from LibPQ query execution functions. It passes them to the notice processor instead.
     LibPQ.FatalError -> False
+#if MIN_VERSION_postgresql_libpq(0,11,0)
+    LibPQ.PipelineSync -> False
+    LibPQ.PipelineAbort -> False
+#endif
 
 {- |
   Packages a bytestring parameter value (which is assumed to be a value encoded

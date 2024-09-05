@@ -138,7 +138,7 @@ library:
     - attoparsec >=0.10 && <0.15
     - bytestring >=0.10 && <0.13
     - dlist >= 0.8 && < 1.1
-    - postgresql-libpq >= 0.9.4.2 && <0.11
+    - postgresql-libpq >= 0.9.4.2 && <0.12
     - containers >= 0.6 && < 0.8
     - network-uri >= 2.6 && < 2.7
     - random >= 1.0 && <2
@@ -160,7 +160,7 @@ tests:
       - bytestring >=0.10 && <0.13
       - containers >= 0.6 && < 0.8
       - hedgehog >= 1.0.5 && <1.5
-      - postgresql-libpq >= 0.9.4.2 && <0.11
+      - postgresql-libpq >= 0.9.4.2 && <0.12
       - orville-postgresql
       - resource-pool <0.3 || (>= 0.4  && <0.5)
       - safe-exceptions >=0.1.7 && < 0.2
