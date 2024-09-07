@@ -13,6 +13,8 @@ module Orville.PostgreSQL.Expr.Select
   , SelectExpr
   , selectExpr
   , Distinct (Distinct)
+  , selectClauseDefault
+  , selectClauseDistinct
   )
 where
 
@@ -37,8 +39,8 @@ newtype SelectClause
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'SelectClause' using the given 'SelectExpr', which may indicate
-  that this is a @DISTINCT@ select.
+ Constructs a 'SelectClause' using the given 'SelectExpr', which may indicate
+ that this is a @DISTINCT@ select.
 
 @since 1.0.0.0
 -}
@@ -59,16 +61,16 @@ newtype SelectExpr = SelectExpr RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
 {- |
-  A simple value type used to indicate that a @SELECT@ should be distinct when
-  constructing a 'SelectExpr'.
+ A simple value type used to indicate that a @SELECT@ should be distinct when
+ constructing a 'SelectExpr'.
 
 @since 1.0.0.0
 -}
 data Distinct = Distinct
 
 {- |
-  Constructs a 'SelectExpr' that may or may not make the @SELECT@ distinct,
-  depending on whether 'Just Distinct' is passed or not.
+ Constructs a 'SelectExpr' that may or may not make the @SELECT@ distinct,
+ depending on whether 'Just Distinct' is passed or not.
 
 @since 1.0.0.0
 -}
@@ -78,3 +80,19 @@ selectExpr mbDistinct =
     case mbDistinct of
       Just Distinct -> "DISTINCT "
       Nothing -> ""
+
+{-
+    Helper function for constructing SelectClause
+
+@since 1.1.0.0
+-}
+selectClauseDefault :: SelectClause
+selectClauseDefault = selectClause (selectExpr Nothing)
+
+{-
+    Helper function for constructing SelectClause with Distinct
+
+@since 1.1.0.0
+-}
+selectClauseDistinct :: SelectClause
+selectClauseDistinct = selectClause (selectExpr $ Just Distinct)

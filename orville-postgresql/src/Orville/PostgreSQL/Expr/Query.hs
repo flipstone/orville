@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
 
 {- |
 Copyright : Flipstone Technology Partners 2023-2024
@@ -29,11 +30,13 @@ module Orville.PostgreSQL.Expr.Query
   , selectStar
   , TableExpr
   , tableExpr
+  , mkTableExpr
+  , Clauses (..)
+  , defaultClauses
   )
 where
 
 import Data.Maybe (catMaybes, fromMaybe)
-
 import Orville.PostgreSQL.Expr.BinaryOperator (BinaryOperator)
 import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
@@ -67,10 +70,10 @@ newtype QueryExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Builds a 'QueryExpr' from the given 'SelectClause', 'SelectList' and
-  'TableExpr'. The resulting 'QueryExpr' is suitable for execution via the SQL
-  execution functions in "Orville.PostgreSQL.Execution" and
-  "Orville.PostgreSQL.Raw.RawSql".
+ Builds a 'QueryExpr' from the given 'SelectClause', 'SelectList' and
+ 'TableExpr'. The resulting 'QueryExpr' is suitable for execution via the SQL
+ execution functions in "Orville.PostgreSQL.Execution" and
+ "Orville.PostgreSQL.Raw.RawSql".
 
 @since 1.0.0.0
 -}
@@ -89,7 +92,7 @@ queryExpr querySelectClause selectList maybeTableExpr =
         ]
 
 {- | The SQL @EXISTS@ subquery expression. This builds a 'BooleanExpr' that checks if the given
-   'QueryExpr' returns at least one row. The resuling SQL will correctly be parenthesized.
+  'QueryExpr' returns at least one row. The resuling SQL will correctly be parenthesized.
 
 @since 1.1.0.0
 -}
@@ -114,7 +117,7 @@ queryInValuePredicate =
   RawSql.unsafeFromRawSql . RawSql.parenthesized . RawSql.toRawSql
 
 {- | The SQL @IN@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
-   returns exactly one column.
+  returns exactly one column.
 
 @since 1.1.0.0
 -}
@@ -123,7 +126,7 @@ inSubquery valExpr =
   inPredicate valExpr . queryInValuePredicate
 
 {- | The SQL @NOT IN@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
-   returns exactly one column.
+  returns exactly one column.
 
 @since 1.1.0.0
 -}
@@ -132,7 +135,7 @@ notInSubquery valExpr =
   notInPredicate valExpr . queryInValuePredicate
 
 {- | The SQL @ANY@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
-   returns exactly one column and that the operator results in a boolean.
+  returns exactly one column and that the operator results in a boolean.
 
 @since 1.1.0.0
 -}
@@ -141,7 +144,7 @@ anySubquery =
   operatorSubquery (RawSql.fromString " ANY ")
 
 {- | The SQL @ALL@ subquery expression. It is up to the caller to ensure that the given 'QueryExpr'
-   returns exactly one column and that the operator results in a boolean.
+  returns exactly one column and that the operator results in a boolean.
 
 @since 1.1.0.0
 -}
@@ -171,7 +174,7 @@ queryExprWithAlias alias query =
       <> RawSql.toRawSql alias
 
 {- | Make a 'QueryExpr' into a 'FromItemExpr', aliased appropriately, so that it can be used to
-   as a subquery in @SELECT@ion.
+  as a subquery in @SELECT@ion.
 
 @since 1.1.0.0
 -}
@@ -216,21 +219,21 @@ newtype SelectList = SelectList RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'SelectList' that will select all colums (i.e. the @*@ in
-  @SELECT *@").
+ Constructs a 'SelectList' that will select all colums (i.e. the @*@ in
+ @SELECT *@").
 
-  @since 1.0.0.0
+ @since 1.0.0.0
 -}
 selectStar :: SelectList
 selectStar =
   SelectList (RawSql.fromString "*")
 
 {- |
-  Constructs a 'SelectList' that will select the specified column names. This
-  is a special case of 'selectDerivedColumns' where all the items to be
-  selected are simple column references.
+ Constructs a 'SelectList' that will select the specified column names. This
+ is a special case of 'selectDerivedColumns' where all the items to be
+ selected are simple column references.
 
-  @since 1.0.0.0
+ @since 1.0.0.0
 -}
 selectColumns :: [Qualified ColumnName] -> SelectList
 selectColumns =
@@ -251,9 +254,9 @@ newtype DerivedColumn = DerivedColumn RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'SelectList' that will select the specified items, which may be
-  column references or other expressions as allowed by 'DerivedColumn'. See
-  also 'selectColumns' the simpler case of selecting a list of column names.
+ Constructs a 'SelectList' that will select the specified items, which may be
+ column references or other expressions as allowed by 'DerivedColumn'. See
+ also 'selectColumns' the simpler case of selecting a list of column names.
 
 @since 1.0.0.0
 -}
@@ -262,9 +265,9 @@ selectDerivedColumns =
   SelectList . RawSql.intercalate RawSql.comma
 
 {- |
-  Constructs a 'DerivedColumn' that will select the given value. No name will
-  be given to the value in the result set. See 'deriveColumnAs' to give the
-  value a name in the result set.
+ Constructs a 'DerivedColumn' that will select the given value. No name will
+ be given to the value in the result set. See 'deriveColumnAs' to give the
+ value a name in the result set.
 
 @since 1.0.0.0
 -}
@@ -273,8 +276,8 @@ deriveColumn =
   DerivedColumn . RawSql.toRawSql
 
 {- |
-  Constructs a 'DerivedColumn' that will select the given value and give it
-  the specified column name in the result set.
+ Constructs a 'DerivedColumn' that will select the given value and give it
+ the specified column name in the result set.
 
 @since 1.0.0.0
 -}
@@ -287,8 +290,8 @@ deriveColumnAs valueExpr asColumn =
     )
 
 {- |
-  Constructs a 'DerivedColumn' that will select the given value and give it
-  the specified alias in the result set.
+ Constructs a 'DerivedColumn' that will select the given value and give it
+ the specified alias in the result set.
 
 @since 1.1.0.0
 -}
@@ -321,7 +324,7 @@ newtype TableExpr
   deriving (RawSql.SqlExpression)
 
 {- |
-  Constructs a 'TableExpr' with the given options.
+ Constructs a 'TableExpr' with the given options.
 
 @since 1.0.0.0
 -}
@@ -364,3 +367,51 @@ tableExpr
           , RawSql.toRawSql <$> maybeOffsetExpr
           , RawSql.toRawSql <$> maybeRowLockingClause
           ]
+
+{- |
+Type to represent all possible options for tableExpr.
+@since 1.1.0.0
+-}
+data Clauses = Clauses
+  { _whereClause :: Maybe WhereClause
+  , _groupByClause :: Maybe GroupByClause
+  , _orderByClause :: Maybe OrderByClause
+  , _limitExpr :: Maybe LimitExpr
+  , _offSetExpr :: Maybe OffsetExpr
+  , _rowLockingClause :: Maybe RowLockingClause
+  , _windowClause :: Maybe WindowClause
+  }
+
+{- |
+Default constructor for Clauses type.
+@since 1.1.0.0
+-}
+defaultClauses :: Clauses
+defaultClauses =
+  Clauses
+    { _whereClause = Nothing
+    , _groupByClause = Nothing
+    , _orderByClause = Nothing
+    , _limitExpr = Nothing
+    , _offSetExpr = Nothing
+    , _rowLockingClause = Nothing
+    , _windowClause = Nothing
+    }
+
+{- |
+Helper function to construct tableExpr
+E.G
+mkTableExpr myFromItemExpr (defaultClauses { _whereClause = myWhereCluase })
+@since 1.1.0.0
+-}
+mkTableExpr :: FromItemExpr -> Clauses -> TableExpr
+mkTableExpr f Clauses {..} =
+  tableExpr
+    f
+    _whereClause
+    _groupByClause
+    _orderByClause
+    _limitExpr
+    _offSetExpr
+    _rowLockingClause
+    _windowClause
