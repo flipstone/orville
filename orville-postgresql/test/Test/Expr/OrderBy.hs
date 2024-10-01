@@ -25,6 +25,7 @@ orderByTests pool =
     , prop_orderByColumnsExpr pool
     , prop_ascendingOrderWithExpr pool
     , prop_descendingOrderWithExpr pool
+    , prop_distinctOnExpr pool
     ]
 
 prop_ascendingExpr :: Property.NamedDBProperty
@@ -33,6 +34,8 @@ prop_ascendingExpr =
     OrderByTest
       { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog", mkFooBar 3 "dog"]
+      , orderByDistinctOn =
+          Nothing
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByColumnName barColumn Expr.ascendingOrder
@@ -44,6 +47,8 @@ prop_descendingExpr =
     OrderByTest
       { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "dog", mkFooBar 2 "dingo"]
+      , orderByDistinctOn =
+          Nothing
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByColumnName barColumn Expr.descendingOrder
@@ -55,6 +60,8 @@ prop_appendOrderByExpr =
     OrderByTest
       { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
+      , orderByDistinctOn =
+          Nothing
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
@@ -68,6 +75,8 @@ prop_orderByColumnsExpr =
     OrderByTest
       { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
+      , orderByDistinctOn =
+          Nothing
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByColumnsExpr $
@@ -83,6 +92,8 @@ prop_ascendingOrderWithExpr =
           [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
       , orderByExpectedQueryResults =
           [FooBar Nothing (Just "dog"), FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog"]
+      , orderByDistinctOn =
+          Nothing
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
@@ -98,6 +109,8 @@ prop_descendingOrderWithExpr =
           [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
       , orderByExpectedQueryResults =
           [FooBar Nothing (Just "dog"), FooBar Nothing Nothing, mkFooBar 2 "dog", FooBar (Just 1) Nothing]
+      , orderByDistinctOn =
+          Nothing
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.appendOrderByExpr
@@ -105,9 +118,25 @@ prop_descendingOrderWithExpr =
               (Expr.orderByColumnName barColumn $ Expr.descendingOrderWith Expr.NullsLast)
       }
 
+prop_distinctOnExpr :: Property.NamedDBProperty
+prop_distinctOnExpr =
+  orderByTest "descendingExpr sorts a text column as expected with distinctOn" $
+    OrderByTest
+      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog"]
+      , orderByDistinctOn =
+          Just . pure . RawSql.unsafeFromRawSql $ RawSql.toRawSql barColumn
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.appendOrderByExpr
+              (Expr.orderByColumnName barColumn Expr.ascendingOrder)
+              (Expr.orderByColumnName fooColumn Expr.ascendingOrder)
+      }
+
 data OrderByTest = OrderByTest
   { orderByValuesToInsert :: [FooBar]
   , orderByClause :: Maybe Expr.OrderByClause
+  , orderByDistinctOn :: Maybe (NE.NonEmpty Expr.DistinctOnExpr)
   , orderByExpectedQueryResults :: [FooBar]
   }
 
@@ -125,7 +154,7 @@ orderByTest testName test =
           result <-
             RawSql.execute connection $
               Expr.queryExpr
-                (Expr.selectClause $ Expr.selectExpr Nothing)
+                (Expr.selectClause . Expr.selectDistinctOnExpr $ orderByDistinctOn test)
                 (Expr.selectColumns [fooColumn, barColumn])
                 (Just $ Expr.tableExpr (Expr.tableFromItem fooBarTable) Nothing Nothing (orderByClause test) Nothing Nothing Nothing Nothing)
 

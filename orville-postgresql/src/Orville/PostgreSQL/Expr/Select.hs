@@ -13,8 +13,12 @@ module Orville.PostgreSQL.Expr.Select
   , SelectExpr
   , selectExpr
   , Distinct (Distinct)
+  , DistinctOnExpr
+  , selectDistinctOnExpr
   )
 where
+
+import qualified Data.List.NonEmpty as NEL
 
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -78,3 +82,30 @@ selectExpr mbDistinct =
     case mbDistinct of
       Just Distinct -> "DISTINCT "
       Nothing -> ""
+
+{- | Type to represent a expression to be used as part of a @DISTINCT@ modifer of a @SELECT@. E.G. the
+foo in
+
+> DISTINCT ON (foo)
+
+'SelectExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
+
+@since 1.1.0.0
+-}
+newtype DistinctOnExpr = DistinctOnExpr RawSql.RawSql
+  deriving (RawSql.SqlExpression)
+
+{- | Constructs a 'SelectExpr' that may or may not make the @SELECT@ distinct on the given expression.
+
+Note that PostgreSQL states the distinct expressions must match the leftmost order by expressions if
+they are both used, but this function does not enforce that.
+
+@since 1.1.0.0
+-}
+selectDistinctOnExpr :: Maybe (NEL.NonEmpty DistinctOnExpr) -> SelectExpr
+selectDistinctOnExpr mbDistinctOns =
+  SelectExpr $
+    case mbDistinctOns of
+      Just ons -> RawSql.fromString "DISTINCT ON " <> RawSql.parenthesized (RawSql.intercalate RawSql.commaSpace ons)
+      Nothing -> mempty
