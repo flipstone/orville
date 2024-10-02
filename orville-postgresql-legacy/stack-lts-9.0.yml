@@ -1,6 +1,0 @@
-resolver: lts-9.0
-packages:
-  - .
-extra-deps:
-  - HDBC-postgresql-2.3.2.5
-

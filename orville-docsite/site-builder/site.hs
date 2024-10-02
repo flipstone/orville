@@ -109,10 +109,6 @@ main = do
 
     match "templates/*" $ compile templateBodyCompiler
 
-    match "orville-postgresql-legacy-docs/**" $ do
-      route idRoute
-      compile copyFileCompiler
-
     create ["check-all-snippets-used"] $ do
       -- This rule doesn't have a route, which causes no actual file to get
       -- create for the site, which is what we want.
