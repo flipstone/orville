@@ -34,8 +34,10 @@ jobs:
         uses: actions/cache@v4
         env:
           cache-version: build-v2
+          stack-yaml-path: "orville-postgresql/${{ matrix.stack-yaml }}"
+
         with:
-          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          key: ${{ env.cache-version }}-${{ hashFiles( env.stack-yaml-path ) }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
             ${{ env.cache-version }}-
           path: |
@@ -58,6 +60,7 @@ jobs:
             dev \
             stack --stack-yaml ${{ matrix.stack-yaml }} test \
             --ghc-options=-j --flag orville-postgresql:ci
+          docker compose run --rm dev chmod -R +r /stack-root
 
   formatting-check:
     name: Formatting Check
