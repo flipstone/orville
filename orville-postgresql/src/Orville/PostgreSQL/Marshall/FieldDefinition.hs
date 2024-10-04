@@ -650,6 +650,10 @@ dateField = fieldOfType SqlType.date
   Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP with time zone" type.
 
+  Note that the time zone is not actually stored.  On read, if the session
+  time zone setting isn't set to UTC, the offset will be applied to the local
+  time component.  On write, the offset always 0.
+
 @since 1.0.0.0
 -}
 utcTimestampField ::
