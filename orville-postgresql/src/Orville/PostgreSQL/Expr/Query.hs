@@ -215,6 +215,11 @@ SQL.
 newtype SelectList = SelectList RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
+-- | @since 1.1.0.0
+instance Semigroup SelectList where
+  SelectList a <> SelectList b =
+    SelectList $ RawSql.appendWithCommaSpace a b
+
 {- |
   Constructs a 'SelectList' that will select all colums (i.e. the @*@ in
   @SELECT *@").
