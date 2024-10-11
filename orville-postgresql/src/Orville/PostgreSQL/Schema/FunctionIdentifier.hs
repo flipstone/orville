@@ -64,17 +64,20 @@ setFunctionIdSchema schema functionId =
     { i_functionIdSchema = Just schema
     }
 
-{- |
-  Returns the 'Expr.Qualified Expr.FunctionName' that should be used to refer to
-  the function in SQL queries.
+{- | Returns the 'Expr.QualifiedOrUnqualified Expr.FunctionName' that should be used to refer to the
+  function in SQL queries where a potentially qualified reference is appropriate.
 
 @since 1.1.0.0
 -}
-functionIdQualifiedName :: FunctionIdentifier -> Expr.Qualified Expr.FunctionName
+functionIdQualifiedName :: FunctionIdentifier -> Expr.QualifiedOrUnqualified Expr.FunctionName
 functionIdQualifiedName functionId =
-  Expr.qualifyFunction
-    (functionIdSchemaName functionId)
-    (functionIdUnqualifiedName functionId)
+  case functionIdSchemaName functionId of
+    Nothing ->
+      Expr.unqualified (functionIdUnqualifiedName functionId)
+    Just schemaName ->
+      Expr.qualifiedTo $ Expr.qualifyFunction
+        schemaName
+        (functionIdUnqualifiedName functionId)
 
 {- |
   Returns the unqualified 'Expr.FunctionName' that should be used to refer to the

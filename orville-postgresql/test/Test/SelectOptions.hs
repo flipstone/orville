@@ -329,7 +329,7 @@ prop_orderByCombined =
   Property.singletonNamedProperty "orderBy generates expected sql with multiple selectOptions" $
     assertOrderByClauseEquals
       (Just "ORDER BY \"foo\" ASC, \"bar\" DESC")
-      ( (O.orderBy $ O.orderByColumnName (Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")) O.ascendingOrder)
+      ( (O.orderBy $ O.orderByColumnName (Expr.unqualified (Expr.columnName "foo")) O.ascendingOrder)
           <> (O.orderBy $ O.orderByField barField O.descendingOrder)
       )
 
@@ -348,7 +348,7 @@ prop_groupByCombined =
     assertGroupByClauseEquals
       (Just "GROUP BY foo, \"bar\"")
       ( (O.groupBy . RawSql.unsafeSqlExpression $ "foo")
-          <> (O.groupBy . Expr.groupByColumnsExpr $ (FieldDef.fieldColumnName Nothing barField :| []))
+          <> (O.groupBy . Expr.groupByColumnsExpr $ ((FieldDef.fieldColumnName Nothing barField) :| []))
       )
 
 prop_forRowLock :: Property.NamedProperty

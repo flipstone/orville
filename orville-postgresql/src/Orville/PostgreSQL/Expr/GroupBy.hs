@@ -18,7 +18,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -83,6 +83,6 @@ appendGroupByExpr (GroupByExpr a) (GroupByExpr b) =
 
 @since 1.0.0.0
 -}
-groupByColumnsExpr :: NonEmpty (Qualified ColumnName) -> GroupByExpr
+groupByColumnsExpr :: NonEmpty (QualifiedOrUnqualified ColumnName) -> GroupByExpr
 groupByColumnsExpr =
   GroupByExpr . RawSql.intercalate RawSql.commaSpace

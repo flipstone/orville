@@ -216,7 +216,7 @@ tableIdentifier =
 
 @since 1.0.0.0
 -}
-tableName :: TableDefinition key writeEntity readEntity -> Expr.Qualified Expr.TableName
+tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedOrUnqualified Expr.TableName
 tableName =
   tableIdQualifiedName . i_tableIdentifier
 
@@ -556,7 +556,7 @@ mkInsertColumnList ::
 mkInsertColumnList marshaller =
   Expr.insertColumnList
     . foldMarshallerFields marshaller []
-    $ collectFromField ExcludeReadOnlyColumns fieldColumnName
+    $ collectFromField ExcludeReadOnlyColumns (\mbA -> fieldColumnName mbA)
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their

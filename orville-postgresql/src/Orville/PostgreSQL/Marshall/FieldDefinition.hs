@@ -397,9 +397,13 @@ fieldValueFromSqlValue =
 
 @since 1.0.0.0
 -}
-fieldColumnName :: Maybe AliasName -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
+fieldColumnName :: Maybe AliasName -> FieldDefinition nullability a -> Expr.QualifiedOrUnqualified Expr.ColumnName
 fieldColumnName mbAlias =
-  Expr.aliasQualifyColumn (fmap aliasNameToAliasExpr mbAlias) . fieldNameToColumnName . fieldName
+  case mbAlias of
+    Nothing ->
+      Expr.unqualified . fieldNameToColumnName . fieldName
+    Just alias ->
+      Expr.qualifiedTo . Expr.aliasQualifyColumn (aliasNameToAliasExpr alias) . fieldNameToColumnName . fieldName
 
 {- |
   Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
@@ -410,7 +414,7 @@ fieldColumnName mbAlias =
 fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReference =
   Expr.columnReference
-    . Expr.aliasQualifyColumn Nothing
+    . Expr.unqualified
     . fieldNameToColumnName
     . fieldName
 

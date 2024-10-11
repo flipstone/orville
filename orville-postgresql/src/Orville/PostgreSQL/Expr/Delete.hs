@@ -17,7 +17,7 @@ where
 
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Expr.Name (Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -48,7 +48,7 @@ returning a 'ReturningExpr'.
 @since 1.0.0.0
 -}
 deleteExpr ::
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   Maybe WhereClause ->
   Maybe ReturningExpr ->
   DeleteExpr

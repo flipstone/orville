@@ -70,11 +70,15 @@ setSequenceIdSchema schema sequenceId =
 
 @since 1.0.0.0
 -}
-sequenceIdQualifiedName :: SequenceIdentifier -> Expr.Qualified Expr.SequenceName
+sequenceIdQualifiedName :: SequenceIdentifier -> Expr.QualifiedOrUnqualified Expr.SequenceName
 sequenceIdQualifiedName sequenceId =
-  Expr.qualifySequence
-    (sequenceIdSchemaName sequenceId)
-    (sequenceIdUnqualifiedName sequenceId)
+  case sequenceIdSchemaName sequenceId of
+    Nothing ->
+      Expr.unqualified (sequenceIdUnqualifiedName sequenceId)
+    Just schemaName ->
+      Expr.qualifiedTo $ Expr.qualifySequence
+        schemaName
+        (sequenceIdUnqualifiedName sequenceId)
 
 {- |
   Returns the unqualified 'Expr.SequenceName' that should be used to refer to the

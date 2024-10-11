@@ -45,7 +45,7 @@ newtype AliasName
 aliasNameAndFieldNameToColumnName :: AliasName -> FieldName -> Expr.Qualified Expr.ColumnName
 aliasNameAndFieldNameToColumnName aliasName =
   Expr.aliasQualifyColumn
-    (Just $ aliasNameToAliasExpr aliasName)
+    (aliasNameToAliasExpr aliasName)
     . fieldNameToColumnName
 
 {- |
