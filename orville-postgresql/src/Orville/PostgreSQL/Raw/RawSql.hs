@@ -89,6 +89,7 @@ data RawSql
   | Append RawSql RawSql
   | Empty
 
+-- | @since 1.0.0.0
 instance Semigroup RawSql where
   (SqlSection builderA) <> (SqlSection builderB) =
     SqlSection (builderA <> builderB)
@@ -97,6 +98,7 @@ instance Semigroup RawSql where
   otherA <> otherB =
     Append otherA otherB
 
+-- | @since 1.0.0.0
 instance Monoid RawSql where
   mempty = Empty
 
@@ -130,6 +132,7 @@ class SqlExpression a where
   toRawSql :: a -> RawSql
   unsafeFromRawSql :: RawSql -> a
 
+-- | @since 1.0.0.0
 instance SqlExpression RawSql where
   toRawSql = id
   unsafeFromRawSql = id
@@ -485,38 +488,62 @@ execute connection sql = do
 @since 1.0.0.0
 -}
 executeVoid :: SqlExpression sql => Conn.Connection -> sql -> IO ()
-executeVoid connection sql = do
-  void $ execute connection sql
+executeVoid connection =
+  void . execute connection
 
--- | Just a plain old space, provided for convenience.
+{- | Just a plain old space, provided for convenience.
+
+@since 1.0.0.0
+-}
 space :: RawSql
 space = fromString " "
 
--- | Just a plain old comma, provided for convenience.
+{- | Just a plain old comma, provided for convenience.
+
+@since 1.0.0.0
+-}
 comma :: RawSql
 comma = fromString ","
 
--- | Comma space separator, provided for convenience.
+{- | Comma space separator, provided for convenience.
+
+@since 1.0.0.0
+-}
 commaSpace :: RawSql
 commaSpace = fromString ", "
 
--- | Just a plain old left paren, provided for convenience.
+{- | Just a plain old left paren, provided for convenience.
+
+@since 1.0.0.0
+-}
 leftParen :: RawSql
 leftParen = fromString "("
 
--- | Just a plain old right paren, provided for convenience.
+{- | Just a plain old right paren, provided for convenience.
+
+@since 1.0.0.0
+-}
 rightParen :: RawSql
 rightParen = fromString ")"
 
--- | Just a plain period, provided for convenience.
+{- | Just a plain period, provided for convenience.
+
+@since 1.0.0.0
+-}
 dot :: RawSql
 dot = fromString "."
 
--- | Just a plain double quote, provided for convenience.
+{- | Just a plain double quote, provided for convenience.
+
+@since 1.0.0.0
+-}
 doubleQuote :: RawSql
 doubleQuote = fromString "\""
 
--- | Just two colons, provided for convenience.
+{- | Just two colons, provided for convenience.
+
+@since 1.0.0.0
+-}
 doubleColon :: RawSql
 doubleColon = fromString "::"
 

@@ -109,7 +109,7 @@ sequenceIdentifier = i_sequenceIdentifier
 
 @since 1.0.0.0
 -}
-sequenceName :: SequenceDefinition -> Expr.Qualified Expr.SequenceName
+sequenceName :: SequenceDefinition -> Expr.QualifiedOrUnqualified Expr.SequenceName
 sequenceName =
   sequenceIdQualifiedName . i_sequenceIdentifier
 

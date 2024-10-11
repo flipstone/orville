@@ -42,7 +42,7 @@ import Data.Maybe (catMaybes, maybeToList)
 import Orville.PostgreSQL.Expr.ColumnDefinition (ColumnDefinition)
 import Orville.PostgreSQL.Expr.DataType (DataType)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
-import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.TableConstraint (TableConstraint)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -71,7 +71,7 @@ newtype CreateTableExpr
 -}
 createTableExpr ::
   -- | The name to be used for the table.
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   -- | The columns to include in the table.
   [ColumnDefinition] ->
   -- | A primary key expression for the table.
@@ -160,7 +160,7 @@ newtype AlterTableExpr
 
   @since 1.0.0.0
 -}
-alterTableExpr :: Qualified TableName -> NonEmpty AlterTableAction -> AlterTableExpr
+alterTableExpr :: QualifiedOrUnqualified TableName -> NonEmpty AlterTableAction -> AlterTableExpr
 alterTableExpr tableName actions =
   AlterTableExpr $
     RawSql.fromString "ALTER TABLE "
@@ -173,7 +173,7 @@ alterTableExpr tableName actions =
 
   @since 1.1.0.0
 -}
-renameTableExpr :: Qualified TableName -> Qualified TableName -> AlterTableExpr
+renameTableExpr :: QualifiedOrUnqualified TableName -> QualifiedOrUnqualified TableName -> AlterTableExpr
 renameTableExpr existingTableName newTableName =
   alterTableExpr existingTableName . pure . AlterTableAction $ RawSql.fromString "RENAME TO " <> RawSql.toRawSql newTableName
 
@@ -409,7 +409,7 @@ newtype DropTableExpr
 
   @since 1.0.0.0
 -}
-dropTableExpr :: Maybe IfExists -> Qualified TableName -> DropTableExpr
+dropTableExpr :: Maybe IfExists -> QualifiedOrUnqualified TableName -> DropTableExpr
 dropTableExpr maybeIfExists tableName =
   DropTableExpr $
     RawSql.intercalate
@@ -444,7 +444,7 @@ newtype TruncateTableExpr
 
   @since 1.1.0.0
 -}
-truncateTablesExpr :: NonEmpty (Qualified TableName) -> TruncateTableExpr
+truncateTablesExpr :: NonEmpty (QualifiedOrUnqualified TableName) -> TruncateTableExpr
 truncateTablesExpr tableNames =
   TruncateTableExpr $
     RawSql.intercalate

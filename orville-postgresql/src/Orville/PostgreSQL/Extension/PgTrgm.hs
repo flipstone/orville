@@ -102,7 +102,7 @@ trigramSimilaritySyntheticField ::
   Marshall.SyntheticField Double
 trigramSimilaritySyntheticField colname compareVal fieldAlias =
   Marshall.syntheticField
-    (trigramSimilarity (Expr.columnReference $ Expr.aliasQualifyColumn Nothing colname) compareVal)
+    (trigramSimilarity (Expr.columnReference $ Expr.unqualified colname) compareVal)
     fieldAlias
     Marshall.double
 
@@ -121,7 +121,7 @@ trigramWordSimilaritySyntheticField ::
   Marshall.SyntheticField Double
 trigramWordSimilaritySyntheticField colname compareVal fieldAlias =
   Marshall.syntheticField
-    (trigramWordSimilarity (Expr.columnReference $ Expr.aliasQualifyColumn Nothing colname) compareVal)
+    (trigramWordSimilarity (Expr.columnReference $ Expr.unqualified colname) compareVal)
     fieldAlias
     Marshall.double
 
@@ -140,7 +140,7 @@ trigramStrictWordSimilaritySyntheticField ::
   Marshall.SyntheticField Double
 trigramStrictWordSimilaritySyntheticField colname compareVal fieldAlias =
   Marshall.syntheticField
-    (trigramStrictWordSimilarity (Expr.columnReference $ Expr.aliasQualifyColumn Nothing colname) compareVal)
+    (trigramStrictWordSimilarity (Expr.columnReference $ Expr.unqualified colname) compareVal)
     fieldAlias
     Marshall.double
 

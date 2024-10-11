@@ -137,7 +137,7 @@ prop_queryPgTrigger =
   Property.singletonNamedDBProperty "Can query the pg_trigger table to find out about a trigger" $ \pool -> do
     let
       triggerFunctionName =
-        Expr.qualifyFunction Nothing $ Expr.functionName "test_trigger_function"
+        Expr.unqualified $ Expr.functionName "test_trigger_function"
 
       createTriggerFunction =
         Expr.createFunction
@@ -185,7 +185,7 @@ prop_queryPgProc =
   Property.singletonNamedDBProperty "Can query the pg_proc table to find out about a proc" $ \pool -> do
     let
       procFunctionName =
-        Expr.qualifyFunction Nothing $ Expr.functionName "test_proc"
+        Expr.unqualified $ Expr.functionName "test_proc"
 
       procName =
         String.fromString "test_proc"

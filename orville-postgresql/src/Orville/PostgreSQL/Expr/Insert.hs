@@ -21,7 +21,7 @@ where
 
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.OnConflict (OnConflictExpr)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -53,7 +53,7 @@ itself.
 @since 1.0.0.0
 -}
 insertExpr ::
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   Maybe InsertColumnList ->
   InsertSource ->
   Maybe OnConflictExpr ->
@@ -94,7 +94,7 @@ parens and commas are used to separate.
 
 @since 1.0.0.0
 -}
-insertColumnList :: [Qualified ColumnName] -> InsertColumnList
+insertColumnList :: [QualifiedOrUnqualified ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
     RawSql.leftParen

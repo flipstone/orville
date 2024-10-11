@@ -145,13 +145,13 @@ mkAggregateTestExpectedRows test =
   in
     fmap mkRow (groupByExpectedQueryResults test)
 
-testTable :: Expr.Qualified Expr.TableName
+testTable :: Expr.QualifiedOrUnqualified Expr.TableName
 testTable =
-  Expr.qualifyTable Nothing (Expr.tableName "expr_test")
+  Expr.unqualified (Expr.tableName "expr_test")
 
-fooColumn :: Expr.Qualified Expr.ColumnName
+fooColumn :: Expr.QualifiedOrUnqualified Expr.ColumnName
 fooColumn =
-  Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")
+  Expr.unqualified (Expr.columnName "foo")
 
 dropAndRecreateTestTable :: Orville.Connection -> IO ()
 dropAndRecreateTestTable connection = do

@@ -14,6 +14,9 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   , qualifyFunction
   , qualifyColumn
   , aliasQualifyColumn
+  , QualifiedOrUnqualified
+  , untrackQualified
+  , unqualified
   )
 where
 
@@ -27,6 +30,46 @@ import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
+Type to represent a SQL name that could be qualified or not. E.G.
+
+> "some_schema_name"."some_table_name"
+
+or
+
+> "some_table_name"
+
+'QualifiedOrUnqualified' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0
+-}
+newtype QualifiedOrUnqualified name
+  = QualifiedOrUnqualified RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
+
+{- | 'untrackQualified' loses the information of the value certainly having a qualification. This is
+   useful when working with functionality that takes a 'QualifiedOrUnqualifed name'.
+
+@since 1.1.0.0
+-}
+untrackQualified :: Qualified name -> QualifiedOrUnqualified name
+untrackQualified =
+  QualifiedOrUnqualified . RawSql.toRawSql
+
+{- | 'unqualified' loses the information of the value not having a qualification. This is
+   useful when working with functionality that takes a 'QualifiedOrUnqualifed name'.
+
+@since 1.1.0.0
+-}
+unqualified :: RawSql.SqlExpression name => name -> QualifiedOrUnqualified name
+unqualified =
+  QualifiedOrUnqualified . RawSql.toRawSql
+
+{- |
 Type to represent a qualified SQL name. E.G.
 
 > "some_schema_name"."some_table_name"
@@ -37,15 +80,19 @@ SQL.
 
 @since 1.0.0.0
 -}
-newtype Qualified name
-  = Qualified RawSql.RawSql
-  deriving
-    ( -- | @since 1.0.0.0
-      RawSql.SqlExpression
-    )
+data Qualified name = Qualified
+  { i_qualifier :: RawSql.RawSql
+  , i_itemQualified :: RawSql.RawSql
+  }
+
+-- | @since 1.0.0.0
+instance RawSql.SqlExpression (Qualified name) where
+  toRawSql (Qualified q i) =
+    q <> RawSql.dot <> i
+  unsafeFromRawSql = Qualified mempty
 
 {- |
-Optionally qualifies a 'TableName' with a 'SchemaName'.
+Qualifies a 'TableName' with a 'SchemaName'.
 
 Note: If you already have a 'Orville.PostgreSQL.Schema.TableIdentifier' in
 hand you should probably use
@@ -53,13 +100,13 @@ hand you should probably use
 @since 1.0.0.0
 -}
 qualifyTable ::
-  Maybe SchemaName ->
+  SchemaName ->
   TableName ->
   Qualified TableName
 qualifyTable = unsafeSchemaQualify
 
 {- |
-Optionally qualifies a 'SequenceName' with a 'SchemaName'.
+Qualifies a 'SequenceName' with a 'SchemaName'.
 
 Note: If you already have a 'Orville.PostgreSQL.Schema.SequenceIdentifier' in
 hand you should probably use
@@ -68,13 +115,13 @@ hand you should probably use
 @since 1.0.0.0
 -}
 qualifySequence ::
-  Maybe SchemaName ->
+  SchemaName ->
   SequenceName ->
   Qualified SequenceName
 qualifySequence = unsafeSchemaQualify
 
 {- |
-Optionally qualifies a 'FunctionName' with a 'SchemaName'.
+Qualifies a 'FunctionName' with a 'SchemaName'.
 
 Note: If you already have a 'Orville.PostgreSQL.Schema.FunctionIdentifier' in
 hand you should probably use
@@ -83,7 +130,7 @@ hand you should probably use
 @since 1.1.0.0
 -}
 qualifyFunction ::
-  Maybe SchemaName ->
+  SchemaName ->
   FunctionName ->
   Qualified FunctionName
 qualifyFunction = unsafeSchemaQualify
@@ -97,38 +144,34 @@ reference is appropriate.
 -}
 qualifyColumn :: Maybe SchemaName -> TableName -> ColumnName -> Qualified ColumnName
 qualifyColumn mbSchemaName tableName unqualifiedName =
-  unsafeSchemaQualify mbSchemaName
-    . RawSql.unsafeFromRawSql
-    $ RawSql.toRawSql (toIdentifier tableName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
+  case mbSchemaName of
+    Nothing ->
+      Qualified
+        { i_qualifier = RawSql.toRawSql (toIdentifier tableName)
+        , i_itemQualified = RawSql.toRawSql (toIdentifier unqualifiedName)
+        }
+    Just schemaName ->
+      Qualified
+        { i_qualifier = (RawSql.toRawSql schemaName) <> RawSql.dot <> RawSql.toRawSql tableName
+        , i_itemQualified = RawSql.toRawSql (toIdentifier unqualifiedName)
+        }
 
-{- | Qualifies a 'ColumnName' optionally with an 'AliasExpr'. This should be used to refer to the column
+{- | Qualifies a 'ColumnName' with an 'AliasExpr'. This should be used to refer to the column
 in SQL queries where an aliased reference is appropriate.
 
 @since 1.1.0.0
 -}
-aliasQualifyColumn :: Maybe AliasExpr -> ColumnName -> Qualified ColumnName
-aliasQualifyColumn mbAliasExprName unqualifiedName =
-  Qualified $ case mbAliasExprName of
-    Nothing ->
-      RawSql.toRawSql $ toIdentifier unqualifiedName
-    Just aliasName ->
-      RawSql.toRawSql (toIdentifier aliasName) <> RawSql.dot <> RawSql.toRawSql (toIdentifier unqualifiedName)
+aliasQualifyColumn :: AliasExpr -> ColumnName -> Qualified ColumnName
+aliasQualifyColumn aliasName =
+  Qualified (RawSql.toRawSql $ toIdentifier aliasName) . RawSql.toRawSql . toIdentifier
 
 -- Note: Not everything actually makes sense to be qualified by _only_ a schema name, such as
 -- columns, as in 'qualifyColumn'. But this does give us a nice uniform way to provide the
 -- functionality in those more type restricted scenarios.
 unsafeSchemaQualify ::
   IdentifierExpression name =>
-  Maybe SchemaName ->
+  SchemaName ->
   name ->
   Qualified name
-unsafeSchemaQualify mbSchemaName unqualifiedName =
-  case mbSchemaName of
-    Nothing ->
-      Qualified . RawSql.toRawSql . toIdentifier $ unqualifiedName
-    Just schemaName ->
-      Qualified
-        ( RawSql.toRawSql schemaName
-            <> RawSql.dot
-            <> RawSql.toRawSql (toIdentifier unqualifiedName)
-        )
+unsafeSchemaQualify schemaName =
+  Qualified (RawSql.toRawSql schemaName) . RawSql.toRawSql . toIdentifier

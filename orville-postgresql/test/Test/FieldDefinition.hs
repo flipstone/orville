@@ -256,7 +256,7 @@ runRoundTripTest pool testCase = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName Nothing fieldDef])
+          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
           (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
@@ -301,7 +301,7 @@ runNullableRoundTripTest pool testCase = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName Nothing fieldDef])
+          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
           (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
@@ -371,7 +371,7 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName Nothing fieldDef])
+          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
           (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
@@ -407,9 +407,9 @@ runDefaultValueInsertOnlyTest pool testCase defaultValue =
         Nothing
         Nothing
 
-testTable :: Expr.Qualified Expr.TableName
+testTable :: Expr.QualifiedOrUnqualified Expr.TableName
 testTable =
-  Expr.qualifyTable Nothing (Expr.tableName "field_definition_test")
+  Expr.unqualified (Expr.tableName "field_definition_test")
 
 dropAndRecreateTestTable :: Marshall.FieldDefinition nullability a -> Orville.Connection -> IO ()
 dropAndRecreateTestTable fieldDef connection = do

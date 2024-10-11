@@ -114,7 +114,7 @@ selectTable tableDef =
 -}
 selectMarshalledColumns ::
   AnnotatedSqlMarshaller writeEntity readEntity ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
 selectMarshalledColumns marshaller qualifiedTableName selectOptions =
@@ -152,7 +152,7 @@ selectTableWithAlias alias tableDef =
 selectMarshalledColumnsWithAlias ::
   AliasName ->
   AnnotatedSqlMarshaller writeEntity readEntity ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
 selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptions =

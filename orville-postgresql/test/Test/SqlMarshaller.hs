@@ -320,9 +320,9 @@ prop_referenceValueExpression =
       expected =
         Expr.rowValueConstructor $
           NE.fromList
-            [ Expr.columnReference $ Marshall.fieldColumnName (Just alias) nameField
-            , Expr.columnReference $ Marshall.fieldColumnName (Just alias) sizeField
-            , Expr.columnReference $ Marshall.fieldColumnName (Just alias) optionField
+            [ Expr.columnReference . Expr.untrackQualified $ Marshall.fieldAliasQualifiedColumnName alias nameField
+            , Expr.columnReference . Expr.untrackQualified $ Marshall.fieldAliasQualifiedColumnName alias sizeField
+            , Expr.columnReference . Expr.untrackQualified $ Marshall.fieldAliasQualifiedColumnName alias optionField
             ]
       actual = Marshall.referenceValueExpression (Marshall.marshallAlias alias fooMarshaller)
 

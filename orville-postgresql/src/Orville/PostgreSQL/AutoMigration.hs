@@ -852,7 +852,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
 @since 1.0.0.0
 -}
 mkConstraintSteps ::
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   [(StepType, Expr.AlterTableAction)] ->
   [MigrationStepWithType]
 mkConstraintSteps tableName actions =
@@ -878,7 +878,7 @@ mkConstraintSteps tableName actions =
 @since 1.0.0.0
 -}
 mkAlterColumnSteps ::
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   [Expr.AlterTableAction] ->
   [MigrationStepWithType]
 mkAlterColumnSteps tableName actionExprs =
@@ -1174,7 +1174,7 @@ pgConstraintMigrationKey constraintDesc =
 -}
 mkAddIndexSteps ::
   Set.Set IndexDefinition.IndexMigrationKey ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   Orville.IndexDefinition ->
   [MigrationStepWithType]
 mkAddIndexSteps existingIndexes tableName indexDef =
@@ -1231,7 +1231,7 @@ mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
 -}
 mkAddTriggerSteps ::
   Set.Set Schema.TriggerMigrationKey ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   Orville.TriggerDefinition ->
   [MigrationStepWithType]
 mkAddTriggerSteps existingTriggers tableName triggerDef =
@@ -1250,7 +1250,7 @@ mkAddTriggerSteps existingTriggers tableName triggerDef =
 -}
 mkDropTriggerSteps ::
   Set.Set Schema.TriggerMigrationKey ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   PgCatalog.PgTrigger ->
   [MigrationStepWithType]
 mkDropTriggerSteps triggersToKeep tableName pgTrigger =

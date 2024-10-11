@@ -43,7 +43,7 @@ data TriggerDefinition = TriggerDefinition
   { i_triggerMigrationKey :: TriggerMigrationKey
   , i_triggerCreateExpr ::
       Maybe Expr.OrReplace ->
-      Expr.Qualified Expr.TableName ->
+      Expr.QualifiedOrUnqualified Expr.TableName ->
       Expr.CreateTriggerExpr
   }
 
@@ -79,7 +79,7 @@ triggerMigrationKey =
 
 @since 1.1.0.0
 -}
-beforeInsert :: String -> Expr.Qualified Expr.FunctionName -> TriggerDefinition
+beforeInsert :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
 beforeInsert name functionName =
   mkTriggerDefinition
     name
@@ -94,7 +94,7 @@ beforeInsert name functionName =
 
 @since 1.1.0.0
 -}
-afterInsert :: String -> Expr.Qualified Expr.FunctionName -> TriggerDefinition
+afterInsert :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
 afterInsert name functionName =
   mkTriggerDefinition
     name
@@ -109,7 +109,7 @@ afterInsert name functionName =
 
 @since 1.1.0.0
 -}
-beforeUpdate :: String -> Expr.Qualified Expr.FunctionName -> TriggerDefinition
+beforeUpdate :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
 beforeUpdate name functionName =
   mkTriggerDefinition
     name
@@ -124,7 +124,7 @@ beforeUpdate name functionName =
 
 @since 1.1.0.0
 -}
-afterUpdate :: String -> Expr.Qualified Expr.FunctionName -> TriggerDefinition
+afterUpdate :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
 afterUpdate name functionName =
   mkTriggerDefinition
     name
@@ -139,7 +139,7 @@ afterUpdate name functionName =
 
 @since 1.1.0.0
 -}
-beforeDelete :: String -> Expr.Qualified Expr.FunctionName -> TriggerDefinition
+beforeDelete :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
 beforeDelete name functionName =
   mkTriggerDefinition
     name
@@ -154,7 +154,7 @@ beforeDelete name functionName =
 
 @since 1.1.0.0
 -}
-afterDelete :: String -> Expr.Qualified Expr.FunctionName -> TriggerDefinition
+afterDelete :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
 afterDelete name functionName =
   mkTriggerDefinition
     name
@@ -177,7 +177,7 @@ mkTriggerDefinition ::
   Expr.TriggerTiming ->
   NonEmpty Expr.TriggerEvent ->
   Expr.TriggerFireScope ->
-  Expr.Qualified Expr.FunctionName ->
+  Expr.QualifiedOrUnqualified Expr.FunctionName ->
   TriggerDefinition
 mkTriggerDefinition name timing events fireScope functionName =
   TriggerDefinition
@@ -203,7 +203,7 @@ mkTriggerDefinition name timing events fireScope functionName =
 mkCreateTriggerExpr ::
   TriggerDefinition ->
   Maybe Expr.OrReplace ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   Expr.CreateTriggerExpr
 mkCreateTriggerExpr =
   i_triggerCreateExpr

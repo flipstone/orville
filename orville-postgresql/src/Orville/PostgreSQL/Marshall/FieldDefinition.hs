@@ -64,6 +64,7 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , fieldValueToSqlValue
   , fieldValueFromSqlValue
   , fieldColumnName
+  , fieldAliasQualifiedColumnName
   , fieldColumnReference
   , fieldColumnDefinition
   , FieldName
@@ -397,9 +398,18 @@ fieldValueFromSqlValue =
 
 @since 1.0.0.0
 -}
-fieldColumnName :: Maybe AliasName -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
-fieldColumnName mbAlias =
-  Expr.aliasQualifyColumn (fmap aliasNameToAliasExpr mbAlias) . fieldNameToColumnName . fieldName
+fieldColumnName :: FieldDefinition nullability a -> Expr.QualifiedOrUnqualified Expr.ColumnName
+fieldColumnName =
+  Expr.unqualified . fieldNameToColumnName . fieldName
+
+{- | Constructs the 'Expr.ColumnName' for a field qualified with the given for use in SQL expressions
+  from the "Orville.PostgreSQL.Expr" module.
+
+@since 1.1.0.0
+-}
+fieldAliasQualifiedColumnName :: AliasName -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
+fieldAliasQualifiedColumnName alias =
+  Expr.aliasQualifyColumn (aliasNameToAliasExpr alias) . fieldNameToColumnName . fieldName
 
 {- |
   Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
@@ -410,7 +420,7 @@ fieldColumnName mbAlias =
 fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReference =
   Expr.columnReference
-    . Expr.aliasQualifyColumn Nothing
+    . Expr.unqualified
     . fieldNameToColumnName
     . fieldName
 
@@ -863,7 +873,7 @@ prefixField prefix fieldDef =
 setField :: FieldDefinition nullability a -> a -> Expr.SetClause
 setField fieldDef =
   Expr.setColumn
-    (fieldColumnName Nothing fieldDef)
+    (fieldColumnName fieldDef)
     . fieldValueToSqlValue fieldDef
 
 {- |
@@ -1115,7 +1125,7 @@ orderByField ::
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByField =
-  Expr.orderByColumnName . fieldColumnName Nothing
+  Expr.orderByColumnName . fieldColumnName
 
 {- | Orders a query by the column name for the given field, taking into account the alias, if any.
 
@@ -1126,15 +1136,15 @@ orderByAliasedField ::
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByAliasedField aliasedFieldDef =
-  Expr.orderByColumnName (fieldColumnName (getAlias aliasedFieldDef) (getFieldDefinition aliasedFieldDef))
+  Expr.orderByColumnName (Expr.untrackQualified $ fieldAliasQualifiedColumnName (getAlias aliasedFieldDef) (getFieldDefinition aliasedFieldDef))
 
-{- | A 'FieldDefinition' that might have been aliased. This is equivalent to a tuple of the field
+{- | A 'FieldDefinition' that has been aliased. This is equivalent to a tuple of the field
 definition and 'Maybe Expr.Alias'.
 
 @since 1.1.0.0
 -}
 data AliasedFieldDefinition nullability a = AliasedFieldDefinition
-  { i_alias :: Maybe AliasName
+  { i_alias :: AliasName
   , i_fieldDef :: FieldDefinition nullability a
   }
 
@@ -1146,16 +1156,16 @@ instance SqlComparable.SqlComparable (AliasedFieldDefinition nullability a) a wh
   toComparableSqlValue (AliasedFieldDefinition _ fieldDef) =
     toComparableSqlValue fieldDef
 
-  referenceValueExpression (AliasedFieldDefinition mbAlias fieldDef) =
-    Expr.columnReference $
-      fieldColumnName mbAlias fieldDef
+  referenceValueExpression (AliasedFieldDefinition alias fieldDef) =
+    Expr.columnReference . Expr.untrackQualified $
+      fieldAliasQualifiedColumnName alias fieldDef
 
 {- |
 Obtains the alias used with the field definition.
 
 @since 1.1.0.0
 -}
-getAlias :: AliasedFieldDefinition nullability a -> Maybe AliasName
+getAlias :: AliasedFieldDefinition nullability a -> AliasName
 getAlias = i_alias
 
 {- |
@@ -1171,6 +1181,6 @@ Alias an existing field definition.
 
 @since 1.1.0.0
 -}
-buildAliasedFieldDefinition :: FieldDefinition nullability a -> Maybe AliasName -> AliasedFieldDefinition nullability a
+buildAliasedFieldDefinition :: FieldDefinition nullability a -> AliasName -> AliasedFieldDefinition nullability a
 buildAliasedFieldDefinition f ma =
   AliasedFieldDefinition ma f

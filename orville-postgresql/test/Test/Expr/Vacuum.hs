@@ -77,14 +77,14 @@ prop_vacuumTwoOptionsTwoTables =
       ]
       twoTables
 
-assertVacuumEquals :: (HH.MonadTest m, HasCallStack) => String -> [Expr.VacuumOption] -> NonEmpty (Expr.Qualified Expr.TableName) -> m ()
+assertVacuumEquals :: (HH.MonadTest m, HasCallStack) => String -> [Expr.VacuumOption] -> NonEmpty (Expr.QualifiedOrUnqualified Expr.TableName) -> m ()
 assertVacuumEquals mbVacuum vacuumOptions vacuumTables =
   withFrozenCallStack $
     RawSql.toExampleBytes (Expr.vacuumExpr vacuumOptions vacuumTables) HH.=== B8.pack mbVacuum
 
-singleTable :: NonEmpty (Expr.Qualified Expr.TableName)
-singleTable = pure . Expr.qualifyTable Nothing $ Expr.tableName "foo"
+singleTable :: NonEmpty (Expr.QualifiedOrUnqualified Expr.TableName)
+singleTable = pure . Expr.unqualified $ Expr.tableName "foo"
 
-twoTables :: NonEmpty (Expr.Qualified Expr.TableName)
+twoTables :: NonEmpty (Expr.QualifiedOrUnqualified Expr.TableName)
 twoTables =
-  (Expr.qualifyTable Nothing $ Expr.tableName "foo") :| [Expr.qualifyTable Nothing $ Expr.tableName "bar"]
+  (Expr.unqualified $ Expr.tableName "foo") :| [Expr.unqualified $ Expr.tableName "bar"]

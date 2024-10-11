@@ -28,7 +28,7 @@ where
 
 import qualified Data.List.NonEmpty as NEL
 
-import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, QualifiedOrUnqualified)
 import qualified Orville.PostgreSQL.Expr.ValueExpression as ValueExpression
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -96,7 +96,7 @@ appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
 
 @since 1.0.0.0
 -}
-orderByColumnsExpr :: NEL.NonEmpty (Qualified ColumnName, OrderByDirection) -> OrderByExpr
+orderByColumnsExpr :: NEL.NonEmpty (QualifiedOrUnqualified ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr = ExtraNonEmpty.foldMap1' (uncurry orderByColumnName)
 
 {- |
@@ -104,7 +104,7 @@ orderByColumnsExpr = ExtraNonEmpty.foldMap1' (uncurry orderByColumnName)
 
 @since 1.0.0.0
 -}
-orderByColumnName :: Qualified ColumnName -> OrderByDirection -> OrderByExpr
+orderByColumnName :: QualifiedOrUnqualified ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName = orderByValueExpression . ValueExpression.columnReference
 
 {- | Create an 'OrderByExpr' for 'AliasExpr' and 'OrderByDirection' pairs, ensuring commas as needed. For basic queries involving columns on some table(s), use 'orderByColumnsExpr'.

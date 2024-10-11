@@ -46,7 +46,7 @@ import Data.Int (Int64)
 import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
-import Orville.PostgreSQL.Expr.Name (FunctionName, Qualified, SequenceName, functionName)
+import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified, SequenceName, functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, functionCall, valueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
@@ -89,7 +89,7 @@ newtype CreateSequenceExpr
 -}
 createSequenceExpr ::
   -- | The name to be used for the sequence.
-  Qualified SequenceName ->
+  QualifiedOrUnqualified SequenceName ->
   -- | An optional @INCREMENT@ expression.
   Maybe IncrementByExpr ->
   -- | An optional @MINVALUE@ expression.
@@ -161,7 +161,7 @@ newtype AlterSequenceExpr
 -}
 alterSequenceExpr ::
   -- | The name of the sequence to alter
-  Qualified SequenceName ->
+  QualifiedOrUnqualified SequenceName ->
   -- | An optional @INCREMENT@ expression
   Maybe IncrementByExpr ->
   -- | An optional @MINVALUE@ expression
@@ -434,7 +434,7 @@ newtype DropSequenceExpr
 
   @since 1.0.0.0
 -}
-dropSequenceExpr :: Maybe IfExists -> Qualified SequenceName -> DropSequenceExpr
+dropSequenceExpr :: Maybe IfExists -> QualifiedOrUnqualified SequenceName -> DropSequenceExpr
 dropSequenceExpr maybeIfExists sequenceName =
   DropSequenceExpr $
     RawSql.intercalate
@@ -455,7 +455,7 @@ dropSequenceExpr maybeIfExists sequenceName =
 
   @since 1.0.0.0
 -}
-nextVal :: Qualified SequenceName -> ValueExpression
+nextVal :: QualifiedOrUnqualified SequenceName -> ValueExpression
 nextVal sequenceName =
   functionCall
     nextValFunction
@@ -479,7 +479,7 @@ nextValFunction =
 
   @since 1.0.0.0
 -}
-currVal :: Qualified SequenceName -> ValueExpression
+currVal :: QualifiedOrUnqualified SequenceName -> ValueExpression
 currVal sequenceName =
   functionCall
     currValFunction
@@ -503,7 +503,7 @@ currValFunction =
 
   @since 1.0.0.0
 -}
-setVal :: Qualified SequenceName -> Int64 -> ValueExpression
+setVal :: QualifiedOrUnqualified SequenceName -> Int64 -> ValueExpression
 setVal sequenceName newValue =
   functionCall
     setValFunction

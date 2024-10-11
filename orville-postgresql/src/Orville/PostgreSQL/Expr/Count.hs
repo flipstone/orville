@@ -13,7 +13,7 @@ module Orville.PostgreSQL.Expr.Count
   )
 where
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, Qualified, functionName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, QualifiedOrUnqualified, functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference, functionCall)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -44,6 +44,6 @@ count1 =
 
 @since 1.0.0.0
 -}
-countColumn :: Qualified ColumnName -> ValueExpression
+countColumn :: QualifiedOrUnqualified ColumnName -> ValueExpression
 countColumn =
   count . columnReference
