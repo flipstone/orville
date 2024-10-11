@@ -14,6 +14,9 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   , qualifyFunction
   , qualifyColumn
   , aliasQualifyColumn
+  , QualifiedOrUnqualified
+  , qualifiedTo
+  , unqualified
   )
 where
 
@@ -25,6 +28,22 @@ import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
 import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
 import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+
+newtype QualifiedOrUnqualified name
+  = QualifiedOrUnqualified RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
+
+-- TODO This name is awful
+qualifiedTo :: Qualified name -> QualifiedOrUnqualified name
+qualifiedTo (Qualified raw) =
+  QualifiedOrUnqualified raw
+
+unqualified :: RawSql.SqlExpression name =>  name -> QualifiedOrUnqualified name
+unqualified =
+  QualifiedOrUnqualified . RawSql.toRawSql
 
 {- |
 Type to represent a qualified SQL name. E.G.

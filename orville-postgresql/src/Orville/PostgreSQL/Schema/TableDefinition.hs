@@ -534,7 +534,7 @@ mkInsertExpr returningOption tableDef maybeOnConflict entities =
       mkInsertSource marshaller entities
   in
     Expr.insertExpr
-      (tableName tableDef)
+      (Expr.qualifiedTo $ tableName tableDef)
       (Just insertColumnList)
       insertSource
       maybeOnConflict
@@ -556,7 +556,7 @@ mkInsertColumnList ::
 mkInsertColumnList marshaller =
   Expr.insertColumnList
     . foldMarshallerFields marshaller []
-    $ collectFromField ExcludeReadOnlyColumns fieldColumnName
+    $ collectFromField ExcludeReadOnlyColumns (\mbA -> Expr.qualifiedTo . fieldColumnName mbA)
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their

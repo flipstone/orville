@@ -63,7 +63,7 @@ joinOnTrue =
   Expr.joinOnConstraint $ Expr.literalBooleanExpr True
 
 fooFromItem :: Expr.FromItemExpr
-fooFromItem = Expr.tableFromItem . Expr.qualifyTable Nothing $ Expr.tableName "foo"
+fooFromItem = Expr.tableFromItem . Expr.unqualified $ Expr.tableName "foo"
 
 barFromItem :: Expr.FromItemExpr
-barFromItem = Expr.tableFromItem . Expr.qualifyTable Nothing $ Expr.tableName "bar"
+barFromItem = Expr.tableFromItem . Expr.unqualified $ Expr.tableName "bar"

@@ -121,7 +121,7 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
-      (Expr.tableFromItem qualifiedTableName)
+      (Expr.tableFromItem $ Expr.qualifiedTo qualifiedTableName)
       selectOptions
 
 {- | Builds a 'Select' that will select all the columns described in the 'TableDefinition', ensuring
@@ -137,7 +137,7 @@ selectTableWithAlias ::
   SelectOptions.SelectOptions ->
   Select readEntity
 selectTableWithAlias alias tableDef =
-  selectMarshalledColumnsWithAlias alias (tableMarshaller tableDef) (tableName tableDef)
+  selectMarshalledColumnsWithAlias alias (tableMarshaller tableDef) (Expr.qualifiedTo $ tableName tableDef)
 
 {- |
   Builds a 'Select' that will select the columns described by the marshaller from the specified
@@ -152,7 +152,7 @@ selectTableWithAlias alias tableDef =
 selectMarshalledColumnsWithAlias ::
   AliasName ->
   AnnotatedSqlMarshaller writeEntity readEntity ->
-  Expr.Qualified Expr.TableName ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
 selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptions =

@@ -410,6 +410,7 @@ fieldColumnName mbAlias =
 fieldColumnReference :: FieldDefinition nullability a -> Expr.ValueExpression
 fieldColumnReference =
   Expr.columnReference
+    . Expr.qualifiedTo
     . Expr.aliasQualifyColumn Nothing
     . fieldNameToColumnName
     . fieldName
@@ -863,7 +864,7 @@ prefixField prefix fieldDef =
 setField :: FieldDefinition nullability a -> a -> Expr.SetClause
 setField fieldDef =
   Expr.setColumn
-    (fieldColumnName Nothing fieldDef)
+    (Expr.qualifiedTo $ fieldColumnName Nothing fieldDef)
     . fieldValueToSqlValue fieldDef
 
 {- |
@@ -1115,7 +1116,7 @@ orderByField ::
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByField =
-  Expr.orderByColumnName . fieldColumnName Nothing
+  Expr.orderByColumnName . Expr.qualifiedTo . fieldColumnName Nothing
 
 {- | Orders a query by the column name for the given field, taking into account the alias, if any.
 
@@ -1126,7 +1127,7 @@ orderByAliasedField ::
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByAliasedField aliasedFieldDef =
-  Expr.orderByColumnName (fieldColumnName (getAlias aliasedFieldDef) (getFieldDefinition aliasedFieldDef))
+  Expr.orderByColumnName (Expr.qualifiedTo $ fieldColumnName (getAlias aliasedFieldDef) (getFieldDefinition aliasedFieldDef))
 
 {- | A 'FieldDefinition' that might have been aliased. This is equivalent to a tuple of the field
 definition and 'Maybe Expr.Alias'.
@@ -1147,7 +1148,7 @@ instance SqlComparable.SqlComparable (AliasedFieldDefinition nullability a) a wh
     toComparableSqlValue fieldDef
 
   referenceValueExpression (AliasedFieldDefinition mbAlias fieldDef) =
-    Expr.columnReference $
+    Expr.columnReference . Expr.qualifiedTo $
       fieldColumnName mbAlias fieldDef
 
 {- |

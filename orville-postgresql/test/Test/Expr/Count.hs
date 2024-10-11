@@ -57,11 +57,11 @@ prop_countColumn =
           (Expr.selectClause (Expr.selectExpr Nothing))
           ( Expr.selectDerivedColumns
               [ Expr.deriveColumnAs
-                  (Expr.countColumn (Orville.fieldColumnName Nothing Foo.fooIdField))
+                  (Expr.countColumn . Expr.qualifiedTo $ Orville.fieldColumnName Nothing Foo.fooIdField)
                   (Expr.columnName "count")
               ]
           )
-          (Just (Expr.tableExpr (Expr.tableFromItem $ Orville.tableName Foo.table) Nothing Nothing Nothing Nothing Nothing Nothing Nothing))
+          (Just (Expr.tableExpr (Expr.tableFromItem . Expr.qualifiedTo $ Orville.tableName Foo.table) Nothing Nothing Nothing Nothing Nothing Nothing Nothing))
 
       marshaller =
         Orville.annotateSqlMarshallerEmptyAnnotation $

@@ -239,7 +239,7 @@ marshallerDerivedColumns marshaller =
     collectDerivedColumn entry columns =
       case entry of
         Natural mbAlias fieldDef _ ->
-          (Expr.deriveColumn . Expr.columnReference $ fieldColumnName mbAlias fieldDef)
+          (Expr.deriveColumn . Expr.columnReference . Expr.qualifiedTo $ fieldColumnName mbAlias fieldDef)
             : columns
         Synthetic synthField ->
           Expr.deriveColumnAs
