@@ -70,7 +70,7 @@ functionIdentifier =
 
 @since 1.1.0.0
 -}
-functionName :: FunctionDefinition -> Expr.Qualified Expr.FunctionName
+functionName :: FunctionDefinition -> Expr.QualifiedOrUnqualified Expr.FunctionName
 functionName =
   functionIdQualifiedName . i_functionIdentifier
 

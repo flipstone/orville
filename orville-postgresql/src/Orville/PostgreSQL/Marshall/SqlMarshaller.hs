@@ -76,7 +76,7 @@ import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionR
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameAsFieldName)
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, buildAliasedFieldDefinition, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, buildAliasedFieldDefinition, fieldAliasQualifiedColumnName, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
@@ -212,7 +212,11 @@ instance SqlComparable.SqlComparable (SqlMarshaller writeEntity readEntity) writ
           collectFromField
             ExcludeReadOnlyColumns
             ( \mbAlias fieldDef ->
-                SqlComparable.referenceValueExpression $ buildAliasedFieldDefinition fieldDef mbAlias
+                case mbAlias of
+                  Nothing -> SqlComparable.referenceValueExpression fieldDef
+                  Just alias ->
+                    SqlComparable.referenceValueExpression $
+                      buildAliasedFieldDefinition fieldDef alias
             )
     in
       maybe
@@ -239,8 +243,13 @@ marshallerDerivedColumns marshaller =
     collectDerivedColumn entry columns =
       case entry of
         Natural mbAlias fieldDef _ ->
-          (Expr.deriveColumn . Expr.columnReference $ fieldColumnName mbAlias fieldDef)
-            : columns
+          let
+            colName =
+              case mbAlias of
+                Nothing -> fieldColumnName fieldDef
+                Just alias -> Expr.untrackQualified $ fieldAliasQualifiedColumnName alias fieldDef
+          in
+            (Expr.deriveColumn $ Expr.columnReference colName) : columns
         Synthetic synthField ->
           Expr.deriveColumnAs
             (syntheticFieldExpression synthField)

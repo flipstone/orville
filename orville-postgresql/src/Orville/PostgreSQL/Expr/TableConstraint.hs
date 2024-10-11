@@ -25,7 +25,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -189,7 +189,7 @@ foreignKeyConstraint ::
   -- | The names of the columns in the source table that form the foreign key.
   NonEmpty ColumnName ->
   -- | The name of the table that the foreign key references.
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   -- | The names of the columns in the foreign table that the foreign key references.
   NonEmpty ColumnName ->
   -- | An optional @ON UPDATE@ foreign key action to perform.

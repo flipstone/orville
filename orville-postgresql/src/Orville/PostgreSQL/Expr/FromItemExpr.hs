@@ -14,7 +14,7 @@ module Orville.PostgreSQL.Expr.FromItemExpr
   )
 where
 
-import Orville.PostgreSQL.Expr.Name (AliasExpr, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -55,17 +55,17 @@ instance Monoid FromItemExpr where
 
   @since 1.1.0.0
 -}
-tableFromItem :: Qualified TableName -> FromItemExpr
-tableFromItem qualifiedTableName =
-  FromItemExpr $
-    RawSql.toRawSql qualifiedTableName
+tableFromItem :: QualifiedOrUnqualified TableName -> FromItemExpr
+tableFromItem =
+  FromItemExpr
+    . RawSql.toRawSql
 
 {- |
   Constructs a 'FromItemExpr' consisting of the specified table AS the given alias.
 
   @since 1.1.0.0
 -}
-tableFromItemWithAlias :: AliasExpr -> Qualified TableName -> FromItemExpr
+tableFromItemWithAlias :: AliasExpr -> QualifiedOrUnqualified TableName -> FromItemExpr
 tableFromItemWithAlias alias qualifiedTableName =
   FromItemExpr $
     RawSql.intercalate

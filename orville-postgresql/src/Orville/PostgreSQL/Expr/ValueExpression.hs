@@ -23,7 +23,7 @@ where
 import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
-import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, FunctionName, Qualified)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, FunctionName, QualifiedOrUnqualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
@@ -69,7 +69,7 @@ is the equivalent of simply writing the column name as the expression. E.G.
 
 @since 1.0.0.0
 -}
-columnReference :: Qualified ColumnName -> ValueExpression
+columnReference :: QualifiedOrUnqualified ColumnName -> ValueExpression
 columnReference = ValueExpression . RawSql.toRawSql
 
 {- |

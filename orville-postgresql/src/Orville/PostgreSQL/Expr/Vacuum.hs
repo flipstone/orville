@@ -20,7 +20,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Expr.Name (Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -46,7 +46,7 @@ newtype VacuumExpr
 
   @since 1.1.0.0
 -}
-vacuumExpr :: [VacuumOption] -> NonEmpty (Qualified TableName) -> VacuumExpr
+vacuumExpr :: [VacuumOption] -> NonEmpty (QualifiedOrUnqualified TableName) -> VacuumExpr
 vacuumExpr vacuumOptions tables =
   let
     optionsWithSpaceRawSql =

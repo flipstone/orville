@@ -50,7 +50,7 @@ prop_renameTable =
   Property.singletonNamedDBProperty "Rename table results in the new name existing and the old name not" $ \pool -> do
     let
       newTableNameString = "renamed_" <> tableNameString
-      newTableName = Expr.qualifyTable Nothing $ Expr.tableName newTableNameString
+      newTableName = Expr.unqualified $ Expr.tableName newTableNameString
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
@@ -86,9 +86,9 @@ prop_addMultipleColumns =
     tableDesc <- PgAssert.assertTableExists pool tableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
 
-exprTableName :: Expr.Qualified Expr.TableName
+exprTableName :: Expr.QualifiedOrUnqualified Expr.TableName
 exprTableName =
-  Expr.qualifyTable Nothing (Expr.tableName tableNameString)
+  Expr.unqualified (Expr.tableName tableNameString)
 
 tableNameString :: String
 tableNameString =

@@ -18,7 +18,7 @@ module Orville.PostgreSQL.Expr.Comment
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TEnc
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, SchemaName, TableName, qualifyColumn)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, SchemaName, TableName, qualifyColumn)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -56,7 +56,7 @@ Construct a 'CommentExpr' for a @COMMENT ON TABLE@ statement.
 
 @since 1.1.0.0
 -}
-commentTableExpr :: Qualified TableName -> Maybe Comment -> CommentExpr
+commentTableExpr :: QualifiedOrUnqualified TableName -> Maybe Comment -> CommentExpr
 commentTableExpr tableName mbComment =
   CommentExpr $
     RawSql.intercalate

@@ -28,7 +28,7 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
-import Orville.PostgreSQL.Expr.Name (FunctionName, Qualified)
+import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -55,7 +55,7 @@ Constructs a SQL @DROP FUNCTION@ statement from a function name.
 
 @since 1.1.0.0
 -}
-dropFunction :: Maybe IfExists -> Qualified FunctionName -> DropFunctionExpr
+dropFunction :: Maybe IfExists -> QualifiedOrUnqualified FunctionName -> DropFunctionExpr
 dropFunction maybeIfExists name =
   DropFunctionExpr $
     RawSql.intercalate
@@ -95,7 +95,7 @@ Note: Orville does not currently support creating functions with arguments.
 -}
 createFunction ::
   Maybe OrReplace ->
-  Qualified FunctionName ->
+  QualifiedOrUnqualified FunctionName ->
   FunctionReturns ->
   FunctionLanguage ->
   FunctionDefinition ->
@@ -106,7 +106,7 @@ createFunction maybeOrReplace name functionReturns functionLanguage definition =
       RawSql.space
       ( catMaybes
           [ Just $ RawSql.fromString "CREATE"
-          , RawSql.toRawSql <$> maybeOrReplace
+          , fmap RawSql.toRawSql maybeOrReplace
           , Just $ RawSql.fromString "FUNCTION"
           , Just $ RawSql.toRawSql name
           , Just $ RawSql.fromString "()" -- currently we don't support specifying arguments

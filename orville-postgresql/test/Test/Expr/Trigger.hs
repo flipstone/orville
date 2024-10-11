@@ -38,7 +38,7 @@ prop_triggers =
         \END"
 
       triggerFunctionName =
-        Expr.qualifyFunction Nothing $ Expr.functionName "test_trigger_function"
+        Expr.unqualified $ Expr.functionName "test_trigger_function"
 
       createTriggerFunction =
         Expr.createFunction

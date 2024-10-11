@@ -86,8 +86,8 @@ prop_insertExprWithOnConflictDoUpdate =
       fooBars0 = [mkFooBar 1 "dog"]
       fooBars1 = [mkFooBar 1 "eagel"]
       addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
-      fooColumnName = Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")
-      barColumnName = Expr.aliasQualifyColumn Nothing (Expr.columnName "bar")
+      fooColumnName = Expr.unqualified (Expr.columnName "foo")
+      barColumnName = Expr.unqualified (Expr.columnName "bar")
       conflictTarget = Expr.conflictTargetForIndexColumn fooColumnName Nothing
       setExcludedColumn = Expr.setColumnNameExcluded barColumnName
       onConflictDoUpdate = Expr.onConflictDoUpdate (Just conflictTarget) (pure setExcludedColumn) Nothing
@@ -311,7 +311,7 @@ prop_truncateTablesExpr =
     let
       fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       fooBar2Table =
-        Expr.qualifyTable Nothing (Expr.tableName "foobar2")
+        Expr.unqualified (Expr.tableName "foobar2")
       dropAndRecreateSecondTable connection = do
         RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql fooBar2Table)
         RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql fooBar2Table <> RawSql.fromString "(foo INTEGER, bar TEXT)")

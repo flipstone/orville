@@ -20,7 +20,7 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -53,7 +53,7 @@ newtype UpdateExpr
 -}
 updateExpr ::
   -- | The name of the table to be updated.
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   -- | The updates to be made to the table.
   SetClauseList ->
   -- | An optional where clause to limit the rows updated.
@@ -125,7 +125,7 @@ newtype SetClause
 
   @since 1.0.0.0
 -}
-setColumn :: Qualified ColumnName -> SqlValue.SqlValue -> SetClause
+setColumn :: QualifiedOrUnqualified ColumnName -> SqlValue.SqlValue -> SetClause
 setColumn columnName value =
   SetClause $
     RawSql.toRawSql columnName

@@ -23,7 +23,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, IndexName, Qualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, IndexName, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- |
@@ -53,7 +53,7 @@ unique, a table, and corresponding collection of 'ColumnName's.
 createIndexExpr ::
   IndexUniqueness ->
   Maybe ConcurrentlyExpr ->
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   NonEmpty ColumnName ->
   CreateIndexExpr
 createIndexExpr uniqueness mbConcurrently tableName columns =
@@ -77,7 +77,7 @@ the index creation.
 createNamedIndexExpr ::
   IndexUniqueness ->
   Maybe ConcurrentlyExpr ->
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   IndexName ->
   IndexBodyExpr ->
   CreateIndexExpr

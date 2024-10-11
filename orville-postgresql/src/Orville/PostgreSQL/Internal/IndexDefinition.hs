@@ -42,7 +42,7 @@ import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
 data IndexDefinition = IndexDefinition
   { i_indexCreateExpr ::
       IndexCreationStrategy ->
-      Expr.Qualified Expr.TableName ->
+      Expr.QualifiedOrUnqualified Expr.TableName ->
       Expr.CreateIndexExpr
   , i_indexMigrationKey :: IndexMigrationKey
   , i_indexCreationStrategy :: IndexCreationStrategy
@@ -185,7 +185,7 @@ indexMigrationKey = i_indexMigrationKey
 
 @since 1.0.0.0
 -}
-indexCreateExpr :: IndexDefinition -> Expr.Qualified Expr.TableName -> Expr.CreateIndexExpr
+indexCreateExpr :: IndexDefinition -> Expr.QualifiedOrUnqualified Expr.TableName -> Expr.CreateIndexExpr
 indexCreateExpr indexDef =
   i_indexCreateExpr
     indexDef
