@@ -27,7 +27,10 @@ Type to represent a PostgreSQL comment string literal.
 @since 1.1.0.0
 -}
 newtype Comment = Comment RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Construct a 'Comment' from a 'T.Text' value. The value will be escaped and quoted.
@@ -43,7 +46,10 @@ Type to represent a PostgreSQL @COMMENT@ statement.
 @since 1.1.0.0
 -}
 newtype CommentExpr = CommentExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Construct a 'CommentExpr' for a @COMMENT ON TABLE@ statement.

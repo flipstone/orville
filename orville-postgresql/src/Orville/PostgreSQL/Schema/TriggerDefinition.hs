@@ -57,7 +57,12 @@ data TriggerDefinition = TriggerDefinition
 -}
 newtype TriggerMigrationKey
   = NamedTriggerKey String
-  deriving (Eq, Ord)
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    )
 
 {- |
   Gets the 'TriggerMigrationKey' for the 'TriggerDefinition'

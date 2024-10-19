@@ -112,7 +112,12 @@ data IndexCreationStrategy
     --       indexes concurrently before you use this strategy. See
     --       https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY.
     Concurrent
-  deriving (Eq, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   Orville uses 'IndexMigrationKey' values while performing auto migrations to
@@ -125,7 +130,12 @@ data IndexCreationStrategy
 data IndexMigrationKey
   = AttributeBasedIndexKey AttributeBasedIndexMigrationKey
   | NamedIndexKey NamedIndexMigrationKey
-  deriving (Eq, Ord)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    )
 
 {- |
   An 'IndexMigrationKey' using 'AttributeBasedIndexMigrationKey' will cause
@@ -139,7 +149,14 @@ data AttributeBasedIndexMigrationKey = AttributeBasedIndexMigrationKey
   { indexKeyUniqueness :: Expr.IndexUniqueness
   , indexKeyColumns :: [FieldDefinition.FieldName]
   }
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   An 'IndexMigrationKey' using 'NamedIndexMigrationKey' will cause Orville to

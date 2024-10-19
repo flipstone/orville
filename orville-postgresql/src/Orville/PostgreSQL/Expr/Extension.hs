@@ -37,7 +37,10 @@ SQL.
 @since 1.1.0.0
 -}
 newtype CreateExtensionExpr = CreateExtensionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Construct a SQL CREATE EXTENSION statement from the extension name and if the statement should
 not fail on loading an extension with the same name as an already loaded one.
@@ -64,7 +67,10 @@ SQL.
 @since 1.1.0.0
 -}
 newtype DropExtensionExpr = DropExtensionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Construct a SQL DROP EXTENSION statement from the extension name and if the statement should
 not fail on loading an extension with the same name as an already loaded one.
@@ -93,7 +99,10 @@ SQL.
 -}
 newtype ExtensionActionExpr
   = ExtensionActionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   The extension action @RESTRICT@.

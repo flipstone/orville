@@ -84,7 +84,10 @@ data SqlValue
   = SqlValue PgTextFormatValue
   | SqlRowValue (NE.NonEmpty SqlValue)
   | SqlNull
-  deriving (Eq)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    )
 
 foldSqlValue ::
   (PgTextFormatValue -> r) ->

@@ -41,7 +41,10 @@ SQL.
 @since 1.0.0.0
 -}
 newtype ValueExpression = ValueExpression RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Performs a SQL type cast to the specified type on the given 'ValueExpression'.
@@ -140,7 +143,10 @@ SQL.
 @since 1.0.0.0
 -}
 newtype ParameterName = ParameterName RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Constructs a 'ValueExpression' that will call the specified PostgreSQL

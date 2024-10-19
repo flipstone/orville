@@ -28,7 +28,14 @@ import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, 
 -}
 newtype AliasName
   = AliasName B8.ByteString
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    , -- | @since 1.1.0.0
+      Show
+    )
 
 {- | Convert an 'AliasName' and a 'FieldName' to a 'Expr.ColumnName' for usage in SQL expressions.
   The result will be properly quoted and escaped.

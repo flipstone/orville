@@ -547,6 +547,7 @@ instance Show ConnectionError where
     in
       connectionErrorMessage err <> ": " <> libPQErrorMsg
 
+-- | @since 1.0.0.0
 instance Exception ConnectionError
 
 {- |
@@ -568,8 +569,12 @@ data SqlExecutionError = SqlExecutionError
   , sqlExecutionErrorSqlQuery :: BS.ByteString
   -- ^ The SQL query that was being run when the error occurred.
   }
-  deriving (Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    )
 
+-- | @since 1.0.0.0
 instance Exception SqlExecutionError
 
 {- |
@@ -581,6 +586,10 @@ instance Exception SqlExecutionError
 -}
 data ConnectionUsedAfterCloseError
   = ConnectionUsedAfterCloseError
-  deriving (Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    )
 
+-- | @since 1.0.0.0
 instance Exception ConnectionUsedAfterCloseError

@@ -35,7 +35,10 @@ SQL.
 -}
 newtype FromItemExpr
   = FromItemExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 -- | @since 1.1.0.0
 instance Semigroup FromItemExpr where

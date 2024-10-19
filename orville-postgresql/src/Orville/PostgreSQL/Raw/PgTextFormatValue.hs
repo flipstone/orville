@@ -40,16 +40,26 @@ import qualified Data.ByteString as BS
 data PgTextFormatValue
   = NoAssumptionsMade BS.ByteString
   | AssumedToHaveNoNULValues BS.ByteString
-  deriving (Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    )
 
+-- | @since 1.0.0.0
 instance Eq PgTextFormatValue where
   left == right =
     toBytesForLibPQ left == toBytesForLibPQ right
 
 data NULByteFoundError
   = NULByteFoundError
-  deriving (Show, Eq)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    )
 
+-- | @since 1.0.0.0
 instance Exception NULByteFoundError
 
 {- |

@@ -23,7 +23,14 @@ import qualified Orville.PostgreSQL.Expr as Expr
 data ExtensionIdentifier = ExtensionIdentifier
   { i_extensionName :: String
   }
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    , -- | @since 1.1.0.0
+      Show
+    )
 
 {- |
   Constructs a 'ExtensionIdentifier' with the given extension name string.

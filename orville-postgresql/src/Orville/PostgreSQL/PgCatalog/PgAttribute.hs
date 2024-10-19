@@ -126,7 +126,16 @@ isOrdinaryColumn attr =
 -}
 newtype AttributeName
   = AttributeName T.Text
-  deriving (Show, Eq, Ord, String.IsString)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      String.IsString
+    )
 
 {- |
   Converts an 'AttributeName' to a plain 'String'.
@@ -144,7 +153,22 @@ attributeNameToString (AttributeName txt) =
 -}
 newtype AttributeNumber
   = AttributeNumber Int16
-  deriving (Show, Eq, Ord, Enum, Num, Integral, Real)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Enum
+    , -- | @since 1.0.0.0
+      Num
+    , -- | @since 1.0.0.0
+      Integral
+    , -- | @since 1.0.0.0
+      Real
+    )
 
 {- |
   Converts an 'AttributeNumber' to an integer.

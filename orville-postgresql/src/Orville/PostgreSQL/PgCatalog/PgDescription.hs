@@ -52,7 +52,12 @@ data PgDescription = PgDescription
 @since 1.1.0.0
 -}
 newtype ObjectSubId = ObjectSubId Int32
-  deriving (Eq, Ord)
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    )
 
 objectSubIdFromAttributeNumber :: AttributeNumber -> ObjectSubId
 objectSubIdFromAttributeNumber = ObjectSubId . fromIntegral . attributeNumberToInt16

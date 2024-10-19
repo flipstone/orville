@@ -230,6 +230,10 @@ releaseLockExpr lockId =
 -}
 newtype MigrationLockError
   = MigrationLockError String
-  deriving (Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    )
 
+-- | @since 1.0.0.0
 instance Exception MigrationLockError

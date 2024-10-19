@@ -103,7 +103,10 @@ data Operation param result = Operation
 -}
 newtype AssertionFailed
   = AssertionFailed String
-  deriving (Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   'mkAssertionFailed' builds an 'AssertionFailed' error from an error message.
@@ -114,6 +117,7 @@ mkAssertionFailed :: String -> AssertionFailed
 mkAssertionFailed =
   AssertionFailed
 
+-- | @since 1.0.0.0
 instance Exception AssertionFailed
 
 {- |

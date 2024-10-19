@@ -46,7 +46,10 @@ SQL.
 -}
 newtype TableConstraint
   = TableConstraint RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'TableConstraint' will create a @UNIQUE@ constraint on the
@@ -76,7 +79,10 @@ SQL.
 -}
 newtype ForeignKeyActionExpr
   = ForeignKeyActionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   The foreign key action @RESTRICT@.
@@ -124,7 +130,10 @@ SQL.
 -}
 newtype ForeignKeyUpdateActionExpr
   = ForeignKeyUpdateActionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
@@ -153,7 +162,10 @@ SQL.
 -}
 newtype ForeignKeyDeleteActionExpr
   = ForeignKeyDeleteActionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'

@@ -29,7 +29,10 @@ SQL.
 -}
 newtype ReturningExpr
   = ReturningExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'ReturningExpr' that returns the items given in the

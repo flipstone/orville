@@ -51,7 +51,10 @@ SQL.
 -}
 newtype BeginTransactionExpr
   = BeginTransactionExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'BeginTransactionExpr' that will begin a transaction using
@@ -80,7 +83,10 @@ SQL.
 -}
 newtype TransactionMode
   = TransactionMode RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   The @READ WRITE@ transaction mode.
@@ -141,7 +147,10 @@ SQL.
 -}
 newtype IsolationLevel
   = IsolationLevel RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   The @SERIALIZABLE@ isolation level.
@@ -192,7 +201,10 @@ SQL.
 -}
 newtype CommitExpr
   = CommitExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   A @COMMIT@ transaction statement.
@@ -216,7 +228,10 @@ SQL.
 -}
 newtype RollbackExpr
   = RollbackExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   A @ROLLBACK@ transaction statement.
@@ -251,7 +266,10 @@ SQL.
 -}
 newtype SavepointExpr
   = SavepointExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   A @SAVEPOINT@ statement that will create a savepoint with the given name.
@@ -276,7 +294,10 @@ SQL.
 -}
 newtype ReleaseSavepointExpr
   = ReleaseSavepontExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   A @RELEASE SAVEPOINT@ statement that will release the specified savepoint.

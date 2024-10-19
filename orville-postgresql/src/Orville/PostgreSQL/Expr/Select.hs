@@ -38,7 +38,10 @@ or
 -}
 newtype SelectClause
   = SelectClause RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'SelectClause' using the given 'SelectExpr', which may indicate
@@ -60,7 +63,10 @@ Type to represent any expression modifying the @SELECT@ part of a SQL. E.G.
 @since 1.0.0.0
 -}
 newtype SelectExpr = SelectExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   A simple value type used to indicate that a @SELECT@ should be distinct when
@@ -94,7 +100,10 @@ foo in
 @since 1.1.0.0
 -}
 newtype DistinctOnExpr = DistinctOnExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Constructs a 'SelectExpr' that may or may not make the @SELECT@ distinct on the given expression.
 

@@ -264,7 +264,12 @@ newTransaction maybeTransactionState =
 -}
 newtype Savepoint
   = Savepoint Int
-  deriving (Eq, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   The initial identifier Orville uses to track the first savepoint within
@@ -324,7 +329,12 @@ data TransactionEvent
     CommitTransaction
   | -- | Indicates that the transaction has been rolled back.
     RollbackTransaction
-  deriving (Eq, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   The default transaction callback is simply a no-op.

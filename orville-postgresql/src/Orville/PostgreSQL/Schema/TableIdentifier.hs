@@ -30,7 +30,14 @@ data TableIdentifier = TableIdentifier
   { i_tableIdName :: String
   , i_tableIdSchema :: Maybe String
   }
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   Constructs a 'TableIdentifier' where the table's name will not be qualified

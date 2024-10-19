@@ -23,8 +23,12 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 -}
 newtype RowCountExpectationError
   = RowCountExpectationError String
-  deriving (Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    )
 
+-- | @since 1.0.0.0
 instance Exception RowCountExpectationError
 
 expectExactlyOneRow :: MonadIO m => String -> [a] -> m a

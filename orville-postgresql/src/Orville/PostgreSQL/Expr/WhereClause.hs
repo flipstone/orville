@@ -61,7 +61,10 @@ SQL.
 -}
 newtype WhereClause
   = WhereClause RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Constructs a @WHERE@ clause from the given 'BooleanExpr'. E.G.
@@ -89,7 +92,10 @@ SQL.
 -}
 newtype BooleanExpr
   = BooleanExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'BooleanExpr' whose value is the SQL literal @TRUE@ or @FALSE@
@@ -263,7 +269,10 @@ SQL.
 -}
 newtype InValuePredicate
   = InValuePredicate RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an 'InValuePredicate' from the given list of 'ValueExpression'.

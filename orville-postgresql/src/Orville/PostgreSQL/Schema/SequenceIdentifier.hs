@@ -30,7 +30,14 @@ data SequenceIdentifier = SequenceIdentifier
   { i_sequenceIdName :: String
   , i_sequenceIdSchema :: Maybe String
   }
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   Constructs a 'SequenceIdentifier' where the sequence's name will not be qualified

@@ -46,7 +46,10 @@ SQL.
 -}
 newtype OrderByClause
   = OrderByClause RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Builds a full 'OrderByClause' with the given ordering described in the 'OrderByExpr'
@@ -139,7 +142,10 @@ SQL.
 @since 1.0.0.0
 -}
 newtype OrderByDirection = OrderByDirection RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Type to represent the ordering of Null, intended to be used with 'OrderByDirection'.

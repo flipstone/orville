@@ -30,7 +30,14 @@ data FunctionIdentifier = FunctionIdentifier
   { i_functionIdName :: String
   , i_functionIdSchema :: Maybe String
   }
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    , -- | @since 1.1.0.0
+      Show
+    )
 
 {- |
   Constructs a 'FunctionIdentifier' where the function's name will not be qualified

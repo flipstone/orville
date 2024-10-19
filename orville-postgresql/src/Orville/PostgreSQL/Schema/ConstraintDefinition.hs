@@ -48,7 +48,12 @@ import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 -}
 newtype TableConstraints
   = TableConstraints (Map.Map ConstraintMigrationKey ConstraintDefinition)
-  deriving (Semigroup, Monoid)
+  deriving
+    ( -- | @since 1.0.0.0
+      Semigroup
+    , -- | @since 1.0.0.0
+      Monoid
+    )
 
 {- |
   Constructs an empty 'TableConstraints'.
@@ -124,7 +129,14 @@ data ConstraintMigrationKey = ConstraintMigrationKey
   , constraintKeyForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
   , constraintKeyForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
   }
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g.
@@ -135,7 +147,14 @@ data ConstraintMigrationKey = ConstraintMigrationKey
 data ConstraintKeyType
   = UniqueConstraint
   | ForeignKeyConstraint
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'.
@@ -246,7 +265,14 @@ data ForeignKeyAction
   | Cascade
   | SetNull
   | SetDefault
-  deriving (Show, Eq, Ord)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    )
 
 foreignKeyActionToExpr :: ForeignKeyAction -> Maybe Expr.ForeignKeyActionExpr
 foreignKeyActionToExpr action = case action of

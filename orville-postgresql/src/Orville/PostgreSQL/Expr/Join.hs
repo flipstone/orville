@@ -43,7 +43,10 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 @since 1.1.0.0
 -}
 newtype JoinType = JoinType RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Constructs a 'JoinType' for an INNER JOIN.
 
@@ -104,7 +107,10 @@ innerLateralJoinType = JoinType $ RawSql.fromString "JOIN LATERAL"
 @since 1.1.0.0
 -}
 newtype JoinConstraint = JoinConstraint RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Constructs a 'JoinConstraint' from a given 'BooleanExpr' that specifies which rows in the JOIN are
    considering to match.
@@ -121,7 +127,10 @@ joinOnConstraint booleanExpr =
 @since 1.1.0.0
 -}
 newtype JoinExpr = JoinExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Build a 'JoinExpr' with the given options. It is up to the caller to ensure the 'FromItemExpr' is
    appropriately aliased.

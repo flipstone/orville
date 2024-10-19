@@ -50,7 +50,12 @@ data SequenceDefinition = SequenceDefinition
   , i_sequenceCache :: Int64
   , i_sequenceCycle :: Bool
   }
-  deriving (Eq, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   Constructs an ascending 'SequenceDefinition' with increment 1 and cache

@@ -48,7 +48,10 @@ SQL.
 @since 1.1.0.0
 -}
 newtype WhenExpr = WhenExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
 Builds a 'WhenExpr' that will apply when the given 'BooleanExpr' evaluates to @TRUE@, resulting in the 'ValueExpression'

@@ -45,7 +45,16 @@ data PgNamespace = PgNamespace
 -}
 newtype NamespaceName
   = NamespaceName T.Text
-  deriving (Show, Eq, Ord, String.IsString)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      String.IsString
+    )
 
 {- |
   Convert a 'NamespaceName' to a plain 'String'.

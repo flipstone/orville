@@ -77,7 +77,10 @@ SQL.
 -}
 newtype CreateSequenceExpr
   = CreateSequenceExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'CreateSequenceExpr' with the given sequence options.
@@ -146,7 +149,10 @@ SQL.
 -}
 newtype AlterSequenceExpr
   = AlterSequenceExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an 'AlterSequenceExpr' with the given sequence options.
@@ -196,7 +202,10 @@ SQL.
 -}
 newtype IncrementByExpr
   = IncrementByExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an 'IncrementByExpr' that will make the sequence increment by
@@ -223,7 +232,10 @@ SQL.
 -}
 newtype MinValueExpr
   = MinValueExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'MinValueExpr' which gives the sequence the specified minimum
@@ -260,7 +272,10 @@ SQL.
 -}
 newtype MaxValueExpr
   = MaxValueExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'MaxValueExpr' which gives the sequence the specified maximum
@@ -297,7 +312,10 @@ SQL.
 -}
 newtype StartWithExpr
   = StartWithExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'StartWithExpr' which gives the sequence the specified start
@@ -324,7 +342,10 @@ SQL.
 -}
 newtype CacheExpr
   = CacheExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'CacheExpr' that will make the sequence pre-allocate the
@@ -355,7 +376,10 @@ SQL.
 -}
 newtype CycleExpr
   = CycleExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'CycleExpr' that indicates that the sequence should cycle.
@@ -398,7 +422,10 @@ SQL.
 -}
 newtype DropSequenceExpr
   = DropSequenceExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'DropSequenceExpr' that will drop sequence with the given name.

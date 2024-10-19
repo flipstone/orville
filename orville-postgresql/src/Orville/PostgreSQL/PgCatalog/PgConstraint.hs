@@ -77,7 +77,16 @@ data PgConstraint = PgConstraint
 -}
 newtype ConstraintName
   = ConstraintName T.Text
-  deriving (Show, Eq, Ord, String.IsString)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      String.IsString
+    )
 
 {- |
   Converts a 'ConstraintName' to a plain 'String'.
@@ -101,7 +110,12 @@ data ConstraintType
   | UniqueConstraint
   | ConstraintTrigger
   | ExclusionConstraint
-  deriving (Show, Eq)
+  deriving
+    ( -- | @since 1.0.0.0
+      Show
+    , -- | @since 1.0.0.0
+      Eq
+    )
 
 {- |
   Converts a 'ConstraintType' to the corresponding single character text

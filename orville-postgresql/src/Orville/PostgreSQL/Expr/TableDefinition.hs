@@ -59,7 +59,10 @@ SQL.
 -}
 newtype CreateTableExpr
   = CreateTableExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'CreateTableExpr' with the given options.
@@ -114,7 +117,10 @@ SQL.
 -}
 newtype PrimaryKeyExpr
   = PrimaryKeyExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'PrimaryKeyExpr' with the given columns.
@@ -144,7 +150,10 @@ SQL.
 -}
 newtype AlterTableExpr
   = AlterTableExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an 'AlterTableExpr' with the given alter table actions.
@@ -181,7 +190,10 @@ SQL.
 -}
 newtype AlterTableAction
   = AlterTableAction RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an 'AlterTableAction' that will add the specified column to the
@@ -267,7 +279,10 @@ SQL.
 -}
 newtype UsingClause
   = UsingClause RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'UsingClause' that will cast the column to the specified type.
@@ -311,7 +326,10 @@ SQL.
 -}
 newtype AlterNotNull
   = AlterNotNull RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Sets the column to not null via @SET NOT NULL@.
@@ -381,7 +399,10 @@ SQL.
 -}
 newtype DropTableExpr
   = DropTableExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'DropTableExpr' that will drop the specified table.
@@ -413,7 +434,10 @@ SQL.
 -}
 newtype TruncateTableExpr
   = TruncateTableExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'TruncateTableExpr' that will truncate the specified tables.

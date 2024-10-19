@@ -41,7 +41,10 @@ SQL.
 -}
 newtype UpdateExpr
   = UpdateExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an 'UpdateExpr' with the given options.
@@ -84,7 +87,10 @@ SQL.
 -}
 newtype SetClauseList
   = SetClauseList RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'SetClauseList' with the specified set clauses.
@@ -108,7 +114,10 @@ SQL.
 -}
 newtype SetClause
   = SetClause RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'SetClause' that will set the specified column to the specified

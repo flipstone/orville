@@ -51,7 +51,16 @@ data PgProc = PgProc
 -}
 newtype ProcName
   = ProcName T.Text
-  deriving (Show, Eq, Ord, String.IsString)
+  deriving
+    ( -- | @since 1.1.0.0
+      Show
+    , -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    , -- | @since 1.1.0.0
+      String.IsString
+    )
 
 {- |
   An Orville 'Orville.TableDefinition' for querying the

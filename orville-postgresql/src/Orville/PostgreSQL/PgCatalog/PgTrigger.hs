@@ -46,7 +46,16 @@ data PgTrigger = PgTrigger
 -}
 newtype TriggerName
   = TriggerName T.Text
-  deriving (Show, Eq, Ord, String.IsString)
+  deriving
+    ( -- | @since 1.1.0.0
+      Show
+    , -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    , -- | @since 1.1.0.0
+      String.IsString
+    )
 
 {- |
   Convert a 'TriggerName' to a plain 'String'.

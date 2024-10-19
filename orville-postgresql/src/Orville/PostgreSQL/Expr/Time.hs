@@ -60,7 +60,10 @@ SQL.
 -}
 newtype IntervalArgument
   = IntervalArgument ParameterName
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs an arbitrary 'IntervalArgument' with whatever name you specify. It

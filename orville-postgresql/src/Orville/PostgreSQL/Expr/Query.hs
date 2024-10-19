@@ -64,7 +64,10 @@ SQL.
 -}
 newtype QueryExpr
   = QueryExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Builds a 'QueryExpr' from the given 'SelectClause', 'SelectList' and
@@ -213,7 +216,10 @@ SQL.
 @since 1.0.0.0
 -}
 newtype SelectList = SelectList RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 -- | @since 1.1.0.0
 instance Semigroup SelectList where
@@ -253,7 +259,10 @@ SQL.
 @since 1.0.0.0
 -}
 newtype DerivedColumn = DerivedColumn RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'SelectList' that will select the specified items, which may be
@@ -323,7 +332,10 @@ SQL.
 -}
 newtype TableExpr
   = TableExpr RawSql.RawSql
-  deriving (RawSql.SqlExpression)
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- |
   Constructs a 'TableExpr' with the given options.

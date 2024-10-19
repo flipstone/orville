@@ -25,7 +25,14 @@ import qualified Orville.PostgreSQL.Expr as Expr
 -}
 newtype FieldName
   = FieldName B8.ByteString
-  deriving (Eq, Ord, Show)
+  deriving
+    ( -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
+    )
 
 {- |
   Convert a field name to a 'Expr.ColumnName' for usage in SQL expressions.
