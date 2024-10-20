@@ -26,7 +26,7 @@ import Data.List.NonEmpty (NonEmpty)
 
 import Orville.PostgreSQL.Expr.Index (IndexBodyExpr)
 import Orville.PostgreSQL.Expr.Internal.Name.ConstraintName (ConstraintName)
-import Orville.PostgreSQL.Expr.Name (ColumnName, Qualified)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -92,7 +92,7 @@ newtype ConflictTargetExpr
 
 @since 1.1.0.0
 -}
-conflictTargetForIndexColumn :: Qualified ColumnName -> Maybe WhereClause -> ConflictTargetExpr
+conflictTargetForIndexColumn :: QualifiedOrUnqualified ColumnName -> Maybe WhereClause -> ConflictTargetExpr
 conflictTargetForIndexColumn colName mbWhere =
   let
     parensCol = RawSql.parenthesized $ RawSql.toRawSql colName
@@ -180,7 +180,7 @@ the special pseudo-table 'EXCLUDED'.
 
 @since 1.1.0.0
 -}
-setColumnNameExcluded :: Qualified ColumnName -> ConflictSetItemExpr
+setColumnNameExcluded :: QualifiedOrUnqualified ColumnName -> ConflictSetItemExpr
 setColumnNameExcluded colName =
   let
     rawName = RawSql.toRawSql colName

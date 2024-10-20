@@ -157,4 +157,4 @@ prefixSyntheticField prefix synthField =
 -}
 orderBySyntheticField :: SyntheticField a -> Expr.OrderByDirection -> Expr.OrderByExpr
 orderBySyntheticField =
-  Expr.orderByColumnName . Expr.aliasQualifyColumn Nothing . Expr.fromIdentifier . Expr.identifierFromBytes . aliasNameToByteString . syntheticFieldAlias
+  Expr.orderByColumnName . Expr.unqualified . Expr.fromIdentifier . Expr.identifierFromBytes . aliasNameToByteString . syntheticFieldAlias

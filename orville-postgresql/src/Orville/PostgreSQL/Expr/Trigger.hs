@@ -31,7 +31,7 @@ import qualified Data.List.NonEmpty as NEL
 import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
-import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, Qualified, TableName, TriggerName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, QualifiedOrUnqualified, TableName, TriggerName)
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -61,7 +61,7 @@ Constructs a SQL @DROP TRIGGER@ statement from the trigger name and table name
 dropTrigger ::
   Maybe IfExists ->
   TriggerName ->
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   DropTriggerExpr
 dropTrigger maybeIfExists name tableName =
   DropTriggerExpr $
@@ -111,9 +111,9 @@ createTrigger ::
   TriggerName ->
   TriggerTiming ->
   NEL.NonEmpty TriggerEvent ->
-  Qualified TableName ->
+  QualifiedOrUnqualified TableName ->
   TriggerFireScope ->
-  Qualified FunctionName ->
+  QualifiedOrUnqualified FunctionName ->
   CreateTriggerExpr
 createTrigger maybeOrReplace name timing events tableName fireScope functionName =
   CreateTriggerExpr $

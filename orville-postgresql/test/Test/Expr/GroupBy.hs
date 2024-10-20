@@ -103,17 +103,17 @@ groupByTest testName test =
 
     rows `assertEqualSqlRows` mkGroupByTestExpectedRows test
 
-testTable :: Expr.Qualified Expr.TableName
+testTable :: Expr.QualifiedOrUnqualified Expr.TableName
 testTable =
-  Expr.qualifyTable Nothing (Expr.tableName "expr_test")
+  Expr.unqualified (Expr.tableName "expr_test")
 
-fooColumn :: Expr.Qualified Expr.ColumnName
+fooColumn :: Expr.QualifiedOrUnqualified Expr.ColumnName
 fooColumn =
-  Expr.aliasQualifyColumn Nothing (Expr.columnName "foo")
+  Expr.unqualified (Expr.columnName "foo")
 
-barColumn :: Expr.Qualified Expr.ColumnName
+barColumn :: Expr.QualifiedOrUnqualified Expr.ColumnName
 barColumn =
-  Expr.aliasQualifyColumn Nothing (Expr.columnName "bar")
+  Expr.unqualified (Expr.columnName "bar")
 
 dropAndRecreateTestTable :: Orville.Connection -> IO ()
 dropAndRecreateTestTable connection = do

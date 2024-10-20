@@ -39,7 +39,7 @@ import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.Join (JoinConstraint, JoinExpr, JoinType, joinExpr)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
-import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, Qualified)
+import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.RowLocking (RowLockingClause)
@@ -243,9 +243,9 @@ selectStar =
 
   @since 1.0.0.0
 -}
-selectColumns :: [Qualified ColumnName] -> SelectList
+selectColumns :: [QualifiedOrUnqualified ColumnName] -> SelectList
 selectColumns =
-  selectDerivedColumns . map (deriveColumn . columnReference)
+  selectDerivedColumns . fmap (deriveColumn . columnReference)
 
 {- |
 Type to represent an individual item in a list of selected items. E.G.

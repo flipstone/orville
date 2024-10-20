@@ -48,7 +48,7 @@ import qualified Data.Text as T
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
-import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
+import Orville.PostgreSQL.Marshall.FieldDefinition (fieldAliasQualifiedColumnName, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
@@ -216,7 +216,7 @@ tableIdentifier =
 
 @since 1.0.0.0
 -}
-tableName :: TableDefinition key writeEntity readEntity -> Expr.Qualified Expr.TableName
+tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedOrUnqualified Expr.TableName
 tableName =
   tableIdQualifiedName . i_tableIdentifier
 
@@ -556,7 +556,12 @@ mkInsertColumnList ::
 mkInsertColumnList marshaller =
   Expr.insertColumnList
     . foldMarshallerFields marshaller []
-    $ collectFromField ExcludeReadOnlyColumns fieldColumnName
+    $ collectFromField
+      ExcludeReadOnlyColumns
+      ( \mbA -> case mbA of
+          Nothing -> fieldColumnName
+          Just alias -> Expr.untrackQualified . fieldAliasQualifiedColumnName alias
+      )
 
 {- |
   Builds an 'Expr.InsertSource' that will insert the given entities with their

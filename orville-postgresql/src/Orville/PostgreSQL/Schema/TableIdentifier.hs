@@ -70,11 +70,16 @@ setTableIdSchema schema tableId =
 
 @since 1.0.0.0
 -}
-tableIdQualifiedName :: TableIdentifier -> Expr.Qualified Expr.TableName
+tableIdQualifiedName :: TableIdentifier -> Expr.QualifiedOrUnqualified Expr.TableName
 tableIdQualifiedName tableId =
-  Expr.qualifyTable
-    (tableIdSchemaName tableId)
-    (tableIdUnqualifiedName tableId)
+  case tableIdSchemaName tableId of
+    Nothing ->
+      Expr.unqualified (tableIdUnqualifiedName tableId)
+    Just schemaName ->
+      Expr.untrackQualified $
+        Expr.qualifyTable
+          schemaName
+          (tableIdUnqualifiedName tableId)
 
 {- |
   Returns the unqualified 'Expr.TableName' that should be used to refer to the

@@ -57,9 +57,9 @@ prop_createWithWithOptions =
     PgCatalog.pgSequenceCache pgSequence === 10
     PgCatalog.pgSequenceCycle pgSequence === True
 
-exprSequenceName :: Expr.Qualified Expr.SequenceName
+exprSequenceName :: Expr.QualifiedOrUnqualified Expr.SequenceName
 exprSequenceName =
-  Expr.qualifySequence Nothing (Expr.sequenceName sequenceNameString)
+  Expr.unqualified (Expr.sequenceName sequenceNameString)
 
 sequenceNameString :: String
 sequenceNameString =
