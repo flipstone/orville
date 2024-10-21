@@ -45,12 +45,14 @@ library:
     - Orville.PostgreSQL.Execution.Update
     - Orville.PostgreSQL.ErrorDetailLevel
     - Orville.PostgreSQL.Expr
+    - Orville.PostgreSQL.Expr.Aggregate
     - Orville.PostgreSQL.Expr.BinaryOperator
     - Orville.PostgreSQL.Expr.ColumnDefinition
     - Orville.PostgreSQL.Expr.Count
     - Orville.PostgreSQL.Expr.Cursor
     - Orville.PostgreSQL.Expr.DataType
     - Orville.PostgreSQL.Expr.Delete
+    - Orville.PostgreSQL.Expr.Filter
     - Orville.PostgreSQL.Expr.GroupBy
     - Orville.PostgreSQL.Expr.IfExists
     - Orville.PostgreSQL.Expr.Index
