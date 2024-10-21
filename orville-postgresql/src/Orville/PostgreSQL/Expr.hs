@@ -74,12 +74,14 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Vacuum
   , module Orville.PostgreSQL.Expr.Extension
   , module Orville.PostgreSQL.Expr.RowLocking
+  , module Orville.PostgreSQL.Expr.Aggregate
   )
 where
 
 -- Note: we list the re-exports explicity above to control the order that they
 -- appear in the generated haddock documentation.
 
+import Orville.PostgreSQL.Expr.Aggregate
 import Orville.PostgreSQL.Expr.BinaryOperator
 import Orville.PostgreSQL.Expr.ColumnDefinition
 import Orville.PostgreSQL.Expr.Comment

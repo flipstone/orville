@@ -49,6 +49,7 @@ library
       Orville.PostgreSQL.Execution.Update
       Orville.PostgreSQL.ErrorDetailLevel
       Orville.PostgreSQL.Expr
+      Orville.PostgreSQL.Expr.Aggregate
       Orville.PostgreSQL.Expr.BinaryOperator
       Orville.PostgreSQL.Expr.ColumnDefinition
       Orville.PostgreSQL.Expr.Count
@@ -206,6 +207,7 @@ test-suite spec
       Test.Entities.User
       Test.EntityOperations
       Test.Execution
+      Test.Expr.Aggregate
       Test.Expr.ConditionalExpr
       Test.Expr.Count
       Test.Expr.Cursor
