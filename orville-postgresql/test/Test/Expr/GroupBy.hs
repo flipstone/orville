@@ -71,7 +71,7 @@ mkGroupByTestInsertSource test =
       , SqlValue.fromText (T.pack $ bar foobar)
       ]
   in
-    Expr.insertSqlValues (map mkRow $ groupByValuesToInsert test)
+    Expr.insertSqlValues (fmap mkRow $ groupByValuesToInsert test)
 
 mkGroupByTestExpectedRows :: GroupByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByTestExpectedRows test =
