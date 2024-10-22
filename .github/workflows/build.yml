@@ -39,6 +39,7 @@ jobs:
         with:
           key: ${{ env.cache-version }}-${{ hashFiles( env.stack-yaml-path ) }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
+            ${{ env.cache-version }}-${{ hashFiles( env.stack-yaml-path ) }}-
             ${{ env.cache-version }}-
           path: |
             ./stack-root
