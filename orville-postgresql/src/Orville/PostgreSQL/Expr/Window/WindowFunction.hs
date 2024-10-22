@@ -20,6 +20,7 @@ module Orville.PostgreSQL.Expr.Window.WindowFunction
   , bitXorWindowFunction
   , boolAndWindowFunction
   , boolOrWindowFunction
+  , countWindowFunction
   , everyWindowFunction
   , jsonAggWindowFunction
   , jsonObjectAggWindowFunction
@@ -158,6 +159,14 @@ boolAndWindowFunction = singleParameterWindowFunction Name.boolAndFunctionName
 boolOrWindowFunction ::
   ValueExpression.ValueExpression -> Maybe Filter.FilterExpr -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 boolOrWindowFunction = singleParameterWindowFunction Name.boolOrFunctionName
+
+{- | The SQL @count@ window function.
+
+@since 1.1.0.0
+-}
+countWindowFunction ::
+  ValueExpression.ValueExpression -> Maybe Filter.FilterExpr -> WindowDefinitionExpr -> ValueExpression.ValueExpression
+countWindowFunction = singleParameterWindowFunction Name.countFunctionName
 
 {- | The SQL @every@ window function.
 

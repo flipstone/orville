@@ -32,7 +32,7 @@ prop_count1 =
         Expr.queryExpr
           (Expr.selectClause (Expr.selectExpr Nothing))
           ( Expr.selectDerivedColumns
-              [ Expr.deriveColumnAs Expr.count1 (Expr.columnName "count")
+              [ Expr.deriveColumnAs Expr.count1AggregateFunction (Expr.columnName "count")
               ]
           )
           Nothing
@@ -57,7 +57,7 @@ prop_countColumn =
           (Expr.selectClause (Expr.selectExpr Nothing))
           ( Expr.selectDerivedColumns
               [ Expr.deriveColumnAs
-                  (Expr.countColumn $ Orville.fieldColumnName Foo.fooIdField)
+                  (Expr.countColumnAggregateFunction $ Orville.fieldColumnName Foo.fooIdField)
                   (Expr.columnName "count")
               ]
           )

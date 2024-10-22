@@ -19,6 +19,10 @@ module Orville.PostgreSQL.Expr.Aggregate
   , bitXorAggregateFunction
   , boolAndAggregateFunction
   , boolOrAggregateFunction
+  , countExprAggregateFunction
+  , count1AggregateFunction
+  , countColumnAggregateFunction
+  , countAggregateFunction
   , everyAggregateFunction
   , jsonAggAggregateFunction
   , jsonObjectAggAggregateFunction
@@ -228,6 +232,49 @@ boolOrAggregateFunction ::
   ValueExpression.ValueExpression
 boolOrAggregateFunction =
   singleParameterAggregateFunction Name.boolOrFunctionName
+
+{- | A simplified version of 'countAggregateFunction' for the SQL @count@ of a
+   'ValueExpression.ValueExpression'
+
+@since 1.1.0.0
+-}
+countExprAggregateFunction ::
+  ValueExpression.ValueExpression ->
+  ValueExpression.ValueExpression
+countExprAggregateFunction valExpr =
+  singleParameterAggregateFunction Name.countFunctionName Nothing valExpr Nothing Nothing
+
+{- | A simplified version of 'countAggregateFunction' for the SQL @count(1)@
+
+@since 1.1.0.0
+-}
+count1AggregateFunction ::
+  ValueExpression.ValueExpression
+count1AggregateFunction =
+  countExprAggregateFunction (RawSql.unsafeFromRawSql . RawSql.intDecLiteral $ 1)
+
+{- | A simplified version of 'countAggregateFunction' for the SQL @count@ of a column
+
+@since 1.1.0.0
+-}
+countColumnAggregateFunction ::
+  Name.QualifiedOrUnqualified Name.ColumnName ->
+  ValueExpression.ValueExpression
+countColumnAggregateFunction =
+  countExprAggregateFunction . ValueExpression.columnReference
+
+{- | The SQL @count@ aggregate function.
+
+@since 1.1.0.0
+-}
+countAggregateFunction ::
+  Maybe AggregateOptionExpr ->
+  ValueExpression.ValueExpression ->
+  Maybe OrderBy.OrderByClause ->
+  Maybe Filter.FilterExpr ->
+  ValueExpression.ValueExpression
+countAggregateFunction =
+  singleParameterAggregateFunction Name.countFunctionName
 
 {- | The SQL @every@ aggregate function.
 

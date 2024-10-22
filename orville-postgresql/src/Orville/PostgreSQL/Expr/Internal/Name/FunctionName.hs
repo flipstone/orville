@@ -17,6 +17,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.FunctionName
   , bitXorFunctionName
   , boolAndFunctionName
   , boolOrFunctionName
+  , countFunctionName
   , everyFunctionName
   , jsonAggFunctionName
   , jsonObjectAggFunctionName
@@ -125,6 +126,14 @@ The @bool_or@ window function name
 -}
 boolOrFunctionName :: FunctionName
 boolOrFunctionName = functionName "bool_or"
+
+{- |
+The @count@ window function name
+
+@since 1.1.0.0
+-}
+countFunctionName :: FunctionName
+countFunctionName = functionName "count"
 
 {- |
 The @every@ window function name
