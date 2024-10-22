@@ -32,7 +32,7 @@ library
   exposed-modules:
       Orville.PostgreSQL
       Orville.PostgreSQL.AutoMigration
-      Orville.PostgreSQL.Extension.PgTrgm
+      Orville.PostgreSQL.ErrorDetailLevel
       Orville.PostgreSQL.Execution
       Orville.PostgreSQL.Execution.Cursor
       Orville.PostgreSQL.Execution.Delete
@@ -47,39 +47,54 @@ library
       Orville.PostgreSQL.Execution.Sequence
       Orville.PostgreSQL.Execution.Transaction
       Orville.PostgreSQL.Execution.Update
-      Orville.PostgreSQL.ErrorDetailLevel
       Orville.PostgreSQL.Expr
       Orville.PostgreSQL.Expr.Aggregate
       Orville.PostgreSQL.Expr.BinaryOperator
       Orville.PostgreSQL.Expr.ColumnDefinition
+      Orville.PostgreSQL.Expr.Comment
+      Orville.PostgreSQL.Expr.ConditionalExpr
       Orville.PostgreSQL.Expr.Count
       Orville.PostgreSQL.Expr.Cursor
       Orville.PostgreSQL.Expr.DataType
       Orville.PostgreSQL.Expr.Delete
+      Orville.PostgreSQL.Expr.Extension
       Orville.PostgreSQL.Expr.Filter
+      Orville.PostgreSQL.Expr.FromItemExpr
+      Orville.PostgreSQL.Expr.Function
       Orville.PostgreSQL.Expr.GroupBy
       Orville.PostgreSQL.Expr.IfExists
+      Orville.PostgreSQL.Expr.IfNotExists
       Orville.PostgreSQL.Expr.Index
       Orville.PostgreSQL.Expr.Insert
+      Orville.PostgreSQL.Expr.Join
       Orville.PostgreSQL.Expr.LimitExpr
       Orville.PostgreSQL.Expr.Math
       Orville.PostgreSQL.Expr.Name
       Orville.PostgreSQL.Expr.OffsetExpr
       Orville.PostgreSQL.Expr.OnConflict
+      Orville.PostgreSQL.Expr.OrReplace
       Orville.PostgreSQL.Expr.OrderBy
       Orville.PostgreSQL.Expr.Query
       Orville.PostgreSQL.Expr.ReturningExpr
+      Orville.PostgreSQL.Expr.RowLocking
       Orville.PostgreSQL.Expr.Select
       Orville.PostgreSQL.Expr.SequenceDefinition
       Orville.PostgreSQL.Expr.TableConstraint
       Orville.PostgreSQL.Expr.TableDefinition
-      Orville.PostgreSQL.Expr.FromItemExpr
       Orville.PostgreSQL.Expr.Time
       Orville.PostgreSQL.Expr.Transaction
+      Orville.PostgreSQL.Expr.Trigger
       Orville.PostgreSQL.Expr.Update
+      Orville.PostgreSQL.Expr.Vacuum
       Orville.PostgreSQL.Expr.ValueExpression
       Orville.PostgreSQL.Expr.WhereClause
+      Orville.PostgreSQL.Expr.Window
+      Orville.PostgreSQL.Expr.Window.WindowClause
+      Orville.PostgreSQL.Expr.Window.WindowDefinitionExpr
+      Orville.PostgreSQL.Expr.Window.WindowFunction
+      Orville.PostgreSQL.Extension.PgTrgm
       Orville.PostgreSQL.Marshall
+      Orville.PostgreSQL.Marshall.AliasName
       Orville.PostgreSQL.Marshall.DefaultValue
       Orville.PostgreSQL.Marshall.FieldDefinition
       Orville.PostgreSQL.Marshall.MarshallError
@@ -92,12 +107,12 @@ library
       Orville.PostgreSQL.Monad.MonadOrville
       Orville.PostgreSQL.Monad.Orville
       Orville.PostgreSQL.OrvilleState
+      Orville.PostgreSQL.PgCatalog
       Orville.PostgreSQL.Plan
       Orville.PostgreSQL.Plan.Explanation
       Orville.PostgreSQL.Plan.Many
       Orville.PostgreSQL.Plan.Operation
       Orville.PostgreSQL.Plan.Syntax
-      Orville.PostgreSQL.PgCatalog
       Orville.PostgreSQL.Raw.Connection
       Orville.PostgreSQL.Raw.PgTextFormatValue
       Orville.PostgreSQL.Raw.PgTime
@@ -106,19 +121,18 @@ library
       Orville.PostgreSQL.Raw.SqlValue
       Orville.PostgreSQL.Schema
       Orville.PostgreSQL.Schema.ConstraintDefinition
+      Orville.PostgreSQL.Schema.ExtensionIdentifier
+      Orville.PostgreSQL.Schema.FunctionDefinition
+      Orville.PostgreSQL.Schema.FunctionIdentifier
       Orville.PostgreSQL.Schema.IndexDefinition
       Orville.PostgreSQL.Schema.PrimaryKey
       Orville.PostgreSQL.Schema.SequenceDefinition
       Orville.PostgreSQL.Schema.SequenceIdentifier
       Orville.PostgreSQL.Schema.TableDefinition
       Orville.PostgreSQL.Schema.TableIdentifier
+      Orville.PostgreSQL.Schema.TriggerDefinition
       Orville.PostgreSQL.UnliftIO
   other-modules:
-      Orville.PostgreSQL.Expr.Comment
-      Orville.PostgreSQL.Expr.ConditionalExpr
-      Orville.PostgreSQL.Expr.Extension
-      Orville.PostgreSQL.Expr.Function
-      Orville.PostgreSQL.Expr.IfNotExists
       Orville.PostgreSQL.Expr.Internal.Name.Alias
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
@@ -134,15 +148,6 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
-      Orville.PostgreSQL.Expr.Join
-      Orville.PostgreSQL.Expr.OrReplace
-      Orville.PostgreSQL.Expr.RowLocking
-      Orville.PostgreSQL.Expr.Trigger
-      Orville.PostgreSQL.Expr.Vacuum
-      Orville.PostgreSQL.Expr.Window
-      Orville.PostgreSQL.Expr.Window.WindowClause
-      Orville.PostgreSQL.Expr.Window.WindowDefinitionExpr
-      Orville.PostgreSQL.Expr.Window.WindowFunction
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
@@ -151,7 +156,6 @@ library
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.RowCountExpectation
-      Orville.PostgreSQL.Marshall.AliasName
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
       Orville.PostgreSQL.PgCatalog.OidField
       Orville.PostgreSQL.PgCatalog.PgAttribute
@@ -165,10 +169,6 @@ library
       Orville.PostgreSQL.PgCatalog.PgProc
       Orville.PostgreSQL.PgCatalog.PgSequence
       Orville.PostgreSQL.PgCatalog.PgTrigger
-      Orville.PostgreSQL.Schema.ExtensionIdentifier
-      Orville.PostgreSQL.Schema.FunctionDefinition
-      Orville.PostgreSQL.Schema.FunctionIdentifier
-      Orville.PostgreSQL.Schema.TriggerDefinition
       Paths_orville_postgresql
   hs-source-dirs:
       src
