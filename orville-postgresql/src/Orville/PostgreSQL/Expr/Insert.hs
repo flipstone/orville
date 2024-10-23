@@ -16,6 +16,7 @@ module Orville.PostgreSQL.Expr.Insert
   , insertSqlValues
   , RowValues
   , rowValues
+  , insertSourceQueryExpr
   )
 where
 
@@ -23,6 +24,7 @@ import Data.Maybe (catMaybes)
 
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.OnConflict (OnConflictExpr)
+import Orville.PostgreSQL.Expr.Query (QueryExpr)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
@@ -171,3 +173,11 @@ rowValues values =
       , RawSql.intercalate RawSql.comma (fmap RawSql.parameter values)
       , RawSql.rightParen
       ]
+
+{- |
+  Use an 'InsertSource' as a 'QueryExpr'.
+
+@since 1.1.0.0
+-}
+insertSourceQueryExpr :: InsertSource -> QueryExpr
+insertSourceQueryExpr = RawSql.unsafeFromRawSql . RawSql.toRawSql
