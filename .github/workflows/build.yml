@@ -12,10 +12,15 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-22.04
     strategy:
-      max-parallel: 5
+      max-parallel: 6
       matrix:
         pg-version: ["pg13", "pg14", "pg15", "pg16", "pg17"]
-        stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yml","stack-lts-19.33-ghc-9.0.2.yml","stack-lts-20.26-ghc-9.2.8.yml","stack-lts-21.22-ghc-9.4.8.yml","stack-nightly-2024-04-06-ghc-9.8.2.yml","stack.yml"]
+        stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yaml",
+                     "stack-lts-19.33-ghc-9.0.2.yaml",
+                     "stack-lts-20.26-ghc-9.2.8.yaml",
+                     "stack-lts-21.22-ghc-9.4.8.yaml",
+                     "stack-nightly-2024-10-22-ghc-9.8.3.yaml",
+                     "stack.yaml"]
     permissions:
       packages: write
       contents: read
@@ -75,7 +80,7 @@ jobs:
         env:
           cache-version: format-v1
         with:
-          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yaml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
             ${{ env.cache-version }}-
           path: |
@@ -112,7 +117,7 @@ jobs:
         env:
           cache-version: format-v1
         with:
-          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yaml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
           restore-keys: |
             ${{ env.cache-version }}-
           path: |
@@ -124,7 +129,7 @@ jobs:
           cd orville-postgresql
           docker compose build -q
 
-      - name: Format and Check for Diff
+      - name: Check for Hackage issues
         run: |
           set -e
 
@@ -133,4 +138,39 @@ jobs:
           docker compose run \
             --rm \
             dev \
-            ghcup install cabal && cabal check
+            cabal check
+
+  cabal-latest-build:
+    name: Cabal Build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache/restore@v4
+        env:
+          cache-version: format-v1
+        with:
+          key: ${{ env.cache-version }}-${{ hashFiles('orville-postgresql/stack*.yaml') }}-${{ hashFiles('orville-postgresql/package.yaml') }}
+          restore-keys: |
+            ${{ env.cache-version }}-
+          path: |
+            ./stack-root
+
+      - name: Build dev environment
+        run: |
+          set -e
+          cd orville-postgresql
+          docker compose build -q
+
+      - name: Build with cabal and latest ghc+deps
+        run: |
+          set -e
+
+          cd orville-postgresql
+          cp compose.override.github.yml compose.override.yml
+          docker compose run \
+            --rm \
+            dev \
+            scripts/cabal-latest.sh

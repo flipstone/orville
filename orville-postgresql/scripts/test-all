@@ -2,7 +2,7 @@
 
 #
 # This script will run compile and run the tests against all the
-# stack*.yml files that are found in the root of the repo, reporting
+# stack*.yaml files that are found in the root of the repo, reporting
 # whether each one passed or failed.
 #
 # It is generally useful for doing a final check before pushing, rather
@@ -16,7 +16,7 @@
 rm -rf test-all-logs
 mkdir test-all-logs
 
-for stack_file in stack*.yml; do
+for stack_file in stack*.yaml; do
   log_file="./test-all-logs/$stack_file.log"
 
   echo "Testing with $stack_file... "
