@@ -254,7 +254,6 @@ runRoundTripTest pool testCase = do
               Nothing
               Nothing
               Nothing
-              Nothing
         )
         Nothing
         Nothing
@@ -306,7 +305,6 @@ runNullableRoundTripTest pool testCase = do
               Nothing
               Nothing
               Nothing
-              Nothing
         )
         Nothing
         Nothing
@@ -346,7 +344,6 @@ runNullCounterExampleTest pool testCase = do
           ( Expr.valuesExprInsertSource $
               Expr.valuesExpr
                 (pure . pure $ Expr.valueExpression SqlValue.sqlNull)
-                Nothing
                 Nothing
                 Nothing
                 Nothing

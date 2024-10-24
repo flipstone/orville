@@ -17,7 +17,6 @@ module Orville.PostgreSQL.Expr.Values
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Expr.Cursor (FetchExpr)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByExpr)
@@ -49,9 +48,8 @@ valuesExpr ::
   Maybe OrderByExpr ->
   Maybe LimitExpr ->
   Maybe OffsetExpr ->
-  Maybe FetchExpr ->
   ValuesExpr
-valuesExpr vals mbOrderBy mbLimit mbOffset mbFetch =
+valuesExpr vals mbOrderBy mbLimit mbOffset =
   let
     opts =
       RawSql.intercalate RawSql.space $
@@ -59,7 +57,6 @@ valuesExpr vals mbOrderBy mbLimit mbOffset mbFetch =
           [ fmap RawSql.toRawSql mbOrderBy
           , fmap RawSql.toRawSql mbLimit
           , fmap RawSql.toRawSql mbOffset
-          , fmap RawSql.toRawSql mbFetch
           ]
   in
     ValuesExpr $

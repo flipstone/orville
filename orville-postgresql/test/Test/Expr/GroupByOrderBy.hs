@@ -69,7 +69,6 @@ mkGroupByOrderByTestInsertSource test =
         Nothing
         Nothing
         Nothing
-        Nothing
 
 mkGroupByOrderByTestExpectedRows :: GroupByOrderByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByOrderByTestExpectedRows test =

@@ -142,7 +142,6 @@ mkAggregateTestInsertSource test =
         Nothing
         Nothing
         Nothing
-        Nothing
 
 mkAggregateTestExpectedRows :: AggregateTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkAggregateTestExpectedRows test =

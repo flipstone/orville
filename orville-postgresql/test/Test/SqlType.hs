@@ -538,7 +538,6 @@ runDecodingTest pool test =
               Nothing
               Nothing
               Nothing
-              Nothing
 
       RawSql.executeVoid connection $
         Expr.insertExpr

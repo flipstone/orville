@@ -107,7 +107,6 @@ insertFooBarSource fooBars =
         Nothing
         Nothing
         Nothing
-        Nothing
 
 nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
 nullOr = maybe SqlValue.sqlNull

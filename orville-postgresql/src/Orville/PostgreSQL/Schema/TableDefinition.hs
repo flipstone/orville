@@ -596,7 +596,6 @@ mkInsertSource marshaller entities =
             Nothing
             Nothing
             Nothing
-            Nothing
 
 {- |
   An internal helper function that collects the 'SqlValue' encoded value for a field from a Haskell
