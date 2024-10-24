@@ -50,7 +50,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Marshall.FieldDefinition (fieldAliasQualifiedColumnName, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
-import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
@@ -588,7 +587,7 @@ mkInsertSource marshaller entities =
       foldMarshallerFields marshaller (const Nothing) collectSqlValue
   in
     Expr.valuesExprInsertSource $
-      case traverse ((fmap . fmap) Expr.valueExpression . encodeRow) entities of
+      case traverse encodeRow entities of
         Nothing ->
           Expr.defaultValuesExpr
         Just valExprs ->
@@ -600,26 +599,25 @@ mkInsertSource marshaller entities =
             Nothing
 
 {- |
-  An internal helper function that collects the 'SqlValue' encoded value for a
-  field from a Haskell entity, adding it a list of 'SqlValue's that is being
-  built.
+  An internal helper function that collects the 'SqlValue' encoded value for a field from a Haskell
+  entity as a 'ValueExpression', adding it a list of 'ValueExpresion's that is being built.
 
 @since 1.0.0.0
 -}
 collectSqlValue ::
   MarshallerField entity ->
-  (entity -> Maybe (NE.NonEmpty SqlValue)) ->
+  (entity -> Maybe (NE.NonEmpty Expr.ValueExpression)) ->
   entity ->
-  Maybe (NE.NonEmpty SqlValue)
+  Maybe (NE.NonEmpty Expr.ValueExpression)
 collectSqlValue entry encodeRest entity =
   case entry of
     Natural _ fieldDef (Just accessor) ->
       let
-        self = fieldValueToSqlValue fieldDef (accessor entity)
+        self = Expr.valueExpression $ fieldValueToSqlValue fieldDef (accessor entity)
       in
         maybe
           (Just $ pure self)
-          (Just . (NE.cons self))
+          (Just . NE.cons self)
           (encodeRest entity)
     Natural _ _ Nothing ->
       encodeRest entity
