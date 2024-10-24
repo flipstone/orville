@@ -12,15 +12,19 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-22.04
     strategy:
-      max-parallel: 6
+      max-parallel: 5
       matrix:
-        pg-version: ["pg13", "pg14", "pg15", "pg16", "pg17"]
+        # We want the PostgreSQL versions to be the second dimension in the matrix so that we build
+        # for all of them first. That way we have a better chance of a runner not needing to pull
+        # images.
         stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yaml",
                      "stack-lts-19.33-ghc-9.0.2.yaml",
                      "stack-lts-20.26-ghc-9.2.8.yaml",
                      "stack-lts-21.22-ghc-9.4.8.yaml",
                      "stack-nightly-2024-10-22-ghc-9.8.3.yaml",
-                     "stack.yaml"]
+                     "stack.yaml"
+                     ]
+        pg-version: ["pg13", "pg14", "pg15", "pg16", "pg17"]
     permissions:
       packages: write
       contents: read
@@ -51,17 +55,16 @@ jobs:
 
       - name: Build dev environment
         run: |
-          set -e
+          set -o errexit
           cd orville-postgresql
-          docker compose build -q
+          PG_VERSION=${{ matrix.pg-version }} docker compose build -q
 
       - name: Run Tests
         run: |
-          set -e
+          set -o errexit
           cd orville-postgresql
-          PG_VERSION=${{ matrix.pg-version }}
           cp compose.override.github.yml compose.override.yml
-          docker compose run \
+          PG_VERSION=${{ matrix.pg-version }} docker compose run \
             --rm \
             dev \
             stack --stack-yaml ${{ matrix.stack-yaml }} test \
