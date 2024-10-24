@@ -40,7 +40,7 @@ module Orville.PostgreSQL.Schema.TableDefinition
   )
 where
 
-import Data.List.NonEmpty (NonEmpty, toList)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -132,7 +132,7 @@ mkTableDefinition name primaryKey marshaller =
   TableDefinition
     { i_tableIdentifier = unqualifiedNameToTableId name
     , i_tablePrimaryKey = TableHasKey primaryKey
-    , i_tableMarshaller = annotateSqlMarshaller (toList $ primaryKeyFieldNames primaryKey) marshaller
+    , i_tableMarshaller = annotateSqlMarshaller (NE.toList $ primaryKeyFieldNames primaryKey) marshaller
     , i_tableColumnsToDrop = Set.empty
     , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
@@ -520,7 +520,7 @@ mkInsertExpr ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
   Maybe Expr.OnConflictExpr ->
-  NonEmpty writeEntity ->
+  NE.NonEmpty writeEntity ->
   Expr.InsertExpr
 mkInsertExpr returningOption tableDef maybeOnConflict entities =
   let
@@ -573,18 +573,31 @@ mkInsertColumnList marshaller =
   via 'mkInsertExpr', but this is exported in case you are composing SQL
   yourself and need the column list of an insert as a fragment.
 
+  If the 'SqlMarshaller' does not contain any fields, the resulting 'InsertSource'
+  will insert a default row using @VALUES(DEFAULT)@.
+
 @since 1.0.0.0
 -}
 mkInsertSource ::
   SqlMarshaller writeEntity readEntity ->
-  NonEmpty writeEntity ->
+  NE.NonEmpty writeEntity ->
   Expr.InsertSource
 mkInsertSource marshaller entities =
   let
     encodeRow =
-      foldMarshallerFields marshaller (const []) collectSqlValue
+      foldMarshallerFields marshaller (const Nothing) collectSqlValue
   in
-    Expr.insertSqlValues $ map encodeRow (toList entities)
+    Expr.valuesExprInsertSource $
+      case traverse ((fmap . fmap) Expr.valueExpression . encodeRow) entities of
+        Nothing ->
+          Expr.defaultValuesExpr
+        Just valExprs ->
+          Expr.valuesExpr
+            valExprs
+            Nothing
+            Nothing
+            Nothing
+            Nothing
 
 {- |
   An internal helper function that collects the 'SqlValue' encoded value for a
@@ -595,13 +608,19 @@ mkInsertSource marshaller entities =
 -}
 collectSqlValue ::
   MarshallerField entity ->
-  (entity -> [SqlValue]) ->
+  (entity -> Maybe (NE.NonEmpty SqlValue)) ->
   entity ->
-  [SqlValue]
+  Maybe (NE.NonEmpty SqlValue)
 collectSqlValue entry encodeRest entity =
   case entry of
     Natural _ fieldDef (Just accessor) ->
-      fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
+      let
+        self = fieldValueToSqlValue fieldDef (accessor entity)
+      in
+        maybe
+          (Just $ pure self)
+          (Just . (NE.cons self))
+          (encodeRest entity)
     Natural _ _ Nothing ->
       encodeRest entity
     Synthetic _ ->

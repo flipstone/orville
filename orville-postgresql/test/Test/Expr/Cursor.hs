@@ -7,6 +7,7 @@ import qualified Control.Exception.Safe as ExSafe
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
+import qualified Data.List.NonEmpty as NE
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
@@ -47,7 +48,7 @@ prop_cursorInTransaction :: Property.NamedDBProperty
 prop_cursorInTransaction =
   Property.singletonNamedDBProperty "In transaction" $ \pool -> do
     result <-
-      withFooBarData pool [row 1, row 2] $ \connection ->
+      withFooBarData pool (NE.fromList [row 1, row 2]) $ \connection ->
         withTestTransaction connection $
           withTestCursor connection Nothing Nothing findAllFooBars $ \cursorName -> do
             result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
@@ -59,7 +60,7 @@ prop_cursorOutsideTransactionWithHold :: Property.NamedDBProperty
 prop_cursorOutsideTransactionWithHold =
   Property.singletonNamedDBProperty "Outside transaction (with hold)" $ \pool -> do
     result <-
-      withFooBarData pool [row 1, row 2] $ \connection ->
+      withFooBarData pool (NE.fromList [row 1, row 2]) $ \connection ->
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
           result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
           Execution.readRows result
@@ -89,7 +90,7 @@ prop_cursorMove :: Property.NamedDBProperty
 prop_cursorMove =
   Property.singletonNamedDBProperty "Move" $ \pool -> do
     result <-
-      withFooBarData pool [row 1, row 2, row 3] $ \connection ->
+      withFooBarData pool (NE.fromList [row 1, row 2, row 3]) $ \connection ->
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
           RawSql.executeVoid connection $ Expr.move (Just $ Expr.rowCount 2) cursorName
           result <- RawSql.execute connection $ Expr.fetch Nothing cursorName
@@ -101,7 +102,7 @@ prop_cursorNoScroll :: Property.NamedDBProperty
 prop_cursorNoScroll =
   Property.singletonNamedDBProperty "Move" $ \pool -> do
     scrollBackResult <-
-      withFooBarData pool [row 1, row 2] $ \connection ->
+      withFooBarData pool (NE.fromList [row 1, row 2]) $ \connection ->
         withTestCursor connection (Just Expr.noScroll) (Just Expr.withHold) findAllFooBars $ \cursorName -> do
           RawSql.executeVoid connection $ Expr.move (Just Expr.next) cursorName
           ExSafe.try $ RawSql.executeVoid connection $ Expr.move (Just Expr.prior) cursorName
@@ -122,7 +123,7 @@ prop_cursorFetchAll =
       runFetchDirectionsOnData
         pool
         Nothing
-        [row 1, row 2]
+        (NE.fromList [row 1, row 2])
         [Expr.fetchAll]
 
     assertEqualFooBarRows first [row 1, row 2]
@@ -134,7 +135,7 @@ prop_cursorFetchRowCount =
       runFetchDirectionsOnData
         pool
         Nothing
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.rowCount 2, Expr.rowCount 2]
 
     assertEqualFooBarRows first [row 1, row 2]
@@ -147,7 +148,7 @@ prop_cursorFetchForward =
       runFetchDirectionsOnData
         pool
         Nothing
-        [row 1, row 2]
+        (NE.fromList [row 1, row 2])
         [Expr.forward, Expr.forward]
 
     assertEqualFooBarRows first [row 1]
@@ -160,7 +161,7 @@ prop_cursorFetchForwardCount =
       runFetchDirectionsOnData
         pool
         Nothing
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.forwardCount 2, Expr.forwardCount 2]
 
     assertEqualFooBarRows first [row 1, row 2]
@@ -173,7 +174,7 @@ prop_cursorFetchForwardAll =
       runFetchDirectionsOnData
         pool
         Nothing
-        [row 1, row 2]
+        (NE.fromList [row 1, row 2])
         [Expr.forwardAll]
 
     assertEqualFooBarRows first [row 1, row 2]
@@ -185,7 +186,7 @@ prop_cursorFetchBackward =
       runFetchDirectionsOnData
         pool
         (Just Expr.scroll)
-        [row 1, row 2]
+        (NE.fromList [row 1, row 2])
         [Expr.forwardCount 2, Expr.backward]
 
     assertEqualFooBarRows first [row 1, row 2]
@@ -198,7 +199,7 @@ prop_cursorFetchBackwardCount =
       runFetchDirectionsOnData
         pool
         (Just Expr.scroll)
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.forwardCount 3, Expr.backwardCount 2]
 
     assertEqualFooBarRows first [row 1, row 2, row 3]
@@ -211,7 +212,7 @@ prop_cursorFetchBackwardAll =
       runFetchDirectionsOnData
         pool
         (Just Expr.scroll)
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.forwardCount 4, Expr.backwardAll]
 
     assertEqualFooBarRows first [row 1, row 2, row 3]
@@ -224,7 +225,7 @@ prop_cursorFetchFirstLast =
       runFetchDirectionsOnData
         pool
         Nothing
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.first, Expr.last]
 
     assertEqualFooBarRows first [row 1]
@@ -237,7 +238,7 @@ prop_cursorFetchNextPrior =
       runFetchDirectionsOnData
         pool
         (Just Expr.scroll)
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.next, Expr.next, Expr.prior]
 
     assertEqualFooBarRows first [row 1]
@@ -251,7 +252,7 @@ prop_cursorFetchAbsolute =
       runFetchDirectionsOnData
         pool
         (Just Expr.scroll)
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.absolute 3, Expr.absolute (-1)]
 
     assertEqualFooBarRows first [row 3]
@@ -264,7 +265,7 @@ prop_cursorFetchRelative =
       runFetchDirectionsOnData
         pool
         (Just Expr.scroll)
-        [row 1, row 2, row 3]
+        (NE.fromList [row 1, row 2, row 3])
         [Expr.relative 1, Expr.relative 2, Expr.relative (-1), Expr.relative 0]
 
     assertEqualFooBarRows first [row 1]
@@ -278,7 +279,7 @@ row n = mkFooBar n ("row " <> show n)
 runFetchDirectionsOnData ::
   Orville.ConnectionPool ->
   Maybe Expr.ScrollExpr ->
-  [FooBar] ->
+  NE.NonEmpty FooBar ->
   [Expr.CursorDirection] ->
   HH.PropertyT IO [[[(Maybe B8.ByteString, SqlValue.SqlValue)]]]
 runFetchDirectionsOnData pool scroll fooBars directions =
