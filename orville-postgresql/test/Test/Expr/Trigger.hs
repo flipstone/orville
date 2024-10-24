@@ -3,7 +3,6 @@ module Test.Expr.Trigger
   ) where
 
 import qualified Control.Monad.IO.Class as MIO
-import Data.List.NonEmpty (NonEmpty ((:|)))
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -26,7 +25,7 @@ prop_triggers =
   Property.singletonNamedDBProperty "creates a trigger on a table" $ \pool -> do
     let
       fooBars =
-        [mkFooBar 1 "dog"]
+        pure $ mkFooBar 1 "dog"
 
       expectedFooBars =
         [mkFooBar 1 "god"]
@@ -53,7 +52,7 @@ prop_triggers =
           Nothing
           (Expr.triggerName "test_trigger")
           Expr.triggerBefore
-          (Expr.triggerOnInsert :| [])
+          (pure Expr.triggerOnInsert)
           fooBarTable
           Expr.triggerForEachRow
           triggerFunctionName
