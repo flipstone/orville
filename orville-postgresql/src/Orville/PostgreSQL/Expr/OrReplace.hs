@@ -15,8 +15,7 @@ where
 
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL "OR REPLACE" expression. E.G.
+{- | Type to represent a SQL "OR REPLACE" expression. E.G.
 
 > OR REPLACE
 
@@ -33,8 +32,7 @@ newtype OrReplace
       RawSql.SqlExpression
     )
 
-{- |
-A value of the SQL "OR REPLACE".
+{- | A value of the SQL "OR REPLACE".
 
 @since 1.1.0.0
 -}

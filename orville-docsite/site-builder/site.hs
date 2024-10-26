@@ -132,8 +132,7 @@ applyDefaultLayout navContext itemContext item = do
     (navContext <> itemContext)
     item
 
-{- |
-  Nav links are generated from a named snapshot of the content items to
+{- | Nav links are generated from a named snapshot of the content items to
   avoid the dependency cycle introduced by an item needing a nav link to
   itself.
 -}

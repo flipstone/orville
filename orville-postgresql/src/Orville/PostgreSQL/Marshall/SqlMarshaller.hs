@@ -83,8 +83,7 @@ import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSynth
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 
-{- |
-  An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
+{- | An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
   annotations which cannot necessarily be determined from the data in the
   marshaller itself. In particular, it includes the names of fields that can be
   used to identify a row in the database when an error is encountered during
@@ -104,8 +103,7 @@ data AnnotatedSqlMarshaller writeEntity readEntity = AnnotatedSqlMarshaller
   , unannotatedSqlMarshaller :: SqlMarshaller writeEntity readEntity
   }
 
-{- |
-  Creates an 'AnnotatedSqlMarshaller' that will use the given column names
+{- | Creates an 'AnnotatedSqlMarshaller' that will use the given column names
   to identify rows in error messages when decoding fails. Any column names
   in the list that are not present in the result set will simply be omitted
   from the error message.
@@ -119,8 +117,7 @@ annotateSqlMarshaller ::
 annotateSqlMarshaller =
   AnnotatedSqlMarshaller
 
-{- |
-  Creates an 'AnnotatedSqlMarshaller' that will identify rows in decoding
+{- | Creates an 'AnnotatedSqlMarshaller' that will identify rows in decoding
   errors by any columns. This is the equivalent of @annotateSqlMarshaller []@.
 
 @since 1.0.0.0
@@ -131,8 +128,7 @@ annotateSqlMarshallerEmptyAnnotation ::
 annotateSqlMarshallerEmptyAnnotation =
   annotateSqlMarshaller []
 
-{- |
-  Applies the provided function to a 'SqlMarshaller' that has been annotated,
+{- | Applies the provided function to a 'SqlMarshaller' that has been annotated,
   preserving the annotations.
 
 @since 1.0.0.0
@@ -144,8 +140,7 @@ mapSqlMarshaller ::
 mapSqlMarshaller f (AnnotatedSqlMarshaller rowIdFields marshaller) =
   AnnotatedSqlMarshaller rowIdFields (f marshaller)
 
-{- |
-  'SqlMarshaller' is how we group the lowest-level translation of single fields
+{- | 'SqlMarshaller' is how we group the lowest-level translation of single fields
   into a higher-level marshalling of full SQL records into Haskell records.
   This is a flexible abstraction that allows us to ultimately model SQL tables
   and work with them as potentially nested Haskell records. We can then
@@ -175,15 +170,16 @@ data SqlMarshaller a b where
   -- | Apply an alias to a marshaller
   MarshallAlias :: AliasName -> SqlMarshaller a b -> SqlMarshaller a b
 
+-- | @since 1.0.0.0
 instance Functor (SqlMarshaller a) where
   fmap f marsh = MarshallApply (MarshallPure f) marsh
 
+-- | @since 1.0.0.0
 instance Applicative (SqlMarshaller a) where
   pure = MarshallPure
   (<*>) = MarshallApply
 
-{- |
-  Marshallers with no natural columns will result in @null@ 'SqlValue.SqlValue' and
+{- | Marshallers with no natural columns will result in @null@ 'SqlValue.SqlValue' and
   'Expr.ValueExpression' as the outputs of 'SqlComparable.toComparableSqlValue' and
   'SqlComparable.referenceValueExpression', respectively.
 
@@ -224,8 +220,7 @@ instance SqlComparable.SqlComparable (SqlMarshaller writeEntity readEntity) writ
         Expr.rowValueConstructor
         (NE.nonEmpty colValExprs)
 
-{- |
-  Returns a list of 'Expr.DerivedColumn' expressions that can be used in a
+{- | Returns a list of 'Expr.DerivedColumn' expressions that can be used in a
   select statement to select values from the database for the 'SqlMarshaller'
   decode.
 
@@ -258,8 +253,7 @@ marshallerDerivedColumns marshaller =
   in
     foldMarshallerFields marshaller [] collectDerivedColumn
 
-{- |
-  Returns the table constraints for all the 'FieldDefinition's used in the
+{- | Returns the table constraints for all the 'FieldDefinition's used in the
   'SqlMarshaller'.
 
 @since 1.0.0.0
@@ -283,8 +277,7 @@ marshallerTableConstraints marshaller =
       ConstraintDefinition.emptyTableConstraints
       collectTableConstraints
 
-{- |
-  Represents a primitive entry in a 'SqlMarshaller'. This type is used with
+{- | Represents a primitive entry in a 'SqlMarshaller'. This type is used with
   'foldMarshallerFields' to provided the entry from the marshaller to the
   folding function to be incorporated in the result of the fold.
 
@@ -294,8 +287,7 @@ data MarshallerField writeEntity where
   Natural :: Maybe AliasName -> FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
   Synthetic :: SyntheticField a -> MarshallerField writeEntity
 
-{- |
-  A fold function that can be used with 'foldMarshallerFields' to collect
+{- | A fold function that can be used with 'foldMarshallerFields' to collect
   a value calculated from a 'FieldDefinition' via the given function. The calculated
   value is added to the list of values being built.
 
@@ -322,8 +314,7 @@ collectFromField readOnlyColumnOption fromField entry results =
     Synthetic _ ->
       results
 
-{- |
-  Uses the field definitions in the marshaller to construct SQL expressions
+{- | Uses the field definitions in the marshaller to construct SQL expressions
   that will set columns of the field definitions to their corresponding values
   found in the Haskell @writeEntity@ value.
 
@@ -339,8 +330,7 @@ marshallEntityToSetClauses marshaller writeEntity =
     []
     (collectSetClauses writeEntity)
 
-{- |
-  An internal helper function that collects the 'Expr.SetClause's to
+{- | An internal helper function that collects the 'Expr.SetClause's to
   update all the fields contained in a 'SqlMarshaller'
 
 @since 1.0.0.0
@@ -359,8 +349,7 @@ collectSetClauses entity entry clauses =
     Synthetic _ ->
       clauses
 
-{- |
-  Specifies whether read-only fields should be included when using functions
+{- | Specifies whether read-only fields should be included when using functions
   such as 'collectFromField'.
 
 @since 1.0.0.0
@@ -369,8 +358,7 @@ data ReadOnlyColumnOption
   = IncludeReadOnlyColumns
   | ExcludeReadOnlyColumns
 
-{- |
-  'foldMarshallerFields' allows you to consume the 'FieldDefinition's that
+{- | 'foldMarshallerFields' allows you to consume the 'FieldDefinition's that
   are contained within the 'SqlMarshaller' to process them however is
   required. This can be used to collect the names of all the fields, encode
   them to 'SqlValue.SqlValue', etc.
@@ -385,8 +373,7 @@ foldMarshallerFields ::
 foldMarshallerFields marshaller =
   foldMarshallerFieldsPart Nothing marshaller (Just id)
 
-{- |
-  The internal helper function that actually implements 'foldMarshallerFields'.
+{- | The internal helper function that actually implements 'foldMarshallerFields'.
   It takes with it a function that extracts the current nesting entity from
   the overall @writeEntity@ that the 'SqlMarshaller' is build on. 'MarshallNest'
   adds more nesting by composing its accessor with the one given here.
@@ -425,8 +412,7 @@ foldMarshallerFieldsPart mbAlias marshaller getPart currentResult addToResult =
     MarshallAlias a m ->
       foldMarshallerFieldsPart (Just a) m getPart currentResult addToResult
 
-{- |
-  Decodes all the rows found in an execution result at once. The first row that
+{- | Decodes all the rows found in an execution result at once. The first row that
   fails to decode will return the 'MarshallError.MarshallErrorDetails' that
   results, otherwise all decoded rows will be returned.
 
@@ -448,8 +434,7 @@ marshallResultFromSql errorDetailLevel marshallerWithMeta result =
     (unannotatedSqlMarshaller marshallerWithMeta)
     result
 
-{- |
-  Decodes all the rows found in a execution result at once. The first row that
+{- | Decodes all the rows found in a execution result at once. The first row that
   fails to decode will return the 'MarshallError.MarshallErrorDetails' that
   results, otherwise all decoded rows will be returned. If an error occurs
   while decoding a row, the 'RowIdentityExtractor' will be used to extract
@@ -498,8 +483,7 @@ traverseSequence f =
               Right bs ->
                 pure (Right (b : bs))
 
-{- |
-  Attempts to decode a result set row that has already been fetched from the
+{- | Attempts to decode a result set row that has already been fetched from the
   database server into a Haskell value. If the decoding fails, a
   'MarshallError.MarshallError' will be returned.
 
@@ -527,8 +511,7 @@ decodeRow errorDetailLevel (RowSource source) (RowIdentityExtractor getRowId) ro
       pure $
         Right entity
 
-{- |
-  A 'RowSource' can fetch and decode rows from a database result set. Using
+{- | A 'RowSource' can fetch and decode rows from a database result set. Using
   a 'RowSource' gives random access to the rows in the result set, only
   attempting to decode them when they are requested by the user via 'decodeRow'.
 
@@ -543,15 +526,16 @@ decodeRow errorDetailLevel (RowSource source) (RowIdentityExtractor getRowId) ro
 newtype RowSource readEntity
   = RowSource (Row -> IO (Either MarshallError.MarshallErrorDetails readEntity))
 
+-- | @since 1.0.0.0
 instance Functor RowSource where
   fmap = mapRowSource
 
+-- | @since 1.0.0.0
 instance Applicative RowSource where
   pure = constRowSource
   (<*>) = applyRowSource
 
-{- |
-  Adds a function to the decoding proocess to transform the value returned
+{- | Adds a function to the decoding proocess to transform the value returned
   by a 'RowSource'.
 
 @since 1.0.0.0
@@ -560,8 +544,7 @@ mapRowSource :: (a -> b) -> RowSource a -> RowSource b
 mapRowSource f (RowSource decodeA) =
   RowSource $ \row -> fmap (fmap f) (decodeA row)
 
-{- |
-  Creates a 'RowSource' that always returns the value given, rather than
+{- | Creates a 'RowSource' that always returns the value given, rather than
   attempting to access the result set and decoding anything.
 
 @since 1.0.0.0
@@ -570,8 +553,7 @@ constRowSource :: readEntity -> RowSource readEntity
 constRowSource =
   RowSource . const . pure . Right
 
-{- |
-  Applies a function that will be decoded from the result set to another
+{- | Applies a function that will be decoded from the result set to another
   value decoded from the result set.
 
 @since 1.0.0.0
@@ -588,8 +570,7 @@ applyRowSource (RowSource decodeAtoB) (RowSource decodeA) =
         eitherA <- decodeA row
         pure (fmap aToB eitherA)
 
-{- |
-  Creates a 'RowSource' that will always fail to decode by returning the
+{- | Creates a 'RowSource' that will always fail to decode by returning the
   provided error. This can be used in cases where a 'RowSource' must
   be provided but it is already known at run time that decoding is impossible.
   For instance, this is used internally when a 'FieldDefinition' references
@@ -601,8 +582,7 @@ failRowSource :: MarshallError.MarshallErrorDetails -> RowSource a
 failRowSource =
   RowSource . const . pure . Left
 
-{- |
-  Uses the 'SqlMarshaller' given to build a 'RowSource' that will decode
+{- | Uses the 'SqlMarshaller' given to build a 'RowSource' that will decode
   from the given result set. The returned 'RowSource' can then be used to
   decode rows as desired by the user. Note that the entire result set is
   held in memory for potential decoding until the 'RowSource' is garbage
@@ -699,8 +679,7 @@ partialRowSource fieldNames columnMap result (RowSource f) =
       Right (Right entity) ->
         pure $ Right entity
 
-{- |
-  Builds a 'RowSource' that will retrieve and decode the name field from
+{- | Builds a 'RowSource' that will retrieve and decode the name field from
   the result.
 
 @since 1.0.0.0
@@ -723,8 +702,7 @@ mkFieldNameSource sourceFieldName fromSqlValue columnMap result =
           , MarshallError.actualColumnNames = Map.keysSet columnMap
           }
 
-{- |
-  An internal helper function that finds all the column names in a result set
+{- | An internal helper function that finds all the column names in a result set
   and associates them with the respective column numbers for easier lookup.
 
 @since 1.0.0.0
@@ -754,8 +732,7 @@ prepareColumnMap result = do
       entries <- traverse mkNameEntry [Column 0 .. maxColumn]
       pure $ Map.fromList (catMaybes entries)
 
-{- |
-  A internal helper function for to build a 'RowSource' that retrieves and
+{- | A internal helper function for to build a 'RowSource' that retrieves and
   decodes a single column value form the result set.
 
 @since 1.0.0.0
@@ -784,8 +761,7 @@ mkColumnRowSource sourceFieldName fromSqlValue result column =
         in
           pure (Left $ MarshallError.DecodingError details)
 
-{- |
-  A 'RowIdentityExtractor' is used to retrieve identifying information for a
+{- | A 'RowIdentityExtractor' is used to retrieve identifying information for a
   row when a 'MarshallError.MarshallError' occurs reading it from the database.
 
   You should only need to worry about this type if you're using
@@ -799,8 +775,7 @@ mkColumnRowSource sourceFieldName fromSqlValue result column =
 newtype RowIdentityExtractor
   = RowIdentityExtractor (Row -> IO [(B8.ByteString, SqlValue.SqlValue)])
 
-{- |
-  Constructs a 'RowIdentityExtractor' that will extract values for the given
+{- | Constructs a 'RowIdentityExtractor' that will extract values for the given
   fields from the result set to identify rows in decoding errors. Any of the
   named fields that are missing from the result set will not be included in the
   extracted row identity.
@@ -838,8 +813,7 @@ mkRowIdentityExtractor fields result =
       Just maxColumn ->
         fmap catMaybes $ traverse getIdentityValue [Column 0 .. maxColumn]
 
-{- |
-  Builds a 'SqlMarshaller' that maps a single field of a Haskell entity to
+{- | Builds a 'SqlMarshaller' that maps a single field of a Haskell entity to
   a single column in the database. That value to store in the database will be
   retrieved from the entity using a provided accessor function. This function
   is intended to be used inside of a stanza of 'Applicative' syntax that will
@@ -867,8 +841,7 @@ marshallField ::
 marshallField accessor fieldDef =
   MarshallNest accessor (MarshallField fieldDef)
 
-{- |
-  Builds a 'SqlMarshaller' that will include a SQL expression in select
+{- | Builds a 'SqlMarshaller' that will include a SQL expression in select
   statements to calculate a value using the columns of the table being selected
   from. The columns being used in the calculation do not themselves need
   to be selected, though they must be present in the table so they can
@@ -901,8 +874,7 @@ marshallSyntheticField ::
 marshallSyntheticField =
   MarshallSyntheticField
 
-{- |
-  Nests a 'SqlMarshaller' inside another, using the given accessor to retrieve
+{- | Nests a 'SqlMarshaller' inside another, using the given accessor to retrieve
   values to be marshalled. The resulting marshaller can then be used in the same
   way as 'marshallField' within the applicative syntax of a larger marshaller.
 
@@ -943,8 +915,7 @@ marshallNested ::
 marshallNested =
   MarshallNest
 
-{- |
-  Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
+{- | Lifts a 'SqlMarshaller' to have both read/write entities be 'Maybe',
   and applies a tag to avoid double mapping.
 
 @since 1.0.0.0
@@ -980,8 +951,7 @@ marshallMaybe =
       MarshallAlias a m ->
         MarshallAlias a (go m)
 
-{- |
-  Builds a 'SqlMarshaller' that will raise a decoding error when the value
+{- | Builds a 'SqlMarshaller' that will raise a decoding error when the value
   produced is a 'Left'.
 
 @since 1.0.0.0
@@ -989,8 +959,7 @@ marshallMaybe =
 marshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
 marshallPartial = MarshallPartial
 
-{- |
-  Builds a 'SqlMarshaller' that will qualifiy the fields contained with the given alias.
+{- | Builds a 'SqlMarshaller' that will qualifiy the fields contained with the given alias.
 
 @since 1.1.0.0
 -}
@@ -1001,8 +970,7 @@ marshallAlias ::
 marshallAlias =
   MarshallAlias
 
-{- |
-  Adds a prefix, followed by an underscore, to the names of all of the fields
+{- | Adds a prefix, followed by an underscore, to the names of all of the fields
   and synthetic fields in a 'SqlMarshaller'.
 
 @since 1.0.0.0
@@ -1029,8 +997,7 @@ prefixMarshaller prefix = go
     MarshallReadOnly m -> MarshallReadOnly $ go m
     MarshallAlias a m -> MarshallAlias a $ go m
 
-{- |
-  Marks a 'SqlMarshaller' as read-only so that it will not attempt to
+{- | Marks a 'SqlMarshaller' as read-only so that it will not attempt to
   read any values from the @writeEntity@. You should use this if you have
   a group of fields which are populated by database rather than the application.
 
@@ -1039,8 +1006,7 @@ prefixMarshaller prefix = go
 marshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
 marshallReadOnly = MarshallReadOnly
 
-{- |
-  A version of 'marshallField' that uses 'marshallReadOnly' to make a single
+{- | A version of 'marshallField' that uses 'marshallReadOnly' to make a single
   read-only field. You will usually use this in conjunction with a
   'FieldDefinition' like @serialField@ where the value is populated by the
   database.
@@ -1052,8 +1018,7 @@ marshallReadOnlyField ::
   SqlMarshaller writeEntity fieldValue
 marshallReadOnlyField = MarshallReadOnly . MarshallField
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is equal to the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1061,8 +1026,7 @@ marshallReadOnlyField = MarshallReadOnly . MarshallField
 marshallerEquals :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerEquals = SqlComparable.equals
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is not equal to the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1070,8 +1034,7 @@ marshallerEquals = SqlComparable.equals
 marshallerNotEquals :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerNotEquals = SqlComparable.notEquals
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is distinct from the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1079,8 +1042,7 @@ marshallerNotEquals = SqlComparable.notEquals
 marshallerIsDistinctFrom :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerIsDistinctFrom = SqlComparable.isDistinctFrom
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is not distinct from the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1088,8 +1050,7 @@ marshallerIsDistinctFrom = SqlComparable.isDistinctFrom
 marshallerIsNotDistinctFrom :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerIsNotDistinctFrom = SqlComparable.isNotDistinctFrom
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is less than the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1097,8 +1058,7 @@ marshallerIsNotDistinctFrom = SqlComparable.isNotDistinctFrom
 marshallerLessThan :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerLessThan = SqlComparable.lessThan
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is less than or equal to the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1106,8 +1066,7 @@ marshallerLessThan = SqlComparable.lessThan
 marshallerLessThanOrEqualTo :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerLessThanOrEqualTo = SqlComparable.lessThanOrEqualTo
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is greater than the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1115,8 +1074,7 @@ marshallerLessThanOrEqualTo = SqlComparable.lessThanOrEqualTo
 marshallerGreaterThan :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerGreaterThan = SqlComparable.greaterThan
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is greater than or equal to the given value encoded as a row.
 
 @since 1.1.0.0
@@ -1124,8 +1082,7 @@ marshallerGreaterThan = SqlComparable.greaterThan
 marshallerGreaterThanOrEqualTo :: SqlMarshaller writeEntity x -> writeEntity -> Expr.BooleanExpr
 marshallerGreaterThanOrEqualTo = SqlComparable.greaterThanOrEqualTo
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is in the given list of values encoded as a list of rows.
 
 @since 1.1.0.0
@@ -1133,8 +1090,7 @@ marshallerGreaterThanOrEqualTo = SqlComparable.greaterThanOrEqualTo
 marshallerIn :: SqlMarshaller writeEntity x -> NE.NonEmpty writeEntity -> Expr.BooleanExpr
 marshallerIn = SqlComparable.isIn
 
-{- |
-  Checks that the row value containing the write fields of the
+{- | Checks that the row value containing the write fields of the
   'SqlMarshaller' is not in the given list of values encoded as a list of rows.
 
 @since 1.1.0.0

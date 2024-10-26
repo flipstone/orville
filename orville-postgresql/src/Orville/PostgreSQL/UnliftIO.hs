@@ -39,8 +39,7 @@ where
 
 import qualified Control.Monad.IO.Unlift as UL
 
-{- |
-  'liftWithConnectionViaUnliftIO' can be used as the implementation of
+{- | 'liftWithConnectionViaUnliftIO' can be used as the implementation of
   'Orville.PostgreSQL.liftWithConnection' for
   'Orville.PostgreSQL.MonadOrvilleControl' when the 'Monad' implements
   'UL.MonadUnliftIO'.
@@ -55,8 +54,7 @@ liftWithConnectionViaUnliftIO ::
 liftWithConnectionViaUnliftIO ioWithConn action =
   UL.withRunInIO $ \runInIO -> ioWithConn (runInIO . action)
 
-{- |
-  'liftCatchViaUnliftIO' can be used as the implementation of
+{- | 'liftCatchViaUnliftIO' can be used as the implementation of
   'Orville.PostgreSQL.liftCatch' for 'Orville.PostgreSQL.MonadOrvilleControl'
   when the 'Monad' implements 'UL.MonadUnliftIO'.
 
@@ -75,8 +73,7 @@ liftCatchViaUnliftIO ioCatch action handler = do
       (UL.unliftIO unlio action)
       (\ex -> UL.unliftIO unlio (handler ex))
 
-{- |
-  'liftMaskViaUnliftIO' can be used as the implementation of
+{- | 'liftMaskViaUnliftIO' can be used as the implementation of
   'Orville.PostgreSQL.liftMask' for 'Orville.PostgreSQL.MonadOrvilleControl'
   when the 'Monad' implements 'UL.MonadUnliftIO'.
 

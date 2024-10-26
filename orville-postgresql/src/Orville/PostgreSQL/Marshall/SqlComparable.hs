@@ -55,8 +55,7 @@ class SqlComparable sqlAbstraction haskellValue | sqlAbstraction -> haskellValue
   -- @since 1.1.0.0
   referenceValueExpression :: sqlAbstraction -> Expr.ValueExpression
 
-{- |
-  Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two items that can themselves be made to 'SqlValue.SqlValue'.
+{- | Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two items that can themselves be made to 'SqlValue.SqlValue'.
 
 @since 1.1.0.0
 -}

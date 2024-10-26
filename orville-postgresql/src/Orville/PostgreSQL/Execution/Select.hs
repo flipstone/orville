@@ -38,8 +38,7 @@ import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marsha
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
 
-{- |
-  Represents a @SELECT@ statement that can be executed against a database. A
+{- | Represents a @SELECT@ statement that can be executed against a database. A
   'Select' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that will be
   used to decode the database result set when it is executed.
 
@@ -48,8 +47,7 @@ import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
 data Select readEntity where
   Select :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.QueryExpr -> Select readEntity
 
-{- |
-  Extracts the query that will be run when the select is executed. Normally you
+{- | Extracts the query that will be run when the select is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
 
@@ -58,8 +56,7 @@ data Select readEntity where
 selectToQueryExpr :: Select readEntity -> Expr.QueryExpr
 selectToQueryExpr (Select _ query) = query
 
-{- |
-  Executes the database query for the 'Select' and uses its
+{- | Executes the database query for the 'Select' and uses its
   'Orville.PostgreSQL.SqlMarshaller' to decode the result set.
 
 @since 1.0.0.0
@@ -68,8 +65,7 @@ executeSelect :: Monad.MonadOrville m => Select row -> m [row]
 executeSelect =
   useSelect (Execute.executeAndDecode QueryType.SelectQuery)
 
-{- |
-  Runs a function allowing it to use the data elements containted within the
+{- | Runs a function allowing it to use the data elements containted within the
   'Select' it pleases. The marshaller that the function is provided can be use
   to decode results from the query.
 
@@ -86,8 +82,7 @@ useSelect ::
 useSelect f (Select marshaller query) =
   f query marshaller
 
-{- |
-  Builds a 'Select' that will select all the columns described in the
+{- | Builds a 'Select' that will select all the columns described in the
   'TableDefinition'. This is the safest way to build a 'Select', because table
   name and columns are all read from the 'TableDefinition'. If the table is
   being managed with Orville auto-migrations, this will match the schema in the
@@ -102,8 +97,7 @@ selectTable ::
 selectTable tableDef =
   selectMarshalledColumns (tableMarshaller tableDef) (tableName tableDef)
 
-{- |
-  Builds a 'Select' that will select the columns described by the marshaller
+{- | Builds a 'Select' that will select the columns described by the marshaller
   from the specified table. It is up to the caller to ensure that the columns
   in the marshaller make sense for the table.
 
@@ -139,8 +133,7 @@ selectTableWithAlias ::
 selectTableWithAlias alias tableDef =
   selectMarshalledColumnsWithAlias alias (tableMarshaller tableDef) (tableName tableDef)
 
-{- |
-  Builds a 'Select' that will select the columns described by the marshaller from the specified
+{- | Builds a 'Select' that will select the columns described by the marshaller from the specified
   table with the given alias. It is up to the caller to ensure that the columns in the marshaller
   make sense for the table.
 
@@ -162,8 +155,7 @@ selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptio
       (Expr.tableFromItemWithAlias (aliasNameToAliasExpr alias) qualifiedTableName)
       selectOptions
 
-{- |
-  Builds a 'Select' that will execute the specified query and use the given
+{- | Builds a 'Select' that will execute the specified query and use the given
   'Orville.PostgreSQL.SqlMarshaller' to decode it. It is up to the caller to
   ensure that the given 'Expr.QueryExpr' makes sense and produces a result set
   that the 'Orville.PostgreSQL.SqlMarshaller' can decode.

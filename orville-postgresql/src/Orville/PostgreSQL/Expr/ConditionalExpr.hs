@@ -35,8 +35,7 @@ coalesce valExprs =
       <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql valExprs)
       <> RawSql.rightParen
 
-{- |
-Type to represent the @WHEN@ portion of a SQL @CASE@ expressions.
+{- | Type to represent the @WHEN@ portion of a SQL @CASE@ expressions.
 E.G.
 
 > WHEN condition THEN result
@@ -53,8 +52,7 @@ newtype WhenExpr = WhenExpr RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Builds a 'WhenExpr' that will apply when the given 'BooleanExpr' evaluates to @TRUE@, resulting in the 'ValueExpression'
+{- | Builds a 'WhenExpr' that will apply when the given 'BooleanExpr' evaluates to @TRUE@, resulting in the 'ValueExpression'
 
 @since 1.1.0.0
 -}
@@ -69,8 +67,7 @@ whenExpr boolExpr resultExpr =
       <> RawSql.space
       <> RawSql.toRawSql resultExpr
 
-{- |
-Builds a 'ValueExpression' corresponding to a SQL @CASE@ using the given 'WhenExpr' as the tested value with results and an optional 'ValueExpression' that corresponds to the @ELSE@ portion of the @CASE@.
+{- | Builds a 'ValueExpression' corresponding to a SQL @CASE@ using the given 'WhenExpr' as the tested value with results and an optional 'ValueExpression' that corresponds to the @ELSE@ portion of the @CASE@.
 
 @since 1.1.0.0
 -}

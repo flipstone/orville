@@ -15,12 +15,15 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 
 import Orville.PostgreSQL.Monad.MonadOrville (MonadOrvilleControl (liftCatch, liftMask))
 
+{- | Track the result of a bracket
+
+@since 1.0.0.0
+-}
 data BracketResult
   = BracketSuccess
   | BracketError
 
-{- |
-  INTERNAL: A version of 'Control.Exception.bracket' that allows us to distinguish between
+{- | INTERNAL: A version of 'Control.Exception.bracket' that allows us to distinguish between
   exception and non-exception release cases. This is available in certain
   packages as a typeclass function under the name "generalBracket", but is
   implemented here directly in terms of IO's 'mask' and 'catch' to guarantee
@@ -49,8 +52,7 @@ bracketWithResult acquire release action = do
 
     pure result
 
-{- |
-  INTERNAL: Catch any exception, run the given handler, and rethrow the
+{- | INTERNAL: Catch any exception, run the given handler, and rethrow the
   exception. This is mostly useful to force the exception being caught to be of
   the type 'SomeException'.
 

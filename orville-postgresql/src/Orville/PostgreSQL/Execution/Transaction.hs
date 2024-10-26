@@ -24,8 +24,7 @@ import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-  Performs an action in an Orville monad within a database transaction. The transaction
+{- | Performs an action in an Orville monad within a database transaction. The transaction
   is begun before the action is called. If the action completes without raising an exception,
   the transaction will be committed. If the action raises an exception, the transaction will
   rollback.
@@ -109,8 +108,7 @@ transactionEventSql state event =
     OrvilleState.ReleaseSavepoint savepoint ->
       RawSql.toRawSql $ Expr.releaseSavepoint (savepointName savepoint)
 
-{- |
-  INTERNAL: Constructs a savepoint name based on the current nesting level of
+{- | INTERNAL: Constructs a savepoint name based on the current nesting level of
   transactions, as tracked by the `OrvilleState.Savepoint` type. Strictly
   speaking this is not necessary for PostgreSQL because it supports shadowing
   savepoint names. The SQL standard doesn't allow for savepoint name shadowing,

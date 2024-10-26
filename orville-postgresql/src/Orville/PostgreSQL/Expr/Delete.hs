@@ -22,8 +22,7 @@ import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL delete statement. E.G.
+{- | Type to represent a SQL delete statement. E.G.
 
 > DELETE FROM foo WHERE id < 10
 
@@ -40,9 +39,7 @@ newtype DeleteExpr
       RawSql.SqlExpression
     )
 
-{- |
-
-Construct a SQL DELETE from a table, optionally limiting with a 'WhereClause' and optionally
+{- | Construct a SQL DELETE from a table, optionally limiting with a 'WhereClause' and optionally
 returning a 'ReturningExpr'.
 
 @since 1.0.0.0

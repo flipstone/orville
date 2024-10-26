@@ -26,8 +26,7 @@ import qualified Data.List.NonEmpty as NEL
 import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent the row locking part of a SQL @SELECT@ query. E.G.
+{- | Type to represent the row locking part of a SQL @SELECT@ query. E.G.
 
 > FOR UPDATE
 

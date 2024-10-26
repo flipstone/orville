@@ -51,8 +51,7 @@ import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
 import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 
-{- |
-  A 'Cursor' allows you to fetch rows incrementally from PostgreSQL. Using
+{- | A 'Cursor' allows you to fetch rows incrementally from PostgreSQL. Using
   a cursor will allow you to execute a query that returns a very large
   result set without the entire result set being loaded in memory in your
   application and instead pulling rows as you're able to process them.
@@ -68,8 +67,7 @@ data Cursor readEntity where
     Expr.CursorName ->
     Cursor readEntity
 
-{- |
-  Declares a @CURSOR@ in PostgreSQL that is available for the duration of the
+{- | Declares a @CURSOR@ in PostgreSQL that is available for the duration of the
   action passed to 'withCursor' and closes the cursor when that action
   completes (or raises an exception).
 
@@ -96,8 +94,7 @@ withCursor scrollExpr holdExpr select useCursor =
     (\cursor _bracketResult -> closeCursor cursor)
     useCursor
 
-{- |
-  Declares a @CURSOR@ in PostgreSQL and returns it for you to use. The cursor
+{- | Declares a @CURSOR@ in PostgreSQL and returns it for you to use. The cursor
   must be closed via 'closeCursor' (or another means) when you are done using
   it. Generally you should use 'withCursor' instead of 'declareCursor' to
   ensure that the cursor gets closed properly.
@@ -125,8 +122,7 @@ declareCursor scrollExpr holdExpr =
     _ <- Execute.executeVoid QueryType.CursorQuery declareExpr
     pure (Cursor marshaller cursorName)
 
-{- |
-  Closes a @CURSOR@ in PostgreSQL that was previously declared.
+{- | Closes a @CURSOR@ in PostgreSQL that was previously declared.
   This should be used to close any cursors you open via 'declareCursor',
   though we recommend you use 'withCursor' instead to ensure that any
   opened cursors are closed in the event of an exception.
@@ -143,8 +139,7 @@ closeCursor (Cursor _ cursorName) =
     . Right
     $ cursorName
 
-{- |
-  Fetch rows from a cursor according to the 'Expr.CursorDirection' given. See
+{- | Fetch rows from a cursor according to the 'Expr.CursorDirection' given. See
   @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
   the effects of fetch and the meanings of cursor directions to PostgreSQL.
 
@@ -161,8 +156,7 @@ fetch direction (Cursor marshaller cursorName) =
     (Expr.fetch direction cursorName)
     marshaller
 
-{- |
-  Moves a cursor according to the 'Expr.CursorDirection' given. See
+{- | Moves a cursor according to the 'Expr.CursorDirection' given. See
   @https://www.postgresql.org/docs/current/sql-fetch.html@ for details about
   the effect of move and the meanings of cursor directions to PostgreSQL.
 
@@ -178,8 +172,7 @@ move direction (Cursor _ cursorName) =
     QueryType.CursorQuery
     (Expr.move direction cursorName)
 
-{- |
-  INTERNAL - Generates a unique (or very nearly guaranteed to be) cursor name.
+{- | INTERNAL - Generates a unique (or very nearly guaranteed to be) cursor name.
   Cursor names only need to be unique among the currently-open cursors on the
   current connection, so using POSIX time plus a 32-bit random tag should be
   more than sufficient to ensure conflicts are not seen in practice.

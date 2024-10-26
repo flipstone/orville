@@ -38,8 +38,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldName as FieldName
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
-{- |
-  A collection of constraints to be added to a table. This collection is
+{- | A collection of constraints to be added to a table. This collection is
   indexed by 'ConstraintMigrationKey'. If multiple constraints with the same
   'ConstraintMigrationKey' are added, the most recently-added one will be kept
   and the previous one dropped.
@@ -55,16 +54,14 @@ newtype TableConstraints
       Monoid
     )
 
-{- |
-  Constructs an empty 'TableConstraints'.
+{- | Constructs an empty 'TableConstraints'.
 
 @since 1.0.0.0
 -}
 emptyTableConstraints :: TableConstraints
 emptyTableConstraints = TableConstraints Map.empty
 
-{- |
-  Adds a 'ConstraintDefinition' to an existing 'TableConstraints'. If a
+{- | Adds a 'ConstraintDefinition' to an existing 'TableConstraints'. If a
   constraint already exists with the same 'ConstraintMigrationKey', it is
   replaced with the new constraint.
 
@@ -78,8 +75,7 @@ addConstraint constraint (TableConstraints constraintMap) =
       constraint
       constraintMap
 
-{- |
-  Gets the list of 'ConstraintDefinition's that have been added to the
+{- | Gets the list of 'ConstraintDefinition's that have been added to the
   'TableConstraints'.
 
 @since 1.0.0.0
@@ -88,8 +84,7 @@ tableConstraintKeys :: TableConstraints -> Set.Set ConstraintMigrationKey
 tableConstraintKeys (TableConstraints constraints) =
   Map.keysSet constraints
 
-{- |
-  Gets the list of 'ConstraintDefinition's that have been added to the
+{- | Gets the list of 'ConstraintDefinition's that have been added to the
   'TableConstraints'.
 
 @since 1.0.0.0
@@ -98,8 +93,7 @@ tableConstraintDefinitions :: TableConstraints -> [ConstraintDefinition]
 tableConstraintDefinitions (TableConstraints constraints) =
   Map.elems constraints
 
-{- |
-  Defines a constraint that can be added to a
+{- | Defines a constraint that can be added to a
   'Orville.PostgreSQL.TableDefinition'. Use one of the constructor functions
   below (such as 'uniqueConstraint') to construct the constraint definition you
   wish to have and then use 'Orville.PostgreSQL.addTableConstraints' to add
@@ -113,8 +107,7 @@ data ConstraintDefinition = ConstraintDefinition
   , _constraintMigrationKey :: ConstraintMigrationKey
   }
 
-{- |
-  The key used by Orville to determine whether a constraint should be added to
+{- | The key used by Orville to determine whether a constraint should be added to
   a table when performing auto-migrations. For most use cases, the constructor
   functions that build a 'ConstraintDefinition' will create this automatically
   for you.
@@ -138,8 +131,7 @@ data ConstraintMigrationKey = ConstraintMigrationKey
       Show
     )
 
-{- |
-  The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g.
+{- | The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g.
   unique, foreign key).
 
 @since 1.0.0.0
@@ -156,24 +148,21 @@ data ConstraintKeyType
       Show
     )
 
-{- |
-  Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'.
+{- | Gets the 'ConstraintMigrationKey' for the 'ConstraintDefinition'.
 
 @since 1.0.0.0
 -}
 constraintMigrationKey :: ConstraintDefinition -> ConstraintMigrationKey
 constraintMigrationKey = _constraintMigrationKey
 
-{- |
-  Gets the SQL expression that will be used to add the constraint to the table.
+{- | Gets the SQL expression that will be used to add the constraint to the table.
 
 @since 1.0.0.0
 -}
 constraintSqlExpr :: ConstraintDefinition -> Expr.TableConstraint
 constraintSqlExpr = _constraintSqlExpr
 
-{- |
-  Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
+{- | Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
   columns.
 
 @since 1.0.0.0
@@ -199,8 +188,7 @@ uniqueConstraint fieldNames =
       , _constraintMigrationKey = migrationKey
       }
 
-{- |
-  A 'ForeignReference' represents one part of a foreign key. The entire foreign
+{- | A 'ForeignReference' represents one part of a foreign key. The entire foreign
   key may comprise multiple columns. The 'ForeignReference' defines a single
   column in the key and which column it references in the foreign table.
 
@@ -211,8 +199,7 @@ data ForeignReference = ForeignReference
   , foreignFieldName :: FieldName.FieldName
   }
 
-{- |
-  Constructs a 'ForeignReference'.
+{- | Constructs a 'ForeignReference'.
 
 @since 1.0.0.0
 -}
@@ -228,8 +215,7 @@ foreignReference localName foreignName =
     , foreignFieldName = foreignName
     }
 
-{- |
-  Defines the options for a foreign key constraint. To construct
+{- | Defines the options for a foreign key constraint. To construct
   'ForeignKeyOptions', perform a record update on 'defaultForeignKeyOptions'.
 
 @since 1.0.0.0
@@ -241,8 +227,7 @@ data ForeignKeyOptions = ForeignKeyOptions
   -- ^ The @ON DELETE@ action for the foreign key.
   }
 
-{- |
-  The default 'ForeignKeyOptions', containing 'NoAction' for both
+{- | The default 'ForeignKeyOptions', containing 'NoAction' for both
   'foreignKeyOptionsOnUpdate' and 'foreignKeyOptionsOnDelete'.
 
 @since 1.0.0.0
@@ -254,8 +239,7 @@ defaultForeignKeyOptions =
     , foreignKeyOptionsOnDelete = NoAction
     }
 
-{- |
-  The actions that can be set on 'ForeignKeyOptions'.
+{- | The actions that can be set on 'ForeignKeyOptions'.
 
 @since 1.0.0.0
 -}
@@ -282,8 +266,7 @@ foreignKeyActionToExpr action = case action of
   SetNull -> Just Expr.setNullExpr
   SetDefault -> Just Expr.setDefaultExpr
 
-{- |
-  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint.
+{- | Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint.
 
 @since 1.0.0.0
 -}
@@ -296,8 +279,7 @@ foreignKeyConstraint ::
 foreignKeyConstraint foreignTableId foreignReferences =
   foreignKeyConstraintWithOptions foreignTableId foreignReferences defaultForeignKeyOptions
 
-{- |
-  Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with
+{- | Builds a 'ConstraintDefinition' for a @FOREIGN KEY@ constraint, with
   ON UPDATE and ON DELETE actions.
 
 @since 1.0.0.0

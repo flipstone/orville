@@ -25,8 +25,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  A trivial wrapper for `Int` to help keep track of column vs row number.
+{- | A trivial wrapper for `Int` to help keep track of column vs row number.
 
 @since 1.0.0.0
 -}
@@ -43,8 +42,7 @@ newtype Column
       Num
     )
 
-{- |
-  A trivial wrapper for `Int` to help keep track of column vs row number.
+{- | A trivial wrapper for `Int` to help keep track of column vs row number.
 
 @since 1.0.0.0
 -}
@@ -61,8 +59,7 @@ newtype Row
       Num
     )
 
-{- |
-  'ExecutionResult' is a common interface for types that represent a result set
+{- | 'ExecutionResult' is a common interface for types that represent a result set
   returned from the database. For real, live database interactions, the
   concrete type will be a 'LibPQ.Result', but the 'FakeLibPQResult' may be
   useful as well if you are writing custom code for decoding result sets and
@@ -76,8 +73,7 @@ class ExecutionResult result where
   columnName :: result -> Column -> IO (Maybe BS.ByteString)
   getValue :: result -> Row -> Column -> IO SqlValue
 
-{- |
-  Reads the rows of an 'ExecutionResult' as a list of column name, 'SqlValue'
+{- | Reads the rows of an 'ExecutionResult' as a list of column name, 'SqlValue'
   pairs. You're almost always better off using a
   'Orville.PostgreSQL.SqlMarshaller' instead, but this function is provided for
   cases where you really want to decode the rows yourself but don't want to use
@@ -140,8 +136,7 @@ instance ExecutionResult LibPQ.Result where
     SqlValue.fromRawBytesNullable
       <$> LibPQ.getvalue' result (LibPQ.toRow row) (LibPQ.toColumn column)
 
-{- |
-  `FakeLibPQResult` provides a fake, in-memory implementation of
+{- | `FakeLibPQResult` provides a fake, in-memory implementation of
   `ExecutionResult`.  This is mostly useful for writing automated tests that
   can assume a result set has been loaded and you just need to test decoding
   the results.
@@ -160,8 +155,7 @@ instance ExecutionResult FakeLibPQResult where
   columnName result = pure . fakeLibPQColumnName result
   getValue result column = pure . fakeLibPQGetValue result column
 
-{- |
-  Constructs a `FakeLibPQResult`. The column names given are associated with
+{- | Constructs a `FakeLibPQResult`. The column names given are associated with
   the values for each row by their position in-list. Any missing values (e.g.
   because a row is shorter than the header list) are treated as a SQL Null
   value.

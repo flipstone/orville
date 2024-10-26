@@ -32,8 +32,7 @@ import Orville.PostgreSQL.Internal.OrvilleState
 import Orville.PostgreSQL.Monad.HasOrvilleState (HasOrvilleState (askOrvilleState, localOrvilleState))
 import Orville.PostgreSQL.Raw.Connection (Connection, withPoolConnection)
 
-{- |
-  'MonadOrville' is the typeclass that most Orville operations require to
+{- | 'MonadOrville' is the typeclass that most Orville operations require to
   do anything that connects to the database. 'MonadOrville' itself is empty,
   but it lists all the required typeclasses as superclass constraints so that
   it can be used instead of listing all the constraints on every function.
@@ -57,8 +56,7 @@ class
   ) =>
   MonadOrville m
 
-{- |
-  'MonadOrvilleControl' presents the interface that Orville will use to lift
+{- | 'MonadOrvilleControl' presents the interface that Orville will use to lift
   low-level IO operations that cannot be lifted via
   'Control.Monad.IO.Class.liftIO' (i.e. those where the IO parameter is
   contravariant rather than covariant).
@@ -78,17 +76,15 @@ class
 @since 1.0.0.0
 -}
 class MonadOrvilleControl m where
-  -- |
-  --     Orville will use this function to lift the acquisition of connections
-  --     from the resource pool into the application monad.
+  -- | Orville will use this function to lift the acquisition of connections
+  -- from the resource pool into the application monad.
   --
   -- @since 1.0.0.0
   liftWithConnection ::
     (forall a. (Connection -> IO a) -> IO a) -> (Connection -> m b) -> m b
 
-  -- |
-  --     Orville will use this function to lift exception catches into the
-  --     application monad.
+  -- | Orville will use this function to lift exception catches into the
+  -- application monad.
   --
   -- @since 1.0.0.0
   liftCatch ::
@@ -98,10 +94,9 @@ class MonadOrvilleControl m where
     (e -> m b) ->
     m b
 
-  -- |
-  --     Orville will use this function to lift 'Control.Exception.mask' calls
-  --     into the application monad to guarantee resource cleanup is executed
-  --     even when asynchronous exceptions are thrown.
+  -- | Orville will use this function to lift 'Control.Exception.mask' calls
+  -- into the application monad to guarantee resource cleanup is executed
+  -- even when asynchronous exceptions are thrown.
   --
   -- @since 1.0.0.0
   liftMask ::
@@ -109,6 +104,7 @@ class MonadOrvilleControl m where
     ((forall a. m a -> m a) -> m c) ->
     m c
 
+-- | @since 1.0.0.0
 instance MonadOrvilleControl IO where
   liftWithConnection ioWithConn =
     ioWithConn
@@ -119,6 +115,7 @@ instance MonadOrvilleControl IO where
   liftMask ioMask =
     ioMask
 
+-- | @since 1.0.0.0
 instance MonadOrvilleControl m => MonadOrvilleControl (ReaderT state m) where
   liftWithConnection ioWithConn action = do
     ReaderT $ \env ->
@@ -136,10 +133,10 @@ instance MonadOrvilleControl m => MonadOrvilleControl (ReaderT state m) where
       liftMask ioMask $ \restore ->
         runReaderT (action (mapReaderT restore)) env
 
+-- | @since 1.0.0.0
 instance (MonadOrvilleControl m, MonadIO m) => MonadOrville (ReaderT OrvilleState m)
 
-{- |
-  'withConnection' should be used to receive a 'Connection' handle for
+{- | 'withConnection' should be used to receive a 'Connection' handle for
   executing queries against the database from within an application monad using
   Orville.  For the "outermost" call of 'withConnection', a connection will be
   acquired from the resource pool. Additional calls to 'withConnection' that
@@ -155,8 +152,7 @@ withConnection :: MonadOrville m => (Connection -> m a) -> m a
 withConnection connectedAction = do
   withConnectedState (connectedAction . connectedConnection)
 
-{- |
-  'withConnection_' is a convenience version of 'withConnection' for those that
+{- | 'withConnection_' is a convenience version of 'withConnection' for those that
   don't need the actual connection handle. You might want to use this function
   even without using the handle because it ensures that all the Orville
   operations performed by the action passed to it occur on the same connection.
@@ -170,8 +166,7 @@ withConnection_ :: MonadOrville m => m a -> m a
 withConnection_ =
   withConnection . const
 
-{- |
-  INTERNAL: This in an internal version of 'withConnection' that gives access to
+{- | INTERNAL: This in an internal version of 'withConnection' that gives access to
   the entire 'ConnectedState' value to allow for transaction management.
 
 @since 1.0.0.0

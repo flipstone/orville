@@ -32,8 +32,7 @@ import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, NotNull, fieldEquals, fieldIn, fieldName, fieldNameToColumnName, fieldNameToString, fieldValueToSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  A Haskell description of the 'FieldDefinition's that make up the primary
+{- | A Haskell description of the 'FieldDefinition's that make up the primary
   key of a SQL table. This type supports composite primary keys as well
   as singular ones.
 
@@ -42,8 +41,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 data PrimaryKey key
   = PrimaryKey (PrimaryKeyPart key) [PrimaryKeyPart key]
 
-{- |
-  A 'PrimaryKeyPart' describes one field of a composite primary key. Values
+{- | A 'PrimaryKeyPart' describes one field of a composite primary key. Values
   are built using 'primaryKeyPart' and then used with 'compositePrimaryKey'
   to build a 'PrimaryKey'.
 
@@ -52,8 +50,7 @@ data PrimaryKey key
 data PrimaryKeyPart key
   = forall part. PrimaryKeyPart (key -> part) (FieldDefinition NotNull part)
 
-{- |
-  'primaryKeyDescription' builds a user-readable representation of the
+{- | 'primaryKeyDescription' builds a user-readable representation of the
   primary key for use in error messages and such. It is a comma-delimited
   list of the names of the fields that make up the primary key.
 
@@ -66,8 +63,7 @@ primaryKeyDescription =
     . toList
     . primaryKeyFieldNames
 
-{- |
-  Retrieves the names of the fields that are part of the primary key.
+{- | Retrieves the names of the fields that are part of the primary key.
 
 @since 1.0.0.0
 -}
@@ -80,8 +76,7 @@ primaryKeyFieldNames =
   in
     mapPrimaryKeyParts partName
 
-{- |
-  'primaryKeyToSql' converts a Haskell value for a primary key into the
+{- | 'primaryKeyToSql' converts a Haskell value for a primary key into the
   (possibly multiple) SQL values that represent the primary key in the
   database.
 
@@ -91,8 +86,7 @@ primaryKeyToSql :: PrimaryKey key -> key -> NonEmpty SqlValue.SqlValue
 primaryKeyToSql keyDef key =
   mapPrimaryKeyParts (partSqlValue key) keyDef
 
-{- |
-  'partSqlValue' is an internal helper function that builds the
+{- | 'partSqlValue' is an internal helper function that builds the
   'SqlValue.SqlValue' for one part of a (possible composite) primary key.
 
 @since 1.0.0.0
@@ -101,8 +95,7 @@ partSqlValue :: key -> (key -> part) -> FieldDefinition NotNull part -> SqlValue
 partSqlValue key getPart partField =
   fieldValueToSqlValue partField (getPart key)
 
-{- |
-  'primaryKey' constructs a single-field primary key from the 'FieldDefinition'
+{- | 'primaryKey' constructs a single-field primary key from the 'FieldDefinition'
   that corresponds to the primary key's column. This is generally used while
   building a 'Orville.PostgreSQL.TableDefinition'.
 
@@ -112,8 +105,7 @@ primaryKey :: FieldDefinition NotNull key -> PrimaryKey key
 primaryKey fieldDef =
   PrimaryKey (PrimaryKeyPart id fieldDef) []
 
-{- |
-  'compositePrimaryKey' constructs a multi-field primary key from the given
+{- | 'compositePrimaryKey' constructs a multi-field primary key from the given
   parts, each of which corresponds to one field in the primary key. You should
   use this while building a 'Orville.PostgreSQL.TableDefinition' for a table
   that you want to have a multi-column primary key. See 'primaryKeyPart' for
@@ -130,8 +122,7 @@ compositePrimaryKey ::
 compositePrimaryKey =
   PrimaryKey
 
-{- |
-  'primaryKeyPart' constructs a building block for a composite primary key
+{- | 'primaryKeyPart' constructs a building block for a composite primary key
   based on a 'FieldDefinition' and an accessor function to extract the value for
   that field from the Haskell @key@ type that represents the overall composite
   key. 'PrimaryKeyPart' values built using this function are usually then
@@ -146,8 +137,7 @@ primaryKeyPart ::
 primaryKeyPart =
   PrimaryKeyPart
 
-{- |
-  'mapPrimaryKeyParts' provides a way to access the innards of a 'PrimaryKey'
+{- | 'mapPrimaryKeyParts' provides a way to access the innards of a 'PrimaryKey'
   definition to extract information. The given function will be called on
   each part of the primary key in order and the list of results is returned.
   Note that single-field and multi-field primary keys are treated the same by
@@ -171,8 +161,7 @@ mapPrimaryKeyParts f (PrimaryKey first rest) =
   in
     fmap doPart (first :| rest)
 
-{- |
-  Builds a 'Expr.PrimaryKeyExpr' that is suitable to be used when creating
+{- | Builds a 'Expr.PrimaryKeyExpr' that is suitable to be used when creating
   a table to define the primary key on the table.
 
 @since 1.0.0.0
@@ -185,8 +174,7 @@ mkPrimaryKeyExpr keyDef =
   in
     Expr.primaryKeyExpr names
 
-{- |
-  'primaryKeyEquals' builds a 'Expr.BooleanExpr' that will match the row where
+{- | 'primaryKeyEquals' builds a 'Expr.BooleanExpr' that will match the row where
   the primary key is equal to the given value. For single-field primary keys,
   this is equivalent to 'fieldEquals', but 'primaryKeyEquals' also handles
   composite primary keys.
@@ -199,8 +187,7 @@ primaryKeyEquals keyDef key =
     Expr.andExpr
     (mapPrimaryKeyParts (partEquals key) keyDef)
 
-{- |
-  'primaryKeyIn' builds a 'Expr.BooleanExpr' that will match rows where the
+{- | 'primaryKeyIn' builds a 'Expr.BooleanExpr' that will match rows where the
   primary key is contained in the given list. For single-field primary keys,
   this is equivalent to 'fieldIn', but 'primaryKeyIn' also handles composite
   primary keys.
@@ -217,8 +204,7 @@ primaryKeyIn keyDef keys =
         Expr.orExpr
         (fmap (primaryKeyEquals keyDef) keys)
 
-{- |
-  INTERNAL: builds the where condition for a single part of the key
+{- | INTERNAL: builds the where condition for a single part of the key
 
 @since 1.0.0.0
 -}

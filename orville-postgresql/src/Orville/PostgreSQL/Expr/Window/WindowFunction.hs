@@ -47,32 +47,28 @@ import qualified Orville.PostgreSQL.Expr.ValueExpression as ValueExpression
 import Orville.PostgreSQL.Expr.Window.WindowDefinitionExpr (WindowDefinitionExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-The @row_number@ window function
+{- | The @row_number@ window function
 
 @since 1.1.0.0
 -}
 rowNumberWindowFunction :: Maybe Filter.FilterExpr -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 rowNumberWindowFunction = windowFunction (functionName "row_number") mempty
 
-{- |
-The @rank@ window function
+{- | The @rank@ window function
 
 @since 1.1.0.0
 -}
 rankWindowFunction :: Maybe Filter.FilterExpr -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 rankWindowFunction = windowFunction (functionName "rank") mempty
 
-{- |
-The @dense_rank@ window function
+{- | The @dense_rank@ window function
 
 @since 1.1.0.0
 -}
 denseRankWindowFunction :: Maybe Filter.FilterExpr -> WindowDefinitionExpr -> ValueExpression.ValueExpression
 denseRankWindowFunction = windowFunction (functionName "dense_rank") mempty
 
-{- |
-The @percent_rank@ window function
+{- | The @percent_rank@ window function
 
 @since 1.1.0.0
 -}

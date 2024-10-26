@@ -33,8 +33,7 @@ import qualified Orville.PostgreSQL.Expr.ValueExpression as ValueExpression
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL order by clause. E.G.
+{- | Type to represent a SQL order by clause. E.G.
 
 > ORDER BY foo, bar
 
@@ -51,16 +50,14 @@ newtype OrderByClause
       RawSql.SqlExpression
     )
 
-{- |
-Builds a full 'OrderByClause' with the given ordering described in the 'OrderByExpr'
+{- | Builds a full 'OrderByClause' with the given ordering described in the 'OrderByExpr'
 
 @since 1.0.0.0
 -}
 orderByClause :: OrderByExpr -> OrderByClause
 orderByClause expr = OrderByClause (RawSql.fromString "ORDER BY " <> RawSql.toRawSql expr)
 
-{- |
-Type to represent a SQL order by expression (the part that follows the @ORDER
+{- | Type to represent a SQL order by expression (the part that follows the @ORDER
 BY@ in SQL). E.G.
 
 > foo, bar
@@ -77,9 +74,7 @@ newtype OrderByExpr = OrderByExpr RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-@since 1.0.0.0
--}
+-- | @since 1.0.0.0
 instance Semigroup OrderByExpr where
   (<>) = appendOrderByExpr
 
@@ -99,8 +94,7 @@ appendOrderByExpr (OrderByExpr a) (OrderByExpr b) =
 orderByColumnsExpr :: NEL.NonEmpty (QualifiedOrUnqualified ColumnName, OrderByDirection) -> OrderByExpr
 orderByColumnsExpr = ExtraNonEmpty.foldMap1' (uncurry orderByColumnName)
 
-{- |
-  Orders a query by the given column name in the given order direction.
+{- | Orders a query by the given column name in the given order direction.
 
 @since 1.0.0.0
 -}
@@ -114,15 +108,14 @@ orderByColumnName = orderByValueExpression . ValueExpression.columnReference
 orderByAliasesExpr :: NEL.NonEmpty (AliasExpr, OrderByDirection) -> OrderByExpr
 orderByAliasesExpr = ExtraNonEmpty.foldMap1' (uncurry orderByAlias)
 
-{- |
-  Orders a query by the given alias in the given order direction. This is useful for ordering by synthetic fields or sub queries.
+{- | Orders a query by the given alias in the given order direction. This is useful for ordering by synthetic fields or sub queries.
 
 @since 1.1.0.0
 -}
 orderByAlias :: AliasExpr -> OrderByDirection -> OrderByExpr
 orderByAlias = orderByValueExpression . ValueExpression.aliasReference
 
-{-- | Create an 'OrderByExpr' for the given 'ValueExpression.ValueExpression' and 'OrderByDirection'. The caller must ensure that the 'ValueExpression.ValueExpression' is valid as an order by expression.
+{- | Create an 'OrderByExpr' for the given 'ValueExpression.ValueExpression' and 'OrderByDirection'. The caller must ensure that the 'ValueExpression.ValueExpression' is valid as an order by expression.
 
 @since 1.1.0.0
 -}
@@ -130,8 +123,7 @@ orderByValueExpression :: ValueExpression.ValueExpression -> OrderByDirection ->
 orderByValueExpression value direction =
   OrderByExpr $ RawSql.toRawSql value <> RawSql.space <> RawSql.toRawSql direction
 
-{- |
-Type to represent a SQL order by direction expression. E.G.
+{- | Type to represent a SQL order by direction expression. E.G.
 
 > ASC
 
@@ -147,8 +139,7 @@ newtype OrderByDirection = OrderByDirection RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Type to represent the ordering of Null, intended to be used with 'OrderByDirection'.
+{- | Type to represent the ordering of Null, intended to be used with 'OrderByDirection'.
 
 @since 1.0.0.0
 -}

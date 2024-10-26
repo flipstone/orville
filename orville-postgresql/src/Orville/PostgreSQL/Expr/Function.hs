@@ -32,8 +32,7 @@ import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL "DROP FUNCTION" statement. E.G.
+{- | Type to represent a SQL "DROP FUNCTION" statement. E.G.
 
 > DROP FUNCTION my_function
 
@@ -50,8 +49,7 @@ newtype DropFunctionExpr
       RawSql.SqlExpression
     )
 
-{- |
-Constructs a SQL @DROP FUNCTION@ statement from a function name.
+{- | Constructs a SQL @DROP FUNCTION@ statement from a function name.
 
 @since 1.1.0.0
 -}
@@ -67,8 +65,7 @@ dropFunction maybeIfExists name =
           ]
       )
 
-{- |
-Type to represent a SQL "CREATE FUNCTION" statement. E.G.
+{- | Type to represent a SQL "CREATE FUNCTION" statement. E.G.
 
 > CREATE FUNCTION my_function RETURNS trigger AS '<definition>'
 
@@ -85,8 +82,7 @@ newtype CreateFunctionExpr
       RawSql.SqlExpression
     )
 
-{- |
-Constructs a SQL @CREATE FUNCTION@ statement from a function name, return type,
+{- | Constructs a SQL @CREATE FUNCTION@ statement from a function name, return type,
 language and definiton.
 
 Note: Orville does not currently support creating functions with arguments.
@@ -116,8 +112,7 @@ createFunction maybeOrReplace name functionReturns functionLanguage definition =
           ]
       )
 
-{- |
-Type to represent the return specifier given as part of a SQL "CREATE
+{- | Type to represent the return specifier given as part of a SQL "CREATE
 FUNCTION" statement. E.G. the @RETURNS trigger@ in
 
 > CREATE FUNCTION my_function RETURNS trigger
@@ -135,8 +130,7 @@ newtype FunctionReturns
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a @RETURNS@ specifier for a @CREATE FUNCTION@ statement with the
+{- | Constructs a @RETURNS@ specifier for a @CREATE FUNCTION@ statement with the
   given return type.
 
 @since 1.1.0.0
@@ -145,8 +139,7 @@ returns :: ReturnType -> FunctionReturns
 returns returnType =
   FunctionReturns $ (RawSql.fromString "RETURNS ") <> RawSql.toRawSql returnType
 
-{- |
-Type to represent the return type given as part of a SQL "CREATE
+{- | Type to represent the return type given as part of a SQL "CREATE
 FUNCTION" statement. E.G. the @trigger@ in
 
 > CREATE FUNCTION my_function RETURNS trigger
@@ -164,8 +157,7 @@ newtype ReturnType
       RawSql.SqlExpression
     )
 
-{- |
-The @trigger@ return type.
+{- | The @trigger@ return type.
 
 @since 1.1.0.0
 -}
@@ -173,8 +165,7 @@ returnTypeTrigger :: ReturnType
 returnTypeTrigger =
   ReturnType (RawSql.fromString "trigger")
 
-{- |
-Type to represent the language specifier given as part of a SQL "CREATE
+{- | Type to represent the language specifier given as part of a SQL "CREATE
 FUNCTION" statement. E.G. the @LANGUAGE plpgsql@ in
 
 > CREATE FUNCTION my_function LANGUAGE plpgsql
@@ -192,8 +183,7 @@ newtype FunctionLanguage
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a @LANGUAGE@ specifier for a @CREATE FUNCTION@ statement with the
+{- | Constructs a @LANGUAGE@ specifier for a @CREATE FUNCTION@ statement with the
   given language name as the language.
 
 @since 1.1.0.0
@@ -202,8 +192,7 @@ language :: LanguageName -> FunctionLanguage
 language name =
   FunctionLanguage $ (RawSql.fromString "LANGUAGE ") <> RawSql.toRawSql name
 
-{- |
-Type to represent the language that the function definition is given in as part
+{- | Type to represent the language that the function definition is given in as part
 of a SQL "CREATE FUNCTION" statement. E.G. the @plpgsql@ in
 
 > CREATE FUNCTION my_function LANGUAGE plpgsql
@@ -221,8 +210,7 @@ newtype LanguageName
       RawSql.SqlExpression
     )
 
-{- |
-The @plpgsql@ language.
+{- | The @plpgsql@ language.
 
 @since 1.1.0.0
 -}
@@ -230,8 +218,7 @@ plpgsql :: LanguageName
 plpgsql =
   LanguageName (RawSql.fromString "plpgsql")
 
-{- |
-Type to represent the definition body of a a SQL "CREATE FUNCTION" statement. E.G. the
+{- | Type to represent the definition body of a a SQL "CREATE FUNCTION" statement. E.G. the
 @AS <definition>@ in
 
 > CREATE FUNCTION my_function AS <definition>
@@ -249,8 +236,7 @@ newtype FunctionDefinition
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'FunctionDefinition' from a 'String', which will be passed as an
+{- | Constructs a 'FunctionDefinition' from a 'String', which will be passed as an
   escaped string literal to PosgreSQL.
 
 @since 1.1.0.0

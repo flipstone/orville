@@ -32,8 +32,7 @@ import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  'MigrationLockOptions' controls how Orville acquires its PostgreSQL advisory lock
+{- | 'MigrationLockOptions' controls how Orville acquires its PostgreSQL advisory lock
   to ensure that only one process is attempting to make schema changes at a time.
   See the descriptions of each of the options for more detail:
 
@@ -70,8 +69,7 @@ data MigrationLockOptions = MigrationLockOptions
   -- @since 1.1.0.0
   }
 
-{- |
-The default lock options use the 'defaultLockId', 25 attempts and randomized delay
+{- | The default lock options use the 'defaultLockId', 25 attempts and randomized delay
 between 100 and 125 milliseconds.
 
 @since 1.1.0.0
@@ -85,8 +83,7 @@ defaultLockOptions =
     , lockDelayVariationMicros = 25000
     }
 
-{- |
-Identifies a PostgreSQL advisory lock to to be aquired by the application. Use
+{- | Identifies a PostgreSQL advisory lock to to be aquired by the application. Use
 'defaultLockId' to obtain the default value and 'nextLockId' to create custom
 values if you need them.
 
@@ -97,8 +94,7 @@ data MigrationLockId = MigrationLockId
   , i_lockKey2 :: Int32
   }
 
-{- |
-The lock id that Orville uses by default to ensure that just one copy of the
+{- | The lock id that Orville uses by default to ensure that just one copy of the
 application is attempting to run migrations at a time.
 
 @since 1.0.0.0
@@ -110,8 +106,7 @@ defaultLockId =
     , i_lockKey2 = 7995632
     }
 
-{- |
-Increments the id of the given 'MigrationLockId', creating a new distinct lock
+{- | Increments the id of the given 'MigrationLockId', creating a new distinct lock
 id. You can use this to create your own custom 'MigrationLockId' values as
 necessary if you need to control migration runs in a custom manner.
 
@@ -126,8 +121,7 @@ nextLockId lockId =
 orvilleLockScope :: Int32
 orvilleLockScope = 17772
 
-{- |
-  Executes an Orville action with a PostgreSQL advisory lock held that
+{- | Executes an Orville action with a PostgreSQL advisory lock held that
   indicates to other Orville processes that a database migration is being done
   and no others should be performed concurrently.
 
@@ -222,8 +216,7 @@ releaseLockExpr lockId =
     <> RawSql.parameter (SqlValue.fromInt32 (i_lockKey2 lockId))
     <> RawSql.rightParen
 
-{- |
-  Raised if 'withMigrationLock' cannot acquire the migration lock in a
+{- | Raised if 'withMigrationLock' cannot acquire the migration lock in a
   timely manner.
 
 @since 1.0.0.0

@@ -10,8 +10,7 @@ module Orville.PostgreSQL.Execution.QueryType
   )
 where
 
-{- |
-  A simple categorization of SQL queries that is used to provide a hint to
+{- | A simple categorization of SQL queries that is used to provide a hint to
   user callbacks about what kind of query is being run.
 
   See 'Orville.PostgreSQL.addSqlExecutionCallback'

@@ -25,8 +25,7 @@ import Orville.PostgreSQL.Expr.IfNotExists (IfNotExists)
 import Orville.PostgreSQL.Expr.Name (ExtensionName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL "CREATE EXTENSION" statement. E.G.
+{- | Type to represent a SQL "CREATE EXTENSION" statement. E.G.
 
 > CREATE EXTENSION foo
 
@@ -55,8 +54,7 @@ createExtensionExpr extension mbIfNotExists mbAction =
       <> RawSql.toRawSql extension
       <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbAction)
 
-{- |
-Type to represent a SQL "DROP EXTENSION" statement. E.G.
+{- | Type to represent a SQL "DROP EXTENSION" statement. E.G.
 
 > DROP EXTENSION foo
 
@@ -85,8 +83,7 @@ dropExtensionExpr extension mbIfExists mbAction =
       <> RawSql.toRawSql extension
       <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbAction)
 
-{- |
-Type to represent a extension action on a @EXTENSION@. E.G.
+{- | Type to represent a extension action on a @EXTENSION@. E.G.
 the @CASCADE@ in
 
 > CREATE EXTENSION foo CASCADE
@@ -104,16 +101,14 @@ newtype ExtensionActionExpr
       RawSql.SqlExpression
     )
 
-{- |
-  The extension action @RESTRICT@.
+{- | The extension action @RESTRICT@.
 
   @since 1.1.0.0
 -}
 extensionRestrictExpr :: ExtensionActionExpr
 extensionRestrictExpr = ExtensionActionExpr $ RawSql.fromString "RESTRICT"
 
-{- |
-  The extension action @CASCADE@.
+{- | The extension action @CASCADE@.
 
   @since 1.1.0.0
 -}

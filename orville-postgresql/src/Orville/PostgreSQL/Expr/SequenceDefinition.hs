@@ -64,8 +64,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
    @@
 -}
 
-{- |
-Type to represent a @CREATE SEQUENCE@ statement. E.G.
+{- | Type to represent a @CREATE SEQUENCE@ statement. E.G.
 
 > CREATE SEQUENCE foo INCREMENT 2
 
@@ -82,8 +81,7 @@ newtype CreateSequenceExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'CreateSequenceExpr' with the given sequence options.
+{- | Constructs a 'CreateSequenceExpr' with the given sequence options.
 
   @since 1.0.0.0
 -}
@@ -136,8 +134,7 @@ createSequenceExpr sequenceName mbIncrementBy mbMinValue mbMaxValue mbStartWith 
   @@
 -}
 
-{- |
-Type to represent a @CREATE SEQUENCE@ statement. E.G.
+{- | Type to represent a @CREATE SEQUENCE@ statement. E.G.
 
 > ALTER SEQUENCE foo START WITH 0
 
@@ -154,8 +151,7 @@ newtype AlterSequenceExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs an 'AlterSequenceExpr' with the given sequence options.
+{- | Constructs an 'AlterSequenceExpr' with the given sequence options.
 
   @since 1.0.0.0
 -}
@@ -189,8 +185,7 @@ alterSequenceExpr sequenceName mbIncrementBy mbMinValue mbMaxValue mbStartWith m
       , fmap RawSql.toRawSql mbCycle
       ]
 
-{- |
-Type to represent an @INCREMENT BY@ expression for sequences. E.G.
+{- | Type to represent an @INCREMENT BY@ expression for sequences. E.G.
 
 > INCREMENT BY 0
 
@@ -207,8 +202,7 @@ newtype IncrementByExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs an 'IncrementByExpr' that will make the sequence increment by
+{- | Constructs an 'IncrementByExpr' that will make the sequence increment by
   the given value.
 
   @since 1.0.0.0
@@ -219,8 +213,7 @@ incrementBy n =
     RawSql.fromString "INCREMENT BY "
       <> RawSql.int64DecLiteral n
 
-{- |
-Type to represent a @MINVALUE@ expression for sequences. E.G.
+{- | Type to represent a @MINVALUE@ expression for sequences. E.G.
 
 > MINVALUE 0
 
@@ -237,8 +230,7 @@ newtype MinValueExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'MinValueExpr' which gives the sequence the specified minimum
+{- | Constructs a 'MinValueExpr' which gives the sequence the specified minimum
   value.
 
   @since 1.0.0.0
@@ -249,8 +241,7 @@ minValue n =
     RawSql.fromString "MINVALUE "
       <> RawSql.int64DecLiteral n
 
-{- |
-  Constructs a 'MinValueExpr' which gives the sequence no minimum value (i.e.
+{- | Constructs a 'MinValueExpr' which gives the sequence no minimum value (i.e.
   @NO MINVALUE@).
 
   @since 1.0.0.0
@@ -259,8 +250,7 @@ noMinValue :: MinValueExpr
 noMinValue =
   MinValueExpr . RawSql.fromString $ "NO MINVALUE"
 
-{- |
-Type to represent a @MAXVALUE@ expression for sequences. E.G.
+{- | Type to represent a @MAXVALUE@ expression for sequences. E.G.
 
 > MAXVALUE 1000000
 
@@ -277,8 +267,7 @@ newtype MaxValueExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'MaxValueExpr' which gives the sequence the specified maximum
+{- | Constructs a 'MaxValueExpr' which gives the sequence the specified maximum
   value.
 
   @since 1.0.0.0
@@ -289,8 +278,7 @@ maxValue n =
     RawSql.fromString "MAXVALUE "
       <> RawSql.int64DecLiteral n
 
-{- |
-  Constructs a 'MaxValueExpr' which gives the sequence no maximum value (i.e.
+{- | Constructs a 'MaxValueExpr' which gives the sequence no maximum value (i.e.
   @NO MAXVALUE@).
 
   @since 1.0.0.0
@@ -299,8 +287,7 @@ noMaxValue :: MaxValueExpr
 noMaxValue =
   MaxValueExpr . RawSql.fromString $ "NO MAXVALUE"
 
-{- |
-Type to represent a @START WITH@ expression for sequences. E.G.
+{- | Type to represent a @START WITH@ expression for sequences. E.G.
 
 > START WITH 1
 
@@ -317,8 +304,7 @@ newtype StartWithExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'StartWithExpr' which gives the sequence the specified start
+{- | Constructs a 'StartWithExpr' which gives the sequence the specified start
   value.
 
   @since 1.0.0.0
@@ -329,8 +315,7 @@ startWith n =
     RawSql.fromString "START WITH "
       <> RawSql.int64DecLiteral n
 
-{- |
-Type to represent a @CACHE@ expression for sequences. E.G.
+{- | Type to represent a @CACHE@ expression for sequences. E.G.
 
 > CACHE 16
 
@@ -347,8 +332,7 @@ newtype CacheExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'CacheExpr' that will make the sequence pre-allocate the
+{- | Constructs a 'CacheExpr' that will make the sequence pre-allocate the
   specified number of sequence values.
 
   @since 1.0.0.0
@@ -359,8 +343,7 @@ cache n =
     RawSql.fromString "CACHE "
       <> RawSql.int64DecLiteral n
 
-{- |
-Type to represent a @CYCLE@ expression for sequences. E.G.
+{- | Type to represent a @CYCLE@ expression for sequences. E.G.
 
 > CYCLE
 
@@ -381,24 +364,21 @@ newtype CycleExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'CycleExpr' that indicates that the sequence should cycle.
+{- | Constructs a 'CycleExpr' that indicates that the sequence should cycle.
 
   @since 1.0.0.0
 -}
 cycle :: CycleExpr
 cycle = CycleExpr $ RawSql.fromString "CYCLE"
 
-{- |
-  Constructs a 'CycleExpr' that indicates that the sequence should not cycle.
+{- | Constructs a 'CycleExpr' that indicates that the sequence should not cycle.
 
   @since 1.0.0.0
 -}
 noCycle :: CycleExpr
 noCycle = CycleExpr $ RawSql.fromString "NO CYCLE"
 
-{- |
-  Constructs a 'CycleExpr' that will cause the sequence to cycle if the flag
+{- | Constructs a 'CycleExpr' that will cause the sequence to cycle if the flag
   passed is @True@.
 
   @since 1.0.0.0
@@ -409,8 +389,7 @@ cycleIfTrue cycleFlag =
     then cycle
     else noCycle
 
-{- |
-Type to represent a @DROP SEQUENCE@ statement. E.G.
+{- | Type to represent a @DROP SEQUENCE@ statement. E.G.
 
 > DROP SEQUENCE foo
 
@@ -427,8 +406,7 @@ newtype DropSequenceExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'DropSequenceExpr' that will drop sequence with the given name.
+{- | Constructs a 'DropSequenceExpr' that will drop sequence with the given name.
   You may specify an 'IfExists' argument if you want to include an @IF EXISTS@
   condition in the statement.
 
@@ -446,8 +424,7 @@ dropSequenceExpr maybeIfExists sequenceName =
           ]
       )
 
-{- |
-  Constructs a 'ValueExpression' that will use the @nextval@ PostgreSQL
+{- | Constructs a 'ValueExpression' that will use the @nextval@ PostgreSQL
   function to get the next value from the given sequence. If you're trying to
   construct your own @SELECT@ to get the value of the sequence, you can use the
   constructed 'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs'
@@ -461,8 +438,7 @@ nextVal sequenceName =
     nextValFunction
     [valueExpression . SqlValue.fromRawBytes . RawSql.toExampleBytes $ sequenceName]
 
-{- |
-  The @nextval@ PostgreSQL function.
+{- | The @nextval@ PostgreSQL function.
 
   @since 1.0.0.0
 -}
@@ -470,8 +446,7 @@ nextValFunction :: FunctionName
 nextValFunction =
   functionName "nextval"
 
-{- |
-  Constructs a 'ValueExpression' that will use the @currval@ PostgreSQL
+{- | Constructs a 'ValueExpression' that will use the @currval@ PostgreSQL
   function to get the current value from the given sequence. If you're trying to
   construct your own @SELECT@ to get the value of the sequence, you can use the
   constructed 'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs'
@@ -485,8 +460,7 @@ currVal sequenceName =
     currValFunction
     [valueExpression . SqlValue.fromRawBytes . RawSql.toExampleBytes $ sequenceName]
 
-{- |
-  The @currval@ PostgreSQL function.
+{- | The @currval@ PostgreSQL function.
 
   @since 1.0.0.0
 -}
@@ -494,8 +468,7 @@ currValFunction :: FunctionName
 currValFunction =
   functionName "currval"
 
-{- |
-  Constructs a 'ValueExpression' that will use the @setval@ PostgreSQL function
+{- | Constructs a 'ValueExpression' that will use the @setval@ PostgreSQL function
   to set the value from the given sequence. If you're trying to construct your
   own @SELECT@ to set the value of the sequence, you can use the constructed
   'ValueExpression' with 'Orville.PostgreSQL.Expr.deriveColumnAs' to build the
@@ -511,8 +484,7 @@ setVal sequenceName newValue =
     , valueExpression . SqlValue.fromInt64 $ newValue
     ]
 
-{- |
-  The @setval@ PostgreSQL function.
+{- | The @setval@ PostgreSQL function.
 
   @since 1.0.0.0
 -}

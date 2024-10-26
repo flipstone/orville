@@ -52,8 +52,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 -- This is a rough model of "query specification" see https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_16_query_specification for more detail than you probably want
 
-{- |
-Type to represent a SQL query, E.G.
+{- | Type to represent a SQL query, E.G.
 
 > SELECT id FROM some_table
 
@@ -70,8 +69,7 @@ newtype QueryExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Builds a 'QueryExpr' from the given 'SelectClause', 'SelectList' and
+{- | Builds a 'QueryExpr' from the given 'SelectClause', 'SelectList' and
   'TableExpr'. The resulting 'QueryExpr' is suitable for execution via the SQL
   execution functions in "Orville.PostgreSQL.Execution" and
   "Orville.PostgreSQL.Raw.RawSql".
@@ -200,8 +198,7 @@ joinQueryExpr ::
 joinQueryExpr joinType alias qexpr =
   joinExpr joinType (subQueryAsFromItemExpr alias qexpr)
 
-{- |
-Type to represent the list of items to be selected in a @SELECT@ clause.
+{- | Type to represent the list of items to be selected in a @SELECT@ clause.
 E.G. the
 
 > foo, bar, baz
@@ -227,8 +224,7 @@ instance Semigroup SelectList where
   SelectList a <> SelectList b =
     SelectList $ RawSql.appendWithCommaSpace a b
 
-{- |
-  Constructs a 'SelectList' that will select all colums (i.e. the @*@ in
+{- | Constructs a 'SelectList' that will select all colums (i.e. the @*@ in
   @SELECT *@").
 
   @since 1.0.0.0
@@ -237,8 +233,7 @@ selectStar :: SelectList
 selectStar =
   SelectList (RawSql.fromString "*")
 
-{- |
-  Constructs a 'SelectList' that will select the specified column names. This
+{- | Constructs a 'SelectList' that will select the specified column names. This
   is a special case of 'selectDerivedColumns' where all the items to be
   selected are simple column references.
 
@@ -248,8 +243,7 @@ selectColumns :: [QualifiedOrUnqualified ColumnName] -> SelectList
 selectColumns =
   selectDerivedColumns . fmap (deriveColumn . columnReference)
 
-{- |
-Type to represent an individual item in a list of selected items. E.G.
+{- | Type to represent an individual item in a list of selected items. E.G.
 
 > now() as current_time
 
@@ -265,8 +259,7 @@ newtype DerivedColumn = DerivedColumn RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'SelectList' that will select the specified items, which may be
+{- | Constructs a 'SelectList' that will select the specified items, which may be
   column references or other expressions as allowed by 'DerivedColumn'. See
   also 'selectColumns' the simpler case of selecting a list of column names.
 
@@ -276,8 +269,7 @@ selectDerivedColumns :: [DerivedColumn] -> SelectList
 selectDerivedColumns =
   SelectList . RawSql.intercalate RawSql.comma
 
-{- |
-  Constructs a 'DerivedColumn' that will select the given value. No name will
+{- | Constructs a 'DerivedColumn' that will select the given value. No name will
   be given to the value in the result set. See 'deriveColumnAs' to give the
   value a name in the result set.
 
@@ -287,8 +279,7 @@ deriveColumn :: ValueExpression -> DerivedColumn
 deriveColumn =
   DerivedColumn . RawSql.toRawSql
 
-{- |
-  Constructs a 'DerivedColumn' that will select the given value and give it
+{- | Constructs a 'DerivedColumn' that will select the given value and give it
   the specified column name in the result set.
 
 @since 1.0.0.0
@@ -301,8 +292,7 @@ deriveColumnAs valueExpr asColumn =
         <> RawSql.toRawSql asColumn
     )
 
-{- |
-  Constructs a 'DerivedColumn' that will select the given value and give it
+{- | Constructs a 'DerivedColumn' that will select the given value and give it
   the specified alias in the result set.
 
 @since 1.1.0.0
@@ -315,8 +305,7 @@ deriveColumnAsAlias valueExpr asAlias =
         <> RawSql.toRawSql asAlias
     )
 
-{- |
-Type to represent a table expression (including its associated options) in a
+{- | Type to represent a table expression (including its associated options) in a
 @SELECT@. This is the part that would appear *after* the word @FROM@. E.G.
 
 > foo
@@ -338,8 +327,7 @@ newtype TableExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'TableExpr' with the given options.
+{- | Constructs a 'TableExpr' with the given options.
 
 @since 1.0.0.0
 -}

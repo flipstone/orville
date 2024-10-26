@@ -33,8 +33,7 @@ import Data.Int (Int32)
 
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent any SQL data type expression. E.G.
+{- | Type to represent any SQL data type expression. E.G.
 
   > INTEGER
 
@@ -237,8 +236,7 @@ smallint :: DataType
 smallint =
   DataType (RawSql.fromString "SMALLINT")
 
-{- |
-  A 'DataType' that represents the PostgreSQL "JSONB" data type.
+{- | A 'DataType' that represents the PostgreSQL "JSONB" data type.
 
 See [postgresql documentation](https://www.postgresql.org/docs/current/datatype-json.html) for more
 information.

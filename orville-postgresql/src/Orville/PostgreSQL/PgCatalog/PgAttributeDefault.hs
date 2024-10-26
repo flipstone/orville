@@ -21,8 +21,7 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberTypeField)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_attrdef@
+{- | The Haskell representation of data read from the @pg_catalog.pg_attrdef@
   table.
 
 @since 1.0.0.0
@@ -41,8 +40,7 @@ data PgAttributeDefault = PgAttributeDefault
   -- @adbin@ column using the PostgreSQL @pg_get_expr@ function.
   }
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_attrdef@ table.
 
 @since 1.0.0.0
@@ -62,8 +60,7 @@ pgAttributeDefaultMarshaller =
     <*> Orville.marshallField pgAttributeDefaultAttributeNumber attributeDefaultAttributeNumberField
     <*> Orville.marshallSyntheticField attributeDefaultExpressionField
 
-{- |
-  The @adrelid@ column of the @pg_catalog.pg_attrdef@ table.
+{- | The @adrelid@ column of the @pg_catalog.pg_attrdef@ table.
 
 @since 1.0.0.0
 -}
@@ -71,8 +68,7 @@ attributeDefaultRelationOidField :: Orville.FieldDefinition Orville.NotNull LibP
 attributeDefaultRelationOidField =
   oidTypeField "adrelid"
 
-{- |
-  The @adnum@ column of the @pg_catalog.pg_attrdef@ table.
+{- | The @adnum@ column of the @pg_catalog.pg_attrdef@ table.
 
 @since 1.0.0.0
 -}
@@ -80,8 +76,7 @@ attributeDefaultAttributeNumberField :: Orville.FieldDefinition Orville.NotNull 
 attributeDefaultAttributeNumberField =
   attributeNumberTypeField "adnum"
 
-{- |
-  A syntheticField for selecting the default expression by decompiling the
+{- | A syntheticField for selecting the default expression by decompiling the
   @adbin@ column of the @pg_catalog.pg_attrdef@ table. The @pg_node_tree@ found
   in the column is decompiled by selecting the expression
   @pg_get_expr(adbin,adrelid)@.

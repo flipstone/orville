@@ -21,8 +21,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL group by clause. E.G.
+{- | Type to represent a SQL group by clause. E.G.
 
 > GROUP BY team_name
 
@@ -46,8 +45,7 @@ newtype GroupByClause
 groupByClause :: GroupByExpr -> GroupByClause
 groupByClause expr = GroupByClause (RawSql.fromString "GROUP BY " <> RawSql.toRawSql expr)
 
-{- |
-Type to represent a SQL group by expression (the part that follows the
+{- | Type to represent a SQL group by expression (the part that follows the
 @GROUP BY@ in SQL). E.G.
 
 > team_name

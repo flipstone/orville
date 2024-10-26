@@ -40,8 +40,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-  A 'DefaultValue' is a SQL expression that can be attached to a
+{- | A 'DefaultValue' is a SQL expression that can be attached to a
   field definition to give a default value for a column at the database level.
   The default value will be used if an insert is done and the column is not
   provided.
@@ -58,8 +57,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 newtype DefaultValue a
   = DefaultValue Expr.ValueExpression
 
-{- |
-  Builds a default value for any 'Integral' type @n@ by converting it to an
+{- | Builds a default value for any 'Integral' type @n@ by converting it to an
   'Integer'.
 
 @since 1.0.0.0
@@ -81,8 +79,7 @@ integralDefault n =
             <> RawSql.fromString "::integer"
       else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
 
-{- |
-  Builds a default value from an 'Int16' for use with small integer fields.
+{- | Builds a default value from an 'Int16' for use with small integer fields.
 
   This is a specialization of 'integerDefault'.
 
@@ -91,8 +88,7 @@ integralDefault n =
 smallIntegerDefault :: Int16 -> DefaultValue Int16
 smallIntegerDefault = integralDefault
 
-{- |
-  Builds a default value from an 'Int32' for use with integer fields.
+{- | Builds a default value from an 'Int32' for use with integer fields.
 
   This is a specialization of 'integerDefault'.
 
@@ -101,8 +97,7 @@ smallIntegerDefault = integralDefault
 integerDefault :: Int32 -> DefaultValue Int32
 integerDefault = integralDefault
 
-{- |
-  Builds a default value from an 'Int16' for use with big integer fields.
+{- | Builds a default value from an 'Int16' for use with big integer fields.
 
   This is a specialization of 'integerDefault'.
 
@@ -111,8 +106,7 @@ integerDefault = integralDefault
 bigIntegerDefault :: Int64 -> DefaultValue Int64
 bigIntegerDefault = integralDefault
 
-{- |
-  Builds a default value from a 'Double' field for use with double fields.
+{- | Builds a default value from a 'Double' field for use with double fields.
 
 @since 1.0.0.0
 -}
@@ -132,8 +126,7 @@ doubleDefault d =
             <> RawSql.fromString "::numeric"
       else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
 
-{- |
-  Builds a default value from a 'Bool', for use with boolean fields.
+{- | Builds a default value from a 'Bool', for use with boolean fields.
 
 @since 1.0.0.0
 -}
@@ -147,8 +140,7 @@ booleanDefault bool =
   in
     DefaultValue $ RawSql.unsafeSqlExpression pgString
 
-{- |
-  Builds a default value from a 'T.Text', for use with unbounded, bounded
+{- | Builds a default value from a 'T.Text', for use with unbounded, bounded
   and fixed-length text fields.
 
 @since 1.0.0.0
@@ -159,8 +151,7 @@ textDefault text =
     RawSql.stringLiteral (TextEnc.encodeUtf8 text)
       <> RawSql.fromString "::text"
 
-{- |
-  Builds a default value from a 'Time.Day' for use with date fields.
+{- | Builds a default value from a 'Time.Day' for use with date fields.
 
 @since 1.0.0.0
 -}
@@ -174,8 +165,7 @@ dateDefault day =
       RawSql.stringLiteral pgText
         <> RawSql.fromString "::date"
 
-{- |
-  Builds a default value that will default to the current date (i.e. the
+{- | Builds a default value that will default to the current date (i.e. the
   date at which the database populates the default value on a given row).
 
   For use with date fields.
@@ -189,8 +179,7 @@ currentDateDefault =
     . RawSql.fromString
     $ "('now'::text)::date"
 
-{- |
-  Builds a default value from a 'Time.UTCTime' for use with UTC timestamp fields.
+{- | Builds a default value from a 'Time.UTCTime' for use with UTC timestamp fields.
 
 @since 1.0.0.0
 -}
@@ -204,8 +193,7 @@ utcTimestampDefault utcTime =
       RawSql.stringLiteral pgText
         <> RawSql.fromString "::timestamp with time zone"
 
-{- |
-  Builds a default value that will default to the current UTC time (i.e. the
+{- | Builds a default value that will default to the current UTC time (i.e. the
   time at which the database populates the default value on a given row).
 
   For use with UTC timestamp fields.
@@ -216,8 +204,7 @@ currentUTCTimestampDefault :: DefaultValue Time.UTCTime
 currentUTCTimestampDefault =
   DefaultValue $ RawSql.unsafeSqlExpression "now()"
 
-{- |
-  Builds a default value from a 'Time.LocalTime' for use with local timestamp fields.
+{- | Builds a default value from a 'Time.LocalTime' for use with local timestamp fields.
 
 @since 1.0.0.0
 -}
@@ -232,8 +219,7 @@ localTimestampDefault localTime =
       $ RawSql.stringLiteral pgText
         <> RawSql.fromString "::timestamp without time zone"
 
-{- |
-  Builds a default value that will default to the current local time (i.e. the
+{- | Builds a default value that will default to the current local time (i.e. the
   time at which the database populates the default value on a given row).
 
   Note: "local" time here will be determined by the database itself, subject to
@@ -247,8 +233,7 @@ currentLocalTimestampDefault :: DefaultValue Time.LocalTime
 currentLocalTimestampDefault =
   DefaultValue $ RawSql.unsafeSqlExpression "('now'::text)::timestamp without time zone"
 
-{- |
-  Coerces a 'DefaultValue' so that it can be used with field definitions of
+{- | Coerces a 'DefaultValue' so that it can be used with field definitions of
   a different Haskell type. The coercion will always succeed, and is safe as
   far as Haskell itself is concerned. As long as the 'DefaultValue' is used
   with a column whose database type is the same as the one the 'DefaultValue'
@@ -260,8 +245,7 @@ coerceDefaultValue :: DefaultValue a -> DefaultValue b
 coerceDefaultValue (DefaultValue expression) =
   DefaultValue expression
 
-{- |
-  Returns a database value expression for the default value.
+{- | Returns a database value expression for the default value.
 
 @since 1.0.0.0
 -}
@@ -269,8 +253,7 @@ defaultValueExpression :: DefaultValue a -> Expr.ValueExpression
 defaultValueExpression (DefaultValue expression) =
   expression
 
-{- |
-  Constructs a default value from a 'Expr.ValueExpression'. You can use this to
+{- | Constructs a default value from a 'Expr.ValueExpression'. You can use this to
   construct default values for any SQL expression that Orville does not support
   directly.
 

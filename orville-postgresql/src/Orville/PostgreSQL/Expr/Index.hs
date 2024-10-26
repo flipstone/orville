@@ -26,8 +26,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Orville.PostgreSQL.Expr.Name (ColumnName, IndexName, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL "CREATE INDEX" statement. E.G.
+{- | Type to represent a SQL "CREATE INDEX" statement. E.G.
 
 > CREATE INDEX ON table (foo, bar, baz)
 
@@ -44,8 +43,7 @@ newtype CreateIndexExpr
       RawSql.SqlExpression
     )
 
-{- |
-Construct a SQL CREATE INDEX from an indicator of if the index should be
+{- | Construct a SQL CREATE INDEX from an indicator of if the index should be
 unique, a table, and corresponding collection of 'ColumnName's.
 
 @since 1.0.0.0
@@ -67,8 +65,7 @@ createIndexExpr uniqueness mbConcurrently tableName columns =
       <> RawSql.space
       <> RawSql.toRawSql (indexBodyColumns columns)
 
-{- |
-Construct a SQL CREATE INDEX from an indicator of if the index should be
+{- | Construct a SQL CREATE INDEX from an indicator of if the index should be
 unique, a table, a name for the index, and some SQL representing the rest of
 the index creation.
 
@@ -93,8 +90,7 @@ createNamedIndexExpr uniqueness mbConcurrently tableName indexName bodyExpr =
       <> RawSql.space
       <> RawSql.toRawSql bodyExpr
 
-{- |
-Type to represent the @CONCURRENTLY@ keyword for index creation. E.G.
+{- | Type to represent the @CONCURRENTLY@ keyword for index creation. E.G.
 
 > CONCURRENTLY
 
@@ -111,8 +107,7 @@ newtype ConcurrentlyExpr
       RawSql.SqlExpression
     )
 
-{- |
-The @CONCURRENTLY@ keyword indicates to PostgreSQL that an index should be
+{- | The @CONCURRENTLY@ keyword indicates to PostgreSQL that an index should be
 created concurrently.
 
 @since 1.0.0.0
@@ -121,8 +116,7 @@ concurrently :: ConcurrentlyExpr
 concurrently =
   RawSql.unsafeSqlExpression "CONCURRENTLY"
 
-{- |
-Type to represent the body of an index definition E.G.
+{- | Type to represent the body of an index definition E.G.
 
 > (foo, bar)
 
@@ -143,8 +137,7 @@ newtype IndexBodyExpr
       RawSql.SqlExpression
     )
 
-{- |
-Creates an 'IndexBodyExpr' for the given column names. The resulting
+{- | Creates an 'IndexBodyExpr' for the given column names. The resulting
 SQL looks like @(column1, column2, ...)@.
 
 @since 1.0.0.0
@@ -158,8 +151,7 @@ indexBodyColumns columns =
       <> RawSql.intercalate RawSql.comma columns
       <> RawSql.rightParen
 
-{- |
-Type to represent if an index should be unique.
+{- | Type to represent if an index should be unique.
 
 @since 1.0.0.0
 -}
@@ -182,8 +174,7 @@ uniquenessToSql uniqueness =
     UniqueIndex -> RawSql.fromString "UNIQUE "
     NonUniqueIndex -> mempty
 
-{- |
-Type to represent a SQL "DROP INDEX" statement. E.G.
+{- | Type to represent a SQL "DROP INDEX" statement. E.G.
 
 > DROP INDEX foo
 
@@ -200,8 +191,7 @@ newtype DropIndexExpr
       RawSql.SqlExpression
     )
 
-{- |
-Construct a SQL DROP INDEX for a given 'IndexName'.
+{- | Construct a SQL DROP INDEX for a given 'IndexName'.
 
 @since 1.0.0.0
 -}

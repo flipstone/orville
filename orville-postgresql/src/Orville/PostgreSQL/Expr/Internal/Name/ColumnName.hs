@@ -16,8 +16,7 @@ where
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, identifier)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL column name. 'ColumnName' values constructed via the
+{- | Type to represent a SQL column name. 'ColumnName' values constructed via the
 'columnName' function will be properly escaped as part of the generated SQL. E.G.
 
 > "some_column_name"
@@ -37,8 +36,7 @@ newtype ColumnName
       IdentifierExpression
     )
 
-{- |
-Construct a 'ColumnName' from a 'String' with proper escaping as part of the generated SQL.
+{- | Construct a 'ColumnName' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.0.0.0
 -}

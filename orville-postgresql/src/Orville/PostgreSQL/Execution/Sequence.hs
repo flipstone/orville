@@ -26,8 +26,7 @@ import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (SequenceDefinition, sequenceName)
 
-{- |
-  Fetches the next value from a sequence via the PostgreSQL @nextval@ function.
+{- | Fetches the next value from a sequence via the PostgreSQL @nextval@ function.
 
 @since 1.0.0.0
 -}
@@ -37,8 +36,7 @@ sequenceNextValue sequenceDef =
     "sequenceNextValue"
     (Expr.nextVal (sequenceName sequenceDef))
 
-{- |
-  Fetches the current value from a sequence via the PostgreSQL @currval@ function.
+{- | Fetches the current value from a sequence via the PostgreSQL @currval@ function.
 
 @since 1.0.0.0
 -}
@@ -48,8 +46,7 @@ sequenceCurrentValue sequenceDef =
     "sequenceCurrentValue"
     (Expr.currVal (sequenceName sequenceDef))
 
-{- |
-  Sets the current value from a sequence via the PostgreSQL @setval@ function.
+{- | Sets the current value from a sequence via the PostgreSQL @setval@ function.
 
 @since 1.0.0.0
 -}

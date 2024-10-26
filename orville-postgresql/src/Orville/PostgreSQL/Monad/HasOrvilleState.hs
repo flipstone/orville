@@ -18,8 +18,7 @@ import Control.Monad.Trans.Reader (ReaderT, ask, local, mapReaderT)
 
 import Orville.PostgreSQL.OrvilleState (OrvilleState)
 
-{- |
-  'HasOrvilleState' is the typeclass that Orville uses to access and manange
+{- | 'HasOrvilleState' is the typeclass that Orville uses to access and manange
   the connection pool and state tracking when it is being executed inside an
   unknown Monad. It is a specialized version of the Reader interface so that it
   can be easily implemented by application Monads that already have a Reader
@@ -53,19 +52,17 @@ import Orville.PostgreSQL.OrvilleState (OrvilleState)
 @since 1.0.0.0
 -}
 class HasOrvilleState m where
-  -- |
-  --     Fetches the current 'OrvilleState' from the host Monad context. The
-  --     equivalent of 'ask' for 'ReaderT OrvilleState'.
+  -- | Fetches the current 'OrvilleState' from the host Monad context. The
+  -- equivalent of 'ask' for 'ReaderT OrvilleState'.
   --
   -- @since 1.0.0.0
   askOrvilleState :: m OrvilleState
 
-  -- |
-  --     Applies a modification to the 'OrvilleState' that is local to the given
-  --     monad operation. Calls to 'askOrvilleState' made within the 'm a' provided
-  --     must return the modified state. The modified state must only apply to
-  --     the given 'm a' and not be persisted beyond it. The equivalent of 'local'
-  --     for 'ReaderT OrvilleState'.
+  -- | Applies a modification to the 'OrvilleState' that is local to the given
+  -- monad operation. Calls to 'askOrvilleState' made within the 'm a' provided
+  -- must return the modified state. The modified state must only apply to
+  -- the given 'm a' and not be persisted beyond it. The equivalent of 'local'
+  -- for 'ReaderT OrvilleState'.
   --
   -- @since 1.0.0.0
   localOrvilleState ::
@@ -75,10 +72,12 @@ class HasOrvilleState m where
     m a ->
     m a
 
+-- | @since 1.0.0.0
 instance Monad m => HasOrvilleState (ReaderT OrvilleState m) where
   askOrvilleState = ask
   localOrvilleState = local
 
+-- | @since 1.0.0.0
 instance {-# OVERLAPS #-} (Monad m, HasOrvilleState m) => HasOrvilleState (ReaderT r m) where
   askOrvilleState = lift askOrvilleState
   localOrvilleState f = mapReaderT (localOrvilleState f)

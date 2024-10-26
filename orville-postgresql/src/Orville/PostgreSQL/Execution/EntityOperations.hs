@@ -51,8 +51,7 @@ import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpe
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Schema as Schema
 
-{- |
-  Inserts an entity into the specified table.
+{- | Inserts an entity into the specified table.
 
 @since 1.0.0.0
 -}
@@ -64,8 +63,7 @@ insertEntity ::
 insertEntity entityTable =
   Monad.void . insertEntityAndReturnRowCount entityTable
 
-{- |
-  Inserts an entity into the specified table. Returns the number of rows
+{- | Inserts an entity into the specified table. Returns the number of rows
   affected by the query.
 
 @since 1.0.0.0
@@ -78,8 +76,7 @@ insertEntityAndReturnRowCount ::
 insertEntityAndReturnRowCount entityTable entity =
   insertEntitiesAndReturnRowCount entityTable (entity :| [])
 
-{- |
-  Inserts an entity into the specified table, returning the data inserted into
+{- | Inserts an entity into the specified table, returning the data inserted into
   the database.
 
   You can use this function to obtain any column values filled in by the
@@ -99,8 +96,7 @@ insertAndReturnEntity entityTable entity = do
     "insertAndReturnEntity RETURNING clause"
     returnedEntities
 
-{- |
-  Inserts a non-empty list of entities into the specified table.
+{- | Inserts a non-empty list of entities into the specified table.
 
 @since 1.0.0.0
 -}
@@ -112,8 +108,7 @@ insertEntities ::
 insertEntities tableDef =
   Monad.void . insertEntitiesAndReturnRowCount tableDef
 
-{- |
-  Inserts a non-empty list of entities into the specified table. Returns the
+{- | Inserts a non-empty list of entities into the specified table. Returns the
   number of rows affected by the query.
 
 @since 1.0.0.0
@@ -126,8 +121,7 @@ insertEntitiesAndReturnRowCount ::
 insertEntitiesAndReturnRowCount tableDef =
   Insert.executeInsert . Insert.insertToTable tableDef
 
-{- |
-  Inserts a non-empty list of entities into the specified table, returning the data that
+{- | Inserts a non-empty list of entities into the specified table, returning the data that
   was inserted into the database.
 
   You can use this function to obtain any column values filled in by the
@@ -143,8 +137,7 @@ insertAndReturnEntities ::
 insertAndReturnEntities tableDef =
   Insert.executeInsertReturnEntities . Insert.insertToTableReturning tableDef
 
-{- |
-  Updates the row with the given key with the data given by @writeEntity@.
+{- | Updates the row with the given key with the data given by @writeEntity@.
 
 @since 1.0.0.0
 -}
@@ -157,8 +150,7 @@ updateEntity ::
 updateEntity tableDef key =
   Monad.void . updateEntityAndReturnRowCount tableDef key
 
-{- |
-  Updates the row with the given key with the data given by @writeEntity@.
+{- | Updates the row with the given key with the data given by @writeEntity@.
   Returns the number of rows affected by the query.
 
 @since 1.0.0.0
@@ -176,8 +168,7 @@ updateEntityAndReturnRowCount tableDef key writeEntity =
     Just update ->
       Update.executeUpdate update
 
-{- |
-  Updates the row with the given key with the data given by @writeEntity@,
+{- | Updates the row with the given key with the data given by @writeEntity@,
   returning the updated row from the database. If no row matches the given key,
   'Nothing' will be returned.
 
@@ -202,8 +193,7 @@ updateAndReturnEntity tableDef key writeEntity =
         "updateAndReturnEntity RETURNING clause"
         returnedEntities
 
-{- |
-  Applies the given 'Expr.SetClause's to the rows in the table that match the
+{- | Applies the given 'Expr.SetClause's to the rows in the table that match the
   given where condition. The easiest way to construct a 'Expr.SetClause' is
   via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
 
@@ -218,8 +208,7 @@ updateFields ::
 updateFields tableDef setClauses =
   Monad.void . updateFieldsAndReturnRowCount tableDef setClauses
 
-{- |
-  Applies the given 'Expr.SetClause's to the rows in the table that match the
+{- | Applies the given 'Expr.SetClause's to the rows in the table that match the
   given where condition. The easiest way to construct a 'Expr.SetClause' is
   via the 'Orville.Postgresql.setField' function (also exported as @.:=@).
   Returns the number of rows affected by the query.
@@ -236,8 +225,7 @@ updateFieldsAndReturnRowCount tableDef setClauses mbWhereCondition =
   Update.executeUpdate $
     Update.updateToTableFields tableDef setClauses mbWhereCondition
 
-{- |
-  Like 'updateFields', but uses a @RETURNING@ clause to return the updated
+{- | Like 'updateFields', but uses a @RETURNING@ clause to return the updated
   version of any rows that were affected by the update.
 
 @since 1.0.0.0
@@ -252,8 +240,7 @@ updateFieldsAndReturnEntities tableDef setClauses mbWhereCondition =
   Update.executeUpdateReturnEntities $
     Update.updateToTableFieldsReturning tableDef setClauses mbWhereCondition
 
-{- |
-  Deletes the row with the given key.
+{- | Deletes the row with the given key.
 
 @since 1.0.0.0
 -}
@@ -265,8 +252,7 @@ deleteEntity ::
 deleteEntity entityTable =
   Monad.void . deleteEntityAndReturnRowCount entityTable
 
-{- |
-  Deletes the row with the given key. Returns the number of rows affected
+{- | Deletes the row with the given key. Returns the number of rows affected
   by the query.
 
 @since 1.0.0.0
@@ -286,8 +272,7 @@ deleteEntityAndReturnRowCount entityTable key =
     Delete.executeDelete $
       Delete.deleteFromTable entityTable (Just primaryKeyCondition)
 
-{- |
-  Deletes the row with the given key, returning the row that was deleted.
+{- | Deletes the row with the given key, returning the row that was deleted.
   If no row matches the given key, 'Nothing' is returned.
 
 @since 1.0.0.0
@@ -310,8 +295,7 @@ deleteAndReturnEntity entityTable key = do
     "deleteAndReturnEntity RETURNING clause"
     returnedEntities
 
-{- |
-  Deletes all rows in the given table that match the where condition.
+{- | Deletes all rows in the given table that match the where condition.
 
 @since 1.0.0.0
 -}
@@ -323,8 +307,7 @@ deleteEntities ::
 deleteEntities entityTable =
   Monad.void . deleteEntitiesAndReturnRowCount entityTable
 
-{- |
-  Deletes all rows in the given table that match the where condition. Returns
+{- | Deletes all rows in the given table that match the where condition. Returns
   the number of rows affected by the query.
 
 @since 1.0.0.0
@@ -338,8 +321,7 @@ deleteEntitiesAndReturnRowCount entityTable whereCondition =
   Delete.executeDelete $
     Delete.deleteFromTable entityTable whereCondition
 
-{- |
-  Deletes all rows in the given table that match the where condition, returning
+{- | Deletes all rows in the given table that match the where condition, returning
   the rows that were deleted.
 
 @since 1.0.0.0
@@ -353,8 +335,7 @@ deleteAndReturnEntities entityTable whereCondition =
   Delete.executeDeleteReturnEntities $
     Delete.deleteFromTableReturning entityTable whereCondition
 
-{- |
-  Finds all the entities in the given table according to the specified
+{- | Finds all the entities in the given table according to the specified
   'SelectOptions.SelectOptions', which may include where conditions to
   match, ordering specifications, etc.
 
@@ -369,8 +350,7 @@ findEntitiesBy entityTable selectOptions =
   Select.executeSelect $
     Select.selectTable entityTable selectOptions
 
-{- |
-  Like 'findEntitiesBy', but adds a 'LIMIT 1' to the query and then returns
+{- | Like 'findEntitiesBy', but adds a 'LIMIT 1' to the query and then returns
   the first item from the list. Usually when you use this you will want to
   provide an order by clause in the 'SelectOptions.SelectOptions' because the
   database will not guarantee ordering.
@@ -386,8 +366,7 @@ findFirstEntityBy entityTable selectOptions =
   listToMaybe
     <$> findEntitiesBy entityTable (SelectOptions.limit 1 <> selectOptions)
 
-{- |
-  Finds a single entity by the table's primary key value.
+{- | Finds a single entity by the table's primary key value.
 
 @since 1.0.0.0
 -}
@@ -405,8 +384,7 @@ findEntity entityTable key =
   in
     findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
-{- |
-  Finds multiple entities by the table's primary key.
+{- | Finds multiple entities by the table's primary key.
 
 @since 1.0.0.0
 -}
@@ -424,8 +402,7 @@ findEntities entityTable keys =
   in
     findEntitiesBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
-{- |
-  Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the
+{- | Thrown by 'updateFields' and 'updateFieldsAndReturnEntities' if the
   'Schema.TableDefinition' they are given has no columns to update.
 
 @since 1.0.0.0

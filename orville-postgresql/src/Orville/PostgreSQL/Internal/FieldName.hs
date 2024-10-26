@@ -18,8 +18,7 @@ import qualified Data.ByteString.Char8 as B8
 
 import qualified Orville.PostgreSQL.Expr as Expr
 
-{- |
-  A simple type to represent the name of a field.
+{- | A simple type to represent the name of a field.
 
 @since 1.0.0.0
 -}
@@ -34,8 +33,7 @@ newtype FieldName
       Show
     )
 
-{- |
-  Convert a field name to a 'Expr.ColumnName' for usage in SQL expressions.
+{- | Convert a field name to a 'Expr.ColumnName' for usage in SQL expressions.
   The field name will be properly quoted and escaped.
 
 @since 1.0.0.0
@@ -44,8 +42,7 @@ fieldNameToColumnName :: FieldName -> Expr.ColumnName
 fieldNameToColumnName =
   Expr.fromIdentifier . Expr.identifierFromBytes . fieldNameToByteString
 
-{- |
-  Constructs a 'FieldName' from a 'String'.
+{- | Constructs a 'FieldName' from a 'String'.
 
 @since 1.0.0.0
 -}
@@ -53,8 +50,7 @@ stringToFieldName :: String -> FieldName
 stringToFieldName =
   FieldName . B8.pack
 
-{- |
-  Converts a 'FieldName' back to a 'String'.
+{- | Converts a 'FieldName' back to a 'String'.
 
 @since 1.0.0.0
 -}
@@ -62,8 +58,7 @@ fieldNameToString :: FieldName -> String
 fieldNameToString =
   B8.unpack . fieldNameToByteString
 
-{- |
-  Converts a 'FieldName' back to a 'B8.ByteString'.
+{- | Converts a 'FieldName' back to a 'B8.ByteString'.
 
 @since 1.0.0.0
 -}
@@ -71,8 +66,7 @@ fieldNameToByteString :: FieldName -> B8.ByteString
 fieldNameToByteString (FieldName name) =
   name
 
-{- |
-  Constructs a 'FieldName' from a 'B8.ByteString'.
+{- | Constructs a 'FieldName' from a 'B8.ByteString'.
 
 @since 1.0.0.0
 -}

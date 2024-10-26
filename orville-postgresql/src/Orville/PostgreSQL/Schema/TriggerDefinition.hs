@@ -23,8 +23,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 
 import qualified Orville.PostgreSQL.Expr as Expr
 
-{- |
-  Defines a trigger that can be added to a
+{- | Defines a trigger that can be added to a
   'Orville.PostgreSQL.TableDefinition'. Use one of the constructor functions
   below (such as 'mkNamedTriggerDefinition') to construct the constraint
   definition you wish to have and then use 'Orville.PostgreSQL.addTableTriggers'
@@ -47,8 +46,7 @@ data TriggerDefinition = TriggerDefinition
       Expr.CreateTriggerExpr
   }
 
-{- |
-  Orville uses 'TriggerMigration' values while performing auto migrations to
+{- | Orville uses 'TriggerMigration' values while performing auto migrations to
   determine whether an trigger needs to be added or dropped. For most use cases
   the constructor functions that build an 'TriggerDefinition' will create this
   automatically for you.
@@ -64,8 +62,7 @@ newtype TriggerMigrationKey
       Ord
     )
 
-{- |
-  Gets the 'TriggerMigrationKey' for the 'TriggerDefinition'
+{- | Gets the 'TriggerMigrationKey' for the 'TriggerDefinition'
 
 @since 1.1.0.0
 -}
@@ -73,8 +70,7 @@ triggerMigrationKey :: TriggerDefinition -> TriggerMigrationKey
 triggerMigrationKey =
   i_triggerMigrationKey
 
-{- |
-  Builds a 'TriggerDefinition' that will execute the named function for each row
+{- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being inserted before it is inserted.
 
 @since 1.1.0.0
@@ -88,8 +84,7 @@ beforeInsert name functionName =
     Expr.triggerForEachRow
     functionName
 
-{- |
-  Builds a 'TriggerDefinition' that will execute the named function for each row
+{- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being inserted after it is inserted.
 
 @since 1.1.0.0
@@ -103,8 +98,7 @@ afterInsert name functionName =
     Expr.triggerForEachRow
     functionName
 
-{- |
-  Builds a 'TriggerDefinition' that will execute the named function for each row
+{- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being updated before it is updated.
 
 @since 1.1.0.0
@@ -118,8 +112,7 @@ beforeUpdate name functionName =
     Expr.triggerForEachRow
     functionName
 
-{- |
-  Builds a 'TriggerDefinition' that will execute the named function for each row
+{- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being updated after it is updated.
 
 @since 1.1.0.0
@@ -133,8 +126,7 @@ afterUpdate name functionName =
     Expr.triggerForEachRow
     functionName
 
-{- |
-  Builds a 'TriggerDefinition' that will execute the named function for each row
+{- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being deleted before it is deleted.
 
 @since 1.1.0.0
@@ -148,8 +140,7 @@ beforeDelete name functionName =
     Expr.triggerForEachRow
     functionName
 
-{- |
-  Builds a 'TriggerDefinition' that will execute the named function for each row
+{- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being deleted after it is deleted.
 
 @since 1.1.0.0
@@ -163,8 +154,7 @@ afterDelete name functionName =
     Expr.triggerForEachRow
     functionName
 
-{- |
-  Constructs a 'TriggerDefinition' definining a trigger with the specified name.
+{- | Constructs a 'TriggerDefinition' definining a trigger with the specified name.
   Note that orville is currently not capable of migrating triggers based on their
   structure. The trigger will be created if no trigger exists on the table with
   the specificed name. If a trigger already exists with the same name on the table
@@ -194,8 +184,7 @@ mkTriggerDefinition name timing events fireScope functionName =
             functionName
     }
 
-{- |
-  Builds a 'Expr.CreateTriggerExpr' that will create a SQL trigger matching
+{- | Builds a 'Expr.CreateTriggerExpr' that will create a SQL trigger matching
   the given 'TriggerDefinition' when it is executed.
 
 @since 1.1.0.0

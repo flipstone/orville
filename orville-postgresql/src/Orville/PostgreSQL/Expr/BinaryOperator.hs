@@ -43,8 +43,7 @@ where
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent any SQL operator of two arguments. E.G.
+{- | Type to represent any SQL operator of two arguments. E.G.
 
 > AND
 

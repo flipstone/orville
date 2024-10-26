@@ -16,8 +16,7 @@ where
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, identifier)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL index name. 'IndexName' values constructed via the
+{- | Type to represent a SQL index name. 'IndexName' values constructed via the
 'indexName' function will be properly escaped as part of the generated SQL. E.G.
 
 > "some_index_name"
@@ -37,8 +36,7 @@ newtype IndexName
       IdentifierExpression
     )
 
-{- |
-Construct an 'IndexName' from a 'String' with proper escaping as part of the generated SQL.
+{- | Construct an 'IndexName' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.0.0.0
 -}

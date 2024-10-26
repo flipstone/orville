@@ -71,8 +71,7 @@ newtype AggregateOptionExpr = AggregateOptionExpr RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Builds an aggregate expression. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
+{- | Builds an aggregate expression. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
 
 @since 1.1.0.0
 -}
@@ -103,8 +102,7 @@ aggregateExpression function mbAggOption parameters mbOrderByClause mbFilter =
       fnCall
         <> filtering
 
-{- |
-Builds an aggregate expression with a * as the function argument. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
+{- | Builds an aggregate expression with a * as the function argument. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
 
 @since 1.1.0.0
 -}
@@ -121,8 +119,7 @@ aggregateStarExpression function mbFilter =
       RawSql.toRawSql (ValueExpression.functionCall function parameters)
         <> filtering
 
-{- |
-Builds an orderd-set aggregate expression. These have the 'OrderBy.OrderByClause' as an argument to the aggregating function. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
+{- | Builds an orderd-set aggregate expression. These have the 'OrderBy.OrderByClause' as an argument to the aggregating function. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
 
 @since 1.1.0.0
 -}

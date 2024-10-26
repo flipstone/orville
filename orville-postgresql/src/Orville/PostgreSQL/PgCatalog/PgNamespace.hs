@@ -23,8 +23,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_namespace@
+{- | The Haskell representation of data read from the @pg_catalog.pg_namespace@
   table. Namespaces in @pg_catalog@ correspond to "schema" concept in database
   organization.
 
@@ -38,8 +37,7 @@ data PgNamespace = PgNamespace
   -- ^ The name of the namespace.
   }
 
-{- |
-  A Haskell type for the name of a namespace.
+{- | A Haskell type for the name of a namespace.
 
 @since 1.0.0.0
 -}
@@ -56,8 +54,7 @@ newtype NamespaceName
       String.IsString
     )
 
-{- |
-  Convert a 'NamespaceName' to a plain 'String'.
+{- | Convert a 'NamespaceName' to a plain 'String'.
 
 @since 1.0.0.0
 -}
@@ -65,8 +62,7 @@ namespaceNameToString :: NamespaceName -> String
 namespaceNameToString (NamespaceName text) =
   T.unpack text
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_namespace@ table.
 
 @since 1.0.0.0
@@ -85,8 +81,7 @@ pgNamespaceMarshaller =
     <$> Orville.marshallField pgNamespaceOid oidField
     <*> Orville.marshallField pgNamespaceName namespaceNameField
 
-{- |
-  The @nspname@ column of the @pg_catalog.pg_namespace@ table.
+{- | The @nspname@ column of the @pg_catalog.pg_namespace@ table.
 
 @since 1.0.0.0
 -}

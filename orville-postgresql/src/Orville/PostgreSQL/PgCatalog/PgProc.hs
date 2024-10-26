@@ -22,8 +22,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_proc@ table.
+{- | The Haskell representation of data read from the @pg_catalog.pg_proc@ table.
   Rows in this table reperesent functions, procedures, aggregate functions, and
   window functions (collectively also known as routines), such as those created
   via @CREATE FUNCTION@ or @CREATE PROCEDUCE.
@@ -44,8 +43,7 @@ data PgProc = PgProc
   -- anything depending on the language.
   }
 
-{- |
-  A Haskell type for the name of the trigger represented by a 'PgProc'.
+{- | A Haskell type for the name of the trigger represented by a 'PgProc'.
 
 @since 1.1.0.0
 -}
@@ -62,8 +60,7 @@ newtype ProcName
       String.IsString
     )
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_proc@ table.
 
 @since 1.1.0.0
@@ -83,8 +80,7 @@ pgProcMarshaller =
     <*> Orville.marshallField pgProcName procNameField
     <*> Orville.marshallField pgProcSource procSourceField
 
-{- |
-  The @pronamespace@ column of the @pg_catalog.pg_proc@ table.
+{- | The @pronamespace@ column of the @pg_catalog.pg_proc@ table.
 
 @since 1.0.0.0
 -}
@@ -92,8 +88,7 @@ procNamespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 procNamespaceOidField =
   oidTypeField "pronamespace"
 
-{- |
-  The @proname@ column of the @pg_catalog.pg_proc@ table.
+{- | The @proname@ column of the @pg_catalog.pg_proc@ table.
 
 @since 1.1.0.0
 -}
@@ -102,8 +97,7 @@ procNameField =
   Orville.coerceField $
     Orville.unboundedTextField "proname"
 
-{- |
-  The @prosrc@ column of the @pg_catalog.pg_proc@ table.
+{- | The @prosrc@ column of the @pg_catalog.pg_proc@ table.
 
 @since 1.1.0.0
 -}

@@ -24,8 +24,7 @@ import qualified Data.Fixed as Fixed
 import qualified Data.Time as Time
 import qualified Data.Word as Word
 
-{- |
-  Renders a 'Time.Day' value to a textual representation for PostgreSQL.
+{- | Renders a 'Time.Day' value to a textual representation for PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -33,8 +32,7 @@ dayToPostgreSQL :: Time.Day -> B8.ByteString
 dayToPostgreSQL =
   B8.pack . Time.showGregorian
 
-{- |
-  An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
+{- | An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
   fails if given an invalid 'Time.Day'.
 
 @since 1.0.0.0
@@ -49,8 +47,7 @@ day = do
       d <- twoDigits
       maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
 
-{- |
-  An Attoparsec parser for parsing 2-digit integral numbers.
+{- | An Attoparsec parser for parsing 2-digit integral numbers.
 
 @since 1.0.0.0
 -}
@@ -63,8 +60,7 @@ twoDigits = do
 fromChar :: Integral a => Char -> a
 fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 
-{- |
-  Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL.
+{- | Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -72,8 +68,7 @@ utcTimeToPostgreSQL :: Time.UTCTime -> B8.ByteString
 utcTimeToPostgreSQL =
   B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q+00"
 
-{- |
-  An Attoparsec parser for parsing 'Time.UTCTime' from an ISO-8601 style
+{- | An Attoparsec parser for parsing 'Time.UTCTime' from an ISO-8601 style
   datetime and timezone with a few PostgreSQL-specific exceptions. See
   'localTime' for more details.
 
@@ -97,8 +92,7 @@ utcTime = do
         utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime
       pure $ Time.addUTCTime offsetNominalDiffTime utcTimeWithoutOffset
 
-{- |
-  Renders a 'Time.LocalTime' value to a textual representation for PostgreSQL.
+{- | Renders a 'Time.LocalTime' value to a textual representation for PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -106,8 +100,7 @@ localTimeToPostgreSQL :: Time.LocalTime -> B8.ByteString
 localTimeToPostgreSQL =
   B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q"
 
-{- |
-  An Attoparsec parser for parsing 'Time.LocalTime' from an ISO-8601 style
+{- | An Attoparsec parser for parsing 'Time.LocalTime' from an ISO-8601 style
   datetime with a few exceptions. The separator between the date and time
   is always @\' \'@ and never @\'T\'@.
 
@@ -117,8 +110,7 @@ localTime :: AttoB8.Parser Time.LocalTime
 localTime = do
   Time.LocalTime <$> day <* AttoB8.char ' ' <*> timeOfDay
 
-{- |
-  An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO-8601 style time.
+{- | An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO-8601 style time.
 
 @since 1.0.0.0
 -}
@@ -129,8 +121,7 @@ timeOfDay = do
   s <- AttoB8.option 0 (AttoB8.char ':' *> seconds)
   maybe (fail "invalid time format") pure $ Time.makeTimeOfDayValid h m s
 
-{- |
-  An Attoparsec parser for parsing a base-10 number. Returns the number of
+{- | An Attoparsec parser for parsing a base-10 number. Returns the number of
   digits consumed. Based off of 'AttoB8.decimal'.
 
 @since 1.0.0.0
@@ -143,8 +134,7 @@ decimalWithCount = do
 appendDigit :: Integral a => a -> Word.Word8 -> a
 appendDigit a w = a * 10 + fromIntegral (w - 48)
 
-{- |
-  An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
+{- | An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
   handle more resolution than PostgreSQL uses, and will truncate the seconds
   fraction if more than 12 digits are present.
 

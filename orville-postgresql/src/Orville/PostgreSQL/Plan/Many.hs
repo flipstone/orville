@@ -25,8 +25,7 @@ import qualified Data.Either as Either
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 
-{- |
-  'NotAKey' is returned from various 'Many' related functions when presented
+{- | 'NotAKey' is returned from various 'Many' related functions when presented
   with an input parameter that was not one of the original inputs that the
   'Many' was constructed with.
 
@@ -35,8 +34,7 @@ import qualified Data.Maybe as Maybe
 data NotAKey
   = NotAKey
 
-{- |
-  A 'Many k a' represents a group of values keyed by list of parameters and
+{- | A 'Many k a' represents a group of values keyed by list of parameters and
   is used to return the results of executing an Orville Plan with a list of
   input parameters. If you need to find the result of the query associated
   with a particular input parameter, you can use 'lookup' to find it. If you
@@ -48,11 +46,11 @@ data NotAKey
 data Many k a
   = Many [k] (k -> Either NotAKey a)
 
+-- | @since 1.0.0.0
 instance Functor (Many k) where
   fmap = map
 
-{- |
-  'fromKeys' constructs a 'Many' value from a list of keys and a function that
+{- | 'fromKeys' constructs a 'Many' value from a list of keys and a function that
   maps them to their values. The order and duplication of keys in the list will
   be preserved by the 'Many' type in the relevant functions. The mapping
   function provided should be a total function -- i.e. it should not produce a
@@ -67,8 +65,7 @@ fromKeys :: [k] -> (k -> Either NotAKey a) -> Many k a
 fromKeys =
   Many
 
-{- |
-   'map' calls a function on all the values found in a 'Many' collection.
+{- |  'map' calls a function on all the values found in a 'Many' collection.
 
 @since 1.0.0.0
 -}
@@ -76,8 +73,7 @@ map :: (a -> b) -> Many k a -> Many k b
 map f (Many ks keyToValue) =
   Many ks (fmap f . keyToValue)
 
-{- |
-   'apply' allows you to apply many functions to many values. The function
+{- |  'apply' allows you to apply many functions to many values. The function
    associated with each parameter is applied to the value associated with the
    same paremeter.
 
@@ -98,8 +94,7 @@ apply manyFs manyAs =
   applyF param =
     lookup param manyFs <*> lookup param manyAs
 
-{- |
-  'compose' uses the values of a 'Many' value as keys to a second 'Many' to
+{- | 'compose' uses the values of a 'Many' value as keys to a second 'Many' to
   create a 'Many' mapping from the original keys to the final values.
 
 @since 1.0.0.0
@@ -112,8 +107,7 @@ compose manyBC manyAB =
     b <- lookup a manyAB
     lookup b manyBC
 
-{- |
-  'keys' fetches the list of keys from a 'Many'. Note that is a list and not
+{- | 'keys' fetches the list of keys from a 'Many'. Note that is a list and not
   a set. 'Many' preserves the order and duplication of any key values that were
   in the key list at the time of construction.
 
@@ -123,8 +117,7 @@ keys :: Many k a -> [k]
 keys (Many ks _) =
   ks
 
-{- |
-  'elems' returns all the values that correspond to the keys of the 'Many'. The
+{- | 'elems' returns all the values that correspond to the keys of the 'Many'. The
   values will be returned in the same order that the keys were present at the
   time of creation, though if you truly care about this it's probably better to
   use 'lookup' to make that correspondence explicit.
@@ -135,8 +128,7 @@ elems :: Many k a -> [a]
 elems (Many ks keyToValue) =
   Either.rights $ fmap keyToValue ks
 
-{- |
-  'toMap' converts the 'Many' into a 'Map.Map' value. If all you wanted to do
+{- | 'toMap' converts the 'Many' into a 'Map.Map' value. If all you wanted to do
   was find the value for a specific key, you should probably use 'lookup'
   instead.
 
@@ -153,8 +145,7 @@ toMap (Many ks keyToValue) =
       Right value ->
         Just (k, value)
 
-{- |
-  'lookup' returns the value for the given parameter. If the given @k@ is
+{- | 'lookup' returns the value for the given parameter. If the given @k@ is
   not one of the original input values that the 'Many' was constructed with,
   the mapping function given at the contructor will determine what value to
   return. Often this will be whatever a reasonable empty or default value for

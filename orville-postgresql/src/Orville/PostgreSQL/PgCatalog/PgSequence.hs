@@ -20,8 +20,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_sequence@
+{- | The Haskell representation of data read from the @pg_catalog.pg_sequence@
   table. Rows in this table are sequences in PostgreSQL.
 
 @since 1.0.0.0
@@ -46,8 +45,7 @@ data PgSequence = PgSequence
   -- ^ Whether the sequence cycles.
   }
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
@@ -72,8 +70,7 @@ pgSequenceMarshaller =
     <*> Orville.marshallField pgSequenceCache sequenceCacheField
     <*> Orville.marshallField pgSequenceCycle sequenceCycleField
 
-{- |
-  The @seqrelid@ column of the @pg_cataglog.pg_sequence@ table.
+{- | The @seqrelid@ column of the @pg_cataglog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -81,8 +78,7 @@ sequencePgClassOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 sequencePgClassOidField =
   oidTypeField "seqrelid"
 
-{- |
-  The @seqtypid@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqtypid@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -90,8 +86,7 @@ sequenceTypeOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 sequenceTypeOidField =
   oidTypeField "seqtypid"
 
-{- |
-  The @seqstart@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqstart@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -99,8 +94,7 @@ sequenceStartField :: Orville.FieldDefinition Orville.NotNull Int64
 sequenceStartField =
   Orville.bigIntegerField "seqstart"
 
-{- |
-  The @seqincrement@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqincrement@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -108,8 +102,7 @@ sequenceIncrementField :: Orville.FieldDefinition Orville.NotNull Int64
 sequenceIncrementField =
   Orville.bigIntegerField "seqincrement"
 
-{- |
-  The @seqmax@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqmax@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -117,8 +110,7 @@ sequenceMaxField :: Orville.FieldDefinition Orville.NotNull Int64
 sequenceMaxField =
   Orville.bigIntegerField "seqmax"
 
-{- |
-  The @seqmin@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqmin@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -126,8 +118,7 @@ sequenceMinField :: Orville.FieldDefinition Orville.NotNull Int64
 sequenceMinField =
   Orville.bigIntegerField "seqmin"
 
-{- |
-  The @seqcache@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqcache@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}
@@ -135,8 +126,7 @@ sequenceCacheField :: Orville.FieldDefinition Orville.NotNull Int64
 sequenceCacheField =
   Orville.bigIntegerField "seqcache"
 
-{- |
-  The @seqcycle@ column of the @pg_catalog.pg_sequence@ table.
+{- | The @seqcycle@ column of the @pg_catalog.pg_sequence@ table.
 
 @since 1.0.0.0
 -}

@@ -24,8 +24,7 @@ import qualified Orville.PostgreSQL.Monad.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import Orville.PostgreSQL.Raw.Connection (ConnectionPool)
 
-{- |
-  The 'Orville' Monad provides an easy starter implementation of
+{- | The 'Orville' Monad provides an easy starter implementation of
   'MonadOrville.MonadOrville' when you don't have a monad specific to your
   application that you need to use.
 
@@ -49,8 +48,7 @@ newtype Orville a = Orville
     , ExSafe.MonadCatch
     )
 
-{- |
-  Runs an 'Orville' operation in the 'IO' monad using the given connection
+{- | Runs an 'Orville' operation in the 'IO' monad using the given connection
   pool.
 
   This will run the 'Orville' operation with the
@@ -66,8 +64,7 @@ runOrville =
   runOrvilleWithState
     . OrvilleState.newOrvilleState ErrorDetailLevel.defaultErrorDetailLevel
 
-{- |
-  Runs an 'Orville' operation in the 'IO' monad, starting from the provided
+{- | Runs an 'Orville' operation in the 'IO' monad, starting from the provided
   'OrvilleState.OrvilleState'.
 
   Caution: If you harvest an 'OrvilleState.OrvilleState' from inside a

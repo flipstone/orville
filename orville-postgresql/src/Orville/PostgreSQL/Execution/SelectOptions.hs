@@ -35,8 +35,7 @@ import Data.Monoid (First (First, getFirst))
 
 import qualified Orville.PostgreSQL.Expr as Expr
 
-{- |
-   A 'SelectOptions' is a set of options that can be used to change the way
+{- |  A 'SelectOptions' is a set of options that can be used to change the way
    a basic query function works by adding @WHERE@, @ORDER BY@, @GROUP BY@, etc.
    Functions are provided to construct 'SelectOptions' for individual options,
    which may then be combined via '<>' (also exposed as 'appendSelectOptions').
@@ -63,8 +62,7 @@ instance Semigroup SelectOptions where
 instance Monoid SelectOptions where
   mempty = emptySelectOptions
 
-{- |
-  A set of empty 'SelectOptions' that will not change how a query is run.
+{- | A set of empty 'SelectOptions' that will not change how a query is run.
 
 @since 1.0.0.0
 -}
@@ -82,8 +80,7 @@ emptySelectOptions =
     , i_fetchClause = mempty
     }
 
-{- |
-  Combines multple select options together, unioning the options together where
+{- | Combines multple select options together, unioning the options together where
   possible. For options where this is not possible (e.g. @LIMIT@), the one
   on the left is preferred.
 
@@ -110,8 +107,7 @@ unionMaybeWith f mbLeft mbRight =
     (Nothing, Just right) -> Just right
     (Just left, Just right) -> Just (f left right)
 
-{- |
-  Builds the 'Expr.SelectClause' that should be used to include the
+{- | Builds the 'Expr.SelectClause' that should be used to include the
   'distinct's from the 'SelectOptions' on a query.
 
 @since 1.0.0.0
@@ -122,8 +118,7 @@ selectDistinct selectOptions =
     First (Just True) -> Expr.selectClause . Expr.selectExpr $ Just Expr.Distinct
     _ -> Expr.selectClause $ Expr.selectExpr Nothing
 
-{- |
-  Builds the 'Expr.WhereClause' that should be used to include the
+{- | Builds the 'Expr.WhereClause' that should be used to include the
   'Expr.BooleanExpr's from the 'SelectOptions' on a query. This will be 'Nothing'
   when no 'Expr.BooleanExpr's have been specified.
 
@@ -133,8 +128,7 @@ selectWhereClause :: SelectOptions -> Maybe Expr.WhereClause
 selectWhereClause =
   fmap Expr.whereClause . i_whereCondition
 
-{- |
-  Constructs a 'SelectOptions' with just 'distinct' set to 'True'.
+{- | Constructs a 'SelectOptions' with just 'distinct' set to 'True'.
 
 @since 1.0.0.0
 -}
@@ -144,8 +138,7 @@ distinct =
     { i_distinct = First $ Just True
     }
 
-{- |
-  Builds the 'Expr.OrderByClause' that should be used to include the
+{- | Builds the 'Expr.OrderByClause' that should be used to include the
   'Expr.OrderByClause's from the 'SelectOptions' on a query. This will be
   'Nothing' when no 'Expr.OrderByClause's have been specified.
 
@@ -155,8 +148,7 @@ selectOrderByClause :: SelectOptions -> Maybe Expr.OrderByClause
 selectOrderByClause =
   fmap Expr.orderByClause . i_orderBy
 
-{- |
-  Builds the 'Expr.GroupByClause' that should be used to include the
+{- | Builds the 'Expr.GroupByClause' that should be used to include the
   'Expr.GroupByClause's from the 'SelectOptions' on a query. This will be
   'Nothing' when no 'Expr.GroupByClause's have been specified.
 
@@ -166,8 +158,7 @@ selectGroupByClause :: SelectOptions -> Maybe Expr.GroupByClause
 selectGroupByClause =
   fmap Expr.groupByClause . i_groupByExpr
 
-{- |
-  Builds a 'Expr.LimitExpr' that will limit the query results to the
+{- | Builds a 'Expr.LimitExpr' that will limit the query results to the
   number specified in the 'SelectOptions' (if any).
 
 @since 1.0.0.0
@@ -176,8 +167,7 @@ selectLimitExpr :: SelectOptions -> Maybe Expr.LimitExpr
 selectLimitExpr =
   getFirst . i_limitExpr
 
-{- |
-  Builds an 'Expr.OffsetExpr' that will limit the query results to the
+{- | Builds an 'Expr.OffsetExpr' that will limit the query results to the
   number specified in the 'SelectOptions' (if any).
 
 @since 1.0.0.0
@@ -186,8 +176,7 @@ selectOffsetExpr :: SelectOptions -> Maybe Expr.OffsetExpr
 selectOffsetExpr =
   getFirst . i_offsetExpr
 
-{- |
-  Builds an 'Expr.RowLockingClause' that will apply the locking rules specified in the 'SelectOptions' (if any).
+{- | Builds an 'Expr.RowLockingClause' that will apply the locking rules specified in the 'SelectOptions' (if any).
 
 @since 1.1.0.0
 -}
@@ -195,8 +184,7 @@ selectRowLockingClause :: SelectOptions -> Maybe Expr.RowLockingClause
 selectRowLockingClause =
   getFirst . i_rowLockingClause
 
-{- |
-  Builds an 'Expr.WindowClause' that will apply the windowing rules specified in the 'SelectOptions' (if any).
+{- | Builds an 'Expr.WindowClause' that will apply the windowing rules specified in the 'SelectOptions' (if any).
 
 @since 1.1.0.0
 -}
@@ -204,8 +192,7 @@ selectWindowClause :: SelectOptions -> Maybe Expr.WindowClause
 selectWindowClause =
   fmap Expr.windowClause . i_windowExpr
 
-{- |
-  Builds an 'Expr.FetchClause' that will apply the fetching rules specified in the 'SelectOptions' (if any).
+{- | Builds an 'Expr.FetchClause' that will apply the fetching rules specified in the 'SelectOptions' (if any).
 
 @since 1.1.0.0
 -}
@@ -213,8 +200,7 @@ selectFetchClause :: SelectOptions -> Maybe Expr.FetchClause
 selectFetchClause =
   getFirst . i_fetchClause
 
-{- |
-  Constructs a 'SelectOptions' with just the given 'Expr.BooleanExpr'.
+{- | Constructs a 'SelectOptions' with just the given 'Expr.BooleanExpr'.
 
 @since 1.0.0.0
 -}
@@ -224,8 +210,7 @@ where_ condition =
     { i_whereCondition = Just condition
     }
 
-{- |
-  Constructs a 'SelectOptions' with just the given 'Expr.OrderByExpr'.
+{- | Constructs a 'SelectOptions' with just the given 'Expr.OrderByExpr'.
 
 @since 1.0.0.0
 -}
@@ -235,8 +220,7 @@ orderBy order =
     { i_orderBy = Just order
     }
 
-{- |
-  Constructs a 'SelectOptions' that will apply the given limit.
+{- | Constructs a 'SelectOptions' that will apply the given limit.
 
 @since 1.0.0.0
 -}
@@ -246,8 +230,7 @@ limit limitValue =
     { i_limitExpr = First . Just . Expr.limitExpr $ limitValue
     }
 
-{- |
-  Constructs a 'SelectOptions' that will apply the given offset.
+{- | Constructs a 'SelectOptions' that will apply the given offset.
 
 @since 1.0.0.0
 -}
@@ -257,8 +240,7 @@ offset offsetValue =
     { i_offsetExpr = First . Just . Expr.offsetExpr $ offsetValue
     }
 
-{- |
-  Constructs a 'SelectOptions' with just the given 'Expr.GroupByExpr'.
+{- | Constructs a 'SelectOptions' with just the given 'Expr.GroupByExpr'.
 
 @since 1.0.0.0
 -}
@@ -268,8 +250,7 @@ groupBy groupByExpr =
     { i_groupByExpr = Just groupByExpr
     }
 
-{- |
-  Constructs a 'SelectOptions' with just the given 'Expr.RowLockingClause'.
+{- | Constructs a 'SelectOptions' with just the given 'Expr.RowLockingClause'.
 
 @since 1.1.0.0
 -}
@@ -279,8 +260,7 @@ forRowLock rowLockingClause =
     { i_rowLockingClause = First $ Just rowLockingClause
     }
 
-{- |
-  Constructs a 'SelectOptions' with just the given 'Expr.NamedWindowDefinitionExpr'.
+{- | Constructs a 'SelectOptions' with just the given 'Expr.NamedWindowDefinitionExpr'.
 
 @since 1.1.0.0
 -}
@@ -290,8 +270,7 @@ window namedWindow =
     { i_windowExpr = Just namedWindow
     }
 
-{- |
-  Constructs a 'SelectOptions' with just the given 'Expr.FetchClause'.
+{- | Constructs a 'SelectOptions' with just the given 'Expr.FetchClause'.
 
 @since 1.1.0.0
 -}
@@ -301,8 +280,7 @@ fetchRow fetchClause =
     { i_fetchClause = First $ Just fetchClause
     }
 
-{- |
-  Builds a 'Expr.QueryExpr' that will use the specified 'Expr.SelectList' when
+{- | Builds a 'Expr.QueryExpr' that will use the specified 'Expr.SelectList' when
   building the @SELECT@ statement to execute. It is up to the caller to make
   sure that the 'Expr.SelectList' expression makes sense for the table being
   queried, and that the names of the columns in the result set match those

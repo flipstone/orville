@@ -25,8 +25,7 @@ import Orville.PostgreSQL.Expr.Name (ColumnName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Represent a complete definition of a column. E.G.
+{- | Represent a complete definition of a column. E.G.
 
 > foo INTEGER
 
@@ -67,8 +66,7 @@ columnDefinition columnName dataType maybeColumnConstraint maybeColumnDefault =
       , fmap RawSql.toRawSql maybeColumnDefault
       ]
 
-{- |
-Represent constraints, such as nullability, on a column. E.G.
+{- | Represent constraints, such as nullability, on a column. E.G.
 
 > NOT NULL
 
@@ -101,8 +99,7 @@ nullConstraint :: ColumnConstraint
 nullConstraint =
   ColumnConstraint (RawSql.fromString "NULL")
 
-{- |
-Represents the default value of a column. E.G.
+{- | Represents the default value of a column. E.G.
 
 > now()
 

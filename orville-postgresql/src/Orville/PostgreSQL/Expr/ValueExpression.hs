@@ -27,8 +27,7 @@ import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, FunctionName, Qualif
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
-{- |
-Type to represent an arbitrary value in a SQL expression. This could be a
+{- | Type to represent an arbitrary value in a SQL expression. This could be a
 constant value, a column reference or any arbitrary calculated expression.
 E.G.
 
@@ -46,8 +45,7 @@ newtype ValueExpression = ValueExpression RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Performs a SQL type cast to the specified type on the given 'ValueExpression'.
+{- | Performs a SQL type cast to the specified type on the given 'ValueExpression'.
 E.G.
 
 > foo :: integer
@@ -61,8 +59,7 @@ cast value dataType =
       <> RawSql.fromString "::"
       <> RawSql.toRawSql dataType
 
-{- |
-Uses a 'ColumnName' to reference a column as a 'ValueExpression'. This
+{- | Uses a 'ColumnName' to reference a column as a 'ValueExpression'. This
 is the equivalent of simply writing the column name as the expression. E.G.
 
 > foo
@@ -72,8 +69,7 @@ is the equivalent of simply writing the column name as the expression. E.G.
 columnReference :: QualifiedOrUnqualified ColumnName -> ValueExpression
 columnReference = ValueExpression . RawSql.toRawSql
 
-{- |
-Uses an 'AliasExpr' to reference an aliased expression as a 'ValueExpression'. This
+{- | Uses an 'AliasExpr' to reference an aliased expression as a 'ValueExpression'. This
 is the equivalent of simply writing the alias as the expression. E.G.
 
 > foo
@@ -83,8 +79,7 @@ is the equivalent of simply writing the alias as the expression. E.G.
 aliasReference :: AliasExpr -> ValueExpression
 aliasReference = ValueExpression . RawSql.toRawSql
 
-{- |
-  Uses the given 'SqlValue' as a constant expression. The value will be passed
+{- | Uses the given 'SqlValue' as a constant expression. The value will be passed
   as a statement parameter, not as a literal expression, so there is not need
   to worry about escaping. However, there are a few places (usually in DDL)
   where PostgreSQL does not support values passed as parameters where this
@@ -95,8 +90,7 @@ aliasReference = ValueExpression . RawSql.toRawSql
 valueExpression :: SqlValue -> ValueExpression
 valueExpression = ValueExpression . RawSql.parameter
 
-{- |
-Constructs a PostgreSQL row value expression from the given list of
+{- | Constructs a PostgreSQL row value expression from the given list of
 expressions. E.G.
 
 > (foo, bar, now())
@@ -110,8 +104,7 @@ rowValueConstructor elements =
       <> RawSql.intercalate RawSql.comma elements
       <> RawSql.rightParen
 
-{- |
-Constructs a 'ValueExpression' that will call the specified PostgreSQL
+{- | Constructs a 'ValueExpression' that will call the specified PostgreSQL
 function with the given arguments passed as position parameters. E.G.
 
 > nextval(sequence_name)
@@ -126,8 +119,7 @@ functionCall functionName parameters =
       <> RawSql.intercalate RawSql.comma parameters
       <> RawSql.rightParen
 
-{- |
-Type to represent the name of a name parameter in a PostgreSQL function call.
+{- | Type to represent the name of a name parameter in a PostgreSQL function call.
 E.G.
 
 > foo
@@ -148,8 +140,7 @@ newtype ParameterName = ParameterName RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Constructs a 'ValueExpression' that will call the specified PostgreSQL
+{- | Constructs a 'ValueExpression' that will call the specified PostgreSQL
 function with the given arguments passed as named parameters. E.G.
 
 > make_interval(years => 1)
@@ -164,8 +155,7 @@ functionCallNamedParams functionName parameters =
       <> RawSql.intercalate RawSql.comma (fmap (uncurry namedParameterArgument) parameters)
       <> RawSql.rightParen
 
-{- |
-  Constructs a sql fragment that will pass the given named argument with the
+{- | Constructs a sql fragment that will pass the given named argument with the
   specified value.
 
   @since 1.0.0.0

@@ -35,8 +35,7 @@ import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkTableReturningClause, tableMarshaller, tableName)
 
-{- |
-Represents a @DELETE@ statement that can be executed against a database. A
+{- | Represents a @DELETE@ statement that can be executed against a database. A
 'Delete' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that, when the
 delete returns data from the database, will be used to decode the database
 result set when it is executed.
@@ -49,8 +48,7 @@ data Delete readEntity returningClause where
     Delete readEntity NoReturningClause
   DeleteReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.DeleteExpr -> Delete readEntity ReturningClause
 
-{- |
-  Extracts the query that will be run when the delete is executed. Normally you
+{- | Extracts the query that will be run when the delete is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
 
@@ -60,8 +58,7 @@ deleteFromDeleteExpr :: Delete readEntity returningClause -> Expr.DeleteExpr
 deleteFromDeleteExpr (Delete expr) = expr
 deleteFromDeleteExpr (DeleteReturning _ expr) = expr
 
-{- |
-  Executes the database query for the 'Delete' and returns the number of
+{- | Executes the database query for the 'Delete' and returns the number of
   rows affected by the query.
 
 @since 1.0.0.0
@@ -73,8 +70,7 @@ executeDelete ::
 executeDelete (Delete expr) =
   Execute.executeAndReturnAffectedRows QueryType.DeleteQuery expr
 
-{- |
-Executes the database query for the 'Delete' and uses its
+{- | Executes the database query for the 'Delete' and uses its
 'Orville.PostgreSQL.SqlMarshaller' to decode the rows (that were just deleted)
 as returned via a RETURNING clause.
 
@@ -87,8 +83,7 @@ executeDeleteReturnEntities ::
 executeDeleteReturnEntities (DeleteReturning marshaller expr) =
   Execute.executeAndDecode QueryType.DeleteQuery expr marshaller
 
-{- |
-  Builds a 'Delete' that will delete all of the writable columns described in the
+{- | Builds a 'Delete' that will delete all of the writable columns described in the
   'TableDefinition' without returning the data as seen by the database.
 
 @since 1.0.0.0
@@ -100,8 +95,7 @@ deleteFromTable ::
 deleteFromTable =
   deleteTable WithoutReturning
 
-{- |
-  Builds a 'Delete' that will delete all of the writable columns described in the
+{- | Builds a 'Delete' that will delete all of the writable columns described in the
   'TableDefinition' and return the data as seen by the database. This is useful for getting
   database-managed columns such as auto-incrementing identifiers and sequences.
 
@@ -130,8 +124,7 @@ deleteTable returningOption tableDef whereCondition =
   in
     rawDeleteExpr returningOption (tableMarshaller tableDef) deleteExpr
 
-{- |
-  Builds a 'Delete' that will execute the specified query and use the given
+{- | Builds a 'Delete' that will execute the specified query and use the given
   'Orville.PostgreSQL.SqlMarshaller' to decode it. It is up to the caller to
   ensure that the given 'Expr.DeleteExpr' makes sense and returns a result that
   the 'Orville.PostgreSQL.SqlMarshaller' can decode.

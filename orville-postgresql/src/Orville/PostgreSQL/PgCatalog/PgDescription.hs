@@ -24,8 +24,7 @@ import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberToInt16)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_description@
+{- | The Haskell representation of data read from the @pg_catalog.pg_description@
   table.
 
 @since 1.1.0.0
@@ -41,8 +40,7 @@ data PgDescription = PgDescription
   -- ^ @since 1.1.0.0
   }
 
-{- |
-  Represents the value in the @objsubid@ field. For tables, this corresponds to the
+{- | Represents the value in the @objsubid@ field. For tables, this corresponds to the
   'AttributeNumber' of the column and indicates that the @description@ field contains
   the comment for that column.
 
@@ -59,11 +57,14 @@ newtype ObjectSubId = ObjectSubId Int32
       Ord
     )
 
+{- | Convert an 'AttributeNumber' to an 'ObjectSubId'
+
+@since 1.1.0.0
+-}
 objectSubIdFromAttributeNumber :: AttributeNumber -> ObjectSubId
 objectSubIdFromAttributeNumber = ObjectSubId . fromIntegral . attributeNumberToInt16
 
-{- |
-  A 'ObjectSubId' of 0 in the @objsubid@ field for a table corresponds to the
+{- | A 'ObjectSubId' of 0 in the @objsubid@ field for a table corresponds to the
   comment on the table.
 
 @since 1.1.0.0

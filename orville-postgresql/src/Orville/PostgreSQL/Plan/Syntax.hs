@@ -54,8 +54,7 @@ import Prelude ()
 
 import qualified Orville.PostgreSQL.Plan as Plan
 
-{- |
-  An operator alias of 'Plan.bind' so that it can be used with @QualifiedDo@.
+{- | An operator alias of 'Plan.bind' so that it can be used with @QualifiedDo@.
 
 @since 1.0.0.0
 -}

@@ -16,8 +16,7 @@ where
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-Type to represent a SQL limit expression. E.G.
+{- | Type to represent a SQL limit expression. E.G.
 
 > LIMIT 10
 

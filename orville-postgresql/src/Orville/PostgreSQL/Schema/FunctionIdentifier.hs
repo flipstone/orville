@@ -20,8 +20,7 @@ where
 
 import qualified Orville.PostgreSQL.Expr as Expr
 
-{- |
-  An identifier used by Orville to identify a particular function in a particular
+{- | An identifier used by Orville to identify a particular function in a particular
   schema.
 
 @since 1.1.0.0
@@ -39,8 +38,7 @@ data FunctionIdentifier = FunctionIdentifier
       Show
     )
 
-{- |
-  Constructs a 'FunctionIdentifier' where the function's name will not be qualified
+{- | Constructs a 'FunctionIdentifier' where the function's name will not be qualified
   by a particular schema.
 
 @since 1.1.0.0
@@ -52,8 +50,7 @@ unqualifiedNameToFunctionId name =
     , i_functionIdSchema = Nothing
     }
 
-{- |
-  Sets the schema of the 'FunctionIdentifier'. Wherever applicable, references to
+{- | Sets the schema of the 'FunctionIdentifier'. Wherever applicable, references to
   the function will be qualified by the given schema name.
 
 @since 1.1.0.0
@@ -80,8 +77,7 @@ functionIdQualifiedName functionId =
           schemaName
           (functionIdUnqualifiedName functionId)
 
-{- |
-  Returns the unqualified 'Expr.FunctionName' that should be used to refer to the
+{- | Returns the unqualified 'Expr.FunctionName' that should be used to refer to the
   function in SQL queries where an unqualified reference is appropriate.
 
 @since 1.1.0.0
@@ -90,8 +86,7 @@ functionIdUnqualifiedName :: FunctionIdentifier -> Expr.FunctionName
 functionIdUnqualifiedName =
   Expr.functionName . i_functionIdName
 
-{- |
-  Returns the 'Expr.SchemaName' (if any) that should be used to qualify
+{- | Returns the 'Expr.SchemaName' (if any) that should be used to qualify
   references to the function in SQL queries.
 
 @since 1.1.0.0
@@ -100,8 +95,7 @@ functionIdSchemaName :: FunctionIdentifier -> Maybe Expr.SchemaName
 functionIdSchemaName =
   fmap Expr.schemaName . i_functionIdSchema
 
-{- |
-  Retrieves the unqualified name of the function as a 'String'.
+{- | Retrieves the unqualified name of the function as a 'String'.
 
 @since 1.1.0.0
 -}
@@ -109,8 +103,7 @@ functionIdUnqualifiedNameString :: FunctionIdentifier -> String
 functionIdUnqualifiedNameString =
   i_functionIdName
 
-{- |
-  Retrieves the schema name of the function as a 'String'.
+{- | Retrieves the schema name of the function as a 'String'.
 
 @since 1.1.0.0
 -}
@@ -118,8 +111,7 @@ functionIdSchemaNameString :: FunctionIdentifier -> Maybe String
 functionIdSchemaNameString =
   i_functionIdSchema
 
-{- |
-  Converts a 'FunctionIdentifier' to a 'String' for descriptive purposes. The
+{- | Converts a 'FunctionIdentifier' to a 'String' for descriptive purposes. The
   name will be qualified if a schema name has been set for the identifier.
 
   Note: You should not use this function for building SQL expressions. Use

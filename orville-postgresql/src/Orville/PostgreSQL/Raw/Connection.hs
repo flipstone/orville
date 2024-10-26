@@ -53,8 +53,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import Orville.PostgreSQL.Raw.PgTextFormatValue (NULByteFoundError (NULByteFoundError), PgTextFormatValue, toBytesForLibPQ)
 
-{- |
-  An option for 'createConnectionPool' that indicates whether LibPQ should
+{- | An option for 'createConnectionPool' that indicates whether LibPQ should
   print notice reports for warnings to the console.
 
 @since 1.0.0.0
@@ -63,8 +62,7 @@ data NoticeReporting
   = EnableNoticeReporting
   | DisableNoticeReporting
 
-{- |
-Orville always uses a connection pool to manage the number of open connections
+{- | Orville always uses a connection pool to manage the number of open connections
 to the database. See 'ConnectionConfig' and 'createConnectionPool' to find how
 to create a 'ConnectionPool'.
 
@@ -73,8 +71,7 @@ to create a 'ConnectionPool'.
 newtype ConnectionPool
   = ConnectionPool (Pool Connection)
 
-{- |
- 'createConnectionPool' allocates a pool of connections to a PostgreSQL server.
+{- | 'createConnectionPool' allocates a pool of connections to a PostgreSQL server.
 
 @since 1.0.0.0
 -}
@@ -121,8 +118,7 @@ createConnectionPool options = do
       connPerStripe
 #endif
 
-{- |
-Values for the 'connectionPoolStripes' field of 'ConnectionOptions'.
+{- | Values for the 'connectionPoolStripes' field of 'ConnectionOptions'.
 
 @since 1.0.0.0
 -}
@@ -137,8 +133,7 @@ data StripeOption
     -- the runtime has.
     StripeCount Int
 
-{- |
-Values for the 'connectionMaxConnections' field of 'ConnectionOptions'.
+{- | Values for the 'connectionMaxConnections' field of 'ConnectionOptions'.
 
 @since 1.0.0.0
 -}
@@ -155,8 +150,7 @@ data MaxConnections
     -- be this value multiplied by the number of stripes.
     MaxConnectionsPerStripe Int
 
-{- |
-Configuration options to pass to 'createConnectionPool' to specify the
+{- | Configuration options to pass to 'createConnectionPool' to specify the
 parameters for the pool and the connections that it creates.
 
 @since 1.0.0.0
@@ -174,17 +168,14 @@ data ConnectionOptions = ConnectionOptions
   -- ^ Controls the number of connections available in the 'ConnectionPool'.
   }
 
-{- |
-  INTERNAL: Resolves the 'StripeOption' to the actual number of stripes to use.
--}
+-- | INTERNAL: Resolves the 'StripeOption' to the actual number of stripes to use.
 determineStripeCount :: StripeOption -> IO Int
 determineStripeCount stripeOption =
   case stripeOption of
     OneStripePerCapability -> getNumCapabilities
     StripeCount n -> pure n
 
-{- |
-  INTERNAL: Resolves the 'MaxConnections' to the actual number of connections
+{- | INTERNAL: Resolves the 'MaxConnections' to the actual number of connections
   to use per stripe.
 -}
 determineConnectionsPerStripe :: Int -> MaxConnections -> Either String Int
@@ -204,8 +195,7 @@ determineConnectionsPerStripe stripes maxConnections =
               <> show stripes
               <> " stripes."
 
-{- |
-  Allocates a connection from the pool and performs an action with it. This
+{- | Allocates a connection from the pool and performs an action with it. This
   function will block if the maximum number of connections is reached.
 
 @since 1.0.0.0
@@ -214,8 +204,7 @@ withPoolConnection :: ConnectionPool -> (Connection -> IO a) -> IO a
 withPoolConnection (ConnectionPool pool) =
   withResource pool
 
-{- |
-  'executeRaw' runs a given SQL statement returning the raw underlying result.
+{- | 'executeRaw' runs a given SQL statement returning the raw underlying result.
 
  All handling of stepping through the result set is left to the caller. This
  potentially leaves connections open much longer than one would expect if all
@@ -252,15 +241,13 @@ data ConnectionContext = ConnectionContext
   -- ^ The underlying connection, if open
   }
 
-{- |
-  An Orville handler for a LibPQ connection.
+{- | An Orville handler for a LibPQ connection.
 
 @since 1.0.0.0
 -}
 newtype Connection = Connection (IORef ConnectionContext)
 
-{- |
-  'connect' is the internal, primitive connection function.
+{- | 'connect' is the internal, primitive connection function.
 
  This should not be exposed to end users, but instead wrapped in something to create a pool.
 
@@ -309,8 +296,7 @@ connect noticeReporting connString =
         EnableNoticeReporting -> LibPQ.enableNoticeReporting connection
       poll connection
 
-{- |
-  'close' has many subtleties to it.
+{- | 'close' has many subtleties to it.
 
   First note that async exceptions are masked.  'mask' though, only works for
   things that are not interruptible
@@ -342,8 +328,7 @@ close (Connection handle) =
   in
     mask underlyingFinish
 
-{- |
- 'underlyingExecute' is the internal, primitive execute function.
+{- | 'underlyingExecute' is the internal, primitive execute function.
 
   This is not intended to be directly exposed to end users, but instead wrapped
   in something using a pool.
@@ -370,8 +355,7 @@ underlyingExecute bs params connection =
           then pure result
           else throwExecutionErrorWithResult result execStatus bs
 
-{- |
-  Escapes and quotes a string for use as a literal within a SQL command that
+{- | Escapes and quotes a string for use as a literal within a SQL command that
   will be executed on the given connection. This uses the @PQescapeStringConn@
   function from LibPQ, which takes the character encoding of the connection
   into account. Note that while @PQescapeStringConn@ does not surround the
@@ -400,8 +384,7 @@ quoteStringLiteral connection unquotedString =
         in
           pure (singleQuote <> BSB.byteString escapedString <> singleQuote)
 
-{- |
-  Escapes and quotes a string for use as an identifier within a SQL command
+{- | Escapes and quotes a string for use as an identifier within a SQL command
   that will be executed on the given connection. This uses the
   @PQescapeIdentifier@ function from LibPQ, which takes the character encoding
   of the connection into account and also applies the quotes.
@@ -423,8 +406,7 @@ quoteIdentifier connection unquotedString =
       Just quotedString ->
         pure (BSB.byteString quotedString)
 
-{- |
-  Serializes access to the underlying LibPQ connection. This is necessary
+{- | Serializes access to the underlying LibPQ connection. This is necessary
   because multiple concurrent commands issued using the same connection will
   result in a dead-lock in LibPQ.
 
@@ -501,8 +483,7 @@ isRowReadableStatus status =
     LibPQ.PipelineAbort -> False
 #endif
 
-{- |
-  Packages a bytestring parameter value (which is assumed to be a value encoded
+{- | Packages a bytestring parameter value (which is assumed to be a value encoded
   as text that the database can use) as a parameter for executing a query.
   This uses Oid 0 to cause the database to infer the type of the paremeter and
   explicitly marks the parameter as being in Text format.
@@ -517,8 +498,7 @@ mkInferredTextParam mbValue =
     Just value ->
       Just (LibPQ.Oid 0, value, LibPQ.Text)
 
-{- |
-  Orville throws a 'ConnectionError' on an error reported by the underlying
+{- | Orville throws a 'ConnectionError' on an error reported by the underlying
   LibPQ connection that does not come directly from executing SQL. This could
   could represent an inability to open a new database connection, but could
   also represent other errors such as an error while quoting a database
@@ -550,8 +530,7 @@ instance Show ConnectionError where
 -- | @since 1.0.0.0
 instance Exception ConnectionError
 
-{- |
-  Orville throws a 'SqlExecutionError' when an error is reported by the
+{- | Orville throws a 'SqlExecutionError' when an error is reported by the
   underlying LibPQ connection during an attempt to execute SQL.
 
 @since 1.0.0.0
@@ -577,8 +556,7 @@ data SqlExecutionError = SqlExecutionError
 -- | @since 1.0.0.0
 instance Exception SqlExecutionError
 
-{- |
-  Orville throws as 'ConnectionUsedAfterCloseError' if it attempts to use a
+{- | Orville throws as 'ConnectionUsedAfterCloseError' if it attempts to use a
   'Connection' value after it has already been closed. If this occurs, it is a
   bug in Orville.
 

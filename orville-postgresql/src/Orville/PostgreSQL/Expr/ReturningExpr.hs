@@ -16,8 +16,7 @@ where
 import Orville.PostgreSQL.Expr.Query (SelectList)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a @RETURNING@ clause in a SQL @SELECT@ statement. E.G.
+{- | Type to represent a @RETURNING@ clause in a SQL @SELECT@ statement. E.G.
 
 > RETURNING (id)
 
@@ -34,8 +33,7 @@ newtype ReturningExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'ReturningExpr' that returns the items given in the
+{- | Constructs a 'ReturningExpr' that returns the items given in the
   'SelectList'. Essentialy this retults @RETURNING <SelectList items>@.
 
 @since 1.0.0.0

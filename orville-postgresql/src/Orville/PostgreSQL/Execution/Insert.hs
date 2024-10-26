@@ -38,8 +38,7 @@ import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkInsertExpr, tableMarshaller)
 
-{- |
-Represents an @INSERT@ statement that can be executed against a database. An
+{- | Represents an @INSERT@ statement that can be executed against a database. An
 'Insert' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that, when the
 insert returns data from the database, will be used to decode the database
 result set when it is executed.
@@ -53,8 +52,7 @@ data Insert readEntity returningClause where
     Insert readEntity NoReturningClause
   InsertReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity ReturningClause
 
-{- |
-  Extracts the query that will be run when the insert is executed. Normally you
+{- | Extracts the query that will be run when the insert is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
 
@@ -64,8 +62,7 @@ insertToInsertExpr :: Insert readEntity returningClause -> Expr.InsertExpr
 insertToInsertExpr (Insert _ expr) = expr
 insertToInsertExpr (InsertReturning _ expr) = expr
 
-{- |
-  Executes the database query for the 'Insert' and returns the number of rows
+{- | Executes the database query for the 'Insert' and returns the number of rows
   affected by the query.
 
 @since 1.0.0.0
@@ -77,8 +74,7 @@ executeInsert ::
 executeInsert (Insert _ expr) =
   Execute.executeAndReturnAffectedRows QueryType.InsertQuery expr
 
-{- |
-Executes the database query for the 'Insert' and uses its
+{- | Executes the database query for the 'Insert' and uses its
 'Orville.PostgreSQL.SqlMarshaller' to decode the rows (that were just inserted)
 as returned via a RETURNING clause.
 
@@ -91,8 +87,7 @@ executeInsertReturnEntities ::
 executeInsertReturnEntities (InsertReturning marshaller expr) =
   Execute.executeAndDecode QueryType.InsertQuery expr marshaller
 
-{- |
-  Builds an 'Insert' that will insert all of the writable columns described in the
+{- | Builds an 'Insert' that will insert all of the writable columns described in the
   'TableDefinition' without returning the data as seen by the database.
 
 @since 1.0.0.0
@@ -104,8 +99,7 @@ insertToTable ::
 insertToTable =
   insertTable WithoutReturning
 
-{- |
-  Builds an 'Insert' that will insert all of the writable columns described in the
+{- | Builds an 'Insert' that will insert all of the writable columns described in the
   'TableDefinition' and return the data as seen by the database. This is useful for getting
   database-managed columns such as auto-incrementing identifiers and sequences.
 
@@ -127,8 +121,7 @@ insertTable ::
 insertTable returningOption tableDef entities =
   rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef Nothing entities)
 
-{- |
-  Builds an 'Insert' that will execute the specified query and use the given
+{- | Builds an 'Insert' that will execute the specified query and use the given
   'Orville.PostgreSQL.SqlMarshaller' to decode it. It is up to the caller to
   ensure that the given 'Expr.InsertExpr' makes sense and produces a value that
   can be stored, as well as returning a result that the

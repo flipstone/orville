@@ -78,8 +78,7 @@ import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Plan.Operation as Op
 import qualified Orville.PostgreSQL.Schema as Schema
 
-{- |
-  A 'Plan' is an executable set of queries that can be executed to load data
+{- | A 'Plan' is an executable set of queries that can be executed to load data
   from the database, using the results of prior queries as input parameters to
   following queries in controlled ways. In particular, the "controlled" aspect
   of this allows plans that take a single input to be adapted to take multiple
@@ -133,23 +132,23 @@ data Plan scope param result where
     Plan scope b c ->
     Plan scope a c
 
+-- | @since 1.0.0.0
 instance Functor (Plan scope param) where
   fmap f = Apply (Pure f)
 
+-- | @since 1.0.0.0
 instance Applicative (Plan scope param) where
   pure = Pure
   (<*>) = Apply
 
-{- |
-  'Execute' is a tag type used as the @scope@ variable for 'Plan' values when
+{- | 'Execute' is a tag type used as the @scope@ variable for 'Plan' values when
   executing them via the 'execute' function.
 
 @since 1.0.0.0
 -}
 data Execute
 
-{- |
-  'ExecuteMany' is an internal tag type used by as the @scope@ variable for
+{- | 'ExecuteMany' is an internal tag type used by as the @scope@ variable for
   'Plan' values when executing them against multiple inputs via the
   'executeMany' internal function.
 

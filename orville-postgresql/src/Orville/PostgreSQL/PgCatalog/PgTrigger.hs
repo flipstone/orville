@@ -22,8 +22,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_trigger@
+{- | The Haskell representation of data read from the @pg_catalog.pg_trigger@
   table. Rows in this table correspond to triggers created on tables and views.
 @since 1.1.0.0
 -}
@@ -39,8 +38,7 @@ data PgTrigger = PgTrigger
   -- ^ The whether the trigger is internal accounting to PostgreSQL.
   }
 
-{- |
-  A Haskell type for the name of the trigger represented by a 'PgTrigger'.
+{- | A Haskell type for the name of the trigger represented by a 'PgTrigger'.
 
 @since 1.1.0.0
 -}
@@ -57,8 +55,7 @@ newtype TriggerName
       String.IsString
     )
 
-{- |
-  Convert a 'TriggerName' to a plain 'String'.
+{- | Convert a 'TriggerName' to a plain 'String'.
 
 @since 1.1.0.0
 -}
@@ -66,8 +63,7 @@ triggerNameToString :: TriggerName -> String
 triggerNameToString (TriggerName name) =
   T.unpack name
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_trigger@ table.
 
 @since 1.1.0.0
@@ -87,8 +83,7 @@ pgTriggerMarshaller =
     <*> Orville.marshallField pgTriggerName triggerNameField
     <*> Orville.marshallField pgTriggerIsInternal triggerIsInternalField
 
-{- |
-  The @tgrelid@ column of the @pg_trigger@ table.
+{- | The @tgrelid@ column of the @pg_trigger@ table.
 
 @since 1.1.0.0
 -}
@@ -96,8 +91,7 @@ triggerRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 triggerRelationOidField =
   oidTypeField "tgrelid"
 
-{- |
-  The @tgname@ column of the @pg_catalog.pg_trigger@ table.
+{- | The @tgname@ column of the @pg_catalog.pg_trigger@ table.
 
 @since 1.1.0.0
 -}
@@ -106,8 +100,7 @@ triggerNameField =
   Orville.coerceField $
     Orville.unboundedTextField "tgname"
 
-{- |
-  The @tgisinternal@ column of the @pg_catalog.pg_trigger@ table.
+{- | The @tgisinternal@ column of the @pg_catalog.pg_trigger@ table.
 
 @since 1.1.0.0
 -}

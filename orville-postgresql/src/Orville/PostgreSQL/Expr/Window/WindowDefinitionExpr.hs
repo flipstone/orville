@@ -86,8 +86,7 @@ windowDefinition mbWindowName mbPartitionBy mbOrderBy mbFrame =
       , fmap RawSql.toRawSql mbFrame
       ]
 
-{- |
-Type to represent the @PARTITION BY expression [, ...]@ portion of a SQL window definition.
+{- | Type to represent the @PARTITION BY expression [, ...]@ portion of a SQL window definition.
 
 'PartitionByExpr' provides a 'RawSql.SqlExpression' instance.
 See 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
@@ -100,8 +99,7 @@ newtype PartitionByExpr = PartitionByExpr RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Builds a 'PartitionByExpr'.
+{- | Builds a 'PartitionByExpr'.
 
 @since 1.1.0.0
 -}
@@ -111,8 +109,7 @@ partitionBy exprs =
     RawSql.fromString "PARTITION BY "
       <> RawSql.intercalate RawSql.commaSpace exprs
 
-{- |
-Type to represent the framing clause of a window definition.
+{- | Type to represent the framing clause of a window definition.
 
 'FrameClause' provides a 'RawSql.SqlExpression' instance.
 See 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
@@ -150,8 +147,7 @@ frameClause mbFrameMode frameStart mbFrameEnd mbExclusion =
         <> RawSql.space
         <> exclusion
 
-{- |
-Type to represent the mode of the framing in a window definition.
+{- | Type to represent the mode of the framing in a window definition.
 
 'FrameModeExpr' provides a 'RawSql.SqlExpression' instance.
 See 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
@@ -185,8 +181,7 @@ rowsFrameMode = FrameModeExpr $ RawSql.fromString "ROWS"
 groupsFrameMode :: FrameModeExpr
 groupsFrameMode = FrameModeExpr $ RawSql.fromString "GROUPS"
 
-{- |
-Type to represent the beginning of the framing in a window definition.
+{- | Type to represent the beginning of the framing in a window definition.
 
 'FrameStartExpr' provides a 'RawSql.SqlExpression' instance.
 See 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
@@ -229,8 +224,7 @@ currentRowFrameStart = FrameStartExpr $ RawSql.fromString "CURRENT ROW"
 offsetFollowingFrameStart :: ValueExpression.ValueExpression -> FrameStartExpr
 offsetFollowingFrameStart val = FrameStartExpr $ RawSql.toRawSql val <> RawSql.fromString " FOLLOWING"
 
-{- |
-Type to represent the ending of the framing in a window definition.
+{- | Type to represent the ending of the framing in a window definition.
 
 'FrameEndExpr' provides a 'RawSql.SqlExpression' instance.
 See 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.
@@ -273,8 +267,7 @@ offsetFollowingFrameEnd val = FrameEndExpr $ RawSql.toRawSql val <> RawSql.fromS
 unboundedFollowingFrameEnd :: FrameEndExpr
 unboundedFollowingFrameEnd = FrameEndExpr $ RawSql.fromString "UNBOUNDED FOLLOWING"
 
-{- |
-Type to represent the exclusion of results in the framing in a window definition.
+{- | Type to represent the exclusion of results in the framing in a window definition.
 
 'FrameExclusionExpr' provides a 'RawSql.SqlExpression' instance.
 See 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom SQL.

@@ -16,8 +16,7 @@ where
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, identifier)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a PostgreSQL extension name. 'ExtensionName' values constructed via the
+{- | Type to represent a PostgreSQL extension name. 'ExtensionName' values constructed via the
 'extensionName' function will be properly escaped as part of the generated SQL. E.G.
 
 > "some_extension_name"
@@ -37,8 +36,7 @@ newtype ExtensionName
       IdentifierExpression
     )
 
-{- |
-Construct an 'ExtensionName' from a 'String'.
+{- | Construct an 'ExtensionName' from a 'String'.
 
 @since 1.1.0.0
 -}

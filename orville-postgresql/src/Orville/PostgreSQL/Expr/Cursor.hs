@@ -49,8 +49,7 @@ import Orville.PostgreSQL.Expr.Name (CursorName)
 import Orville.PostgreSQL.Expr.Query (QueryExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-'DeclareExpr' corresponds to the SQL DECLARE statement, for declaring and
+{- | 'DeclareExpr' corresponds to the SQL DECLARE statement, for declaring and
 opening cursors. E.G.
 
 > DECLARE FOO CURSOR FOR SELECT * FROM BAR
@@ -96,8 +95,7 @@ declare cursorName maybeScrollExpr maybeHoldExpr queryExpr =
         , Just $ RawSql.toRawSql queryExpr
         ]
 
-{- |
-'ScrollExpr' is used to determine if a cursor should be able to fetch
+{- | 'ScrollExpr' is used to determine if a cursor should be able to fetch
 nonsequentially. E.G.
 
 > NO SCROLL
@@ -137,8 +135,7 @@ noScroll :: ScrollExpr
 noScroll =
   ScrollExpr . RawSql.fromString $ "NO SCROLL"
 
-{- |
-'HoldExpr' is used to determine if a cursor should be available for use after
+{- | 'HoldExpr' is used to determine if a cursor should be available for use after
 the transaction that created it has been committed. E.G.
 
 > WITH HOLD
@@ -175,8 +172,7 @@ withoutHold :: HoldExpr
 withoutHold =
   HoldExpr . RawSql.fromString $ "WITHOUT HOLD"
 
-{- |
-'CloseExpr' corresponds to the SQL CLOSE statement. E.G.
+{- | 'CloseExpr' corresponds to the SQL CLOSE statement. E.G.
 
 > CLOSE ALL
 
@@ -207,8 +203,7 @@ close allOrCursorName =
     RawSql.fromString "CLOSE "
       <> either RawSql.toRawSql RawSql.toRawSql allOrCursorName
 
-{- |
-'AllCursors' corresponds to the ALL keyword in a CLOSE statement. E.G.
+{- | 'AllCursors' corresponds to the ALL keyword in a CLOSE statement. E.G.
 
 > ALL
 
@@ -233,8 +228,7 @@ allCursors :: AllCursors
 allCursors =
   AllCursors . RawSql.fromString $ "ALL"
 
-{- |
-'FetchExpr' corresponds to the SQL FETCH statement, for retrieving rows from a
+{- | 'FetchExpr' corresponds to the SQL FETCH statement, for retrieving rows from a
 previously-created cursor. E.G.
 
 > FETCH NEXT FOO
@@ -270,8 +264,7 @@ fetch maybeDirection cursorName =
         , Just $ RawSql.toRawSql cursorName
         ]
 
-{- |
-'MoveExpr' corresponds to the SQL MOVE statement, for positioning a previously
+{- | 'MoveExpr' corresponds to the SQL MOVE statement, for positioning a previously
 created cursor, /without/ retrieving any rows. E.G.
 
 > MOVE NEXT FOO
@@ -303,8 +296,7 @@ move maybeDirection cursorName =
       , Just $ RawSql.toRawSql cursorName
       ]
 
-{- |
-'CursorDirection' corresponds to the direction argument to the SQL FETCH and
+{- | 'CursorDirection' corresponds to the direction argument to the SQL FETCH and
 MOVE statements. E.G.
 
 > BACKWARD

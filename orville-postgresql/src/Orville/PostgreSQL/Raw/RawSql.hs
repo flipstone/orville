@@ -73,8 +73,7 @@ import Orville.PostgreSQL.Raw.PgTextFormatValue (PgTextFormatValue)
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  'RawSql' provides a type for efficiently constructing raw SQL statements from
+{- | 'RawSql' provides a type for efficiently constructing raw SQL statements from
   smaller parts and then executing them. It also supports using placeholder
   values to pass parameters with a query without having to interpolate them as
   part of the actual SQL state and being exposed to SQL injection.
@@ -102,8 +101,7 @@ instance Semigroup RawSql where
 instance Monoid RawSql where
   mempty = Empty
 
-{- |
-  Append two 'RawSql' values together with 'commaSpace' in between, unless
+{- | Append two 'RawSql' values together with 'commaSpace' in between, unless
   either of the values are empty.
 
 @since 1.1.0.0
@@ -114,8 +112,7 @@ appendWithCommaSpace a b = case (a, b) of
   (x, Empty) -> x
   (x, y) -> x <> commaSpace <> y
 
-{- |
- 'SqlExpression' provides a common interface for converting types to and from
+{- | 'SqlExpression' provides a common interface for converting types to and from
  'RawSql', either via 'toRawSql' and 'unsafeFromRawSql', or the convenience
  function 'unsafeSqlExpression'. Orville defines a large number of types that
  represent various fragments of SQL statements as well as functions to help
@@ -137,8 +134,7 @@ instance SqlExpression RawSql where
   toRawSql = id
   unsafeFromRawSql = id
 
-{- |
-A convenience function for creating an arbitrary 'SqlExpression' from a
+{- | A convenience function for creating an arbitrary 'SqlExpression' from a
 'String'. Great care should be exercised when using this function as it cannot
 provide any sort of guarantee that the string passed is usable to generate
 valid SQL via the rest of Orville's 'Orville.PostgreSQL.Expr' API.
@@ -156,8 +152,7 @@ unsafeSqlExpression :: SqlExpression a => String -> a
 unsafeSqlExpression =
   unsafeFromRawSql . fromString
 
-{- |
-  Provides procedures for quoting parts of a raw SQL query so that they can be
+{- | Provides procedures for quoting parts of a raw SQL query so that they can be
   safely executed. Quoting may be done in some 'Monad' m, allowing for the use
   of quoting operations provided by 'Conn.Connection', which operates in the
   'IO' monad.
@@ -171,8 +166,7 @@ data Quoting m = Quoting
   , quoteIdentifier :: BS.ByteString -> m BSB.Builder
   }
 
-{- |
-  Quoting done in pure Haskell that is suitable for showing SQL examples,
+{- | Quoting done in pure Haskell that is suitable for showing SQL examples,
   but is not guaranteed to be sufficient for all database connections. For
   quoting that is based on the actual connection to the database, see
   'connectionQuoting'.
@@ -209,8 +203,7 @@ exampleQuoteString quoteChar =
         <> BSB.byteString (B8.unfoldr quote (Right unquoted))
         <> quoteBytes
 
-{- |
-  Quoting done in IO using the quoting functions provided by the connection,
+{- | Quoting done in IO using the quoting functions provided by the connection,
   which can apply quoting based on the specific connection properties.
 
   If you don't have a connection available and are only planning on using the
@@ -225,8 +218,7 @@ connectionQuoting connection =
     , quoteIdentifier = Conn.quoteIdentifier connection
     }
 
-{- |
-  Constructs the actual SQL bytestring and parameter values that will be passed
+{- | Constructs the actual SQL bytestring and parameter values that will be passed
   to the database to execute a 'RawSql' query. Any string literals that are
   included in the SQL expression will be quoted using the given quoting
   directive.
@@ -246,8 +238,7 @@ toBytesAndParams quoting sql = do
     , DList.toList (paramValues finalProgress)
     )
 
-{- |
-  Builds the bytes that represent the raw SQL. These bytes may not be executable
+{- | Builds the bytes that represent the raw SQL. These bytes may not be executable
   on their own, because they may contain placeholders that must be filled in,
   but can be useful for inspecting SQL queries.
 
@@ -257,8 +248,7 @@ toExampleBytes :: SqlExpression sql => sql -> BS.ByteString
 toExampleBytes =
   fst . runIdentity . toBytesAndParams exampleQuoting
 
-{- |
-  This is an internal datatype used during the SQL building process to track
+{- | This is an internal datatype used during the SQL building process to track
   how many params have been seen so that placeholder indices (e.g. '$1', etc)
   can be generated to include in the SQL.
 
@@ -269,8 +259,7 @@ data ParamsProgress = ParamsProgress
   , paramValues :: DList (Maybe PgTextFormatValue)
   }
 
-{- |
-  An initial value for 'ParamsProgress' that indicates no params have been been
+{- | An initial value for 'ParamsProgress' that indicates no params have been been
   encountered yet.
 
 @since 1.0.0.0
@@ -282,8 +271,7 @@ startingProgress =
     , paramValues = DList.empty
     }
 
-{- |
-  Adds a parameter value to the end of the params list, tracking the count
+{- | Adds a parameter value to the end of the params list, tracking the count
   of parameters as it does so.
 
 @since 1.0.0.0
@@ -295,8 +283,7 @@ snocParam (ParamsProgress count values) newValue =
     , paramValues = DList.snoc values newValue
     }
 
-{- |
-  Constructs a bytestring builder that can be executed to get the bytes for a
+{- | Constructs a bytestring builder that can be executed to get the bytes for a
   section of 'RawSql'. This function takes and returns a 'ParamsProgress' so
   that placeholder indices (e.g. '$1') and their corresponding parameter values
   can be tracked across multiple sections of raw SQL.
@@ -368,8 +355,7 @@ buildParameterSql =
       mkRowValue
       (mkSingleValue Nothing)
 
-{- |
-  Constructs a 'RawSql' from a 'String' value using UTF-8 encoding.
+{- | Constructs a 'RawSql' from a 'String' value using UTF-8 encoding.
 
   Note that because the string is treated as raw SQL, it is completely up to
   the caller to protected againt SQL-injection attacks when using this
@@ -381,8 +367,7 @@ fromString :: String -> RawSql
 fromString =
   SqlSection . BSB.stringUtf8
 
-{- |
-  Constructs a 'RawSql' from a 'T.Text' value using UTF-8 encoding.
+{- | Constructs a 'RawSql' from a 'T.Text' value using UTF-8 encoding.
 
   Note that because the text is treated as raw SQL, it is completely up to the
   caller to protected againt SQL-injection attacks when using this function.
@@ -394,8 +379,7 @@ fromText :: T.Text -> RawSql
 fromText =
   SqlSection . TextEnc.encodeUtf8Builder
 
-{- |
-  Constructs a 'RawSql' from a 'BS.ByteString' value, which is assumed to be
+{- | Constructs a 'RawSql' from a 'BS.ByteString' value, which is assumed to be
   encoded sensibly for the database to handle.
 
   Note that because the string is treated as raw SQL, it is completely up to
@@ -408,8 +392,7 @@ fromBytes :: BS.ByteString -> RawSql
 fromBytes =
   SqlSection . BSB.byteString
 
-{- |
-  Includes an input parameter in the 'RawSql' statement that will be passed
+{- | Includes an input parameter in the 'RawSql' statement that will be passed
   using placeholders (e.g. '$1') rather than being included directly in the SQL
   statement. This is the correct way to include input from untrusted sources as
   part of a 'RawSql' query. The parameter must be formatted in a textual
@@ -422,8 +405,7 @@ parameter :: SqlValue -> RawSql
 parameter =
   Parameter
 
-{- |
-  Includes a bytestring value as a string literal in the SQL statement. The
+{- | Includes a bytestring value as a string literal in the SQL statement. The
   string literal will be quoted and escaped for you; the value provided should
   not include surrounding quotes or quote special characters.
 
@@ -438,8 +420,7 @@ stringLiteral :: BS.ByteString -> RawSql
 stringLiteral =
   StringLiteral
 
-{- |
-  Includes a bytestring value as an identifier in the SQL statement. The
+{- | Includes a bytestring value as an identifier in the SQL statement. The
   identifier will be quoted and escaped for you; the value provided should not
   include surrounding quotes or quote special characters.
 
@@ -449,8 +430,7 @@ identifier :: BS.ByteString -> RawSql
 identifier =
   Identifier
 
-{- |
-  Concatenates a list of 'RawSql' values using another 'RawSql' value as the
+{- | Concatenates a list of 'RawSql' values using another 'RawSql' value as the
   separator between the items.
 
 @since 1.0.0.0
@@ -462,8 +442,7 @@ intercalate separator =
     . map toRawSql
     . Fold.toList
 
-{- |
-  Executes a 'RawSql' value using the 'Conn.executeRaw' function. Make sure
+{- | Executes a 'RawSql' value using the 'Conn.executeRaw' function. Make sure
   to read the documentation of 'Conn.executeRaw' for caveats and warnings.
   Use with caution.
 
@@ -477,8 +456,7 @@ execute connection sql = do
   (sqlBytes, params) <- toBytesAndParams (connectionQuoting connection) sql
   Conn.executeRaw connection sqlBytes params
 
-{- |
-  Executes a 'RawSql' value using the 'Conn.executeRawVoid' function. Make sure
+{- | Executes a 'RawSql' value using the 'Conn.executeRawVoid' function. Make sure
   to read the documentation of 'Conn.executeRawVoid' for caveats and warnings.
   Use with caution.
 
@@ -547,8 +525,7 @@ doubleQuote = fromString "\""
 doubleColon :: RawSql
 doubleColon = fromString "::"
 
-{- |
-  Constructs a 'RawSql' from an 'Int.Int8' value. The integral value is
+{- | Constructs a 'RawSql' from an 'Int.Int8' value. The integral value is
   included directly in the SQL string, not passed as a parameter. When dealing
   with user input, it is better to use 'parameter' whenever possible.
 
@@ -558,8 +535,7 @@ int8DecLiteral :: Int.Int8 -> RawSql
 int8DecLiteral =
   SqlSection . BSB.int8Dec
 
-{- |
-  Constructs a 'RawSql' from an 'Int.Int16' value. The integral value is
+{- | Constructs a 'RawSql' from an 'Int.Int16' value. The integral value is
   included directly in the SQL string, not passed as a parameter. When dealing
   with user input, it is better to use 'parameter' whenever possible.
 
@@ -569,8 +545,7 @@ int16DecLiteral :: Int.Int16 -> RawSql
 int16DecLiteral =
   SqlSection . BSB.int16Dec
 
-{- |
-  Constructs a 'RawSql' from an 'Int.Int32' value. The integral value is
+{- | Constructs a 'RawSql' from an 'Int.Int32' value. The integral value is
   included directly in the SQL string, not passed as a parameter. When dealing
   with user input, it is better to use 'parameter' whenever possible.
 
@@ -580,8 +555,7 @@ int32DecLiteral :: Int.Int32 -> RawSql
 int32DecLiteral =
   SqlSection . BSB.int32Dec
 
-{- |
-  Constructs a 'RawSql' from an 'Int.Int64' value. The integral value is
+{- | Constructs a 'RawSql' from an 'Int.Int64' value. The integral value is
   included directly in the SQL string, not passed as a parameter. When dealing
   with user input, it is better to use 'parameter' whenever possible.
 
@@ -591,8 +565,7 @@ int64DecLiteral :: Int.Int64 -> RawSql
 int64DecLiteral =
   SqlSection . BSB.int64Dec
 
-{- |
-  Constructs a 'RawSql' from an 'Int' value. The integral value is included
+{- | Constructs a 'RawSql' from an 'Int' value. The integral value is included
   directly in the SQL string, not passed as a parameter. When dealing with user
   input, it is better to use 'parameter' whenever possible.
 
@@ -602,16 +575,14 @@ intDecLiteral :: Int -> RawSql
 intDecLiteral =
   SqlSection . BSB.intDec
 
-{- |
-  Constructs a 'RawSql' representing the SQL @NULL@ literal.
+{- | Constructs a 'RawSql' representing the SQL @NULL@ literal.
 
 @since 1.1.0.0
 -}
 nullLiteral :: RawSql
 nullLiteral = fromString "NULL"
 
-{- |
-  Constructs a 'RawSql' by putting parentheses around an arbitrary expression.
+{- | Constructs a 'RawSql' by putting parentheses around an arbitrary expression.
   The result is returned as a 'RawSql'. It is up to the caller to decide
   whether it should be wrapped in a more-specific expression type.
 

@@ -17,8 +17,7 @@ where
 import Orville.PostgreSQL.Expr.Name (AliasExpr, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent the item in the @FROM@ clause of a @SELECT
+{- | Type to represent the item in the @FROM@ clause of a @SELECT
 statement. E.G. just the
 
 > foo
@@ -49,8 +48,7 @@ instance Semigroup FromItemExpr where
 instance Monoid FromItemExpr where
   mempty = FromItemExpr mempty
 
-{- |
-  Constructs a 'FromItemExpr' consisting of just the specified table
+{- | Constructs a 'FromItemExpr' consisting of just the specified table
   name.
 
   @since 1.1.0.0
@@ -60,8 +58,7 @@ tableFromItem =
   FromItemExpr
     . RawSql.toRawSql
 
-{- |
-  Constructs a 'FromItemExpr' consisting of the specified table AS the given alias.
+{- | Constructs a 'FromItemExpr' consisting of the specified table AS the given alias.
 
   @since 1.1.0.0
 -}

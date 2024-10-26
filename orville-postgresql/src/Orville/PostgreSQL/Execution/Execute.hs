@@ -32,8 +32,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  Executes a SQL query and decodes the result set using the provided
+{- | Executes a SQL query and decodes the result set using the provided
   marshaller. Any SQL Execution callbacks that have been added to the
   'OrvilleState' will be called.
 
@@ -52,8 +51,7 @@ executeAndDecode queryType sql marshaller = do
   orvilleState <- askOrvilleState
   withConnection (liftIO . executeAndDecodeIO queryType sql marshaller orvilleState)
 
-{- |
-  Executes a SQL query and returns the number of rows affected by the query.
+{- | Executes a SQL query and returns the number of rows affected by the query.
   Any SQL Execution callbacks that have been added to the 'OrvilleState' will
   be called.
 
@@ -76,8 +74,7 @@ executeAndReturnAffectedRows queryType sql = do
   orvilleState <- askOrvilleState
   withConnection (liftIO . executeAndReturnAffectedRowsIO queryType sql orvilleState)
 
-{- |
-  Executes a SQL query and ignores the result. Any SQL Execution callbacks
+{- | Executes a SQL query and ignores the result. Any SQL Execution callbacks
   that have been added to the 'OrvilleState' will be called.
 
   If the query fails an exception will be raised.
@@ -93,8 +90,7 @@ executeVoid queryType sql = do
   orvilleState <- askOrvilleState
   withConnection (liftIO . executeVoidIO queryType sql orvilleState)
 
-{- |
-  Executes a SQL query and decodes the result set using the provided
+{- | Executes a SQL query and decodes the result set using the provided
   marshaller. Any SQL Execution callbacks that have been added to the
   'OrvilleState' will be called.
 
@@ -129,8 +125,7 @@ executeAndDecodeIO queryType sql marshaller orvilleState conn = do
     Right entities ->
       pure entities
 
-{- |
-  Executes a SQL query and returns the number of rows affected by the query.
+{- | Executes a SQL query and returns the number of rows affected by the query.
   Any SQL Execution callbacks that have been added to the 'OrvilleState' will
   be called.
 
@@ -166,8 +161,7 @@ executeAndReturnAffectedRowsIO queryType sql orvilleState conn = do
         Right n ->
           pure n
 
-{- |
-  Executes a SQL query and ignores the result. Any SQL Execution callbacks
+{- | Executes a SQL query and ignores the result. Any SQL Execution callbacks
   that have been added to the 'OrvilleState' will be called.
 
   If the query fails, an exception will be raised.
@@ -206,8 +200,7 @@ executeWithCallbacksIO queryType sql orvilleState conn =
       rawSql
       (RawSql.execute conn rawSql)
 
-{- |
-  Thrown by 'executeAndReturnAffectedRows' and 'executeAndReturnAffectedRowsIO'
+{- | Thrown by 'executeAndReturnAffectedRows' and 'executeAndReturnAffectedRowsIO'
   if the number of affected rows cannot be successfully read from the LibPQ
   command result.
 

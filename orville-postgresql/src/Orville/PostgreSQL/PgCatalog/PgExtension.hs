@@ -20,8 +20,7 @@ import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_extension@ table.
+{- | The Haskell representation of data read from the @pg_catalog.pg_extension@ table.
   Rows in this table contain extended information about extensions.
 
 @since 1.1.0.0
@@ -31,8 +30,7 @@ newtype PgExtension = PgExtension
   -- ^ The PostgreSQL name for this extension.
   }
 
-{- |
-  A Haskell type for the name of the extension represented by a 'PgExtension'.
+{- | A Haskell type for the name of the extension represented by a 'PgExtension'.
 
 @since 1.1.0.0
 -}
@@ -49,8 +47,7 @@ newtype ExtensionName
       String.IsString
     )
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_extension@ table.
 
 @since 1.0.0.0
@@ -67,8 +64,7 @@ pgExtensionMarshaller =
   PgExtension
     <$> Orville.marshallField pgExtensionName extensionNameField
 
-{- |
-  The @extname@ column of the @pg_extension@ table.
+{- | The @extname@ column of the @pg_extension@ table.
 
 @since 1.1.0.0
 -}

@@ -55,8 +55,7 @@ import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, prima
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 import Orville.PostgreSQL.Schema.TriggerDefinition (TriggerDefinition, TriggerMigrationKey, triggerMigrationKey)
 
-{- |
-  Contains the definition of a SQL table for Orville to use for generating
+{- | Contains the definition of a SQL table for Orville to use for generating
   queries and marshalling Haskell values to and from the database.
 
   * @key@ is a Haskell type used to indicate whether the table has a primary
@@ -82,8 +81,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , i_tableComment :: Maybe T.Text
   }
 
-{- |
-  'HasKey' is a type with no constructors. It is used only at the type level
+{- | 'HasKey' is a type with no constructors. It is used only at the type level
   as the @key@ parameter to the 'TableDefinition' type to indicate that the
   table has a primary key and what the Haskell type of the primary key is.
 
@@ -91,8 +89,7 @@ data TableDefinition key writeEntity readEntity = TableDefinition
 -}
 data HasKey key
 
-{- |
-  'NoKey' is a type with no constructors. It is used only at the type level
+{- | 'NoKey' is a type with no constructors. It is used only at the type level
   as the @key@ parameter to the 'TableDefinition' type to indicate that the
   table does not have a primary key.
 
@@ -100,8 +97,7 @@ data HasKey key
 -}
 data NoKey
 
-{- |
-  INTERNAL: Use at the value level to track whether the 'TableDefinition' has a
+{- | INTERNAL: Use at the value level to track whether the 'TableDefinition' has a
   primary key. The @key@ parameter matches the @key@ parameter of
   'TableDefinition'
 
@@ -111,8 +107,7 @@ data TablePrimaryKey key where
   TableHasKey :: PrimaryKey keyType -> TablePrimaryKey (HasKey keyType)
   TableHasNoKey :: TablePrimaryKey NoKey
 
-{- |
-  Constructs a new 'TableDefinition' with the basic fields required for
+{- | Constructs a new 'TableDefinition' with the basic fields required for
   operation. For convenience, this function accepts a 'PrimaryKey' even though
   this is not required for all Orville operations to work. If you need to
   create a table without any primary key, see 'mkTableDefinitionWithoutKey'.
@@ -139,8 +134,7 @@ mkTableDefinition name primaryKey marshaller =
     , i_tableComment = Nothing
     }
 
-{- |
-  Constructs a new 'TableDefinition' with the minimal fields required for
+{- | Constructs a new 'TableDefinition' with the minimal fields required for
   operation. Note: tables created via this function will not have a primary
   key. Certain Orville functions require a primary key. Attempting to call
   functions requiring a primary key will fail to compile when using a table
@@ -166,8 +160,7 @@ mkTableDefinitionWithoutKey name marshaller =
     , i_tableComment = Nothing
     }
 
-{- |
-  Annotates a 'TableDefinition' with a direction to drop columns if they are
+{- | Annotates a 'TableDefinition' with a direction to drop columns if they are
   found in the database. Orville does not drop columns during auto-migration
   unless they are explicitly requested to be dropped via 'dropColumns'.
 
@@ -190,8 +183,7 @@ dropColumns columns tableDef =
     { i_tableColumnsToDrop = i_tableColumnsToDrop tableDef <> Set.fromList columns
     }
 
-{- |
-  Returns the set of columns that have been marked as dropped by 'dropColumns'.
+{- | Returns the set of columns that have been marked as dropped by 'dropColumns'.
 
 @since 1.0.0.0
 -}
@@ -199,8 +191,7 @@ columnsToDrop :: TableDefinition key writeEntity readEntity -> Set.Set String
 columnsToDrop =
   i_tableColumnsToDrop
 
-{- |
-  Returns the table's 'TableIdentifier'.
+{- | Returns the table's 'TableIdentifier'.
 
 @since 1.0.0.0
 -}
@@ -208,8 +199,7 @@ tableIdentifier :: TableDefinition key writeEntity readEntity -> TableIdentifier
 tableIdentifier =
   i_tableIdentifier
 
-{- |
-  Returns the table's name as an expression that can be used to build SQL
+{- | Returns the table's name as an expression that can be used to build SQL
   statements. If the table has a schema name set, the name will be qualified
   with it.
 
@@ -219,8 +209,7 @@ tableName :: TableDefinition key writeEntity readEntity -> Expr.QualifiedOrUnqua
 tableName =
   tableIdQualifiedName . i_tableIdentifier
 
-{- |
-  Returns 'Just' the comment of the table, or 'Nothing' if it has not been set.
+{- | Returns 'Just' the comment of the table, or 'Nothing' if it has not been set.
 
 @since 1.1.0.0
 -}
@@ -228,8 +217,7 @@ tableComment :: TableDefinition key writeEntity readEntity -> Maybe T.Text
 tableComment =
   i_tableComment
 
-{- |
-  Sets the table's schema to the name in the given 'String', which will be
+{- | Sets the table's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a table has a schema name set, it will be
   included as a qualifier on the table name for all queries involving the
   table.
@@ -245,8 +233,7 @@ setTableSchema schemaName tableDef =
     { i_tableIdentifier = setTableIdSchema schemaName (i_tableIdentifier tableDef)
     }
 
-{- |
-  Sets the table's comment.
+{- | Sets the table's comment.
 
 @since 1.1.0.0
 -}
@@ -259,8 +246,7 @@ setTableComment comment tableDef =
     { i_tableComment = Just comment
     }
 
-{- |
-  Retrieves all the table constraints that have been added to the table either
+{- | Retrieves all the table constraints that have been added to the table either
   via 'addTableConstraints' or that are found on
   'Orville.PostgreSQL.FieldDefinition's included with this table's
   'SqlMarshaller'.
@@ -274,8 +260,7 @@ tableConstraints =
   tableConstraintsFromMarshaller
     <> tableConstraintsFromTable
 
-{- |
-  Retrieves all the table constraints that have been added to the table via
+{- | Retrieves all the table constraints that have been added to the table via
   'addTableConstraints'. This does NOT include any table constraints from the
   table's 'SqlMarshaller'.
 
@@ -287,8 +272,7 @@ tableConstraintsFromTable ::
 tableConstraintsFromTable =
   i_tableConstraintsFromTable
 
-{- |
-  Retrieves all the table constraints that were included in the table's
+{- | Retrieves all the table constraints that were included in the table's
   'SqlMarshaller' when it was created. This does NOT include any table
   constraints added via 'addTableConstraints'.
 
@@ -302,8 +286,7 @@ tableConstraintsFromMarshaller =
     . unannotatedSqlMarshaller
     . i_tableMarshaller
 
-{- |
-  Adds the given table constraints to the table definition. It's also possible
+{- | Adds the given table constraints to the table definition. It's also possible
   to add constraints that apply to only one column, adding them to the
   'Orville.PostgreSQL.FieldDefinition's that are included in the table's
   'SqlMarshaller'.
@@ -331,8 +314,7 @@ addTableConstraints constraintDefs tableDef =
           constraintDefs
     }
 
-{- |
-  Retrieves all the table indexes that have been added to the table via
+{- | Retrieves all the table indexes that have been added to the table via
   'addTableIndexes'.
 
 @since 1.0.0.0
@@ -343,8 +325,7 @@ tableIndexes ::
 tableIndexes =
   i_tableIndexes
 
-{- |
-  Adds the given table indexes to the table definition.
+{- | Adds the given table indexes to the table definition.
 
   Note: If multiple indexes are added with the same 'IndexMigrationKey', only
   the last one that is added will be part of the 'TableDefinition'. Any
@@ -365,8 +346,7 @@ addTableIndexes indexDefs tableDef =
       { i_tableIndexes = foldr addIndex (i_tableIndexes tableDef) indexDefs
       }
 
-{- |
-  Retrieves all the table indexes that have been added to the table via
+{- | Retrieves all the table indexes that have been added to the table via
   'addTableTriggers'.
 
 @since 1.1.0.0
@@ -377,8 +357,7 @@ tableTriggers ::
 tableTriggers =
   i_tableTriggers
 
-{- |
-  Adds the given table triggers to the table definition.
+{- | Adds the given table triggers to the table definition.
 
   Note: If multiple wriggers are added with the same 'Expr.TriggerName', only
   the last one that is added will be part of the 'TableDefinition'. Any
@@ -405,8 +384,7 @@ addTableTriggers triggerDefs tableDef =
       { i_tableTriggers = foldr addTrigger (i_tableTriggers tableDef) triggerDefs
       }
 
-{- |
-  Returns the primary key for the table, as defined at construction via
+{- | Returns the primary key for the table, as defined at construction via
   'mkTableDefinition'.
 
 @since 1.0.0.0
@@ -416,8 +394,7 @@ tablePrimaryKey def =
   case i_tablePrimaryKey def of
     TableHasKey primaryKey -> primaryKey
 
-{- |
-  Returns the marshaller for the table, as defined at construction via
+{- | Returns the marshaller for the table, as defined at construction via
   'mkTableDefinition'.
 
 @since 1.0.0.0
@@ -425,8 +402,7 @@ tablePrimaryKey def =
 tableMarshaller :: TableDefinition key writeEntity readEntity -> AnnotatedSqlMarshaller writeEntity readEntity
 tableMarshaller = i_tableMarshaller
 
-{- |
-  Applies the provided function to the underlying 'SqlMarshaller' of the
+{- | Applies the provided function to the underlying 'SqlMarshaller' of the
   'TableDefinition'.
 
 @since 1.0.0.0
@@ -438,8 +414,7 @@ mapTableMarshaller ::
 mapTableMarshaller f tableDef =
   tableDef {i_tableMarshaller = mapSqlMarshaller f $ i_tableMarshaller tableDef}
 
-{- |
-  Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the
+{- | Builds a 'Expr.CreateTableExpr' that will create a SQL table matching the
   given 'TableDefinition' when it is executed.
 
 @since 1.0.0.0
@@ -454,8 +429,7 @@ mkCreateTableExpr tableDef =
     (mkTablePrimaryKeyExpr tableDef)
     (map constraintSqlExpr . tableConstraintDefinitions . tableConstraints $ tableDef)
 
-{- |
-  Builds the 'Expr.ColumnDefinitions' for all the fields described by the
+{- | Builds the 'Expr.ColumnDefinitions' for all the fields described by the
   table definition's 'SqlMarshaller'.
 
 @since 1.0.0.0
@@ -469,8 +443,7 @@ mkTableColumnDefinitions tableDef =
     []
     (collectFromField IncludeReadOnlyColumns (const fieldColumnDefinition))
 
-{- |
-  Builds the 'Expr.PrimaryKeyExpr' for this table, or none if this table has no
+{- | Builds the 'Expr.PrimaryKeyExpr' for this table, or none if this table has no
   primary key.
 
 @since 1.0.0.0
@@ -485,8 +458,7 @@ mkTablePrimaryKeyExpr tableDef =
     TableHasNoKey ->
       Nothing
 
-{- |
-  When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
+{- | When 'WithReturning' is given, builds a 'Expr.ReturningExpr' that will
   return all the columns in the given 'TableDefinition'.
 
 @since 1.0.0.0
@@ -508,8 +480,7 @@ mkTableReturningClause returningOption tableDef =
         . tableMarshaller
         $ tableDef
 
-{- |
-  Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
+{- | Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
   table when it is executed. A @RETURNING@ clause will either be included to
   return the inserted rows or not, depending on the 'ReturningOption' given.
 
@@ -539,8 +510,7 @@ mkInsertExpr returningOption tableDef maybeOnConflict entities =
       maybeOnConflict
       (mkTableReturningClause returningOption tableDef)
 
-{- |
-  Builds an 'Expr.InsertColumnList' that specifies the columns for an
+{- | Builds an 'Expr.InsertColumnList' that specifies the columns for an
   insert statement in the order that they appear in the given 'SqlMarshaller'.
 
   In normal circumstances you will want to build the complete insert statement
@@ -562,8 +532,7 @@ mkInsertColumnList marshaller =
           Just alias -> Expr.untrackQualified . fieldAliasQualifiedColumnName alias
       )
 
-{- |
-  Builds an 'Expr.InsertSource' that will insert the given entities with their
+{- | Builds an 'Expr.InsertSource' that will insert the given entities with their
   values specified in the order that the fields appear in the given
   'SqlMarshaller' (which matches the order of column names produced by
   'mkInsertColumnList').
@@ -598,8 +567,7 @@ mkInsertSource marshaller entities =
         Just valExprs ->
           Expr.valuesExprFromValueExpressions valExprs
 
-{- |
-  An internal helper function that collects the 'SqlValue' encoded value for a field from a Haskell
+{- | An internal helper function that collects the 'SqlValue' encoded value for a field from a Haskell
   entity as a 'ValueExpression', adding it a list of 'ValueExpresion's that is being built.
 
 @since 1.0.0.0

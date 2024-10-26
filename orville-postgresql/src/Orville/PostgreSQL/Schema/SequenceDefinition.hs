@@ -32,8 +32,7 @@ import Data.Int (Int64)
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Schema.SequenceIdentifier (SequenceIdentifier, sequenceIdQualifiedName, setSequenceIdSchema, unqualifiedNameToSequenceId)
 
-{- |
-  Contains the definition of a SQL sequence for Orville to use when creating
+{- | Contains the definition of a SQL sequence for Orville to use when creating
   the sequence and fetching values from it. You can create a
   'SequenceDefinition' with default values via 'mkSequenceDefinition' and then
   use the various set functions that are provided if you need to set specific
@@ -57,8 +56,7 @@ data SequenceDefinition = SequenceDefinition
       Show
     )
 
-{- |
-  Constructs an ascending 'SequenceDefinition' with increment 1 and cache
+{- | Constructs an ascending 'SequenceDefinition' with increment 1 and cache
   1 that does not cycle. The sequence will start at 1 and count to the
   largest 'Int64' value.
 
@@ -76,8 +74,7 @@ mkSequenceDefinition name =
     , i_sequenceCycle = False
     }
 
-{- |
-  Sets the sequence's schema to the name in the given 'String', which will be
+{- | Sets the sequence's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a sequence has a schema name set, it will be
   included as a qualifier on the sequence name for all queries involving the
   sequence.
@@ -93,8 +90,7 @@ setSequenceSchema schemaName sequenceDef =
     { i_sequenceIdentifier = setSequenceIdSchema schemaName (i_sequenceIdentifier sequenceDef)
     }
 
-{- |
-  Retrieves the 'SequenceIdentifier' for this sequence, which is set by the
+{- | Retrieves the 'SequenceIdentifier' for this sequence, which is set by the
   name provided to 'mkSequenceDefinition' and any calls made to
   'setSequenceSchema' thereafter.
 
@@ -103,8 +99,7 @@ setSequenceSchema schemaName sequenceDef =
 sequenceIdentifier :: SequenceDefinition -> SequenceIdentifier
 sequenceIdentifier = i_sequenceIdentifier
 
-{- |
-  Retrieves the 'Expr.Qualified' 'Expr.SequenceName' for the sequence that
+{- | Retrieves the 'Expr.Qualified' 'Expr.SequenceName' for the sequence that
   should be used to build SQL expressions involving it.
 
 @since 1.0.0.0
@@ -113,16 +108,14 @@ sequenceName :: SequenceDefinition -> Expr.QualifiedOrUnqualified Expr.SequenceN
 sequenceName =
   sequenceIdQualifiedName . i_sequenceIdentifier
 
-{- |
-  Retrieves the increment value for the sequence.
+{- | Retrieves the increment value for the sequence.
 
 @since 1.0.0.0
 -}
 sequenceIncrement :: SequenceDefinition -> Int64
 sequenceIncrement = i_sequenceIncrement
 
-{- |
-  Sets the increment value for the sequence. The increment cannot be set to
+{- | Sets the increment value for the sequence. The increment cannot be set to
   @0@ (PostgreSQL will raise an error when trying to create or modify the
   sequence in this case).
 
@@ -135,8 +128,7 @@ setSequenceIncrement :: Int64 -> SequenceDefinition -> SequenceDefinition
 setSequenceIncrement n sequenceDef =
   sequenceDef {i_sequenceIncrement = n}
 
-{- |
-  Retrieves the min value of the sequence. If no explicit minimum has been set,
+{- | Retrieves the min value of the sequence. If no explicit minimum has been set,
   this returns @1@ for ascending sequences and 'minBound' for 'Int64' for
   descending sequences.
 
@@ -151,8 +143,7 @@ sequenceMinValue sequenceDef =
         then 1
         else minBound
 
-{- |
-  Sets the min value for the sequence.
+{- | Sets the min value for the sequence.
 
 @since 1.0.0.0
 -}
@@ -160,8 +151,7 @@ setSequenceMinValue :: Int64 -> SequenceDefinition -> SequenceDefinition
 setSequenceMinValue n sequenceDef =
   sequenceDef {i_sequenceMinValue = Just n}
 
-{- |
-  Retrieves the max value of the sequence. If no explicit maximum has been set,
+{- | Retrieves the max value of the sequence. If no explicit maximum has been set,
   this returns 'maxBound' for 'Int64' for ascending sequences and @-1@ for
   descending sequences.
 
@@ -176,8 +166,7 @@ sequenceMaxValue sequenceDef =
         then maxBound
         else -1
 
-{- |
-  Sets the max value for the sequence.
+{- | Sets the max value for the sequence.
 
 @since 1.0.0.0
 -}
@@ -185,8 +174,7 @@ setSequenceMaxValue :: Int64 -> SequenceDefinition -> SequenceDefinition
 setSequenceMaxValue n sequenceDef =
   sequenceDef {i_sequenceMaxValue = Just n}
 
-{- |
-  Retrieves the start value for the sequence. If no explicit start value has
+{- | Retrieves the start value for the sequence. If no explicit start value has
   been set, this returns 'sequenceMinValue' for ascending sequences and
   'sequenceMaxValue' for descending sequences.
 
@@ -201,8 +189,7 @@ sequenceStart sequenceDef =
         then sequenceMinValue sequenceDef
         else sequenceMaxValue sequenceDef
 
-{- |
-  Sets the sequence start value. The start value must be at least the
+{- | Sets the sequence start value. The start value must be at least the
   minimum value and no greater than the maximum value.
 
 @since 1.0.0.0
@@ -211,8 +198,7 @@ setSequenceStart :: Int64 -> SequenceDefinition -> SequenceDefinition
 setSequenceStart n sequenceDef =
   sequenceDef {i_sequenceStart = Just n}
 
-{- |
-  Retrieves the number of sequence values that will be pre-allocated by
+{- | Retrieves the number of sequence values that will be pre-allocated by
   PostgreSQL.
 
 @since 1.0.0.0
@@ -220,8 +206,7 @@ setSequenceStart n sequenceDef =
 sequenceCache :: SequenceDefinition -> Int64
 sequenceCache = i_sequenceCache
 
-{- |
-  Sets the number of sequence values that will be pre-allocated by PostgreSQL.
+{- | Sets the number of sequence values that will be pre-allocated by PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -229,8 +214,7 @@ setSequenceCache :: Int64 -> SequenceDefinition -> SequenceDefinition
 setSequenceCache n sequenceDef =
   sequenceDef {i_sequenceCache = n}
 
-{- |
-  Indicates whether the sequence will wrap around when it reaches the maximum
+{- | Indicates whether the sequence will wrap around when it reaches the maximum
   value (for ascending sequences) or minimum value (for descending sequences).
   When 'False', any attempts to get the next value of the sequence while at the
   limit will result in an error.
@@ -240,8 +224,7 @@ setSequenceCache n sequenceDef =
 sequenceCycle :: SequenceDefinition -> Bool
 sequenceCycle = i_sequenceCycle
 
-{- |
-  Sets the 'sequenceCycle' value for the sequence. 'True' indicates that the
+{- | Sets the 'sequenceCycle' value for the sequence. 'True' indicates that the
   sequence will cycle. 'False' will cause an error to be raised if the next
   sequence value is requested while already at the limit.
 
@@ -251,8 +234,7 @@ setSequenceCycle :: Bool -> SequenceDefinition -> SequenceDefinition
 setSequenceCycle b sequenceDef =
   sequenceDef {i_sequenceCycle = b}
 
-{- |
-  Builds a 'Expr.CreateSequenceExpr' that will create a SQL sequence matching
+{- | Builds a 'Expr.CreateSequenceExpr' that will create a SQL sequence matching
   the given 'SequenceDefinition' when it is executed.
 
 @since 1.0.0.0

@@ -21,8 +21,7 @@ import qualified Data.Text.Encoding as TEnc
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, SchemaName, TableName, qualifyColumn)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a PostgreSQL comment string literal.
+{- | Type to represent a PostgreSQL comment string literal.
 
 @since 1.1.0.0
 -}
@@ -32,16 +31,14 @@ newtype Comment = Comment RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Construct a 'Comment' from a 'T.Text' value. The value will be escaped and quoted.
+{- | Construct a 'Comment' from a 'T.Text' value. The value will be escaped and quoted.
 
 @since 1.1.0.0
 -}
 commentText :: T.Text -> Comment
 commentText = Comment . RawSql.stringLiteral . TEnc.encodeUtf8
 
-{- |
-Type to represent a PostgreSQL @COMMENT@ statement.
+{- | Type to represent a PostgreSQL @COMMENT@ statement.
 
 @since 1.1.0.0
 -}
@@ -51,8 +48,7 @@ newtype CommentExpr = CommentExpr RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Construct a 'CommentExpr' for a @COMMENT ON TABLE@ statement.
+{- | Construct a 'CommentExpr' for a @COMMENT ON TABLE@ statement.
 
 @since 1.1.0.0
 -}
@@ -67,8 +63,7 @@ commentTableExpr tableName mbComment =
       , maybe RawSql.nullLiteral RawSql.toRawSql mbComment
       ]
 
-{- |
-Construct a 'CommentExpr' for a @COMMENT ON COLUMN@ statement.
+{- | Construct a 'CommentExpr' for a @COMMENT ON COLUMN@ statement.
 
 @since 1.1.0.0
 -}

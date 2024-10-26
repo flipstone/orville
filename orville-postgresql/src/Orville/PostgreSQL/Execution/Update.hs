@@ -39,8 +39,7 @@ import Orville.PostgreSQL.Marshall (AnnotatedSqlMarshaller, marshallEntityToSetC
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (HasKey, TableDefinition, mkTableReturningClause, primaryKeyEquals, tableMarshaller, tableName, tablePrimaryKey)
 
-{- |
-  Represents an @UPDATE@ statement that can be executed against a database. An
+{- | Represents an @UPDATE@ statement that can be executed against a database. An
   'Update' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that, when the
   update returns data from the database, will be used to decode the database
   result set when it is executed.
@@ -51,8 +50,7 @@ data Update readEntity returningClause where
   UpdateNoReturning :: Expr.UpdateExpr -> Update readEntity NoReturningClause
   UpdateReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.UpdateExpr -> Update readEntity ReturningClause
 
-{- |
-  Extracts the query that will be run when the update is executed. Normally you
+{- | Extracts the query that will be run when the update is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
   useful to view the query for debugging or query explanation.
 
@@ -62,8 +60,7 @@ updateToUpdateExpr :: Update readEntity returningClause -> Expr.UpdateExpr
 updateToUpdateExpr (UpdateNoReturning expr) = expr
 updateToUpdateExpr (UpdateReturning _ expr) = expr
 
-{- |
-  Executes the database query for the 'Update' and returns the number of
+{- | Executes the database query for the 'Update' and returns the number of
   affected rows.
 
 @since 1.0.0.0
@@ -72,8 +69,7 @@ executeUpdate :: Monad.MonadOrville m => Update readEntity returningClause -> m 
 executeUpdate =
   Execute.executeAndReturnAffectedRows QueryType.UpdateQuery . updateToUpdateExpr
 
-{- |
-  Executes the database query for the 'Update' and uses its
+{- | Executes the database query for the 'Update' and uses its
   'AnnotatedSqlMarshaller' to decode any rows that were just updated, as
   returned via a RETURNING clause.
 
@@ -83,8 +79,7 @@ executeUpdateReturnEntities :: Monad.MonadOrville m => Update readEntity Returni
 executeUpdateReturnEntities (UpdateReturning marshaller expr) =
   Execute.executeAndDecode QueryType.UpdateQuery expr marshaller
 
-{- |
-  Builds an 'Update' that will update all of the writable columns described in
+{- | Builds an 'Update' that will update all of the writable columns described in
   the 'TableDefinition' without returning the data as seen by the database.
 
   This function returns 'Nothing' if the 'TableDefinition' has no columns,
@@ -100,8 +95,7 @@ updateToTable ::
 updateToTable =
   updateTable WithoutReturning
 
-{- |
-  Builds an 'Update' that will update all of the writable columns described in
+{- | Builds an 'Update' that will update all of the writable columns described in
   the 'TableDefinition' and return the data as seen by the database. This is
   useful for getting database-managed columns such as auto-incrementing
   identifiers and sequences.
@@ -119,8 +113,7 @@ updateToTableReturning ::
 updateToTableReturning =
   updateTable WithReturning
 
-{- |
-  Builds an 'Update' that will apply the specified column set clauses to rows
+{- | Builds an 'Update' that will apply the specified column set clauses to rows
   within the specified table without returning the data as seen by the database.
 
 @since 1.0.0.0
@@ -133,8 +126,7 @@ updateToTableFields ::
 updateToTableFields =
   updateFields WithoutReturning
 
-{- |
-  Builds an 'Update' that will apply the specified column set clauses to rows
+{- | Builds an 'Update' that will apply the specified column set clauses to rows
   within the specified table and return the updated version of any rows affected by
   the update state by using a @RETURNING@ clause.
 
@@ -148,8 +140,7 @@ updateToTableFieldsReturning ::
 updateToTableFieldsReturning =
   updateFields WithReturning
 
-{- |
-  Builds an 'Update' that will execute the specified query and use the given 'AnnotatedSqlMarshaller' to
+{- | Builds an 'Update' that will execute the specified query and use the given 'AnnotatedSqlMarshaller' to
   decode it. It is up to the caller to ensure that the given 'Expr.UpdateExpr' makes sense and
   produces a value that can be stored, as well as returning a result that the 'AnnotatedSqlMarshaller' can
   decode.

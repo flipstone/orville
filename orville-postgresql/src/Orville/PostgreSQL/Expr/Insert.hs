@@ -30,8 +30,7 @@ import Orville.PostgreSQL.Expr.Values (ValuesExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
-{- |
-Type to represent a SQL "INSERT" statement. E.G.
+{- | Type to represent a SQL "INSERT" statement. E.G.
 
 > INSERT INTO foo (id) VALUES (1),(3),(3)
 
@@ -74,8 +73,7 @@ insertExpr target maybeInsertColumns source maybeOnConflict maybeReturning =
       , fmap RawSql.toRawSql maybeReturning
       ]
 
-{- |
-Type to represent the SQL columns list for an insert statement. E.G.
+{- | Type to represent the SQL columns list for an insert statement. E.G.
 
 > (foo,bar,baz)
 
@@ -105,8 +103,7 @@ insertColumnList columnNames =
       (RawSql.parenthesized . RawSql.intercalate RawSql.comma . fmap RawSql.toRawSql)
       (NE.nonEmpty columnNames)
 
-{- |
-Type to represent the SQL for the source of data for an insert statement. E.G.
+{- | Type to represent the SQL for the source of data for an insert statement. E.G.
 
 > VALUES ('Bob',32),('Cindy',33)
 
@@ -123,8 +120,7 @@ newtype InsertSource
       RawSql.SqlExpression
     )
 
-{- |
-  Use a 'ValuesExpr' as an 'InsertSource'.
+{- | Use a 'ValuesExpr' as an 'InsertSource'.
 
 @since 1.1.0.0
 -}
@@ -155,8 +151,7 @@ insertSqlValues :: [[SqlValue]] -> InsertSource
 insertSqlValues =
   insertRowValues . fmap rowValues
 
-{- |
-Type to represent a SQL row literal. For example, a single row to insert
+{- | Type to represent a SQL row literal. For example, a single row to insert
 in a @VALUES@ clause. E.G.
 
 > ('Cindy',33)

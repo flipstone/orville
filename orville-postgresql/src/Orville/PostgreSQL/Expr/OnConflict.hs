@@ -30,8 +30,7 @@ import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent the SQL for the 'ON CONFLICT' clause.
+{- | Type to represent the SQL for the 'ON CONFLICT' clause.
 
 'OnConflict' provides a 'RawSql.SqlExpression' instance. See 'RawSql.unsafeSqlExpression' for how to
 construct a value with your own custom SQL.

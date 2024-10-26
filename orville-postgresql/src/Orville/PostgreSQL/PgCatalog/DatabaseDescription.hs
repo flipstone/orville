@@ -50,8 +50,7 @@ import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Plan.Operation as Op
 
-{- |
-  A description of selected items from a single PostgreSQL database.
+{- | A description of selected items from a single PostgreSQL database.
   'describeDatabase' can be used to load the descriptions of request
   items.
 
@@ -66,8 +65,7 @@ data DatabaseDescription = DatabaseDescription
   -- ^ @since 1.1.0.0
   }
 
-{- |
-  Lookup a relation by its qualified name in the @pg_catalog@ schema.
+{- | Lookup a relation by its qualified name in the @pg_catalog@ schema.
 
 @since 1.0.0.0
 -}
@@ -78,8 +76,7 @@ lookupRelation ::
 lookupRelation key =
   Map.lookup key . databaseRelations
 
-{- |
-  Lookup a procedure by its qualified name in the @pg_catalog@ schema.
+{- | Lookup a procedure by its qualified name in the @pg_catalog@ schema.
 
 @since 1.1.0.0
 -}
@@ -90,8 +87,7 @@ lookupProcedure ::
 lookupProcedure key =
   Map.lookup key . databaseProcedures
 
-{- |
-  Lookup an extension by its name in the @pg_catalog@ schema.
+{- | Lookup an extension by its name in the @pg_catalog@ schema.
 
 @since 1.1.0.0
 -}
@@ -102,8 +98,7 @@ lookupExtension ::
 lookupExtension key =
   Map.lookup key . databaseExtensions
 
-{- |
-  Lookup a relation by its qualified name in the @pg_catalog@ schema. If the
+{- | Lookup a relation by its qualified name in the @pg_catalog@ schema. If the
   relation is not of the expected kind, 'Nothing' is returned.
 
 @since 1.0.0.0
@@ -122,8 +117,7 @@ lookupRelationOfKind kind key dbDesc =
     Nothing ->
       Nothing
 
-{- |
-  A description of a particular relation in the PostgreSQL database, including
+{- | A description of a particular relation in the PostgreSQL database, including
   the attributes of the relation.
 
 @since 1.0.0.0
@@ -149,8 +143,7 @@ data RelationDescription = RelationDescription
   -- ^ @since 1.1.0.0
   }
 
-{- |
-  Find an attribute by name from the 'RelationDescription'.
+{- | Find an attribute by name from the 'RelationDescription'.
 
 @since 1.0.0.0
 -}
@@ -161,8 +154,7 @@ lookupAttribute ::
 lookupAttribute key =
   Map.lookup key . relationAttributes
 
-{- |
-  Find an attribute default from the 'RelationDescription'.
+{- | Find an attribute default from the 'RelationDescription'.
 
 @since 1.0.0.0
 -}
@@ -173,8 +165,7 @@ lookupAttributeDefault ::
 lookupAttributeDefault attr =
   Map.lookup (pgAttributeNumber attr) . relationAttributeDefaults
 
-{- |
-  Find an attribute comment by name from the 'RelationDescription'
+{- | Find an attribute comment by name from the 'RelationDescription'
 
 @since 1.1.0.0
 -}
@@ -185,8 +176,7 @@ lookupAttributeComment ::
 lookupAttributeComment key =
   Map.lookup key . relationAttributeComments
 
-{- |
-  A description of a particular constraint in the PostgreSQL database, including
+{- | A description of a particular constraint in the PostgreSQL database, including
   the attributes and relations that it references.
 
 @since 1.0.0.0
@@ -198,8 +188,7 @@ data ConstraintDescription = ConstraintDescription
   , constraintForeignKey :: Maybe [PgAttribute]
   }
 
-{- |
-  A description of a relation in the PostgreSQL database that is referenced by
+{- | A description of a relation in the PostgreSQL database that is referenced by
   a foreign key constraint, including the namespace that the relation belongs to.
 
 @since 1.0.0.0
@@ -209,8 +198,7 @@ data ForeignRelationDescription = ForeignRelationDescription
   , foreignRelationNamespace :: PgNamespace
   }
 
-{- |
-  A description of an index in the PostgreSQL database, including the names of
+{- | A description of an index in the PostgreSQL database, including the names of
   the attributes included in the index and the 'PgClass' record of the index
   itself (NOT the 'PgClass' of the table that the index is for).
 
@@ -222,8 +210,7 @@ data IndexDescription = IndexDescription
   , indexMembers :: [IndexMember]
   }
 
-{- |
-  A description of an index member in the PostgreSQL database. If the member
+{- | A description of an index member in the PostgreSQL database. If the member
   is a simple attribute, the 'PgAttribute' for that is provided. If it is an
   index over an expression, no further description is currently provided.
 
@@ -233,8 +220,7 @@ data IndexMember
   = IndexAttribute PgAttribute
   | IndexExpression
 
-{- |
-  Describes the requested relations in the current database. If any of the
+{- | Describes the requested relations in the current database. If any of the
   relations do not exist, they will not have an entry in the returned
   description.
 

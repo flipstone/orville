@@ -60,8 +60,7 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
 
-{- |
-  A 'SchemaItem' represents a single item in a database schema such as a table,
+{- | A 'SchemaItem' represents a single item in a database schema such as a table,
   index or constraint. The constructor functions below can be used to create
   items from other types (such as 'Orville.TableDefinition') to put them into
   a list to be used with 'autoMigrateSchema'.
@@ -69,68 +68,60 @@ import qualified Orville.PostgreSQL.Schema as Schema
 @since 1.0.0.0
 -}
 data SchemaItem where
-  -- |
-  --    Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
+  -- | Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
   --
   -- @since 1.0.0.0
   SchemaTable ::
     Orville.TableDefinition key writeEntity readEntity ->
     SchemaItem
-  -- |
-  --    Constructs a 'SchemaItem' that will drop the specified table if it is
+  -- | Constructs a 'SchemaItem' that will drop the specified table if it is
   --    found in the database.
   --
   -- @since 1.0.0.0
   SchemaDropTable ::
     Orville.TableIdentifier ->
     SchemaItem
-  -- |
-  --    Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
+  -- | Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
   --
   -- @since 1.0.0.0
   SchemaSequence ::
     Orville.SequenceDefinition ->
     SchemaItem
-  -- |
-  --    Constructs a 'SchemaItem' that will drop the specified table if it is
-  --    found in the database.
+  -- | Constructs a 'SchemaItem' that will drop the specified table if it is
+  -- found in the database.
   --
   -- @since 1.0.0.0
   SchemaDropSequence ::
     Orville.SequenceIdentifier ->
     SchemaItem
-  -- |
-  --    Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
+  -- | Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
   --
   -- @since 1.1.0.0
   SchemaFunction ::
     Orville.FunctionDefinition ->
     SchemaItem
-  -- |
-  --    Constructs a 'SchemaItem' that will drop the specified table if it is
-  --    found in the database.
+  -- | Constructs a 'SchemaItem' that will drop the specified table if it is
+  -- found in the database.
   --
   -- @since 1.1.0.0
   SchemaDropFunction ::
     Orville.FunctionIdentifier ->
     SchemaItem
-  -- |
-  --    Constructs a 'SchemaItem' from a 'Orville.ExtensionName', that will load the extension.
+  -- | Constructs a 'SchemaItem' from a 'Orville.ExtensionName', that will load the extension.
   --
   -- @since 1.1.0.0
   SchemaExtension ::
     Orville.ExtensionIdentifier ->
     SchemaItem
   -- | Constructs a 'SchemaItem' that will unload the postgresql extension if it is found in the
-  --   database.
+  -- database.
   --
   -- @since 1.1.0.0
   SchemaDropExtension ::
     Orville.ExtensionIdentifier ->
     SchemaItem
 
-{- |
-  Returns a one-line string describing the 'SchemaItem', suitable for a human
+{- | Returns a one-line string describing the 'SchemaItem', suitable for a human
   to identify it in a list of output.
 
   For example, a 'SchemaItem' constructed via 'SchemaTable' gives @Table <table
@@ -176,8 +167,7 @@ data MigrationPlan = MigrationPlan
   , i_concurrentIndexSteps :: [MigrationStep]
   }
 
-{- |
-  Returns all the 'MigrationStep's found in a 'MigrationPlan' together in a
+{- | Returns all the 'MigrationStep's found in a 'MigrationPlan' together in a
   single list. This is useful if you merely want to examine the steps of a plan
   rather than execute them. You should always use 'executeMigrationPlan' to
   execute a migration plan to ensure that the transactional steps are done
@@ -203,8 +193,7 @@ mkMigrationPlan steps =
       , i_concurrentIndexSteps = map migrationStep concurrentIndexSteps
       }
 
-{- |
-  A single SQL statement that will be executed in order to migrate the database
+{- | A single SQL statement that will be executed in order to migrate the database
   to the desired result. You can use 'generateMigrationPlan' to get a list
   of these yourself for inspection and debugging.
 
@@ -217,8 +206,7 @@ newtype MigrationStep
       RawSql.SqlExpression
     )
 
-{- |
-  This type is used internally by Orville to order the migration steps after
+{- | This type is used internally by Orville to order the migration steps after
   they have been created. It is not exposed outside this module.
 
 @since 1.0.0.0
@@ -258,8 +246,7 @@ isMigrationStepTransactional stepWithType =
     AddIndexesConcurrently -> False
     SetComments -> True
 
-{- |
-  Indicates the kind of operation being performed by a 'MigrationStep' so
+{- | Indicates the kind of operation being performed by a 'MigrationStep' so
   that the steps can be ordered in a sequence that is guaranteed to succeed.
   The order of the constructors below indicates the order in which steps will
   be run.
@@ -304,8 +291,7 @@ data StepType
       Ord
     )
 
-{- |
-  A 'MigrationDataError' will be thrown from the migration functions if data
+{- | A 'MigrationDataError' will be thrown from the migration functions if data
   necessary for migration cannot be found.
 
 @since 1.0.0.0
@@ -372,8 +358,7 @@ defaultOptions =
     , migrationLockOptions = MigrationLock.defaultLockOptions
     }
 
-{- |
-  This function compares the list of 'SchemaItem's provided against the current
+{- | This function compares the list of 'SchemaItem's provided against the current
   schema found in the database to determine whether any migrations are
   necessary.  If any changes need to be made, this function executes. You can
   call 'generateMigrationPlan' and 'executeMigrationPlan' yourself if you want
@@ -395,8 +380,7 @@ autoMigrateSchema options schemaItems =
     plan <- generateMigrationPlanWithoutLock schemaItems
     executeMigrationPlanWithoutLock options plan
 
-{- |
-  Compares the list of 'SchemaItem's provided against the current schema found
+{- | Compares the list of 'SchemaItem's provided against the current schema found
   in the database and returns a 'MigrationPlan' that could be executed to make
   the database schema match the items given.
 
@@ -445,8 +429,7 @@ generateMigrationPlanWithoutLock schemaItems =
       Right migrationSteps ->
         pure . mkMigrationPlan . concat $ migrationSteps
 
-{- |
-  Executes a 'MigrationPlan' that has been previously devised via
+{- | Executes a 'MigrationPlan' that has been previously devised via
   'generateMigrationPlan'. Normally all the steps in a migration plan are
   executed in a transaction so that they will all be applied together
   successfully or all rolled-back if one of them fails. Any indexes using the
@@ -631,8 +614,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
                   (Expr.dropExtensionExpr (Orville.extensionIdName extension) Nothing Nothing)
               ]
 
-{- |
-  Builds 'MigrationStep's that will perform table creation. This function
+{- | Builds 'MigrationStep's that will perform table creation. This function
   assumes the table does not exist. The migration step it produces will fail if
   the table already exists in its schema. Multiple steps may be required to
   create the table if foreign keys exist to that reference other tables, which
@@ -725,8 +707,7 @@ mkCreateTableCommentSteps tableDef =
   in
     Maybe.catMaybes (mbCommentTableStep : mbCommentColumnsSteps)
 
-{- |
-  Builds migration steps that are required to create or alter the table's
+{- | Builds migration steps that are required to create or alter the table's
   schema to make it match the given table definition.
 
   This function uses the given relation description to determine what
@@ -843,8 +824,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
       <> dropTriggerSteps
       <> commentSteps
 
-{- |
-  Consolidates alter table actions (which should all be related to adding and
+{- | Consolidates alter table actions (which should all be related to adding and
   dropping constraints) into migration steps based on their 'StepType'. Actions
   with the same 'StepType' will be performed togethir in a single @ALTER TABLE@
   statement.
@@ -871,8 +851,7 @@ mkConstraintSteps tableName actions =
       . map mkMapEntry
       $ actions
 
-{- |
-  If there are any alter table actions for adding or removing columns, creates a migration
+{- | If there are any alter table actions for adding or removing columns, creates a migration
   step to perform them. Otherwise returns an empty list.
 
 @since 1.0.0.0
@@ -888,8 +867,7 @@ mkAlterColumnSteps tableName actionExprs =
     Just nonEmptyActionExprs ->
       [mkMigrationStepWithType AddRemoveTablesAndColumns (Expr.alterTableExpr tableName nonEmptyActionExprs)]
 
-{- |
-  Builds 'Expr.AlterTableAction' expressions to bring the database schema in
+{- | Builds 'Expr.AlterTableAction' expressions to bring the database schema in
   line with the given 'Orville.FieldDefinition', or none if no change is
   required.
 
@@ -988,8 +966,7 @@ mkAddAlterColumnActions relationDesc fieldDef =
         -- attributes.
         [Expr.addColumn (Orville.fieldColumnDefinition fieldDef)]
 
-{- |
-  Builds 'Expr.AlterTableAction' expressions for the given attribute to make
+{- | Builds 'Expr.AlterTableAction' expressions for the given attribute to make
   the database schema match the given 'Orville.TableDefinition'. This function
   is only responsible for handling cases where the attribute does not have a
   correspending 'Orville.FieldDefinition'. See 'mkAlterTableSteps' for those
@@ -1010,8 +987,7 @@ mkDropColumnActions tableDef attr = do
 
   [Expr.dropColumn $ Expr.columnName attrName]
 
-{- |
-  Sets the schema name on a constraint to the given namespace when the
+{- | Sets the schema name on a constraint to the given namespace when the
   constraint has no namespace explicitly given. This is important for Orville
   to discover whether a constraint from a table definition matches a constraint
   found to already exist in the database because constraints in the database
@@ -1040,8 +1016,7 @@ setDefaultSchemaNameOnConstraintKey currentNamespace constraintKey =
         Just _ ->
           constraintKey
 
-{- |
-  Builds 'Expr.AlterTableAction' expressions to create the given table
+{- | Builds 'Expr.AlterTableAction' expressions to create the given table
   constraint if it does not exist.
 
 @since 1.0.0.0
@@ -1066,8 +1041,7 @@ mkAddConstraintActions currentNamespace existingConstraints constraintDef =
       then []
       else [(stepType, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
 
-{- |
-  Builds 'Expr.AlterTableAction' expressions to drop the given table
+{- | Builds 'Expr.AlterTableAction' expressions to drop the given table
   constraint if it should not exist.
 
 @since 1.0.0.0
@@ -1099,8 +1073,7 @@ mkDropConstraintActions constraintsToKeep constraint =
           in
             [(stepType, Expr.dropConstraint constraintName)]
 
-{- |
-  Builds the orville migration key for a description of an existing constraint
+{- | Builds the orville migration key for a description of an existing constraint
   so that it can be compared with constraints found in a table definition.
   Constraint keys built this way always have a schema name populated, so it's
   important to set the schema names for the constraints found in the table
@@ -1167,8 +1140,7 @@ pgConstraintMigrationKey constraintDesc =
               PgCatalog.pgConstraintForeignKeyOnDeleteType $ PgCatalog.constraintRecord constraintDesc
           }
 
-{- |
-  Builds migration steps to create an index if it does not exist.
+{- | Builds migration steps to create an index if it does not exist.
 
 @since 1.0.0.0
 -}
@@ -1191,8 +1163,7 @@ mkAddIndexSteps existingIndexes tableName indexDef =
       then []
       else [mkMigrationStepWithType indexStep (Orville.indexCreateExpr indexDef tableName)]
 
-{- |
-  Builds migration steps to drop an index if it should not exist.
+{- | Builds migration steps to drop an index if it should not exist.
 
 @since 1.0.0.0
 -}
@@ -1224,8 +1195,7 @@ mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
           then []
           else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr indexName)]
 
-{- |
-  Builds migration steps to create a trigger if it does not exist.
+{- | Builds migration steps to create a trigger if it does not exist.
 
 @since 1.1.0.0
 -}
@@ -1243,8 +1213,7 @@ mkAddTriggerSteps existingTriggers tableName triggerDef =
       then []
       else [mkMigrationStepWithType AddTriggers (Orville.mkCreateTriggerExpr triggerDef Nothing tableName)]
 
-{- |
-  Builds migration steps to drop an trigger if it should not exist.
+{- | Builds migration steps to drop an trigger if it should not exist.
 
 @since 1.1.0.0
 -}
@@ -1329,8 +1298,7 @@ mkCommentColumnStep relationDesc tableId fieldDef =
                 (fmap Expr.commentText targetFieldComment)
             )
 
-{- |
-  Primary Key, Unique, and Exclusion constraints automatically create indexes
+{- | Primary Key, Unique, and Exclusion constraints automatically create indexes
   that we don't want orville to consider for the purposes of migrations. This
   function checks the constraint type and returns the OID of the supporting
   index if the constraint is one of these types.
@@ -1357,8 +1325,7 @@ pgConstraintImpliedIndexOid pgConstraint =
     PgCatalog.ConstraintTrigger ->
       Nothing
 
-{- |
-  Builds the orville migration keys given a description of an existing index
+{- | Builds the orville migration keys given a description of an existing index
   so that it can be compared with indexs found in a table definition.
 
   If the description includes expressions as members of the index rather than
@@ -1410,8 +1377,7 @@ pgAttributeBasedIndexMigrationKey indexDesc = do
       , IndexDefinition.indexKeyColumns = fieldNames
       }
 
-{- |
-  Builds the orville migration key given a description of an existing trigger
+{- | Builds the orville migration key given a description of an existing trigger
   so that it can be compared with triggers found in a table definition.
 
   If the description includes expressions as members of the trigger rather than
@@ -1427,8 +1393,7 @@ pgTriggerMigrationKey =
     . PgCatalog.triggerNameToString
     . PgCatalog.pgTriggerName
 
-{- |
-  Retrieves from a 'SchemaItem' the relation (if any) that the schema item relates to
+{- | Retrieves from a 'SchemaItem' the relation (if any) that the schema item relates to
   so that the migration infrastructure can look up data about it in the PostgreSQL
   catalog for planning migration steps.
 -}
@@ -1455,8 +1420,7 @@ schemaItemPgCatalogRelation currentNamespace item =
     SchemaDropExtension _extension ->
       Nothing
 
-{- |
-  Retrieves from a 'SchemaItem' the function (if any) that the schema item relates to
+{- | Retrieves from a 'SchemaItem' the function (if any) that the schema item relates to
   so that the migration infrastructure can look up data about it in the PostgreSQL
   catalog for planning migration steps.
 -}
@@ -1483,8 +1447,7 @@ schemaItemPgCatalogFunction currentNamespace item =
     SchemaDropExtension _extension ->
       Nothing
 
-{- |
-  Retrieves from a 'SchemaItem' the extension (if any) that the schema item relates to
+{- | Retrieves from a 'SchemaItem' the extension (if any) that the schema item relates to
   so that the migration infrastructure can look up data about it in the PostgreSQL
   catalog for planning migration steps.
 -}

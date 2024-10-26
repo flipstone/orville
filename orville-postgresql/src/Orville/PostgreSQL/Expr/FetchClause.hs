@@ -19,8 +19,7 @@ where
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-Type to represent a SQL FETCH clause. E.G.
+{- | Type to represent a SQL FETCH clause. E.G.
 
 > FETCH FIRST 2 ROWS ONLY
 
@@ -37,7 +36,7 @@ newtype FetchClause
       RawSql.SqlExpression
     )
 
-{- | Build a 'FETCH' for a given number of rows and with the given modifier.
+{- | Build a SQL FETCH clause for a given number of rows and 'FetchClauseModifier'.
 
 @since 1.1.0.0
 -}
@@ -67,8 +66,7 @@ internal_fetchRaw countingRawSql modifier =
       <> RawSql.fromString " ROW "
       <> RawSql.toRawSql modifier
 
-{- |
-Type to represent the treatment of ties in a SQL FETCH expression. E.G.
+{- | Type to represent the treatment of ties in a SQL FETCH expression. E.G.
 
 > WITH TIES
 

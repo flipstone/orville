@@ -16,8 +16,7 @@ where
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-Type to represent a SQL offset expression. E.G.
+{- | Type to represent a SQL offset expression. E.G.
 
 > OFFSET 10
 

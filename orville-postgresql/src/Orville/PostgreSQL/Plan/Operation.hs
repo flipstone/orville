@@ -48,8 +48,7 @@ import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
 
-{- |
-  'Operation' provides a stucture for building primitive operations that can be
+{- | 'Operation' provides a stucture for building primitive operations that can be
   incorporated into a 'Database.Orville.PostgreSQL.Plan.Plan'. An 'Operation'
   provides base case implementations of the various plan execution functions.
   You only need to care about this type if you want to create new custom
@@ -90,8 +89,7 @@ data Operation param result = Operation
   -- interesting IO interactions should generally return an empty explanation.
   }
 
-{- |
-  'AssertionFailed' may be returned from the execute functions of an
+{- | 'AssertionFailed' may be returned from the execute functions of an
   'Operation' to indicate that some expected invariant has failed. For example,
   following a foreign key that is enforced by the database only to find that no
   record exists. When an 'Operation' returns an 'AssertionFailed' value during
@@ -108,8 +106,7 @@ newtype AssertionFailed
       Show
     )
 
-{- |
-  'mkAssertionFailed' builds an 'AssertionFailed' error from an error message.
+{- | 'mkAssertionFailed' builds an 'AssertionFailed' error from an error message.
 
 @since 1.0.0.0
 -}
@@ -120,8 +117,7 @@ mkAssertionFailed =
 -- | @since 1.0.0.0
 instance Exception AssertionFailed
 
-{- |
-  'askParam' simply returns the parameter given from the plan.
+{- | 'askParam' simply returns the parameter given from the plan.
 
 @since 1.0.0.0
 -}
@@ -134,8 +130,7 @@ askParam =
     , explainOperationMany = Exp.noExplanation
     }
 
-{- |
-  'assertRight' returns the value on the 'Right' side of an 'Either'. If
+{- | 'assertRight' returns the value on the 'Right' side of an 'Either'. If
   the 'Either' is a 'Left', it raises 'AssertionFailed' with the message
   from the 'Left' side of the 'Either'.
 
@@ -174,8 +169,7 @@ assertRight =
     , explainOperationMany = Exp.noExplanation
     }
 
-{- |
-  The functions below ('findOne', 'findAll', etc) accept a 'WherePlanner'
+{- | The functions below ('findOne', 'findAll', etc) accept a 'WherePlanner'
   to determine how to build the where conditions for executing a 'Exec.Select'
   statement as part of a plan operation.
 
@@ -214,8 +208,7 @@ data WherePlanner param = WherePlanner
   -- either an example or dummy value.
   }
 
-{- |
-  Builds a 'WherePlanner' that will match on a single
+{- | Builds a 'WherePlanner' that will match on a single
   'FieldDefinition.FieldDefinition'.  The resulting 'WherePlanner' can be used
   with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 
@@ -238,8 +231,7 @@ byField fieldDef =
       , explainManyWhereCondition = Marshall.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
       }
 
-{- |
-  Builds a 'WherePlanner' that will match on a 2-tuple of
+{- | Builds a 'WherePlanner' that will match on a 2-tuple of
   'FieldDefinition.FieldDefinition's.  The resulting 'WherePlanner' can be used
   with functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 
@@ -286,8 +278,7 @@ byFieldTuple fieldDefA fieldDefB =
             (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
       }
 
-{- |
-  Builds a 'WherePlanner' that will match on the writable fields of a
+{- | Builds a 'WherePlanner' that will match on the writable fields of a
   'Marshall.SqlMarshaller'. The resulting 'WherePlanner' can be used with
   functions such as 'findOne' and 'findAll' to construct an 'Operation'.
 
@@ -324,8 +315,7 @@ dedupeFieldValues (first :| rest) =
   in
     first :| dedupedWithoutFirst
 
-{- |
-  'findOne' builds a planning primitive that finds (at most) one row from the
+{- | 'findOne' builds a planning primitive that finds (at most) one row from the
   given table where the column value for the provided 'Core.FieldDefinition'
   matches the plan's input parameter. When executed on multiple parameters, it
   fetches all rows where the field matches the inputs and arbitrarily picks at
@@ -341,8 +331,7 @@ findOne ::
 findOne tableDef wherePlanner =
   findOneWithOpts tableDef wherePlanner mempty
 
-{- |
-  'findOneWhere' is similar to 'findOne' but allows a 'Expr.BooleanExpr' to be
+{- | 'findOneWhere' is similar to 'findOne' but allows a 'Expr.BooleanExpr' to be
   specified that is added to the database query to restrict which rows are
   returned.
 
@@ -357,8 +346,7 @@ findOneWhere ::
 findOneWhere tableDef wherePlanner cond =
   findOneWithOpts tableDef wherePlanner (Exec.where_ cond)
 
-{- |
-  'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'.
+{- | 'findOneWithOpts' is a internal helper used by 'findOne' and 'findOneWhere'.
 
 @since 1.0.0.0
 -}
@@ -399,8 +387,7 @@ findOneWithOpts tableDef wherePlanner opts =
       )
       (Schema.tableMarshaller tableDef)
 
-{- |
-  'findAll' builds a planning primitive that finds all the rows from the given
+{- | 'findAll' builds a planning primitive that finds all the rows from the given
   table where the column value for the provided field matches the plan's input
   parameter. When executed on multiple parameters, all rows are fetched in a
   single query and then associated with their respective inputs after being
@@ -416,8 +403,7 @@ findAll ::
 findAll tableDef wherePlanner =
   findAllWithOpts tableDef wherePlanner mempty
 
-{- |
-  'findAllWhere' is similar to 'findAll' but allows a 'Expr.BooleanExpr' to be
+{- | 'findAllWhere' is similar to 'findAll' but allows a 'Expr.BooleanExpr' to be
   specified that is added to the database query to restrict which rows are
   returned.
 
@@ -432,8 +418,7 @@ findAllWhere ::
 findAllWhere tableDef wherePlanner cond =
   findAllWithOpts tableDef wherePlanner (Exec.where_ cond)
 
-{- |
-  'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'.
+{- | 'findAllWithOpts' is an internal helper used by 'findAll' and 'findAllWhere'.
 
 @since 1.0.0.0
 -}
@@ -474,8 +459,7 @@ findAllWithOpts tableDef wherePlanner opts =
       )
       (Schema.tableMarshaller tableDef)
 
-{- |
-  'stringifyField' arbitrarily re-labels the 'Marshall.SqlType' of a field
+{- | 'stringifyField' arbitrarily re-labels the 'Marshall.SqlType' of a field
   definition as text. It is an internal helper function that is used for
   constructing 'Expr.BooleanExpr' clauses used to generate sql when explaining
   how a plan will be executed. Relabeling the type as 'T.Text' allows us to use
@@ -489,8 +473,7 @@ stringifyField ::
 stringifyField =
   Marshall.convertField (const Marshall.unboundedText)
 
-{- |
-  'stringifyMarshaller' arbitrarily re-labels the 'Marshall.SqlType' of all the
+{- | 'stringifyMarshaller' arbitrarily re-labels the 'Marshall.SqlType' of all the
   writable fields in a marshaller as 'T.Text'. Used internally to generate SQL
   for explanations. Also returns the number of re-labled fields to facilitate
   generating a list of example values.
@@ -519,8 +502,7 @@ stringifyMarshaller marshaller =
   in
     (length stringyFields, traverse (uncurry marshallField) (zip [(0 :: Int) ..] stringyFields))
 
-{- |
-  'SelectOperation' is a helper type for building 'Operation' primitives that
+{- | 'SelectOperation' is a helper type for building 'Operation' primitives that
   run 'Ex.cSelect' queries. Specifying the fields of 'SelectOperation' and then
   using the 'selectOperation' function to build an 'Operation' is more
   convenient than building functions to execute the queries that are required
@@ -571,8 +553,7 @@ data SelectOperation param row result = SelectOperation
   -- type as the @result@ type and 'findOne' uses 'Maybe'.
   }
 
-{- |
-  'selectOperation' builds a primitive planning 'Operation' using the functions
+{- | 'selectOperation' builds a primitive planning 'Operation' using the functions
   given by a 'SelectOperation'. If you are implementing a custom operation that
   runs a select statement, it is probably easier to use this function rather
   than building the 'Operation' functions directly.
@@ -595,8 +576,7 @@ explainSelect :: Exec.Select row -> Exp.Explanation
 explainSelect =
   Exp.explainStep . BS8.unpack . RawSql.toExampleBytes . Exec.selectToQueryExpr
 
-{- |
-  'executeSelectOne' is an internal helper function that executes a
+{- | 'executeSelectOne' is an internal helper function that executes a
   'SelectOperation' on a single input parameter.
 
 @since 1.0.0.0
@@ -610,8 +590,7 @@ executeSelectOne selectOp param =
   Right . produceResult selectOp
     <$> (Exec.executeSelect . selectOne selectOp $ param)
 
-{- |
-  'executeSelectMany' is an internal helper function that executes a
+{- | 'executeSelectMany' is an internal helper function that executes a
   'SelectOperation' on multiple input parameters.
 
 @since 1.0.0.0
@@ -662,8 +641,7 @@ executeSelectMany selectOp params = do
 
   pure . Right $ manyRows
 
-{- |
-  'findSelect' builds a plan 'Operation' where the select that is run does not
+{- | 'findSelect' builds a plan 'Operation' where the select that is run does not
   use the input parameters for the plan in any way. The 'executeOperationMany'
   function of the resulting 'Operation' will run the query once and use the
   entire result set as the result each of the input parameters in turn.

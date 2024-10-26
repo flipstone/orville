@@ -46,8 +46,7 @@ import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, QualifiedOrUnqu
 import Orville.PostgreSQL.Expr.TableConstraint (TableConstraint)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a @CREATE TABLE@ statement. E.G.
+{- | Type to represent a @CREATE TABLE@ statement. E.G.
 
 > CREATE TABLE foo (id integer)
 
@@ -64,8 +63,7 @@ newtype CreateTableExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'CreateTableExpr' with the given options.
+{- | Constructs a 'CreateTableExpr' with the given options.
 
   @since 1.0.0.0
 -}
@@ -104,8 +102,7 @@ createTableExpr tableName columnDefs mbPrimaryKey constraints =
         , RawSql.rightParen
         ]
 
-{- |
-Type to represent the primary key of a table. E.G.
+{- | Type to represent the primary key of a table. E.G.
 
 > PRIMARY KEY (id)
 
@@ -122,8 +119,7 @@ newtype PrimaryKeyExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'PrimaryKeyExpr' with the given columns.
+{- | Constructs a 'PrimaryKeyExpr' with the given columns.
 
   @since 1.0.0.0
 -}
@@ -137,8 +133,7 @@ primaryKeyExpr columnNames =
       , RawSql.rightParen
       ]
 
-{- |
-Type to represent an @ALTER TABLE@ statement. E.G.
+{- | Type to represent an @ALTER TABLE@ statement. E.G.
 
 > ALTER TABLE foo ADD COLUMN bar integer
 
@@ -155,8 +150,7 @@ newtype AlterTableExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs an 'AlterTableExpr' with the given alter table actions.
+{- | Constructs an 'AlterTableExpr' with the given alter table actions.
 
   @since 1.0.0.0
 -}
@@ -168,8 +162,7 @@ alterTableExpr tableName actions =
       <> RawSql.space
       <> RawSql.intercalate RawSql.commaSpace actions
 
-{- |
-  Given an existing table name and the desired name, construct an 'AlterTableExpr' that will rename to desired.
+{- | Given an existing table name and the desired name, construct an 'AlterTableExpr' that will rename to desired.
 
   @since 1.1.0.0
 -}
@@ -177,8 +170,7 @@ renameTableExpr :: QualifiedOrUnqualified TableName -> QualifiedOrUnqualified Ta
 renameTableExpr existingTableName newTableName =
   alterTableExpr existingTableName . pure . AlterTableAction $ RawSql.fromString "RENAME TO " <> RawSql.toRawSql newTableName
 
-{- |
-Type to represent an action as part of an @ALTER TABLE@ statement. E.G.
+{- | Type to represent an action as part of an @ALTER TABLE@ statement. E.G.
 
 > ADD COLUMN bar integer
 
@@ -195,8 +187,7 @@ newtype AlterTableAction
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs an 'AlterTableAction' that will add the specified column to the
+{- | Constructs an 'AlterTableAction' that will add the specified column to the
   table.
 
   @since 1.0.0.0
@@ -206,8 +197,7 @@ addColumn columnDef =
   AlterTableAction $
     RawSql.fromString "ADD COLUMN " <> RawSql.toRawSql columnDef
 
-{- |
-  Constructs an 'AlterTableAction' that will drop the specified column from the
+{- | Constructs an 'AlterTableAction' that will drop the specified column from the
   table.
 
   @since 1.0.0.0
@@ -217,8 +207,7 @@ dropColumn columnName =
   AlterTableAction $
     RawSql.fromString "DROP COLUMN " <> RawSql.toRawSql columnName
 
-{- |
-  Constructs an 'AlterTableAction' that will add the specified constraint to the
+{- | Constructs an 'AlterTableAction' that will add the specified constraint to the
   table.
 
   @since 1.0.0.0
@@ -228,8 +217,7 @@ addConstraint constraint =
   AlterTableAction $
     RawSql.fromString "ADD " <> RawSql.toRawSql constraint
 
-{- |
-  Constructs an 'AlterTableAction' that will drop the specified constraint from the
+{- | Constructs an 'AlterTableAction' that will drop the specified constraint from the
   table.
 
   @since 1.0.0.0
@@ -239,8 +227,7 @@ dropConstraint constraintName =
   AlterTableAction $
     RawSql.fromString "DROP CONSTRAINT " <> RawSql.toRawSql constraintName
 
-{- |
-  Constructs an 'AlterTableAction' that will alter the type of the specified
+{- | Constructs an 'AlterTableAction' that will alter the type of the specified
   column.
 
   @since 1.0.0.0
@@ -265,8 +252,7 @@ alterColumnType columnName dataType maybeUsingClause =
           : maybeToList (fmap RawSql.toRawSql maybeUsingClause)
       )
 
-{- |
-Type to represent a @USING@ clause as part of an @ALTER COLUMN@ when changing
+{- | Type to represent a @USING@ clause as part of an @ALTER COLUMN@ when changing
 the type of a column. E.G.
 
 > USING id :: integer
@@ -284,8 +270,7 @@ newtype UsingClause
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'UsingClause' that will cast the column to the specified type.
+{- | Constructs a 'UsingClause' that will cast the column to the specified type.
 
   @since 1.0.0.0
 -}
@@ -297,8 +282,7 @@ usingCast columnName dataType =
       <> RawSql.doubleColon
       <> RawSql.toRawSql dataType
 
-{- |
-  Constructs an 'AlterTableAction' that will alter the nullability of the
+{- | Constructs an 'AlterTableAction' that will alter the nullability of the
   column.
 
   @since 1.0.0.0
@@ -313,8 +297,7 @@ alterColumnNullability columnName alterNotNull =
       , RawSql.toRawSql alterNotNull
       ]
 
-{- |
-Type to represent an action to alter the nullability of a column. E.G.
+{- | Type to represent an action to alter the nullability of a column. E.G.
 
 > SET NOT NULL
 
@@ -331,8 +314,7 @@ newtype AlterNotNull
       RawSql.SqlExpression
     )
 
-{- |
-  Sets the column to not null via @SET NOT NULL@.
+{- | Sets the column to not null via @SET NOT NULL@.
 
   @since 1.0.0.0
 -}
@@ -340,8 +322,7 @@ setNotNull :: AlterNotNull
 setNotNull =
   AlterNotNull $ RawSql.fromString "SET NOT NULL"
 
-{- |
-  Sets the column to allow null via @DROP NOT NULL@.
+{- | Sets the column to allow null via @DROP NOT NULL@.
 
   @since 1.0.0.0
 -}
@@ -349,8 +330,7 @@ dropNotNull :: AlterNotNull
 dropNotNull =
   AlterNotNull $ RawSql.fromString "DROP NOT NULL"
 
-{- |
-  Constructs an 'AlterTableAction' that will use @DROP DEFAULT@ to drop the
+{- | Constructs an 'AlterTableAction' that will use @DROP DEFAULT@ to drop the
   default value of the specified column.
 
   @since 1.0.0.0
@@ -365,8 +345,7 @@ alterColumnDropDefault columnName =
       , RawSql.fromString "DROP DEFAULT"
       ]
 
-{- |
-  Constructs an 'AlterTableAction' that will use @SET DEFAULT@ to set the
+{- | Constructs an 'AlterTableAction' that will use @SET DEFAULT@ to set the
   default value of the specified column.
 
   @since 1.0.0.0
@@ -386,8 +365,7 @@ alterColumnSetDefault columnName defaultValue =
       , RawSql.toRawSql defaultValue
       ]
 
-{- |
-Type to represent a @DROP TABLE@ statement. E.G.
+{- | Type to represent a @DROP TABLE@ statement. E.G.
 
 > DROP TABLE FOO
 
@@ -404,8 +382,7 @@ newtype DropTableExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'DropTableExpr' that will drop the specified table.
+{- | Constructs a 'DropTableExpr' that will drop the specified table.
 
   @since 1.0.0.0
 -}
@@ -421,8 +398,7 @@ dropTableExpr maybeIfExists tableName =
           ]
       )
 
-{- |
-Type to represent a @TRUNCATE TABLE@ statement. E.G.
+{- | Type to represent a @TRUNCATE TABLE@ statement. E.G.
 
 > TRUNCATE TABLE FOO
 
@@ -439,8 +415,7 @@ newtype TruncateTableExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'TruncateTableExpr' that will truncate the specified tables.
+{- | Constructs a 'TruncateTableExpr' that will truncate the specified tables.
 
   @since 1.1.0.0
 -}

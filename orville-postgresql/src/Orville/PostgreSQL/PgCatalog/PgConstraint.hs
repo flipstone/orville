@@ -29,8 +29,7 @@ import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberParser, attributeNumberTextBuilder)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_constraint@
+{- | The Haskell representation of data read from the @pg_catalog.pg_constraint@
   table. Rows in this table correspond to check, primary key, unique, foreign
   key and exclusion constraints on tables.
 
@@ -69,8 +68,7 @@ data PgConstraint = PgConstraint
   -- ^ For foreign key constraints, the on delete action type.
   }
 
-{- |
-  A Haskell type for the name of the constraint represented by a
+{- | A Haskell type for the name of the constraint represented by a
   'PgConstraint'.
 
 @since 1.0.0.0
@@ -88,8 +86,7 @@ newtype ConstraintName
       String.IsString
     )
 
-{- |
-  Converts a 'ConstraintName' to a plain 'String'.
+{- | Converts a 'ConstraintName' to a plain 'String'.
 
 @since 1.0.0.0
 -}
@@ -97,8 +94,7 @@ constraintNameToString :: ConstraintName -> String
 constraintNameToString (ConstraintName txt) =
   T.unpack txt
 
-{- |
-  The type of constraint that a 'PgConstraint' represents, as described at
+{- | The type of constraint that a 'PgConstraint' represents, as described at
   https://www.postgresql.org/docs/13/catalog-pg-constraint.html.
 
 @since 1.0.0.0
@@ -117,8 +113,7 @@ data ConstraintType
       Eq
     )
 
-{- |
-  Converts a 'ConstraintType' to the corresponding single character text
+{- | Converts a 'ConstraintType' to the corresponding single character text
   representation used by PostgreSQL.
 
   See also 'pgTextToConstraintType'
@@ -136,8 +131,7 @@ constraintTypeToPgText conType =
       ConstraintTrigger -> "t"
       ExclusionConstraint -> "x"
 
-{- |
-  Attempts to parse a PostgreSQL single character textual value as a
+{- | Attempts to parse a PostgreSQL single character textual value as a
   'ConstraintType'
 
   See also 'constraintTypeToPgText'
@@ -155,8 +149,7 @@ pgTextToConstraintType text =
     "x" -> Right ExclusionConstraint
     typ -> Left ("Unrecognized PostgreSQL constraint type: " <> typ)
 
-{- |
-  Converts a 'Maybe Orville.ForeignKeyAction' to the corresponding single character
+{- | Converts a 'Maybe Orville.ForeignKeyAction' to the corresponding single character
   text representation used by PostgreSQL.
 
   See also 'pgTextToForeignKeyAction'
@@ -174,8 +167,7 @@ foreignKeyActionToPgText mbfkAction =
       Just Orville.SetDefault -> "d"
       Nothing -> " "
 
-{- |
-  Attempts to parse a PostgreSQL single character textual value as a
+{- | Attempts to parse a PostgreSQL single character textual value as a
   'Maybe Orville.ForeignKeyAction'
 
   See also 'foreignKeyActionToPgText'
@@ -193,8 +185,7 @@ pgTextToForeignKeyAction text =
     " " -> Right Nothing
     typ -> Left ("Unrecognized PostgreSQL foreign key action type: " <> typ)
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_constraint@ table.
 
 @since 1.0.0.0
@@ -222,8 +213,7 @@ pgConstraintMarshaller =
     <*> Orville.marshallField pgConstraintForeignKeyOnUpdateType constraintForeignKeyOnUpdateTypeField
     <*> Orville.marshallField pgConstraintForeignKeyOnDeleteType constraintForeignKeyOnDeleteTypeField
 
-{- |
-  The @conname@ column of the @pg_constraint@ table.
+{- | The @conname@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -232,8 +222,7 @@ constraintNameField =
   Orville.coerceField $
     Orville.unboundedTextField "conname"
 
-{- |
-  The @connamespace@ column of the @pg_constraint@ table.
+{- | The @connamespace@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -241,8 +230,7 @@ constraintNamespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintNamespaceOidField =
   oidTypeField "connamespace"
 
-{- |
-  The @contype@ column of the @pg_constraint@ table.
+{- | The @contype@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -252,8 +240,7 @@ constraintTypeField =
     (Orville.tryConvertSqlType constraintTypeToPgText pgTextToConstraintType)
     (Orville.unboundedTextField "contype")
 
-{- |
-  The @conrelid@ column of the @pg_constraint@ table.
+{- | The @conrelid@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -261,8 +248,7 @@ constraintRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintRelationOidField =
   oidTypeField "conrelid"
 
-{- |
-  The @conindid@ column of the @pg_constraint@ table.
+{- | The @conindid@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -270,8 +256,7 @@ constraintIndexOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 constraintIndexOidField =
   oidTypeField "conindid"
 
-{- |
-  The @conkey@ column of the @pg_constraint@ table.
+{- | The @conkey@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -282,8 +267,7 @@ constraintKeyField =
       (Orville.tryConvertSqlType attributeNumberListToPgArrayText pgArrayTextToAttributeNumberList)
       (Orville.unboundedTextField "conkey")
 
-{- |
-  The @confrelid@ column of the @pg_constraint@ table.
+{- | The @confrelid@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}
@@ -291,8 +275,7 @@ constraintForeignRelationOidField :: Orville.FieldDefinition Orville.NotNull Lib
 constraintForeignRelationOidField =
   oidTypeField "confrelid"
 
-{- |
-  The @confkey@ column of the @pg_constraint@ table.
+{- | The @confkey@ column of the @pg_constraint@ table.
 
 @since 1.0.0.0
 -}

@@ -63,8 +63,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  SqlType defines the mapping of a Haskell type (@a@) to a SQL column type in the
+{- | SqlType defines the mapping of a Haskell type (@a@) to a SQL column type in the
   database. This includes both how to convert the type to and from the raw values
   read from the database as well as the schema information required to create
   and migrate columns using the type.
@@ -100,8 +99,7 @@ data SqlType a = SqlType
   -- logic to ignore the default value rather than drop it as it normally would.
   }
 
-{- |
-  'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
+{- | 'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.
 
 @since 1.0.0.0
 -}
@@ -117,8 +115,7 @@ integer =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'serial' defines a 32-bit auto-incrementing column type. This corresponds to
+{- | 'serial' defines a 32-bit auto-incrementing column type. This corresponds to
   the "SERIAL" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -135,8 +132,7 @@ serial =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = True
     }
 
-{- |
-  'bigInteger' defines a 64-bit integer type. This corresponds to the "BIGINT"
+{- | 'bigInteger' defines a 64-bit integer type. This corresponds to the "BIGINT"
   type in SQL.
 
 @since 1.0.0.0
@@ -153,8 +149,7 @@ bigInteger =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'bigSerial' defines a 64-bit auto-incrementing column type. This corresponds to
+{- | 'bigSerial' defines a 64-bit auto-incrementing column type. This corresponds to
   the "BIGSERIAL" type in PostgresSQL.
 
 @since 1.0.0.0
@@ -171,8 +166,7 @@ bigSerial =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = True
     }
 
-{- |
-  'smallInteger' defines a 16-bit integer type. This corresponds to the "SMALLINT" type in SQL.
+{- | 'smallInteger' defines a 16-bit integer type. This corresponds to the "SMALLINT" type in SQL.
 
 @since 1.0.0.0
 -}
@@ -188,8 +182,7 @@ smallInteger =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'double' defines a floating point numeric type. This corresponds to the
+{- | 'double' defines a floating point numeric type. This corresponds to the
   "DOUBLE PRECISION" type in SQL.
 
 @since 1.0.0.0
@@ -206,8 +199,7 @@ double =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'boolean' defines a True/False boolean type. This corresponds to the "BOOLEAN"
+{- | 'boolean' defines a True/False boolean type. This corresponds to the "BOOLEAN"
   type in SQL.
 
 @since 1.0.0.0
@@ -224,8 +216,7 @@ boolean =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'unboundedText' defines an unbounded length text field type. This corresponds to a
+{- | 'unboundedText' defines an unbounded length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -242,8 +233,7 @@ unboundedText =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'fixedText' defines a fixed length text field type. This corresponds to a
+{- | 'fixedText' defines a fixed length text field type. This corresponds to a
   "CHAR(len)" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -260,8 +250,7 @@ fixedText len =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'boundedText' defines a variable length text field type. This corresponds to a
+{- | 'boundedText' defines a variable length text field type. This corresponds to a
   "VARCHAR(len)" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -278,8 +267,7 @@ boundedText len =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'textSearchVector' defines a type for indexed text searching. It corresponds to the
+{- | 'textSearchVector' defines a type for indexed text searching. It corresponds to the
   "TSVECTOR" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -296,8 +284,7 @@ textSearchVector =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'uuid' defines a UUID type. It corresponds to the "UUID" type in PostgreSQL.
+{- | 'uuid' defines a UUID type. It corresponds to the "UUID" type in PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -319,8 +306,7 @@ uuid =
       , sqlTypeDontDropImplicitDefaultDuringMigrate = False
       }
 
-{- |
-  'date' defines a type representing a calendar date (without time zone). It corresponds
+{- | 'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
 
 @since 1.0.0.0
@@ -337,8 +323,7 @@ date =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'timestamp' defines a type representing a particular point in time without time zone information,
+{- | 'timestamp' defines a type representing a particular point in time without time zone information,
   but can be constructed with a time zone offset.
   It corresponds to the "TIMESTAMP with time zone" type in SQL.
 
@@ -361,8 +346,7 @@ timestamp =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'timestampWithoutZone' defines a type representing a particular point in time (without time zone).
+{- | 'timestampWithoutZone' defines a type representing a particular point in time (without time zone).
   It corresponds to the "TIMESTAMP without time zone" type in SQL.
 
   http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
@@ -381,8 +365,7 @@ timestampWithoutZone =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-   'jsonb' represents any type that can be converted To and From JSON. This corresponds
+{- |  'jsonb' represents any type that can be converted To and From JSON. This corresponds
    to the "JSONB" type in PostgreSQL.
 
 @since 1.0.0.0
@@ -399,8 +382,7 @@ jsonb =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'oid' corresponds to the type used in PostgreSQL for identifying system
+{- | 'oid' corresponds to the type used in PostgreSQL for identifying system
   objects.
 
 @since 1.0.0.0
@@ -417,8 +399,7 @@ oid =
     , sqlTypeDontDropImplicitDefaultDuringMigrate = False
     }
 
-{- |
-  'foreignRefType' creates a 'SqlType' suitable for columns that will be
+{- | 'foreignRefType' creates a 'SqlType' suitable for columns that will be
   foreign keys referencing a column of the given 'SqlType'. For most types, the
   underlying SQL type will be identical, but for special types (such as
   auto-incrementing primary keys), the type constructed by 'foreignRefType' will
@@ -434,8 +415,7 @@ foreignRefType sqlType =
     Nothing -> sqlType
     Just refExpr -> sqlType {sqlTypeExpr = refExpr, sqlTypeReferenceExpr = Nothing}
 
-{- |
-  'tryConvertSqlType' changes the Haskell type used by a 'SqlType' which
+{- | 'tryConvertSqlType' changes the Haskell type used by a 'SqlType' which
   changes the column type that will be used in the database schema. The
   functions given will be used to convert the now Haskell type to and from the
   original type when reading and writing values from the database. When reading
@@ -453,8 +433,7 @@ tryConvertSqlType bToA aToB sqlType =
         aToB a
     }
 
-{- |
-  'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
+{- | 'convertSqlType' changes the Haskell type used by a 'SqlType' in the same manner
   as 'tryConvertSqlType' in cases where an @a@ can always be converted to a @b@.
 
 @since 1.0.0.0

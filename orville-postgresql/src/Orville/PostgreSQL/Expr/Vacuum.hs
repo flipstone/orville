@@ -23,8 +23,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Orville.PostgreSQL.Expr.Name (QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a @VACUUM@ statement. E.G.
+{- | Type to represent a @VACUUM@ statement. E.G.
 
 > VACUUM foo
 
@@ -41,8 +40,7 @@ newtype VacuumExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'VacuumExpr' with the given vacuum options on the given tables.
+{- | Constructs a 'VacuumExpr' with the given vacuum options on the given tables.
 
   @since 1.1.0.0
 -}
@@ -63,6 +61,16 @@ vacuumExpr vacuumOptions tables =
         <> optionsWithSpaceRawSql
         <> RawSql.intercalate RawSql.commaSpace tables
 
+{- | Type to represent the option(s) to a @VACUUM@ statement. E.G.
+
+> FULL TRUE
+
+'VacuumExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0
+-}
 newtype VacuumOption
   = VacuumOption RawSql.RawSql
   deriving
@@ -70,8 +78,7 @@ newtype VacuumOption
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'VaccumOption' that will instruct if the vacuum should be "full".
+{- | Constructs a 'VaccumOption' that will instruct if the vacuum should be "full".
 
   @since 1.1.0.0
 -}
@@ -88,8 +95,7 @@ vacuumFreeze :: Bool -> VacuumOption
 vacuumFreeze bool =
   VacuumOption $ RawSql.fromString "FREEZE " <> boolRawSql bool
 
-{- |
-  Constructs a 'VaccumOption' that will instruct if the vacuum should be verbose.
+{- | Constructs a 'VaccumOption' that will instruct if the vacuum should be verbose.
 
   @since 1.1.0.0
 -}

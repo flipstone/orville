@@ -15,8 +15,7 @@ where
 
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL "IF NOT EXISTS" expression. E.G.
+{- | Type to represent a SQL "IF NOT EXISTS" expression. E.G.
 
 > IF NOT EXISTS
 
@@ -36,8 +35,7 @@ newtype IfNotExists
       RawSql.SqlExpression
     )
 
-{- |
-A value of the SQL "IF NOT EXISTS".
+{- | A value of the SQL "IF NOT EXISTS".
 
 @since 1.1.0.0
 -}

@@ -21,8 +21,7 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToColumnName)
 
-{- |
-  A simple type to represent the name of a field.
+{- | A simple type to represent the name of a field.
 
 @since 1.1.0.0
 -}
@@ -48,8 +47,7 @@ aliasNameAndFieldNameToColumnName aliasName =
     (aliasNameToAliasExpr aliasName)
     . fieldNameToColumnName
 
-{- |
-  Constructs a 'AliasName' from a 'String'.
+{- | Constructs a 'AliasName' from a 'String'.
 
 @since 1.1.0.0
 -}
@@ -57,8 +55,7 @@ stringToAliasName :: String -> AliasName
 stringToAliasName =
   AliasName . B8.pack
 
-{- |
-  Converts a 'AliasName' to an 'AliasExpr'.
+{- | Converts a 'AliasName' to an 'AliasExpr'.
 
 @since 1.1.0.0
 -}
@@ -66,8 +63,7 @@ aliasNameToAliasExpr :: AliasName -> Expr.AliasExpr
 aliasNameToAliasExpr =
   Expr.fromIdentifier . Expr.identifierFromBytes . aliasNameToByteString
 
-{- |
-  Converts a 'AliasName' back to a 'String'.
+{- | Converts a 'AliasName' back to a 'String'.
 
 @since 1.1.0.0
 -}
@@ -75,8 +71,7 @@ aliasNameToString :: AliasName -> String
 aliasNameToString =
   B8.unpack . aliasNameToByteString
 
-{- |
-  Converts a 'AliasName' back to a 'B8.ByteString'.
+{- | Converts a 'AliasName' back to a 'B8.ByteString'.
 
 @since 1.1.0.0
 -}
@@ -84,16 +79,14 @@ aliasNameToByteString :: AliasName -> B8.ByteString
 aliasNameToByteString (AliasName name) =
   name
 
-{- |
-  Constructs a 'AliasName' from a 'B8.ByteString'.
+{- | Constructs a 'AliasName' from a 'B8.ByteString'.
 
 @since 1.1.0.0
 -}
 byteStringToAliasName :: B8.ByteString -> AliasName
 byteStringToAliasName = AliasName
 
-{- |
-  Allows to treat an 'AliasName' as a 'FieldName'.
+{- | Allows to treat an 'AliasName' as a 'FieldName'.
 
 @since 1.1.0.0
 -}

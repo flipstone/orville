@@ -5,8 +5,7 @@ import qualified Data.Text as T
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 
-{- |
-  Pet is a plain old Haskell record that will be marshalled to and from the
+{- | Pet is a plain old Haskell record that will be marshalled to and from the
   @pet@ table.
 -}
 data Pet =
@@ -15,14 +14,12 @@ data Pet =
     , petName :: T.Text
     }
 
-{- |
-  It's good practice to create newtype specific to each entity to hold its
+{- | It's good practice to create newtype specific to each entity to hold its
   primary key value
 -}
 newtype PetId = PetId Int32
 
-{- |
-  A marshaller must be defined to convert Pet to and from SQL.
+{- | A marshaller must be defined to convert Pet to and from SQL.
 -}
 petMarshaller :: O.SqlMarshaller Pet Pet
 petMarshaller =
@@ -30,24 +27,21 @@ petMarshaller =
     <$> O.marshallField petId petIdField
     <*> O.marshallField petName nameField
 
-{- |
-  Defines the @id@ field for the marshaller to marshall the 'petId' record
+{- | Defines the @id@ field for the marshaller to marshall the 'petId' record
   field to and from.
 -}
 petIdField :: O.FieldDefinition O.NotNull PetId
 petIdField =
   O.coerceField (O.integerField "id")
 
-{- |
-  Defines the @name@ field for the marshaller to marshall the 'petName' record
+{- | Defines the @name@ field for the marshaller to marshall the 'petName' record
   field to and from.
 -}
 nameField :: O.FieldDefinition O.NotNull T.Text
 nameField =
   O.unboundedTextField "name"
 
-{- |
-  Marshaller above is associated with the @pet@ table. The marshallers fields
+{- | Marshaller above is associated with the @pet@ table. The marshallers fields
   will define the column of the table.
 -}
 petTable :: O.TableDefinition (O.HasKey PetId) Pet Pet
@@ -57,8 +51,7 @@ petTable =
     (O.primaryKey petIdField)
     petMarshaller
 
-{- |
-  A simple demo that connects to a database, inserts 2 pets and then finds the
+{- | A simple demo that connects to a database, inserts 2 pets and then finds the
   pet named "Spot"
 -}
 main :: IO ()
@@ -79,8 +72,7 @@ main = do
     Nothing -> putStrLn "No Spot Found!"
     Just _spot -> putStrLn "Spot found!"
 
-{- |
-  The Orville monad provides a starter pack for running Orville operations
+{- | The Orville monad provides a starter pack for running Orville operations
   against a connection pool.
 -}
 insertAndFindSpot :: O.Orville (Maybe Pet)

@@ -28,8 +28,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a table constraint that would be part of a @CREATE TABLE@ or
+{- | Type to represent a table constraint that would be part of a @CREATE TABLE@ or
 @ALTER TABLE@ statement. For instance, the @UNIQUE@ constraint in
 
 > CREATE TABLE FOO
@@ -51,8 +50,7 @@ newtype TableConstraint
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'TableConstraint' will create a @UNIQUE@ constraint on the
+{- | Constructs a 'TableConstraint' will create a @UNIQUE@ constraint on the
   given columns.
 
   @since 1.0.0.0
@@ -65,8 +63,7 @@ uniqueConstraint columnNames =
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
 
-{- |
-Type to represent a foreign key action on a @FOREIGN KEY@ constraint. E.G.
+{- | Type to represent a foreign key action on a @FOREIGN KEY@ constraint. E.G.
 the @CASCADE@ in
 
 > FOREIGN KEY (foo_id) REFERENCES foo (id) ON DELETE CASCADE
@@ -84,40 +81,35 @@ newtype ForeignKeyActionExpr
       RawSql.SqlExpression
     )
 
-{- |
-  The foreign key action @RESTRICT@.
+{- | The foreign key action @RESTRICT@.
 
   @since 1.0.0.0
 -}
 restrictExpr :: ForeignKeyActionExpr
 restrictExpr = ForeignKeyActionExpr $ RawSql.fromString "RESTRICT"
 
-{- |
-  The foreign key action @CASCADE@.
+{- | The foreign key action @CASCADE@.
 
   @since 1.0.0.0
 -}
 cascadeExpr :: ForeignKeyActionExpr
 cascadeExpr = ForeignKeyActionExpr $ RawSql.fromString "CASCADE"
 
-{- |
-  The foreign key action @SET NULL@.
+{- | The foreign key action @SET NULL@.
 
   @since 1.0.0.0
 -}
 setNullExpr :: ForeignKeyActionExpr
 setNullExpr = ForeignKeyActionExpr $ RawSql.fromString "SET NULL"
 
-{- |
-  The foreign key action @SET DEFAULT@.
+{- | The foreign key action @SET DEFAULT@.
 
   @since 1.0.0.0
 -}
 setDefaultExpr :: ForeignKeyActionExpr
 setDefaultExpr = ForeignKeyActionExpr $ RawSql.fromString "SET DEFAULT"
 
-{- |
-Type to represent a foreign key update action on a @FOREIGN KEY@ constraint. E.G.
+{- | Type to represent a foreign key update action on a @FOREIGN KEY@ constraint. E.G.
 the @ON UPDATE RESTRICT@ in
 
 > FOREIGN KEY (foo_id) REFERENCES foo (id) ON UPDATE RESTRICT
@@ -135,8 +127,7 @@ newtype ForeignKeyUpdateActionExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
+{- | Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
   in an @ON UPDATE@ clause for a foreign key.
 
   @since 1.0.0.0
@@ -148,8 +139,7 @@ foreignKeyUpdateActionExpr action =
       <> RawSql.space
       <> RawSql.toRawSql action
 
-{- |
-Type to represent a foreign key update action on a @FOREIGN KEY@ constraint. E.G.
+{- | Type to represent a foreign key update action on a @FOREIGN KEY@ constraint. E.G.
 the @ON DELETE RESTRICT@ in
 
 > FOREIGN KEY (foo_id) REFERENCES foo (id) ON DELETE RESTRICT
@@ -167,8 +157,7 @@ newtype ForeignKeyDeleteActionExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
+{- | Constructs a 'ForeignKeyActionExpr' that uses the given 'ForeignKeyActionExpr'
   in an @ON UPDATE@ clause for a foreign key.
 
   @since 1.0.0.0
@@ -180,8 +169,7 @@ foreignKeyDeleteActionExpr action =
       <> RawSql.space
       <> RawSql.toRawSql action
 
-{- |
-  Constructs a 'TableConstraint' that represent a @FOREIGN KEY@ constraint
+{- | Constructs a 'TableConstraint' that represent a @FOREIGN KEY@ constraint
 
   @since 1.0.0.0
 -}

@@ -32,8 +32,7 @@ newtype FilterExpr = FilterExpr RawSql.RawSql
       RawSql.SqlExpression
     )
 
-{- |
-Builds a 'FilterExpr' with the given 'WhereClause.WhereClause'
+{- | Builds a 'FilterExpr' with the given 'WhereClause.WhereClause'
 
 @since 1.1.0.0
 -}

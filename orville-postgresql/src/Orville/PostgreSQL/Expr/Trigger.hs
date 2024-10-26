@@ -35,8 +35,7 @@ import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, QualifiedOrUnqual
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL "DROP TRIGGER" statement. E.G.
+{- | Type to represent a SQL "DROP TRIGGER" statement. E.G.
 
 > DROP TRIGGER my_trigger ON my_table
 
@@ -53,8 +52,7 @@ newtype DropTriggerExpr
       RawSql.SqlExpression
     )
 
-{- |
-Constructs a SQL @DROP TRIGGER@ statement from the trigger name and table name
+{- | Constructs a SQL @DROP TRIGGER@ statement from the trigger name and table name
 
 @since 1.1.0.0
 -}
@@ -76,8 +74,7 @@ dropTrigger maybeIfExists name tableName =
           ]
       )
 
-{- |
-Type to represent a SQL "CREATE TRIGGER" statement. E.G.
+{- | Type to represent a SQL "CREATE TRIGGER" statement. E.G.
 
 > CREATE TRIGGER my_trigger BEFORE UPDATE ON my_table EXECUTE PROCEDURE my_trigger_function
 
@@ -94,8 +91,7 @@ newtype CreateTriggerExpr
       RawSql.SqlExpression
     )
 
-{- |
-Constructs a SQL @CREATE TRIGGER@ statement from the trigger name and its defining
+{- | Constructs a SQL @CREATE TRIGGER@ statement from the trigger name and its defining
 attributes.
 
 Note: Orville does not currently support creating triggers with arguments.
@@ -135,8 +131,7 @@ createTrigger maybeOrReplace name timing events tableName fireScope functionName
           ]
       )
 
-{- |
-Type to represent the time at which a trigger will fire in releation to the
+{- | Type to represent the time at which a trigger will fire in releation to the
 event that caused it. E.G. the @BEFORE@ in
 
 > CREATE TRIGGER my_trigger BEFORE UPDATE ON my_table FOR EACH ROW EXECUTE PROCEDURE my_trigger_function
@@ -154,8 +149,7 @@ newtype TriggerTiming
       RawSql.SqlExpression
     )
 
-{- |
-The @BEFORE@ 'TriggerTiming'.
+{- | The @BEFORE@ 'TriggerTiming'.
 
 @since 1.1.0.0
 -}
@@ -163,8 +157,7 @@ triggerBefore :: TriggerTiming
 triggerBefore =
   TriggerTiming (RawSql.fromString "BEFORE")
 
-{- |
-The @AFTER@ 'TriggerTiming'.
+{- | The @AFTER@ 'TriggerTiming'.
 
 @since 1.1.0.0
 -}
@@ -172,8 +165,7 @@ triggerAfter :: TriggerTiming
 triggerAfter =
   TriggerTiming (RawSql.fromString "AFTER")
 
-{- |
-The @INSTEAD OF@ 'TriggerTiming'.
+{- | The @INSTEAD OF@ 'TriggerTiming'.
 
 @since 1.1.0.0
 -}
@@ -181,8 +173,7 @@ triggerInsteadOf :: TriggerTiming
 triggerInsteadOf =
   TriggerTiming (RawSql.fromString "INSTEAD OF")
 
-{- |
-Type to represent the an event that will cause a trigger to fire in a SQL "CREATE
+{- | Type to represent the an event that will cause a trigger to fire in a SQL "CREATE
 TRIGGER" statement. E.G. the @UPDATE@ in
 
 > CREATE TRIGGER my_trigger BEFORE UPDATE ON my_table FOR EACH ROW EXECUTE PROCEDURE my_trigger_function
@@ -200,8 +191,7 @@ newtype TriggerEvent
       RawSql.SqlExpression
     )
 
-{- |
-The @INSERT@ 'TriggerEvent'
+{- | The @INSERT@ 'TriggerEvent'
 
 @since 1.1.0.0
 -}
@@ -209,8 +199,7 @@ triggerOnInsert :: TriggerEvent
 triggerOnInsert =
   TriggerEvent (RawSql.fromString "INSERT")
 
-{- |
-The @UPDATE@ 'TriggerEvent'
+{- | The @UPDATE@ 'TriggerEvent'
 
 @since 1.1.0.0
 -}
@@ -218,8 +207,7 @@ triggerOnUpdate :: TriggerEvent
 triggerOnUpdate =
   TriggerEvent (RawSql.fromString "UPDATE")
 
-{- |
-The @UPDATE OF@ 'TriggerEvent'. This causes the trigger only to fire when on of
+{- | The @UPDATE OF@ 'TriggerEvent'. This causes the trigger only to fire when on of
 the specified columns is mentioned of affected by an update.
 
 @since 1.1.0.0
@@ -230,8 +218,7 @@ triggerOnUpdateOf columnNames =
     RawSql.fromString "UPDATE OF"
       <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql columnNames)
 
-{- |
-The @DELETE@ 'TriggerEvent'
+{- | The @DELETE@ 'TriggerEvent'
 
 @since 1.1.0.0
 -}
@@ -239,8 +226,7 @@ triggerOnDelete :: TriggerEvent
 triggerOnDelete =
   TriggerEvent (RawSql.fromString "DELETE")
 
-{- |
-The @TRUNCATE@ 'TriggerEvent'
+{- | The @TRUNCATE@ 'TriggerEvent'
 
 @since 1.1.0.0
 -}
@@ -248,8 +234,7 @@ triggerOnTruncate :: TriggerEvent
 triggerOnTruncate =
   TriggerEvent (RawSql.fromString "TRUNCATE")
 
-{- |
-Type to represent the part of a SQL "CREATE TRIGGER" statement that indicates whether
+{- | Type to represent the part of a SQL "CREATE TRIGGER" statement that indicates whether
 the trigger will be fired once for each row or once for each statement. E.G. the
 @FOR EACH ROW@ in
 
@@ -268,8 +253,7 @@ newtype TriggerFireScope
       RawSql.SqlExpression
     )
 
-{- |
-The @FOR EACH ROW@ 'TriggerFireScope'
+{- | The @FOR EACH ROW@ 'TriggerFireScope'
 
 @since 1.1.0.0
 -}
@@ -277,8 +261,7 @@ triggerForEachRow :: TriggerFireScope
 triggerForEachRow =
   TriggerFireScope (RawSql.fromString "FOR EACH ROW")
 
-{- |
-The @FOR EACH STATEMENT@ 'TriggerFireScope'
+{- | The @FOR EACH STATEMENT@ 'TriggerFireScope'
 
 @since 1.1.0.0
 -}

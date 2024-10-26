@@ -18,8 +18,7 @@ import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, fromIdentifier, identifier, toIdentifier)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL alias. 'AliasExpr' values constructed
+{- | Type to represent a SQL alias. 'AliasExpr' values constructed
 via the 'alias' function will be properly escaped as part of the
 generated SQL. E.G.
 
@@ -40,8 +39,7 @@ newtype AliasExpr
       IdentifierExpression
     )
 
-{- |
-Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
+{- | Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.1.0.0
 -}
@@ -49,8 +47,7 @@ stringToAliasExpr :: String -> AliasExpr
 stringToAliasExpr =
   AliasExpr . identifier
 
-{- |
-It is occasionally appropriate to treat Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
+{- | It is occasionally appropriate to treat Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
 
 @since 1.1.0.0
 -}

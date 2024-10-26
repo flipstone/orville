@@ -18,8 +18,7 @@ where
 import Control.Exception (Exception)
 import qualified Data.ByteString as BS
 
-{- |
-  A 'PgTextFormatValue' represents raw bytes that will be passed to PostgreSQL
+{- | A 'PgTextFormatValue' represents raw bytes that will be passed to PostgreSQL
   via LibPQ. These bytes must conform to the TEXT format of values that
   PostgreSQL expects. In all cases, PostgreSQL will be allowed to infer the
   type of the value based on its usage in the query.
@@ -50,6 +49,10 @@ instance Eq PgTextFormatValue where
   left == right =
     toBytesForLibPQ left == toBytesForLibPQ right
 
+{- | The exception raised when encountering a '\NUL' byte is unexpectedly found
+
+@since 1.0.0.0
+-}
 data NULByteFoundError
   = NULByteFoundError
   deriving
@@ -62,8 +65,7 @@ data NULByteFoundError
 -- | @since 1.0.0.0
 instance Exception NULByteFoundError
 
-{- |
-  Constructs a 'PgTextFormatValue' from the given bytes directly, without checking
+{- | Constructs a 'PgTextFormatValue' from the given bytes directly, without checking
   whether any of the bytes are '\NUL' or not. If a 'BS.ByteString' containing
   a '\NUL' byte is given, the value will be truncated at the '\NUL' when it
   is passed to LibPQ.
@@ -78,8 +80,7 @@ unsafeFromByteString :: BS.ByteString -> PgTextFormatValue
 unsafeFromByteString =
   AssumedToHaveNoNULValues
 
-{- |
-  Constructs a 'PgTextFormatValue' from the given bytes, which will be checked
+{- | Constructs a 'PgTextFormatValue' from the given bytes, which will be checked
   to ensure none of them are '\NUL' before being passed to LibPQ. If a '\NUL'
   byte is found an error will be raised.
 
@@ -89,8 +90,7 @@ fromByteString :: BS.ByteString -> PgTextFormatValue
 fromByteString =
   NoAssumptionsMade
 
-{- |
-  Converts the 'PgTextFormatValue' to bytes intended to be passed to LibPQ.
+{- | Converts the 'PgTextFormatValue' to bytes intended to be passed to LibPQ.
   If any '\NUL' bytes are found, 'NULByteFoundError' will be returned (unless
   'unsafeFromByteString' was used to construct the value).
 
@@ -106,8 +106,7 @@ toBytesForLibPQ value =
         then Left NULByteFoundError
         else Right anyBytes
 
-{- |
-  Converts the 'PgTextFormatValue' back to the bytes that were used to
+{- | Converts the 'PgTextFormatValue' back to the bytes that were used to
   construct it, losing the information about whether it would be checked
   for '\NUL' bytes or not.
 

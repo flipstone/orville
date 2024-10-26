@@ -30,8 +30,7 @@ import qualified Data.List.NonEmpty as NEL
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDefinition
 
-{- |
-  Defines an index that can be added to a 'Orville.PostgreSQL.TableDefinition'.
+{- | Defines an index that can be added to a 'Orville.PostgreSQL.TableDefinition'.
   Use one of the constructor functions below (such as 'uniqueIndex') to
   construct the index definition you wish to have and then use
   'Orville.PostgreSQL.addTableIndexes' to add them to your table definition.
@@ -48,8 +47,7 @@ data IndexDefinition = IndexDefinition
   , i_indexCreationStrategy :: IndexCreationStrategy
   }
 
-{- |
-  Sets the 'IndexCreationStrategy' to be used when creating the index described
+{- | Sets the 'IndexCreationStrategy' to be used when creating the index described
   by the 'IndexDefinition'. By default, all indexes are created using the
   'Transactional' strategy, but some tables are too large for this to be
   feasible. See the 'Concurrent' creation strategy for how to work around this.
@@ -65,8 +63,7 @@ setIndexCreationStrategy strategy indexDef =
     { i_indexCreationStrategy = strategy
     }
 
-{- |
-  Gets the 'IndexCreationStrategy' to be used when creating the index described
+{- | Gets the 'IndexCreationStrategy' to be used when creating the index described
   by the 'IndexDefinition'. By default, all indexes are created using the
   'Transactional' strategy.
 
@@ -78,22 +75,19 @@ indexCreationStrategy ::
 indexCreationStrategy =
   i_indexCreationStrategy
 
-{- |
-  Defines how an 'IndexDefinition' will be executed to add an index to a table.
+{- | Defines how an 'IndexDefinition' will be executed to add an index to a table.
   By default, all indexes are created using the 'Transactional' strategy.
 
 @since 1.0.0.0
 -}
 data IndexCreationStrategy
-  = -- |
-    --       The default strategy. The index will be added as part of a
+  = -- | The default strategy. The index will be added as part of a
     --       database transaction along with all the other DDL being executed
     --       to migrate the database schema. If any migration should fail, the
     --       index creation will be rolled back as part of the transaction.
     --       This is how schema migrations work in general in Orville.
     Transactional
-  | -- |
-    --       Creates the index using the @CONCURRENTLY@ keyword in PostgreSQL.
+  | -- | Creates the index using the @CONCURRENTLY@ keyword in PostgreSQL.
     --       Index creation will not lock the table during creation, allowing
     --       the application to access the table normally while the index is
     --       created. Concurrent index creation cannot be done in a
@@ -119,8 +113,7 @@ data IndexCreationStrategy
       Show
     )
 
-{- |
-  Orville uses 'IndexMigrationKey' values while performing auto migrations to
+{- | Orville uses 'IndexMigrationKey' values while performing auto migrations to
   determine whether an index needs to be added or dropped. For most use cases
   the constructor functions that build an 'IndexDefinition' will create this
   automatically for you.
@@ -137,8 +130,7 @@ data IndexMigrationKey
       Ord
     )
 
-{- |
-  An 'IndexMigrationKey' using 'AttributeBasedIndexMigrationKey' will cause
+{- | An 'IndexMigrationKey' using 'AttributeBasedIndexMigrationKey' will cause
   Orville to compare the structure of the indexes found in the database to the
   index structure it wants to create. If no matching index is found it will
   create a new index.
@@ -158,8 +150,7 @@ data AttributeBasedIndexMigrationKey = AttributeBasedIndexMigrationKey
       Show
     )
 
-{- |
-  An 'IndexMigrationKey' using 'NamedIndexMigrationKey' will cause Orville to
+{- | An 'IndexMigrationKey' using 'NamedIndexMigrationKey' will cause Orville to
   compare the only the names of indexes found in the database when determine
   whether to create the index. If an index with a matching name is found no
   index will be created. If no matching index name is found a new index will be
@@ -171,16 +162,14 @@ data AttributeBasedIndexMigrationKey = AttributeBasedIndexMigrationKey
 -}
 type NamedIndexMigrationKey = String
 
-{- |
-  Gets the 'IndexMigrationKey' for the 'IndexDefinition'
+{- | Gets the 'IndexMigrationKey' for the 'IndexDefinition'
 
 @since 1.0.0.0
 -}
 indexMigrationKey :: IndexDefinition -> IndexMigrationKey
 indexMigrationKey = i_indexMigrationKey
 
-{- |
-  Gets the SQL expression that will be used to add the index to the specified
+{- | Gets the SQL expression that will be used to add the index to the specified
   table.
 
 @since 1.0.0.0
@@ -191,8 +180,7 @@ indexCreateExpr indexDef =
     indexDef
     (i_indexCreationStrategy indexDef)
 
-{- |
-  Constructs an 'IndexDefinition' for a non-unique index on the given columns.
+{- | Constructs an 'IndexDefinition' for a non-unique index on the given columns.
 
 @since 1.0.0.0
 -}
@@ -200,8 +188,7 @@ nonUniqueIndex :: NonEmpty FieldDefinition.FieldName -> IndexDefinition
 nonUniqueIndex =
   mkIndexDefinition Expr.NonUniqueIndex
 
-{- |
-  Constructs an 'IndexDefinition' for a non-unique index with given SQL and
+{- | Constructs an 'IndexDefinition' for a non-unique index with given SQL and
   index name.
 
 @since 1.0.0.0
@@ -210,8 +197,7 @@ nonUniqueNamedIndex :: String -> Expr.IndexBodyExpr -> IndexDefinition
 nonUniqueNamedIndex =
   mkNamedIndexDefinition Expr.NonUniqueIndex
 
-{- |
-  Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given columns.
+{- | Constructs an 'IndexDefinition' for a @UNIQUE@ index on the given columns.
 
 @since 1.0.0.0
 -}
@@ -219,8 +205,7 @@ uniqueIndex :: NonEmpty FieldDefinition.FieldName -> IndexDefinition
 uniqueIndex =
   mkIndexDefinition Expr.UniqueIndex
 
-{- |
-  Constructs an 'IndexDefinition' for a @UNIQUE@ index with given SQL and index
+{- | Constructs an 'IndexDefinition' for a @UNIQUE@ index with given SQL and index
   name.
 
 @since 1.0.0.0
@@ -229,8 +214,7 @@ uniqueNamedIndex :: String -> Expr.IndexBodyExpr -> IndexDefinition
 uniqueNamedIndex =
   mkNamedIndexDefinition Expr.UniqueIndex
 
-{- |
-  Constructs an 'IndexDefinition' for an index on the given columns with the
+{- | Constructs an 'IndexDefinition' for an index on the given columns with the
   given uniqueness.
 
 @since 1.0.0.0
@@ -260,8 +244,7 @@ mkIndexDefinition uniqueness fieldNames =
       , i_indexCreationStrategy = Transactional
       }
 
-{- |
-  Constructs an 'IndexDefinition' for an index with the given uniqueness, given
+{- | Constructs an 'IndexDefinition' for an index with the given uniqueness, given
   name, and given SQL.
 
 @since 1.0.0.0
@@ -287,8 +270,7 @@ mkNamedIndexDefinition uniqueness indexName bodyExpr =
       , i_indexCreationStrategy = Transactional
       }
 
-{- |
-  Internal helper to determine whether @CONCURRENTLY@ should be included in
+{- | Internal helper to determine whether @CONCURRENTLY@ should be included in
   the SQL to create the index.
 
 @since 1.0.0.0

@@ -29,8 +29,7 @@ import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
 import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent a SQL name that could be qualified or not. E.G.
+{- | Type to represent a SQL name that could be qualified or not. E.G.
 
 > "some_schema_name"."some_table_name"
 
@@ -69,8 +68,7 @@ unqualified :: RawSql.SqlExpression name => name -> QualifiedOrUnqualified name
 unqualified =
   QualifiedOrUnqualified . RawSql.toRawSql
 
-{- |
-Type to represent a qualified SQL name. E.G.
+{- | Type to represent a qualified SQL name. E.G.
 
 > "some_schema_name"."some_table_name"
 
@@ -91,8 +89,7 @@ instance RawSql.SqlExpression (Qualified name) where
     q <> RawSql.dot <> i
   unsafeFromRawSql = Qualified mempty
 
-{- |
-Qualifies a 'TableName' with a 'SchemaName'.
+{- | Qualifies a 'TableName' with a 'SchemaName'.
 
 Note: If you already have a 'Orville.PostgreSQL.Schema.TableIdentifier' in
 hand you should probably use
@@ -105,8 +102,7 @@ qualifyTable ::
   Qualified TableName
 qualifyTable = unsafeSchemaQualify
 
-{- |
-Qualifies a 'SequenceName' with a 'SchemaName'.
+{- | Qualifies a 'SequenceName' with a 'SchemaName'.
 
 Note: If you already have a 'Orville.PostgreSQL.Schema.SequenceIdentifier' in
 hand you should probably use
@@ -120,8 +116,7 @@ qualifySequence ::
   Qualified SequenceName
 qualifySequence = unsafeSchemaQualify
 
-{- |
-Qualifies a 'FunctionName' with a 'SchemaName'.
+{- | Qualifies a 'FunctionName' with a 'SchemaName'.
 
 Note: If you already have a 'Orville.PostgreSQL.Schema.FunctionIdentifier' in
 hand you should probably use
@@ -135,8 +130,7 @@ qualifyFunction ::
   Qualified FunctionName
 qualifyFunction = unsafeSchemaQualify
 
-{- |
-Qualifies a 'ColumnName' with a 'TableName' and, optionally, a 'SchemaName'.
+{- | Qualifies a 'ColumnName' with a 'TableName' and, optionally, a 'SchemaName'.
 This should be used to refer to the column in SQL queries where a qualified
 reference is appropriate.
 

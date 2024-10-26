@@ -24,8 +24,7 @@ import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberParser, attributeNumberTextBuilder)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_index@ table.
+{- | The Haskell representation of data read from the @pg_catalog.pg_index@ table.
   Rows in this table contain extended information about indices. Information
   about indices is also contained in the @pg_catalog.pg_class@ table as well.
 
@@ -54,8 +53,7 @@ data PgIndex = PgIndex
   -- dropped and should be ignored.
   }
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_index@ table.
 
 @since 1.0.0.0
@@ -77,8 +75,7 @@ pgIndexMarshaller =
     <*> Orville.marshallField pgIndexIsPrimary indexIsPrimaryField
     <*> Orville.marshallField pgIndexIsLive indexIsLiveField
 
-{- |
-  The @indexrelid@ column of the @pg_index@ table.
+{- | The @indexrelid@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -86,8 +83,7 @@ indexPgClassOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 indexPgClassOidField =
   oidTypeField "indexrelid"
 
-{- |
-  The @indrelid@ column of the @pg_index@ table.
+{- | The @indrelid@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -95,8 +91,7 @@ indexRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 indexRelationOidField =
   oidTypeField "indrelid"
 
-{- |
-  The @indkey@ column of the @pg_index@ table.
+{- | The @indkey@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -106,8 +101,7 @@ indexAttributeNumbersField =
     (Orville.tryConvertSqlType attributeNumberListToPgVectorText pgVectorTextToAttributeNumberList)
     (Orville.unboundedTextField "indkey")
 
-{- |
-  The @indisunique@ column of the @pg_index@ table.
+{- | The @indisunique@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -115,8 +109,7 @@ indexIsUniqueField :: Orville.FieldDefinition Orville.NotNull Bool
 indexIsUniqueField =
   Orville.booleanField "indisunique"
 
-{- |
-  The @indisprimary@ column of the @pg_index@ table.
+{- | The @indisprimary@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}
@@ -124,8 +117,7 @@ indexIsPrimaryField :: Orville.FieldDefinition Orville.NotNull Bool
 indexIsPrimaryField =
   Orville.booleanField "indisprimary"
 
-{- |
-  The @indislive@ column of the @pg_index@ table.
+{- | The @indislive@ column of the @pg_index@ table.
 
 @since 1.0.0.0
 -}

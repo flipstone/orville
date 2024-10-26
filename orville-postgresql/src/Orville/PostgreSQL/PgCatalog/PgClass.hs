@@ -26,8 +26,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 
-{- |
-  The Haskell representation of data read from the @pg_catalog.pg_class@
+{- | The Haskell representation of data read from the @pg_catalog.pg_class@
   table. Rows in this table correspond to tables, indexes, sequences, views,
   materialized views, composite types and TOAST tables.
 
@@ -45,8 +44,7 @@ data PgClass = PgClass
   -- ^ The kind of relation (table, view, etc).
   }
 
-{- |
-  A Haskell type for the name of the relation represented by a 'PgClass'.
+{- | A Haskell type for the name of the relation represented by a 'PgClass'.
 
 @since 1.0.0.0
 -}
@@ -63,8 +61,7 @@ newtype RelationName
       String.IsString
     )
 
-{- |
-  Convert a 'RelationName' to a plain 'String'.
+{- | Convert a 'RelationName' to a plain 'String'.
 
 @since 1.0.0.0
 -}
@@ -72,8 +69,7 @@ relationNameToString :: RelationName -> String
 relationNameToString (RelationName text) =
   T.unpack text
 
-{- |
-  The kind of relation represented by a 'PgClass', as described at
+{- | The kind of relation represented by a 'PgClass', as described at
   https://www.postgresql.org/docs/13/catalog-pg-class.html.
 
 @since 1.0.0.0
@@ -96,8 +92,7 @@ data RelationKind
       Eq
     )
 
-{- |
-  An Orville 'Orville.TableDefinition' for querying the
+{- | An Orville 'Orville.TableDefinition' for querying the
   @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
@@ -118,8 +113,7 @@ pgClassMarshaller =
     <*> Orville.marshallField pgClassRelationName relationNameField
     <*> Orville.marshallField pgClassRelationKind relationKindField
 
-{- |
-  The @relnamespace@ column of the @pg_catalog.pg_class@ table.
+{- | The @relnamespace@ column of the @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -127,8 +121,7 @@ namespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
 namespaceOidField =
   oidTypeField "relnamespace"
 
-{- |
-  The @relname@ column of the @pg_catalog.pg_class@ table.
+{- | The @relname@ column of the @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -137,8 +130,7 @@ relationNameField =
   Orville.coerceField $
     Orville.unboundedTextField "relname"
 
-{- |
-  The @relkind@ column of the @pg_catalog.pg_class@ table.
+{- | The @relkind@ column of the @pg_catalog.pg_class@ table.
 
 @since 1.0.0.0
 -}
@@ -148,8 +140,7 @@ relationKindField =
     (Orville.tryConvertSqlType relationKindToPgText pgTextToRelationKind)
     (Orville.unboundedTextField "relkind")
 
-{- |
-  Converts a 'RelationKind' to the corresponding single character text
+{- | Converts a 'RelationKind' to the corresponding single character text
   representation used by PostgreSQL.
 
   See also 'pgTextToRelationKind'
@@ -171,8 +162,7 @@ relationKindToPgText kind =
       PartitionedTable -> "p"
       PartitionedIndex -> "I"
 
-{- |
-  Attempts to parse a PostgreSQL single character textual value as a
+{- | Attempts to parse a PostgreSQL single character textual value as a
   'RelationKind'.
 
   See also 'relationKindToPgText'

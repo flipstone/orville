@@ -25,16 +25,14 @@ import Orville.PostgreSQL.Expr.Name (functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ParameterName, ValueExpression, functionCall, functionCallNamedParams)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-  The value of the current time as returned by the PostgreSQL function @now()@.
+{- | The value of the current time as returned by the PostgreSQL function @now()@.
 
   @since 1.0.0.0
 -}
 now :: ValueExpression
 now = functionCall (functionName "now") []
 
-{- |
-  Constructs a 'ValueExpression' whose value in PostgreSQL is the result of
+{- | Constructs a 'ValueExpression' whose value in PostgreSQL is the result of
   calling @make_interval@ with the specified time intervals passed as named
   arguments.
 
@@ -46,8 +44,7 @@ makeInterval args =
     (functionName "make_interval")
     (fmap (\(IntervalArgument paramName, value) -> (paramName, value)) args)
 
-{- |
-Type to represent the name of a time interval argument to the PostgreSQL
+{- | Type to represent the name of a time interval argument to the PostgreSQL
 @make_interval@ function. E.G.
 
 > years
@@ -65,8 +62,7 @@ newtype IntervalArgument
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs an arbitrary 'IntervalArgument' with whatever name you specify. It
+{- | Constructs an arbitrary 'IntervalArgument' with whatever name you specify. It
   is up to you to ensure that name a valid argument name for @make_interval@.
 
   @since 1.0.0.0
@@ -75,56 +71,49 @@ unsafeIntervalArg :: String -> IntervalArgument
 unsafeIntervalArg =
   IntervalArgument . RawSql.unsafeSqlExpression
 
-{- |
-  The @years@ argument to @make_interval@.
+{- | The @years@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}
 years :: IntervalArgument
 years = unsafeIntervalArg "years"
 
-{- |
-  The @months@ argument to @make_interval@.
+{- | The @months@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}
 months :: IntervalArgument
 months = unsafeIntervalArg "months"
 
-{- |
-  The @weeks@ argument to @make_interval@.
+{- | The @weeks@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}
 weeks :: IntervalArgument
 weeks = unsafeIntervalArg "weeks"
 
-{- |
-  The @days@ argument to @make_interval@.
+{- | The @days@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}
 days :: IntervalArgument
 days = unsafeIntervalArg "days"
 
-{- |
-  The @hours@ argument to @make_interval@.
+{- | The @hours@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}
 hours :: IntervalArgument
 hours = unsafeIntervalArg "hours"
 
-{- |
-  The @mins@ argument to @make_interval@.
+{- | The @mins@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}
 minutes :: IntervalArgument
 minutes = unsafeIntervalArg "mins"
 
-{- |
-  The @secs@ argument to @make_interval@.
+{- | The @secs@ argument to @make_interval@.
 
   @since 1.0.0.0
 -}

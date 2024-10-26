@@ -38,8 +38,7 @@ import Data.Maybe (maybeToList)
 import qualified Orville.PostgreSQL.Expr.Name as Name
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent the name of a begin transaction statement. E.G.
+{- | Type to represent the name of a begin transaction statement. E.G.
 
 > BEGIN TRANSACTION
 
@@ -56,8 +55,7 @@ newtype BeginTransactionExpr
       RawSql.SqlExpression
     )
 
-{- |
-  Constructs a 'BeginTransactionExpr' that will begin a transaction using
+{- | Constructs a 'BeginTransactionExpr' that will begin a transaction using
   the specified mode, if any.
 
   @since 1.0.0.0
@@ -70,8 +68,7 @@ beginTransaction maybeTransactionMode =
           : maybeToList (RawSql.toRawSql <$> maybeTransactionMode)
       )
 
-{- |
-Type to represent the transaction mode. E.G.
+{- | Type to represent the transaction mode. E.G.
 
 > ISOLATION LEVEL SERIALIZABLE
 
@@ -88,8 +85,7 @@ newtype TransactionMode
       RawSql.SqlExpression
     )
 
-{- |
-  The @READ WRITE@ transaction mode.
+{- | The @READ WRITE@ transaction mode.
 
   @since 1.0.0.0
 -}
@@ -97,8 +93,7 @@ readWrite :: TransactionMode
 readWrite =
   TransactionMode (RawSql.fromString "READ WRITE")
 
-{- |
-  The @READ ONLY@ transaction mode.
+{- | The @READ ONLY@ transaction mode.
 
   @since 1.0.0.0
 -}
@@ -106,8 +101,7 @@ readOnly :: TransactionMode
 readOnly =
   TransactionMode (RawSql.fromString "READ ONLY")
 
-{- |
-  The @DEFERRABLE@ transaction mode.
+{- | The @DEFERRABLE@ transaction mode.
 
   @since 1.0.0.0
 -}
@@ -115,8 +109,7 @@ deferrable :: TransactionMode
 deferrable =
   TransactionMode (RawSql.fromString "DEFERRABLE")
 
-{- |
-  The @NOT DEFERRABLE@ transaction mode.
+{- | The @NOT DEFERRABLE@ transaction mode.
 
   @since 1.0.0.0
 -}
@@ -124,8 +117,7 @@ notDeferrable :: TransactionMode
 notDeferrable =
   TransactionMode (RawSql.fromString "NOT DEFERRABLE")
 
-{- |
-  An @ISOLATION LEVEL@ transaction mode with the given 'IsolationLevel'.
+{- | An @ISOLATION LEVEL@ transaction mode with the given 'IsolationLevel'.
 
   @since 1.0.0.0
 -}
@@ -134,8 +126,7 @@ isolationLevel level =
   TransactionMode $
     (RawSql.fromString "ISOLATION LEVEL " <> RawSql.toRawSql level)
 
-{- |
-Type to represent the transaction isolation level. E.G.
+{- | Type to represent the transaction isolation level. E.G.
 
 > SERIALIZABLE
 
@@ -152,8 +143,7 @@ newtype IsolationLevel
       RawSql.SqlExpression
     )
 
-{- |
-  The @SERIALIZABLE@ isolation level.
+{- | The @SERIALIZABLE@ isolation level.
 
   @since 1.0.0.0
 -}
@@ -161,8 +151,7 @@ serializable :: IsolationLevel
 serializable =
   IsolationLevel (RawSql.fromString "SERIALIZABLE")
 
-{- |
-  The @REPEATABLE READ@ isolation level.
+{- | The @REPEATABLE READ@ isolation level.
 
   @since 1.0.0.0
 -}
@@ -170,8 +159,7 @@ repeatableRead :: IsolationLevel
 repeatableRead =
   IsolationLevel (RawSql.fromString "REPEATABLE READ")
 
-{- |
-  The @READ COMMITTED@ isolation level.
+{- | The @READ COMMITTED@ isolation level.
 
   @since 1.0.0.0
 -}
@@ -179,8 +167,7 @@ readCommitted :: IsolationLevel
 readCommitted =
   IsolationLevel (RawSql.fromString "READ COMMITTED")
 
-{- |
-  The @READ UNCOMMITTED@ isolation level.
+{- | The @READ UNCOMMITTED@ isolation level.
 
   @since 1.0.0.0
 -}
@@ -188,8 +175,7 @@ readUncommitted :: IsolationLevel
 readUncommitted =
   IsolationLevel (RawSql.fromString "READ UNCOMMITTED")
 
-{- |
-Type to represent the transaction commit statement. E.G.
+{- | Type to represent the transaction commit statement. E.G.
 
 > COMMIT
 
@@ -206,8 +192,7 @@ newtype CommitExpr
       RawSql.SqlExpression
     )
 
-{- |
-  A @COMMIT@ transaction statement.
+{- | A @COMMIT@ transaction statement.
 
   @since 1.0.0.0
 -}
@@ -215,8 +200,7 @@ commit :: CommitExpr
 commit =
   CommitExpr (RawSql.fromString "COMMIT")
 
-{- |
-Type to represent the transaction rollback statement. E.G.
+{- | Type to represent the transaction rollback statement. E.G.
 
 > ROLLBACK
 
@@ -233,8 +217,7 @@ newtype RollbackExpr
       RawSql.SqlExpression
     )
 
-{- |
-  A @ROLLBACK@ transaction statement.
+{- | A @ROLLBACK@ transaction statement.
 
   @since 1.0.0.0
 -}
@@ -242,8 +225,7 @@ rollback :: RollbackExpr
 rollback =
   RollbackExpr (RawSql.fromString "ROLLBACK")
 
-{- |
-  A @ROLLBACK TO@ transaction statement that will rollback to the specified
+{- | A @ROLLBACK TO@ transaction statement that will rollback to the specified
   savepoint.
 
   @since 1.0.0.0
@@ -253,8 +235,7 @@ rollbackTo savepointName =
   RollbackExpr $
     RawSql.fromString "ROLLBACK TO SAVEPOINT " <> RawSql.toRawSql savepointName
 
-{- |
-Type to represent the transaction savepoint statement. E.G.
+{- | Type to represent the transaction savepoint statement. E.G.
 
 > SAVEPOINT foo
 
@@ -271,8 +252,7 @@ newtype SavepointExpr
       RawSql.SqlExpression
     )
 
-{- |
-  A @SAVEPOINT@ statement that will create a savepoint with the given name.
+{- | A @SAVEPOINT@ statement that will create a savepoint with the given name.
 
   @since 1.0.0.0
 -}
@@ -281,8 +261,7 @@ savepoint savepointName =
   SavepointExpr $
     RawSql.fromString "SAVEPOINT " <> RawSql.toRawSql savepointName
 
-{- |
-Type to represent the transaction release savepoint statement. E.G.
+{- | Type to represent the transaction release savepoint statement. E.G.
 
 > RELEASE SAVEPOINT foo
 
@@ -299,8 +278,7 @@ newtype ReleaseSavepointExpr
       RawSql.SqlExpression
     )
 
-{- |
-  A @RELEASE SAVEPOINT@ statement that will release the specified savepoint.
+{- | A @RELEASE SAVEPOINT@ statement that will release the specified savepoint.
 
   @since 1.0.0.0
 -}

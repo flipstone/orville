@@ -28,8 +28,7 @@ import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-{- |
-  A 'SyntheticField' can be used to evaluate a SQL expression based on the
+{- | A 'SyntheticField' can be used to evaluate a SQL expression based on the
   columns of a table when records are selected from the database. Synthetic
   fields are inherently read-only.
 
@@ -41,8 +40,7 @@ data SyntheticField a = SyntheticField
   , i_syntheticFieldType :: SqlType.SqlType a
   }
 
-{- |
-  Marshalls a Haskell value to be in the field to its 'SqlValue.SqlValue'
+{- | Marshalls a Haskell value to be in the field to its 'SqlValue.SqlValue'
   representation.
 
 @since 1.1.0.0
@@ -51,8 +49,7 @@ instance SqlComparable.SqlComparable (SyntheticField a) a where
   toComparableSqlValue field = SqlType.sqlTypeToSql (syntheticFieldType field)
   referenceValueExpression = syntheticFieldExpression
 
-{- |
-  Returns the SQL expression that should be used in select statements to
+{- | Returns the SQL expression that should be used in select statements to
   calculate the synthetic field.
 
 @since 1.0.0.0
@@ -61,8 +58,7 @@ syntheticFieldExpression :: SyntheticField a -> Expr.ValueExpression
 syntheticFieldExpression =
   i_syntheticFieldExpression
 
-{- |
-  Returns the alias that should be used in select statements to name the
+{- | Returns the alias that should be used in select statements to name the
   synthetic field.
 
 @since 1.0.0.0
@@ -71,8 +67,7 @@ syntheticFieldAlias :: SyntheticField a -> AliasName
 syntheticFieldAlias =
   i_syntheticFieldAlias
 
-{- |
-  Decodes a calculated value selected from the database to its expected
+{- | Decodes a calculated value selected from the database to its expected
   Haskell type. Returns a 'Left' with an error message if the decoding fails.
 
 @since 1.0.0.0
@@ -81,8 +76,7 @@ syntheticFieldValueFromSqlValue :: SyntheticField a -> SqlValue.SqlValue -> Eith
 syntheticFieldValueFromSqlValue =
   SqlType.sqlTypeFromSql . syntheticFieldType
 
-{- |
-  The 'SqlType.SqlType' for the 'SyntheticField' determines the PostgreSQL
+{- | The 'SqlType.SqlType' for the 'SyntheticField' determines the PostgreSQL
   data type used to define the field as well as how to marshall Haskell values
   from the database.
 
@@ -91,8 +85,7 @@ syntheticFieldValueFromSqlValue =
 syntheticFieldType :: SyntheticField a -> SqlType.SqlType a
 syntheticFieldType = i_syntheticFieldType
 
-{- |
-  Constructs a 'SyntheticField' that will select a SQL expression using
+{- | Constructs a 'SyntheticField' that will select a SQL expression using
   the given alias.
 
 @since 1.0.0.0
@@ -112,8 +105,7 @@ syntheticField expression alias sqlType =
     , i_syntheticFieldType = sqlType
     }
 
-{- |
-  Modifies a 'SyntheticField' to allow it to decode @NULL@ values.
+{- | Modifies a 'SyntheticField' to allow it to decode @NULL@ values.
 
 @since 1.0.0.0
 -}
@@ -135,8 +127,7 @@ nullableSyntheticField synthField =
       { i_syntheticFieldType = nullableType (syntheticFieldType synthField)
       }
 
-{- |
-  Adds a prefix, followed by an underscore, to the alias used to name the
+{- | Adds a prefix, followed by an underscore, to the alias used to name the
   synthetic field.
 
 @since 1.0.0.0
@@ -150,8 +141,7 @@ prefixSyntheticField prefix synthField =
     { i_syntheticFieldAlias = byteStringToAliasName (B8.pack prefix <> "_" <> aliasNameToByteString (syntheticFieldAlias synthField))
     }
 
-{- |
-  Orders a query by the alias for the given synthetic field.
+{- | Orders a query by the alias for the given synthetic field.
 
 @since 1.1.0.0
 -}
