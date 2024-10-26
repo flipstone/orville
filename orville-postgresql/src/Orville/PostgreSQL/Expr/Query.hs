@@ -35,6 +35,7 @@ where
 import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.BinaryOperator (BinaryOperator)
+import Orville.PostgreSQL.Expr.FetchClause (FetchClause)
 import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
 import Orville.PostgreSQL.Expr.Join (JoinConstraint, JoinExpr, JoinType, joinExpr)
@@ -359,6 +360,8 @@ tableExpr ::
   Maybe RowLockingClause ->
   -- | An optional @WINDOW@ clause to apply to the result set.
   Maybe WindowClause ->
+  -- | An optional @FETCH@ clause to apply to the result set.
+  Maybe FetchClause ->
   TableExpr
 tableExpr
   tableReferenceList
@@ -368,7 +371,8 @@ tableExpr
   maybeLimitExpr
   maybeOffsetExpr
   maybeRowLockingClause
-  maybeWindowClause =
+  maybeWindowClause
+  maybeFetchClause =
     TableExpr
       . RawSql.intercalate RawSql.space
       $ RawSql.toRawSql tableReferenceList
@@ -379,5 +383,6 @@ tableExpr
           , RawSql.toRawSql <$> maybeOrderByClause
           , RawSql.toRawSql <$> maybeLimitExpr
           , RawSql.toRawSql <$> maybeOffsetExpr
+          , RawSql.toRawSql <$> maybeFetchClause
           , RawSql.toRawSql <$> maybeRowLockingClause
           ]

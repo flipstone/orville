@@ -83,7 +83,7 @@ findAllFooBarsInTable tableName =
     Expr.queryExpr
       (Expr.selectClause $ Expr.selectExpr Nothing)
       (Expr.selectColumns [fooColumn, Expr.untrackQualified barColumnAliased])
-      (Just $ Expr.tableExpr tableRef Nothing Nothing (Just orderByFoo) Nothing Nothing Nothing Nothing)
+      (Just $ Expr.tableExpr tableRef Nothing Nothing (Just orderByFoo) Nothing Nothing Nothing Nothing Nothing)
 
 encodeFooBar :: FooBar -> [(Maybe B8.ByteString, SqlValue.SqlValue)]
 encodeFooBar fooBar =

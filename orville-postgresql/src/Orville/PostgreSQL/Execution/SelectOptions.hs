@@ -17,6 +17,7 @@ module Orville.PostgreSQL.Execution.SelectOptions
   , selectOffsetExpr
   , selectRowLockingClause
   , selectWindowClause
+  , selectFetchClause
   , distinct
   , where_
   , orderBy
@@ -25,6 +26,7 @@ module Orville.PostgreSQL.Execution.SelectOptions
   , groupBy
   , forRowLock
   , window
+  , fetchRow
   , selectOptionsQueryExpr
   )
 where
@@ -50,6 +52,7 @@ data SelectOptions = SelectOptions
   , i_groupByExpr :: Maybe Expr.GroupByExpr
   , i_rowLockingClause :: First Expr.RowLockingClause
   , i_windowExpr :: Maybe Expr.NamedWindowDefinitionExpr
+  , i_fetchClause :: First Expr.FetchClause
   }
 
 -- | @since 1.0.0.0
@@ -76,6 +79,7 @@ emptySelectOptions =
     , i_groupByExpr = mempty
     , i_rowLockingClause = mempty
     , i_windowExpr = Nothing
+    , i_fetchClause = mempty
     }
 
 {- |
@@ -96,6 +100,7 @@ appendSelectOptions left right =
     (i_groupByExpr left <> i_groupByExpr right)
     (i_rowLockingClause left <> i_rowLockingClause right)
     (i_windowExpr left <> i_windowExpr right)
+    (i_fetchClause left <> i_fetchClause right)
 
 unionMaybeWith :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
 unionMaybeWith f mbLeft mbRight =
@@ -200,6 +205,15 @@ selectWindowClause =
   fmap Expr.windowClause . i_windowExpr
 
 {- |
+  Builds an 'Expr.FetchClause' that will apply the fetching rules specified in the 'SelectOptions' (if any).
+
+@since 1.1.0.0
+-}
+selectFetchClause :: SelectOptions -> Maybe Expr.FetchClause
+selectFetchClause =
+  getFirst . i_fetchClause
+
+{- |
   Constructs a 'SelectOptions' with just the given 'Expr.BooleanExpr'.
 
 @since 1.0.0.0
@@ -277,6 +291,17 @@ window namedWindow =
     }
 
 {- |
+  Constructs a 'SelectOptions' with just the given 'Expr.FetchClause'.
+
+@since 1.1.0.0
+-}
+fetchRow :: Expr.FetchClause -> SelectOptions
+fetchRow fetchClause =
+  emptySelectOptions
+    { i_fetchClause = First $ Just fetchClause
+    }
+
+{- |
   Builds a 'Expr.QueryExpr' that will use the specified 'Expr.SelectList' when
   building the @SELECT@ statement to execute. It is up to the caller to make
   sure that the 'Expr.SelectList' expression makes sense for the table being
@@ -312,4 +337,5 @@ selectOptionsQueryExpr selectList tableReferenceList selectOptions =
           (selectOffsetExpr selectOptions)
           (selectRowLockingClause selectOptions)
           (selectWindowClause selectOptions)
+          (selectFetchClause selectOptions)
     )

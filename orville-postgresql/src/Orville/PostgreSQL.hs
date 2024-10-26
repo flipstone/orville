@@ -283,6 +283,7 @@ module Orville.PostgreSQL
   , SelectOptions.emptySelectOptions
   , SelectOptions.appendSelectOptions
   , SelectOptions.forRowLock
+  , SelectOptions.fetchRow
   , FieldDefinition.fieldEquals
   , (FieldDefinition..==)
   , FieldDefinition.fieldNotEquals
@@ -333,6 +334,7 @@ module Orville.PostgreSQL
   , SelectOptions.selectWhereClause
   , SelectOptions.selectDistinct
   , SelectOptions.selectRowLockingClause
+  , SelectOptions.selectFetchClause
 
     -- * Functions for defining and working with sequences
   , Sequence.sequenceNextValue

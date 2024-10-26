@@ -58,6 +58,7 @@ library
       Orville.PostgreSQL.Expr.DataType
       Orville.PostgreSQL.Expr.Delete
       Orville.PostgreSQL.Expr.Extension
+      Orville.PostgreSQL.Expr.FetchClause
       Orville.PostgreSQL.Expr.Filter
       Orville.PostgreSQL.Expr.FromItemExpr
       Orville.PostgreSQL.Expr.Function

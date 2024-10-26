@@ -76,6 +76,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.RowLocking
   , module Orville.PostgreSQL.Expr.Aggregate
   , module Orville.PostgreSQL.Expr.Filter
+  , module Orville.PostgreSQL.Expr.FetchClause
   )
 where
 
@@ -92,6 +93,7 @@ import Orville.PostgreSQL.Expr.Cursor
 import Orville.PostgreSQL.Expr.DataType
 import Orville.PostgreSQL.Expr.Delete
 import Orville.PostgreSQL.Expr.Extension
+import Orville.PostgreSQL.Expr.FetchClause
 import Orville.PostgreSQL.Expr.Filter
 import Orville.PostgreSQL.Expr.FromItemExpr
 import Orville.PostgreSQL.Expr.Function
