@@ -4,7 +4,7 @@ module Test.Expr.InsertUpdateDelete
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
@@ -38,7 +38,7 @@ prop_insertExpr :: Property.NamedDBProperty
 prop_insertExpr =
   Property.singletonNamedDBProperty "insertExpr inserts values" $ \pool -> do
     let
-      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
     rows <-
       MIO.liftIO $
@@ -52,13 +52,13 @@ prop_insertExpr =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows fooBars
+    assertEqualFooBarRows rows (NE.toList fooBars)
 
 prop_insertExprWithOnConflictDoNothing :: Property.NamedDBProperty
 prop_insertExprWithOnConflictDoNothing =
   Property.singletonNamedDBProperty "insertExpr with on conflict do nothing does not modify table" $ \pool -> do
     let
-      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
 
     rows <-
@@ -77,14 +77,14 @@ prop_insertExprWithOnConflictDoNothing =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows fooBars
+    assertEqualFooBarRows rows (NE.toList fooBars)
 
 prop_insertExprWithOnConflictDoUpdate :: Property.NamedDBProperty
 prop_insertExprWithOnConflictDoUpdate =
   Property.singletonNamedDBProperty "insertExpr with on conflict do update updates conflicting row" $ \pool -> do
     let
-      fooBars0 = [mkFooBar 1 "dog"]
-      fooBars1 = [mkFooBar 1 "eagel"]
+      fooBars0 = pure $ mkFooBar 1 "dog"
+      fooBars1 = pure $ mkFooBar 1 "eagel"
       addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
       fooColumnName = Expr.unqualified (Expr.columnName "foo")
       barColumnName = Expr.unqualified (Expr.columnName "bar")
@@ -108,13 +108,13 @@ prop_insertExprWithOnConflictDoUpdate =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows fooBars1
+    assertEqualFooBarRows rows (NE.toList fooBars1)
 
 prop_insertExprWithReturning :: Property.NamedDBProperty
 prop_insertExprWithReturning =
   Property.singletonNamedDBProperty "insertExpr with returning clause returns the requested columns" $ \pool -> do
     let
-      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
     rows <-
       MIO.liftIO $
@@ -132,19 +132,19 @@ prop_insertExprWithReturning =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows fooBars
+    assertEqualFooBarRows rows (NE.toList fooBars)
 
 prop_updateExpr :: Property.NamedDBProperty
 prop_updateExpr =
   Property.singletonNamedDBProperty "updateExpr updates rows in the db" $ \pool -> do
     let
-      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-      newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
+      oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = NE.fromList [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
 
       setBarToFerret =
         Expr.updateExpr
           fooBarTable
-          (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
+          (Expr.setClauseList (pure $ Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))))
           Nothing
           Nothing
 
@@ -162,19 +162,19 @@ prop_updateExpr =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows newFooBars
+    assertEqualFooBarRows rows (NE.toList newFooBars)
 
 prop_updateExprWithWhere :: Property.NamedDBProperty
 prop_updateExprWithWhere =
   Property.singletonNamedDBProperty "updateExpr uses a where clause when given" $ \pool -> do
     let
-      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-      newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "cat"]
+      oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = NE.fromList [mkFooBar 1 "ferret", mkFooBar 2 "cat"]
 
       updateDogToForret =
         Expr.updateExpr
           fooBarTable
-          (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
+          (Expr.setClauseList (pure $ Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))))
           (Just (Expr.whereClause (Expr.equals barColumnRef (Expr.valueExpression (SqlValue.fromText (T.pack "dog"))))))
           Nothing
 
@@ -192,19 +192,19 @@ prop_updateExprWithWhere =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows newFooBars
+    assertEqualFooBarRows rows (NE.toList newFooBars)
 
 prop_updateExprWithReturning :: Property.NamedDBProperty
 prop_updateExprWithReturning =
   Property.singletonNamedDBProperty "updateExpr with returning clause returns the new records" $ \pool -> do
     let
-      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-      newFooBars = [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
+      oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = NE.fromList [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
 
       setBarToFerret =
         Expr.updateExpr
           fooBarTable
-          (Expr.setClauseList (Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret")) :| []))
+          (Expr.setClauseList (pure $ Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))))
           Nothing
           (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
@@ -220,13 +220,13 @@ prop_updateExprWithReturning =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows newFooBars
+    assertEqualFooBarRows rows (NE.toList newFooBars)
 
 prop_deleteExpr :: Property.NamedDBProperty
 prop_deleteExpr =
   Property.singletonNamedDBProperty "deleteExpr deletes rows in the db" $ \pool -> do
     let
-      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
       deleteRows =
         Expr.deleteExpr
@@ -254,8 +254,8 @@ prop_deleteExprWithWhere :: Property.NamedDBProperty
 prop_deleteExprWithWhere =
   Property.singletonNamedDBProperty "deleteExpr uses a where clause when given" $ \pool -> do
     let
-      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
-      newFooBars = [mkFooBar 2 "cat"]
+      oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      newFooBars = pure $ mkFooBar 2 "cat"
 
       deleteDogs =
         Expr.deleteExpr
@@ -277,13 +277,13 @@ prop_deleteExprWithWhere =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows newFooBars
+    assertEqualFooBarRows rows (NE.toList newFooBars)
 
 prop_deleteExprWithReturning :: Property.NamedDBProperty
 prop_deleteExprWithReturning =
   Property.singletonNamedDBProperty "deleteExpr with returning returns the original rows" $ \pool -> do
     let
-      oldFooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
       deleteDogs =
         Expr.deleteExpr
@@ -303,13 +303,13 @@ prop_deleteExprWithReturning =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows oldFooBars
+    assertEqualFooBarRows rows (NE.toList oldFooBars)
 
 prop_truncateTablesExpr :: Property.NamedDBProperty
 prop_truncateTablesExpr =
   Property.singletonNamedDBProperty "truncateTablesExpr clears out inserted values from all tables" $ \pool -> do
     let
-      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       fooBar2Table =
         Expr.unqualified (Expr.tableName "foobar2")
       dropAndRecreateSecondTable connection = do
@@ -331,7 +331,7 @@ prop_truncateTablesExpr =
         MIO.liftIO $
           Conn.withPoolConnection pool $ \connection -> do
             RawSql.executeVoid connection $
-              Expr.truncateTablesExpr (fooBarTable :| (pure fooBar2Table))
+              Expr.truncateTablesExpr (fooBarTable NE.:| (pure fooBar2Table))
 
     _ <- recreateAndInsert
     _ <- truncateTables

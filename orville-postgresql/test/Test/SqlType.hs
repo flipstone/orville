@@ -531,12 +531,20 @@ runDecodingTest pool test =
 
       let
         tableName = Expr.unqualified $ Expr.tableName "decoding_test"
+        insertSource =
+          Expr.valuesExprInsertSource
+            . Expr.valuesExprFromValueExpressions
+            . pure
+            . pure
+            . Expr.valueExpression
+            . SqlValue.fromRawBytesNullable
+            $ rawSqlValue test
 
       RawSql.executeVoid connection $
         Expr.insertExpr
           tableName
           Nothing
-          (Expr.insertSqlValues [[SqlValue.fromRawBytesNullable (rawSqlValue test)]])
+          insertSource
           Nothing
           Nothing
 

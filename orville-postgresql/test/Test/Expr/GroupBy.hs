@@ -6,7 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
-import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
@@ -36,19 +36,19 @@ prop_groupByColumnsExpr :: Property.NamedDBProperty
 prop_groupByColumnsExpr =
   groupByTest "groupByColumnsExpr groups by columns" $
     GroupByTest
-      { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      { groupByValuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults = [FooBar 3 "dog", FooBar 2 "dingo", FooBar 1 "dog"]
       , groupByClause =
           Just . Expr.groupByClause $
             Expr.groupByColumnsExpr $
-              barColumn :| [fooColumn]
+              barColumn NE.:| [fooColumn]
       }
 
 prop_appendGroupByExpr :: Property.NamedDBProperty
 prop_appendGroupByExpr =
   groupByTest "appendGroupByExpr causes grouping on both clauses" $
     GroupByTest
-      { groupByValuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo", FooBar 1 "dog", FooBar 2 "dingo"]
+      { groupByValuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo", FooBar 1 "dog", FooBar 2 "dingo"]
       , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo"]
       , groupByClause =
           Just . Expr.groupByClause $
@@ -58,7 +58,7 @@ prop_appendGroupByExpr =
       }
 
 data GroupByTest = GroupByTest
-  { groupByValuesToInsert :: [FooBar]
+  { groupByValuesToInsert :: NE.NonEmpty FooBar
   , groupByClause :: Maybe Expr.GroupByClause
   , groupByExpectedQueryResults :: [FooBar]
   }
@@ -67,11 +67,15 @@ mkGroupByTestInsertSource :: GroupByTest -> Expr.InsertSource
 mkGroupByTestInsertSource test =
   let
     mkRow foobar =
-      [ SqlValue.fromInt32 (foo foobar)
-      , SqlValue.fromText (T.pack $ bar foobar)
-      ]
+      NE.fromList
+        [ Expr.valueExpression $ SqlValue.fromInt32 (foo foobar)
+        , Expr.valueExpression $ SqlValue.fromText (T.pack $ bar foobar)
+        ]
   in
-    Expr.insertSqlValues (fmap mkRow $ groupByValuesToInsert test)
+    Expr.valuesExprInsertSource
+      . Expr.valuesExprFromValueExpressions
+      . fmap mkRow
+      $ (groupByValuesToInsert test)
 
 mkGroupByTestExpectedRows :: GroupByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByTestExpectedRows test =

@@ -6,6 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
@@ -34,7 +35,7 @@ prop_groupByOrderByExpr :: Property.NamedDBProperty
 prop_groupByOrderByExpr =
   groupByOrderByTest "GroupBy and OrderBy clauses can be used together" $
     GroupByOrderByTest
-      { valuesToInsert = [FooBar 1 "shiba", FooBar 2 "dingo", FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "shiba"]
+      { valuesToInsert = NE.fromList [FooBar 1 "shiba", FooBar 2 "dingo", FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "shiba"]
       , expectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 1 "shiba"]
       , groupByClause =
           Just . Expr.groupByClause $
@@ -47,7 +48,7 @@ prop_groupByOrderByExpr =
       }
 
 data GroupByOrderByTest = GroupByOrderByTest
-  { valuesToInsert :: [FooBar]
+  { valuesToInsert :: NE.NonEmpty FooBar
   , groupByClause :: Maybe Expr.GroupByClause
   , orderByClause :: Maybe Expr.OrderByClause
   , expectedQueryResults :: [FooBar]
@@ -57,11 +58,15 @@ mkGroupByOrderByTestInsertSource :: GroupByOrderByTest -> Expr.InsertSource
 mkGroupByOrderByTestInsertSource test =
   let
     mkRow foobar =
-      [ SqlValue.fromInt32 (foo foobar)
-      , SqlValue.fromText (T.pack $ bar foobar)
-      ]
+      NE.fromList
+        [ Expr.valueExpression $ SqlValue.fromInt32 (foo foobar)
+        , Expr.valueExpression $ SqlValue.fromText (T.pack $ bar foobar)
+        ]
   in
-    Expr.insertSqlValues (map mkRow $ valuesToInsert test)
+    Expr.valuesExprInsertSource
+      . Expr.valuesExprFromValueExpressions
+      . fmap mkRow
+      $ valuesToInsert test
 
 mkGroupByOrderByTestExpectedRows :: GroupByOrderByTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkGroupByOrderByTestExpectedRows test =

@@ -40,7 +40,7 @@ module Orville.PostgreSQL.Schema.TableDefinition
   )
 where
 
-import Data.List.NonEmpty (NonEmpty, toList)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -50,7 +50,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Marshall.FieldDefinition (fieldAliasQualifiedColumnName, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
-import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
@@ -132,7 +131,7 @@ mkTableDefinition name primaryKey marshaller =
   TableDefinition
     { i_tableIdentifier = unqualifiedNameToTableId name
     , i_tablePrimaryKey = TableHasKey primaryKey
-    , i_tableMarshaller = annotateSqlMarshaller (toList $ primaryKeyFieldNames primaryKey) marshaller
+    , i_tableMarshaller = annotateSqlMarshaller (NE.toList $ primaryKeyFieldNames primaryKey) marshaller
     , i_tableColumnsToDrop = Set.empty
     , i_tableConstraintsFromTable = emptyTableConstraints
     , i_tableIndexes = Map.empty
@@ -520,7 +519,7 @@ mkInsertExpr ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
   Maybe Expr.OnConflictExpr ->
-  NonEmpty writeEntity ->
+  NE.NonEmpty writeEntity ->
   Expr.InsertExpr
 mkInsertExpr returningOption tableDef maybeOnConflict entities =
   let
@@ -573,35 +572,53 @@ mkInsertColumnList marshaller =
   via 'mkInsertExpr', but this is exported in case you are composing SQL
   yourself and need the column list of an insert as a fragment.
 
+  If the 'SqlMarshaller' does not contain any fields, the resulting 'InsertSource'
+  will insert a default row using @VALUES(DEFAULT)@.
+
 @since 1.0.0.0
 -}
 mkInsertSource ::
   SqlMarshaller writeEntity readEntity ->
-  NonEmpty writeEntity ->
+  NE.NonEmpty writeEntity ->
   Expr.InsertSource
 mkInsertSource marshaller entities =
   let
     encodeRow =
-      foldMarshallerFields marshaller (const []) collectSqlValue
+      foldMarshallerFields marshaller (const Nothing) collectSqlValue
   in
-    Expr.insertSqlValues $ map encodeRow (toList entities)
+    Expr.valuesExprInsertSource $
+      case traverse encodeRow entities of
+        Nothing ->
+          Expr.valuesExpr
+            (Expr.valuesExprRow (pure Expr.valuesExprDefaultValue) <$ entities)
+            Nothing
+            Nothing
+            Nothing
+            Nothing
+        Just valExprs ->
+          Expr.valuesExprFromValueExpressions valExprs
 
 {- |
-  An internal helper function that collects the 'SqlValue' encoded value for a
-  field from a Haskell entity, adding it a list of 'SqlValue's that is being
-  built.
+  An internal helper function that collects the 'SqlValue' encoded value for a field from a Haskell
+  entity as a 'ValueExpression', adding it a list of 'ValueExpresion's that is being built.
 
 @since 1.0.0.0
 -}
 collectSqlValue ::
   MarshallerField entity ->
-  (entity -> [SqlValue]) ->
+  (entity -> Maybe (NE.NonEmpty Expr.ValueExpression)) ->
   entity ->
-  [SqlValue]
+  Maybe (NE.NonEmpty Expr.ValueExpression)
 collectSqlValue entry encodeRest entity =
   case entry of
     Natural _ fieldDef (Just accessor) ->
-      fieldValueToSqlValue fieldDef (accessor entity) : (encodeRest entity)
+      let
+        self = Expr.valueExpression $ fieldValueToSqlValue fieldDef (accessor entity)
+      in
+        maybe
+          (Just $ pure self)
+          (Just . NE.cons self)
+          (encodeRest entity)
     Natural _ _ Nothing ->
       encodeRest entity
     Synthetic _ ->

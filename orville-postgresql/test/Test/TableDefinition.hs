@@ -7,6 +7,7 @@ import qualified Control.Exception as E
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -36,6 +37,7 @@ tableDefinitionTests pool =
     , prop_primaryKey pool
     , prop_uniqueConstraint pool
     , prop_fieldConstraints
+    , prop_insertDefaultValuesWithEmptyMarshaller pool
     ]
 
 prop_roundTrip :: Property.NamedDBProperty
@@ -49,7 +51,7 @@ prop_roundTrip =
           ReturningOption.WithoutReturning
           Foo.table
           Nothing
-          (originalFoo :| [])
+          (originalFoo NE.:| [])
 
       selectFoos =
         Select.selectTable Foo.table mempty
@@ -212,3 +214,33 @@ prop_fieldConstraints =
         ConstraintDefinition.tableConstraintKeys . Orville.tableConstraints
 
     tableConstraintKeys tableWithFieldConstraints === tableConstraintKeys tableWithTableConstraints
+
+prop_insertDefaultValuesWithEmptyMarshaller :: Property.NamedDBProperty
+prop_insertDefaultValuesWithEmptyMarshaller =
+  Property.singletonNamedDBProperty "Inserts default values when table marshaller is empty" $ \pool -> do
+    let
+      table :: TableDefinition.TableDefinition (Orville.HasKey Bar.BarId) () ()
+      table =
+        TableDefinition.mapTableMarshaller (const $ pure ()) Bar.table
+      entities =
+        NE.fromList [(), (), ()]
+      expectedResult =
+        [ Bar.Bar 1 $ T.pack "default"
+        , Bar.Bar 2 $ T.pack "default"
+        , Bar.Bar 3 $ T.pack "default"
+        ]
+
+      insertExpr =
+        TableDefinition.mkInsertExpr
+          ReturningOption.WithoutReturning
+          table
+          Nothing
+          entities
+
+    result <- MIO.liftIO . Orville.runOrville pool $ do
+      MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
+        TestTable.dropAndRecreateTableDef connection Bar.table
+        RawSql.executeVoid connection insertExpr
+      Select.executeSelect $ Select.selectTable Bar.table mempty
+
+    result === expectedResult

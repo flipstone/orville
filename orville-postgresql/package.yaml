@@ -84,6 +84,7 @@ library:
     - Orville.PostgreSQL.Expr.Update
     - Orville.PostgreSQL.Expr.Vacuum
     - Orville.PostgreSQL.Expr.ValueExpression
+    - Orville.PostgreSQL.Expr.Values
     - Orville.PostgreSQL.Expr.WhereClause
     - Orville.PostgreSQL.Expr.Window
     - Orville.PostgreSQL.Expr.Window.WindowClause

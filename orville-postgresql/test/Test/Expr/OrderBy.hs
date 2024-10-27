@@ -32,7 +32,7 @@ prop_ascendingExpr :: Property.NamedDBProperty
 prop_ascendingExpr =
   orderByTest "ascendingExpr sorts a text column" $
     OrderByTest
-      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog", mkFooBar 3 "dog"]
       , orderByDistinctOn =
           Nothing
@@ -45,7 +45,7 @@ prop_descendingExpr :: Property.NamedDBProperty
 prop_descendingExpr =
   orderByTest "descendingExpr sorts a text column" $
     OrderByTest
-      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "dog", mkFooBar 2 "dingo"]
       , orderByDistinctOn =
           Nothing
@@ -58,7 +58,7 @@ prop_appendOrderByExpr :: Property.NamedDBProperty
 prop_appendOrderByExpr =
   orderByTest "appendOrderByExpr causes ordering on both columns" $
     OrderByTest
-      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
       , orderByDistinctOn =
           Nothing
@@ -73,7 +73,7 @@ prop_orderByColumnsExpr :: Property.NamedDBProperty
 prop_orderByColumnsExpr =
   orderByTest "orderByColumnsExpr orders by columns" $
     OrderByTest
-      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
       , orderByDistinctOn =
           Nothing
@@ -89,7 +89,7 @@ prop_ascendingOrderWithExpr =
   orderByTest "ascendingOrderWith sorts columns with nulls first/last" $
     OrderByTest
       { orderByValuesToInsert =
-          [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
+          NE.fromList [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
       , orderByExpectedQueryResults =
           [FooBar Nothing (Just "dog"), FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog"]
       , orderByDistinctOn =
@@ -106,7 +106,7 @@ prop_descendingOrderWithExpr =
   orderByTest "descendingOrderWith sorts columns with nulls first/last" $
     OrderByTest
       { orderByValuesToInsert =
-          [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
+          NE.fromList [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
       , orderByExpectedQueryResults =
           [FooBar Nothing (Just "dog"), FooBar Nothing Nothing, mkFooBar 2 "dog", FooBar (Just 1) Nothing]
       , orderByDistinctOn =
@@ -122,7 +122,7 @@ prop_distinctOnExpr :: Property.NamedDBProperty
 prop_distinctOnExpr =
   orderByTest "descendingExpr sorts a text column as expected with distinctOn" $
     OrderByTest
-      { orderByValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog"]
       , orderByDistinctOn =
           Just . pure . RawSql.unsafeFromRawSql $ RawSql.toRawSql barColumn
@@ -134,7 +134,7 @@ prop_distinctOnExpr =
       }
 
 data OrderByTest = OrderByTest
-  { orderByValuesToInsert :: [FooBar]
+  { orderByValuesToInsert :: NE.NonEmpty FooBar
   , orderByClause :: Maybe Expr.OrderByClause
   , orderByDistinctOn :: Maybe (NE.NonEmpty Expr.DistinctOnExpr)
   , orderByExpectedQueryResults :: [FooBar]

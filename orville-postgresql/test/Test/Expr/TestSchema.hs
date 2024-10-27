@@ -22,6 +22,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
@@ -91,22 +92,25 @@ encodeFooBar fooBar =
   , (Just (B8.pack "bar"), nullOr SqlValue.fromText (T.pack <$> bar fooBar))
   ]
 
-insertFooBarSource :: [FooBar] -> Expr.InsertSource
+insertFooBarSource :: NE.NonEmpty FooBar -> Expr.InsertSource
 insertFooBarSource fooBars =
   let
     mkRow fooBar =
-      [ nullOr SqlValue.fromInt32 (foo fooBar)
-      , nullOr SqlValue.fromText (T.pack <$> bar fooBar)
-      ]
+      NE.fromList
+        [ Expr.valueExpression $ nullOr SqlValue.fromInt32 (foo fooBar)
+        , Expr.valueExpression $ nullOr SqlValue.fromText (T.pack <$> bar fooBar)
+        ]
   in
-    Expr.insertSqlValues (map mkRow fooBars)
+    Expr.valuesExprInsertSource
+      . Expr.valuesExprFromValueExpressions
+      $ fmap mkRow fooBars
 
 nullOr :: (a -> SqlValue.SqlValue) -> Maybe a -> SqlValue.SqlValue
 nullOr = maybe SqlValue.sqlNull
 
 withFooBarData ::
   Orville.ConnectionPool ->
-  [FooBar] ->
+  NE.NonEmpty FooBar ->
   (Orville.Connection -> IO a) ->
   HH.PropertyT IO a
 withFooBarData pool fooBars action =

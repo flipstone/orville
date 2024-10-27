@@ -6,6 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import Data.Int (Int32)
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 
 import qualified Orville.PostgreSQL as Orville
@@ -42,7 +43,7 @@ prop_noWhereClauseSpecified :: Property.NamedDBProperty
 prop_noWhereClauseSpecified =
   whereConditionTest "Returns all rows when where clause is specified" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereExpectedQueryResults = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereClause = Nothing
       }
@@ -51,7 +52,7 @@ prop_equalsOp :: Property.NamedDBProperty
 prop_equalsOp =
   whereConditionTest "equalsOp matches exact value" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereExpectedQueryResults = [mkFooBar 2 "bee"]
       , whereClause =
           Just . Expr.whereClause $
@@ -62,7 +63,7 @@ prop_isDistinctFromOp :: Property.NamedDBProperty
 prop_isDistinctFromOp =
   whereConditionTest "isDistinctFromOp matches on null correctly" $
     WhereConditionTest
-      { whereValuesToInsert = [FooBar Nothing (Just "ant"), mkFooBar 2 "bee", FooBar Nothing (Just "chihuahua")]
+      { whereValuesToInsert = NE.fromList [FooBar Nothing (Just "ant"), mkFooBar 2 "bee", FooBar Nothing (Just "chihuahua")]
       , whereExpectedQueryResults = [mkFooBar 2 "bee"]
       , whereClause =
           Just . Expr.whereClause $
@@ -76,7 +77,7 @@ prop_isNotDistinctFromOp =
       expectedResults = [FooBar Nothing (Just "ant"), FooBar Nothing (Just "chihuahua")]
     in
       WhereConditionTest
-        { whereValuesToInsert = [mkFooBar 2 "bee"] <> expectedResults
+        { whereValuesToInsert = mkFooBar 2 "bee" :| expectedResults
         , whereExpectedQueryResults = expectedResults
         , whereClause =
             Just . Expr.whereClause $
@@ -87,7 +88,7 @@ prop_greaterThanOp :: Property.NamedDBProperty
 prop_greaterThanOp =
   whereConditionTest "greaterThanOp matches greater values" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereExpectedQueryResults = [mkFooBar 3 "chihuahua"]
       , whereClause =
           Just . Expr.whereClause $
@@ -98,7 +99,7 @@ prop_greaterThanOrEqualsOp :: Property.NamedDBProperty
 prop_greaterThanOrEqualsOp =
   whereConditionTest "greaterThanOrEqualsOp matches greater or equal values" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereExpectedQueryResults = [mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereClause =
           Just . Expr.whereClause $
@@ -109,7 +110,7 @@ prop_lessThanOp :: Property.NamedDBProperty
 prop_lessThanOp =
   whereConditionTest "lessThanOp matches lesser values" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereExpectedQueryResults = [mkFooBar 1 "ant"]
       , whereClause =
           Just . Expr.whereClause $
@@ -120,7 +121,7 @@ prop_lessThanOrEqualsToOp :: Property.NamedDBProperty
 prop_lessThanOrEqualsToOp =
   whereConditionTest "lessThanOrEqualsOp matches lesser or equal values" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , whereExpectedQueryResults = [mkFooBar 1 "ant", mkFooBar 2 "bee"]
       , whereClause =
           Just . Expr.whereClause $
@@ -131,7 +132,7 @@ prop_andExpr :: Property.NamedDBProperty
 prop_andExpr =
   whereConditionTest "andExpr requires both conditions to be true" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 3 "dog"]
       , whereClause =
           Just . Expr.whereClause $
@@ -144,7 +145,7 @@ prop_orExpr :: Property.NamedDBProperty
 prop_orExpr =
   whereConditionTest "orExpr requires either conditions to be true" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereClause =
           Just . Expr.whereClause $
@@ -157,7 +158,7 @@ prop_notExpr :: Property.NamedDBProperty
 prop_notExpr =
   whereConditionTest "notExpr inverts condition" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 2 "dingo"]
       , whereClause =
           Just . Expr.whereClause . Expr.notExpr $
@@ -170,7 +171,7 @@ prop_valueIn :: Property.NamedDBProperty
 prop_valueIn =
   whereConditionTest "valueIn requires the column's value to be in the list" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "dog"]
       , whereClause =
           Just . Expr.whereClause $
@@ -183,7 +184,7 @@ prop_valueNotIn :: Property.NamedDBProperty
 prop_valueNotIn =
   whereConditionTest "valueNotIn requires the column's value to not be in the list" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 2 "dingo"]
       , whereClause =
           Just . Expr.whereClause $
@@ -196,7 +197,7 @@ prop_tupleIn :: Property.NamedDBProperty
 prop_tupleIn =
   whereConditionTest "tupleIn requires the column value combination to be in the list" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 2 "dingo"]
       , whereClause =
           Just . Expr.whereClause $
@@ -211,7 +212,7 @@ prop_tupleNotIn :: Property.NamedDBProperty
 prop_tupleNotIn =
   whereConditionTest "tupleNotIn requires the column value combination to not be in the list" $
     WhereConditionTest
-      { whereValuesToInsert = [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , whereExpectedQueryResults = [mkFooBar 3 "dog"]
       , whereClause =
           Just . Expr.whereClause $
@@ -231,7 +232,7 @@ textValueExpr =
   Expr.valueExpression . SqlValue.fromText . T.pack
 
 data WhereConditionTest = WhereConditionTest
-  { whereValuesToInsert :: [FooBar]
+  { whereValuesToInsert :: NE.NonEmpty FooBar
   , whereClause :: Maybe Expr.WhereClause
   , whereExpectedQueryResults :: [FooBar]
   }

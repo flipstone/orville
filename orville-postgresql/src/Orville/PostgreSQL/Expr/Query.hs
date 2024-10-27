@@ -174,7 +174,7 @@ queryExprWithAlias alias query =
       <> RawSql.fromString " AS "
       <> RawSql.toRawSql alias
 
-{- | Make a 'QueryExpr' into a 'FromItemExpr', aliased appropriately, so that it can be used to
+{- | Make a 'QueryExpr' into a 'FromItemExpr', aliased appropriately, so that it can be used
    as a subquery in @SELECT@ion.
 
 @since 1.1.0.0

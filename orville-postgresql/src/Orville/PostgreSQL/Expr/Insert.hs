@@ -16,14 +16,17 @@ module Orville.PostgreSQL.Expr.Insert
   , insertSqlValues
   , RowValues
   , rowValues
+  , valuesExprInsertSource
   )
 where
 
 import Data.Maybe (catMaybes)
 
+import qualified Data.List.NonEmpty as NE
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.OnConflict (OnConflictExpr)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
+import Orville.PostgreSQL.Expr.Values (ValuesExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
@@ -97,9 +100,10 @@ parens and commas are used to separate.
 insertColumnList :: [QualifiedOrUnqualified ColumnName] -> InsertColumnList
 insertColumnList columnNames =
   InsertColumnList $
-    RawSql.leftParen
-      <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql columnNames)
-      <> RawSql.rightParen
+    maybe
+      mempty
+      (RawSql.parenthesized . RawSql.intercalate RawSql.comma . fmap RawSql.toRawSql)
+      (NE.nonEmpty columnNames)
 
 {- |
 Type to represent the SQL for the source of data for an insert statement. E.G.
@@ -119,6 +123,16 @@ newtype InsertSource
       RawSql.SqlExpression
     )
 
+{- |
+  Use a 'ValuesExpr' as an 'InsertSource'.
+
+@since 1.1.0.0
+-}
+valuesExprInsertSource :: ValuesExpr -> InsertSource
+valuesExprInsertSource = InsertSource . RawSql.toRawSql
+
+{-# DEPRECATED insertRowValues "Use Orville.PostgreSQL.Expr.valuesExpr and Orville.PostgreSQL.Expr.valuesExprInsertSource" #-}
+
 {- | Create an 'InsertSource' for the given 'RowValues'. This ensures that all input values are used
 as parameters and comma-separated in the generated SQL.
 
@@ -129,6 +143,8 @@ insertRowValues rows =
   InsertSource $
     RawSql.fromString "VALUES "
       <> RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql rows)
+
+{-# DEPRECATED insertSqlValues "Use Orville.PostgreSQL.Expr.ValuesExpr and Orivlle.PostgreSQL.Expr.valuesExprInsertSource" #-}
 
 {- | Create an 'InsertSource' for the given 'SqlValue's. This ensures that all input values are used
 as parameters and comma-separated in the generated SQL.

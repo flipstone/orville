@@ -6,6 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 
@@ -40,7 +41,7 @@ prop_avgAggregate :: Property.NamedDBProperty
 prop_avgAggregate =
   aggregateFunctionTest "avgAggregateFunction computes simple average" $
     AggregateTest
-      { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
           [ DoubleRes 2.00000
           ]
@@ -56,7 +57,7 @@ prop_maxAggregate :: Property.NamedDBProperty
 prop_maxAggregate =
   aggregateFunctionTest "maxAggregateFunction computes maximum" $
     AggregateTest
-      { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
           [ DoubleRes 3.0
           ]
@@ -72,7 +73,7 @@ prop_minAggregate :: Property.NamedDBProperty
 prop_minAggregate =
   aggregateFunctionTest "minAggregateFunction computes minimum" $
     AggregateTest
-      { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
           [ DoubleRes 1.0
           ]
@@ -88,7 +89,7 @@ prop_sumAggregate :: Property.NamedDBProperty
 prop_sumAggregate =
   aggregateFunctionTest "sumAggregateFunction computes simple sum" $
     AggregateTest
-      { valuesToInsert = [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
+      { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
           [ DoubleRes 6.0
           ]
@@ -101,7 +102,7 @@ prop_sumAggregate =
       }
 
 data AggregateTest = AggregateTest
-  { valuesToInsert :: [FooBar]
+  { valuesToInsert :: NE.NonEmpty FooBar
   , aggregateFunctionExpr :: Expr.ValueExpression
   , groupByExpectedQueryResults :: [DoubleRes]
   }
@@ -130,11 +131,14 @@ mkAggregateTestInsertSource :: AggregateTest -> Expr.InsertSource
 mkAggregateTestInsertSource test =
   let
     mkRow foobar =
-      [ SqlValue.fromInt32 (foo foobar)
-      , SqlValue.fromText (T.pack $ bar foobar)
-      ]
+      NE.fromList
+        [ Expr.valueExpression $ SqlValue.fromInt32 (foo foobar)
+        , Expr.valueExpression $ SqlValue.fromText (T.pack $ bar foobar)
+        ]
   in
-    Expr.insertSqlValues (fmap mkRow $ valuesToInsert test)
+    Expr.valuesExprInsertSource
+      . Expr.valuesExprFromValueExpressions
+      $ fmap mkRow (valuesToInsert test)
 
 mkAggregateTestExpectedRows :: AggregateTest -> [[(Maybe B8.ByteString, SqlValue.SqlValue)]]
 mkAggregateTestExpectedRows test =

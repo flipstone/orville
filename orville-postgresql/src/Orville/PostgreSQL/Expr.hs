@@ -77,6 +77,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Aggregate
   , module Orville.PostgreSQL.Expr.Filter
   , module Orville.PostgreSQL.Expr.FetchClause
+  , module Orville.PostgreSQL.Expr.Values
   )
 where
 
@@ -123,5 +124,6 @@ import Orville.PostgreSQL.Expr.Trigger
 import Orville.PostgreSQL.Expr.Update
 import Orville.PostgreSQL.Expr.Vacuum
 import Orville.PostgreSQL.Expr.ValueExpression
+import Orville.PostgreSQL.Expr.Values
 import Orville.PostgreSQL.Expr.WhereClause
 import Orville.PostgreSQL.Expr.Window

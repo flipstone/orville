@@ -1,5 +1,6 @@
 module Test.Entities.Bar
   ( Bar (..)
+  , BarId
   , table
   , generate
   , generateList
@@ -49,7 +50,8 @@ barIdField =
 
 barNameField :: Orville.FieldDefinition Orville.NotNull BarName
 barNameField =
-  Orville.unboundedTextField "name"
+  Orville.setDefaultValue (Orville.textDefault $ T.pack "default") $
+    Orville.unboundedTextField "name"
 
 generate :: HH.Gen BarWrite
 generate =

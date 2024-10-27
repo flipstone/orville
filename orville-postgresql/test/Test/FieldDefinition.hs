@@ -248,7 +248,13 @@ runRoundTripTest pool testCase = do
       Expr.insertExpr
         testTable
         Nothing
-        (Expr.insertSqlValues [[Marshall.toComparableSqlValue fieldDef value]])
+        ( Expr.valuesExprInsertSource
+            . Expr.valuesExprFromValueExpressions
+            . pure
+            . pure
+            . Expr.valueExpression
+            $ Marshall.toComparableSqlValue fieldDef value
+        )
         Nothing
         Nothing
 
@@ -293,7 +299,13 @@ runNullableRoundTripTest pool testCase = do
       Expr.insertExpr
         testTable
         Nothing
-        (Expr.insertSqlValues [[Marshall.fieldValueToSqlValue fieldDef value]])
+        ( Expr.valuesExprInsertSource
+            . Expr.valuesExprFromValueExpressions
+            . pure
+            . pure
+            . Expr.valueExpression
+            $ Marshall.toComparableSqlValue fieldDef value
+        )
         Nothing
         Nothing
 
@@ -329,7 +341,12 @@ runNullCounterExampleTest pool testCase = do
         Expr.insertExpr
           testTable
           Nothing
-          (Expr.insertSqlValues [[SqlValue.sqlNull]])
+          ( Expr.valuesExprInsertSource
+              . Expr.valuesExprFromValueExpressions
+              . pure
+              . pure
+              $ Expr.valueExpression SqlValue.sqlNull
+          )
           Nothing
           Nothing
 

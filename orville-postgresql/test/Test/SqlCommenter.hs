@@ -6,6 +6,7 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Data.Functor.Identity (runIdentity)
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -62,7 +63,7 @@ prop_sqlCommenterInsertExpr :: Property.NamedDBProperty
 prop_sqlCommenterInsertExpr =
   Property.singletonNamedDBProperty "sqlcommenter support does not impact ability of insertExpr inserting values" $ \pool -> do
     let
-      fooBars = [mkFooBar 1 "dog", mkFooBar 2 "cat"]
+      fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
     rows <-
       MIO.liftIO $
@@ -78,7 +79,7 @@ prop_sqlCommenterInsertExpr =
 
           Execution.readRows result
 
-    assertEqualFooBarRows rows fooBars
+    assertEqualFooBarRows rows (NE.toList fooBars)
 
 prop_sqlCommenterOrvilleState :: Property.NamedDBProperty
 prop_sqlCommenterOrvilleState =
