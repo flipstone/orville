@@ -199,6 +199,8 @@ updateFields returingOption tableDef setClauses mbWhereCondition =
     rawUpdateExpr returingOption (tableMarshaller tableDef) $
       Expr.updateExpr
         (tableName tableDef)
+        Nothing
         (Expr.setClauseList setClauses)
+        Nothing
         whereClause
         (mkTableReturningClause returingOption tableDef)

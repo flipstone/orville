@@ -32,6 +32,7 @@ insertUpdateDeleteTests pool =
     , prop_deleteExprWithReturning pool
     , prop_truncateTablesExpr pool
     , prop_insertExprWithOnConflictDoUpdate pool
+    , prop_updateFromItemExpr pool
     ]
 
 prop_insertExpr :: Property.NamedDBProperty
@@ -144,7 +145,9 @@ prop_updateExpr =
       setBarToFerret =
         Expr.updateExpr
           fooBarTable
+          Nothing
           (Expr.setClauseList (pure $ Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))))
+          Nothing
           Nothing
           Nothing
 
@@ -174,7 +177,9 @@ prop_updateExprWithWhere =
       updateDogToForret =
         Expr.updateExpr
           fooBarTable
+          Nothing
           (Expr.setClauseList (pure $ Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))))
+          Nothing
           (Just (Expr.whereClause (Expr.equals barColumnRef (Expr.valueExpression (SqlValue.fromText (T.pack "dog"))))))
           Nothing
 
@@ -204,7 +209,9 @@ prop_updateExprWithReturning =
       setBarToFerret =
         Expr.updateExpr
           fooBarTable
+          Nothing
           (Expr.setClauseList (pure $ Expr.setColumn barColumn (SqlValue.fromText (T.pack "ferret"))))
+          Nothing
           Nothing
           (Just $ Expr.returningExpr $ Expr.selectColumns [fooColumn, barColumn])
 
@@ -352,3 +359,60 @@ prop_truncateTablesExpr =
 
     assertEqualFooBarRows fooBarRows []
     assertEqualFooBarRows fooBar2Rows []
+
+prop_updateFromItemExpr :: Property.NamedDBProperty
+prop_updateFromItemExpr =
+  Property.singletonNamedDBProperty "updateExpr includes a fromItem to allow where condition to reference another table" $ \pool -> do
+    let
+      fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat", mkFooBar 3 "ferret"]
+      fooBars2 = NE.fromList [mkFooBar 1 "bird", mkFooBar 3 "fish", mkFooBar 4 "snake"]
+      expectedFooBars = NE.fromList [mkFooBar 1 "bird", mkFooBar 2 "cat", mkFooBar 3 "fish"]
+      fooBar2Table =
+        Expr.unqualified (Expr.tableName "foobar2")
+      dropAndRecreateSecondTable connection = do
+        RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql fooBar2Table)
+        RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql fooBar2Table <> RawSql.fromString "(foo INTEGER, bar TEXT)")
+
+      fooBar2FromItem = Expr.tableFromItemWithAlias (Expr.stringToAliasExpr "f2") fooBar2Table
+
+      setClauseList = RawSql.unsafeSqlExpression "bar = f2.bar"
+
+      whereClause = RawSql.unsafeSqlExpression "WHERE foobar.foo = f2.foo"
+
+      updateExpr =
+        Expr.updateExpr
+          fooBarTable
+          Nothing
+          setClauseList
+          (Just fooBar2FromItem)
+          (Just whereClause)
+          (Just $ Expr.returningExpr $ Expr.selectColumns [RawSql.unsafeSqlExpression "foobar.foo", RawSql.unsafeSqlExpression "foobar.bar"])
+
+      recreateAndInsert =
+        MIO.liftIO $
+          Conn.withPoolConnection pool $ \connection -> do
+            dropAndRecreateTestTable connection
+            dropAndRecreateSecondTable connection
+
+            RawSql.executeVoid connection $
+              Expr.insertExpr fooBarTable Nothing (insertFooBarSource fooBars) Nothing Nothing
+            RawSql.executeVoid connection $
+              Expr.insertExpr fooBar2Table Nothing (insertFooBarSource fooBars2) Nothing Nothing
+
+    _ <- recreateAndInsert
+
+    _ <-
+      MIO.liftIO $
+        Conn.withPoolConnection pool $ \connection -> do
+          result <- RawSql.execute connection updateExpr
+
+          Execution.readRows result
+
+    fooBarRows <-
+      MIO.liftIO $
+        Conn.withPoolConnection pool $ \connection -> do
+          result <- RawSql.execute connection findAllFooBars
+
+          Execution.readRows result
+
+    assertEqualFooBarRows fooBarRows (NE.toList expectedFooBars)

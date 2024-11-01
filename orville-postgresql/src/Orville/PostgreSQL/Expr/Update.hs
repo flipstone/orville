@@ -14,14 +14,19 @@ module Orville.PostgreSQL.Expr.Update
   , setClauseList
   , SetClause
   , setColumn
+  , setColumnExpression
+  , UpdateNamedOnly
+  , onlyUpdateNamedTable
   )
 where
 
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes)
 
+import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
+import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
@@ -47,29 +52,68 @@ newtype UpdateExpr
 
 {- | Constructs an 'UpdateExpr' with the given options.
 
-  @since 1.0.0.0
+@since 1.0.0.0
 -}
 updateExpr ::
   -- | The name of the table to be updated.
   QualifiedOrUnqualified TableName ->
+  -- | Optionally update only the given table name
+  Maybe UpdateNamedOnly ->
   -- | The updates to be made to the table.
   SetClauseList ->
+  -- | An optional 'FromItemExpr' to allow columns from other tables to be included in the
+  -- 'SetClauseList' and 'WhereClause'
+  --
+  -- @since 1.1.0.0
+  Maybe FromItemExpr ->
   -- | An optional where clause to limit the rows updated.
   Maybe WhereClause ->
   -- | An optional returning clause to return data from the updated rows.
   Maybe ReturningExpr ->
   UpdateExpr
-updateExpr tableName setClause maybeWhereClause maybeReturningExpr =
-  UpdateExpr $
-    RawSql.intercalate RawSql.space $
-      catMaybes
+updateExpr tableName maybeUpdateNamedOnly setClause maybeFromItemExpr maybeWhereClause maybeReturningExpr =
+  let
+    buildFromItem :: FromItemExpr -> RawSql.RawSql
+    buildFromItem fromItem =
+      RawSql.fromString "FROM " <> RawSql.toRawSql fromItem
+  in
+    UpdateExpr
+      . RawSql.intercalate RawSql.space
+      $ catMaybes
         [ Just $ RawSql.fromString "UPDATE"
+        , fmap RawSql.toRawSql maybeUpdateNamedOnly
         , Just $ RawSql.toRawSql tableName
         , Just $ RawSql.fromString "SET"
         , Just $ RawSql.toRawSql setClause
+        , fmap buildFromItem maybeFromItemExpr
         , fmap RawSql.toRawSql maybeWhereClause
         , fmap RawSql.toRawSql maybeReturningExpr
         ]
+
+{- | Type to represent the option to update only the named table and not any descendants. E.G.
+
+> ONLY
+
+'UpdateNamedOnly' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0
+-}
+newtype UpdateNamedOnly
+  = UpdateNamedOnly RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
+
+{- | The @ONLY@ modifier to an @UPDATE@ to not update any descendant tables.
+
+@since 1.1.0.0
+-}
+onlyUpdateNamedTable :: UpdateNamedOnly
+onlyUpdateNamedTable =
+  UpdateNamedOnly $ RawSql.fromString "ONLY"
 
 {- | Type to represent the list of updates to be made in an @UPDATE@ statement. E.G.
 
@@ -125,3 +169,17 @@ setColumn columnName value =
     RawSql.toRawSql columnName
       <> RawSql.fromString "="
       <> RawSql.parameter value
+
+{- | Constructs a 'SetClause' that will set the specified columns to the expression.
+
+@since 1.1.0.0
+-}
+setColumnExpression ::
+  NonEmpty (QualifiedOrUnqualified ColumnName) ->
+  ValueExpression ->
+  SetClause
+setColumnExpression columnNames value =
+  SetClause $
+    (RawSql.intercalate RawSql.comma $ fmap RawSql.toRawSql columnNames)
+      <> RawSql.fromString "="
+      <> RawSql.parenthesized (RawSql.toRawSql value)
