@@ -14,13 +14,24 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        pg-version: ["pg13", "pg14", "pg15", "pg16", "pg17"]
+        pg-version: ["pg13", "pg17"]
         stack-yaml: ["stack-lts-18.28-ghc-8.10.7.yaml",
                      "stack-lts-19.33-ghc-9.0.2.yaml",
                      "stack-lts-20.26-ghc-9.2.8.yaml",
                      "stack-lts-21.22-ghc-9.4.8.yaml",
                      "stack-nightly-2024-10-22-ghc-9.8.3.yaml",
                      "stack.yaml"]
+
+        include:
+          # Only test the default 'stack.yaml' for the "middle" postgresql versions to reduce the
+          # load on CI
+          - pg-version: "pg14"
+            stack-yaml: "stack.yaml"
+          - pg-version: "pg15"
+            stack-yaml: "stack.yaml"
+          - pg-version: "pg16"
+            stack-yaml: "stack.yaml"
+
     permissions:
       packages: write
       contents: read
