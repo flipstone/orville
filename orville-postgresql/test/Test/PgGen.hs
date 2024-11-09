@@ -125,7 +125,7 @@ pgLocalTime =
 
 pgDay :: HH.Gen Time.Day
 pgDay = do
-  year <- Gen.integral (Range.linearFrom 2000 0 3000)
+  year <- Gen.integral (Range.constantFrom 2000 (-4713) 294276)
   month <- Gen.integral (Range.constant 1 12)
   day <- Gen.integral (Range.constant 1 (Time.gregorianMonthLength year month))
 

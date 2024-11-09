@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 {- |
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
@@ -15,6 +17,7 @@ module Orville.PostgreSQL.Raw.PgTime
   )
 where
 
+import Control.Applicative (optional)
 import qualified Data.Attoparsec.ByteString as AttoBS
 import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.ByteString as BS
@@ -29,8 +32,33 @@ import qualified Data.Word as Word
 @since 1.0.0.0
 -}
 dayToPostgreSQL :: Time.Day -> B8.ByteString
-dayToPostgreSQL =
-  B8.pack . Time.showGregorian
+dayToPostgreSQL date =
+  B8.pack $
+    case absDayYear date of
+      NegativeYear absDate -> Time.showGregorian absDate <> " BC"
+      PositiveYear _ -> Time.showGregorian date
+
+data AbsYearResult a
+  = NegativeYear a
+  | PositiveYear a
+  deriving (Functor)
+
+absDayYear :: Time.Day -> AbsYearResult Time.Day
+absDayYear date =
+  let
+    (y, m, d) = Time.toGregorian date
+    absDay = Time.fromGregorian (abs y) m d
+  in
+    if y < 0
+      then NegativeYear absDay
+      else PositiveYear absDay
+
+negateDayYear :: Time.Day -> Time.Day
+negateDayYear date =
+  let
+    (y, m, d) = Time.toGregorian date
+  in
+    Time.fromGregorian (negate y) m d
 
 {- | An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
   fails if given an invalid 'Time.Day'.
@@ -45,7 +73,16 @@ day = do
     else do
       m <- twoDigits <* AttoB8.char '-'
       d <- twoDigits
-      maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
+      mbBc <- optionalBC
+      let
+        negateFn = maybe id (const negateDayYear) mbBc
+      maybe
+        (fail "invalid date format")
+        (pure . negateFn)
+        (Time.fromGregorianValid y m d)
+
+optionalBC :: AttoB8.Parser (Maybe B8.ByteString)
+optionalBC = optional . AttoB8.string $ B8.pack " BC"
 
 {- | An Attoparsec parser for parsing 2-digit integral numbers.
 
@@ -65,8 +102,14 @@ fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
 @since 1.0.0.0
 -}
 utcTimeToPostgreSQL :: Time.UTCTime -> B8.ByteString
-utcTimeToPostgreSQL =
-  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q+00"
+utcTimeToPostgreSQL time =
+  let
+    format = Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q+00"
+  in
+    B8.pack $
+      case absUtcTimeYear time of
+        NegativeYear absTime -> format absTime <> " BC"
+        PositiveYear _ -> format time
 
 {- | An Attoparsec parser for parsing 'Time.UTCTime' from an ISO-8601 style
   datetime and timezone with a few PostgreSQL-specific exceptions. See
@@ -84,21 +127,53 @@ utcTime = do
       hour <- twoDigits
       minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
       second <- AttoB8.option 0 $ AttoB8.char ':' *> twoDigits
+      mbBc <- optionalBC
       let
+        negateFn = maybe id (const negateUtcTimeYear) mbBc
         offsetSeconds :: Int
         offsetSeconds = (second + minute * 60 + hour * 3600) * if sign == '+' then (-1) else 1
         offsetNominalDiffTime = fromIntegral offsetSeconds
         diffTime = Time.timeOfDayToTime (Time.localTimeOfDay lt)
         utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime
-      pure $ Time.addUTCTime offsetNominalDiffTime utcTimeWithoutOffset
+      pure . negateFn $ Time.addUTCTime offsetNominalDiffTime utcTimeWithoutOffset
+
+absUtcTimeYear :: Time.UTCTime -> AbsYearResult Time.UTCTime
+absUtcTimeYear time =
+  fmap
+    (`Time.UTCTime` Time.utctDayTime time)
+    (absDayYear $ Time.utctDay time)
+
+negateUtcTimeYear :: Time.UTCTime -> Time.UTCTime
+negateUtcTimeYear time =
+  Time.UTCTime
+    (negateDayYear $ Time.utctDay time)
+    (Time.utctDayTime time)
 
 {- | Renders a 'Time.LocalTime' value to a textual representation for PostgreSQL.
 
 @since 1.0.0.0
 -}
 localTimeToPostgreSQL :: Time.LocalTime -> B8.ByteString
-localTimeToPostgreSQL =
-  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q"
+localTimeToPostgreSQL time =
+  let
+    format = Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q"
+  in
+    B8.pack $
+      case absLocalTimeYear time of
+        NegativeYear absTime -> format absTime <> " BC"
+        PositiveYear _ -> format time
+
+absLocalTimeYear :: Time.LocalTime -> AbsYearResult Time.LocalTime
+absLocalTimeYear time =
+  fmap
+    (`Time.LocalTime` Time.localTimeOfDay time)
+    (absDayYear $ Time.localDay time)
+
+negateLocalTimeYear :: Time.LocalTime -> Time.LocalTime
+negateLocalTimeYear time =
+  Time.LocalTime
+    (negateDayYear $ Time.localDay time)
+    (Time.localTimeOfDay time)
 
 {- | An Attoparsec parser for parsing 'Time.LocalTime' from an ISO-8601 style
   datetime with a few exceptions. The separator between the date and time
@@ -108,7 +183,9 @@ localTimeToPostgreSQL =
 -}
 localTime :: AttoB8.Parser Time.LocalTime
 localTime = do
-  Time.LocalTime <$> day <* AttoB8.char ' ' <*> timeOfDay
+  time <- Time.LocalTime <$> day <* AttoB8.char ' ' <*> timeOfDay
+  mbBc <- optionalBC
+  pure $ maybe id (const negateLocalTimeYear) mbBc time
 
 {- | An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO-8601 style time.
 

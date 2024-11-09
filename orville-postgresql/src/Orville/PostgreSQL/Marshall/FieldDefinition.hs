@@ -608,6 +608,10 @@ jsonbField = fieldOfType SqlType.jsonb
 {- | Builds a 'FieldDefinition' that stores Haskell 'Time.Day' values as the
   PostgreSQL "DATE" type.
 
+  This field cannot represent the full range of 'Time.Day' values. PostgreSQL supports years
+  from -4731 to 5874897 inclusive for this field, and sending a 'Time.Day' with a year outside
+  of this range to the database will result in a PostgreSQL exception.
+
 @since 1.0.0.0
 -}
 dateField ::
@@ -619,6 +623,10 @@ dateField = fieldOfType SqlType.date
 {- | Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP with time zone" type.
 
+  This field cannot represent the full range of 'Time.UTCTime' values. PostgreSQL supports years
+  from -4731 to 294276 inclusive for this field, and sending a 'Time.UTCTime' with a year outside
+  of this range to the database will result in a PostgreSQL exception.
+
 @since 1.0.0.0
 -}
 utcTimestampField ::
@@ -629,6 +637,10 @@ utcTimestampField = fieldOfType SqlType.timestamp
 
 {- | Builds a 'FieldDefinition' that stores Haskell 'Time.UTCTime' values as the
   PostgreSQL "TIMESTAMP without time zone" type.
+
+  This field cannot represent the full range of 'Time.LocalTime' values. PostgreSQL supports years
+  from -4731 to 294276 inclusive for this field, and sending a 'Time.LocalTime' with a year outside
+  of this range to the database will result in a PostgreSQL exception.
 
 @since 1.0.0.0
 -}
