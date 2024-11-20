@@ -10,10 +10,13 @@ to ensure some Haskell action occurs within a database transaction.
 -}
 module Orville.PostgreSQL.Execution.Transaction
   ( withTransaction
+  , inWithTransaction
+  , InWithTransaction (InOutermostTransaction, InSavepointTransaction)
   )
 where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Numeric.Natural (Natural)
 
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
@@ -125,3 +128,45 @@ savepointName savepoint =
     n = OrvilleState.savepointNestingLevel savepoint
   in
     Expr.savepointName ("orville_savepoint_level_" <> show n)
+
+{- |
+  Information about the current transaction state of an action passed to 'withTransaction'.
+
+@since 1.1.0.0
+-}
+data InWithTransaction
+  = InOutermostTransaction
+  | -- | The 'Natural' indicates the savepoint depth, where @1@ is the first savepoint.
+    InSavepointTransaction Natural
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    , -- | @since 1.1.0.0
+      Ord
+    , -- | @since 1.1.0.0
+      Show
+    )
+
+{- |
+  Returns 'Just' an 'InWithTransaction' value when called inside of the action passed to
+  'withTransaction', and 'Nothing' otherwise.
+
+@since 1.1.0.0
+-}
+inWithTransaction :: MonadOrville.MonadOrville m => m (Maybe InWithTransaction)
+inWithTransaction =
+  fmap
+    ( \state -> case OrvilleState.orvilleConnectionState state of
+        OrvilleState.Connected connectedState ->
+          fmap
+            ( \transactionState -> case transactionState of
+                OrvilleState.OutermostTransaction ->
+                  InOutermostTransaction
+                OrvilleState.SavepointTransaction i ->
+                  InSavepointTransaction . fromIntegral $ OrvilleState.savepointNestingLevel i
+            )
+            (OrvilleState.connectedTransaction connectedState)
+        OrvilleState.NotConnected ->
+          Nothing
+    )
+    Monad.askOrvilleState

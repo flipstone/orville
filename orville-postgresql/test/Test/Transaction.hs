@@ -30,6 +30,7 @@ transactionTests pool =
     , prop_callbacksMadeForTransactionCommit pool
     , prop_callbacksMadeForTransactionRollback pool
     , prop_usesCustomBeginTransactionSql pool
+    , prop_inWithTransaction pool
     ]
 
 prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
@@ -161,6 +162,20 @@ prop_usesCustomBeginTransactionSql =
       === [ (Orville.OtherQuery, RawSql.toExampleBytes Expr.commit)
           , (Orville.OtherQuery, RawSql.toExampleBytes customExpr)
           ]
+
+prop_inWithTransaction :: Property.NamedDBProperty
+prop_inWithTransaction =
+  Property.singletonNamedDBProperty "inWithTransaction returns InWithTransaction inside of withTransaction" $ \pool -> do
+    (inside, insideSavepoint, outsideBefore, outsideAfter) <- HH.evalIO . Orville.runOrville pool $ do
+      outsideBefore <- Orville.inWithTransaction
+      inside <- Orville.withTransaction Orville.inWithTransaction
+      insideSavepoint <- Orville.withTransaction $ Orville.withTransaction Orville.inWithTransaction
+      outsideAfter <- Orville.inWithTransaction
+      pure (inside, insideSavepoint, outsideBefore, outsideAfter)
+    inside === Just Orville.InOutermostTransaction
+    insideSavepoint === Just (Orville.InSavepointTransaction 1)
+    outsideBefore === Nothing
+    outsideAfter === Nothing
 
 captureTransactionCallbackEvents ::
   Orville.ConnectionPool ->

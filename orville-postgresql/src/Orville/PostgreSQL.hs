@@ -70,6 +70,8 @@ module Orville.PostgreSQL
 
     -- * Opening transactions and savepoints
   , Transaction.withTransaction
+  , Transaction.inWithTransaction
+  , Transaction.InWithTransaction (InOutermostTransaction, InSavepointTransaction)
 
     -- * Types for incorporating Orville into other Monads
   , MonadOrville.MonadOrville
