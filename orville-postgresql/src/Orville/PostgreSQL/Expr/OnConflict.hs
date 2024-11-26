@@ -110,12 +110,12 @@ conflictTargetForIndexColumn colName mbWhere =
 conflictTargetForIndexExpr :: IndexBodyExpr -> Maybe WhereClause -> ConflictTargetExpr
 conflictTargetForIndexExpr idxBody mbWhere =
   let
-    parensBody = RawSql.parenthesized $ RawSql.toRawSql idxBody
+    rawIdxBody = RawSql.toRawSql idxBody
   in
     ConflictTargetExpr $
       case mbWhere of
-        Nothing -> parensBody
-        Just whereClause -> parensBody <> RawSql.space <> RawSql.toRawSql whereClause
+        Nothing -> rawIdxBody
+        Just whereClause -> rawIdxBody <> RawSql.space <> RawSql.toRawSql whereClause
 
 {- | Build a 'ConflictTargetExpr' for conflicting on the given 'ConstraintName'. For conflicing on an
    index, see 'conflictTargetForIndexColumn' or 'conflictTargetForIndexExpr' instead.
