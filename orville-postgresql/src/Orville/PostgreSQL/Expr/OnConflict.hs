@@ -105,6 +105,7 @@ conflictTargetForIndexColumn colName mbWhere =
    for more than a single column. PostgreSQL will use the expression to infer which index to check for
    conflicts.
 
+   Note that this function assumes that the 'IndexBodyExpr' is parenthesized.
 @since 1.1.0.0
 -}
 conflictTargetForIndexExpr :: IndexBodyExpr -> Maybe WhereClause -> ConflictTargetExpr
