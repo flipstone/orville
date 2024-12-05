@@ -80,38 +80,35 @@ withTransaction action =
           action
 
       finishTransaction :: MonadIO m => () -> Bracket.BracketResult -> m ()
-      finishTransaction () result =
-        liftIO $
-          case result of
+      finishTransaction () result = liftIO $ do
+        mbTransactionStatus <- Connection.transactionStatus conn
+        case mbTransactionStatus of
+          Nothing -> do
+            callback OrvilleState.RollbackTransaction
+            throwIO $ UnexpectedTransactionStatusError mbTransactionStatus
+          Just LibPQ.TransInTrans -> case result of
             Bracket.BracketSuccess -> do
-              mbTransactionStatus <- Connection.transactionStatus conn
-              case mbTransactionStatus of
-                Nothing -> do
+              let
+                successEvent = OrvilleState.transactionSuccessEvent transaction
+              eSuccess <- try $ executeTransactionSql (transactionEventSql state successEvent)
+              case eSuccess of
+                Right () ->
+                  callback successEvent
+                Left ex -> do
                   callback OrvilleState.RollbackTransaction
-                  throwIO $ UnexpectedTransactionStatusError Nothing
-                Just transactionStatus -> case transactionStatus of
-                  LibPQ.TransInTrans -> do
-                    let
-                      successEvent = OrvilleState.transactionSuccessEvent transaction
-                    eSuccess <- try $ executeTransactionSql (transactionEventSql state successEvent)
-                    case eSuccess of
-                      Right () ->
-                        callback successEvent
-                      Left ex -> do
-                        callback OrvilleState.RollbackTransaction
-                        throwIO (ex :: Connection.SqlExecutionError)
-                  LibPQ.TransInError -> do
-                    executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
-                    callback OrvilleState.RollbackTransaction
-                  _ -> do
-                    executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
-                    callback OrvilleState.RollbackTransaction
-                    throwIO $ UnexpectedTransactionStatusError (Just transactionStatus)
+                  throwIO (ex :: Connection.SqlExecutionError)
             Bracket.BracketError -> do
               let
                 rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
               executeTransactionSql (transactionEventSql state rollbackEvent)
               callback rollbackEvent
+          Just LibPQ.TransInError -> do
+            executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
+            callback OrvilleState.RollbackTransaction
+          Just _ -> do
+            executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
+            callback OrvilleState.RollbackTransaction
+            throwIO $ UnexpectedTransactionStatusError mbTransactionStatus
 
     Bracket.bracketWithResult beginTransaction finishTransaction doAction
 
