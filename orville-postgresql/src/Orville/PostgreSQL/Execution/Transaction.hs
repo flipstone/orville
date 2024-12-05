@@ -12,10 +12,13 @@ module Orville.PostgreSQL.Execution.Transaction
   ( withTransaction
   , inWithTransaction
   , InWithTransaction (InOutermostTransaction, InSavepointTransaction)
+  , UnexpectedTransactionStatusError (..)
   )
 where
 
+import Control.Exception (Exception, throwIO, try)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Numeric.Natural (Natural)
 
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
@@ -25,6 +28,7 @@ import qualified Orville.PostgreSQL.Internal.Bracket as Bracket
 import qualified Orville.PostgreSQL.Internal.MonadOrville as MonadOrville
 import qualified Orville.PostgreSQL.Internal.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Monad as Monad
+import qualified Orville.PostgreSQL.Raw.Connection as Connection
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- | Performs an action in an Orville monad within a database transaction. The transaction
@@ -80,10 +84,29 @@ withTransaction action =
         liftIO $
           case result of
             Bracket.BracketSuccess -> do
-              let
-                successEvent = OrvilleState.transactionSuccessEvent transaction
-              executeTransactionSql (transactionEventSql state successEvent)
-              callback successEvent
+              mbTransactionStatus <- Connection.transactionStatus conn
+              case mbTransactionStatus of
+                Nothing -> do
+                  callback OrvilleState.RollbackTransaction
+                  throwIO $ UnexpectedTransactionStatusError Nothing
+                Just transactionStatus -> case transactionStatus of
+                  LibPQ.TransInTrans -> do
+                    let
+                      successEvent = OrvilleState.transactionSuccessEvent transaction
+                    eSuccess <- try $ executeTransactionSql (transactionEventSql state successEvent)
+                    case eSuccess of
+                      Right () ->
+                        callback successEvent
+                      Left ex -> do
+                        callback OrvilleState.RollbackTransaction
+                        throwIO (ex :: Connection.SqlExecutionError)
+                  LibPQ.TransInError -> do
+                    executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
+                    callback OrvilleState.RollbackTransaction
+                  _ -> do
+                    executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
+                    callback OrvilleState.RollbackTransaction
+                    throwIO $ UnexpectedTransactionStatusError (Just transactionStatus)
             Bracket.BracketError -> do
               let
                 rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
@@ -91,6 +114,28 @@ withTransaction action =
               callback rollbackEvent
 
     Bracket.bracketWithResult beginTransaction finishTransaction doAction
+
+{- |
+  'withTransaction' will throw this exception if libpq reports a transaction status other
+  than 'LibPQ.TransInTrans' or 'LibPQ.TransInError', or if there is no connection to the
+  database. The latter case should be impossible, and indicates a bug in Orville if observed.
+
+@since 1.1.0.0
+-}
+newtype UnexpectedTransactionStatusError = UnexpectedTransactionStatusError
+  { unexpectedTransactionStatusErrorTransactionStatus :: Maybe LibPQ.TransactionStatus
+  }
+
+instance Show UnexpectedTransactionStatusError where
+  show =
+    maybe
+      "UnexpectedTransactionStatusError: No database connection."
+      ( \status ->
+          "UnexpectedTransactionStatusError: " <> show status
+      )
+      . unexpectedTransactionStatusErrorTransactionStatus
+
+instance Exception UnexpectedTransactionStatusError
 
 transactionEventSql ::
   OrvilleState.OrvilleState ->
