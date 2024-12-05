@@ -3,6 +3,7 @@ module Test.Transaction
   )
 where
 
+import Control.Exception (SomeException (..), catch)
 import qualified Control.Monad as Monad
 import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
@@ -12,6 +13,7 @@ import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
@@ -31,6 +33,7 @@ transactionTests pool =
     , prop_callbacksMadeForTransactionRollback pool
     , prop_usesCustomBeginTransactionSql pool
     , prop_inWithTransaction pool
+    , prop_rollbackCallbackInInvalidTransaction pool
     ]
 
 prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
@@ -176,6 +179,21 @@ prop_inWithTransaction =
     insideSavepoint === Just (Orville.InSavepointTransaction 1)
     outsideBefore === Nothing
     outsideAfter === Nothing
+
+prop_rollbackCallbackInInvalidTransaction :: Property.NamedDBProperty
+prop_rollbackCallbackInInvalidTransaction =
+  Property.singletonNamedDBProperty "withTransaction triggers the rollback callback if the LibPQ transaction status is TransInError" $ \pool -> do
+    let
+      badQuery = RawSql.fromString "bad"
+
+    allEvents <- captureTransactionCallbackEvents pool $
+      Orville.withTransaction $ do
+        Orville.liftCatch
+          catch
+          (Execution.executeVoid Execution.OtherQuery badQuery)
+          (\(SomeException _) -> pure ())
+
+    allEvents === [Orville.BeginTransaction, Orville.RollbackTransaction]
 
 captureTransactionCallbackEvents ::
   Orville.ConnectionPool ->

@@ -31,6 +31,7 @@ module Orville.PostgreSQL.Raw.Connection
   , ConnectionError
   , SqlExecutionError (..)
   , transactionStatus
+  , transactionStatusOrThrow
   )
 where
 
@@ -440,6 +441,15 @@ transactionStatus (Connection handle) = do
         pure Nothing
       OpenConnection conn ->
         fmap Just (LibPQ.transactionStatus conn)
+
+{- |
+  Similar to 'transactionStatus', but throws a 'ConnectionUsedAfterCloseError' if the connection is closed.
+
+@since 1.1.0.0
+-}
+transactionStatusOrThrow :: Connection -> IO LibPQ.TransactionStatus
+transactionStatusOrThrow conn =
+  withLibPQConnectionOrFailIfClosed conn LibPQ.transactionStatus
 
 throwConnectionError :: String -> LibPQ.Connection -> IO a
 throwConnectionError message conn = do
