@@ -109,6 +109,7 @@ aggregateExpression function mbAggOption parameters mbOrderByClause mbFilter =
 aggregateStarExpression :: FunctionName -> Maybe Filter.FilterExpr -> ValueExpression.ValueExpression
 aggregateStarExpression function mbFilter =
   let
+    parameters :: [ValueExpression.ValueExpression]
     parameters = pure . RawSql.unsafeFromRawSql $ RawSql.fromString "*"
     filtering =
       case mbFilter of

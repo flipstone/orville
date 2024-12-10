@@ -259,6 +259,7 @@ byFieldTuple fieldDefA fieldDefB =
         <$> Marshall.marshallField (fst . accessor) fieldDefA
         <*> Marshall.marshallField (snd . accessor) fieldDefB
 
+    packAll :: NonEmpty (String, String) -> NonEmpty (T.Text, T.Text)
     packAll =
       fmap (\(a, b) -> (T.pack a, T.pack b))
   in

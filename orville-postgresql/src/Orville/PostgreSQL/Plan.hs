@@ -748,7 +748,7 @@ chainMaybe ::
   Plan scope a (Maybe b) ->
   Plan scope b (Maybe c) ->
   Plan scope a (Maybe c)
-chainMaybe a b =
+chainMaybe aPlan bPlan =
   let
     optionalInput ::
       Plan scope a (Maybe b) ->
@@ -756,7 +756,7 @@ chainMaybe a b =
     optionalInput =
       fmap join . planMaybe
   in
-    Chain a (optionalInput b)
+    Chain aPlan (optionalInput bPlan)
 
 {- |
   'assert' allows you to make an assertion about a plan's result that will

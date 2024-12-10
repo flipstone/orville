@@ -175,6 +175,7 @@ accquireTransactionLock options =
 
           go $ attempts + 1
 
+    attemptLockAcquisition :: m Bool
     attemptLockAcquisition = do
       tryLockResults <-
         Exec.executeAndDecode Exec.OtherQuery (tryLockExpr lockId) lockedMarshaller

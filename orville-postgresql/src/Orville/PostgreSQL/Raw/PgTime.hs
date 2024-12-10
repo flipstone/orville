@@ -87,6 +87,7 @@ utcTime = do
       let
         offsetSeconds :: Int
         offsetSeconds = (second + minute * 60 + hour * 3600) * if sign == '+' then (-1) else 1
+        offsetNominalDiffTime :: Time.NominalDiffTime
         offsetNominalDiffTime = fromIntegral offsetSeconds
         diffTime = Time.timeOfDayToTime (Time.localTimeOfDay lt)
         utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime

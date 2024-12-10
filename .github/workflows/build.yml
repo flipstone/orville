@@ -23,7 +23,8 @@ jobs:
                      "stack-lts-19.33-ghc-9.0.2.yaml",
                      "stack-lts-20.26-ghc-9.2.8.yaml",
                      "stack-lts-21.22-ghc-9.4.8.yaml",
-                     "stack-nightly-2024-10-22-ghc-9.8.3.yaml",
+                     "stack-lts-22.28-ghc-9.6.6.yaml",
+                     "stack-nightly-2024-12-17-ghc-9.10.1.yaml",
                      "stack.yaml"]
 
         include:
@@ -180,6 +181,11 @@ jobs:
           docker compose build -q
 
       - name: Build with cabal and latest ghc+deps
+        # When a new ghc version is released, we might not be able to build all the dependencies for
+        # a little while. So we need to allow failure here. It is a very unfortunate situation that
+        # github does not give us a better UX for this as the closest thing to a required check is
+        # not configured here, but seemingly only through the api/webui for "branch protection"
+        continue-on-error: true
         run: |
           set -e
 

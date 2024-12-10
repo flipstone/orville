@@ -63,6 +63,7 @@ withTransaction action =
       callback =
         OrvilleState.orvilleTransactionCallback state
 
+      beginTransaction :: Monad.MonadOrville m => m ()
       beginTransaction = do
         liftIO $ do
           let

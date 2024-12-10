@@ -12,7 +12,7 @@ maintainer: maintainers@flipstone.com
 license: MIT
 license-file: LICENSE
 git: git@github.com:flipstone/orville.git
-tested-with: GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.8, GHC == 9.6.6, GHC == 9.8.3, GHC == 9.10.1
+tested-with: GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.8, GHC == 9.6.6, GHC == 9.8.4, GHC == 9.10.1
 
 extra-source-files:
   - CHANGELOG.md
@@ -145,13 +145,27 @@ library:
           - -Wmissing-local-signatures
           - -Wmissing-export-lists
           - -Wmissing-import-lists
+          - -Wmonomorphism-restriction
           - -Wnoncanonical-monad-instances
-          - -Wredundant-constraints
           - -Wpartial-fields
+          - -Wredundant-constraints
           - -Wmissed-specialisations
           - -Wno-implicit-prelude
           - -Wno-safe
           - -Wno-unsafe
+        when:
+          - condition: impl (ghc >= 9.2)
+            ghc-options:
+              - -Woperator-whitespace
+              - -Wredundant-bang-patterns
+        when:
+          - condition: impl (ghc >= 9.4)
+            ghc-options:
+              - -Wredundant-strictness-flags
+        when:
+          - condition: impl (ghc >= 9.8)
+            ghc-options:
+                - -Wterm-variable-capture
       else:
         ghc-options:
           - -Wall
