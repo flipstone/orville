@@ -54,7 +54,7 @@ instance Eq PgTextFormatValue where
 @since 1.0.0.0
 -}
 data NULByteFoundError
-  = NULByteFoundError
+  = NULByteFoundError BS.ByteString
   deriving
     ( -- | @since 1.0.0.0
       Show
@@ -103,7 +103,7 @@ toBytesForLibPQ value =
       Right noNULBytes
     NoAssumptionsMade anyBytes ->
       if BS.elem 0 anyBytes
-        then Left NULByteFoundError
+        then Left (NULByteFoundError anyBytes)
         else Right anyBytes
 
 {- | Converts the 'PgTextFormatValue' back to the bytes that were used to

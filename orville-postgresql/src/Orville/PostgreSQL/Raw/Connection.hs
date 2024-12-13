@@ -221,8 +221,8 @@ executeRaw ::
   IO LibPQ.Result
 executeRaw connection bs params =
   case traverse (traverse toBytesForLibPQ) params of
-    Left NULByteFoundError ->
-      throwIO NULByteFoundError
+    Left err@(NULByteFoundError _) ->
+      throwIO err
     Right paramBytes ->
       underlyingExecute bs paramBytes connection
 

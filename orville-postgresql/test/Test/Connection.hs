@@ -75,7 +75,7 @@ prop_errorOnSafeNulByte =
           ]
 
     case result of
-      Left PgTextFormatValue.NULByteFoundError ->
+      Left (PgTextFormatValue.NULByteFoundError _) ->
         HH.success
       Right _ -> do
         HH.footnote "Expected 'executeRaw' to return failure, but it did not"
