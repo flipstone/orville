@@ -23,6 +23,8 @@ module Orville.PostgreSQL.Expr.TableDefinition
   , alterColumnType
   , alterColumnSetDefault
   , alterColumnDropDefault
+  , alterColumnAddIdentity
+  , alterColumnDropIdentity
   , UsingClause
   , usingCast
   , alterColumnNullability
@@ -39,7 +41,7 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes, maybeToList)
 
-import Orville.PostgreSQL.Expr.ColumnDefinition (ColumnDefinition)
+import Orville.PostgreSQL.Expr.ColumnDefinition (ColumnDefinition, ColumnIdentityGeneration)
 import Orville.PostgreSQL.Expr.DataType (DataType)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, QualifiedOrUnqualified, TableName)
@@ -364,6 +366,38 @@ alterColumnSetDefault columnName defaultValue =
       , RawSql.fromString "SET DEFAULT"
       , RawSql.toRawSql defaultValue
       ]
+
+{- | Constructs an 'AlterTableAction' that will use @ADD GENERATED .. AS IDENTITY@ to set the
+   specified column to be an identity column.
+
+  @since 1.1.0.0
+-}
+alterColumnAddIdentity ::
+  ColumnName ->
+  ColumnIdentityGeneration ->
+  AlterTableAction
+alterColumnAddIdentity columnName columnIdentityGeneration =
+  AlterTableAction $
+    RawSql.fromString "ALTER COLUMN "
+      <> RawSql.toRawSql columnName
+      <> RawSql.fromString " ADD GENERATED "
+      <> RawSql.toRawSql columnIdentityGeneration
+      <> RawSql.fromString " AS IDENTITY"
+
+{- | Constructs an 'AlterTableAction' that will drop the identity requirement of a column
+
+  @since 1.1.0.0
+-}
+alterColumnDropIdentity ::
+  ColumnName ->
+  Maybe IfExists ->
+  AlterTableAction
+alterColumnDropIdentity columnName maybeIfExists =
+  AlterTableAction $
+    RawSql.fromString "ALTER COLUMN "
+      <> RawSql.toRawSql columnName
+      <> RawSql.fromString " DROP IDENTITY"
+      <> maybe mempty (\i -> RawSql.space <> RawSql.toRawSql i) maybeIfExists
 
 {- | Type to represent a @DROP TABLE@ statement. E.G.
 

@@ -37,6 +37,7 @@ import qualified Data.Text.Lazy.Builder.Int as LTBI
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
 
 {- | The Haskell representation of data read from the @pg_catalog.pg_attribute@
@@ -64,6 +65,8 @@ data PgAttribute = PgAttribute
   , pgAttributeTypeModifier :: Int32
   -- ^ Type-specific data supplied at creation time, such as the maximum length
   -- of a @varchar@ column.
+  , pgAttributeIdentity :: Maybe Marshall.FieldIdentityGeneration
+  -- ^ Indicates whether the column is an identity and how it is generated if at all.
   , pgAttributeIsDropped :: Bool
   -- ^ Indicates whether the column has been dropped and is not longer valid.
   , pgAttributeIsNotNull :: Bool
@@ -215,6 +218,7 @@ pgAttributeMarshaller =
     <*> Orville.marshallField pgAttributeTypeOid attributeTypeOidField
     <*> Orville.marshallField pgAttributeLength attributeLengthField
     <*> Orville.marshallField pgAttributeTypeModifier attributeTypeModifierField
+    <*> Orville.marshallField pgAttributeIdentity attributeIdentityField
     <*> Orville.marshallField pgAttributeIsDropped attributeIsDroppedField
     <*> Orville.marshallField pgAttributeIsNotNull attributeIsNotNullField
 
@@ -275,6 +279,19 @@ attributeTypeModifierField :: Orville.FieldDefinition Orville.NotNull Int32
 attributeTypeModifierField =
   Orville.integerField "atttypmod"
 
+{- | The @attidentity@ column of the @pg_catalog.pg_attribute@ table.
+
+@since 1.1.0.0
+-}
+attributeIdentityField ::
+  Orville.FieldDefinition
+    Orville.NotNull
+    (Maybe Marshall.FieldIdentityGeneration)
+attributeIdentityField =
+  Orville.convertField
+    (Orville.tryConvertSqlType columnIdentityToPgText pgTextToColumnIdentity)
+    (Orville.fixedTextField "attidentity" 1)
+
 {- | The @attisdropped@ column of the @pg_catalog.pg_attribute@ table.
 
 @since 1.0.0.0
@@ -290,3 +307,28 @@ attributeIsDroppedField =
 attributeIsNotNullField :: Orville.FieldDefinition Orville.NotNull Bool
 attributeIsNotNullField =
   Orville.booleanField "attnotnull"
+
+{- | Internal, convert a 'T.Text' to a 'Maybe Marshall.FieldIdentityGeneration', allowing for the empty text case
+   to be Nothing.
+
+@since 1.1.0.0
+-}
+pgTextToColumnIdentity :: T.Text -> Either String (Maybe Marshall.FieldIdentityGeneration)
+pgTextToColumnIdentity text =
+  case T.unpack text of
+    "" -> Right Nothing
+    "a" -> Right (Just Marshall.GeneratedAlways)
+    "d" -> Right (Just Marshall.GeneratedByDefault)
+    attid -> Left ("Unrecognized PostgreSQL attribute identity: " <> attid)
+
+{- | Internal, convert a 'Maybe Expr.ColumnIdentity' to a 'T.Text', allowing for the Nothing case to
+   be the empty text.
+
+@since 1.1.0.0
+-}
+columnIdentityToPgText :: Maybe Marshall.FieldIdentityGeneration -> T.Text
+columnIdentityToPgText attid =
+  T.pack $ case attid of
+    Nothing -> ""
+    (Just Marshall.GeneratedAlways) -> "a"
+    (Just Marshall.GeneratedByDefault) -> "d"

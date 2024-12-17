@@ -15,10 +15,12 @@ module Orville.PostgreSQL.Expr.ColumnDefinition
   , nullConstraint
   , ColumnDefault
   , columnDefault
+  , identityColumnConstraint
+  , ColumnIdentityGeneration
+  , alwaysColumnIdentityGeneration
+  , byDefaultColumnIdentityGeneration
   )
 where
-
-import qualified Data.Maybe as Maybe
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
 import Orville.PostgreSQL.Expr.Name (ColumnName)
@@ -51,20 +53,26 @@ columnDefinition ::
   ColumnName ->
   -- | The SQL type of the column.
   DataType ->
-  -- | The constraint on the column, if any.
-  Maybe ColumnConstraint ->
+  -- | The constraints on the column, if any.
+  [ColumnConstraint] ->
   -- | The default value for the column, if any.
   Maybe ColumnDefault ->
   ColumnDefinition
-columnDefinition columnName dataType maybeColumnConstraint maybeColumnDefault =
-  ColumnDefinition
-    . RawSql.intercalate RawSql.space
-    $ Maybe.catMaybes
-      [ Just $ RawSql.toRawSql columnName
-      , Just $ RawSql.toRawSql dataType
-      , fmap RawSql.toRawSql maybeColumnConstraint
-      , fmap RawSql.toRawSql maybeColumnDefault
-      ]
+columnDefinition columnName dataType columnConstraints maybeColumnDefault =
+  let
+    constraintRawSql =
+      RawSql.intercalate RawSql.space columnConstraints
+  in
+    ColumnDefinition $
+      RawSql.toRawSql columnName
+        <> RawSql.space
+        <> RawSql.toRawSql dataType
+        <> RawSql.space
+        <> constraintRawSql
+        <> case maybeColumnDefault of
+          Nothing -> mempty
+          Just colDefault ->
+            RawSql.space <> RawSql.toRawSql colDefault
 
 {- | Represent constraints, such as nullability, on a column. E.G.
 
@@ -98,6 +106,50 @@ notNullConstraint =
 nullConstraint :: ColumnConstraint
 nullConstraint =
   ColumnConstraint (RawSql.fromString "NULL")
+
+{- | Represent the generation definition of an identity column. E.G.
+
+> ALWAYS
+
+'ColumnIdentityGeneration' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0
+-}
+newtype ColumnIdentityGeneration
+  = ColumnIdentityGeneration RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
+
+{- | Express that a column is an identity column.
+
+@since 1.1.0.0
+-}
+identityColumnConstraint ::
+  ColumnIdentityGeneration ->
+  ColumnConstraint
+identityColumnConstraint identityGeneration =
+  ColumnConstraint $
+    RawSql.fromString "GENERATE "
+      <> RawSql.toRawSql identityGeneration
+      <> RawSql.fromString " AS IDENTITY"
+
+{- | The @ALWAYS@ generation for an identity column
+
+@since 1.1.0.0
+-}
+alwaysColumnIdentityGeneration :: ColumnIdentityGeneration
+alwaysColumnIdentityGeneration = ColumnIdentityGeneration $ RawSql.fromString "ALWAYS"
+
+{- | The @BY DEFAULT@ generation for an identity column
+
+@since 1.1.0.0
+-}
+byDefaultColumnIdentityGeneration :: ColumnIdentityGeneration
+byDefaultColumnIdentityGeneration = ColumnIdentityGeneration $ RawSql.fromString "BY DEFAULT"
 
 {- | Represents the default value of a column. E.G.
 

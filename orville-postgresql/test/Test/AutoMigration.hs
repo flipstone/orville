@@ -32,6 +32,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
 
 import qualified Test.Entities.Foo as Foo
+import Test.Orphans ()
 import qualified Test.PgAssert as PgAssert
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
@@ -41,7 +42,8 @@ autoMigrationTests :: Orville.ConnectionPool -> Property.Group
 autoMigrationTests pool =
   Property.group
     "AutoMigration"
-    [ prop_raisesErrorIfMigrationLockIsLocked pool
+    [ prop_altersColumnAddIdentity pool
+    , prop_raisesErrorIfMigrationLockIsLocked pool
     , prop_releasesMigrationLockOnError pool
     , prop_createsMissingTables pool
     , prop_dropsRequestedTables pool
@@ -521,6 +523,46 @@ prop_altersColumnDefaultValue_TextNumeric =
         , SomeField <$> genFieldWithMaybeDefault genDefaultIntegral Orville.bigIntegerDefault (Orville.bigIntegerField "column")
         , SomeField <$> genFieldWithMaybeDefault genDefaultDouble Orville.doubleDefault (Orville.doubleField "column")
         ]
+
+prop_altersColumnAddIdentity :: Property.NamedDBProperty
+prop_altersColumnAddIdentity =
+  Property.namedDBProperty "Alters an existing column to add IDENTITY" $ \pool -> do
+    colIdentity <- HH.forAll Gen.enumBounded
+
+    let
+      originalField = Orville.integerField "column"
+      newField = Orville.markAsIdentity colIdentity originalField
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "migration_test"
+          (Orville.marshallField id originalField)
+
+      newTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "migration_test"
+          (Orville.marshallField id newField)
+
+    firstTimePlan <-
+      HH.evalIO
+        . Orville.runOrville pool
+        $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    originalTableDesc <- PgAssert.assertTableExists pool "migration_test"
+
+    secondTimePlan <-
+      HH.evalIO
+        . Orville.runOrville pool
+        $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    PgAssert.assertFieldIdentityGenerationMatches originalTableDesc "column" Nothing
+    newTableDesc <- PgAssert.assertTableExists pool "migration_test"
+    PgAssert.assertFieldIdentityGenerationMatches newTableDesc "column" (Just colIdentity)
+    migrationPlanStepStrings secondTimePlan === []
 
 prop_altersColumnDefaultValue_Bool :: Property.NamedDBProperty
 prop_altersColumnDefaultValue_Bool =

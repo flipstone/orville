@@ -103,8 +103,8 @@ tableConstraintDefinitions (TableConstraints constraints) =
 @since 1.0.0.0
 -}
 data ConstraintDefinition = ConstraintDefinition
-  { _constraintSqlExpr :: Expr.TableConstraint
-  , _constraintMigrationKey :: ConstraintMigrationKey
+  { i_constraintSqlExpr :: Expr.TableConstraint
+  , i_constraintMigrationKey :: ConstraintMigrationKey
   }
 
 {- | The key used by Orville to determine whether a constraint should be added to
@@ -153,14 +153,14 @@ data ConstraintKeyType
 @since 1.0.0.0
 -}
 constraintMigrationKey :: ConstraintDefinition -> ConstraintMigrationKey
-constraintMigrationKey = _constraintMigrationKey
+constraintMigrationKey = i_constraintMigrationKey
 
 {- | Gets the SQL expression that will be used to add the constraint to the table.
 
 @since 1.0.0.0
 -}
 constraintSqlExpr :: ConstraintDefinition -> Expr.TableConstraint
-constraintSqlExpr = _constraintSqlExpr
+constraintSqlExpr = i_constraintSqlExpr
 
 {- | Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
   columns.
@@ -184,8 +184,8 @@ uniqueConstraint fieldNames =
         }
   in
     ConstraintDefinition
-      { _constraintSqlExpr = expr
-      , _constraintMigrationKey = migrationKey
+      { i_constraintSqlExpr = expr
+      , i_constraintMigrationKey = migrationKey
       }
 
 {- | A 'ForeignReference' represents one part of a foreign key. The entire foreign
@@ -326,6 +326,6 @@ foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
         }
   in
     ConstraintDefinition
-      { _constraintSqlExpr = expr
-      , _constraintMigrationKey = migrationKey
+      { i_constraintSqlExpr = expr
+      , i_constraintMigrationKey = migrationKey
       }

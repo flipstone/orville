@@ -104,6 +104,10 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , getFieldDefinition
   , getAlias
   , buildAliasedFieldDefinition
+  , FieldIdentityGeneration (GeneratedAlways, GeneratedByDefault)
+  , markAsIdentity
+  , unmarkIdentity
+  , fieldIdentityGeneration
   )
 where
 
@@ -141,6 +145,7 @@ data FieldDefinition nullability a = FieldDefinition
   , i_fieldDefaultValue :: Maybe (DefaultValue.DefaultValue a)
   , i_fieldDescription :: Maybe String
   , i_fieldTableConstraints :: [FieldName -> ConstraintDefinition.ConstraintDefinition]
+  , i_fieldIdentity :: IdentityGADT nullability
   }
 
 {- | Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
@@ -414,22 +419,26 @@ fieldColumnDefinition fieldDef =
   Expr.columnDefinition
     (fieldNameToColumnName $ fieldName fieldDef)
     (SqlType.sqlTypeExpr $ fieldType fieldDef)
-    (Just $ fieldColumnConstraint fieldDef)
+    (fieldColumnConstraints fieldDef)
     (fmap (Expr.columnDefault . DefaultValue.defaultValueExpression) $ i_fieldDefaultValue fieldDef)
 
-{- | INTERNAL - Builds the appropriate ColumnConstraint for a field. Currently
-  this only handles nullability, but if we add support for more constraints
-  directly on columns it may end up handling those as well.
+{- | INTERNAL - Builds the appropriate [ColumnConstraint] for a field.
 
 @since 1.0.0.0
 -}
-fieldColumnConstraint :: FieldDefinition nullabily a -> Expr.ColumnConstraint
-fieldColumnConstraint fieldDef =
+fieldColumnConstraints :: FieldDefinition nullabily a -> [Expr.ColumnConstraint]
+fieldColumnConstraints fieldDef =
   case fieldNullability fieldDef of
-    NotNullField _ ->
-      Expr.notNullConstraint
+    NotNullField nnf ->
+      case i_fieldIdentity nnf of
+        IsIdentityGADT GeneratedAlways ->
+          [Expr.notNullConstraint, Expr.identityColumnConstraint Expr.alwaysColumnIdentityGeneration]
+        IsIdentityGADT GeneratedByDefault ->
+          [Expr.notNullConstraint, Expr.identityColumnConstraint Expr.byDefaultColumnIdentityGeneration]
+        AllowedIdentityButNotSetGADT ->
+          pure Expr.notNullConstraint
     NullableField _ ->
-      Expr.nullConstraint
+      pure Expr.nullConstraint
 
 {- | The type in considered internal because it requires GADTs to make use of
   it meaningfully. The 'FieldNullability' type is used as the public interface
@@ -671,12 +680,13 @@ fieldOfType sqlType name =
     , i_fieldDefaultValue = Nothing
     , i_fieldDescription = Nothing
     , i_fieldTableConstraints = mempty
+    , i_fieldIdentity = AllowedIdentityButNotSetGADT
     }
 
-{- | Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field
-  in 'Maybe'. The field will be marked as @NULL@ in the database schema and
-  the value 'Nothing' will be used to represent @NULL@ values when converting
-  to and from SQL.
+{- | Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field in 'Maybe'. The
+  field will be marked as @NULL@ in the database schema and the value 'Nothing' will be used to
+  represent @NULL@ values when converting to and from SQL. If the field was previously an indentity
+  column, that will be removed.
 
 @since 1.0.0.0
 -}
@@ -701,6 +711,7 @@ nullableField field =
       , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
       , i_fieldDescription = fieldDescription field
       , i_fieldTableConstraints = i_fieldTableConstraints field
+      , i_fieldIdentity = NotIdentityGADT
       }
 
 {- | Adds a 'Maybe' wrapper to a field that is already nullable. (If your field is
@@ -734,6 +745,7 @@ asymmetricNullableField field =
       , i_fieldDefaultValue = fmap DefaultValue.coerceDefaultValue (i_fieldDefaultValue field)
       , i_fieldDescription = fieldDescription field
       , i_fieldTableConstraints = i_fieldTableConstraints field
+      , i_fieldIdentity = i_fieldIdentity field
       }
 
 {- | Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can
@@ -797,6 +809,26 @@ removeDefaultValue ::
 removeDefaultValue fieldDef =
   fieldDef
     { i_fieldDefaultValue = Nothing
+    }
+
+{- | Use the supplied options to mark a column as an identity column.
+
+@since 1.1.0.0
+-}
+markAsIdentity :: FieldIdentityGeneration -> FieldDefinition NotNull a -> FieldDefinition NotNull a
+markAsIdentity identityGen fieldDef =
+  fieldDef
+    { i_fieldIdentity = IsIdentityGADT identityGen
+    }
+
+{- | Remove the identity portion of a field. Note that if a field
+
+@since 1.1.0.0
+-}
+unmarkIdentity :: FieldDefinition NotNull a -> FieldDefinition NotNull a
+unmarkIdentity fieldDef =
+  fieldDef
+    { i_fieldIdentity = AllowedIdentityButNotSetGADT
     }
 
 {- | Adds a prefix, followed by an underscore, to a field's name.
@@ -1102,3 +1134,42 @@ getFieldDefinition = i_fieldDef
 buildAliasedFieldDefinition :: FieldDefinition nullability a -> AliasName -> AliasedFieldDefinition nullability a
 buildAliasedFieldDefinition f ma =
   AliasedFieldDefinition ma f
+
+{- | INTERNAL: This type is an internal tracking of if a column is an identity column. We tie this to
+   the nullability because a nullable column is not allowed to be an identity column.
+
+@since 1.1.0.0
+-}
+data IdentityGADT nullability where
+  IsIdentityGADT :: FieldIdentityGeneration -> IdentityGADT NotNull
+  AllowedIdentityButNotSetGADT :: IdentityGADT NotNull
+  NotIdentityGADT :: IdentityGADT Nullable
+
+{- | Get the 'FieldIdentityGeneration', if there is one, of a 'FieldDefinition'.
+
+@since 1.1.0.0
+-}
+fieldIdentityGeneration :: FieldDefinition nullability a -> Maybe FieldIdentityGeneration
+fieldIdentityGeneration fieldDef =
+  case i_fieldIdentity fieldDef of
+    AllowedIdentityButNotSetGADT -> Nothing
+    NotIdentityGADT -> Nothing
+    IsIdentityGADT colId -> Just colId
+
+{- | Represents how the identity field be will generated.
+
+@since 1.1.0.0
+-}
+data FieldIdentityGeneration
+  = -- | The field will always be generated, and user supplied values during write for it is expressly not allowed.
+    --
+    -- @since 1.1.0.0
+    GeneratedAlways
+  | -- | The field will be generated by default, allowing for user defined values for writes will be allowed.
+    --
+    -- @since 1.1.0.0
+    GeneratedByDefault
+  deriving
+    ( -- | @since 1.1.0.0
+      Eq
+    )

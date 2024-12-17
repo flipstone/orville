@@ -12,6 +12,7 @@ module Test.PgAssert
   , assertColumnExists
   , assertColumnDefaultExists
   , assertColumnDefaultMatches
+  , assertFieldIdentityGenerationMatches
   , assertUniqueConstraintExists
   , assertForeignKeyConstraintExists
   , assertIndexExists
@@ -45,6 +46,7 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -215,6 +217,29 @@ assertColumnExists relationDesc columnName = do
         HH.failure
     Just attr ->
       pure attr
+
+assertFieldIdentityGenerationMatches ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  String ->
+  Maybe Marshall.FieldIdentityGeneration ->
+  m ()
+assertFieldIdentityGenerationMatches relationDesc columnName mbExpectedIdentityGeneration = do
+  attr <- assertColumnExists relationDesc columnName
+  case (PgCatalog.pgAttributeIdentity attr, mbExpectedIdentityGeneration) of
+    (Nothing, Nothing) -> pure ()
+    (Nothing, Just _) -> do
+      HH.annotate $ columnName <> " expected to be an identity but was not"
+      HH.failure
+    (Just _, Nothing) -> do
+      HH.annotate $ columnName <> " expected to not be an identity but was"
+      HH.failure
+    (Just colId, Just expectedIdentityGeneration) ->
+      if colId == expectedIdentityGeneration
+        then pure ()
+        else do
+          HH.annotate $ columnName <> " did not match expected identity generation"
+          HH.failure
 
 assertColumnDefaultExists ::
   (HH.MonadTest m, HasCallStack) =>

@@ -56,6 +56,7 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Internal.MigrationLock as MigrationLock
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
@@ -953,8 +954,28 @@ mkAddAlterColumnActions relationDesc fieldDef =
                           ( Just (Expr.alterColumnDropDefault columnName)
                           , Just (Expr.alterColumnSetDefault columnName newDefault)
                           )
+
+              alterIdentity =
+                case (Marshall.fieldIdentityGeneration fieldDef, PgCatalog.pgAttributeIdentity attr) of
+                  (Nothing, Nothing) -> mempty
+                  (Just Marshall.GeneratedAlways, Just Marshall.GeneratedAlways) -> mempty
+                  (Just Marshall.GeneratedByDefault, Just Marshall.GeneratedByDefault) -> mempty
+                  (Nothing, Just _) ->
+                    pure $ Expr.alterColumnDropIdentity columnName Nothing
+                  (Just Marshall.GeneratedAlways, Nothing) ->
+                    pure $ Expr.alterColumnAddIdentity columnName Expr.alwaysColumnIdentityGeneration
+                  (Just Marshall.GeneratedAlways, Just _existing) ->
+                    [Expr.alterColumnDropIdentity columnName Nothing, Expr.alterColumnAddIdentity columnName Expr.alwaysColumnIdentityGeneration]
+                  (Just Marshall.GeneratedByDefault, Nothing) ->
+                    pure $ Expr.alterColumnAddIdentity columnName Expr.byDefaultColumnIdentityGeneration
+                  (Just Marshall.GeneratedByDefault, Just _existing) ->
+                    [Expr.alterColumnDropIdentity columnName Nothing, Expr.alterColumnAddIdentity columnName Expr.byDefaultColumnIdentityGeneration]
             in
-              Maybe.maybeToList dropDefault <> alterType <> Maybe.maybeToList setDefault <> alterNullability
+              Maybe.maybeToList dropDefault
+                <> alterType
+                <> Maybe.maybeToList setDefault
+                <> alterNullability
+                <> alterIdentity
       _ ->
         -- Either the column doesn't exist in the table _OR_ it's a system
         -- column. If it's a system column, attempting to add it will result

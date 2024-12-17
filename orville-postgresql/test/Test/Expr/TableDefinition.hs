@@ -99,7 +99,7 @@ column1Definition =
   Expr.columnDefinition
     (Expr.columnName column1NameString)
     Expr.text
-    Nothing
+    mempty
     Nothing
 
 column1NameString :: String
@@ -111,7 +111,7 @@ column2Definition =
   Expr.columnDefinition
     (Expr.columnName column2NameString)
     Expr.text
-    Nothing
+    mempty
     Nothing
 
 column2NameString :: String

@@ -247,6 +247,8 @@ module Orville.PostgreSQL
   , FieldDefinition.getFieldDefinition
   , FieldDefinition.getAlias
   , FieldDefinition.buildAliasedFieldDefinition
+  , FieldDefinition.markAsIdentity
+  , FieldDefinition.unmarkIdentity
   , Marshall.AliasName
   , Marshall.stringToAliasName
   , Marshall.aliasNameToString
