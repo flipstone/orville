@@ -150,6 +150,7 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
+      Orville.PostgreSQL.Expr.TSVector
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
@@ -228,6 +229,7 @@ test-suite spec
       Test.Expr.TestSchema
       Test.Expr.Time
       Test.Expr.Trigger
+      Test.Expr.TSVector
       Test.Expr.Vacuum
       Test.Expr.Where
       Test.Expr.Window

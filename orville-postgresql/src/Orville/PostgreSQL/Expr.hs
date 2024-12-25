@@ -78,6 +78,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Filter
   , module Orville.PostgreSQL.Expr.FetchClause
   , module Orville.PostgreSQL.Expr.Values
+  , module Orville.PostgreSQL.Expr.TSVector
   )
 where
 
@@ -127,3 +128,4 @@ import Orville.PostgreSQL.Expr.ValueExpression
 import Orville.PostgreSQL.Expr.Values
 import Orville.PostgreSQL.Expr.WhereClause
 import Orville.PostgreSQL.Expr.Window
+import Orville.PostgreSQL.Expr.TSVector
