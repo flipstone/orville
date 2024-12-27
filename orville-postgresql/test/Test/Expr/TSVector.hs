@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Test.Expr.TSVector
   ( tsVectorTests
   )
@@ -21,7 +22,11 @@ import qualified Test.Property as Property
 tsVectorTests :: Orville.ConnectionPool -> Property.Group
 tsVectorTests pool =
   Property.group "Expr - TSVector" $
-    [  prop_matchesOneRow pool ]
+    [ prop_matchesOneRow pool
+    , prop_toTSRank pool
+    , prop_plainToTSQuery pool
+    , prop_setTSWeight pool
+    ]
 
 prop_matchesOneRow :: Property.NamedDBProperty
 prop_matchesOneRow =
@@ -31,16 +36,74 @@ prop_matchesOneRow =
       , tsVectorExpectedQueryResults = [mkFooBar 2 "bee"]
       , whereClause =
           Just . Expr.whereClause $
-            Expr.tsMatch 
-                    (Expr.toTSVector 
-                        barColumnRef Nothing)
-                    (Expr.toTSQuery
-                        (Expr.valueExpression $ SqlValue.fromText ("bee" :: Text)) Nothing)
+            Expr.tsMatch
+              ( Expr.toTSVector
+                  barColumnRef
+                  Nothing
+              )
+              ( Expr.toTSQuery
+                  (Expr.valueExpression $ SqlValue.fromText ("bee" :: Text))
+                  Nothing
+              )
+      , orderByClause = Nothing
+      }
+
+prop_setTSWeight :: Property.NamedDBProperty
+prop_setTSWeight =
+  tsVectorTest "Sets weight on a TSVector" $
+    TSVectorTest
+      { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "weighted"]
+      , tsVectorExpectedQueryResults = [mkFooBar 1 "weighted"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.tsMatch
+              ( Expr.setTSWeight
+                  (Expr.toTSVector barColumnRef Nothing)
+                  Expr.tsWeightA
+              )
+              (Expr.toTSQuery (Expr.valueExpression $ SqlValue.fromText ("weighted" :: Text)) Nothing)
+      , orderByClause = Nothing
+      }
+
+prop_plainToTSQuery :: Property.NamedDBProperty
+prop_plainToTSQuery =
+  tsVectorTest "Creates TSQuery from plain text" $
+    TSVectorTest
+      { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "plain query"]
+      , tsVectorExpectedQueryResults = [mkFooBar 1 "plain query"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.tsMatch
+              (Expr.toTSVector barColumnRef Nothing)
+              (Expr.plainToTSQuery (Expr.valueExpression $ SqlValue.fromText ("plain query" :: Text)) Nothing)
+      , orderByClause = Nothing
+      }
+
+prop_toTSRank :: Property.NamedDBProperty
+prop_toTSRank =
+  tsVectorTest "Calculates rank of TSVector and TSQuery" $
+    TSVectorTest
+      { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "foo", mkFooBar 2 "bar"]
+      , tsVectorExpectedQueryResults = [mkFooBar 2 "bar", mkFooBar 1 "foo"]
+      , whereClause = Nothing
+      , orderByClause =
+          Just . Expr.orderByClause $
+            Expr.orderByValueExpression
+              ( Expr.tsRankToValueExpression $
+                  Expr.toTSRank
+                    ( Expr.setTSWeight
+                        (Expr.toTSVector barColumnRef Nothing)
+                        Expr.tsWeightA
+                    )
+                    (Expr.toTSQuery (Expr.valueExpression $ SqlValue.fromText ("bar" :: Text)) Nothing)
+              )
+              Expr.descendingOrder
       }
 
 data TSVectorTest = TSVectorTest
   { tsVectorValuesToInsert :: NE.NonEmpty FooBar
   , whereClause :: Maybe Expr.WhereClause
+  , orderByClause :: Maybe Expr.OrderByClause
   , tsVectorExpectedQueryResults :: [FooBar]
   }
 
@@ -60,7 +123,7 @@ tsVectorTest testName test =
               Expr.queryExpr
                 (Expr.selectClause $ Expr.selectExpr Nothing)
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Just $ Expr.tableExpr (Expr.tableFromItem fooBarTable) (whereClause test) Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+                (Just $ Expr.tableExpr (Expr.tableFromItem fooBarTable) (whereClause test) Nothing (orderByClause test) Nothing Nothing Nothing Nothing Nothing)
 
           Execution.readRows result
 

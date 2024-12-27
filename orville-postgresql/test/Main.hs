@@ -28,13 +28,13 @@ import qualified Test.Expr.Join as ExprJoin
 import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
+import qualified Test.Expr.TSVector as ExprTSVector
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.Time as ExprTime
 import qualified Test.Expr.Trigger as ExprTrigger
 import qualified Test.Expr.Vacuum as ExprVacuum
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.Expr.Window as ExprWindow
-import qualified Test.Expr.TSVector as ExprTSVector
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.MarshallError as MarshallError
 import qualified Test.PgCatalog as PgCatalog
