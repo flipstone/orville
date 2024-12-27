@@ -117,9 +117,9 @@ import Orville.PostgreSQL.Expr.ReturningExpr
 import Orville.PostgreSQL.Expr.RowLocking
 import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
-import Orville.PostgreSQL.Expr.TextSearch
 import Orville.PostgreSQL.Expr.TableConstraint
 import Orville.PostgreSQL.Expr.TableDefinition
+import Orville.PostgreSQL.Expr.TextSearch
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
 import Orville.PostgreSQL.Expr.Trigger

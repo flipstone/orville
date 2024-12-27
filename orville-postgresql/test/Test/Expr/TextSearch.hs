@@ -21,7 +21,8 @@ import qualified Test.Property as Property
 
 textSearchTests :: Orville.ConnectionPool -> Property.Group
 textSearchTests pool =
-  Property.group "Expr - TSVector" $
+  Property.group
+    "Expr - TSVector"
     [ prop_matchesOneRow pool
     , prop_toTSRank pool
     , prop_plainToTSQuery pool
@@ -36,13 +37,15 @@ prop_matchesOneRow =
       , tsVectorExpectedQueryResults = [mkFooBar 2 "bee"]
       , whereClause =
           Just . Expr.whereClause $
-              Expr.toTSVector
+            Expr.tsMatch
+              ( Expr.toTSVector
                   barColumnRef
-                  Nothing
-              Expr.@@
-              Expr.toTSQuery
+                  (Just Expr.englishRegConfig)
+              )
+              ( Expr.toTSQuery
                   (Expr.valueExpression $ SqlValue.fromText ("bee" :: Text))
                   Nothing
+              )
       , orderByClause = Nothing
       }
 
@@ -87,13 +90,12 @@ prop_toTSRank =
       , orderByClause =
           Just . Expr.orderByClause $
             Expr.orderByValueExpression
-              ( Expr.tsRankToValueExpression $
-                  Expr.toTSRank
-                    ( Expr.setTSWeight
-                        (Expr.toTSVector barColumnRef Nothing)
-                        Expr.tsWeightA
-                    )
-                    (Expr.toTSQuery (Expr.valueExpression $ SqlValue.fromText ("bar" :: Text)) Nothing)
+              ( Expr.toTSRank
+                  ( Expr.setTSWeight
+                      (Expr.toTSVector barColumnRef Nothing)
+                      Expr.tsWeightA
+                  )
+                  (Expr.toTSQuery (Expr.valueExpression $ SqlValue.fromText ("bar" :: Text)) Nothing)
               )
               Expr.descendingOrder
       }

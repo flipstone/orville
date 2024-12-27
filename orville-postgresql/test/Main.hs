@@ -28,8 +28,8 @@ import qualified Test.Expr.Join as ExprJoin
 import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
-import qualified Test.Expr.TextSearch as ExprTextSearch
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
+import qualified Test.Expr.TextSearch as ExprTextSearch
 import qualified Test.Expr.Time as ExprTime
 import qualified Test.Expr.Trigger as ExprTrigger
 import qualified Test.Expr.Vacuum as ExprVacuum
