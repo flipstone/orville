@@ -78,7 +78,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Filter
   , module Orville.PostgreSQL.Expr.FetchClause
   , module Orville.PostgreSQL.Expr.Values
-  , module Orville.PostgreSQL.Expr.TSVector
+  , module Orville.PostgreSQL.Expr.TextSearch
   )
 where
 
@@ -117,7 +117,7 @@ import Orville.PostgreSQL.Expr.ReturningExpr
 import Orville.PostgreSQL.Expr.RowLocking
 import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
-import Orville.PostgreSQL.Expr.TSVector
+import Orville.PostgreSQL.Expr.TextSearch
 import Orville.PostgreSQL.Expr.TableConstraint
 import Orville.PostgreSQL.Expr.TableDefinition
 import Orville.PostgreSQL.Expr.Time

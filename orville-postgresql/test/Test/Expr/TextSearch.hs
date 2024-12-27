@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.Expr.TSVector
-  ( tsVectorTests
+module Test.Expr.TextSearch
+  ( textSearchTests
   )
 where
 
@@ -19,8 +19,8 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-tsVectorTests :: Orville.ConnectionPool -> Property.Group
-tsVectorTests pool =
+textSearchTests :: Orville.ConnectionPool -> Property.Group
+textSearchTests pool =
   Property.group "Expr - TSVector" $
     [ prop_matchesOneRow pool
     , prop_toTSRank pool
@@ -36,15 +36,13 @@ prop_matchesOneRow =
       , tsVectorExpectedQueryResults = [mkFooBar 2 "bee"]
       , whereClause =
           Just . Expr.whereClause $
-            Expr.tsMatch
-              ( Expr.toTSVector
+              Expr.toTSVector
                   barColumnRef
                   Nothing
-              )
-              ( Expr.toTSQuery
+              Expr.@@
+              Expr.toTSQuery
                   (Expr.valueExpression $ SqlValue.fromText ("bee" :: Text))
                   Nothing
-              )
       , orderByClause = Nothing
       }
 

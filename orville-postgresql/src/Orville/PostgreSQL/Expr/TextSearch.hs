@@ -7,7 +7,7 @@ Stability : Stable
 
 @since 1.1.0.0
 -}
-module Orville.PostgreSQL.Expr.TSVector
+module Orville.PostgreSQL.Expr.TextSearch
   ( RegConfig
   , TSVector
   , TSQuery
