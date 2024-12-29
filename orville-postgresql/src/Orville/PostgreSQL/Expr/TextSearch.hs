@@ -307,9 +307,9 @@ setTSWeight tsVector tsWeight =
 tsWeightToValueExpression :: TSWeight -> ValueExpression
 tsWeightToValueExpression (TSWeight rawSql) = RawSql.unsafeFromRawSql rawSql
 
-{- | Converts a 'ValueExpression' into a 'TSQuery', optionally using a specified 'RegConfig'. 
-     The 'ValueExpression' must be text. All punctuation in the given 'ValueExpression' will be ignored 
-     and individual words will be combined with a logical AND. This results in a 'TSQuery' 
+{- | Converts a 'ValueExpression' into a 'TSQuery', optionally using a specified 'RegConfig'.
+     The 'ValueExpression' must be text. All punctuation in the given 'ValueExpression' will be ignored
+     and individual words will be combined with a logical AND. This results in a 'TSQuery'
      that matches when all words are present.
 
 @since 1.1.0.0

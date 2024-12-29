@@ -15,7 +15,7 @@ executed.
 -}
 module Orville.PostgreSQL.Execution
   ( -- * High-level modules for most common tasks
-    module Orville.PostgreSQL.Execution.EntityOperations
+      module Orville.PostgreSQL.Execution.EntityOperations
   , module Orville.PostgreSQL.Execution.SelectOptions
   , module Orville.PostgreSQL.Execution.Sequence
   , module Orville.PostgreSQL.Execution.Transaction
