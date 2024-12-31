@@ -735,7 +735,7 @@ asymmetricNullableField field =
     nullableType sqlType =
       sqlType
         { SqlType.sqlTypeToSql = maybe SqlValue.sqlNull (SqlType.sqlTypeToSql sqlType)
-        , SqlType.sqlTypeFromSql = \sqlValue -> Just <$> SqlType.sqlTypeFromSql sqlType sqlValue
+        , SqlType.sqlTypeFromSql = fmap Just . SqlType.sqlTypeFromSql sqlType
         }
   in
     FieldDefinition

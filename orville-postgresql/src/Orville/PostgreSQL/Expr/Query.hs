@@ -168,7 +168,7 @@ operatorSubquery querySpecificRawSql binOp valExpr (QueryExpr queryRawSql) =
 queryExprWithAlias :: AliasExpr -> QueryExpr -> QueryExpr
 queryExprWithAlias alias query =
   QueryExpr $
-    (RawSql.parenthesized $ RawSql.toRawSql query)
+    RawSql.parenthesized (RawSql.toRawSql query)
       <> RawSql.fromString " AS "
       <> RawSql.toRawSql alias
 

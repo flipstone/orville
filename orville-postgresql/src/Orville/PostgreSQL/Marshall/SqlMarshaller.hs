@@ -172,7 +172,7 @@ data SqlMarshaller a b where
 
 -- | @since 1.0.0.0
 instance Functor (SqlMarshaller a) where
-  fmap f marsh = MarshallApply (MarshallPure f) marsh
+  fmap f = MarshallApply (MarshallPure f)
 
 -- | @since 1.0.0.0
 instance Applicative (SqlMarshaller a) where
@@ -500,13 +500,13 @@ decodeRow errorDetailLevel (RowSource source) (RowIdentityExtractor getRowId) ro
   case result of
     Left err -> do
       rowId <- getRowId row
-      pure $
-        Left $
-          MarshallError.MarshallError
-            { MarshallError.marshallErrorDetailLevel = errorDetailLevel
-            , MarshallError.marshallErrorRowIdentifier = rowId
-            , MarshallError.marshallErrorDetails = err
-            }
+      pure
+        . Left
+        $ MarshallError.MarshallError
+          { MarshallError.marshallErrorDetailLevel = errorDetailLevel
+          , MarshallError.marshallErrorRowIdentifier = rowId
+          , MarshallError.marshallErrorDetails = err
+          }
     Right entity ->
       pure $
         Right entity

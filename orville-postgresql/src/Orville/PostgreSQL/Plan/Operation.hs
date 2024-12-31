@@ -225,8 +225,8 @@ byField fieldDef =
   in
     WherePlanner
       { paramMarshaller = flip Marshall.marshallField fieldDef
-      , executeOneWhereCondition = \fieldValue -> Marshall.fieldEquals fieldDef fieldValue
-      , executeManyWhereCondition = \fieldValues -> Marshall.fieldIn fieldDef (dedupeFieldValues fieldValues)
+      , executeOneWhereCondition = Marshall.fieldEquals fieldDef
+      , executeManyWhereCondition = Marshall.fieldIn fieldDef . dedupeFieldValues
       , explainOneWhereCondition = Marshall.fieldEquals stringyField $ T.pack "EXAMPLE VALUE"
       , explainManyWhereCondition = Marshall.fieldIn stringyField $ fmap T.pack ("EXAMPLE VALUE 1" :| ["EXAMPLE VALUE 2"])
       }
@@ -266,7 +266,7 @@ byFieldTuple fieldDefA fieldDefB =
     WherePlanner
       { paramMarshaller = marshaller
       , executeOneWhereCondition = \fieldValue -> Marshall.fieldTupleIn fieldDefA fieldDefB (fieldValue :| [])
-      , executeManyWhereCondition = \fieldValues -> Marshall.fieldTupleIn fieldDefA fieldDefB (dedupeFieldValues fieldValues)
+      , executeManyWhereCondition = Marshall.fieldTupleIn fieldDefA fieldDefB . dedupeFieldValues
       , explainOneWhereCondition =
           Marshall.fieldTupleIn
             stringyFieldA
@@ -276,7 +276,7 @@ byFieldTuple fieldDefA fieldDefB =
           Marshall.fieldTupleIn
             stringyFieldA
             stringyFieldB
-            (packAll $ (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
+            (packAll (("EXAMPLE VALUE A 1", "EXAMPLE VALUE B 1") :| [("EXAMPLE VALUE A 2", "EXAMPLE VALUE B 2")]))
       }
 
 {- | Builds a 'WherePlanner' that will match on the writable fields of a

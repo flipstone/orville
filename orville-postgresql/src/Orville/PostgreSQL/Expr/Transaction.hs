@@ -62,11 +62,10 @@ newtype BeginTransactionExpr
 -}
 beginTransaction :: Maybe TransactionMode -> BeginTransactionExpr
 beginTransaction maybeTransactionMode =
-  BeginTransactionExpr $
-    RawSql.intercalate RawSql.space $
-      ( RawSql.fromString "BEGIN TRANSACTION"
-          : maybeToList (RawSql.toRawSql <$> maybeTransactionMode)
-      )
+  BeginTransactionExpr
+    . RawSql.intercalate RawSql.space
+    $ RawSql.fromString "BEGIN TRANSACTION"
+      : maybeToList (RawSql.toRawSql <$> maybeTransactionMode)
 
 {- | Type to represent the transaction mode. E.G.
 
@@ -123,7 +122,7 @@ notDeferrable =
 -}
 isolationLevel :: IsolationLevel -> TransactionMode
 isolationLevel level =
-  TransactionMode $
+  TransactionMode
     (RawSql.fromString "ISOLATION LEVEL " <> RawSql.toRawSql level)
 
 {- | Type to represent the transaction isolation level. E.G.

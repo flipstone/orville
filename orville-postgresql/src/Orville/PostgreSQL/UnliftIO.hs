@@ -71,7 +71,7 @@ liftCatchViaUnliftIO ioCatch action handler = do
   UL.liftIO $
     ioCatch
       (UL.unliftIO unlio action)
-      (\ex -> UL.unliftIO unlio (handler ex))
+      (UL.unliftIO unlio . handler)
 
 {- | 'liftMaskViaUnliftIO' can be used as the implementation of
   'Orville.PostgreSQL.liftMask' for 'Orville.PostgreSQL.MonadOrvilleControl'

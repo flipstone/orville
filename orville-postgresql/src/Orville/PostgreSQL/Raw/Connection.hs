@@ -425,8 +425,7 @@ withLibPQConnectionOrFailIfClosed (Connection handle) withConnection = do
       OpenConnection conn ->
         withConnection conn
 
-{- |
-  Returns 'Just' the transaction status of the current connection, as reported by @libpq@, or
+{- | Returns 'Just' the transaction status of the current connection, as reported by @libpq@, or
   'Nothing' if the connection is currently closed. See 'Database.PostgreSQL.LibPQ.transactionStatus',
   'Database.PostgreSQL.LibPQ.TransactionStatus' for more information.
 
@@ -442,8 +441,7 @@ transactionStatus (Connection handle) = do
       OpenConnection conn ->
         fmap Just (LibPQ.transactionStatus conn)
 
-{- |
-  Similar to 'transactionStatus', but throws a 'ConnectionUsedAfterCloseError' if the connection is closed.
+{- | Similar to 'transactionStatus', but throws a 'ConnectionUsedAfterCloseError' if the connection is closed.
 
 @since 1.1.0.0
 -}

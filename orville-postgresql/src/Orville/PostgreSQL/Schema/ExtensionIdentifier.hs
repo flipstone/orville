@@ -19,7 +19,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 
 @since 1.1.0.0
 -}
-data ExtensionIdentifier = ExtensionIdentifier
+newtype ExtensionIdentifier = ExtensionIdentifier
   { i_extensionName :: String
   }
   deriving

@@ -71,8 +71,8 @@ primaryKeyFieldNames :: PrimaryKey key -> NonEmpty FieldName
 primaryKeyFieldNames =
   let
     partName :: (part -> key) -> FieldDefinition NotNull a -> FieldName
-    partName _ field =
-      fieldName field
+    partName _ =
+      fieldName
   in
     mapPrimaryKeyParts partName
 

@@ -146,5 +146,5 @@ seconds = do
   s <- twoDigits
   (dec, charCount) <- AttoB8.option (0, 0) (AttoB8.char '.' *> decimalWithCount)
   if charCount >= 12
-    then pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
-    else pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))
+    then pure . Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
+    else pure . Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))

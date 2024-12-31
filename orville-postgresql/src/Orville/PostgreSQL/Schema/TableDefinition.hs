@@ -339,8 +339,8 @@ addTableIndexes ::
   TableDefinition key writeEntity readEntity
 addTableIndexes indexDefs tableDef =
   let
-    addIndex index indexMap =
-      Map.insert (indexMigrationKey index) index indexMap
+    addIndex index =
+      Map.insert (indexMigrationKey index) index
   in
     tableDef
       { i_tableIndexes = foldr addIndex (i_tableIndexes tableDef) indexDefs
@@ -377,8 +377,8 @@ addTableTriggers ::
   TableDefinition key writeEntity readEntity
 addTableTriggers triggerDefs tableDef =
   let
-    addTrigger trigger triggerMap =
-      Map.insert (triggerMigrationKey trigger) trigger triggerMap
+    addTrigger trigger =
+      Map.insert (triggerMigrationKey trigger) trigger
   in
     tableDef
       { i_tableTriggers = foldr addTrigger (i_tableTriggers tableDef) triggerDefs

@@ -50,9 +50,9 @@ createExtensionExpr :: ExtensionName -> Maybe IfNotExists -> Maybe ExtensionActi
 createExtensionExpr extension mbIfNotExists mbAction =
   CreateExtensionExpr $
     RawSql.fromString "CREATE EXTENSION "
-      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbIfNotExists)
+      <> maybe mempty ((<> RawSql.space) . RawSql.toRawSql) mbIfNotExists
       <> RawSql.toRawSql extension
-      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbAction)
+      <> maybe mempty ((<> RawSql.space) . RawSql.toRawSql) mbAction
 
 {- | Type to represent a SQL "DROP EXTENSION" statement. E.G.
 
@@ -79,9 +79,9 @@ dropExtensionExpr :: ExtensionName -> Maybe IfExists -> Maybe ExtensionActionExp
 dropExtensionExpr extension mbIfExists mbAction =
   DropExtensionExpr $
     RawSql.fromString "DROP EXTENSION "
-      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbIfExists)
+      <> maybe mempty ((<> RawSql.space) . RawSql.toRawSql) mbIfExists
       <> RawSql.toRawSql extension
-      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbAction)
+      <> maybe mempty ((<> RawSql.space) . RawSql.toRawSql) mbAction
 
 {- | Type to represent a extension action on a @EXTENSION@. E.G.
 the @CASCADE@ in

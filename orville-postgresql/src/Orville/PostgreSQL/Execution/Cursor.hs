@@ -88,11 +88,10 @@ withCursor ::
   Select readEntity ->
   (Cursor readEntity -> m a) ->
   m a
-withCursor scrollExpr holdExpr select useCursor =
+withCursor scrollExpr holdExpr select =
   Bracket.bracketWithResult
     (declareCursor scrollExpr holdExpr select)
     (\cursor _bracketResult -> closeCursor cursor)
-    useCursor
 
 {- | Declares a @CURSOR@ in PostgreSQL and returns it for you to use. The cursor
   must be closed via 'closeCursor' (or another means) when you are done using

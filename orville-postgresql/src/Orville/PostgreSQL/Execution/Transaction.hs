@@ -136,8 +136,7 @@ withTransaction action =
 
     Bracket.bracketWithResult beginTransaction finishTransaction doAction
 
-{- |
-  'withTransaction' will throw this exception if libpq reports a transaction status on the underlying
+{- | 'withTransaction' will throw this exception if libpq reports a transaction status on the underlying
   connection that is incompatible with the current transaction event.
 
 @since 1.1.0.0
@@ -147,10 +146,18 @@ data UnexpectedTransactionStatusError = UnexpectedTransactionStatusError
   , unexpectedTransactionStatusErrorTransactionEvent :: OrvilleState.TransactionEvent
   }
 
+{- |
+
+@since 1.1.0.0
+-}
 instance Show UnexpectedTransactionStatusError where
   show (UnexpectedTransactionStatusError status event) =
     "Unexpected transaction status during event " <> show event <> ": " <> show status
 
+{- |
+
+@since 1.1.0.0
+-}
 instance Exception UnexpectedTransactionStatusError
 
 transactionEventSql ::
@@ -164,11 +171,11 @@ transactionEventSql state event =
     OrvilleState.NewSavepoint savepoint ->
       RawSql.toRawSql $ Expr.savepoint (savepointName savepoint)
     OrvilleState.RollbackTransaction ->
-      RawSql.toRawSql $ Expr.rollback
+      RawSql.toRawSql Expr.rollback
     OrvilleState.RollbackToSavepoint savepoint ->
       RawSql.toRawSql $ Expr.rollbackTo (savepointName savepoint)
     OrvilleState.CommitTransaction ->
-      RawSql.toRawSql $ Expr.commit
+      RawSql.toRawSql Expr.commit
     OrvilleState.ReleaseSavepoint savepoint ->
       RawSql.toRawSql $ Expr.releaseSavepoint (savepointName savepoint)
 
@@ -190,8 +197,7 @@ savepointName savepoint =
   in
     Expr.savepointName ("orville_savepoint_level_" <> show n)
 
-{- |
-  Information about the current transaction state of an action passed to 'withTransaction'.
+{- | Information about the current transaction state of an action passed to 'withTransaction'.
 
 @since 1.1.0.0
 -}
@@ -208,8 +214,7 @@ data InWithTransaction
       Show
     )
 
-{- |
-  Returns 'Just' an 'InWithTransaction' value when called inside of the action passed to
+{- |  Returns 'Just' an 'InWithTransaction' value when called inside of the action passed to
   'withTransaction', and 'Nothing' otherwise.
 
 @since 1.1.0.0

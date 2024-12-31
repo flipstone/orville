@@ -103,7 +103,7 @@ readRows res = do
     readValue rowIndex columnIndex = do
       name <- columnName res columnIndex
       value <- getValue res rowIndex columnIndex
-      pure $ (name, value)
+      pure (name, value)
 
     readRow rowIndex =
       traverse (readValue rowIndex) columnIndices

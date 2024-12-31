@@ -1,5 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 {- |
 Copyright : Flipstone Technology Partners 2024
 License   : MIT

@@ -8,9 +8,10 @@ Stability : Stable
 @since 1.1.0.0
 -}
 module Orville.PostgreSQL.Expr.TextSearch
-  ( RegConfig
-  , TSVector
+  ( TSVector
+  , tsVectorToValueExpression
   , TSQuery
+  , tsQueryToValueExpression
   , TSWeight
   , tsMatch
   , tsMatchTSQueryTSVector
@@ -20,15 +21,35 @@ module Orville.PostgreSQL.Expr.TextSearch
   , plainToTSQuery
   , toTSRank
   , setTSWeight
-  , simpleRegConfig
-  , englishRegConfig
   , tsWeightToValueExpression
-  , tsVectorToValueExpression
-  , tsQueryToValueExpression
   , tsWeightA
   , tsWeightB
   , tsWeightC
   , tsWeightD
+  , RegConfig
+  , arabicRegConfig
+  , danishRegConfig
+  , dutchRegConfig
+  , englishRegConfig
+  , finnishRegConfig
+  , frenchRegConfig
+  , germanRegConfig
+  , greekRegConfig
+  , hungarianRegConfig
+  , indonesianRegConfig
+  , irishRegConfig
+  , italianRegConfig
+  , lithuanianRegConfig
+  , nepaliRegConfig
+  , norwegianRegConfig
+  , portugueseRegConfig
+  , romanianRegConfig
+  , russianRegConfig
+  , simpleRegConfig
+  , spanishRegConfig
+  , swedishRegConfig
+  , tamilRegConfig
+  , turkishRegConfig
   ) where
 
 import Orville.PostgreSQL.Expr.BinaryOperator (BinaryOperator, binaryOpExpression, binaryOperator)
@@ -37,8 +58,7 @@ import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, functionCall)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- | Type to represent a SQL value expression that evaluates to a TSVector. This could be a
-constant value, a column reference.
+{- | Type to represent a PostgreSQL @tsvector@.
 
 'TSVector' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
@@ -53,8 +73,7 @@ newtype TSVector
       RawSql.SqlExpression
     )
 
-{- | Type to represent a SQL value expression that evaluates to a TSQuery. This could be a
-constant value, a column reference.
+{- | Type to represent a PostgreSQL @tsquery@.
 
 'TSQuery' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
@@ -64,21 +83,6 @@ SQL.
 -}
 newtype TSQuery
   = TSQuery RawSql.RawSql
-  deriving
-    ( -- | @since 1.1.0.0
-      RawSql.SqlExpression
-    )
-
-{- | Represents a text search configuration.
-
-'RegConfig' provides a 'RawSql.SqlExpression' instance. See
-'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
-SQL.
-
- @since 1.1.0.0
--}
-newtype RegConfig
-  = RegConfig RawSql.RawSql
   deriving
     ( -- | @since 1.1.0.0
       RawSql.SqlExpression
@@ -106,11 +110,6 @@ tsVectorConcatOp = binaryOperator "||"
 
 {- | Matches a 'TSVector' against a 'TSQuery'. This function is an alias for the '@@' operator.
 
-=== Example:
-
->>> tsMatch (toTSVector (RawSql.fromString 'document') Nothing) (toTSQuery (RawSql.fromString 'query') Nothing)
--- Produces a boolean expression equivalent to 'toTSVector ... @@ toTSQuery ...'.
-
 @since 1.1.0.0
 -}
 tsMatch :: TSVector -> TSQuery -> BooleanExpr
@@ -129,11 +128,6 @@ tsMatchTSQueryTSVector :: TSQuery -> TSVector -> BooleanExpr
 tsMatchTSQueryTSVector = flip tsMatch
 
 {- | Concatenates two 'TSVector' values.
-
-=== Example:
-
->>> tsVectorConcat (toTSVector (RawSql.fromString 'vector1') Nothing) (toTSVector (RawSql.fromString 'vector2') Nothing)
--- Produces a 'TSVector' equivalent to 'vector1 || vector2'.
 
 @since 1.1.0.0
 -}
@@ -187,20 +181,6 @@ setTSWeightFunction = functionName "setweight"
 plaintoTSQueryFunction :: FunctionName
 plaintoTSQueryFunction = functionName "plainto_tsquery"
 
-{- | A constant representing the "simple" text search configuration.
-
-@since 1.1.0.0
--}
-simpleRegConfig :: RegConfig
-simpleRegConfig = RegConfig $ RawSql.fromString "simple"
-
-{- | A constant representing the "english" text search configuration.
-
-@since 1.1.0.0
--}
-englishRegConfig :: RegConfig
-englishRegConfig = RegConfig $ RawSql.fromString "english"
-
 {- | Converts a 'RegConfig' to a 'ValueExpression'.
 
 @since 1.1.0.0
@@ -220,18 +200,16 @@ The provided 'ValueExpression' must adhere to the following limitations:
   * Behavior may differ depending on whether @json@ or @jsonb@ is used.
   * Word normalization will be applied during the conversion process.
 
-=== Example:
-
->>> toTSVector (RawSql.fromString 'text') (Just simpleRegConfig)
--- Produces a 'TSVector' for the given text using the 'simple' configuration.
-
 @since 1.1.0.0
 -}
 toTSVector :: ValueExpression -> Maybe RegConfig -> TSVector
-toTSVector val mbRegConfig = TSVector . RawSql.toRawSql $
-  functionCall toTSVectorFunction $ case mbRegConfig of
-    Nothing -> [val]
-    Just regConfig -> [regConfigToValueExpression regConfig, val]
+toTSVector val mbRegConfig =
+  TSVector
+    . RawSql.toRawSql
+    . functionCall toTSVectorFunction
+    $ case mbRegConfig of
+      Nothing -> [val]
+      Just regConfig -> [regConfigToValueExpression regConfig, val]
 
 {- | Converts a 'ValueExpression' to a 'TSQuery', optionally using a specified 'RegConfig'.
 
@@ -240,18 +218,16 @@ The provided 'ValueExpression' must adhere to the following limitations:
   * Behavior may differ depending on whether @json@ or @jsonb@ is used.
   * Word normalization will be applied during the conversion process.
 
-=== Example:
-
->>> toTSQuery (RawSql.fromString 'search term') (Just englishRegConfig)
--- Produces a 'TSQuery' for the given term using the 'english' configuration.
-
 @since 1.1.0.0
 -}
 toTSQuery :: ValueExpression -> Maybe RegConfig -> TSQuery
-toTSQuery val mbRegConfig = TSQuery . RawSql.toRawSql $
-  functionCall toTSQueryFunction $ case mbRegConfig of
-    Nothing -> [val]
-    Just regConfig -> [regConfigToValueExpression regConfig, val]
+toTSQuery val mbRegConfig =
+  TSQuery
+    . RawSql.toRawSql
+    . functionCall toTSQueryFunction
+    $ case mbRegConfig of
+      Nothing -> [val]
+      Just regConfig -> [regConfigToValueExpression regConfig, val]
 
 {- | Converts a 'TSQuery' to a 'ValueExpression'.
 
@@ -267,12 +243,7 @@ tsQueryToValueExpression (TSQuery rawSql) = RawSql.unsafeFromRawSql rawSql
 tsVectorToValueExpression :: TSVector -> ValueExpression
 tsVectorToValueExpression (TSVector rawSql) = RawSql.unsafeFromRawSql rawSql
 
-{- | Converts a 'TSVector' and 'TSQuery' into a rank ('TSRank') based on how well they match.
-
-=== Example:
-
->>> toTSRank (toTSVector (RawSql.fromString 'text') Nothing) (toTSQuery (RawSql.fromString 'search term') Nothing)
--- Produces a 'TSRank' for the given vector and query.
+{- | Perform a text search ranking based on how well the 'TSVector' and 'TSQuery' match.
 
 @since 1.1.0.0
 -}
@@ -285,11 +256,6 @@ toTSRank tsVector tsQuery =
     ]
 
 {- | Assigns the given weight to each element of a 'TSVector'.
-
-=== Example:
-
->>> setTSWeight (toTSVector (RawSql.fromString 'text') Nothing) tsWeightA
--- Produces a 'TSVector' with weight 'A'.
 
 @since 1.1.0.0
 -}
@@ -307,15 +273,194 @@ setTSWeight tsVector tsWeight =
 tsWeightToValueExpression :: TSWeight -> ValueExpression
 tsWeightToValueExpression (TSWeight rawSql) = RawSql.unsafeFromRawSql rawSql
 
-{- | Converts a 'ValueExpression' into a 'TSQuery', optionally using a specified 'RegConfig'.
-     The 'ValueExpression' must be text. All punctuation in the given 'ValueExpression' will be ignored
-     and individual words will be combined with a logical AND. This results in a 'TSQuery'
-     that matches when all words are present.
+{- | Converts a 'ValueExpression' into a 'TSQuery', optionally using a specified 'RegConfig'.  The
+     'ValueExpression' must be text. All punctuation in the given 'ValueExpression' will be ignored
+     and individual words will be combined with a logical AND. This results in a 'TSQuery' that
+     matches when all words are present.
 
 @since 1.1.0.0
 -}
 plainToTSQuery :: ValueExpression -> Maybe RegConfig -> TSQuery
-plainToTSQuery val mbRegConfig = TSQuery . RawSql.toRawSql $
-  functionCall plaintoTSQueryFunction $ case mbRegConfig of
-    Nothing -> [val]
-    Just regConfig -> [regConfigToValueExpression regConfig, val]
+plainToTSQuery val mbRegConfig =
+  TSQuery
+    . RawSql.toRawSql
+    . functionCall plaintoTSQueryFunction
+    $ case mbRegConfig of
+      Nothing -> [val]
+      Just regConfig -> [regConfigToValueExpression regConfig, val]
+
+{- | Type to represent a text search configuration.
+
+'RegConfig' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+ @since 1.1.0.0
+-}
+newtype RegConfig
+  = RegConfig RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0
+      RawSql.SqlExpression
+    )
+
+{- | The "arabic" text search configuration.
+
+@since 1.1.0.0
+-}
+arabicRegConfig :: RegConfig
+arabicRegConfig = RegConfig $ RawSql.fromString "arabic"
+
+{- | The "danish" text search configuration.
+
+@since 1.1.0.0
+-}
+danishRegConfig :: RegConfig
+danishRegConfig = RegConfig $ RawSql.fromString "danish"
+
+{- | The "dutch" text search configuration.
+
+@since 1.1.0.0
+-}
+dutchRegConfig :: RegConfig
+dutchRegConfig = RegConfig $ RawSql.fromString "dutch"
+
+{- | The "english" text search configuration.
+
+@since 1.1.0.0
+-}
+englishRegConfig :: RegConfig
+englishRegConfig = RegConfig $ RawSql.fromString "english"
+
+{- | The "finnish" text search configuration.
+
+@since 1.1.0.0
+-}
+finnishRegConfig :: RegConfig
+finnishRegConfig = RegConfig $ RawSql.fromString "finnish"
+
+{- | The "french" text search configuration.
+
+@since 1.1.0.0
+-}
+frenchRegConfig :: RegConfig
+frenchRegConfig = RegConfig $ RawSql.fromString "french"
+
+{- | The "german" text search configuration.
+
+@since 1.1.0.0
+-}
+germanRegConfig :: RegConfig
+germanRegConfig = RegConfig $ RawSql.fromString "german"
+
+{- | The "greek" text search configuration.
+
+@since 1.1.0.0
+-}
+greekRegConfig :: RegConfig
+greekRegConfig = RegConfig $ RawSql.fromString "greek"
+
+{- | The "hungarian" text search configuration.
+
+@since 1.1.0.0
+-}
+hungarianRegConfig :: RegConfig
+hungarianRegConfig = RegConfig $ RawSql.fromString "hungarian"
+
+{- | The "indonesian" text search configuration.
+
+@since 1.1.0.0
+-}
+indonesianRegConfig :: RegConfig
+indonesianRegConfig = RegConfig $ RawSql.fromString "indonesian"
+
+{- | The "irish" text search configuration.
+
+@since 1.1.0.0
+-}
+irishRegConfig :: RegConfig
+irishRegConfig = RegConfig $ RawSql.fromString "irish"
+
+{- | The "italian" text search configuration.
+
+@since 1.1.0.0
+-}
+italianRegConfig :: RegConfig
+italianRegConfig = RegConfig $ RawSql.fromString "italian"
+
+{- | The "lithuanian" text search configuration.
+
+@since 1.1.0.0
+-}
+lithuanianRegConfig :: RegConfig
+lithuanianRegConfig = RegConfig $ RawSql.fromString "lithuanian"
+
+{- | The "nepali" text search configuration.
+
+@since 1.1.0.0
+-}
+nepaliRegConfig :: RegConfig
+nepaliRegConfig = RegConfig $ RawSql.fromString "nepali"
+
+{- | The "norwegian" text search configuration.
+
+@since 1.1.0.0
+-}
+norwegianRegConfig :: RegConfig
+norwegianRegConfig = RegConfig $ RawSql.fromString "norwegian"
+
+{- | The "portuguese" text search configuration.
+
+@since 1.1.0.0
+-}
+portugueseRegConfig :: RegConfig
+portugueseRegConfig = RegConfig $ RawSql.fromString "portuguese"
+
+{- | The "romanian" text search configuration.
+
+@since 1.1.0.0
+-}
+romanianRegConfig :: RegConfig
+romanianRegConfig = RegConfig $ RawSql.fromString "romanian"
+
+{- | The "russian" text search configuration.
+
+@since 1.1.0.0
+-}
+russianRegConfig :: RegConfig
+russianRegConfig = RegConfig $ RawSql.fromString "russian"
+
+{- | The "simple" text search configuration.
+
+@since 1.1.0.0
+-}
+simpleRegConfig :: RegConfig
+simpleRegConfig = RegConfig $ RawSql.fromString "simple"
+
+{- | The "spanish" text search configuration.
+
+@since 1.1.0.0
+-}
+spanishRegConfig :: RegConfig
+spanishRegConfig = RegConfig $ RawSql.fromString "spanish"
+
+{- | The "swedish" text search configuration.
+
+@since 1.1.0.0
+-}
+swedishRegConfig :: RegConfig
+swedishRegConfig = RegConfig $ RawSql.fromString "swedish"
+
+{- | The "tamil" text search configuration.
+
+@since 1.1.0.0
+-}
+tamilRegConfig :: RegConfig
+tamilRegConfig = RegConfig $ RawSql.fromString "tamil"
+
+{- | The "turkish" text search configuration.
+
+@since 1.1.0.0
+-}
+turkishRegConfig :: RegConfig
+turkishRegConfig = RegConfig $ RawSql.fromString "turkish"

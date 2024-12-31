@@ -627,8 +627,8 @@ focusParam ::
   (a -> b) ->
   Plan scope b result ->
   Plan scope a result
-focusParam focuser plan =
-  chain (focuser <$> askParam) plan
+focusParam focuser =
+  chain (fmap focuser askParam)
 
 {- |
   'planEither' lets you construct a plan that branches by executing a different
@@ -707,8 +707,8 @@ using ::
   Planned scope param a ->
   Plan scope a b ->
   Plan scope param b
-using planned plan =
-  chain (use planned) plan
+using planned =
+  chain (use planned)
 
 {- |
   'apply' applies a function produced by a plan to the value produced
@@ -796,8 +796,8 @@ execute ::
   Plan Execute param result ->
   param ->
   m result
-execute plan param =
-  executeOne plan param
+execute =
+  executeOne
 
 {- |
   'executeOne' is an internal helper that executes a 'Plan' with a concrete

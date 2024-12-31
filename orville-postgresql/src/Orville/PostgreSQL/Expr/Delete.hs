@@ -50,11 +50,11 @@ deleteExpr ::
   Maybe ReturningExpr ->
   DeleteExpr
 deleteExpr tableName maybeWhereClause maybeReturningExpr =
-  DeleteExpr $
-    RawSql.intercalate RawSql.space $
-      catMaybes
-        [ Just $ RawSql.fromString "DELETE FROM"
-        , Just $ RawSql.toRawSql tableName
-        , fmap RawSql.toRawSql maybeWhereClause
-        , fmap RawSql.toRawSql maybeReturningExpr
-        ]
+  DeleteExpr
+    . RawSql.intercalate RawSql.space
+    $ catMaybes
+      [ Just $ RawSql.fromString "DELETE FROM"
+      , Just $ RawSql.toRawSql tableName
+      , fmap RawSql.toRawSql maybeWhereClause
+      , fmap RawSql.toRawSql maybeReturningExpr
+      ]

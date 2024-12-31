@@ -83,17 +83,17 @@ declare ::
   QueryExpr ->
   DeclareExpr
 declare cursorName maybeScrollExpr maybeHoldExpr queryExpr =
-  DeclareExpr $
-    RawSql.intercalate RawSql.space $
-      catMaybes
-        [ Just $ RawSql.fromString "DECLARE"
-        , Just $ RawSql.toRawSql cursorName
-        , fmap RawSql.toRawSql maybeScrollExpr
-        , Just $ RawSql.fromString "CURSOR"
-        , fmap RawSql.toRawSql maybeHoldExpr
-        , Just $ RawSql.fromString "FOR"
-        , Just $ RawSql.toRawSql queryExpr
-        ]
+  DeclareExpr
+    . RawSql.intercalate RawSql.space
+    $ catMaybes
+      [ Just $ RawSql.fromString "DECLARE"
+      , Just $ RawSql.toRawSql cursorName
+      , fmap RawSql.toRawSql maybeScrollExpr
+      , Just $ RawSql.fromString "CURSOR"
+      , fmap RawSql.toRawSql maybeHoldExpr
+      , Just $ RawSql.fromString "FOR"
+      , Just $ RawSql.toRawSql queryExpr
+      ]
 
 {- | 'ScrollExpr' is used to determine if a cursor should be able to fetch
 nonsequentially. E.G.
@@ -256,13 +256,13 @@ newtype FetchExpr
 -}
 fetch :: Maybe CursorDirection -> CursorName -> FetchExpr
 fetch maybeDirection cursorName =
-  FetchExpr $
-    RawSql.intercalate RawSql.space $
-      catMaybes
-        [ Just $ RawSql.fromString "FETCH"
-        , fmap RawSql.toRawSql maybeDirection
-        , Just $ RawSql.toRawSql cursorName
-        ]
+  FetchExpr
+    . RawSql.intercalate RawSql.space
+    $ catMaybes
+      [ Just $ RawSql.fromString "FETCH"
+      , fmap RawSql.toRawSql maybeDirection
+      , Just $ RawSql.toRawSql cursorName
+      ]
 
 {- | 'MoveExpr' corresponds to the SQL MOVE statement, for positioning a previously
 created cursor, /without/ retrieving any rows. E.G.

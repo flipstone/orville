@@ -180,6 +180,6 @@ setColumnExpression ::
   SetClause
 setColumnExpression columnNames value =
   SetClause $
-    (RawSql.intercalate RawSql.comma $ fmap RawSql.toRawSql columnNames)
+    RawSql.intercalate RawSql.comma (fmap RawSql.toRawSql columnNames)
       <> RawSql.fromString "="
       <> RawSql.parenthesized (RawSql.toRawSql value)

@@ -59,7 +59,7 @@ createIndexExpr uniqueness mbConcurrently tableName columns =
     RawSql.fromString "CREATE "
       <> uniquenessToSql uniqueness
       <> RawSql.fromString "INDEX "
-      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbConcurrently)
+      <> maybe mempty ((<> RawSql.space) . RawSql.toRawSql) mbConcurrently
       <> RawSql.fromString "ON "
       <> RawSql.toRawSql tableName
       <> RawSql.space
@@ -83,7 +83,7 @@ createNamedIndexExpr uniqueness mbConcurrently tableName indexName bodyExpr =
     RawSql.fromString "CREATE "
       <> uniquenessToSql uniqueness
       <> RawSql.fromString "INDEX "
-      <> maybe mempty (<> RawSql.space) (fmap RawSql.toRawSql mbConcurrently)
+      <> maybe mempty ((<> RawSql.space) . RawSql.toRawSql) mbConcurrently
       <> RawSql.toRawSql indexName
       <> RawSql.fromString " ON "
       <> RawSql.toRawSql tableName

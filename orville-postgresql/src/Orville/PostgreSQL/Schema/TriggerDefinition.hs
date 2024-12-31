@@ -76,13 +76,12 @@ triggerMigrationKey =
 @since 1.1.0.0
 -}
 beforeInsert :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
-beforeInsert name functionName =
+beforeInsert name =
   mkTriggerDefinition
     name
     Expr.triggerBefore
     (Expr.triggerOnInsert :| [])
     Expr.triggerForEachRow
-    functionName
 
 {- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being inserted after it is inserted.
@@ -90,13 +89,12 @@ beforeInsert name functionName =
 @since 1.1.0.0
 -}
 afterInsert :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
-afterInsert name functionName =
+afterInsert name =
   mkTriggerDefinition
     name
     Expr.triggerAfter
     (Expr.triggerOnInsert :| [])
     Expr.triggerForEachRow
-    functionName
 
 {- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being updated before it is updated.
@@ -104,13 +102,12 @@ afterInsert name functionName =
 @since 1.1.0.0
 -}
 beforeUpdate :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
-beforeUpdate name functionName =
+beforeUpdate name =
   mkTriggerDefinition
     name
     Expr.triggerBefore
     (Expr.triggerOnUpdate :| [])
     Expr.triggerForEachRow
-    functionName
 
 {- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being updated after it is updated.
@@ -118,13 +115,12 @@ beforeUpdate name functionName =
 @since 1.1.0.0
 -}
 afterUpdate :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
-afterUpdate name functionName =
+afterUpdate name =
   mkTriggerDefinition
     name
     Expr.triggerAfter
     (Expr.triggerOnUpdate :| [])
     Expr.triggerForEachRow
-    functionName
 
 {- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being deleted before it is deleted.
@@ -132,13 +128,12 @@ afterUpdate name functionName =
 @since 1.1.0.0
 -}
 beforeDelete :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
-beforeDelete name functionName =
+beforeDelete name =
   mkTriggerDefinition
     name
     Expr.triggerBefore
     (Expr.triggerOnDelete :| [])
     Expr.triggerForEachRow
-    functionName
 
 {- | Builds a 'TriggerDefinition' that will execute the named function for each row
   being deleted after it is deleted.
@@ -146,13 +141,12 @@ beforeDelete name functionName =
 @since 1.1.0.0
 -}
 afterDelete :: String -> Expr.QualifiedOrUnqualified Expr.FunctionName -> TriggerDefinition
-afterDelete name functionName =
+afterDelete name =
   mkTriggerDefinition
     name
     Expr.triggerAfter
     (Expr.triggerOnDelete :| [])
     Expr.triggerForEachRow
-    functionName
 
 {- | Constructs a 'TriggerDefinition' definining a trigger with the specified name.
   Note that orville is currently not capable of migrating triggers based on their

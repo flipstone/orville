@@ -299,9 +299,9 @@ describeRelationByClass =
 
 findRelation :: Plan.Plan scope (PgNamespace, RelationName) (Maybe PgClass)
 findRelation =
-  Plan.focusParam (\(ns, relname) -> (pgNamespaceOid ns, relname)) $
-    Plan.planOperation $
-      Op.findOne pgClassTable byNamespaceOidAndRelationName
+  Plan.focusParam (\(ns, relname) -> (pgNamespaceOid ns, relname))
+    . Plan.planOperation
+    $ Op.findOne pgClassTable byNamespaceOidAndRelationName
 
 byNamespaceOidAndRelationName :: Op.WherePlanner (LibPQ.Oid, RelationName)
 byNamespaceOidAndRelationName =
@@ -391,9 +391,9 @@ findConstraintForeignRelationClass =
         LibPQ.Oid 0 -> Nothing
         nonZero -> Just nonZero
   in
-    Plan.focusParam relationId $
-      Plan.planMaybe $
-        Plan.findOne pgClassTable oidField
+    Plan.focusParam relationId
+      . Plan.planMaybe
+      $ Plan.findOne pgClassTable oidField
 
 findClassIndexes :: Plan.Plan scope PgClassAndAttributes [IndexDescription]
 findClassIndexes =
@@ -537,9 +537,9 @@ describeProcedureByName =
 
 findProc :: Plan.Plan scope (PgNamespace, ProcName) (Maybe PgProc)
 findProc =
-  Plan.focusParam (\(ns, procName) -> (pgNamespaceOid ns, procName)) $
-    Plan.planOperation $
-      Op.findOne pgProcTable byNamespaceOidAndProcName
+  Plan.focusParam (\(ns, procName) -> (pgNamespaceOid ns, procName))
+    . Plan.planOperation
+    $ Op.findOne pgProcTable byNamespaceOidAndProcName
 
 byNamespaceOidAndProcName :: Op.WherePlanner (LibPQ.Oid, ProcName)
 byNamespaceOidAndProcName =

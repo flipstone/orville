@@ -137,7 +137,7 @@ newtype FunctionReturns
 -}
 returns :: ReturnType -> FunctionReturns
 returns returnType =
-  FunctionReturns $ (RawSql.fromString "RETURNS ") <> RawSql.toRawSql returnType
+  FunctionReturns $ RawSql.fromString "RETURNS " <> RawSql.toRawSql returnType
 
 {- | Type to represent the return type given as part of a SQL "CREATE
 FUNCTION" statement. E.G. the @trigger@ in
@@ -190,7 +190,7 @@ newtype FunctionLanguage
 -}
 language :: LanguageName -> FunctionLanguage
 language name =
-  FunctionLanguage $ (RawSql.fromString "LANGUAGE ") <> RawSql.toRawSql name
+  FunctionLanguage $ RawSql.fromString "LANGUAGE " <> RawSql.toRawSql name
 
 {- | Type to represent the language that the function definition is given in as part
 of a SQL "CREATE FUNCTION" statement. E.G. the @plpgsql@ in
