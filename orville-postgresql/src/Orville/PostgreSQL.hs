@@ -224,6 +224,7 @@ module Orville.PostgreSQL
   , FieldDefinition.fieldOfType
   , FieldDefinition.fieldColumnName
   , FieldDefinition.fieldColumnReference
+  , FieldDefinition.fieldAliasQualifiedColumnName
   , FieldDefinition.fieldName
   , FieldDefinition.setFieldName
   , FieldDefinition.fieldDescription
@@ -288,6 +289,7 @@ module Orville.PostgreSQL
   , SelectOptions.appendSelectOptions
   , SelectOptions.forRowLock
   , SelectOptions.fetchRow
+  , SelectOptions.window
   , FieldDefinition.fieldEquals
   , (FieldDefinition..==)
   , FieldDefinition.fieldNotEquals
