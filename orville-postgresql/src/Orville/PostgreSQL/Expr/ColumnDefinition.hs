@@ -133,7 +133,7 @@ identityColumnConstraint ::
   ColumnConstraint
 identityColumnConstraint identityGeneration =
   ColumnConstraint $
-    RawSql.fromString "GENERATE "
+    RawSql.fromString "GENERATED "
       <> RawSql.toRawSql identityGeneration
       <> RawSql.fromString " AS IDENTITY"
 

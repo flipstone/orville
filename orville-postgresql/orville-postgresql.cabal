@@ -194,6 +194,10 @@ library
   default-language: Haskell2010
   if flag(ci)
     ghc-options: -Wall -Werror -Wcompat -Widentities -Wincomplete-uni-patterns -Wincomplete-patterns -Wincomplete-record-updates -Wmissing-local-signatures -Wmissing-export-lists -Wmissing-import-lists -Wmonomorphism-restriction -Wnoncanonical-monad-instances -Wpartial-fields -Wredundant-constraints -Wmissed-specialisations -Wno-implicit-prelude -Wno-safe -Wno-unsafe
+    if impl (ghc >= 9.2)
+      ghc-options: -Woperator-whitespace -Wredundant-bang-patterns
+    if impl (ghc >= 9.4)
+      ghc-options: -Wredundant-strictness-flags
     if impl (ghc >= 9.8)
       ghc-options: -Wterm-variable-capture
   else

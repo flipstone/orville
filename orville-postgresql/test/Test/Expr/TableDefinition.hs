@@ -40,10 +40,10 @@ prop_createWithMultipleColumns =
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
-        Orville.executeVoid Orville.DDLQuery $ Expr.createTableExpr exprTableName [column1Definition, column2Definition] Nothing []
+        Orville.executeVoid Orville.DDLQuery $ Expr.createTableExpr exprTableName [column1Definition, column2Definition, column1DefinitionGenAlways, column1DefinitionGenByDefault] Nothing []
 
     tableDesc <- PgAssert.assertTableExists pool tableNameString
-    PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column1AlwaysNameString, column1ByDefaultNameString, column2NameString]
 
 prop_renameTable :: Property.NamedDBProperty
 prop_renameTable =
@@ -81,10 +81,10 @@ prop_addMultipleColumns =
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
         Orville.executeVoid Orville.DDLQuery $ Expr.createTableExpr exprTableName [] Nothing []
-        Orville.executeVoid Orville.DDLQuery $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [Expr.addColumn column2Definition])
+        Orville.executeVoid Orville.DDLQuery $ Expr.alterTableExpr exprTableName (Expr.addColumn column1Definition :| [Expr.addColumn column1DefinitionGenAlways, Expr.addColumn column1DefinitionGenByDefault, Expr.addColumn column2Definition])
 
     tableDesc <- PgAssert.assertTableExists pool tableNameString
-    PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString]
+    PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column2NameString, column1AlwaysNameString, column1ByDefaultNameString]
 
 exprTableName :: Expr.QualifiedOrUnqualified Expr.TableName
 exprTableName =
@@ -102,9 +102,33 @@ column1Definition =
     mempty
     Nothing
 
+column1DefinitionGenByDefault :: Expr.ColumnDefinition
+column1DefinitionGenByDefault =
+  Expr.columnDefinition
+    (Expr.columnName column1ByDefaultNameString)
+    Expr.int
+    [Expr.notNullConstraint, Expr.identityColumnConstraint Expr.byDefaultColumnIdentityGeneration]
+    Nothing
+
+column1DefinitionGenAlways :: Expr.ColumnDefinition
+column1DefinitionGenAlways =
+  Expr.columnDefinition
+    (Expr.columnName column1AlwaysNameString)
+    Expr.int
+    [Expr.notNullConstraint, Expr.identityColumnConstraint Expr.alwaysColumnIdentityGeneration]
+    Nothing
+
 column1NameString :: String
 column1NameString =
   "column1"
+
+column1AlwaysNameString :: String
+column1AlwaysNameString =
+  "column1_always"
+
+column1ByDefaultNameString :: String
+column1ByDefaultNameString =
+  "column1_by_default"
 
 column2Definition :: Expr.ColumnDefinition
 column2Definition =

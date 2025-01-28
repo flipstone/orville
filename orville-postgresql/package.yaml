@@ -158,14 +158,13 @@ library:
             ghc-options:
               - -Woperator-whitespace
               - -Wredundant-bang-patterns
-        when:
           - condition: impl (ghc >= 9.4)
             ghc-options:
               - -Wredundant-strictness-flags
-        when:
+
           - condition: impl (ghc >= 9.8)
             ghc-options:
-                - -Wterm-variable-capture
+              - -Wterm-variable-capture
       else:
         ghc-options:
           - -Wall
