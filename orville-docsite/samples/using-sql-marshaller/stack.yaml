@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2023-01-01.yaml
-resolver: lts-21.19
+resolver: lts-22.43
 system-ghc: true
 install-ghc: false
 
