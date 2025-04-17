@@ -7,10 +7,12 @@ Stability : Stable
 -}
 module Orville.PostgreSQL.Internal.Bracket
   ( bracketWithResult
+  , handleAndRethrow
   , BracketResult (BracketSuccess, BracketError)
   ) where
 
 import Control.Exception (SomeException, catch, mask, throwIO)
+import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 
 import Orville.PostgreSQL.Monad.MonadOrville (MonadOrvilleControl (liftCatch, liftMask))
@@ -41,7 +43,6 @@ bracketWithResult ::
 bracketWithResult acquire release action = do
   liftMask mask $ \restore -> do
     resource <- acquire
-
     result <-
       liftCatch
         catch
@@ -59,10 +60,10 @@ bracketWithResult acquire release action = do
 @since 1.0.0.0
 -}
 handleAndRethrow ::
-  MonadIO m =>
+  (MonadIO m, MonadOrvilleControl m) =>
   m a ->
   SomeException ->
   m b
 handleAndRethrow handle ex = do
-  _ <- handle
+  liftCatch catch (void handle) (\e -> case e :: SomeException of _ -> pure ())
   liftIO . throwIO $ ex

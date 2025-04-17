@@ -5,12 +5,15 @@ where
 
 import Control.Exception (SomeException (..), catch)
 import qualified Control.Monad as Monad
+import qualified Control.Monad.Trans.Reader as Reader
 import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
 import qualified Data.Text as T
+import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
+import qualified UnliftIO
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -34,6 +37,7 @@ transactionTests pool =
     , prop_usesCustomBeginTransactionSql pool
     , prop_inWithTransaction pool
     , prop_rollbackCallbackInInvalidTransaction pool
+    , prop_transactionCleanupRunsAfterBeginTransactionFails pool
     ]
 
 prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
@@ -194,6 +198,34 @@ prop_rollbackCallbackInInvalidTransaction =
           (\(SomeException _) -> pure ())
 
     allEvents === [Orville.BeginTransaction, Orville.RollbackTransaction]
+
+prop_transactionCleanupRunsAfterBeginTransactionFails :: Property.NamedDBProperty
+prop_transactionCleanupRunsAfterBeginTransactionFails =
+  Property.namedDBProperty "withTransaction runs cleanup after failed begin callback" $ \pool -> do
+    block <- UnliftIO.newEmptyMVar
+    cancel <- UnliftIO.newEmptyMVar
+    let
+      run :: Reader.ReaderT Orville.OrvilleState IO a -> IO a
+      run =
+        flip Reader.runReaderT (Orville.newOrvilleState Orville.defaultErrorDetailLevel pool)
+
+      callback =
+        Orville.addTransactionCallback $ \ev -> case ev of
+          Orville.BeginTransaction -> do
+            UnliftIO.putMVar cancel ()
+            UnliftIO.takeMVar block
+          _ -> pure ()
+
+      action :: Reader.ReaderT Orville.OrvilleState IO (Maybe LibPQ.TransactionStatus)
+      action = Orville.withConnection $ \conn -> do
+        t <- UnliftIO.async . Orville.withTransaction $ pure ()
+        UnliftIO.takeMVar cancel
+        UnliftIO.cancel t
+        UnliftIO.liftIO $ Conn.transactionStatus conn
+
+    status <- HH.evalIO . run $ Orville.localOrvilleState callback action
+
+    status === Just LibPQ.TransIdle
 
 captureTransactionCallbackEvents ::
   Orville.ConnectionPool ->

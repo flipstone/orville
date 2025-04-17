@@ -16,8 +16,8 @@ module Orville.PostgreSQL.Execution.Transaction
   )
 where
 
-import Control.Exception (Exception, throwIO, try)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Exception (Exception, onException, throwIO, try)
+import Control.Monad.IO.Class (liftIO)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Numeric.Natural (Natural)
 
@@ -67,41 +67,44 @@ withTransaction action =
       callback =
         OrvilleState.orvilleTransactionCallback state
 
-      beginTransaction :: Monad.MonadOrville m => m ()
-      beginTransaction =
-        liftIO $ do
-          status <- Connection.transactionStatusOrThrow conn
-          let
-            openEvent = OrvilleState.openTransactionEvent transaction
-            beginAction = do
-              executeTransactionSql (transactionEventSql state openEvent)
-              callback openEvent
-            transactionError = UnexpectedTransactionStatusError status openEvent
-          case status of
-            LibPQ.TransIdle -> case openEvent of
-              OrvilleState.BeginTransaction ->
-                beginAction
-              _ ->
-                throwIO transactionError
-            LibPQ.TransInTrans -> case openEvent of
-              OrvilleState.NewSavepoint _ ->
-                beginAction
-              _ ->
-                throwIO transactionError
-            LibPQ.TransActive ->
+      beginTransaction :: IO ()
+      beginTransaction = do
+        status <- Connection.transactionStatusOrThrow conn
+        let
+          openEvent = OrvilleState.openTransactionEvent transaction
+
+          beginAction = do
+            executeTransactionSql (transactionEventSql state openEvent)
+            callback openEvent
+
+          transactionError = UnexpectedTransactionStatusError status openEvent
+        case status of
+          LibPQ.TransIdle -> case openEvent of
+            OrvilleState.BeginTransaction ->
+              beginAction `onException` do
+                executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
+                callback OrvilleState.RollbackTransaction
+            _ ->
               throwIO transactionError
-            LibPQ.TransInError ->
+          LibPQ.TransInTrans -> case openEvent of
+            OrvilleState.NewSavepoint _ ->
+              beginAction
+            _ ->
               throwIO transactionError
-            LibPQ.TransUnknown ->
-              throwIO transactionError
+          LibPQ.TransActive ->
+            throwIO transactionError
+          LibPQ.TransInError ->
+            throwIO transactionError
+          LibPQ.TransUnknown ->
+            throwIO transactionError
 
       doAction () =
         Monad.localOrvilleState
           (OrvilleState.connectState innerConnectedState)
           action
 
-      finishTransaction :: MonadIO m => () -> Bracket.BracketResult -> m ()
-      finishTransaction () result = liftIO $ do
+      finishTransaction :: Bracket.BracketResult -> IO ()
+      finishTransaction result = do
         status <- Connection.transactionStatusOrThrow conn
         let
           successEvent = OrvilleState.transactionSuccessEvent transaction
@@ -134,7 +137,10 @@ withTransaction action =
           LibPQ.TransUnknown ->
             throwIO transactionError
 
-    Bracket.bracketWithResult beginTransaction finishTransaction doAction
+    Bracket.bracketWithResult
+      (liftIO beginTransaction)
+      (const $ liftIO . finishTransaction)
+      doAction
 
 {- | 'withTransaction' will throw this exception if libpq reports a transaction status on the underlying
   connection that is incompatible with the current transaction event.
