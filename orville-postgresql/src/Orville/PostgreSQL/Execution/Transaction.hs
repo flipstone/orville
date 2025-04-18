@@ -16,7 +16,7 @@ module Orville.PostgreSQL.Execution.Transaction
   )
 where
 
-import Control.Exception (Exception, onException, throwIO, try)
+import Control.Exception (Exception, finally, onException, throwIO, try, uninterruptibleMask)
 import Control.Monad.IO.Class (liftIO)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Numeric.Natural (Natural)
@@ -72,18 +72,18 @@ withTransaction action =
         status <- Connection.transactionStatusOrThrow conn
         let
           openEvent = OrvilleState.openTransactionEvent transaction
-
           beginAction = do
             executeTransactionSql (transactionEventSql state openEvent)
             callback openEvent
-
           transactionError = UnexpectedTransactionStatusError status openEvent
         case status of
           LibPQ.TransIdle -> case openEvent of
-            OrvilleState.BeginTransaction ->
-              beginAction `onException` do
-                executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
-                callback OrvilleState.RollbackTransaction
+            OrvilleState.BeginTransaction -> do
+              let
+                rollback = uninterruptibleMask $ \restore -> do
+                  executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
+                  restore $ callback OrvilleState.RollbackTransaction
+              beginAction `onException` rollback
             _ ->
               throwIO transactionError
           LibPQ.TransInTrans -> case openEvent of
@@ -104,28 +104,26 @@ withTransaction action =
           action
 
       finishTransaction :: Bracket.BracketResult -> IO ()
-      finishTransaction result = do
+      finishTransaction result = uninterruptibleMask $ \restore -> do
         status <- Connection.transactionStatusOrThrow conn
         let
           successEvent = OrvilleState.transactionSuccessEvent transaction
           rollbackEvent = OrvilleState.rollbackTransactionEvent transaction
           rollback = do
             executeTransactionSql (transactionEventSql state rollbackEvent)
-            callback rollbackEvent
+            restore $ callback rollbackEvent
           transactionError = UnexpectedTransactionStatusError status $ case result of
             Bracket.BracketSuccess -> successEvent
             Bracket.BracketError -> rollbackEvent
-
         case status of
           LibPQ.TransInTrans -> case result of
             Bracket.BracketSuccess -> do
               eSuccess <- try $ executeTransactionSql (transactionEventSql state successEvent)
               case eSuccess of
                 Right () ->
-                  callback successEvent
+                  restore $ callback successEvent
                 Left ex -> do
-                  callback rollbackEvent
-                  throwIO (ex :: Connection.SqlExecutionError)
+                  restore (callback rollbackEvent) `finally` throwIO (ex :: Connection.SqlExecutionError)
             Bracket.BracketError ->
               rollback
           LibPQ.TransInError ->

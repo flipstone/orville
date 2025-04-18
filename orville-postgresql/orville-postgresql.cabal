@@ -262,8 +262,7 @@ test-suite spec
   hs-source-dirs:
       test
   build-depends:
-      async >=2.0 && <2.3
-    , attoparsec >=0.10 && <0.15
+      attoparsec >=0.10 && <0.15
     , base >=4.8 && <5
     , bytestring >=0.10 && <0.13
     , containers >=0.6 && <0.9

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Test.Transaction
   ( transactionTests
   )
@@ -14,6 +16,7 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified UnliftIO
+import qualified UnliftIO.Concurrent as Concurrent
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -38,6 +41,7 @@ transactionTests pool =
     , prop_inWithTransaction pool
     , prop_rollbackCallbackInInvalidTransaction pool
     , prop_transactionCleanupRunsAfterBeginTransactionFails pool
+    , prop_transactionCleanupCannotBeInterrupted pool
     ]
 
 prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
@@ -201,7 +205,7 @@ prop_rollbackCallbackInInvalidTransaction =
 
 prop_transactionCleanupRunsAfterBeginTransactionFails :: Property.NamedDBProperty
 prop_transactionCleanupRunsAfterBeginTransactionFails =
-  Property.namedDBProperty "withTransaction runs cleanup after failed begin callback" $ \pool -> do
+  Property.singletonNamedDBProperty "withTransaction runs cleanup after failed begin callback" $ \pool -> do
     block <- UnliftIO.newEmptyMVar
     cancel <- UnliftIO.newEmptyMVar
     let
@@ -215,6 +219,35 @@ prop_transactionCleanupRunsAfterBeginTransactionFails =
             UnliftIO.putMVar cancel ()
             UnliftIO.takeMVar block
           _ -> pure ()
+
+      action :: Reader.ReaderT Orville.OrvilleState IO (Maybe LibPQ.TransactionStatus)
+      action = Orville.withConnection $ \conn -> do
+        t <- UnliftIO.async . Orville.withTransaction $ pure ()
+        UnliftIO.takeMVar cancel
+        UnliftIO.cancel t
+        UnliftIO.liftIO $ Conn.transactionStatus conn
+
+    status <- HH.evalIO . run $ Orville.localOrvilleState callback action
+
+    status === Just LibPQ.TransIdle
+
+prop_transactionCleanupCannotBeInterrupted :: Property.NamedDBProperty
+prop_transactionCleanupCannotBeInterrupted =
+  Property.singletonNamedDBProperty "withTransaction - finishTransaction cannot be interrupted by an async exception" $ \pool -> do
+    cancel <- UnliftIO.newEmptyMVar
+    let
+      run :: Reader.ReaderT Orville.OrvilleState IO a -> IO a
+      run =
+        flip Reader.runReaderT (Orville.newOrvilleState Orville.defaultErrorDetailLevel pool)
+
+      callback =
+        Orville.addSqlExecutionCallback $ \_ sql act ->
+          case RawSql.toExampleBytes sql of
+            "COMMIT" -> do
+              UnliftIO.putMVar cancel ()
+              Concurrent.threadDelay 500000
+              act
+            _ -> act
 
       action :: Reader.ReaderT Orville.OrvilleState IO (Maybe LibPQ.TransactionStatus)
       action = Orville.withConnection $ \conn -> do
