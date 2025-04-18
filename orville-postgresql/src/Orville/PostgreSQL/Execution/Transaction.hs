@@ -80,9 +80,18 @@ withTransaction action =
           LibPQ.TransIdle -> case openEvent of
             OrvilleState.BeginTransaction -> do
               let
-                rollback = uninterruptibleMask $ \restore -> do
+                execRollback :: (IO () -> IO a) -> IO a
+                execRollback restore = do
                   executeTransactionSql (transactionEventSql state OrvilleState.RollbackTransaction)
                   restore $ callback OrvilleState.RollbackTransaction
+                rollback = uninterruptibleMask $ \restore -> do
+                  postBeginStatus <- Connection.transactionStatusOrThrow conn
+                  case postBeginStatus of
+                    LibPQ.TransInTrans -> execRollback restore
+                    LibPQ.TransInError -> execRollback restore
+                    LibPQ.TransActive -> execRollback restore
+                    LibPQ.TransIdle -> pure ()
+                    LibPQ.TransUnknown -> pure ()
               beginAction `onException` rollback
             _ ->
               throwIO transactionError
