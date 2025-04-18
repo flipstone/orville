@@ -7,7 +7,6 @@ Stability : Stable
 -}
 module Orville.PostgreSQL.Internal.Bracket
   ( bracketWithResult
-  , handleAndRethrow
   , BracketResult (BracketSuccess, BracketError)
   ) where
 
