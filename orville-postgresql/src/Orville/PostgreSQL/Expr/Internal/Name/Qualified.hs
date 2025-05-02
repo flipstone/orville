@@ -78,16 +78,12 @@ SQL.
 
 @since 1.0.0.0
 -}
-data Qualified name = Qualified
-  { i_qualifier :: RawSql.RawSql
-  , i_itemQualified :: RawSql.RawSql
-  }
-
--- | @since 1.0.0.0
-instance RawSql.SqlExpression (Qualified name) where
-  toRawSql (Qualified q i) =
-    q <> RawSql.dot <> i
-  unsafeFromRawSql = Qualified mempty
+newtype Qualified name
+  = Qualified RawSql.RawSql
+  deriving
+    ( -- | @since 1.0.0.0
+      RawSql.SqlExpression
+    )
 
 {- | Qualifies a 'TableName' with a 'SchemaName'.
 
@@ -138,17 +134,16 @@ reference is appropriate.
 -}
 qualifyColumn :: Maybe SchemaName -> TableName -> ColumnName -> Qualified ColumnName
 qualifyColumn mbSchemaName tableName unqualifiedName =
-  case mbSchemaName of
-    Nothing ->
-      Qualified
-        { i_qualifier = RawSql.toRawSql (toIdentifier tableName)
-        , i_itemQualified = RawSql.toRawSql (toIdentifier unqualifiedName)
-        }
-    Just schemaName ->
-      Qualified
-        { i_qualifier = (RawSql.toRawSql schemaName) <> RawSql.dot <> RawSql.toRawSql tableName
-        , i_itemQualified = RawSql.toRawSql (toIdentifier unqualifiedName)
-        }
+  let
+    tableQualifiedColumn =
+      rawQualify tableName unqualifiedName
+  in
+    case mbSchemaName of
+      Nothing ->
+        Qualified tableQualifiedColumn
+
+      Just schemaName ->
+        Qualified (rawQualify schemaName tableQualifiedColumn)
 
 {- | Qualifies a 'ColumnName' with an 'AliasExpr'. This should be used to refer to the column
 in SQL queries where an aliased reference is appropriate.
@@ -157,7 +152,7 @@ in SQL queries where an aliased reference is appropriate.
 -}
 aliasQualifyColumn :: AliasExpr -> ColumnName -> Qualified ColumnName
 aliasQualifyColumn aliasName =
-  Qualified (RawSql.toRawSql $ toIdentifier aliasName) . RawSql.toRawSql . toIdentifier
+  Qualified . rawQualify aliasName
 
 -- Note: Not everything actually makes sense to be qualified by _only_ a schema name, such as
 -- columns, as in 'qualifyColumn'. But this does give us a nice uniform way to provide the
@@ -168,4 +163,14 @@ unsafeSchemaQualify ::
   name ->
   Qualified name
 unsafeSchemaQualify schemaName =
-  Qualified (RawSql.toRawSql schemaName) . RawSql.toRawSql . toIdentifier
+  Qualified . rawQualify schemaName . toIdentifier
+
+rawQualify ::
+  (RawSql.SqlExpression qualifier, RawSql.SqlExpression name) =>
+  qualifier ->
+  name ->
+  RawSql.RawSql
+rawQualify qualifier name =
+  RawSql.toRawSql qualifier
+    <> RawSql.dot
+    <> RawSql.toRawSql name

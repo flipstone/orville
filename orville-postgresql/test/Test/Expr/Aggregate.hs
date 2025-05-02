@@ -120,7 +120,7 @@ aggregateFunctionTest testName test =
         RawSql.execute connection $
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
-            (Expr.selectDerivedColumns . pure $ Expr.deriveColumnAsAlias (aggregateFunctionExpr test) (RawSql.unsafeFromRawSql $ RawSql.fromString "agg"))
+            (Expr.selectDerivedColumns . pure $ Expr.deriveColumnAs (aggregateFunctionExpr test) (RawSql.unsafeFromRawSql $ RawSql.fromString "agg"))
             (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
       Execution.readRows result

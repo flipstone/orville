@@ -189,6 +189,7 @@ module Orville.PostgreSQL
   , SqlMarshaller.ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns)
   , SyntheticField.SyntheticField
   , SyntheticField.syntheticFieldExpression
+  , SyntheticField.syntheticFieldName
   , SyntheticField.syntheticFieldAlias
   , SyntheticField.syntheticFieldValueFromSqlValue
   , SyntheticField.syntheticField

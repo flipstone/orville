@@ -75,11 +75,11 @@ import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameAsFieldName)
+import Orville.PostgreSQL.Marshall.AliasName (AliasName)
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, buildAliasedFieldDefinition, fieldAliasQualifiedColumnName, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
-import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
+import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldName, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 
@@ -248,7 +248,7 @@ marshallerDerivedColumns marshaller =
         Synthetic synthField ->
           Expr.deriveColumnAs
             (syntheticFieldExpression synthField)
-            (fieldNameToColumnName . aliasNameAsFieldName $ syntheticFieldAlias synthField)
+            (fieldNameToColumnName . syntheticFieldName $ synthField)
             : columns
   in
     foldMarshallerFields marshaller [] collectDerivedColumn
@@ -619,7 +619,7 @@ mkRowSource marshaller result = do
             result
         MarshallSyntheticField syntheticField ->
           mkFieldNameSource
-            (aliasNameAsFieldName $ syntheticFieldAlias syntheticField)
+            (syntheticFieldName syntheticField)
             (syntheticFieldValueFromSqlValue syntheticField)
             columnMap
             result
@@ -633,7 +633,7 @@ mkRowSource marshaller result = do
                   Natural _ field _ ->
                     fieldName field : names
                   Synthetic field ->
-                    aliasNameAsFieldName (syntheticFieldAlias field) : names
+                    syntheticFieldName field : names
           in
             partialRowSource fieldNames columnMap result (mkSource mbAlias m)
         MarshallReadOnly m ->
@@ -861,7 +861,7 @@ marshallField accessor fieldDef =
   atLeast21Field =
     SyntheticField
       { syntheticFieldExpression = RawSql.unsafeSqlExpression "age >= 21"
-      , syntheticFieldAlias = Orville.stringToFieldName "over21"
+      , syntheticFieldName = Orville.stringToFieldName "over21"
       , syntheticFieldValueFromSqlValue = SqlValue.toBool
       }
   @
@@ -959,7 +959,8 @@ marshallMaybe =
 marshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
 marshallPartial = MarshallPartial
 
-{- | Builds a 'SqlMarshaller' that will qualifiy the fields contained with the given alias.
+{- | Builds a 'SqlMarshaller' that will qualify references to the (non-synthetic)
+ fields it contains with the given alias.
 
 @since 1.1.0.0
 -}

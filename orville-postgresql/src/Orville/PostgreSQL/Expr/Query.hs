@@ -16,7 +16,6 @@ module Orville.PostgreSQL.Expr.Query
   , notInSubquery
   , anySubquery
   , allSubquery
-  , queryExprWithAlias
   , joinQueryExpr
   , subQueryAsFromItemExpr
   , SelectList
@@ -24,7 +23,6 @@ module Orville.PostgreSQL.Expr.Query
   , DerivedColumn
   , deriveColumn
   , deriveColumnAs
-  , deriveColumnAsAlias
   , selectDerivedColumns
   , selectStar
   , TableExpr
@@ -161,25 +159,17 @@ operatorSubquery querySpecificRawSql binOp valExpr (QueryExpr queryRawSql) =
       <> querySpecificRawSql
       <> RawSql.parenthesized queryRawSql
 
-{- | Append the SQL @AS@ and given 'AliasExpr' to a 'QueryExpr'
-
-@since 1.1.0.0
--}
-queryExprWithAlias :: AliasExpr -> QueryExpr -> QueryExpr
-queryExprWithAlias alias query =
-  QueryExpr $
-    RawSql.parenthesized (RawSql.toRawSql query)
-      <> RawSql.fromString " AS "
-      <> RawSql.toRawSql alias
-
 {- | Make a 'QueryExpr' into a 'FromItemExpr', aliased appropriately, so that it can be used
    as a subquery in @SELECT@ion.
 
 @since 1.1.0.0
 -}
 subQueryAsFromItemExpr :: AliasExpr -> QueryExpr -> FromItemExpr
-subQueryAsFromItemExpr alias =
-  RawSql.unsafeFromRawSql . RawSql.toRawSql . queryExprWithAlias alias
+subQueryAsFromItemExpr alias query =
+  RawSql.unsafeFromRawSql $
+    RawSql.parenthesized (RawSql.toRawSql query)
+      <> RawSql.fromString " AS "
+      <> RawSql.toRawSql alias
 
 {- | Build a 'JoinExpr' from a 'QueryExpr' with the given options
 
@@ -290,19 +280,6 @@ deriveColumnAs valueExpr asColumn =
     ( RawSql.toRawSql valueExpr
         <> RawSql.fromString " AS "
         <> RawSql.toRawSql asColumn
-    )
-
-{- | Constructs a 'DerivedColumn' that will select the given value and give it
-  the specified alias in the result set.
-
-@since 1.1.0.0
--}
-deriveColumnAsAlias :: ValueExpression -> AliasExpr -> DerivedColumn
-deriveColumnAsAlias valueExpr asAlias =
-  DerivedColumn
-    ( RawSql.toRawSql valueExpr
-        <> RawSql.fromString " AS "
-        <> RawSql.toRawSql asAlias
     )
 
 {- | Type to represent a table expression (including its associated options) in a
