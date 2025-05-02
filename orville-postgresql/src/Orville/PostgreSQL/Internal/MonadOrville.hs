@@ -73,6 +73,9 @@ class
   implementation of the methods below for monads that implement
   'Control.Monad.IO.Unlift.MonadUnliftIO'.
 
+  Note that 'm' MUST NOT be short-circuiting, like e.g. MaybeT and ExceptT.
+  Transactions won't work right if it is.
+
 @since 1.0.0.0
 -}
 class MonadOrvilleControl m where
