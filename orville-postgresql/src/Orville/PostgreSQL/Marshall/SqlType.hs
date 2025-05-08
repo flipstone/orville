@@ -185,6 +185,8 @@ smallInteger =
 {- | 'double' defines a floating point numeric type. This corresponds to the
   "DOUBLE PRECISION" type in SQL.
 
+  Note that Infinity, -Infinity and NaN are not handled.
+
 @since 1.0.0.0
 -}
 double :: SqlType Double
@@ -219,6 +221,9 @@ boolean =
 {- | 'unboundedText' defines an unbounded length text field type. This corresponds to a
   "TEXT" type in PostgreSQL.
 
+  Note that values must not contain NULL codepoints, they are unsupported in
+  PostgreSQL.
+
 @since 1.0.0.0
 -}
 unboundedText :: SqlType Text
@@ -235,6 +240,9 @@ unboundedText =
 
 {- | 'fixedText' defines a fixed length text field type. This corresponds to a
   "CHAR(len)" type in PostgreSQL.
+
+  Note that values must not contain NULL codepoints, they are unsupported in
+  PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -253,6 +261,9 @@ fixedText len =
 {- | 'boundedText' defines a variable length text field type. This corresponds to a
   "VARCHAR(len)" type in PostgreSQL.
 
+  Note that values must not contain NULL codepoints, they are unsupported in
+  PostgreSQL.
+
 @since 1.0.0.0
 -}
 boundedText :: Int32 -> SqlType Text
@@ -269,6 +280,9 @@ boundedText len =
 
 {- | 'textSearchVector' defines a type for indexed text searching. It corresponds to the
   "TSVECTOR" type in PostgreSQL.
+
+  Note that values must not contain NULL codepoints, they are unsupported in
+  PostgreSQL.
 
 @since 1.0.0.0
 -}
@@ -367,6 +381,9 @@ timestampWithoutZone =
 
 {- |  'jsonb' represents any type that can be converted To and From JSON. This corresponds
    to the "JSONB" type in PostgreSQL.
+
+  Note that strings contained within must not contain NULL unicode codepoints,
+  as they are unsupported in PostgreSQL.
 
 @since 1.0.0.0
 -}
