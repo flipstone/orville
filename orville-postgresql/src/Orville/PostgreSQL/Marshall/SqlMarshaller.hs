@@ -79,7 +79,7 @@ import Orville.PostgreSQL.Marshall.AliasName (AliasName)
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, buildAliasedFieldDefinition, fieldAliasQualifiedColumnName, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
-import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldName, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
+import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldExpression, syntheticFieldName, syntheticFieldValueFromSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 

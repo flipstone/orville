@@ -24,7 +24,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldName (FieldName, fieldNameToByteString, byteStringToFieldName, stringToFieldName)
+import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, stringToFieldName)
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue

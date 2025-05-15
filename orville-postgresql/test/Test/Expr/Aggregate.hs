@@ -121,7 +121,7 @@ aggregateFunctionTest testName test =
           Expr.queryExpr
             (Expr.selectClause $ Expr.selectExpr Nothing)
             (Expr.selectDerivedColumns . pure $ Expr.deriveColumnAs (aggregateFunctionExpr test) (RawSql.unsafeFromRawSql $ RawSql.fromString "agg"))
-            (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+            (Just $ Expr.tableExpr (Expr.singleTableReferenceList testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
       Execution.readRows result
 

@@ -156,7 +156,18 @@ orderByTest testName test =
               Expr.queryExpr
                 (Expr.selectClause . Expr.selectDistinctOnExpr $ orderByDistinctOn test)
                 (Expr.selectColumns [fooColumn, barColumn])
-                (Just $ Expr.tableExpr (Expr.tableFromItem fooBarTable) Nothing Nothing (orderByClause test) Nothing Nothing Nothing Nothing Nothing)
+                ( Just $
+                    Expr.tableExpr
+                      (Expr.singleTableReferenceList fooBarTable)
+                      Nothing
+                      Nothing
+                      (orderByClause test)
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                      Nothing
+                )
 
           Execution.readRows result
 

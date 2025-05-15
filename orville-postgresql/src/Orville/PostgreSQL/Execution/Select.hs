@@ -115,7 +115,7 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
-      (Expr.tableFromItem qualifiedTableName)
+      (Expr.singleTableReferenceList qualifiedTableName)
       selectOptions
 
 {- | Builds a 'Select' that will select all the columns described in the 'TableDefinition', ensuring
@@ -152,7 +152,9 @@ selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptio
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . marshallAlias alias $ unannotatedSqlMarshaller marshaller))
-      (Expr.tableFromItemWithAlias (aliasNameToAliasExpr alias) qualifiedTableName)
+      ( Expr.tableReferenceList
+          [Expr.tableNameReference qualifiedTableName (Just (aliasNameToAliasExpr alias))]
+      )
       selectOptions
 
 {- | Builds a 'Select' that will execute the specified query and use the given

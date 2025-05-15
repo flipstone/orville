@@ -32,7 +32,7 @@ insertUpdateDeleteTests pool =
     , prop_deleteExprWithReturning pool
     , prop_truncateTablesExpr pool
     , prop_insertExprWithOnConflictDoUpdate pool
-    , prop_updateFromItemExpr pool
+    , prop_updateTableRefList pool
     ]
 
 prop_insertExpr :: Property.NamedDBProperty
@@ -360,9 +360,9 @@ prop_truncateTablesExpr =
     assertEqualFooBarRows fooBarRows []
     assertEqualFooBarRows fooBar2Rows []
 
-prop_updateFromItemExpr :: Property.NamedDBProperty
-prop_updateFromItemExpr =
-  Property.singletonNamedDBProperty "updateExpr includes a fromItem to allow where condition to reference another table" $ \pool -> do
+prop_updateTableRefList :: Property.NamedDBProperty
+prop_updateTableRefList =
+  Property.singletonNamedDBProperty "updateExpr includes a tableReferenceList to allow where condition to reference another table" $ \pool -> do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat", mkFooBar 3 "ferret"]
       fooBars2 = NE.fromList [mkFooBar 1 "bird", mkFooBar 3 "fish", mkFooBar 4 "snake"]
@@ -373,7 +373,7 @@ prop_updateFromItemExpr =
         RawSql.executeVoid connection (RawSql.fromString "DROP TABLE IF EXISTS " <> RawSql.toRawSql fooBar2Table)
         RawSql.executeVoid connection (RawSql.fromString "CREATE TABLE " <> RawSql.toRawSql fooBar2Table <> RawSql.fromString "(foo INTEGER, bar TEXT)")
 
-      fooBar2FromItem = Expr.tableFromItemWithAlias (Expr.stringToAliasExpr "f2") fooBar2Table
+      fooBar2TableRef = Expr.tableNameReference fooBar2Table (Just (Expr.stringToAliasExpr "f2"))
 
       setClauseList = RawSql.unsafeSqlExpression "bar = f2.bar"
 
@@ -384,7 +384,7 @@ prop_updateFromItemExpr =
           fooBarTable
           Nothing
           setClauseList
-          (Just fooBar2FromItem)
+          (Just $ Expr.tableReferenceList [fooBar2TableRef])
           (Just whereClause)
           (Just $ Expr.returningExpr $ Expr.selectColumns [RawSql.unsafeSqlExpression "foobar.foo", RawSql.unsafeSqlExpression "foobar.bar"])
 

@@ -141,7 +141,6 @@ qualifyColumn mbSchemaName tableName unqualifiedName =
     case mbSchemaName of
       Nothing ->
         Qualified tableQualifiedColumn
-
       Just schemaName ->
         Qualified (rawQualify schemaName tableQualifiedColumn)
 

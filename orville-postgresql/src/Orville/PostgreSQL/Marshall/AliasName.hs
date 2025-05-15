@@ -84,4 +84,3 @@ aliasNameToByteString (AliasName name) =
 -}
 byteStringToAliasName :: B8.ByteString -> AliasName
 byteStringToAliasName = AliasName
-

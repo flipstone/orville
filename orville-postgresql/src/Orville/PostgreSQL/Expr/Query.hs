@@ -16,8 +16,7 @@ module Orville.PostgreSQL.Expr.Query
   , notInSubquery
   , anySubquery
   , allSubquery
-  , joinQueryExpr
-  , subQueryAsFromItemExpr
+  , subQueryTableReference
   , SelectList
   , selectColumns
   , DerivedColumn
@@ -34,15 +33,14 @@ import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.BinaryOperator (BinaryOperator)
 import Orville.PostgreSQL.Expr.FetchClause (FetchClause)
-import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
-import Orville.PostgreSQL.Expr.Join (JoinConstraint, JoinExpr, JoinType, joinExpr)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
 import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.RowLocking (RowLockingClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
+import Orville.PostgreSQL.Expr.TableReferenceList (TableReference, TableReferenceList)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr, InValuePredicate, WhereClause, inPredicate, notInPredicate)
 import Orville.PostgreSQL.Expr.Window (WindowClause)
@@ -164,29 +162,12 @@ operatorSubquery querySpecificRawSql binOp valExpr (QueryExpr queryRawSql) =
 
 @since 1.1.0.0
 -}
-subQueryAsFromItemExpr :: AliasExpr -> QueryExpr -> FromItemExpr
-subQueryAsFromItemExpr alias query =
+subQueryTableReference :: QueryExpr -> AliasExpr -> TableReference
+subQueryTableReference query alias =
   RawSql.unsafeFromRawSql $
     RawSql.parenthesized (RawSql.toRawSql query)
       <> RawSql.fromString " AS "
       <> RawSql.toRawSql alias
-
-{- | Build a 'JoinExpr' from a 'QueryExpr' with the given options
-
-@since 1.1.0.0
--}
-joinQueryExpr ::
-  -- | The type of SQL @JOIN@ to perform
-  JoinType ->
-  -- | The alias the subquery should have
-  AliasExpr ->
-  -- | The subquery we wish to join with
-  QueryExpr ->
-  -- | What conditions will be joined on.
-  JoinConstraint ->
-  JoinExpr
-joinQueryExpr joinType alias qexpr =
-  joinExpr joinType (subQueryAsFromItemExpr alias qexpr)
 
 {- | Type to represent the list of items to be selected in a @SELECT@ clause.
 E.G. the
@@ -310,7 +291,7 @@ newtype TableExpr
 -}
 tableExpr ::
   -- | The item(s) to query from.
-  FromItemExpr ->
+  TableReferenceList ->
   -- | An optional @WHERE@ clause to limit the results returned.
   Maybe WhereClause ->
   -- | An optional @GROUP BY@ clause to group the result set rows.

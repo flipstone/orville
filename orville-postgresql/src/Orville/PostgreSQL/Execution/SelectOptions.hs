@@ -298,7 +298,7 @@ fetchRow fetchClause =
 -}
 selectOptionsQueryExpr ::
   Expr.SelectList ->
-  Expr.FromItemExpr ->
+  Expr.TableReferenceList ->
   SelectOptions ->
   Expr.QueryExpr
 selectOptionsQueryExpr selectList tableReferenceList selectOptions =
