@@ -22,9 +22,6 @@ module Orville.PostgreSQL.Expr.Join
   , joining
   ) where
 
-import qualified Data.Foldable as Foldable
-import Data.Function ((&))
-
 import Orville.PostgreSQL.Expr.TableReferenceList (TableReference)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -164,7 +161,11 @@ joinedTable tableRefA joinType tableRefB joinOn =
   @since 1.1.0.0
 -}
 join ::
-  JoinType -> TableReference -> JoinConstraint -> TableReference -> TableReference
+  JoinType ->
+  TableReference ->
+  JoinConstraint ->
+  TableReference ->
+  TableReference
 join joinType tableRefB joinOn tableRefA =
   joinedTable tableRefA joinType tableRefB joinOn
 
@@ -180,4 +181,4 @@ join joinType tableRefB joinOn tableRefA =
 -}
 joining :: TableReference -> [TableReference -> TableReference] -> TableReference
 joining tableRef joinList =
-  Foldable.foldl' (&) tableRef joinList
+  foldr (flip (.)) id joinList tableRef
