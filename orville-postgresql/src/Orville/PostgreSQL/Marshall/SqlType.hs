@@ -382,7 +382,7 @@ timestampWithoutZone =
 {- |  'jsonb' represents any type that can be converted To and From JSON. This corresponds
    to the "JSONB" type in PostgreSQL.
 
-  Note that strings contained within must not contain NULL unicode codepoints,
+  Note that strings contained within must not contain NULL codepoints,
   as they are unsupported in PostgreSQL.
 
 @since 1.0.0.0
