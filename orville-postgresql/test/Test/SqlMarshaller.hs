@@ -39,7 +39,7 @@ sqlMarshallerTests =
     , prop_marshallField_missingColumn
     , prop_marshallField_decodeValueFailure
     , prop_marshallResultFromSql_Foo
-    , prop_marshallResultFromSql_FooWithAlias
+    , prop_marshallResultFromSql_FooWithQualifier
     , prop_marshallResultFromSql_Bar
     , prop_foldMarshallerFields
     , prop_passMaybeThrough
@@ -168,8 +168,8 @@ prop_marshallResultFromSql_Foo =
     result <- marshallTestRowFromSql fooMarshaller input
     Bifunctor.first show result === Right foos
 
-prop_marshallResultFromSql_FooWithAlias :: Property.NamedProperty
-prop_marshallResultFromSql_FooWithAlias =
+prop_marshallResultFromSql_FooWithQualifier :: Property.NamedProperty
+prop_marshallResultFromSql_FooWithQualifier =
   Property.namedProperty "marshallResultFromSql decodes all rows in Foo result set, when given an alias for each field" $ do
     foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
 
@@ -185,7 +185,7 @@ prop_marshallResultFromSql_FooWithAlias =
           [B8.pack "name", B8.pack "size", B8.pack "option"]
           (map mkRowValues foos)
 
-    result <- marshallTestRowFromSql fooMarshallerWithAliasOnEachField input
+    result <- marshallTestRowFromSql fooMarshallerWithQualifierOnEachField input
     Bifunctor.first show result === Right foos
 
 prop_marshallResultFromSql_Bar :: Property.NamedProperty
@@ -320,11 +320,11 @@ prop_referenceValueExpression =
       expected =
         Expr.rowValueConstructor $
           NE.fromList
-            [ Expr.columnReference . Expr.untrackQualified $ Marshall.fieldAliasQualifiedColumnName alias nameField
-            , Expr.columnReference . Expr.untrackQualified $ Marshall.fieldAliasQualifiedColumnName alias sizeField
-            , Expr.columnReference . Expr.untrackQualified $ Marshall.fieldAliasQualifiedColumnName alias optionField
+            [ Expr.columnReference . Expr.untrackQualified . Marshall.qualifiedFieldColumnName $ Marshall.qualifyField alias nameField
+            , Expr.columnReference . Expr.untrackQualified . Marshall.qualifiedFieldColumnName $ Marshall.qualifyField alias sizeField
+            , Expr.columnReference . Expr.untrackQualified . Marshall.qualifiedFieldColumnName $ Marshall.qualifyField alias optionField
             ]
-      actual = Marshall.referenceValueExpression (Marshall.marshallAlias alias fooMarshaller)
+      actual = Marshall.referenceValueExpression (Marshall.marshallQualifyFields alias fooMarshaller)
 
     RawSql.toExampleBytes actual === RawSql.toExampleBytes expected
 
@@ -349,13 +349,13 @@ fooMarshaller =
     <*> Marshall.marshallField fooSize sizeField
     <*> Marshall.marshallField fooOption optionField
 
-fooMarshallerWithAliasOnEachField :: Marshall.SqlMarshaller Foo Foo
-fooMarshallerWithAliasOnEachField =
-  Marshall.marshallAlias (Marshall.stringToAliasName "f") $
+fooMarshallerWithQualifierOnEachField :: Marshall.SqlMarshaller Foo Foo
+fooMarshallerWithQualifierOnEachField =
+  Marshall.marshallQualifyFields (Marshall.stringToAliasName "f") $
     Foo
-      <$> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooName nameField)
-      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooSize sizeField)
-      <*> Marshall.marshallAlias (Marshall.stringToAliasName "f") (Marshall.marshallField fooOption optionField)
+      <$> Marshall.marshallQualifyFields (Marshall.stringToAliasName "f") (Marshall.marshallField fooName nameField)
+      <*> Marshall.marshallQualifyFields (Marshall.stringToAliasName "f") (Marshall.marshallField fooSize sizeField)
+      <*> Marshall.marshallQualifyFields (Marshall.stringToAliasName "f") (Marshall.marshallField fooOption optionField)
 
 nameField :: Marshall.FieldDefinition Marshall.NotNull T.Text
 nameField =

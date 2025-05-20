@@ -57,7 +57,7 @@ prop_countColumn =
           (Expr.selectClause (Expr.selectExpr Nothing))
           ( Expr.selectDerivedColumns
               [ Expr.deriveColumnAs
-                  (Expr.countColumnAggregateFunction $ Orville.fieldColumnName Foo.fooIdField)
+                  (Expr.countColumnAggregateFunction . Expr.unqualified $ Orville.fieldColumnName Foo.fooIdField)
                   (Expr.columnName "count")
               ]
           )

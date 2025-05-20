@@ -58,13 +58,12 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , setField
   , (.:=)
   , orderByField
-  , orderByAliasedField
+  , orderBySqlComparable
   , FieldNullability (..)
   , fieldValueToExpression
   , fieldValueToSqlValue
   , fieldValueFromSqlValue
   , fieldColumnName
-  , fieldAliasQualifiedColumnName
   , fieldColumnReference
   , fieldColumnDefinition
   , FieldName
@@ -100,10 +99,10 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , jsonbField
   , fieldOfType
   , whereColumnComparison
-  , AliasedFieldDefinition
-  , getFieldDefinition
-  , getAlias
-  , buildAliasedFieldDefinition
+  , QualifiedFieldDefinition
+  , qualifyField
+  , qualifiedFieldColumnName
+  , FieldQualifier (qualifyColumnName)
   , FieldIdentityGeneration (GeneratedAlways, GeneratedByDefault)
   , markAsIdentity
   , unmarkIdentity
@@ -121,7 +120,7 @@ import qualified Data.UUID as UUID
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, fieldNameToString, stringToFieldName)
-import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameToAliasExpr)
+import qualified Orville.PostgreSQL.Marshall.AliasName as AliasName
 import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
 import Orville.PostgreSQL.Marshall.SqlComparable (SqlComparable (referenceValueExpression, toComparableSqlValue))
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
@@ -384,18 +383,9 @@ fieldValueFromSqlValue =
 
 @since 1.0.0.0
 -}
-fieldColumnName :: FieldDefinition nullability a -> Expr.QualifiedOrUnqualified Expr.ColumnName
+fieldColumnName :: FieldDefinition nullability a -> Expr.ColumnName
 fieldColumnName =
-  Expr.unqualified . fieldNameToColumnName . fieldName
-
-{- | Constructs the 'Expr.ColumnName' for a field qualified with the given for use in SQL expressions
-  from the "Orville.PostgreSQL.Expr" module.
-
-@since 1.1.0.0
--}
-fieldAliasQualifiedColumnName :: AliasName -> FieldDefinition nullability a -> Expr.Qualified Expr.ColumnName
-fieldAliasQualifiedColumnName alias =
-  Expr.aliasQualifyColumn (aliasNameToAliasExpr alias) . fieldNameToColumnName . fieldName
+  fieldNameToColumnName . fieldName
 
 {- | Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
   "Orville.PostgreSQL.Expr" module.
@@ -853,7 +843,7 @@ prefixField prefix fieldDef =
 setField :: FieldDefinition nullability a -> a -> Expr.SetClause
 setField fieldDef =
   Expr.setColumn
-    (fieldColumnName fieldDef)
+    (Expr.unqualified (fieldColumnName fieldDef))
     . fieldValueToSqlValue fieldDef
 
 {- | Operator alias for 'setField'.
@@ -1078,62 +1068,90 @@ orderByField ::
   Expr.OrderByDirection ->
   Expr.OrderByExpr
 orderByField =
-  Expr.orderByColumnName . fieldColumnName
+  orderBySqlComparable
 
-{- | Orders a query by the column name for the given field, taking into account the alias, if any.
+{- |
+
+TODO - move this to SqlComparable
 
 @since 1.1.0.0
 -}
-orderByAliasedField ::
-  AliasedFieldDefinition nullability value ->
+orderBySqlComparable ::
+  SqlComparable.SqlComparable comparable value =>
+  comparable ->
   Expr.OrderByDirection ->
   Expr.OrderByExpr
-orderByAliasedField aliasedFieldDef =
-  Expr.orderByColumnName (Expr.untrackQualified $ fieldAliasQualifiedColumnName (getAlias aliasedFieldDef) (getFieldDefinition aliasedFieldDef))
+orderBySqlComparable =
+  Expr.orderByValueExpression . referenceValueExpression
 
-{- | A 'FieldDefinition' that has been aliased. This is equivalent to a tuple of the field
-definition and 'Maybe Expr.Alias'.
+{- |
 
 @since 1.1.0.0
 -}
-data AliasedFieldDefinition nullability a = AliasedFieldDefinition
-  { i_alias :: AliasName
-  , i_fieldDef :: FieldDefinition nullability a
+class FieldQualifier qualifier where
+  qualifyColumnName :: qualifier -> Expr.ColumnName -> Expr.Qualified Expr.ColumnName
+
+{- |
+
+@since 1.1.0.0
+-}
+instance FieldQualifier TableIdentifier.TableIdentifier where
+  qualifyColumnName tableId =
+    Expr.qualifyColumn
+      (TableIdentifier.tableIdSchemaName tableId)
+      (TableIdentifier.tableIdUnqualifiedName tableId)
+
+{- |
+
+@since 1.1.0.0
+-}
+instance FieldQualifier AliasName.AliasName where
+  qualifyColumnName =
+    Expr.aliasQualifyColumn . AliasName.aliasNameToAliasExpr
+
+{- |
+
+@since 1.1.0.0
+-}
+data QualifiedFieldDefinition qualifier nullability a = QualifiedFieldDefinition
+  { i_fieldQualifier :: qualifier
+  , i_unqualifiedDefinition :: FieldDefinition nullability a
   }
 
 {- |
 
 @since 1.1.0.0
 -}
-instance SqlComparable.SqlComparable (AliasedFieldDefinition nullability a) a where
-  toComparableSqlValue (AliasedFieldDefinition _ fieldDef) =
-    toComparableSqlValue fieldDef
+qualifyField ::
+  qualifier ->
+  FieldDefinition nullability a ->
+  QualifiedFieldDefinition qualifier nullability a
+qualifyField =
+  QualifiedFieldDefinition
 
-  referenceValueExpression (AliasedFieldDefinition alias fieldDef) =
-    Expr.columnReference . Expr.untrackQualified $
-      fieldAliasQualifiedColumnName alias fieldDef
-
-{- | Obtains the alias used with the field definition.
-
-@since 1.1.0.0
--}
-getAlias :: AliasedFieldDefinition nullability a -> AliasName
-getAlias = i_alias
-
-{- | Obtains the field definition as it was prior to being aliased.
+{- |
 
 @since 1.1.0.0
 -}
-getFieldDefinition :: AliasedFieldDefinition nullability a -> FieldDefinition nullability a
-getFieldDefinition = i_fieldDef
+qualifiedFieldColumnName ::
+  FieldQualifier qualifier =>
+  QualifiedFieldDefinition qualifier nullability a ->
+  Expr.Qualified Expr.ColumnName
+qualifiedFieldColumnName qualifiedFieldDef =
+  qualifyColumnName
+    (i_fieldQualifier qualifiedFieldDef)
+    (fieldColumnName (i_unqualifiedDefinition qualifiedFieldDef))
 
-{- | Alias an existing field definition.
+{- |
 
 @since 1.1.0.0
 -}
-buildAliasedFieldDefinition :: FieldDefinition nullability a -> AliasName -> AliasedFieldDefinition nullability a
-buildAliasedFieldDefinition f ma =
-  AliasedFieldDefinition ma f
+instance FieldQualifier qualifier => SqlComparable.SqlComparable (QualifiedFieldDefinition qualifier nullability a) a where
+  toComparableSqlValue =
+    toComparableSqlValue . i_unqualifiedDefinition
+
+  referenceValueExpression =
+    Expr.columnReference . Expr.untrackQualified . qualifiedFieldColumnName
 
 {- | INTERNAL: This type is an internal tracking of if a column is an identity column. We tie this to
    the nullability because a nullable column is not allowed to be an identity column.

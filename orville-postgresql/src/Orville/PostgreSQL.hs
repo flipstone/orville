@@ -182,7 +182,7 @@ module Orville.PostgreSQL
   , SqlMarshaller.marshallReadOnlyField
   , SqlMarshaller.marshallPartial
   , SqlMarshaller.marshallMaybe
-  , SqlMarshaller.marshallAlias
+  , SqlMarshaller.marshallQualifyFields
   , SqlMarshaller.prefixMarshaller
   , SqlMarshaller.foldMarshallerFields
   , SqlMarshaller.collectFromField
@@ -225,7 +225,6 @@ module Orville.PostgreSQL
   , FieldDefinition.fieldOfType
   , FieldDefinition.fieldColumnName
   , FieldDefinition.fieldColumnReference
-  , FieldDefinition.fieldAliasQualifiedColumnName
   , FieldDefinition.fieldName
   , FieldDefinition.setFieldName
   , FieldDefinition.fieldDescription
@@ -245,10 +244,10 @@ module Orville.PostgreSQL
   , FieldDefinition.setField
   , (FieldDefinition..:=)
   , FieldDefinition.FieldNullability (NotNullField, NullableField)
-  , FieldDefinition.AliasedFieldDefinition
-  , FieldDefinition.getFieldDefinition
-  , FieldDefinition.getAlias
-  , FieldDefinition.buildAliasedFieldDefinition
+  , FieldDefinition.QualifiedFieldDefinition
+  , FieldDefinition.qualifyField
+  , FieldDefinition.qualifiedFieldColumnName
+  , FieldDefinition.FieldQualifier (qualifyColumnName)
   , FieldDefinition.markAsIdentity
   , FieldDefinition.unmarkIdentity
   , Marshall.AliasName
@@ -322,7 +321,7 @@ module Orville.PostgreSQL
   , Expr.descendingOrder
   , Expr.descendingOrderWith
   , FieldDefinition.orderByField
-  , FieldDefinition.orderByAliasedField
+  , FieldDefinition.orderBySqlComparable
   , Marshall.SqlComparable (toComparableSqlValue, referenceValueExpression)
   , Expr.orderByColumnName
   , Expr.andExpr

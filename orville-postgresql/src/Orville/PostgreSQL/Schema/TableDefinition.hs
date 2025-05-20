@@ -48,7 +48,7 @@ import qualified Data.Text as T
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
-import Orville.PostgreSQL.Marshall.FieldDefinition (fieldAliasQualifiedColumnName, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue)
+import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue, qualifiedFieldColumnName, qualifyField)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
@@ -527,9 +527,12 @@ mkInsertColumnList marshaller =
     . foldMarshallerFields marshaller []
     $ collectFromField
       ExcludeReadOnlyColumns
-      ( \mbA -> case mbA of
-          Nothing -> fieldColumnName
-          Just alias -> Expr.untrackQualified . fieldAliasQualifiedColumnName alias
+      ( \mbQ -> case mbQ of
+          Nothing -> Expr.unqualified . fieldColumnName
+          Just qualifier ->
+            Expr.untrackQualified
+              . qualifiedFieldColumnName
+              . qualifyField qualifier
       )
 
 {- | Builds an 'Expr.InsertSource' that will insert the given entities with their
