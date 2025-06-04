@@ -16,15 +16,12 @@ module Orville.PostgreSQL.Expr.Query
   , notInSubquery
   , anySubquery
   , allSubquery
-  , queryExprWithAlias
-  , joinQueryExpr
-  , subQueryAsFromItemExpr
+  , subQueryTableReference
   , SelectList
   , selectColumns
   , DerivedColumn
   , deriveColumn
   , deriveColumnAs
-  , deriveColumnAsAlias
   , selectDerivedColumns
   , selectStar
   , TableExpr
@@ -36,15 +33,14 @@ import Data.Maybe (catMaybes, fromMaybe)
 
 import Orville.PostgreSQL.Expr.BinaryOperator (BinaryOperator)
 import Orville.PostgreSQL.Expr.FetchClause (FetchClause)
-import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.GroupBy (GroupByClause)
-import Orville.PostgreSQL.Expr.Join (JoinConstraint, JoinExpr, JoinType, joinExpr)
 import Orville.PostgreSQL.Expr.LimitExpr (LimitExpr)
 import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OffsetExpr (OffsetExpr)
 import Orville.PostgreSQL.Expr.OrderBy (OrderByClause)
 import Orville.PostgreSQL.Expr.RowLocking (RowLockingClause)
 import Orville.PostgreSQL.Expr.Select (SelectClause)
+import Orville.PostgreSQL.Expr.TableReferenceList (TableReference, TableReferenceList)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, columnReference)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr, InValuePredicate, WhereClause, inPredicate, notInPredicate)
 import Orville.PostgreSQL.Expr.Window (WindowClause)
@@ -161,42 +157,18 @@ operatorSubquery querySpecificRawSql binOp valExpr (QueryExpr queryRawSql) =
       <> querySpecificRawSql
       <> RawSql.parenthesized queryRawSql
 
-{- | Append the SQL @AS@ and given 'AliasExpr' to a 'QueryExpr'
+{- | Make a 'QueryExpr' into a 'TableReference' using the specified alias.
+  This is the way to use a 'QueryExpr' as a subquery that can be joined
+  against and referenced as if it were a table.
 
 @since 1.1.0.0
 -}
-queryExprWithAlias :: AliasExpr -> QueryExpr -> QueryExpr
-queryExprWithAlias alias query =
-  QueryExpr $
+subQueryTableReference :: QueryExpr -> AliasExpr -> TableReference
+subQueryTableReference query alias =
+  RawSql.unsafeFromRawSql $
     RawSql.parenthesized (RawSql.toRawSql query)
       <> RawSql.fromString " AS "
       <> RawSql.toRawSql alias
-
-{- | Make a 'QueryExpr' into a 'FromItemExpr', aliased appropriately, so that it can be used
-   as a subquery in @SELECT@ion.
-
-@since 1.1.0.0
--}
-subQueryAsFromItemExpr :: AliasExpr -> QueryExpr -> FromItemExpr
-subQueryAsFromItemExpr alias =
-  RawSql.unsafeFromRawSql . RawSql.toRawSql . queryExprWithAlias alias
-
-{- | Build a 'JoinExpr' from a 'QueryExpr' with the given options
-
-@since 1.1.0.0
--}
-joinQueryExpr ::
-  -- | The type of SQL @JOIN@ to perform
-  JoinType ->
-  -- | The alias the subquery should have
-  AliasExpr ->
-  -- | The subquery we wish to join with
-  QueryExpr ->
-  -- | What conditions will be joined on.
-  JoinConstraint ->
-  JoinExpr
-joinQueryExpr joinType alias qexpr =
-  joinExpr joinType (subQueryAsFromItemExpr alias qexpr)
 
 {- | Type to represent the list of items to be selected in a @SELECT@ clause.
 E.G. the
@@ -292,19 +264,6 @@ deriveColumnAs valueExpr asColumn =
         <> RawSql.toRawSql asColumn
     )
 
-{- | Constructs a 'DerivedColumn' that will select the given value and give it
-  the specified alias in the result set.
-
-@since 1.1.0.0
--}
-deriveColumnAsAlias :: ValueExpression -> AliasExpr -> DerivedColumn
-deriveColumnAsAlias valueExpr asAlias =
-  DerivedColumn
-    ( RawSql.toRawSql valueExpr
-        <> RawSql.fromString " AS "
-        <> RawSql.toRawSql asAlias
-    )
-
 {- | Type to represent a table expression (including its associated options) in a
 @SELECT@. This is the part that would appear *after* the word @FROM@. E.G.
 
@@ -333,7 +292,7 @@ newtype TableExpr
 -}
 tableExpr ::
   -- | The item(s) to query from.
-  FromItemExpr ->
+  TableReferenceList ->
   -- | An optional @WHERE@ clause to limit the results returned.
   Maybe WhereClause ->
   -- | An optional @GROUP BY@ clause to group the result set rows.

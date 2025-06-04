@@ -20,7 +20,6 @@ import qualified Test.Expr.Aggregate as ExprAggregate
 import qualified Test.Expr.ConditionalExpr as ExprConditional
 import qualified Test.Expr.Count as ExprCount
 import qualified Test.Expr.Cursor as ExprCursor
-import qualified Test.Expr.FromItemExpr as ExprFromItem
 import qualified Test.Expr.GroupBy as ExprGroupBy
 import qualified Test.Expr.GroupByOrderBy as ExprGroupByOrderBy
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
@@ -29,6 +28,7 @@ import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
+import qualified Test.Expr.TableReferenceList as ExprTableReferenceList
 import qualified Test.Expr.TextSearch as ExprTextSearch
 import qualified Test.Expr.Time as ExprTime
 import qualified Test.Expr.Trigger as ExprTrigger
@@ -78,7 +78,7 @@ main = do
       , ExprTrigger.triggerTests pool
       , ExprVacuum.vacuumTests
       , ExprJoin.joinTests
-      , ExprFromItem.fromItemExprTests
+      , ExprTableReferenceList.tableReferenceListTests
       , ExprConditional.conditionalTests
       , ExprWindow.windowTests
       , ExprTextSearch.textSearchTests pool

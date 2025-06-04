@@ -13,6 +13,7 @@ module Orville.PostgreSQL.Marshall.SyntheticField
   ( SyntheticField
   , syntheticFieldExpression
   , syntheticFieldAlias
+  , syntheticFieldName
   , syntheticFieldValueFromSqlValue
   , syntheticField
   , nullableSyntheticField
@@ -23,7 +24,7 @@ where
 
 import qualified Data.ByteString.Char8 as B8
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameToByteString, byteStringToAliasName, stringToAliasName)
+import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, stringToFieldName)
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
@@ -36,7 +37,7 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 -}
 data SyntheticField a = SyntheticField
   { i_syntheticFieldExpression :: Expr.ValueExpression
-  , i_syntheticFieldAlias :: AliasName
+  , i_syntheticFieldName :: FieldName
   , i_syntheticFieldType :: SqlType.SqlType a
   }
 
@@ -63,9 +64,19 @@ syntheticFieldExpression =
 
 @since 1.0.0.0
 -}
-syntheticFieldAlias :: SyntheticField a -> AliasName
+{-# DEPRECATED syntheticFieldAlias "Use syntheticFieldName instead" #-}
+syntheticFieldAlias :: SyntheticField a -> FieldName
 syntheticFieldAlias =
-  i_syntheticFieldAlias
+  i_syntheticFieldName
+
+{- | Returns the name that should be used in select statements to name the
+  synthetic field.
+
+@since 1.1.0.0
+-}
+syntheticFieldName :: SyntheticField a -> FieldName
+syntheticFieldName =
+  i_syntheticFieldName
 
 {- | Decodes a calculated value selected from the database to its expected
   Haskell type. Returns a 'Left' with an error message if the decoding fails.
@@ -101,7 +112,7 @@ syntheticField ::
 syntheticField expression alias sqlType =
   SyntheticField
     { i_syntheticFieldExpression = expression
-    , i_syntheticFieldAlias = stringToAliasName alias
+    , i_syntheticFieldName = stringToFieldName alias
     , i_syntheticFieldType = sqlType
     }
 
@@ -138,7 +149,7 @@ prefixSyntheticField ::
   SyntheticField a
 prefixSyntheticField prefix synthField =
   synthField
-    { i_syntheticFieldAlias = byteStringToAliasName (B8.pack prefix <> "_" <> aliasNameToByteString (syntheticFieldAlias synthField))
+    { i_syntheticFieldName = byteStringToFieldName (B8.pack prefix <> "_" <> fieldNameToByteString (syntheticFieldName synthField))
     }
 
 {- | Orders a query by the alias for the given synthetic field.
@@ -147,4 +158,4 @@ prefixSyntheticField prefix synthField =
 -}
 orderBySyntheticField :: SyntheticField a -> Expr.OrderByDirection -> Expr.OrderByExpr
 orderBySyntheticField =
-  Expr.orderByColumnName . Expr.unqualified . Expr.fromIdentifier . Expr.identifierFromBytes . aliasNameToByteString . syntheticFieldAlias
+  Expr.orderByColumnName . Expr.unqualified . Expr.fromIdentifier . Expr.identifierFromBytes . fieldNameToByteString . syntheticFieldName

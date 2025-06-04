@@ -14,8 +14,6 @@ module Orville.PostgreSQL.Expr.OrderBy
   , appendOrderByExpr
   , orderByColumnName
   , orderByColumnsExpr
-  , orderByAlias
-  , orderByAliasesExpr
   , orderByValueExpression
   , OrderByDirection
   , NullsOrder (NullsFirst, NullsLast)
@@ -28,7 +26,7 @@ where
 
 import qualified Data.List.NonEmpty as NEL
 
-import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, QualifiedOrUnqualified)
+import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified)
 import qualified Orville.PostgreSQL.Expr.ValueExpression as ValueExpression
 import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -100,20 +98,6 @@ orderByColumnsExpr = ExtraNonEmpty.foldMap1' (uncurry orderByColumnName)
 -}
 orderByColumnName :: QualifiedOrUnqualified ColumnName -> OrderByDirection -> OrderByExpr
 orderByColumnName = orderByValueExpression . ValueExpression.columnReference
-
-{- | Create an 'OrderByExpr' for 'AliasExpr' and 'OrderByDirection' pairs, ensuring commas as needed. For basic queries involving columns on some table(s), use 'orderByColumnsExpr'.
-
-@since 1.1.0.0
--}
-orderByAliasesExpr :: NEL.NonEmpty (AliasExpr, OrderByDirection) -> OrderByExpr
-orderByAliasesExpr = ExtraNonEmpty.foldMap1' (uncurry orderByAlias)
-
-{- | Orders a query by the given alias in the given order direction. This is useful for ordering by synthetic fields or sub queries.
-
-@since 1.1.0.0
--}
-orderByAlias :: AliasExpr -> OrderByDirection -> OrderByExpr
-orderByAlias = orderByValueExpression . ValueExpression.aliasReference
 
 {- | Create an 'OrderByExpr' for the given 'ValueExpression.ValueExpression' and 'OrderByDirection'. The caller must ensure that the 'ValueExpression.ValueExpression' is valid as an order by expression.
 

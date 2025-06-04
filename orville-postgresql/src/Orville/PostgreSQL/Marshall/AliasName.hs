@@ -13,13 +13,12 @@ module Orville.PostgreSQL.Marshall.AliasName
   , aliasNameAndFieldNameToColumnName
   , aliasNameToByteString
   , byteStringToAliasName
-  , aliasNameAsFieldName
   ) where
 
 import qualified Data.ByteString.Char8 as B8
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToColumnName)
+import Orville.PostgreSQL.Internal.FieldName (FieldName, fieldNameToColumnName)
 
 {- | A simple type to represent the name of a field.
 
@@ -85,11 +84,3 @@ aliasNameToByteString (AliasName name) =
 -}
 byteStringToAliasName :: B8.ByteString -> AliasName
 byteStringToAliasName = AliasName
-
-{- | Allows to treat an 'AliasName' as a 'FieldName'.
-
-@since 1.1.0.0
--}
-aliasNameAsFieldName :: AliasName -> FieldName
-aliasNameAsFieldName =
-  byteStringToFieldName . aliasNameToByteString

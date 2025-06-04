@@ -23,8 +23,6 @@ module Orville.PostgreSQL.Execution.Select
   , selectToQueryExpr
   , selectTable
   , selectMarshalledColumns
-  , selectTableWithAlias
-  , selectMarshalledColumnsWithAlias
   , rawSelectQueryExpr
   )
 where
@@ -33,8 +31,7 @@ import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameToAliasExpr)
-import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallAlias, marshallerDerivedColumns, unannotatedSqlMarshaller)
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
 
@@ -115,44 +112,7 @@ selectMarshalledColumns marshaller qualifiedTableName selectOptions =
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
-      (Expr.tableFromItem qualifiedTableName)
-      selectOptions
-
-{- | Builds a 'Select' that will select all the columns described in the 'TableDefinition', ensuring
-  they are qualified with the given alias. This is the safest way to build a 'Select', because table
-  name and columns are all read from the 'TableDefinition'. If the table is being managed with
-  Orville auto-migrations, this will match the schema in the database.
-
-@since 1.1.0.0
--}
-selectTableWithAlias ::
-  AliasName ->
-  TableDefinition key writeEntity readEntity ->
-  SelectOptions.SelectOptions ->
-  Select readEntity
-selectTableWithAlias alias tableDef =
-  selectMarshalledColumnsWithAlias alias (tableMarshaller tableDef) (tableName tableDef)
-
-{- | Builds a 'Select' that will select the columns described by the marshaller from the specified
-  table with the given alias. It is up to the caller to ensure that the columns in the marshaller
-  make sense for the table.
-
-  This function is useful for querying a subset of table columns using a custom
-  marshaller.
-
-@since 1.1.0.0
--}
-selectMarshalledColumnsWithAlias ::
-  AliasName ->
-  AnnotatedSqlMarshaller writeEntity readEntity ->
-  Expr.QualifiedOrUnqualified Expr.TableName ->
-  SelectOptions.SelectOptions ->
-  Select readEntity
-selectMarshalledColumnsWithAlias alias marshaller qualifiedTableName selectOptions =
-  rawSelectQueryExpr marshaller $
-    SelectOptions.selectOptionsQueryExpr
-      (Expr.selectDerivedColumns (marshallerDerivedColumns . marshallAlias alias $ unannotatedSqlMarshaller marshaller))
-      (Expr.tableFromItemWithAlias (aliasNameToAliasExpr alias) qualifiedTableName)
+      (Expr.singleTableReferenceList qualifiedTableName)
       selectOptions
 
 {- | Builds a 'Select' that will execute the specified query and use the given

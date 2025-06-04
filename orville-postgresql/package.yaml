@@ -56,7 +56,6 @@ library:
     - Orville.PostgreSQL.Expr.Extension
     - Orville.PostgreSQL.Expr.FetchClause
     - Orville.PostgreSQL.Expr.Filter
-    - Orville.PostgreSQL.Expr.FromItemExpr
     - Orville.PostgreSQL.Expr.Function
     - Orville.PostgreSQL.Expr.GroupBy
     - Orville.PostgreSQL.Expr.IfExists
@@ -78,6 +77,7 @@ library:
     - Orville.PostgreSQL.Expr.SequenceDefinition
     - Orville.PostgreSQL.Expr.TableConstraint
     - Orville.PostgreSQL.Expr.TableDefinition
+    - Orville.PostgreSQL.Expr.TableReferenceList
     - Orville.PostgreSQL.Expr.Time
     - Orville.PostgreSQL.Expr.Transaction
     - Orville.PostgreSQL.Expr.Trigger

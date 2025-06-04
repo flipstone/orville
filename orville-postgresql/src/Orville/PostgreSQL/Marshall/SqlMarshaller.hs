@@ -37,7 +37,7 @@ module Orville.PostgreSQL.Marshall.SqlMarshaller
   , marshallNested
   , marshallMaybe
   , marshallPartial
-  , marshallAlias
+  , marshallQualifyFields
   , prefixMarshaller
   , ReadOnlyColumnOption (IncludeReadOnlyColumns, ExcludeReadOnlyColumns)
   , collectFromField
@@ -75,13 +75,13 @@ import Orville.PostgreSQL.ErrorDetailLevel (ErrorDetailLevel)
 import Orville.PostgreSQL.Execution.ExecutionResult (Column (Column), ExecutionResult, Row (Row))
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.AliasName (AliasName, aliasNameAsFieldName)
-import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), asymmetricNullableField, buildAliasedFieldDefinition, fieldAliasQualifiedColumnName, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, setField)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldNullability (NotNullField, NullableField), FieldQualifier, asymmetricNullableField, fieldColumnName, fieldName, fieldNameToByteString, fieldNameToColumnName, fieldNullability, fieldTableConstraints, fieldValueFromSqlValue, nullableField, prefixField, qualifiedFieldColumnName, qualifyField, setField)
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
-import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldAlias, syntheticFieldExpression, syntheticFieldValueFromSqlValue)
+import Orville.PostgreSQL.Marshall.SyntheticField (SyntheticField, nullableSyntheticField, prefixSyntheticField, syntheticFieldExpression, syntheticFieldName, syntheticFieldValueFromSqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
+import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- | An 'AnnotatedSqlMarshaller' is a 'SqlMarshaller' that contains extra
   annotations which cannot necessarily be determined from the data in the
@@ -167,8 +167,12 @@ data SqlMarshaller a b where
   MarshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
   -- | Marshall a column that is read-only, like auto-incrementing ids.
   MarshallReadOnly :: SqlMarshaller a b -> SqlMarshaller c b
-  -- | Apply an alias to a marshaller
-  MarshallAlias :: AliasName -> SqlMarshaller a b -> SqlMarshaller a b
+  -- | Apply an qualifier to all the fields of a marshaller
+  MarshallQualifyFields ::
+    FieldQualifier qualifier =>
+    qualifier ->
+    SqlMarshaller a b ->
+    SqlMarshaller a b
 
 -- | @since 1.0.0.0
 instance Functor (SqlMarshaller a) where
@@ -207,12 +211,12 @@ instance SqlComparable.SqlComparable (SqlMarshaller writeEntity readEntity) writ
         foldMarshallerFields marshaller [] $
           collectFromField
             ExcludeReadOnlyColumns
-            ( \mbAlias fieldDef ->
-                case mbAlias of
+            ( \mbQualifier fieldDef ->
+                case mbQualifier of
                   Nothing -> SqlComparable.referenceValueExpression fieldDef
-                  Just alias ->
+                  Just qualifier ->
                     SqlComparable.referenceValueExpression $
-                      buildAliasedFieldDefinition fieldDef alias
+                      qualifyField qualifier fieldDef
             )
     in
       maybe
@@ -237,18 +241,22 @@ marshallerDerivedColumns marshaller =
       [Expr.DerivedColumn]
     collectDerivedColumn entry columns =
       case entry of
-        Natural mbAlias fieldDef _ ->
+        Natural mbQualifier fieldDef _ ->
           let
             colName =
-              case mbAlias of
-                Nothing -> fieldColumnName fieldDef
-                Just alias -> Expr.untrackQualified $ fieldAliasQualifiedColumnName alias fieldDef
+              case mbQualifier of
+                Nothing -> Expr.unqualified (fieldColumnName fieldDef)
+                Just qualifier ->
+                  Expr.untrackQualified
+                    . qualifiedFieldColumnName
+                    . qualifyField qualifier
+                    $ fieldDef
           in
             (Expr.deriveColumn $ Expr.columnReference colName) : columns
         Synthetic synthField ->
           Expr.deriveColumnAs
             (syntheticFieldExpression synthField)
-            (fieldNameToColumnName . aliasNameAsFieldName $ syntheticFieldAlias synthField)
+            (fieldNameToColumnName . syntheticFieldName $ synthField)
             : columns
   in
     foldMarshallerFields marshaller [] collectDerivedColumn
@@ -284,7 +292,7 @@ marshallerTableConstraints marshaller =
 @since 1.0.0.0
 -}
 data MarshallerField writeEntity where
-  Natural :: Maybe AliasName -> FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
+  Natural :: FieldQualifier qualifier => Maybe qualifier -> FieldDefinition nullability a -> Maybe (writeEntity -> a) -> MarshallerField writeEntity
   Synthetic :: SyntheticField a -> MarshallerField writeEntity
 
 {- | A fold function that can be used with 'foldMarshallerFields' to collect
@@ -299,17 +307,17 @@ data MarshallerField writeEntity where
 -}
 collectFromField ::
   ReadOnlyColumnOption ->
-  (forall nullability a. Maybe AliasName -> FieldDefinition nullability a -> result) ->
+  (forall qualifier nullability a. FieldQualifier qualifier => Maybe qualifier -> FieldDefinition nullability a -> result) ->
   MarshallerField entity ->
   [result] ->
   [result]
 collectFromField readOnlyColumnOption fromField entry results =
   case entry of
-    Natural mbAlias fieldDef (Just _) ->
-      fromField mbAlias fieldDef : results
-    Natural mbAlias fieldDef Nothing ->
+    Natural mbQualifier fieldDef (Just _) ->
+      fromField mbQualifier fieldDef : results
+    Natural mbQualifier fieldDef Nothing ->
       case readOnlyColumnOption of
-        IncludeReadOnlyColumns -> fromField mbAlias fieldDef : results
+        IncludeReadOnlyColumns -> fromField mbQualifier fieldDef : results
         ExcludeReadOnlyColumns -> results
     Synthetic _ ->
       results
@@ -371,7 +379,10 @@ foldMarshallerFields ::
   (MarshallerField writeEntity -> result -> result) ->
   result
 foldMarshallerFields marshaller =
-  foldMarshallerFieldsPart Nothing marshaller (Just id)
+  foldMarshallerFieldsPart
+    (Nothing :: Maybe TableIdentifier.TableIdentifier)
+    marshaller
+    (Just id)
 
 {- | The internal helper function that actually implements 'foldMarshallerFields'.
   It takes with it a function that extracts the current nesting entity from
@@ -381,36 +392,37 @@ foldMarshallerFields marshaller =
 @since 1.0.0.0
 -}
 foldMarshallerFieldsPart ::
-  Maybe AliasName ->
+  FieldQualifier qualifier =>
+  Maybe qualifier ->
   SqlMarshaller entityPart readEntity ->
   Maybe (writeEntity -> entityPart) ->
   result ->
   (MarshallerField writeEntity -> result -> result) ->
   result
-foldMarshallerFieldsPart mbAlias marshaller getPart currentResult addToResult =
+foldMarshallerFieldsPart mbQualifier marshaller getPart currentResult addToResult =
   case marshaller of
     MarshallPure _ ->
       currentResult
     MarshallApply submarshallerA submarshallerB ->
       let
         subresultB =
-          foldMarshallerFieldsPart mbAlias submarshallerB getPart currentResult addToResult
+          foldMarshallerFieldsPart mbQualifier submarshallerB getPart currentResult addToResult
       in
-        foldMarshallerFieldsPart mbAlias submarshallerA getPart subresultB addToResult
+        foldMarshallerFieldsPart mbQualifier submarshallerA getPart subresultB addToResult
     MarshallNest nestingFunction submarshaller ->
-      foldMarshallerFieldsPart mbAlias submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
+      foldMarshallerFieldsPart mbQualifier submarshaller (fmap (nestingFunction .) getPart) currentResult addToResult
     MarshallField fieldDefinition ->
-      addToResult (Natural mbAlias fieldDefinition getPart) currentResult
+      addToResult (Natural mbQualifier fieldDefinition getPart) currentResult
     MarshallSyntheticField syntheticField ->
       addToResult (Synthetic syntheticField) currentResult
     MarshallMaybeTag m ->
-      foldMarshallerFieldsPart mbAlias m getPart currentResult addToResult
+      foldMarshallerFieldsPart mbQualifier m getPart currentResult addToResult
     MarshallPartial m ->
-      foldMarshallerFieldsPart mbAlias m getPart currentResult addToResult
+      foldMarshallerFieldsPart mbQualifier m getPart currentResult addToResult
     MarshallReadOnly m ->
-      foldMarshallerFieldsPart mbAlias m Nothing currentResult addToResult
-    MarshallAlias a m ->
-      foldMarshallerFieldsPart (Just a) m getPart currentResult addToResult
+      foldMarshallerFieldsPart mbQualifier m Nothing currentResult addToResult
+    MarshallQualifyFields q m ->
+      foldMarshallerFieldsPart (Just q) m getPart currentResult addToResult
 
 {- | Decodes all the rows found in an execution result at once. The first row that
   fails to decode will return the 'MarshallError.MarshallErrorDetails' that
@@ -599,8 +611,8 @@ mkRowSource marshaller result = do
   columnMap <- prepareColumnMap result
 
   let
-    mkSource :: Maybe AliasName -> SqlMarshaller a b -> RowSource b
-    mkSource mbAlias marshallerPart =
+    mkSource :: Maybe qualifier -> SqlMarshaller a b -> RowSource b
+    mkSource mbQualifier marshallerPart =
       -- Note, this case statement is evaluated before the row argument is
       -- ever passed to a 'RowSource' to ensure that a single 'RowSource'
       -- operation is build and re-used when decoding many rows.
@@ -608,9 +620,9 @@ mkRowSource marshaller result = do
         MarshallPure readEntity ->
           constRowSource readEntity
         MarshallApply marshallAToB marshallA ->
-          mkSource mbAlias marshallAToB <*> mkSource mbAlias marshallA
+          mkSource mbQualifier marshallAToB <*> mkSource mbQualifier marshallA
         MarshallNest _ someMarshaller ->
-          mkSource mbAlias someMarshaller
+          mkSource mbQualifier someMarshaller
         MarshallField fieldDef ->
           mkFieldNameSource
             (fieldName fieldDef)
@@ -619,12 +631,12 @@ mkRowSource marshaller result = do
             result
         MarshallSyntheticField syntheticField ->
           mkFieldNameSource
-            (aliasNameAsFieldName $ syntheticFieldAlias syntheticField)
+            (syntheticFieldName syntheticField)
             (syntheticFieldValueFromSqlValue syntheticField)
             columnMap
             result
         MarshallMaybeTag m ->
-          mkSource mbAlias m
+          mkSource mbQualifier m
         MarshallPartial m ->
           let
             fieldNames =
@@ -633,13 +645,13 @@ mkRowSource marshaller result = do
                   Natural _ field _ ->
                     fieldName field : names
                   Synthetic field ->
-                    aliasNameAsFieldName (syntheticFieldAlias field) : names
+                    syntheticFieldName field : names
           in
-            partialRowSource fieldNames columnMap result (mkSource mbAlias m)
+            partialRowSource fieldNames columnMap result (mkSource mbQualifier m)
         MarshallReadOnly m ->
-          mkSource mbAlias m
-        MarshallAlias a m ->
-          mkSource (Just a) m
+          mkSource mbQualifier m
+        MarshallQualifyFields q m ->
+          mkSource (Just q) m
 
   pure . mkSource Nothing $ marshaller
 
@@ -861,7 +873,7 @@ marshallField accessor fieldDef =
   atLeast21Field =
     SyntheticField
       { syntheticFieldExpression = RawSql.unsafeSqlExpression "age >= 21"
-      , syntheticFieldAlias = Orville.stringToFieldName "over21"
+      , syntheticFieldName = Orville.stringToFieldName "over21"
       , syntheticFieldValueFromSqlValue = SqlValue.toBool
       }
   @
@@ -948,8 +960,8 @@ marshallMaybe =
         MarshallPartial (fmap sequence $ go m)
       MarshallReadOnly m ->
         MarshallReadOnly (go m)
-      MarshallAlias a m ->
-        MarshallAlias a (go m)
+      MarshallQualifyFields q m ->
+        MarshallQualifyFields q (go m)
 
 {- | Builds a 'SqlMarshaller' that will raise a decoding error when the value
   produced is a 'Left'.
@@ -959,16 +971,20 @@ marshallMaybe =
 marshallPartial :: SqlMarshaller a (Either String b) -> SqlMarshaller a b
 marshallPartial = MarshallPartial
 
-{- | Builds a 'SqlMarshaller' that will qualifiy the fields contained with the given alias.
+{- | Builds a 'SqlMarshaller' that will qualify references to the (non-synthetic)
+ fields it contains with the given qualifier. Any fields that have already been
+ qualified in the provided marshaller by a previous call to 'marshallQualifyFields'
+ will retain the qualifier they were previously given.
 
 @since 1.1.0.0
 -}
-marshallAlias ::
-  AliasName ->
+marshallQualifyFields ::
+  FieldQualifier qualifier =>
+  qualifier ->
   SqlMarshaller a b ->
   SqlMarshaller a b
-marshallAlias =
-  MarshallAlias
+marshallQualifyFields =
+  MarshallQualifyFields
 
 {- | Adds a prefix, followed by an underscore, to the names of all of the fields
   and synthetic fields in a 'SqlMarshaller'.
@@ -995,7 +1011,7 @@ prefixMarshaller prefix = go
     MarshallMaybeTag m -> MarshallMaybeTag $ go m
     MarshallPartial m -> MarshallPartial $ go m
     MarshallReadOnly m -> MarshallReadOnly $ go m
-    MarshallAlias a m -> MarshallAlias a $ go m
+    MarshallQualifyFields q m -> MarshallQualifyFields q $ go m
 
 {- | Marks a 'SqlMarshaller' as read-only so that it will not attempt to
   read any values from the @writeEntity@. You should use this if you have
