@@ -23,9 +23,9 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (catMaybes)
 
-import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)
+import Orville.PostgreSQL.Expr.TableReferenceList (TableReferenceList)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression)
 import Orville.PostgreSQL.Expr.WhereClause (WhereClause)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -61,21 +61,21 @@ updateExpr ::
   Maybe UpdateNamedOnly ->
   -- | The updates to be made to the table.
   SetClauseList ->
-  -- | An optional 'FromItemExpr' to allow columns from other tables to be included in the
+  -- | An optional 'TableReferenceList' to allow columns from other tables to be included in the
   -- 'SetClauseList' and 'WhereClause'
   --
   -- @since 1.1.0.0
-  Maybe FromItemExpr ->
+  Maybe TableReferenceList ->
   -- | An optional where clause to limit the rows updated.
   Maybe WhereClause ->
   -- | An optional returning clause to return data from the updated rows.
   Maybe ReturningExpr ->
   UpdateExpr
-updateExpr tableName maybeUpdateNamedOnly setClause maybeFromItemExpr maybeWhereClause maybeReturningExpr =
+updateExpr tableName maybeUpdateNamedOnly setClause maybeTableRefs maybeWhereClause maybeReturningExpr =
   let
-    buildFromItem :: FromItemExpr -> RawSql.RawSql
-    buildFromItem fromItem =
-      RawSql.fromString "FROM " <> RawSql.toRawSql fromItem
+    buildTableRefs :: TableReferenceList -> RawSql.RawSql
+    buildTableRefs tableRefs =
+      RawSql.fromString "FROM " <> RawSql.toRawSql tableRefs
   in
     UpdateExpr
       . RawSql.intercalate RawSql.space
@@ -85,7 +85,7 @@ updateExpr tableName maybeUpdateNamedOnly setClause maybeFromItemExpr maybeWhere
         , Just $ RawSql.toRawSql tableName
         , Just $ RawSql.fromString "SET"
         , Just $ RawSql.toRawSql setClause
-        , fmap buildFromItem maybeFromItemExpr
+        , fmap buildTableRefs maybeTableRefs
         , fmap RawSql.toRawSql maybeWhereClause
         , fmap RawSql.toRawSql maybeReturningExpr
         ]

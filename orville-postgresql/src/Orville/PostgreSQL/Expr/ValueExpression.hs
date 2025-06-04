@@ -16,14 +16,13 @@ module Orville.PostgreSQL.Expr.ValueExpression
   , rowValueConstructor
   , functionCall
   , functionCallNamedParams
-  , aliasReference
   )
 where
 
 import qualified Data.List.NonEmpty as NE
 
 import Orville.PostgreSQL.Expr.DataType (DataType)
-import Orville.PostgreSQL.Expr.Name (AliasExpr, ColumnName, FunctionName, QualifiedOrUnqualified)
+import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, QualifiedOrUnqualified)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 
@@ -68,16 +67,6 @@ is the equivalent of simply writing the column name as the expression. E.G.
 -}
 columnReference :: QualifiedOrUnqualified ColumnName -> ValueExpression
 columnReference = ValueExpression . RawSql.toRawSql
-
-{- | Uses an 'AliasExpr' to reference an aliased expression as a 'ValueExpression'. This
-is the equivalent of simply writing the alias as the expression. E.G.
-
-> foo
-
-@since 1.1.0.0
--}
-aliasReference :: AliasExpr -> ValueExpression
-aliasReference = ValueExpression . RawSql.toRawSql
 
 {- | Uses the given 'SqlValue' as a constant expression. The value will be passed
   as a statement parameter, not as a literal expression, so there is not need

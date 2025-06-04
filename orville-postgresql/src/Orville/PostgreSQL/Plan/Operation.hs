@@ -486,22 +486,34 @@ stringifyMarshaller ::
   (Int, Marshall.SqlMarshaller [T.Text] [T.Text])
 stringifyMarshaller marshaller =
   let
-    fieldNames =
+    mkFieldMarshaller ::
+      Marshall.FieldQualifier qualifier =>
+      Maybe qualifier ->
+      Marshall.FieldDefinition nullability a ->
+      (Int -> Marshall.SqlMarshaller [T.Text] T.Text)
+    mkFieldMarshaller mbQualifier fieldDef =
+      \idx ->
+        maybe id Marshall.marshallQualifyFields mbQualifier $
+          Marshall.marshallField
+            (!! idx)
+            ( Marshall.unboundedTextField
+                . Marshall.fieldNameToString
+                . Marshall.fieldName
+                $ fieldDef
+            )
+
+    marshallerConstructors :: [Int -> Marshall.SqlMarshaller [T.Text] T.Text]
+    marshallerConstructors =
       Marshall.foldMarshallerFields marshaller [] $
         Marshall.collectFromField
           Marshall.ExcludeReadOnlyColumns
-          (\mbAlias fieldDef -> (mbAlias, Marshall.fieldNameToString $ Marshall.fieldName fieldDef))
+          mkFieldMarshaller
 
-    stringyFields = (fmap . fmap) Marshall.unboundedTextField fieldNames
-
-    marshallField ::
-      Int ->
-      (Maybe Marshall.AliasName, Marshall.FieldDefinition Marshall.NotNull T.Text) ->
-      Marshall.SqlMarshaller [T.Text] T.Text
-    marshallField idx (mbAlias, fieldDef) =
-      maybe id Marshall.marshallAlias mbAlias $ Marshall.marshallField (!! idx) fieldDef
+    stringyMarshaller :: Marshall.SqlMarshaller [T.Text] [T.Text]
+    stringyMarshaller =
+      traverse id (zipWith ($) marshallerConstructors [(0 :: Int) ..])
   in
-    (length stringyFields, traverse (uncurry marshallField) (zip [(0 :: Int) ..] stringyFields))
+    (length marshallerConstructors, stringyMarshaller)
 
 {- | 'SelectOperation' is a helper type for building 'Operation' primitives that
   run 'Ex.cSelect' queries. Specifying the fields of 'SelectOperation' and then

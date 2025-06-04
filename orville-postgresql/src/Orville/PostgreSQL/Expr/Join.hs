@@ -17,12 +17,12 @@ module Orville.PostgreSQL.Expr.Join
   , innerLateralJoinType
   , JoinConstraint
   , joinOnConstraint
-  , JoinExpr
-  , joinExpr
-  , appendJoinFromItem
+  , joinedTable
+  , join
+  , joining
   ) where
 
-import Orville.PostgreSQL.Expr.FromItemExpr (FromItemExpr)
+import Orville.PostgreSQL.Expr.TableReferenceList (TableReference)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -122,44 +122,72 @@ joinOnConstraint booleanExpr =
   JoinConstraint $
     RawSql.fromString "ON " <> RawSql.toRawSql booleanExpr
 
-{- | Representation of @JOIN@, modifiers to it, such as @LEFT@, and any conditions for the @JOIN@.
+{- |
+  Constructs a 'TableReference' by creating a join expression from two existing table
+  references. The result is an @n+m@ way join, where @n@ is the number of tables referenced
+  in the first table reference expression (which itself may be a join) and @m@ is the
+  number of tables referenced by the second table reference expression.
+
+  See also: 'join', 'joining'
 
 @since 1.1.0.0
 -}
-newtype JoinExpr = JoinExpr RawSql.RawSql
-  deriving
-    ( -- | @since 1.1.0.0
-      RawSql.SqlExpression
-    )
-
-{- | Build a 'JoinExpr' with the given options. It is up to the caller to ensure the 'FromItemExpr' is
-   appropriately aliased.
-
-@since 1.1.0.0
--}
-joinExpr ::
+joinedTable ::
+  TableReference ->
   JoinType ->
-  FromItemExpr ->
+  TableReference ->
   JoinConstraint ->
-  JoinExpr
-joinExpr joinType tableRefList joinOn =
-  JoinExpr $
-    RawSql.toRawSql joinType
+  TableReference
+joinedTable tableRefA joinType tableRefB joinOn =
+  RawSql.unsafeFromRawSql $
+    RawSql.toRawSql tableRefA
       <> RawSql.space
-      <> RawSql.toRawSql tableRefList
+      <> RawSql.toRawSql joinType
+      <> RawSql.space
+      <> RawSql.toRawSql tableRefB
       <> RawSql.space
       <> RawSql.toRawSql joinOn
 
-{- | Add 'JoinExpr's to a given 'FromItemExpr'. Resuling in an n+m way join, where n is the
-   number of tables referenced by the given 'FromItemExpr', and m is the number of joins in
-   the list of 'JoinExpr's.
+{- |
+  A flipped version of 'joinedTable' that allows joined tables to be constructed in
+  a syntax more similar to SQL. For example:
 
-@since 1.1.0.0
+  @@
+    fooTableRef
+      & join leftJoinType barTableRef someJoinCondition
+      & join leftJoinType bazTableRef someOtherJoinCondition
+  @@
+
+  See also: 'joining', 'joinedTable'
+
+  @since 1.1.0.0
 -}
-appendJoinFromItem :: FromItemExpr -> [JoinExpr] -> FromItemExpr
-appendJoinFromItem item [] = item
-appendJoinFromItem item joins =
-  RawSql.unsafeFromRawSql
-    . RawSql.intercalate
-      RawSql.space
-    $ (RawSql.toRawSql item) : (fmap RawSql.toRawSql joins)
+join ::
+  JoinType ->
+  TableReference ->
+  JoinConstraint ->
+  TableReference ->
+  TableReference
+join joinType tableRefB joinOn tableRefA =
+  joinedTable tableRefA joinType tableRefB joinOn
+
+{- |
+  A convenience function for constructing joins by tracking the tables to be
+  joined in a list instead of using the '(&)' operator. The tables will be joined
+  in a left associative manner, matching the associativity of the analogous SQL
+  expression.
+
+  @@
+    joining fooTableRef
+      [ join leftJoinType barTableRef someJoinCondition
+      , join leftJoinType bazTableRef someOtherJoinCondition
+      ]
+  @@
+
+  See also: 'join', 'joinedTable'
+
+  @since 1.1.0.0
+-}
+joining :: TableReference -> [TableReference -> TableReference] -> TableReference
+joining tableRef joinList =
+  foldr (flip (.)) id joinList tableRef

@@ -10,12 +10,10 @@ Stability : Stable
 module Orville.PostgreSQL.Expr.Internal.Name.Alias
   ( AliasExpr
   , stringToAliasExpr
-  , aliasExprToColumnName
   )
 where
 
-import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
-import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, fromIdentifier, identifier, toIdentifier)
+import Orville.PostgreSQL.Expr.Internal.Name.Identifier (Identifier, IdentifierExpression, identifier)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- | Type to represent a SQL alias. 'AliasExpr' values constructed
@@ -46,11 +44,3 @@ newtype AliasExpr
 stringToAliasExpr :: String -> AliasExpr
 stringToAliasExpr =
   AliasExpr . identifier
-
-{- | It is occasionally appropriate to treat Construct an 'AliasExpr' from a 'String' with proper escaping as part of the generated SQL.
-
-@since 1.1.0.0
--}
-aliasExprToColumnName :: AliasExpr -> ColumnName
-aliasExprToColumnName =
-  fromIdentifier . toIdentifier

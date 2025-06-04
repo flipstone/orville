@@ -26,6 +26,7 @@ module Orville.PostgreSQL.Marshall.SqlComparable
   , likeInsensitive
   , tupleIn
   , tupleNotIn
+  , orderBySqlComparable
   ) where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
@@ -290,3 +291,15 @@ tupleNotIn a b =
   Expr.tupleNotIn
     (referenceValueExpression a :| [referenceValueExpression b])
     . fmap (toSqlValueTuple a b)
+
+{- | Orders a query by the 'referenceValueExpression' given by the 'comparable'.
+
+@since 1.1.0.0
+-}
+orderBySqlComparable ::
+  SqlComparable comparable value =>
+  comparable ->
+  Expr.OrderByDirection ->
+  Expr.OrderByExpr
+orderBySqlComparable =
+  Expr.orderByValueExpression . referenceValueExpression

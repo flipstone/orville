@@ -262,8 +262,8 @@ runRoundTripTest pool testCase = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
-          (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+          (Expr.selectColumns [Expr.unqualified (Marshall.fieldColumnName fieldDef)])
+          (Just $ Expr.tableExpr (Expr.singleTableReferenceList testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
 
@@ -313,8 +313,8 @@ runNullableRoundTripTest pool testCase = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
-          (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+          (Expr.selectColumns [Expr.unqualified (Marshall.fieldColumnName fieldDef)])
+          (Just $ Expr.tableExpr (Expr.singleTableReferenceList testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
 
@@ -388,8 +388,8 @@ runDefaultValueFieldDefinitionTest pool testCase mkDefaultValue = do
       RawSql.execute connection $
         Expr.queryExpr
           (Expr.selectClause $ Expr.selectExpr Nothing)
-          (Expr.selectColumns [Marshall.fieldColumnName fieldDef])
-          (Just $ Expr.tableExpr (Expr.tableFromItem testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+          (Expr.selectColumns [Expr.unqualified (Marshall.fieldColumnName fieldDef)])
+          (Just $ Expr.tableExpr (Expr.singleTableReferenceList testTable) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
     Execution.readRows result
 

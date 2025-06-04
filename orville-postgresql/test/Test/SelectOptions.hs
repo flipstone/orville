@@ -54,7 +54,7 @@ selectOptionsTests =
     , prop_fieldNotInOperator
     , prop_distinct
     , prop_orderBy
-    , prop_orderByAliased
+    , prop_orderByQualified
     , prop_orderByCombined
     , prop_groupBy
     , prop_groupByCombined
@@ -313,13 +313,13 @@ prop_orderBy =
           )
       )
 
-prop_orderByAliased :: Property.NamedProperty
-prop_orderByAliased =
+prop_orderByQualified :: Property.NamedProperty
+prop_orderByQualified =
   Property.singletonNamedProperty "orderBy generates expected sql" $
     assertOrderByClauseEquals
       (Just "ORDER BY \"f\".\"foo\" ASC, \"bar\" DESC")
       ( O.orderBy
-          ( O.orderByAliasedField (O.buildAliasedFieldDefinition fooField (Marshall.stringToAliasName "f")) Expr.ascendingOrder
+          ( O.orderBySqlComparable (O.qualifyField (Marshall.stringToAliasName "f") fooField) Expr.ascendingOrder
               <> O.orderByField barField Expr.descendingOrder
           )
       )
@@ -339,7 +339,8 @@ prop_groupBy =
     assertGroupByClauseEquals
       (Just "GROUP BY \"foo\", \"bar\"")
       ( O.groupBy . Expr.groupByColumnsExpr $
-          FieldDef.fieldColumnName fooField :| [FieldDef.fieldColumnName barField]
+          Expr.unqualified (FieldDef.fieldColumnName fooField)
+            :| [Expr.unqualified (FieldDef.fieldColumnName barField)]
       )
 
 prop_groupByCombined :: Property.NamedProperty
@@ -348,7 +349,7 @@ prop_groupByCombined =
     assertGroupByClauseEquals
       (Just "GROUP BY foo, \"bar\"")
       ( (O.groupBy . RawSql.unsafeSqlExpression $ "foo")
-          <> (O.groupBy . Expr.groupByColumnsExpr $ ((FieldDef.fieldColumnName barField) :| []))
+          <> (O.groupBy . Expr.groupByColumnsExpr $ ((Expr.unqualified (FieldDef.fieldColumnName barField)) :| []))
       )
 
 prop_forRowLock :: Property.NamedProperty

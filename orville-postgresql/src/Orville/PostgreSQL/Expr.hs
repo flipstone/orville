@@ -43,7 +43,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.DataType
   , module Orville.PostgreSQL.Expr.Delete
   , module Orville.PostgreSQL.Expr.GroupBy
-  , module Orville.PostgreSQL.Expr.FromItemExpr
+  , module Orville.PostgreSQL.Expr.TableReferenceList
   , module Orville.PostgreSQL.Expr.IfExists
   , module Orville.PostgreSQL.Expr.IfNotExists
   , module Orville.PostgreSQL.Expr.Index
@@ -97,7 +97,6 @@ import Orville.PostgreSQL.Expr.Delete
 import Orville.PostgreSQL.Expr.Extension
 import Orville.PostgreSQL.Expr.FetchClause
 import Orville.PostgreSQL.Expr.Filter
-import Orville.PostgreSQL.Expr.FromItemExpr
 import Orville.PostgreSQL.Expr.Function
 import Orville.PostgreSQL.Expr.GroupBy
 import Orville.PostgreSQL.Expr.IfExists
@@ -119,6 +118,7 @@ import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
 import Orville.PostgreSQL.Expr.TableConstraint
 import Orville.PostgreSQL.Expr.TableDefinition
+import Orville.PostgreSQL.Expr.TableReferenceList
 import Orville.PostgreSQL.Expr.TextSearch
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
