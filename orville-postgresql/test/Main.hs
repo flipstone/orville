@@ -61,6 +61,7 @@ main = do
       [ Connection.connectionTests pool
       , RawSql.rawSqlTests pool
       , Execution.executionTests pool
+      , PgTime.pgTimeTests pool
       , SqlType.sqlTypeTests pool
       , PostgreSQLAxioms.postgreSQLAxiomTests pool
       , ExprAggregate.aggregateTests pool
@@ -96,7 +97,6 @@ main = do
       , AutoMigration.autoMigrationTests pool
       , Cursor.cursorTests pool
       , SqlCommenter.sqlCommenterTests pool
-      , PgTime.pgTimeTests pool
       ]
 
   Monad.unless (Property.allPassed summary) SE.exitFailure

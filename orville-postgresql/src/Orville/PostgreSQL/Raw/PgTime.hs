@@ -15,6 +15,8 @@ module Orville.PostgreSQL.Raw.PgTime
   )
 where
 
+import Control.Applicative ((<|>))
+import Control.Monad (when)
 import qualified Data.Attoparsec.ByteString as AttoBS
 import qualified Data.Attoparsec.ByteString.Char8 as AttoB8
 import qualified Data.ByteString as BS
@@ -23,29 +25,137 @@ import qualified Data.Char as Char
 import qualified Data.Fixed as Fixed
 import qualified Data.Time as Time
 import qualified Data.Word as Word
+import qualified Text.Printf as Printf
 
 {- | Renders a 'Time.Day' value to a textual representation for PostgreSQL.
 
 @since 1.0.0.0
 -}
 dayToPostgreSQL :: Time.Day -> B8.ByteString
-dayToPostgreSQL =
-  B8.pack . Time.showGregorian
+dayToPostgreSQL date =
+  case mkCommonEraDay date of
+    (ce, ced) ->
+      B8.pack (renderCommonEraDay ced <> renderCommonEraSuffix ce)
 
-{- | An Attoparsec parser for parsing 'Time.Day' from YYYY-MM-DD format. Parsing
-  fails if given an invalid 'Time.Day'.
+{- | An Attoparsec parser for parsing 'Time.Day' from a string in PostgreSQL's ISO style
+  (YYYY-MM-DD[ BC]) format. Parsing fails if given an invalid 'Time.Day'.
 
 @since 1.0.0.0
 -}
 day :: AttoB8.Parser Time.Day
 day = do
+  ced <- commonEraDay
+  ce <- parseCommonEraSuffix
+  commonEraDayToISO8601Day ce ced
+
+commonEraDay :: AttoB8.Parser CommonEraDay
+commonEraDay = do
   (y, yearCount) <- decimalWithCount <* AttoB8.char '-'
-  if yearCount < 4
-    then fail "invalid date format"
-    else do
-      m <- twoDigits <* AttoB8.char '-'
-      d <- twoDigits
-      maybe (fail "invalid date format") pure $ Time.fromGregorianValid y m d
+  when (yearCount < 4) (fail "invalid date format")
+  m <- twoDigits <* AttoB8.char '-'
+  d <- twoDigits
+  pure $ CommonEraDay y m d
+
+{- | Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL.
+
+@since 1.0.0.0
+-}
+utcTimeToPostgreSQL :: Time.UTCTime -> B8.ByteString
+utcTimeToPostgreSQL time =
+  let
+    -- DiffTime lacks support for %Q (fractional seconds), so be sure to format
+    -- via a type that supports %Q.
+    formattedTime =
+      Time.formatTime Time.defaultTimeLocale "%0H:%0M:%0S%Q+00"
+        . Time.timeToTimeOfDay
+        $ Time.utctDayTime time
+  in
+    case mkCommonEraDay (Time.utctDay time) of
+      (ce, ced) ->
+        B8.pack $
+          renderCommonEraDay ced <> " " <> formattedTime <> renderCommonEraSuffix ce
+
+{- | An Attoparsec parser for 'Time.UTCTime' from a PostgreSQL ISO style timestamptz format.
+
+@since 1.0.0.0
+-}
+utcTime :: AttoB8.Parser Time.UTCTime
+utcTime = do
+  ced <- commonEraDay <* AttoB8.char ' '
+  time <- timeOfDay
+  offset <- signedTimezoneOffset
+  ce <- parseCommonEraSuffix
+  validDay <- commonEraDayToISO8601Day ce ced
+  pure $ Time.addUTCTime offset (Time.UTCTime validDay (Time.timeOfDayToTime time))
+
+signedTimezoneOffset :: AttoB8.Parser Time.NominalDiffTime
+signedTimezoneOffset = do
+  sign <- AttoB8.satisfy (\char -> char == '+' || char == '-')
+  case sign of
+    '+' -> fmap negate timezoneOffset
+    _ -> timezoneOffset
+
+timezoneOffset :: AttoB8.Parser Time.NominalDiffTime
+timezoneOffset = do
+  h <- twoDigits
+  m <- AttoB8.option 0 (AttoB8.char ':' *> twoDigits)
+  s <- AttoB8.option 0 (AttoB8.char ':' *> twoDigits)
+  pure . fromIntegral $ (s :: Int) + m * 60 + h * 3600
+
+{- | Renders a 'Time.LocalTime' value to a textual representation for PostgreSQL.
+
+@since 1.0.0.0
+-}
+localTimeToPostgreSQL :: Time.LocalTime -> B8.ByteString
+localTimeToPostgreSQL time =
+  let
+    formattedTime =
+      Time.formatTime Time.defaultTimeLocale "%0H:%0M:%0S%Q" $
+        Time.localTimeOfDay time
+  in
+    case mkCommonEraDay (Time.localDay time) of
+      (ce, ced) ->
+        B8.pack $
+          renderCommonEraDay ced <> " " <> formattedTime <> renderCommonEraSuffix ce
+
+{- | An Attoparsec parser for 'Time.LocalTime' from PostgreSQL's ISO style timestamp format.
+
+@since 1.0.0.0
+-}
+localTime :: AttoB8.Parser Time.LocalTime
+localTime = do
+  ced <- commonEraDay <* AttoB8.char ' '
+  time <- timeOfDay
+  ce <- parseCommonEraSuffix
+  validDay <- commonEraDayToISO8601Day ce ced
+  pure $ Time.LocalTime validDay time
+
+{- | An Attoparsec parser for 'Time.TimeOfDay' from PostgreSQL's ISO style time format.
+
+@since 1.0.0.0
+-}
+timeOfDay :: AttoB8.Parser Time.TimeOfDay
+timeOfDay = do
+  h <- twoDigits <* AttoB8.char ':'
+  m <- twoDigits <* AttoB8.char ':'
+  s <- seconds
+  case Time.makeTimeOfDayValid h m s of
+    Nothing -> fail "invalid time format"
+    Just validTime -> pure validTime
+
+{- | An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
+  handle more resolution than PostgreSQL uses, and will truncate the seconds
+  fraction if more than 12 digits are present.
+
+@since 1.0.0.0
+-}
+seconds :: AttoB8.Parser Fixed.Pico
+seconds = do
+  s <- twoDigits
+  (dec, charCount) <- AttoB8.option (0, 0) (AttoB8.char '.' *> decimalWithCount)
+  if charCount >= 12
+    then pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
+    else pure $ Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))
 
 {- | An Attoparsec parser for parsing 2-digit integral numbers.
 
@@ -53,74 +163,9 @@ day = do
 -}
 twoDigits :: Integral a => AttoB8.Parser a
 twoDigits = do
-  tens <- AttoB8.digit
-  ones <- AttoB8.digit
-  pure $ fromChar tens * 10 + fromChar ones
-
-fromChar :: Integral a => Char -> a
-fromChar c = fromIntegral $ Char.ord c - Char.ord '0'
-
-{- | Renders a 'Time.UTCTime' value to a textual representation for PostgreSQL.
-
-@since 1.0.0.0
--}
-utcTimeToPostgreSQL :: Time.UTCTime -> B8.ByteString
-utcTimeToPostgreSQL =
-  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q+00"
-
-{- | An Attoparsec parser for parsing 'Time.UTCTime' from an ISO-8601 style
-  datetime and timezone with a few PostgreSQL-specific exceptions. See
-  'localTime' for more details.
-
-@since 1.0.0.0
--}
-utcTime :: AttoB8.Parser Time.UTCTime
-utcTime = do
-  lt <- localTime
-  sign <- AttoB8.satisfy (\char -> char == '+' || char == '-' || char == 'Z')
-  if sign == 'Z'
-    then pure $ Time.localTimeToUTC Time.utc lt
-    else do
-      hour <- twoDigits
-      minute <- AttoB8.option 0 $ AttoB8.choice [AttoB8.char ':' *> twoDigits, twoDigits]
-      second <- AttoB8.option 0 $ AttoB8.char ':' *> twoDigits
-      let
-        offsetSeconds :: Int
-        offsetSeconds = (second + minute * 60 + hour * 3600) * if sign == '+' then (-1) else 1
-        offsetNominalDiffTime :: Time.NominalDiffTime
-        offsetNominalDiffTime = fromIntegral offsetSeconds
-        diffTime = Time.timeOfDayToTime (Time.localTimeOfDay lt)
-        utcTimeWithoutOffset = Time.UTCTime (Time.localDay lt) diffTime
-      pure $ Time.addUTCTime offsetNominalDiffTime utcTimeWithoutOffset
-
-{- | Renders a 'Time.LocalTime' value to a textual representation for PostgreSQL.
-
-@since 1.0.0.0
--}
-localTimeToPostgreSQL :: Time.LocalTime -> B8.ByteString
-localTimeToPostgreSQL =
-  B8.pack . Time.formatTime Time.defaultTimeLocale "%0Y-%m-%d %H:%M:%S%Q"
-
-{- | An Attoparsec parser for parsing 'Time.LocalTime' from an ISO-8601 style
-  datetime with a few exceptions. The separator between the date and time
-  is always @\' \'@ and never @\'T\'@.
-
-@since 1.0.0.0
--}
-localTime :: AttoB8.Parser Time.LocalTime
-localTime = do
-  Time.LocalTime <$> day <* AttoB8.char ' ' <*> timeOfDay
-
-{- | An Attoparsec parser for parsing 'Time.TimeOfDay' from an ISO-8601 style time.
-
-@since 1.0.0.0
--}
-timeOfDay :: AttoB8.Parser Time.TimeOfDay
-timeOfDay = do
-  h <- twoDigits <* AttoB8.char ':'
-  m <- twoDigits
-  s <- AttoB8.option 0 (AttoB8.char ':' *> seconds)
-  maybe (fail "invalid time format") pure $ Time.makeTimeOfDayValid h m s
+  tens <- fmap (fromIntegral . Char.digitToInt) AttoB8.digit
+  ones <- fmap (fromIntegral . Char.digitToInt) AttoB8.digit
+  pure $ tens * 10 + ones
 
 {- | An Attoparsec parser for parsing a base-10 number. Returns the number of
   digits consumed. Based off of 'AttoB8.decimal'.
@@ -135,16 +180,45 @@ decimalWithCount = do
 appendDigit :: Integral a => a -> Word.Word8 -> a
 appendDigit a w = a * 10 + fromIntegral (w - 48)
 
-{- | An Attoparsec parser for parsing 'Fixed.Pico' from SS[.sss] format. This can
-  handle more resolution than PostgreSQL uses, and will truncate the seconds
-  fraction if more than 12 digits are present.
+data CommonEra
+  = BCE
+  | CE
 
-@since 1.0.0.0
--}
-seconds :: AttoB8.Parser Fixed.Pico
-seconds = do
-  s <- twoDigits
-  (dec, charCount) <- AttoB8.option (0, 0) (AttoB8.char '.' *> decimalWithCount)
-  if charCount >= 12
-    then pure . Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec `div` 10 ^ (charCount - 12))
-    else pure . Fixed.MkFixed $ (s * 10 ^ (12 :: Int)) + (dec * 10 ^ (12 - charCount))
+renderCommonEraSuffix :: CommonEra -> String
+renderCommonEraSuffix ce =
+  case ce of
+    BCE -> " BC"
+    CE -> mempty
+
+parseCommonEraSuffix :: AttoB8.Parser CommonEra
+parseCommonEraSuffix =
+  (BCE <$ AttoB8.string (B8.pack " BC") <|> pure CE) <* AttoB8.endOfInput
+
+data CommonEraDay = CommonEraDay
+  { _commonEraDayYear :: Integer
+  , _commonEraDayMonth :: Int
+  , _commonEraDayDay :: Int
+  }
+
+mkCommonEraDay :: Time.Day -> (CommonEra, CommonEraDay)
+mkCommonEraDay date =
+  case Time.toGregorian date of
+    (y, m, d) ->
+      fmap
+        (\cey -> CommonEraDay cey m d)
+        (if y <= 0 then (BCE, 1 - y) else (CE, y))
+
+renderCommonEraDay :: CommonEraDay -> String
+renderCommonEraDay (CommonEraDay y m d) =
+  Printf.printf "%04d-%02d-%02d" y m d
+
+commonEraDayToISO8601Day :: MonadFail m => CommonEra -> CommonEraDay -> m Time.Day
+commonEraDayToISO8601Day ce (CommonEraDay y m d) =
+  let
+    iso8601Year = case ce of
+      BCE -> 1 - y
+      CE -> y
+  in
+    case Time.fromGregorianValid iso8601Year m d of
+      Nothing -> fail "invalid date"
+      Just valid -> pure valid
