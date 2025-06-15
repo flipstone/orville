@@ -323,6 +323,10 @@ uuid =
 {- | 'date' defines a type representing a calendar date (without time zone). It corresponds
   to the "DATE" type in SQL.
 
+  This type cannot represent the full range of 'Time.Day' values. PostgreSQL supports years
+  from -4731 to 5874897 inclusive for this type, and sending a 'Time.Day' with a year outside
+  of this range to the database will result in a PostgreSQL exception.
+
 @since 1.0.0.0
 -}
 date :: SqlType Time.Day
@@ -340,6 +344,10 @@ date =
 {- | 'timestamp' defines a type representing a particular point in time without time zone information,
   but can be constructed with a time zone offset.
   It corresponds to the "TIMESTAMP with time zone" type in SQL.
+
+  This type cannot represent the full range of 'Time.UTCTime' values. PostgreSQL supports years
+  from -4731 to 294276 inclusive for this type, and sending a 'Time.UTCTime' with a year outside
+  of this range to the database will result in a PostgreSQL exception.
 
   Note: This is NOT a typo. The "TIMESTAMP with time zone" type in SQL does not include
   any actual time zone information. For an excellent explanation of the complexities
@@ -362,6 +370,10 @@ timestamp =
 
 {- | 'timestampWithoutZone' defines a type representing a particular point in time (without time zone).
   It corresponds to the "TIMESTAMP without time zone" type in SQL.
+
+  This type cannot represent the full range of 'Time.LocalTime' values. PostgreSQL supports years
+  from -4731 to 294276 inclusive for this type, and sending a 'Time.LocalTime' with a year outside
+  of this range to the database will result in a PostgreSQL exception.
 
   http://blog.untrod.com/2016/08/actually-understanding-timezones-in-postgresql.html
 

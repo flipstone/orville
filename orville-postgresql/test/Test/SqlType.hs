@@ -370,6 +370,26 @@ dateTests pool =
           , expectedValue = Time.fromGregorian 10000 12 21
           }
     )
+  ,
+    ( String.fromString "Testing the decode of DATE with value 0001-12-21 BC"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DATE"
+          , rawSqlValue = Just $ B8.pack "'0001-12-21 BC'"
+          , sqlType = SqlType.date
+          , expectedValue = Time.fromGregorian 0 12 21
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of DATE with value 0041-02-29 BC"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "DATE"
+          , rawSqlValue = Just $ B8.pack "'0041-02-29 BC'"
+          , sqlType = SqlType.date
+          , expectedValue = Time.fromGregorian (-40) 2 29
+          }
+    )
   ]
 
 timestampTests :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
@@ -445,6 +465,26 @@ timestampTests pool =
           }
     )
   ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '0001-12-21 00:00:32.000+00 BC'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'0001-12-21 00:00:32.000+00 BC'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian 0 12 21) (Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITH TIME ZONE with value '0041-02-29 00:00:32.000+00 BC'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITH TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'0041-02-29 00:00:32.000+00 BC'"
+          , sqlType = SqlType.timestamp
+          , expectedValue = Time.UTCTime (Time.fromGregorian (-40) 2 29) (Time.secondsToDiffTime 32)
+          }
+    )
+  ,
     ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '2020-12-21 00:00:32'"
     , runDecodingTest pool $
         DecodingTest
@@ -512,6 +552,26 @@ timestampTests pool =
           , rawSqlValue = Just $ B8.pack "'0001-12-21 00:00:32'"
           , sqlType = SqlType.timestampWithoutZone
           , expectedValue = Time.LocalTime (Time.fromGregorian 1 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '0001-12-21 00:00:32 BC'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'0001-12-21 00:00:32 BC'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian 0 12 21) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
+          }
+    )
+  ,
+    ( String.fromString "Testing the decode of TIMESTAMP WITHOUT TIME ZONE with value '0041-02-29 00:00:32 BC'"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "TIMESTAMP WITHOUT TIME ZONE"
+          , rawSqlValue = Just $ B8.pack "'0041-02-29 00:00:32 BC'"
+          , sqlType = SqlType.timestampWithoutZone
+          , expectedValue = Time.LocalTime (Time.fromGregorian (-40) 2 29) (Time.timeToTimeOfDay $ Time.secondsToDiffTime 32)
           }
     )
   ]
