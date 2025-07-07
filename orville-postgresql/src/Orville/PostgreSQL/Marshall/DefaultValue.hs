@@ -32,7 +32,7 @@ import Data.Int (Int16, Int32, Int64)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
-import qualified Numeric as Numeric
+import qualified Numeric
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.PgTime as PgTime

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -191,7 +191,7 @@ fakeLibPQMaxColumn :: FakeLibPQResult -> Maybe Column
 fakeLibPQMaxColumn result =
   let
     maxColumnsByRow =
-      map fst
+      fmap fst
         . Maybe.mapMaybe Map.lookupMax
         . Map.elems
         . fakeLibPQRows
@@ -203,7 +203,7 @@ fakeLibPQMaxColumn result =
       _ ->
         Just (maximum maxColumnsByRow)
 
-fakeLibPQColumnName :: FakeLibPQResult -> Column -> (Maybe BS.ByteString)
+fakeLibPQColumnName :: FakeLibPQResult -> Column -> Maybe BS.ByteString
 fakeLibPQColumnName result column =
   Map.lookup column (fakeLibPQColumns result)
 

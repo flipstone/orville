@@ -1,7 +1,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2024
+Copyright : Flipstone Technology Partners 2024-2025
 License   : MIT
 Stability : Stable
 
@@ -67,7 +67,7 @@ toSqlValueTuple ::
   (c, d) ->
   NonEmpty Expr.ValueExpression
 toSqlValueTuple a b (c, d) =
-  (Expr.valueExpression $ toComparableSqlValue a c)
+  Expr.valueExpression (toComparableSqlValue a c)
     :| [Expr.valueExpression $ toComparableSqlValue b d]
 
 {- | Checks that the referenced item from the first argument does not equal the SQL value of the

@@ -1,6 +1,6 @@
 {- |
 
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -439,7 +439,7 @@ intercalate :: (SqlExpression sql, Foldable f) => RawSql -> f sql -> RawSql
 intercalate separator =
   mconcat
     . List.intersperse separator
-    . map toRawSql
+    . fmap toRawSql
     . Fold.toList
 
 {- | Executes a 'RawSql' value using the 'Conn.executeRaw' function. Make sure

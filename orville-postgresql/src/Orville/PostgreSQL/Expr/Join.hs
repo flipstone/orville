@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2024
+Copyright : Flipstone Technology Partners 2024-2025
 License   : MIT
 Stability : Stable
 
@@ -122,11 +122,10 @@ joinOnConstraint booleanExpr =
   JoinConstraint $
     RawSql.fromString "ON " <> RawSql.toRawSql booleanExpr
 
-{- |
-  Constructs a 'TableReference' by creating a join expression from two existing table
-  references. The result is an @n+m@ way join, where @n@ is the number of tables referenced
-  in the first table reference expression (which itself may be a join) and @m@ is the
-  number of tables referenced by the second table reference expression.
+{- | Constructs a 'TableReference' by creating a join expression from two existing table references.
+  The result is an @n+m@ way join, where @n@ is the number of tables referenced in the first table
+  reference expression (which itself may be a join) and @m@ is the number of tables referenced by
+  the second table reference expression.
 
   See also: 'join', 'joining'
 
@@ -148,9 +147,8 @@ joinedTable tableRefA joinType tableRefB joinOn =
       <> RawSql.space
       <> RawSql.toRawSql joinOn
 
-{- |
-  A flipped version of 'joinedTable' that allows joined tables to be constructed in
-  a syntax more similar to SQL. For example:
+{- | A flipped version of 'joinedTable' that allows joined tables to be constructed in a syntax more
+  similar to SQL. For example:
 
   @@
     fooTableRef
@@ -171,11 +169,9 @@ join ::
 join joinType tableRefB joinOn tableRefA =
   joinedTable tableRefA joinType tableRefB joinOn
 
-{- |
-  A convenience function for constructing joins by tracking the tables to be
-  joined in a list instead of using the '(&)' operator. The tables will be joined
-  in a left associative manner, matching the associativity of the analogous SQL
-  expression.
+{- | A convenience function for constructing joins by tracking the tables to be joined in a list
+  instead of using the '(&)' operator. The tables will be joined in a left associative manner,
+  matching the associativity of the analogous SQL expression.
 
   @@
     joining fooTableRef

@@ -33,9 +33,7 @@ marshallErrorTests pool =
     , prop_showMarshallErrorRaisedFromOrvilleContext pool
     ]
 
-{- |
-  Shared example used to test error detail level rendering of decoding errors
-  below.
+{- | Shared example used to test error detail level rendering of decoding errors below.
 
 @since 1.0.0.0
 -}
@@ -134,9 +132,7 @@ prop_renderDecodingErrorWithoutErrorMessage =
             \Unable to decode columns from result set: [REDACTED]. \
             \Value(s) that failed to decode: [bar = baz]"
 
-{- |
-  Shared example used to test error detail level rendering of missing column
-  errors below.
+{- | Shared example used to test error detail level rendering of missing column errors below.
 
 @since 1.0.0.0
 -}

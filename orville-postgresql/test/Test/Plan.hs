@@ -726,9 +726,8 @@ prop_explain =
           , "SELECT \"foo_id\",\"id\",\"foo_id\" FROM \"foo_child\" WHERE (\"foo_id\") = ($1)"
           ]
 
-{- |
-  Generates a list of Foos that along with FooName and FooAge that could plausibly be
-  found in the list zero, one or more times.
+{- | Generates a list of Foos that along with FooName and FooAge that could plausibly be found in the
+  list zero, one or more times.
 
 @since 1.0.0.0
 -}
@@ -747,9 +746,8 @@ generateSearchTargetAndSubjects = do
   foos <- Foo.generateListUsing (Range.linear 0 5) generatePossibleTargetFoo
   pure (targetName, targetAge, foos)
 
-{- |
-  Generates a list of Foos that along with FooName that could plausibly be
-  found in the list zero, one or more times.
+{- | Generates a list of Foos that along with FooName that could plausibly be found in the list zero,
+  one or more times.
 
 @since 1.0.0.0
 -}
@@ -765,11 +763,9 @@ generateSearchTargetListAndSubjects = do
   foos <- Foo.generateListUsing (Range.linear 0 5) generatePossibleTargetFoo
   pure (targetNames, targetAges, foos)
 
-{- |
-  Uses Hedgehog's cover function to make sure common edge cases are covered
-  for tests that are conducting a search. The predicate given should indicate
-  whether the item would be expected to match the search being tested. The
-  list of items should be the list that will be searced against.
+{- | Uses Hedgehog's cover function to make sure common edge cases are covered for tests that are
+  conducting a search. The predicate given should indicate whether the item would be expected to
+  match the search being tested. The list of items should be the list that will be searced against.
 
 @since 1.0.0.0
 -}
@@ -779,12 +775,10 @@ coverSearchResultCases predicate subjects = do
   HH.cover 1 (String.fromString "subjects present with no matches") (not (null subjects) && not (any predicate subjects))
   HH.cover 1 (String.fromString "at least 1 match") (length (filter predicate subjects) >= 1)
 
-{- |
-  Asserts that the given result is one that could have been produced by apply
-  the predicate to the given list to find a single result. This assertion
-  doesn't care which particular item from the list was found, as long as it the
-  result matches the predicate and it is one from the list, or that nothing in
-  the list matches if the 'Nothing' was found.
+{- | Asserts that the given result is one that could have been produced by apply the predicate to the
+  given list to find a single result. This assertion doesn't care which particular item from the
+  list was found, as long as it the result matches the predicate and it is one from the list, or
+  that nothing in the list matches if the 'Nothing' was found.
 
 @since 1.0.0.0
 -}
@@ -801,9 +795,8 @@ assertMatchIsFromPredicate maybeEntity predicate subjects =
     Just entity ->
       HH.assert (predicate entity && elem entity subjects)
 
-{- |
-  Asserts that the found items are all of those from the list that match the
-  predicate, but without caring about order.
+{- | Asserts that the found items are all of those from the list that match the predicate, but without
+  caring about order.
 
 @since 1.0.0.0
 -}
@@ -821,9 +814,8 @@ assertAllMatchesFound ::
 assertAllMatchesFound keyAttr foundEntities predicate allEntities =
   List.sortOn keyAttr foundEntities === List.sortOn keyAttr (filter predicate allEntities)
 
-{- |
-  Applies the given assertion for every key in the list. If any of the key
-  is not found in the provided 'Many.Many' value, this assertion will fail.
+{- | Applies the given assertion for every key in the list. If any of the key is not found in the
+  provided 'Many.Many' value, this assertion will fail.
 
 @since 1.0.0.0
 -}

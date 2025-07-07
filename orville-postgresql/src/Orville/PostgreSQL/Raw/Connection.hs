@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -345,7 +345,7 @@ underlyingExecute ::
 underlyingExecute bs params connection =
   withLibPQConnectionOrFailIfClosed connection $ \libPQConn -> do
     mbResult <-
-      LibPQ.execParams libPQConn bs (map mkInferredTextParam params) LibPQ.Text
+      LibPQ.execParams libPQConn bs (fmap mkInferredTextParam params) LibPQ.Text
 
     case mbResult of
       Nothing -> do

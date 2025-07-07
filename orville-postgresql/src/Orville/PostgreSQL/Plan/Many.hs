@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -86,8 +86,8 @@ map f (Many ks keyToValue) =
 -}
 apply ::
   (Many param (a -> b)) ->
-  (Many param a) ->
-  (Many param b)
+  Many param a ->
+  Many param b
 apply manyFs manyAs =
   fromKeys (keys manyFs) applyF
  where

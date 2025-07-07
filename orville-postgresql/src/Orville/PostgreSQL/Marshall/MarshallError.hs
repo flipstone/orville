@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -73,7 +73,7 @@ renderMarshallError :: ErrorDetailLevel -> MarshallError -> String
 renderMarshallError detailLevel marshallError =
   let
     presentableRowId =
-      map
+      fmap
         (presentSqlColumnValue detailLevel redactIdentifierValue)
         (marshallErrorRowIdentifier marshallError)
   in
@@ -154,7 +154,7 @@ renderDecodingErrorDetails :: ErrorDetailLevel -> DecodingErrorDetails -> String
 renderDecodingErrorDetails detailLevel details =
   let
     presentableErrorValues =
-      map
+      fmap
         (presentSqlColumnValue detailLevel redactNonIdentifierValue)
         (decodingErrorValues details)
   in
@@ -173,7 +173,7 @@ renderDecodingErrorDetails detailLevel details =
 -}
 data MissingColumnErrorDetails = MissingColumnErrorDetails
   { missingColumnName :: B8.ByteString
-  , actualColumnNames :: (Set.Set B8.ByteString)
+  , actualColumnNames :: Set.Set B8.ByteString
   }
 
 {- | Renders a 'MissingColumnErrorDetails' to a 'String' with a specified
@@ -185,7 +185,7 @@ renderMissingColumnErrorDetails :: ErrorDetailLevel -> MissingColumnErrorDetails
 renderMissingColumnErrorDetails detailLevel details =
   let
     presentableActualNames =
-      map
+      fmap
         (redactSchemaName detailLevel . B8.unpack)
         (Set.toList $ actualColumnNames details)
   in

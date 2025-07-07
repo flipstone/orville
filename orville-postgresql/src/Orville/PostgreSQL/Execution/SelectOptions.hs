@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023-2024
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 

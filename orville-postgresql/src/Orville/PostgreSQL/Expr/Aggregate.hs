@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2024
+Copyright : Flipstone Technology Partners 2024-2025
 License   : MIT
 Stability : Stable
 
@@ -88,9 +88,7 @@ aggregateExpression function mbAggOption parameters mbOrderByClause mbFilter =
                     <> RawSql.space
             )
               <> RawSql.intercalate RawSql.comma parameters
-              <> case mbOrderByClause of
-                Nothing -> mempty
-                Just orderByClause -> RawSql.toRawSql orderByClause
+              <> maybe mempty RawSql.toRawSql mbOrderByClause
           )
 
     filtering =
@@ -312,7 +310,7 @@ jsonObjectAggAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 jsonObjectAggAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.jsonObjectAggFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.jsonObjectAggFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @jsonb_agg@ aggregate function.
 
@@ -339,7 +337,7 @@ jsonbObjectAggAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 jsonbObjectAggAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.jsonbObjectAggFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.jsonbObjectAggFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @max@ aggregate function.
 
@@ -379,7 +377,7 @@ stringAggAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 stringAggAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.stringAggFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.stringAggFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @sum@ aggregate function.
 
@@ -406,7 +404,7 @@ corAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 corAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.corFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.corFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @covar_pop@ aggregate function.
 
@@ -420,7 +418,7 @@ covarPopAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 covarPopAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.covarPopFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.covarPopFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @covar_samp@ aggregate function.
 
@@ -434,7 +432,7 @@ covarSampAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 covarSampAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.covarSampFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.covarSampFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @stddev_pop@ aggregate function.
 
@@ -448,7 +446,7 @@ stddevPopAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 stddevPopAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.stddevPopFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.stddevPopFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @stddev_samp@ aggregate function.
 
@@ -462,7 +460,7 @@ stddevSampAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 stddevSampAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.stddevSampFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.stddevSampFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @var_pop@ aggregate function.
 
@@ -476,7 +474,7 @@ varPopAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 varPopAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.varPopFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.varPopFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 {- | The SQL @var_samp@ aggregate function.
 
@@ -490,7 +488,7 @@ varSampAggregateFunction ::
   Maybe Filter.FilterExpr ->
   ValueExpression.ValueExpression
 varSampAggregateFunction mbAggOption param1 param2 =
-  aggregateExpression Name.varSampFunctionName mbAggOption (param1 NEL.:| (pure param2))
+  aggregateExpression Name.varSampFunctionName mbAggOption (param1 NEL.:| pure param2)
 
 -- internal helper to make building up the aggregates that only take a single parameter.
 singleParameterAggregateFunction ::

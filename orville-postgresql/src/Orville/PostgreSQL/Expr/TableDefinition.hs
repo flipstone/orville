@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2024
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -82,10 +82,10 @@ createTableExpr ::
 createTableExpr tableName columnDefs mbPrimaryKey constraints =
   let
     columnDefsSql =
-      map RawSql.toRawSql columnDefs
+      fmap RawSql.toRawSql columnDefs
 
     constraintsSql =
-      map RawSql.toRawSql constraints
+      fmap RawSql.toRawSql constraints
 
     tableElementsSql =
       case mbPrimaryKey of
@@ -456,9 +456,4 @@ newtype TruncateTableExpr
 truncateTablesExpr :: NonEmpty (QualifiedOrUnqualified TableName) -> TruncateTableExpr
 truncateTablesExpr tableNames =
   TruncateTableExpr $
-    RawSql.intercalate
-      RawSql.space
-      ( [ RawSql.fromString "TRUNCATE TABLE"
-        , RawSql.intercalate RawSql.commaSpace tableNames
-        ]
-      )
+    RawSql.fromString "TRUNCATE TABLE " <> RawSql.intercalate RawSql.commaSpace tableNames

@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -511,7 +511,7 @@ stringifyMarshaller marshaller =
 
     stringyMarshaller :: Marshall.SqlMarshaller [T.Text] [T.Text]
     stringyMarshaller =
-      traverse id (zipWith ($) marshallerConstructors [(0 :: Int) ..])
+      sequenceA (zipWith ($) marshallerConstructors [(0 :: Int) ..])
   in
     (length marshallerConstructors, stringyMarshaller)
 
@@ -627,7 +627,7 @@ executeSelectMany selectOp params = do
     emptyRowsMap :: Map.Map param (Seq.Seq a)
     emptyRowsMap =
       Map.fromList
-        . map (\param -> (param, Seq.empty))
+        . fmap (\param -> (param, Seq.empty))
         $ paramList
 
     insertRow results row =

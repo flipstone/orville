@@ -29,14 +29,12 @@ pgInt32 :: HH.Gen Int32
 pgInt32 =
   Gen.integral (Range.linearFrom 0 minBound maxBound)
 
-{- |
-  Produces a double value that can be reliably round tripped through
-  PostgreSQL, which only allows 15 digits of decimal precision.
+{- | Produces a double value that can be reliably round tripped through PostgreSQL, which only allows
+  15 digits of decimal precision.
 
-  Generating doubles naively using 'Gen.double' produces large numbers with
-  more than 15 digits of precisio, so we use 'encodeFloat' to directly ensure
-  the precision of large numbers is within PostgreSQL's limit. Precision of
-  small numbers is enforced by rounding excess digits off.
+  Generating doubles naively using 'Gen.double' produces large numbers with more than 15 digits of
+  precisio, so we use 'encodeFloat' to directly ensure the precision of large numbers is within
+  PostgreSQL's limit. Precision of small numbers is enforced by rounding excess digits off.
 
 @since 1.0.0.0
 -}
@@ -85,12 +83,10 @@ pgIdentifier :: HH.Gen String
 pgIdentifier =
   Gen.string (Range.linear 1 63) $ Gen.element pgIdentifierChars
 
-{- |
-  Relation names must be unique in PostgreSQL, so we sometimes generate
-  names with prefixes to avoid conflicts between different types of
-  relations such as tables and indexes. The min length value allows the
-  caller to length of the random strings that will be appended to prefix,
-  which case be useful to avoid conflicts.
+{- | Relation names must be unique in PostgreSQL, so we sometimes generate names with prefixes to
+  avoid conflicts between different types of relations such as tables and indexes. The min length
+  value allows the caller to length of the random strings that will be appended to prefix, which
+  case be useful to avoid conflicts.
 
 @since 1.0.0.0
 -}
@@ -101,10 +97,8 @@ pgIdentifierWithPrefix prefix minLength =
     . Gen.element
     $ pgIdentifierChars
 
-{- |
-  A list of characters to include in identifiers when testing. Not all of these
-  are valid in unquoted identifiers -- this helps ensure that Orville is
-  properly quoting ids.
+{- | A list of characters to include in identifiers when testing. Not all of these are valid in
+  unquoted identifiers -- this helps ensure that Orville is properly quoting ids.
 
 @since 1.0.0.0
 -}

@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2024
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -252,7 +252,7 @@ marshallerDerivedColumns marshaller =
                     . qualifyField qualifier
                     $ fieldDef
           in
-            (Expr.deriveColumn $ Expr.columnReference colName) : columns
+            Expr.deriveColumn (Expr.columnReference colName) : columns
         Synthetic synthField ->
           Expr.deriveColumnAs
             (syntheticFieldExpression synthField)

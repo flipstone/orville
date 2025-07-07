@@ -78,33 +78,28 @@ import qualified Orville.PostgreSQL.Plan.Many as Many
 import qualified Orville.PostgreSQL.Plan.Operation as Op
 import qualified Orville.PostgreSQL.Schema as Schema
 
-{- | A 'Plan' is an executable set of queries that can be executed to load data
-  from the database, using the results of prior queries as input parameters to
-  following queries in controlled ways. In particular, the "controlled" aspect
-  of this allows plans that take a single input to be adapted to take multiple
-  input parameters in a list without the resulting plan executing N+1 queries.
-  This restriction means that while query results can be used as input
-  parameters to later queries, they cannot be used to decide to run completely
-  different queries based on other query results. Allowing this would prevent
-  the 'Plan' structure from eliminating N+1 query loops.
+{- | A 'Plan' is an executable set of queries that can be executed to load data from the database,
+  using the results of prior queries as input parameters to following queries in controlled ways. In
+  particular, the "controlled" aspect of this allows plans that take a single input to be adapted to
+  take multiple input parameters in a list without the resulting plan executing N+1 queries.  This
+  restriction means that while query results can be used as input parameters to later queries, they
+  cannot be used to decide to run completely different queries based on other query
+  results. Allowing this would prevent the 'Plan' structure from eliminating N+1 query loops.
 
-  Note that during execution, queries are never combined across tables to form
-  joins or subqueries. Queries are still executed in the same sequence as
-  specified in the plan, just on all the inputs at once rather than in a loop.
-  If you need to do a join with a plan, you can always construct your own
-  custom 'Op.Operation' and use 'planOperation' to incorporate it into a plan.
+  Note that during execution, queries are never combined across tables to form joins or
+  subqueries. Queries are still executed in the same sequence as specified in the plan, just on all
+  the inputs at once rather than in a loop.  If you need to do a join with a plan, you can always
+  construct your own custom 'Op.Operation' and use 'planOperation' to incorporate it into a plan.
 
-  The @param@ type variable indicates what type of value is expected as input
-  when the plan is executed.
+  The @param@ type variable indicates what type of value is expected as input when the plan is
+  executed.
 
-  The @result@ type for a plan indicates what Haskell type is produced
-  when the plan is executed.
+  The @result@ type for a plan indicates what Haskell type is produced when the plan is executed.
 
-  The @scope@ type is used internally by Orville to track how the plan is
-  currently executed against a single input or multiple inputs. This type
-  parameter should never be specified as a concrete type in user code, but must
-  be exposed as a variable to ensure that execute scope is tracked correctly
-  through usages of 'bind'.
+  The @scope@ type is used internally by Orville to track how the plan is currently executed against
+  a single input or multiple inputs. This type parameter should never be specified as a concrete
+  type in user code, but must be exposed as a variable to ensure that execute scope is tracked
+  correctly through usages of 'bind'.
 
 @since 1.0.0.0
 -}
@@ -141,36 +136,31 @@ instance Applicative (Plan scope param) where
   pure = Pure
   (<*>) = Apply
 
-{- | 'Execute' is a tag type used as the @scope@ variable for 'Plan' values when
-  executing them via the 'execute' function.
+{- | 'Execute' is a tag type used as the @scope@ variable for 'Plan' values when executing them via
+  the 'execute' function.
 
 @since 1.0.0.0
 -}
 data Execute
 
-{- | 'ExecuteMany' is an internal tag type used by as the @scope@ variable for
-  'Plan' values when executing them against multiple inputs via the
-  'executeMany' internal function.
+{- | 'ExecuteMany' is an internal tag type used by as the @scope@ variable for 'Plan' values when
+  executing them against multiple inputs via the 'executeMany' internal function.
 
 @since 1.0.0.0
 -}
 data ExecuteMany
 
-{- |
-  A 'Planned' value is a wrapper around the results of previously-run queries
-  when using the 'bind' function. At the time that you are writing a plan, you
-  do not know whether the 'Plan' will be run with a single input or multiple
-  inputs. A 'Planned' value may end up being either an individual item or a
-  list of items. Due to this, your ability to interact with the value is
-  limited to the use of 'fmap' to extract (or build) other values from the
-  results. 'Planned' values can be used together with the 'use' function to
-  make a 'Plan' that produces the extracted value.
+{- | A 'Planned' value is a wrapper around the results of previously-run queries when using the 'bind'
+  function. At the time that you are writing a plan, you do not know whether the 'Plan' will be run
+  with a single input or multiple inputs. A 'Planned' value may end up being either an individual
+  item or a list of items. Due to this, your ability to interact with the value is limited to the
+  use of 'fmap' to extract (or build) other values from the results. 'Planned' values can be used
+  together with the 'use' function to make a 'Plan' that produces the extracted value.
 
-  Note that while 'Planned' could provide an 'Applicative' instance as well, it
-  does not to avoid confusion with the 'Applicative' instance for 'Plan'
-  itself. If you need to build a value from several 'Planned' values using
-  'Applicative', you should call 'use' on each of the values and use the
-  'Applicative' instance for 'Plan'.
+  Note that while 'Planned' could provide an 'Applicative' instance as well, it does not to avoid
+  confusion with the 'Applicative' instance for 'Plan' itself. If you need to build a value from
+  several 'Planned' values using 'Applicative', you should call 'use' on each of the values and use
+  the 'Applicative' instance for 'Plan'.
 
 @since 1.0.0.0
 -}
@@ -182,10 +172,8 @@ data Planned scope param a where
 instance Functor (Planned scope param) where
   fmap = mapPlanned
 
-{- |
-  'mapPlanned' applies a function to what value or values have been produced by
-  the plan. This function can also be called as 'fmap' or '<$>' thorugh the
-  'Functor' instance for 'Planned'.
+{- | 'mapPlanned' applies a function to what value or values have been produced by the plan. This
+  function can also be called as 'fmap' or '<$>' thorugh the 'Functor' instance for 'Planned'.
 
 @since 1.0.0.0
 -}
@@ -199,28 +187,25 @@ mapPlanned f planned =
     PlannedExplain ->
       PlannedExplain
 
-{- |
-  'resolveOne' resolves a 'Planned' value that is known to be in the 'Execute'
-  scope to its single wrapped value.
+{- | 'resolveOne' resolves a 'Planned' value that is known to be in the 'Execute' scope to its single
+  wrapped value.
 
 @since 1.0.0.0
 -}
 resolveOne :: Planned Execute param a -> a
 resolveOne (PlannedOne a) = a
 
-{- |
-  'resolveMany resolves a 'Planned' value that is known to be in the
-  'ExecuteMany' scope to the 'Many' value wrapped inside it.
+{- | 'resolveMany resolves a 'Planned' value that is known to be in the 'ExecuteMany' scope to the
+  'Many' value wrapped inside it.
 
 @since 1.0.0.0
 -}
 resolveMany :: Planned ExecuteMany k a -> Many k a
 resolveMany (PlannedMany as) = as
 
-{- |
-  'planOperation' allows any primitive 'Op.Operation' to be used as an atomic step
-  in a plan. When the plan is executed, the appropriate 'Op.Operation' functions
-  will be used depending on the execution context.
+{- | 'planOperation' allows any primitive 'Op.Operation' to be used as an atomic step in a plan. When
+  the plan is executed, the appropriate 'Op.Operation' functions will be used depending on the
+  execution context.
 
 @since 1.0.0.0
 -}
@@ -230,11 +215,10 @@ planOperation ::
 planOperation =
   PlanOp
 
-{- |
-  'planSelect' allows any Orville 'Select' query to be incorporated into a
-  plan. Note that the 'Select' cannot depend on the plan's input parameters in
-  this case. If the plan is executed with multiple inputs, the same set of all
-  the results will be used as the results for each of the input parameters.
+{- | 'planSelect' allows any Orville 'Select' query to be incorporated into a plan. Note that the
+  'Select' cannot depend on the plan's input parameters in this case. If the plan is executed with
+  multiple inputs, the same set of all the results will be used as the results for each of the input
+  parameters.
 
 @since 1.0.0.0
 -}
@@ -242,10 +226,9 @@ planSelect :: Select row -> Plan scope () [row]
 planSelect select =
   planOperation (Op.findSelect select)
 
-{- |
-  'askParam' allows the input parameter for the plan to be retrieved as the
-  result of the plan. Together with 'bind' you can use this to get access to
-  the input parameter as a 'Planned' value.
+{- | 'askParam' allows the input parameter for the plan to be retrieved as the result of the
+  plan. Together with 'bind' you can use this to get access to the input parameter as a 'Planned'
+  value.
 
 @since 1.0.0.0
 -}
@@ -253,10 +236,8 @@ askParam :: Plan scope param param
 askParam =
   planOperation Op.askParam
 
-{- |
-  'findMaybeOne' constructs a 'Plan' that will find at most one row from
-  the given table where the plan's input value matches the given database
-  field.
+{- | 'findMaybeOne' constructs a 'Plan' that will find at most one row from the given table where the
+  plan's input value matches the given database field.
 
 @since 1.0.0.0
 -}
@@ -268,9 +249,8 @@ findMaybeOne ::
 findMaybeOne tableDef fieldDef =
   planOperation (Op.findOne tableDef (Op.byField fieldDef))
 
-{- |
-  Construct a plan that will find at most one row from the given table where
-  the plan's input value matches the fields in the provided 'Marshall.SqlMarshaller'.
+{- | Construct a plan that will find at most one row from the given table where the plan's input value
+  matches the fields in the provided 'Marshall.SqlMarshaller'.
 
 @since 1.1.0.0
 -}
@@ -282,10 +262,8 @@ findMaybeOneByMarshaller ::
 findMaybeOneByMarshaller tableDef paramMarshaller =
   planOperation (Op.findOne tableDef (Op.byMarshaller paramMarshaller))
 
-{- |
-  'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a
-  'Expr.BooleanExpr' to be specified to restrict which rows are matched by the
-  database query.
+{- | 'findMaybeOneWhere' is similar to 'findMaybeOne', but allows a 'Expr.BooleanExpr' to be specified
+  to restrict which rows are matched by the database query.
 
 @since 1.0.0.0
 -}
@@ -298,9 +276,8 @@ findMaybeOneWhere ::
 findMaybeOneWhere tableDef fieldDef cond =
   planOperation (Op.findOneWhere tableDef (Op.byField fieldDef) cond)
 
-{- |
-  Similar to 'findMaybeOneByMarshaller', but allows a 'Expr.BooleanExpr' to be
-  specified to restrict which rows are matched by the database query.
+{- | Similar to 'findMaybeOneByMarshaller', but allows a 'Expr.BooleanExpr' to be specified to
+  restrict which rows are matched by the database query.
 
 @since 1.1.0.0
 -}
@@ -313,12 +290,10 @@ findMaybeOneWhereByMarshaller ::
 findMaybeOneWhereByMarshaller tableDef paramMarshaller cond =
   planOperation (Op.findOneWhere tableDef (Op.byMarshaller paramMarshaller) cond)
 
-{- |
-  'findOneShowVia' is similar to 'findMaybeOne', but it expects that there will
-  always be a row found matching the plan's input value. If no row is found, an
-  'Op.AssertionFailed' exception will be thrown. This is a useful convenience
-  when looking up foreign-key associations that are expected to be enforced by
-  the database itself.
+{- | 'findOneShowVia' is similar to 'findMaybeOne', but it expects that there will always be a row
+  found matching the plan's input value. If no row is found, an 'Op.AssertionFailed' exception will
+  be thrown. This is a useful convenience when looking up foreign-key associations that are expected
+  to be enforced by the database itself.
 
 @since 1.0.0.0
 -}
@@ -333,12 +308,10 @@ findOneShowVia showParam tableDef fieldDef =
     (assertFound showParam tableDef fieldDef)
     (findMaybeOne tableDef fieldDef)
 
-{- |
-  Similar to 'findMaybeOneByMarshaller', but expects that there will always be
-  a row found matching the plan's input value. If no row is found, an
-  'Op.AssertionFailed' exception will be thrown. This is a useful convenience
-  when looking up foreign-key associations that are expected to be enforced by
-  the database itself.
+{- | Similar to 'findMaybeOneByMarshaller', but expects that there will always be a row found matching
+  the plan's input value. If no row is found, an 'Op.AssertionFailed' exception will be thrown. This
+  is a useful convenience when looking up foreign-key associations that are expected to be enforced
+  by the database itself.
 
 @since 1.1.0.0
 -}
@@ -353,10 +326,8 @@ findOneShowViaByMarshaller showParam tableDef paramMarshaller =
     (assertFoundByMarshaller showParam tableDef)
     (findMaybeOneByMarshaller tableDef paramMarshaller)
 
-{- |
-  'findOne' is an alias to 'findOneShowVia' that uses the 'Show' instance of
-  @fieldValue@ when producing a failure message in the event that the entity
-  cannot be found.
+{- | 'findOne' is an alias to 'findOneShowVia' that uses the 'Show' instance of @fieldValue@ when
+  producing a failure message in the event that the entity cannot be found.
 
 @since 1.0.0.0
 -}
@@ -367,10 +338,8 @@ findOne ::
   Plan scope fieldValue readEntity
 findOne = findOneShowVia show
 
-{- |
-  An alias for 'findOneShowViaByMarshaller' that uses the 'Show' instance of
-  @param@ when producing a failure message in the event that the entity cannot
-  be found.
+{- | An alias for 'findOneShowViaByMarshaller' that uses the 'Show' instance of @param@ when producing
+  a failure message in the event that the entity cannot be found.
 
 @since 1.1.0.0
 -}
@@ -381,10 +350,8 @@ findOneByMarshaller ::
   Plan scope param readEntity
 findOneByMarshaller = findOneShowViaByMarshaller show
 
-{- |
-  'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a
-  'Expr.BooleanExpr' to be specified to restrict which rows are matched by the
-  database query.
+{- | 'findOneWhereShowVia' is similar to 'findOneShowVia', but allows a 'Expr.BooleanExpr' to be
+  specified to restrict which rows are matched by the database query.
 
 @since 1.0.0.0
 -}
@@ -400,9 +367,8 @@ findOneWhereShowVia showParam tableDef fieldDef cond =
     (assertFound showParam tableDef fieldDef)
     (findMaybeOneWhere tableDef fieldDef cond)
 
-{- |
-  Similar to 'findOneShowViaByMarshaller', but allows a 'Expr.BooleanExpr' to be
-  specified to restrict which rows are matched by the database query.
+{- | Similar to 'findOneShowViaByMarshaller', but allows a 'Expr.BooleanExpr' to be specified to
+  restrict which rows are matched by the database query.
 
 @since 1.1.0.0
 -}
@@ -418,10 +384,8 @@ findOneWhereShowViaByMarshaller showParam tableDef paramMarshaller cond =
     (assertFoundByMarshaller showParam tableDef)
     (findMaybeOneWhereByMarshaller tableDef paramMarshaller cond)
 
-{- |
-  'findOneWhere' is an alias to 'findOneWhereShowVia' that uses the 'Show'
-  instance of @fieldValue@ when producing a failure message in the event that
-  the entity cannot be found.
+{- | 'findOneWhere' is an alias to 'findOneWhereShowVia' that uses the 'Show' instance of @fieldValue@
+  when producing a failure message in the event that the entity cannot be found.
 
 @since 1.0.0.0
 -}
@@ -433,10 +397,8 @@ findOneWhere ::
   Plan scope fieldValue readEntity
 findOneWhere = findOneWhereShowVia show
 
-{- |
-  An alias for 'findOneWhereShowViaByMarshaller' that uses the 'Show' instance
-  of @param@ when producing a failure message in the event that the entity
-  cannot be found.
+{- | An alias for 'findOneWhereShowViaByMarshaller' that uses the 'Show' instance of @param@ when
+  producing a failure message in the event that the entity cannot be found.
 
 @since 1.1.0.0
 -}
@@ -448,9 +410,7 @@ findOneWhereByMarshaller ::
   Plan scope param readEntity
 findOneWhereByMarshaller = findOneWhereShowViaByMarshaller show
 
-{- |
-  'assertFound' is an internal helper that checks that row was found where
-  one was expected.
+{- | 'assertFound' is an internal helper that checks that row was found where one was expected.
 
 @since 1.0.0.0
 -}
@@ -476,9 +436,7 @@ assertFound showParam tableDef fieldDef param maybeRecord =
           , showParam param
           ]
 
-{- |
-  An internal helper that checks that a row was found and produces
-  an error message otherwise.
+{- | An internal helper that checks that a row was found and produces an error message otherwise.
 
 @since 1.1.0.0
 -}
@@ -501,9 +459,8 @@ assertFoundByMarshaller showParam tableDef param maybeRecord =
           , showParam param
           ]
 
-{- |
-  'findAll' constructs a 'Plan' that will find all the rows from the given
-  table where the plan's input value matches the given database field.
+{- | 'findAll' constructs a 'Plan' that will find all the rows from the given table where the plan's
+  input value matches the given database field.
 
 @since 1.0.0.0
 -}
@@ -515,9 +472,8 @@ findAll ::
 findAll tableDef fieldDef =
   planOperation (Op.findAll tableDef (Op.byField fieldDef))
 
-{- |
-  Construct a 'Plan' that will find all the rows from the given table where
-  the plan's input value matches the fields in the provided 'Marshall.SqlMarshaller'.
+{- | Construct a 'Plan' that will find all the rows from the given table where the plan's input value
+  matches the fields in the provided 'Marshall.SqlMarshaller'.
 
 @since 1.1.0.0
 -}
@@ -529,9 +485,8 @@ findAllByMarshaller ::
 findAllByMarshaller tableDef paramMarshaller =
   planOperation (Op.findAll tableDef (Op.byMarshaller paramMarshaller))
 
-{- |
-  'findAllWhere' is similar to 'findAll', but allows a 'Expr.BooleanExpr' to be
-  specified to restrict which rows are matched by the database query.
+{- | 'findAllWhere' is similar to 'findAll', but allows a 'Expr.BooleanExpr' to be specified to
+  restrict which rows are matched by the database query.
 
 @since 1.0.0.0
 -}
@@ -544,9 +499,8 @@ findAllWhere ::
 findAllWhere tableDef fieldDef cond =
   planOperation (Op.findAllWhere tableDef (Op.byField fieldDef) cond)
 
-{- |
-  Similar to 'findAllByMarshaller', but allows a 'Expr.BooleanExpr' to be
-  specified to restrict which rows are matched by the database query.
+{- | Similar to 'findAllByMarshaller', but allows a 'Expr.BooleanExpr' to be specified to restrict
+  which rows are matched by the database query.
 
 @since 1.1.0.0
 -}
@@ -559,12 +513,10 @@ findAllWhereByMarshaller ::
 findAllWhereByMarshaller tableDef paramMarshaller cond =
   planOperation (Op.findAllWhere tableDef (Op.byMarshaller paramMarshaller) cond)
 
-{- |
-  'planMany' adapts a plan that takes a single input parameter to work on
-  multiple input parameters. When the new plan is executed, each query will
-  execute in the same basic order, but with adjusted conditions to find all the
-  rows for all inputs at once rather than running the planned queries once for
-  each input.
+{- | 'planMany' adapts a plan that takes a single input parameter to work on multiple input
+  parameters. When the new plan is executed, each query will execute in the same basic order, but
+  with adjusted conditions to find all the rows for all inputs at once rather than running the
+  planned queries once for each input.
 
 @since 1.0.0.0
 -}
@@ -574,19 +526,15 @@ planMany ::
 planMany =
   PlanMany
 
-{- |
-  'planList' lifts a plan so both its param and result become lists. This saves
-  you from having to fmap in 'Many.elems' when all you want back from a 'Many'
-  is the list of results inside it.
+{- | 'planList' lifts a plan so both its param and result become lists. This saves you from having to
+  fmap in 'Many.elems' when all you want back from a 'Many' is the list of results inside it.
 
-  There will always be the same number of elements in the @[result]@ list as
-  there are in the @[param]@ list, even if there are duplicate values in the
-  input parameters. This may be counter-intuitive in the trivial case where a
-  plan that queries a single table is passed to 'planList' but cannot be
-  avoided due to more complicated situations where the original plan executes
-  queries against multiple tables. When a plan that queries multiple tables is
-  passed, the query results must be correlated based on the input parameters to
-  build each @result@ value.
+  There will always be the same number of elements in the @[result]@ list as there are in the
+  @[param]@ list, even if there are duplicate values in the input parameters. This may be
+  counter-intuitive in the trivial case where a plan that queries a single table is passed to
+  'planList' but cannot be avoided due to more complicated situations where the original plan
+  executes queries against multiple tables. When a plan that queries multiple tables is passed, the
+  query results must be correlated based on the input parameters to build each @result@ value.
 
 @since 1.0.0.0
 -}
@@ -596,8 +544,7 @@ planList ::
 planList plan =
   Many.elems <$> planMany plan
 
-{- |
-  Similar to 'planList', but generalized to work with any 'Traversable'.
+{- | Similar to 'planList', but generalized to work with any 'Traversable'.
 
 @since 1.1.0.0
 -}
@@ -614,12 +561,10 @@ planTraversable plan =
   in
     assert lookupAll $ chain (fmap Foldable.toList askParam) (planMany plan)
 
-{- |
-  'focusParam' builds a plan from a function and an existing plan, taking the
-  result of that function as input. This is especially useful when there is
-  some structure, and a plan that only needs a part of that structure as input.
-  The function argument can access part of the structure for the plan argument
-  to use, so the final returned plan can take the entire structure as input.
+{- | 'focusParam' builds a plan from a function and an existing plan, taking the result of that
+  function as input. This is especially useful when there is some structure, and a plan that only
+  needs a part of that structure as input.  The function argument can access part of the structure
+  for the plan argument to use, so the final returned plan can take the entire structure as input.
 
 @since 1.0.0.0
 -}
@@ -630,13 +575,11 @@ focusParam ::
 focusParam focuser =
   chain (fmap focuser askParam)
 
-{- |
-  'planEither' lets you construct a plan that branches by executing a different
-  plan for the 'Left' and 'Right' sides of an 'Either' value. When used with a
-  single input parameter, only one of the two plans will be used, based on the
-  input parameter. When used on multiple input parameters, each of the two
-  plans will be executed only once with all the 'Left' and 'Right' values
-  provided as input parameters respectively.
+{- | 'planEither' lets you construct a plan that branches by executing a different plan for the 'Left'
+  and 'Right' sides of an 'Either' value. When used with a single input parameter, only one of the
+  two plans will be used, based on the input parameter. When used on multiple input parameters, each
+  of the two plans will be executed only once with all the 'Left' and 'Right' values provided as
+  input parameters respectively.
 
 @since 1.0.0.0
 -}
@@ -647,10 +590,9 @@ planEither ::
 planEither =
   PlanEither
 
-{- |
-  'planMaybe' lifts a plan so both its param and result become 'Maybe's. This is
-  useful when modifying an existing plan to deal with optionality. Writing just
-  one plan can then easily produce both the required and optional versions.
+{- | 'planMaybe' lifts a plan so both its param and result become 'Maybe's. This is useful when
+  modifying an existing plan to deal with optionality. Writing just one plan can then easily produce
+  both the required and optional versions.
 
 @since 1.0.0.0
 -}
@@ -659,21 +601,17 @@ planMaybe plan =
   focusParam (maybe (Left ()) Right) $
     either id id <$> planEither (pure Nothing) (Just <$> plan)
 
-{- |
-  'bind' gives access to the results of a plan to use as input values to future
-  plans. The plan result is given the input parameter to the provided function,
-  which must produce the remaining 'Plan' to be executed. The value will be
-  wrapped in the 'Planned' type, which may represent either a result or
-  multiple results, depending on whether one plan is currently being executed
-  with one and multiple input parameters. This ensures that the caller produces
-  only a single remaining 'Plan' to be used for all inputs when there are
-  multiple to eliminate the need to possibly run different queries for
-  different inputs (which would an introduce N+1 query execution).
+{- | 'bind' gives access to the results of a plan to use as input values to future plans. The plan
+  result is given the input parameter to the provided function, which must produce the remaining
+  'Plan' to be executed. The value will be wrapped in the 'Planned' type, which may represent either
+  a result or multiple results, depending on whether one plan is currently being executed with one
+  and multiple input parameters. This ensures that the caller produces only a single remaining
+  'Plan' to be used for all inputs when there are multiple to eliminate the need to possibly run
+  different queries for different inputs (which would an introduce N+1 query execution).
 
-  The 'Planned' value (or values) provided by 'bind' have actually been
-  retrieved from the database, so the value can be used multiple times when
-  constructing the remaining 'Plan' without fear of causing the query to run
-  multiple times.
+  The 'Planned' value (or values) provided by 'bind' have actually been retrieved from the database,
+  so the value can be used multiple times when constructing the remaining 'Plan' without fear of
+  causing the query to run multiple times.
 
   Also see 'use' for how to lift a 'Planned' value back into a 'Plan'.
 
@@ -686,9 +624,8 @@ bind ::
 bind =
   Bind
 
-{- |
-  'use' constructs a 'Plan' that always produces the 'Planned' value
-  as its result, regardless of the parameter given as input to the plan.
+{- | 'use' constructs a 'Plan' that always produces the 'Planned' value as its result, regardless of
+  the parameter given as input to the plan.
 
 @since 1.0.0.0
 -}
@@ -696,10 +633,8 @@ use :: Planned scope param a -> Plan scope param a
 use =
   Use
 
-{- |
-  'using' uses a 'Planned' value in the input to another 'Plan'. The
-  resulting plan will ignore its input and use the 'Planned' value as
-  the input to produce its result instead.
+{- | 'using' uses a 'Planned' value in the input to another 'Plan'. The resulting plan will ignore its
+  input and use the 'Planned' value as the input to produce its result instead.
 
 @since 1.0.0.0
 -}
@@ -710,10 +645,8 @@ using ::
 using planned =
   chain (use planned)
 
-{- |
-  'apply' applies a function produced by a plan to the value produced
-  by another plan. This is usually used via the '<*>' operator through
-  the 'Applicative' instance for 'Plan'.
+{- | 'apply' applies a function produced by a plan to the value produced by another plan. This is
+  usually used via the '<*>' operator through the 'Applicative' instance for 'Plan'.
 
 @since 1.0.0.0
 -}
@@ -724,9 +657,8 @@ apply ::
 apply =
   Apply
 
-{- |
-  'chain' connects the output of one plan to the input of another to form a
-  larger plan that will execute the first followed by the second.
+{- | 'chain' connects the output of one plan to the input of another to form a larger plan that will
+  execute the first followed by the second.
 
 @since 1.0.0.0
 -}
@@ -737,10 +669,8 @@ chain ::
 chain =
   Chain
 
-{- |
-  'chainMaybe' connects two plans that both yield Maybes.
-  If the first plan yields no result, the second is skipped.
-  See also 'chain'.
+{- | 'chainMaybe' connects two plans that both yield Maybes.  If the first plan yields no result, the
+  second is skipped.  See also 'chain'.
 
 @since 1.0.0.0
 -}
@@ -758,12 +688,10 @@ chainMaybe aPlan bPlan =
   in
     Chain aPlan (optionalInput bPlan)
 
-{- |
-  'assert' allows you to make an assertion about a plan's result that will
-  throw an 'Op.AssertionFailed' exception during execution if it proves to be
-  false. The first parameter is the assertion function, which should return
-  either an error message to be given in the exception or the value to be used
-  as the plan's result.
+{- | 'assert' allows you to make an assertion about a plan's result that will throw an
+  'Op.AssertionFailed' exception during execution if it proves to be false. The first parameter is
+  the assertion function, which should return either an error message to be given in the exception
+  or the value to be used as the plan's result.
 
 @since 1.0.0.0
 -}
@@ -780,14 +708,12 @@ assert assertion aPlan =
   in
     chain eitherPlan (PlanOp Op.assertRight)
 
-{- |
-  'execute' accepts the input parameter (or parameters) expected by a 'Plan'
-  and runs the plan to completion, either throwing an 'Op.AssertionFailed'
-  exception in the monad @m@ or producing the expected result.
+{- | 'execute' accepts the input parameter (or parameters) expected by a 'Plan' and runs the plan to
+  completion, either throwing an 'Op.AssertionFailed' exception in the monad @m@ or producing the
+  expected result.
 
-  If you have a plan that takes one input and want to provide a list of
-  input, use 'planMany' to adapt it to a multple-input plan before calling
-  'execute'.
+  If you have a plan that takes one input and want to provide a list of input, use 'planMany' to
+  adapt it to a multple-input plan before calling 'execute'.
 
 @since 1.0.0.0
 -}
@@ -799,9 +725,8 @@ execute ::
 execute =
   executeOne
 
-{- |
-  'executeOne' is an internal helper that executes a 'Plan' with a concrete
-  @scope@ type to ensure all 'Planned' values are built with 'PlannedOne'.
+{- | 'executeOne' is an internal helper that executes a 'Plan' with a concrete @scope@ type to ensure
+  all 'Planned' values are built with 'PlannedOne'.
 
 @since 1.0.0.0
 -}
@@ -843,9 +768,8 @@ executeOne plan param =
       b <- executeOne planAB param
       executeOne planBC b
 
-{- |
-  'executeMany' is an internal helper that executes a 'Plan' with a concrete
-  @scope@ type to ensure all 'Planned' values are built with 'PlannedMany'.
+{- | 'executeMany' is an internal helper that executes a 'Plan' with a concrete @scope@ type to ensure
+  all 'Planned' values are built with 'PlannedMany'.
 
 @since 1.0.0.0
 -}
@@ -914,9 +838,8 @@ executeMany plan params =
       cs <- executeMany planBC (Many.elems bs)
       pure $ Many.compose cs bs
 
-{- |
-  'Explain' is a tag type used as the @scope@ variable when explaining a 'Plan'
-  via the 'explain' function.
+{- | 'Explain' is a tag type used as the @scope@ variable when explaining a 'Plan' via the 'explain'
+  function.
 
 @since 1.0.0.0
 -}
@@ -924,11 +847,9 @@ data Explain
   = ExplainOne
   | ExplainMany
 
-{- |
-  'explain' produces a textual description of the steps outlined by
-  a 'Plan' -- in most cases example SQL queries. If you want to see
-  the explanation of how the plan will run with multiple input parameters,
-  you can use 'planMany' to adapt it before calling 'explain'.
+{- | 'explain' produces a textual description of the steps outlined by a 'Plan' -- in most cases
+  example SQL queries. If you want to see the explanation of how the plan will run with multiple
+  input parameters, you can use 'planMany' to adapt it before calling 'explain'.
 
 @since 1.0.0.0
 -}
@@ -937,10 +858,8 @@ explain plan =
   Exp.explanationSteps $
     explainPlan ExplainOne plan
 
-{- |
-  'explainPlan' is an internal helper to executes a plan with the
-  @scope@ type fixed to 'Explain' to ensure that all 'Planned'
-  values are constructed with the 'PlannedExplain' constructor.
+{- | 'explainPlan' is an internal helper to executes a plan with the @scope@ type fixed to 'Explain'
+  to ensure that all 'Planned' values are constructed with the 'PlannedExplain' constructor.
 
 @since 1.0.0.0
 -}

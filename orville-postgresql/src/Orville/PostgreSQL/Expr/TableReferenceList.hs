@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -19,9 +19,7 @@ where
 import Orville.PostgreSQL.Expr.Name (AliasExpr, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
-{- |
-Type to represent the table references in the @FROM@ clause of a @SELECT
-statement. E.G. just the
+{- | Type to represent the table references in the @FROM@ clause of a @SELECT statement. E.G. just the
 
 > foo, bar
 
@@ -39,9 +37,8 @@ newtype TableReferenceList
   = TableReferenceList RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-{- |
-  Constructs a 'TableReferenceList' from a list of 'TableReference' values.
-  The table references will be separated by commas in the resulting list
+{- | Constructs a 'TableReferenceList' from a list of 'TableReference' values. The table references
+  will be separated by commas in the resulting list
 
 @since 1.1.0.0
 -}
@@ -49,9 +46,8 @@ tableReferenceList :: [TableReference] -> TableReferenceList
 tableReferenceList =
   TableReferenceList . RawSql.intercalate RawSql.commaSpace
 
-{- |
-  A convenience function for constructing a 'TableReferenceList' that references
-  just a single table with no alias.
+{- | A convenience function for constructing a 'TableReferenceList' that references just a single
+  table with no alias.
 
   See also 'tableReferenceList' and 'tableNameReference'.
 
@@ -61,9 +57,8 @@ singleTableReferenceList :: QualifiedOrUnqualified TableName -> TableReferenceLi
 singleTableReferenceList name =
   tableReferenceList [tableNameReference name Nothing]
 
-{- |
-Type to represent a single table references in the @FROM@ clause of a @SELECT
-statement. E.G. just the
+{- | Type to represent a single table references in the @FROM@ clause of a @SELECT@
+   statement. E.G. just the
 
 > foo
 
@@ -81,11 +76,9 @@ newtype TableReference
   = TableReference RawSql.RawSql
   deriving (RawSql.SqlExpression)
 
-{- |
-  Constructs a 'TableReference' for the specified table name.
-  name.
+{- | Constructs a 'TableReference' for the specified table name.
 
-  @since 1.1.0.0
+@since 1.1.0.0
 -}
 tableNameReference ::
   QualifiedOrUnqualified TableName ->

@@ -3,7 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2024
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -190,8 +190,8 @@ mkMigrationPlan steps =
         $ steps
   in
     MigrationPlan
-      { i_transactionalSteps = map migrationStep transactionalSteps
-      , i_concurrentIndexSteps = map migrationStep concurrentIndexSteps
+      { i_transactionalSteps = fmap migrationStep transactionalSteps
+      , i_concurrentIndexSteps = fmap migrationStep concurrentIndexSteps
       }
 
 {- | A single SQL statement that will be executed in order to migrate the database
@@ -849,7 +849,7 @@ mkConstraintSteps tableName actions =
   in
     Map.foldrWithKey addStep []
       . Map.fromListWith (<>)
-      . map mkMapEntry
+      . fmap mkMapEntry
       $ actions
 
 {- | If there are any alter table actions for adding or removing columns, creates a migration
@@ -1119,8 +1119,9 @@ pgConstraintMigrationKey constraintDesc =
     constraint =
       PgCatalog.constraintRecord constraintDesc
 
+    pgAttributeNamesToFieldNames :: [PgCatalog.PgAttribute] -> [Orville.FieldName]
     pgAttributeNamesToFieldNames =
-      map (Orville.stringToFieldName . PgCatalog.attributeNameToString . PgCatalog.pgAttributeName)
+      fmap (Orville.stringToFieldName . PgCatalog.attributeNameToString . PgCatalog.pgAttributeName)
 
     foreignRelationTableId :: PgCatalog.ForeignRelationDescription -> Orville.TableIdentifier
     foreignRelationTableId foreignRelationDesc =
