@@ -73,8 +73,18 @@ class
   implementation of the methods below for monads that implement
   'Control.Monad.IO.Unlift.MonadUnliftIO'.
 
-  Note that 'm' MUST NOT be short-circuiting, like e.g. MaybeT and ExceptT.
-  Transactions won't work right if it is.
+  Note: Orville assumes that execution of any monadic operations will continue
+  normally other than when an exception is thrown in the IO monad. The monad
+  implementing 'MonadOrvilleControl' allows for the monad execution to
+  terminate in other ways (such as a 'Nothing' in the case of 'MaybeT' or
+  'Left' in the case of 'ExceptT'), it will likely interfere with Orville's
+  'withTransaction' function. In particular, if the action passed to
+  'withTransaction' terminates early in any way other than an exception it will
+  prevent the transaction from being resolved before the connection is returned
+  to the connection pool. When that connection is taken from the pool in the
+  future, it will already have the open and unfinished transaction on it.
+  Another call to 'withTransaction' using that connection will raise an
+  exception when it detects that there is already an open transaction.
 
 @since 1.0.0.0
 -}
