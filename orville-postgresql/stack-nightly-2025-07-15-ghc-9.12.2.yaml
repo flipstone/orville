@@ -1,5 +1,5 @@
 ---
-resolver: nightly-2024-12-17
+resolver: nightly-2025-07-15
 packages:
   - .
 allow-different-user: true
