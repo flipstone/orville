@@ -30,6 +30,7 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
+import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 
 import qualified Test.Entities.Foo as Foo
 import Test.Orphans ()
@@ -861,10 +862,21 @@ prop_addsAndRemovesMixedIndexes =
         Orville.addTableIndexes originalIndexes $
           mkIntListTable "migration_test" originalColumns
 
+      originalTableDefWithSchema =
+        TableDefinition.setTableSchema "orville_migration_schema" $
+          Orville.addTableIndexes originalIndexes $
+            mkIntListTable "migration_test" originalColumns
+
       newTableDef =
         Orville.addTableIndexes newIndexes $
           Orville.dropColumns columnsToDrop $
             mkIntListTable "migration_test" newColumns
+
+      newTableDefWithSchema =
+        TableDefinition.setTableSchema "orville_migration_schema" $
+          Orville.addTableIndexes newIndexes $
+            Orville.dropColumns columnsToDrop $
+              mkIntListTable "migration_test" newColumns
 
     HH.cover 5 (String.fromString "Adding Indexes") (not $ null (newTestIndexes \\ originalTestIndexes))
     HH.cover 5 (String.fromString "Dropping Indexes") (not $ null (originalTestIndexes \\ newTestIndexes))
@@ -879,9 +891,11 @@ prop_addsAndRemovesMixedIndexes =
     firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP SCHEMA IF EXISTS orville_migration_schema CASCADE"
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE SCHEMA orville_migration_schema"
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
-          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTableDef]
-          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTableDef, AutoMigration.SchemaTable originalTableDefWithSchema]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef, AutoMigration.SchemaTable newTableDefWithSchema]
 
     HH.annotate ("First time migration steps: " <> show (migrationPlanStepStrings firstTimePlan))
 
@@ -890,19 +904,33 @@ prop_addsAndRemovesMixedIndexes =
       (PgAssert.assertIndexExists originalTableDesc <$> testIndexUniqueness <*> testIndexColumns)
       originalTestIndexes
 
+    originalTableWithSchemaDesc <- PgAssert.assertTableExistsInSchema pool "orville_migration_schema" "migration_test"
+    Fold.traverse_
+      (PgAssert.assertIndexExists originalTableWithSchemaDesc <$> testIndexUniqueness <*> testIndexColumns)
+      originalTestIndexes
+
     secondTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
           AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
-          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+          AutoMigration.generateMigrationPlan
+            AutoMigration.defaultOptions
+            [AutoMigration.SchemaTable newTableDef, AutoMigration.SchemaTable newTableDefWithSchema]
 
     migrationPlanStepStrings secondTimePlan === []
+
     newTableDesc <- PgAssert.assertTableExists pool "migration_test"
+    newTableWithSchemaDesc <- PgAssert.assertTableExistsInSchema pool "orville_migration_schema" "migration_test"
 
     Fold.traverse_
       (PgAssert.assertIndexExists newTableDesc <$> testIndexUniqueness <*> testIndexColumns)
       newTestIndexes
     length (PgCatalog.relationIndexes newTableDesc) === length (List.nub newTestIndexes)
+
+    Fold.traverse_
+      (PgAssert.assertIndexExists newTableWithSchemaDesc <$> testIndexUniqueness <*> testIndexColumns)
+      newTestIndexes
+    length (PgCatalog.relationIndexes newTableWithSchemaDesc) === length (List.nub newTestIndexes)
 
 prop_createsMissingSequences :: Property.NamedDBProperty
 prop_createsMissingSequences =

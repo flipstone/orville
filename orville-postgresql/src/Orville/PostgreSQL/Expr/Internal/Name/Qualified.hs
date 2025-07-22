@@ -12,6 +12,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   , qualifyTable
   , qualifySequence
   , qualifyFunction
+  , qualifyIndex
   , qualifyColumn
   , aliasQualifyColumn
   , QualifiedOrUnqualified
@@ -24,6 +25,7 @@ import Orville.PostgreSQL.Expr.Internal.Name.Alias (AliasExpr)
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
 import Orville.PostgreSQL.Expr.Internal.Name.FunctionName (FunctionName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
+import Orville.PostgreSQL.Expr.Internal.Name.IndexName (IndexName)
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName (SchemaName)
 import Orville.PostgreSQL.Expr.Internal.Name.SequenceName (SequenceName)
 import Orville.PostgreSQL.Expr.Internal.Name.TableName (TableName)
@@ -125,6 +127,15 @@ qualifyFunction ::
   FunctionName ->
   Qualified FunctionName
 qualifyFunction = unsafeSchemaQualify
+
+{- | Qualifies an 'IndexName' with a 'SchemaName'.
+@since 1.1.0.0
+-}
+qualifyIndex ::
+  SchemaName ->
+  IndexName ->
+  Qualified IndexName
+qualifyIndex = unsafeSchemaQualify
 
 {- | Qualifies a 'ColumnName' with a 'TableName' and, optionally, a 'SchemaName'.
 This should be used to refer to the column in SQL queries where a qualified
