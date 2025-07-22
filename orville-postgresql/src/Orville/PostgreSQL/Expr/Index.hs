@@ -195,7 +195,7 @@ newtype DropIndexExpr
 
 @since 1.0.0.0
 -}
-dropIndexExpr :: IndexName -> DropIndexExpr
+dropIndexExpr :: QualifiedOrUnqualified IndexName -> DropIndexExpr
 dropIndexExpr indexName =
   DropIndexExpr $
     RawSql.fromString "DROP INDEX " <> RawSql.toRawSql indexName

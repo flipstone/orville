@@ -60,6 +60,7 @@ import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
+import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- | A 'SchemaItem' represents a single item in a database schema such as a table,
   index or constraint. The constructor functions below can be used to create
@@ -788,7 +789,7 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
 
     dropIndexSteps =
       concatMap
-        (mkDropIndexSteps indexesToKeep systemIndexOids)
+        (mkDropIndexSteps indexesToKeep systemIndexOids . TableIdentifier.tableIdSchemaName $ Orville.tableIdentifier tableDef)
         (PgCatalog.relationIndexes relationDesc)
 
     existingTriggers =
@@ -1191,9 +1192,10 @@ mkAddIndexSteps existingIndexes tableName indexDef =
 mkDropIndexSteps ::
   Set.Set IndexDefinition.IndexMigrationKey ->
   Set.Set LibPQ.Oid ->
+  Maybe Expr.SchemaName ->
   PgCatalog.IndexDescription ->
   [MigrationStepWithType]
-mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
+mkDropIndexSteps indexesToKeep systemIndexOids mSchema indexDesc =
   case pgIndexMigrationKeys indexDesc of
     [] ->
       []
@@ -1208,13 +1210,17 @@ mkDropIndexSteps indexesToKeep systemIndexOids indexDesc =
             . PgCatalog.pgClassRelationName
             $ pgClass
 
+        qualifiedIndexName = case mSchema of
+          Just schema -> Expr.untrackQualified $ Expr.qualifyIndex schema indexName
+          Nothing -> Expr.unqualified indexName
+
         indexOid =
           PgCatalog.pgClassOid pgClass
       in
         if any (flip Set.member indexesToKeep) indexKeys
           || Set.member indexOid systemIndexOids
           then []
-          else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr indexName)]
+          else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr qualifiedIndexName)]
 
 {- | Builds migration steps to create a trigger if it does not exist.
 
