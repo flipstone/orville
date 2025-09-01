@@ -70,6 +70,8 @@ module Orville.PostgreSQL
 
     -- * Opening transactions and savepoints
   , Transaction.withTransaction
+  , Transaction.withTransactionInstruction
+  , Transaction.TransactionInstruction (Commit, Rollback)
   , Transaction.inWithTransaction
   , Transaction.InWithTransaction (InOutermostTransaction, InSavepointTransaction)
 

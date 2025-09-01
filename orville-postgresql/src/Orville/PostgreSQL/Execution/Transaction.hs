@@ -10,6 +10,8 @@ to ensure some Haskell action occurs within a database transaction.
 -}
 module Orville.PostgreSQL.Execution.Transaction
   ( withTransaction
+  , withTransactionInstruction
+  , TransactionInstruction (Commit, Rollback)
   , inWithTransaction
   , InWithTransaction (InOutermostTransaction, InSavepointTransaction)
   , UnexpectedTransactionStatusError (..)
@@ -34,11 +36,14 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 {- | Performs an action in an Orville monad within a database transaction. The transaction
   is begun before the action is called. If the action completes without raising an exception,
   the transaction will be committed. If the action raises an exception, the transaction will
-  rollback.
+  rollback. This is equivalent to calling 'withTransactionInstruction' and always returning
+  'Commit' as the 'TransactionInstruction'.
 
   This function is safe to call from within another transaction. When called this way, the
   transaction will establish a new savepoint at the beginning of the nested transaction and
   either release the savepoint or rollback to it as appropriate.
+
+  See also: 'withTransactionInstruction'
 
   Note: Exceptions are handled using the implementations of 'Monad.catch' and
   'Monad.mask' provided by the 'Monad.MonadOrvilleControl' instance for @m@.
@@ -46,7 +51,36 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 @since 1.0.0.0
 -}
 withTransaction :: Monad.MonadOrville m => m a -> m a
-withTransaction action =
+withTransaction =
+  withTransactionInstruction . fmap (\a -> (a, Commit))
+
+{- |
+Used with 'withTransactionInstruction' to indicate whether the transaction should be
+committed or rolled back.
+
+@since 1.1.0.0
+-}
+data TransactionInstruction = Commit | Rollback
+
+{- | Performs an action in an Orville monad within a database transaction. The transaction
+  is begun before the action is called. If the action completes without raising an exception,
+  the transaction will be it will either be commited or rolled back, depending on the
+  'TransactionInstruction' returned by the action.. If the action raises an exception, the
+  transaction will rollback.
+
+  This function is safe to call from within another transaction. When called this way, the
+  transaction will establish a new savepoint at the beginning of the nested transaction and
+  either release the savepoint or rollback to it as appropriate.
+
+  See also: 'withTransaction'
+
+  Note: Exceptions are handled using the implementations of 'Monad.catch' and
+  'Monad.mask' provided by the 'Monad.MonadOrvilleControl' instance for @m@.
+
+@since 1.1.0.0
+-}
+withTransactionInstruction :: Monad.MonadOrville m => m (a, TransactionInstruction) -> m a
+withTransactionInstruction action =
   MonadOrville.withConnectedState $ \connectedState -> do
     let
       conn = OrvilleState.connectedConnection connectedState
@@ -107,12 +141,12 @@ withTransaction action =
           LibPQ.TransUnknown ->
             throwIO transactionError
 
-      doAction () =
+      doAction () = do
         Monad.localOrvilleState
           (OrvilleState.connectState innerConnectedState)
           action
 
-      finishTransaction :: Bracket.BracketResult -> IO ()
+      finishTransaction :: Bracket.BracketResult (a, TransactionInstruction) -> IO ()
       finishTransaction result = uninterruptibleMask $ \restore -> do
         status <- Connection.transactionStatusOrThrow conn
         let
@@ -122,17 +156,20 @@ withTransaction action =
             executeTransactionSql (transactionEventSql state rollbackEvent)
             restore $ callback rollbackEvent
           transactionError = UnexpectedTransactionStatusError status $ case result of
-            Bracket.BracketSuccess -> successEvent
+            Bracket.BracketSuccess (_, Commit) -> successEvent
+            Bracket.BracketSuccess (_, Rollback) -> rollbackEvent
             Bracket.BracketError -> rollbackEvent
         case status of
           LibPQ.TransInTrans -> case result of
-            Bracket.BracketSuccess -> do
+            Bracket.BracketSuccess (_, Commit) -> do
               eSuccess <- try $ executeTransactionSql (transactionEventSql state successEvent)
               case eSuccess of
                 Right () ->
                   restore $ callback successEvent
                 Left ex -> do
                   restore (callback rollbackEvent) `finally` throwIO (ex :: Connection.SqlExecutionError)
+            Bracket.BracketSuccess (_, Rollback) -> do
+              rollback
             Bracket.BracketError ->
               rollback
           LibPQ.TransInError ->
@@ -144,10 +181,11 @@ withTransaction action =
           LibPQ.TransUnknown ->
             throwIO transactionError
 
-    Bracket.bracketWithResult
-      (liftIO beginTransaction)
-      (const $ liftIO . finishTransaction)
-      doAction
+    fmap fst $
+      Bracket.bracketWithResult
+        (liftIO beginTransaction)
+        (const $ liftIO . finishTransaction)
+        doAction
 
 {- | 'withTransaction' will throw this exception if libpq reports a transaction status on the underlying
   connection that is incompatible with the current transaction event.

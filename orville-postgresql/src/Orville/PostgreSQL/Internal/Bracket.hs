@@ -20,8 +20,8 @@ import Orville.PostgreSQL.Monad.MonadOrville (MonadOrvilleControl (liftCatch, li
 
 @since 1.0.0.0
 -}
-data BracketResult
-  = BracketSuccess
+data BracketResult a
+  = BracketSuccess a
   | BracketError
 
 {- | INTERNAL: A version of 'Control.Exception.bracket' that allows us to distinguish between
@@ -36,7 +36,7 @@ data BracketResult
 bracketWithResult ::
   (MonadIO m, MonadOrvilleControl m) =>
   m a ->
-  (a -> BracketResult -> m c) ->
+  (a -> BracketResult b -> m c) ->
   (a -> m b) ->
   m b
 bracketWithResult acquire release action = do
@@ -48,7 +48,7 @@ bracketWithResult acquire release action = do
         (restore (action resource))
         (handleAndRethrow (release resource BracketError))
 
-    _ <- release resource BracketSuccess
+    _ <- release resource (BracketSuccess result)
 
     pure result
 

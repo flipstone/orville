@@ -33,10 +33,13 @@ transactionTests :: Orville.ConnectionPool -> Property.Group
 transactionTests pool =
   Property.group "Transaction" $
     [ prop_transactionsWithoutExceptionsCommit pool
+    , prop_transactionWithInstructionsToCommitCommit pool
     , prop_exceptionsLeadToTransactionRollback pool
-    , prop_savepointsRollbackInnerTransactions pool
+    , prop_savepointsRollbackInnerTransactionsOnException pool
+    , prop_savepointsAllowInnerTransactionsToRollback pool
     , prop_callbacksMadeForTransactionCommit pool
-    , prop_callbacksMadeForTransactionRollback pool
+    , prop_callbacksMadeForTransactionRollbackByException pool
+    , prop_callbacksMadeForTransactionRollbackByInstruction pool
     , prop_usesCustomBeginTransactionSql pool
     , prop_inWithTransaction pool
     , prop_rollbackCallbackInInvalidTransaction pool
@@ -61,6 +64,25 @@ prop_transactionsWithoutExceptionsCommit =
 
     length tracers === nestingLevel
 
+prop_transactionWithInstructionsToCommitCommit :: Property.NamedDBProperty
+prop_transactionWithInstructionsToCommitCommit =
+  Property.namedDBProperty "Transactions with instructions to commit, commit" $ \pool -> do
+    nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
+
+    tracers <-
+      HH.evalIO $ do
+        Conn.withPoolConnection pool $ \connection ->
+          TestTable.dropAndRecreateTableDef connection tracerTable
+
+        Orville.runOrville pool $ do
+          TransactionUtil.runNestedTransactionWithInstructions nestingLevel $ \_ -> do
+            Monad.void $ Orville.insertEntity tracerTable Tracer
+            pure Orville.Commit
+
+          Orville.findEntitiesBy tracerTable mempty
+
+    length tracers === nestingLevel
+
 prop_exceptionsLeadToTransactionRollback :: Property.NamedDBProperty
 prop_exceptionsLeadToTransactionRollback =
   Property.namedDBProperty "Exceptions within transaction blocks execute rollbock" $ \pool -> do
@@ -81,9 +103,9 @@ prop_exceptionsLeadToTransactionRollback =
 
     length tracers === 0
 
-prop_savepointsRollbackInnerTransactions :: Property.NamedDBProperty
-prop_savepointsRollbackInnerTransactions =
-  Property.namedDBProperty "Savepoints allow inner transactions to rollback while outer transactions commit" $ \pool -> do
+prop_savepointsRollbackInnerTransactionsOnException :: Property.NamedDBProperty
+prop_savepointsRollbackInnerTransactionsOnException =
+  Property.namedDBProperty "Savepoints allow inner transactions to throw and rollback while outer transactions commit" $ \pool -> do
     outerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
     innerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
@@ -98,6 +120,39 @@ prop_savepointsRollbackInnerTransactions =
           _ <- Orville.insertEntity tracerTable Tracer
           Monad.when (level >= outerNestingLevel) $
             TransactionUtil.silentlyHandleTestError innerActions
+
+    tracers <-
+      HH.evalIO $ do
+        Conn.withPoolConnection pool $ \connection ->
+          TestTable.dropAndRecreateTableDef connection tracerTable
+
+        Orville.runOrville pool $ do
+          outerActions
+          Orville.findEntitiesBy tracerTable mempty
+
+    length tracers === outerNestingLevel
+
+prop_savepointsAllowInnerTransactionsToRollback :: Property.NamedDBProperty
+prop_savepointsAllowInnerTransactionsToRollback =
+  Property.namedDBProperty "Savepoints allow inner transactions to rollback while outer transactions commit" $ \pool -> do
+    outerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
+    innerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
+
+    let
+      innerActions =
+        TransactionUtil.runNestedTransactionWithInstructions innerNestingLevel $ \level -> do
+          _ <- Orville.insertEntity tracerTable Tracer
+          -- Commit all the inner savepoints, but then rollback the first one so that
+          -- nothing from this transaction set gets committed
+          pure $
+            if level > 1
+              then Orville.Commit
+              else Orville.Rollback
+
+      outerActions =
+        TransactionUtil.runNestedTransactions outerNestingLevel $ \level -> do
+          _ <- Orville.insertEntity tracerTable Tracer
+          Monad.when (level >= outerNestingLevel) innerActions
 
     tracers <-
       HH.evalIO $ do
@@ -128,14 +183,32 @@ prop_callbacksMadeForTransactionCommit =
 
     allEvents === expectedEvents
 
-prop_callbacksMadeForTransactionRollback :: Property.NamedDBProperty
-prop_callbacksMadeForTransactionRollback =
-  Property.namedDBProperty "Callbacks are delivered for a transaction this is rolled back" $ \pool -> do
+prop_callbacksMadeForTransactionRollbackByException :: Property.NamedDBProperty
+prop_callbacksMadeForTransactionRollbackByException =
+  Property.namedDBProperty "Callbacks are delivered for a transaction this is rolled back by an exception" $ \pool -> do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     allEvents <- captureTransactionCallbackEvents pool $
       TransactionUtil.runNestedTransactions nestingLevel $ \level ->
         Monad.when (level >= nestingLevel) (TransactionUtil.throwTestError)
+
+    let
+      expectedEvents =
+        mkExpectedEventsForNestedActions nestingLevel $ \maybeSavepoint ->
+          case maybeSavepoint of
+            Nothing -> (Orville.BeginTransaction, Orville.RollbackTransaction)
+            Just savepoint -> (Orville.NewSavepoint savepoint, Orville.RollbackToSavepoint savepoint)
+
+    allEvents === expectedEvents
+
+prop_callbacksMadeForTransactionRollbackByInstruction :: Property.NamedDBProperty
+prop_callbacksMadeForTransactionRollbackByInstruction =
+  Property.namedDBProperty "Callbacks are delivered for a transaction this is rolled back by an instruction" $ \pool -> do
+    nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
+
+    allEvents <- captureTransactionCallbackEvents pool $
+      TransactionUtil.runNestedTransactionWithInstructions nestingLevel $ \_ ->
+        pure Orville.Rollback
 
     let
       expectedEvents =
