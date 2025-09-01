@@ -27,6 +27,7 @@ connectionTests pool =
     , prop_errorOnSafeNulByte pool
     , prop_truncateValuesAtUnsafeNulByte pool
     , prop_errorOnInvalidSql pool
+    , prop_returningAConnectionToPoolWithOpenTransactionCausesException pool
     ]
 
 prop_safeOrUnsafeNonNullBytes :: Property.NamedDBProperty
@@ -137,4 +138,21 @@ prop_errorOnInvalidSql =
         Conn.sqlExecutionErrorSqlState err === Just syntaxErrorState
       Right _ -> do
         HH.footnote "Expected 'executeRow' to return failure, but it did not"
+        HH.failure
+
+prop_returningAConnectionToPoolWithOpenTransactionCausesException :: Property.NamedDBProperty
+prop_returningAConnectionToPoolWithOpenTransactionCausesException =
+  Property.singletonNamedDBProperty "returning a connection to the pool with an open transaction causes an exception" $ \pool -> do
+    result <-
+      MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection ->
+        Conn.executeRaw
+          connection
+          (B8.pack "BEGIN TRANSACTION")
+          []
+
+    case result of
+      Left (_err :: Conn.ConnectionError) ->
+        pure ()
+      Right _ -> do
+        HH.footnote "Expected 'withPoolConnection' to return failure, but it did not"
         HH.failure

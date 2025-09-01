@@ -203,8 +203,24 @@ determineConnectionsPerStripe stripes maxConnections =
 @since 1.0.0.0
 -}
 withPoolConnection :: ConnectionPool -> (Connection -> IO a) -> IO a
-withPoolConnection (ConnectionPool pool) =
-  withResource pool
+withPoolConnection (ConnectionPool pool) action =
+  let
+    assertConnectionIdle connection mkMsg = do
+      status <- transactionStatusOrThrow connection
+      case status of
+        LibPQ.TransIdle ->
+          pure ()
+        _ ->
+          withLibPQConnectionOrFailIfClosed connection $ \libPQConn -> do
+            throwConnectionError (mkMsg status) libPQConn
+
+    actionWithTxnStatusChecks connection = do
+      assertConnectionIdle connection (\status -> "Connection found in pool that was not idle. It was: " <> show status)
+      result <- action connection
+      assertConnectionIdle connection (\status -> "Would have returned a connection to the pool that was not idle. It was: " <> show status)
+      pure result
+  in
+    withResource pool actionWithTxnStatusChecks
 
 {- | 'executeRaw' runs a given SQL statement returning the raw underlying result.
 
