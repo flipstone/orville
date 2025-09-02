@@ -141,7 +141,7 @@ withTransactionInstruction action =
           LibPQ.TransUnknown ->
             throwIO transactionError
 
-      doAction () = do
+      doAction () =
         Monad.localOrvilleState
           (OrvilleState.connectState innerConnectedState)
           action
