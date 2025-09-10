@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-container.sh
+
+cd site-builder
+stack exec site -- "$@"

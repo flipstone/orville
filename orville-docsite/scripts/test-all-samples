@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-container.sh
+
+for sample_dir in samples/*; do
+  # If anything in the samples directory is not directory then don't try
+  # to run it as a sample
+  if [ -d "$sample_dir" ]; then
+    ./scripts/test-sample $sample_dir
+  fi
+done

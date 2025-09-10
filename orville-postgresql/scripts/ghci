@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-dev-container.sh
+
+stack \
+  ghci \
+  orville-postgresql:lib \
+  orville-postgresql:test:spec

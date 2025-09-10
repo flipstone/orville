@@ -1,5 +1,7 @@
----
 resolver: lts-23.0
 packages:
   - .
-allow-different-user: true
+
+flags:
+  orville-postgresql:
+    ci: true

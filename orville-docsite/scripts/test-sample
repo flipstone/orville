@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-container.sh
+
+if [ "$1" = "" ]; then
+  echo "path to sample directory must be specified"
+  exit 1
+fi;
+
+sample_dir=$1
+
+echo "===================================================="
+echo "Running $sample_dir"
+echo "============================i======================="
+
+cd $sample_dir
+sh ./run.sh

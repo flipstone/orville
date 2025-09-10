@@ -1,4 +1,0 @@
-services:
-  dev:
-    volumes:
-      - ../stack-root:/stack-root

@@ -1,9 +1,9 @@
-version: "3"
 services:
   dev:
     build: .
     environment:
       STACK_ROOT: /stack-root
+      IN_DEV_CONTAINER: "true"
     volumes:
       - .:/orville-docsite
       - stack-root:/stack-root

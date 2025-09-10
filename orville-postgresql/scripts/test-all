@@ -9,18 +9,17 @@
 # then as the regular edit/compile/test loop to get feedback during
 # development.
 #
-# You can run it via docker by running:
-#   docker compose run --rm dev ./test-all
-#
+
+. scripts/lib/run-in-dev-container.sh
 
 rm -rf test-all-logs
 mkdir test-all-logs
 
-for stack_file in stack*.yaml; do
+for stack_file in stack-ghc*.yaml; do
   log_file="./test-all-logs/$stack_file.log"
 
   echo "Testing with $stack_file... "
-  if stack --stack-yaml "$stack_file" test --fast --flag orville-postgresql:ci >"$log_file" 2>&1; then
+  if stack --stack-yaml "$stack_file" test >$log_file 2>&1; then
     echo "Passed"
   else
     SOME_TEST_FAILED=1

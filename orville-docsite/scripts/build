@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+./scripts/stack install
+./scripts/test-all-samples
+./scripts/site rebuild
+
+rm -r ../docs/*
+cp -r site-builder/_site/* ../docs/.

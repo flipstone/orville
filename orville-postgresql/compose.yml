@@ -11,13 +11,15 @@ services:
     environment:
       TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg13}"
       STACK_ROOT: /stack-root
-    command:
-      - ./scripts/test-loop
-      - ${STACK_YAML_FILE:-stack.yaml}
-    # A TTY is required for the test-loop script to use
-    # stack test. stdin_open would be sufficient, but
-    # allocating a tty provides colorful test output :)
-    tty: true
+      IN_DEV_CONTAINER: "true"
+
+  tools:
+    image: ghcr.io/flipstone/haskell-tools:debian-ghc-9.6.6-54c3115
+    volumes:
+      - .:/orville-postgresql
+    working_dir: /orville-postgresql
+    environment:
+      IN_TOOLS_CONTAINER: "true"
 
   testdb-pg13:
     image: postgres:13.16-alpine

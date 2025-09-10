@@ -1,5 +1,0 @@
----
-resolver: lts-21.22
-packages:
-  - .
-allow-different-user: true

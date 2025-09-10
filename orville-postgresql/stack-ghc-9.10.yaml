@@ -1,0 +1,2 @@
+<<: !include stack.yaml
+resolver: lts-24.8

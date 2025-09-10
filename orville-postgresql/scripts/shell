@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-dev-container.sh
+exec bash "$@"
+

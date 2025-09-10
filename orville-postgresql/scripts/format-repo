@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-tools-container.sh
+
+if [ "$CI" ]; then
+  MODE=check
+else
+  MODE=inplace
+fi
+
+find . -iname '*.hs' | xargs fourmolu --mode $MODE

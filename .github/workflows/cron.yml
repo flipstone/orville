@@ -27,18 +27,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build dev environment
-        run: |
-          set -e
-          cd orville-postgresql
-          docker compose build -q
-
       - name: Run cabal outdated
-        run: |
-          set -e
-          cd orville-postgresql
-          cp compose.override.github.yml compose.override.yml
-          docker compose run \
-            --rm \
-            dev \
-            scripts/outdated-check.sh
+        working-directory: orville-postgresql
+        run: scripts/outdated-check
