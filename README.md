@@ -34,6 +34,11 @@ may be the right choice for you.
 * Optional API for executing complex data loads across multiple tables without ever writing an N+1 query by accident
 * Progressive escape hatches to let you dig deeper when you need to
 
+## PostgreSQL Versions Supported
+
+Orville is tested against and supports major versions of PostgreSQL that are currently
+maintained. This is currently versions 13,14,15,16 and 17.
+
 ## Tutorials
 
 See the tutorials, in order of increasing complexity:

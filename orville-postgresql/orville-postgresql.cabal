@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -15,7 +15,7 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 tested-with:
-    GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.2
+    GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.8, GHC == 9.4.8, GHC == 9.6.7, GHC == 9.8.4, GHC == 9.10.2, GHC == 9.12.2
 extra-source-files:
     CHANGELOG.md
 
@@ -82,6 +82,7 @@ library
       Orville.PostgreSQL.Expr.TableConstraint
       Orville.PostgreSQL.Expr.TableDefinition
       Orville.PostgreSQL.Expr.TableReferenceList
+      Orville.PostgreSQL.Expr.TextSearch
       Orville.PostgreSQL.Expr.Time
       Orville.PostgreSQL.Expr.Transaction
       Orville.PostgreSQL.Expr.Trigger
@@ -150,7 +151,6 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
-      Orville.PostgreSQL.Expr.TextSearch
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
@@ -187,7 +187,7 @@ library
     , resource-pool <0.3 || >=0.4 && <0.6
     , safe-exceptions >=0.1.7 && <0.2
     , text >=1.2 && <1.3 || >=2.0 && <2.2
-    , time >=1.9.1 && <1.15
+    , time >=1.9.1 && <1.16
     , transformers >=0.5 && <0.7
     , unliftio-core >=0.1 && <0.3
     , uuid >=1.3.15 && <1.4
@@ -264,13 +264,13 @@ test-suite spec
     , base >=4.8 && <5
     , bytestring >=0.10 && <0.13
     , containers >=0.6 && <0.9
-    , hedgehog >=1.0.5 && <1.6
+    , hedgehog >=1.0.5 && <1.7
     , orville-postgresql
     , postgresql-libpq >=0.9.4.2 && <0.12
     , resource-pool <0.3 || >=0.4 && <0.6
     , safe-exceptions >=0.1.7 && <0.2
     , text >=1.2 && <1.3 || >=2.0 && <2.2
-    , time >=1.9.1 && <1.15
+    , time >=1.9.1 && <1.16
     , transformers >=0.5 && <0.7
     , unliftio >=0.1 && <0.3
     , uuid >=1.3.15 && <1.4
