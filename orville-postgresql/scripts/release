@@ -2,7 +2,7 @@
 
 set -e
 
-source scripts/lib/run-in-tools-container.sh
+source scripts/lib/run-in-dev-container.sh
 
 case "$1" in
   prepare-candidate)
