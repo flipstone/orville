@@ -9,6 +9,7 @@ Stability : Stable
 -}
 module Orville.PostgreSQL.Expr.TableConstraint
   ( TableConstraint
+  , checkConstraint
   , uniqueConstraint
   , foreignKeyConstraint
   , ForeignKeyActionExpr
@@ -25,7 +26,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
-import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
+import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 {- | Type to represent a table constraint that would be part of a @CREATE TABLE@ or
@@ -49,6 +50,21 @@ newtype TableConstraint
     ( -- | @since 1.0.0.0
       RawSql.SqlExpression
     )
+
+{- | Constructs a 'TableConstraint' that will create a named @CHECK@ constraint with the
+  given expression.
+
+  @since 1.2.0.0
+-}
+checkConstraint :: ConstraintName -> RawSql.RawSql -> TableConstraint
+checkConstraint constrName checkConstrExpr =
+  TableConstraint $
+    RawSql.fromString "CONSTRAINT "
+      <> RawSql.toRawSql constrName
+      <> RawSql.fromString " CHECK "
+      <> RawSql.leftParen
+      <> checkConstrExpr
+      <> RawSql.rightParen
 
 {- | Constructs a 'TableConstraint' will create a @UNIQUE@ constraint on the
   given columns.

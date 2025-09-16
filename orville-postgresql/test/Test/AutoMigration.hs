@@ -55,6 +55,7 @@ autoMigrationTests pool =
     , prop_altersColumnDefaultValue_Bool pool
     , prop_altersColumnDefaultValue_Timelike pool
     , prop_respectsImplicitDefaultOnSerialFields pool
+    , prop_addAndRemovesCheckConstraints pool
     , prop_addAndRemovesUniqueConstraints pool
     , prop_addAndRemovesForeignKeyConstraints pool
     , prop_createsMissingSequences pool
@@ -835,6 +836,54 @@ prop_addAndRemovesForeignKeyConstraints =
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newForeignKeyInfos
     length (PgCatalog.relationConstraints tableDesc) === length (List.nub newForeignKeyInfos)
+
+prop_addAndRemovesCheckConstraints :: Property.NamedDBProperty
+prop_addAndRemovesCheckConstraints =
+  Property.namedDBProperty "Adds and removes check constraints" $ \pool -> do
+    let
+      genConstrList =
+        Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
+
+    originalConstrs <- HH.forAll genConstrList
+    newConstrs <- HH.forAll genConstrList
+
+    let
+      originalConstraints =
+        fmap mkCheckConstraint originalConstrs
+
+      newConstraints =
+        fmap mkCheckConstraint newConstrs
+
+      originalTableDef =
+        Orville.addTableConstraints originalConstraints $
+          mkIntListTable "migration_check_test" ["col1", "col2"]
+
+      newTableDef =
+        Orville.addTableConstraints newConstraints $
+          mkIntListTable "migration_check_test" ["col1"]
+
+    HH.cover 5 (String.fromString "Adding and Dropping Constraints") (not $ null (newConstrs \\ originalConstrs))
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTableDef]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    HH.annotate ("First time migration steps: " <> show (migrationPlanStepStrings firstTimePlan))
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    migrationPlanStepStrings secondTimePlan === []
+    tableDesc <- PgAssert.assertTableExists pool "migration_check_test"
+
+    Fold.traverse_ (PgAssert.assertCheckConstraintExists tableDesc) newConstrs
+    length (PgCatalog.relationConstraints tableDesc) === length newConstraints
 
 prop_addsAndRemovesMixedIndexes :: Property.NamedDBProperty
 prop_addsAndRemovesMixedIndexes =
@@ -1675,6 +1724,10 @@ intColumnsMarshallerWithComments columns =
 mkUniqueConstraint :: NEL.NonEmpty String -> Orville.ConstraintDefinition
 mkUniqueConstraint columnList =
   Orville.uniqueConstraint (fmap Orville.stringToFieldName columnList)
+
+mkCheckConstraint :: String -> Orville.ConstraintDefinition
+mkCheckConstraint constrName =
+  Orville.checkConstraint (Schema.unqualifiedNameToConstraintId constrName) (RawSql.fromString "col1 > 2")
 
 mkForeignKeyConstraint :: String -> PgAssert.ForeignKeyInfo -> Orville.ConstraintDefinition
 mkForeignKeyConstraint foreignTableName foreignKeyInfo =

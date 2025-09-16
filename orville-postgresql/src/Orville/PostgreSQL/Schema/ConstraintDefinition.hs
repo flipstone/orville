@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -9,13 +9,14 @@ Stability : Stable
 -}
 module Orville.PostgreSQL.Schema.ConstraintDefinition
   ( ConstraintDefinition
+  , checkConstraint
   , uniqueConstraint
   , foreignKeyConstraint
   , foreignKeyConstraintWithOptions
   , ForeignReference (ForeignReference, localFieldName, foreignFieldName)
   , foreignReference
-  , ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction)
-  , ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint)
+  , ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyName, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction)
+  , ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint, CheckConstraint)
   , constraintMigrationKey
   , constraintSqlExpr
   , ForeignKeyAction (..)
@@ -36,6 +37,8 @@ import qualified Data.Set as Set
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.FieldName as FieldName
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Schema.ConstraintIdentifier as ConstraintIdentifier
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- | A collection of constraints to be added to a table. This collection is
@@ -116,6 +119,7 @@ data ConstraintDefinition = ConstraintDefinition
 -}
 data ConstraintMigrationKey = ConstraintMigrationKey
   { constraintKeyType :: ConstraintKeyType
+  , constraintKeyName :: Maybe ConstraintIdentifier.ConstraintIdentifier
   , constraintKeyColumns :: Maybe [FieldName.FieldName]
   , constraintKeyForeignTable :: Maybe TableIdentifier.TableIdentifier
   , constraintKeyForeignColumns :: Maybe [FieldName.FieldName]
@@ -139,6 +143,7 @@ data ConstraintMigrationKey = ConstraintMigrationKey
 data ConstraintKeyType
   = UniqueConstraint
   | ForeignKeyConstraint
+  | CheckConstraint
   deriving
     ( -- | @since 1.0.0.0
       Eq
@@ -162,6 +167,31 @@ constraintMigrationKey = i_constraintMigrationKey
 constraintSqlExpr :: ConstraintDefinition -> Expr.TableConstraint
 constraintSqlExpr = i_constraintSqlExpr
 
+{- | Constructs a 'ConstraintDefinition' for a @CHECK@ constraint with the given name and boolean expression.
+
+@since 1.2.0.0
+-}
+checkConstraint :: ConstraintIdentifier.ConstraintIdentifier -> RawSql.RawSql -> ConstraintDefinition
+checkConstraint constraintIdentifier constraintConditionExpr =
+  let
+    expr = Expr.checkConstraint (ConstraintIdentifier.constraintIdUnqualifiedName constraintIdentifier) constraintConditionExpr
+
+    migrationKey =
+      ConstraintMigrationKey
+        { constraintKeyType = CheckConstraint
+        , constraintKeyName = Just constraintIdentifier
+        , constraintKeyColumns = Nothing
+        , constraintKeyForeignTable = Nothing
+        , constraintKeyForeignColumns = Nothing
+        , constraintKeyForeignKeyOnUpdateAction = Nothing
+        , constraintKeyForeignKeyOnDeleteAction = Nothing
+        }
+  in
+    ConstraintDefinition
+      { i_constraintSqlExpr = expr
+      , i_constraintMigrationKey = migrationKey
+      }
+
 {- | Constructs a 'ConstraintDefinition' for a @UNIQUE@ constraint on the given
   columns.
 
@@ -176,6 +206,7 @@ uniqueConstraint fieldNames =
     migrationKey =
       ConstraintMigrationKey
         { constraintKeyType = UniqueConstraint
+        , constraintKeyName = Nothing
         , constraintKeyColumns = Just (NEL.toList fieldNames)
         , constraintKeyForeignTable = Nothing
         , constraintKeyForeignColumns = Nothing
@@ -318,6 +349,7 @@ foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
     migrationKey =
       ConstraintMigrationKey
         { constraintKeyType = ForeignKeyConstraint
+        , constraintKeyName = Nothing
         , constraintKeyColumns = Just (NEL.toList localFieldNames)
         , constraintKeyForeignTable = Just foreignTableId
         , constraintKeyForeignColumns = Just (NEL.toList foreignFieldNames)

@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2024
+Copyright : Flipstone Technology Partners 2023-2025
 License   : MIT
 Stability : Stable
 
@@ -19,6 +19,7 @@ module Orville.PostgreSQL.Schema
   , module Orville.PostgreSQL.Schema.PrimaryKey
   , module Orville.PostgreSQL.Schema.IndexDefinition
   , module Orville.PostgreSQL.Schema.ConstraintDefinition
+  , module Orville.PostgreSQL.Schema.ConstraintIdentifier
   , module Orville.PostgreSQL.Schema.TriggerDefinition
 
     -- * Defining Sequences
@@ -38,6 +39,7 @@ where
 -- appear in the generated haddock documentation.
 
 import Orville.PostgreSQL.Schema.ConstraintDefinition
+import Orville.PostgreSQL.Schema.ConstraintIdentifier
 import Orville.PostgreSQL.Schema.ExtensionIdentifier
 import Orville.PostgreSQL.Schema.FunctionDefinition
 import Orville.PostgreSQL.Schema.FunctionIdentifier

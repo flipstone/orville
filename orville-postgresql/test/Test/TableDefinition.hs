@@ -18,6 +18,7 @@ import qualified Orville.PostgreSQL.Execution.ReturningOption as ReturningOption
 import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import qualified Orville.PostgreSQL.Schema as Schema
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 
@@ -33,6 +34,7 @@ tableDefinitionTests pool =
     [ prop_roundTrip pool
     , prop_readOnlyFields pool
     , prop_primaryKey pool
+    , prop_checkConstraint pool
     , prop_uniqueConstraint pool
     , prop_fieldConstraints
     , prop_insertDefaultValuesWithEmptyMarshaller pool
@@ -142,6 +144,46 @@ prop_uniqueConstraint =
         HH.failure
       Left err ->
         Conn.sqlExecutionErrorSqlState err === Just (B8.pack "23505")
+
+prop_checkConstraint :: Property.NamedDBProperty
+prop_checkConstraint =
+  Property.singletonNamedDBProperty "Creates a check constraint and checks a valid and invalid insert" $ \pool -> do
+    originalFoo <- HH.forAll Foo.generate
+
+    let
+      fooTableWithUniqueNameConstraint =
+        Orville.addTableConstraints
+          [Orville.checkConstraint (Schema.unqualifiedNameToConstraintId "fooPositiveAgeConstraint") $ RawSql.fromString "age > 5"]
+          Foo.table
+
+      insertFoo foo =
+        TableDefinition.mkInsertExpr
+          ReturningOption.WithoutReturning
+          Foo.table
+          Nothing
+          (pure foo)
+
+      validFoo =
+        originalFoo {Foo.fooAge = 6}
+
+    MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
+      TestTable.dropAndRecreateTableDef connection fooTableWithUniqueNameConstraint
+      RawSql.executeVoid connection $ insertFoo validFoo
+
+    let
+      invalidFoo =
+        originalFoo {Foo.fooAge = 4}
+
+    invalidResult <- MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection -> do
+      TestTable.dropAndRecreateTableDef connection fooTableWithUniqueNameConstraint
+      RawSql.executeVoid connection $ insertFoo invalidFoo
+
+    case invalidResult of
+      Right () -> do
+        HH.footnote "Expected 'executeVoid' to return failure, but it did not"
+        HH.failure
+      Left err ->
+        Conn.sqlExecutionErrorSqlState err === Just (B8.pack "23514")
 
 prop_fieldConstraints :: Property.NamedProperty
 prop_fieldConstraints =

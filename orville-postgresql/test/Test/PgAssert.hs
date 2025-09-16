@@ -13,6 +13,7 @@ module Test.PgAssert
   , assertColumnDefaultExists
   , assertColumnDefaultMatches
   , assertFieldIdentityGenerationMatches
+  , assertCheckConstraintExists
   , assertUniqueConstraintExists
   , assertForeignKeyConstraintExists
   , assertIndexExists
@@ -313,6 +314,22 @@ assertUniqueConstraintExists relationDesc columnNames = do
   Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
     withFrozenCallStack $ do
       HH.annotate $ "Unique constraint " <> show (NEL.toList columnNames) <> " not found"
+      HH.failure
+
+assertCheckConstraintExists ::
+  (HH.MonadTest m, HasCallStack) =>
+  PgCatalog.RelationDescription ->
+  String ->
+  m ()
+assertCheckConstraintExists relationDesc constrName = do
+  let
+    constraintMatches constraintDesc =
+      PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraintDesc) == PgCatalog.CheckConstraint
+        && PgCatalog.constraintNameToString (PgCatalog.pgConstraintName $ PgCatalog.constraintRecord constraintDesc) == constrName
+
+  Monad.when (not $ isMatchingConstraintPresent constraintMatches relationDesc) $
+    withFrozenCallStack $ do
+      HH.annotate $ "Check constraint " <> constrName <> " not found"
       HH.failure
 
 data ForeignKeyInfo = ForeignKeyInfo

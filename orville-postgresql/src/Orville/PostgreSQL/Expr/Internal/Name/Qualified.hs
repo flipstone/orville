@@ -13,6 +13,7 @@ module Orville.PostgreSQL.Expr.Internal.Name.Qualified
   , qualifySequence
   , qualifyFunction
   , qualifyIndex
+  , qualifyConstraint
   , qualifyColumn
   , aliasQualifyColumn
   , QualifiedOrUnqualified
@@ -23,6 +24,7 @@ where
 
 import Orville.PostgreSQL.Expr.Internal.Name.Alias (AliasExpr)
 import Orville.PostgreSQL.Expr.Internal.Name.ColumnName (ColumnName)
+import Orville.PostgreSQL.Expr.Internal.Name.ConstraintName (ConstraintName)
 import Orville.PostgreSQL.Expr.Internal.Name.FunctionName (FunctionName)
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier (IdentifierExpression (toIdentifier))
 import Orville.PostgreSQL.Expr.Internal.Name.IndexName (IndexName)
@@ -136,6 +138,19 @@ qualifyIndex ::
   IndexName ->
   Qualified IndexName
 qualifyIndex = unsafeSchemaQualify
+
+{- | Qualifies a 'ConstraintName' with a 'SchemaName'.
+
+Note: If you already have a 'Orville.PostgreSQL.Schema.ConstraintIdentifier' in
+hand you should probably use
+'Orville.PostgreSQL.Schema.constraintIdQualifiedName' instead.
+@since 1.2.0.0
+-}
+qualifyConstraint ::
+  SchemaName ->
+  ConstraintName ->
+  Qualified ConstraintName
+qualifyConstraint = unsafeSchemaQualify
 
 {- | Qualifies a 'ColumnName' with a 'TableName' and, optionally, a 'SchemaName'.
 This should be used to refer to the column in SQL queries where a qualified
