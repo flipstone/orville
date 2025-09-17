@@ -60,6 +60,7 @@ import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
+import qualified Orville.PostgreSQL.Schema.ConstraintIdentifier as ConstraintIdentifier
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 
 {- | A 'SchemaItem' represents a single item in a database schema such as a table,
@@ -234,6 +235,7 @@ isMigrationStepTransactional stepWithType =
   case migrationStepType stepWithType of
     DropForeignKeys -> True
     DropUniqueConstraints -> True
+    DropCheckConstraints -> True
     DropIndexes -> True
     DropTriggers -> True
     DropFunctions -> True
@@ -244,6 +246,7 @@ isMigrationStepTransactional stepWithType =
     AddTriggers -> True
     AddIndexesTransactionally -> True
     AddUniqueConstraints -> True
+    AddCheckConstraints -> True
     AddForeignKeys -> True
     AddIndexesConcurrently -> False
     SetComments -> True
@@ -260,6 +263,8 @@ data StepType
     DropForeignKeys
   | -- | @since 1.0.0.0
     DropUniqueConstraints
+  | -- | @since 1.2.0.0
+    DropCheckConstraints
   | -- | @since 1.0.0.0
     DropIndexes
   | -- | @since 1.1.0.0
@@ -280,6 +285,8 @@ data StepType
     AddIndexesTransactionally
   | -- | @since 1.0.0.0
     AddUniqueConstraints
+  | -- | @since 1.2.0.0
+    AddCheckConstraints
   | -- | @since 1.0.0.0
     AddForeignKeys
   | -- | @since 1.0.0.0
@@ -1053,15 +1060,25 @@ mkAddConstraintActions currentNamespace existingConstraints constraintDef =
     constraintKey =
       setDefaultSchemaNameOnConstraintKey currentNamespace $
         Orville.constraintMigrationKey constraintDef
-
-    stepType =
-      case Orville.constraintKeyType constraintKey of
-        Orville.UniqueConstraint -> AddUniqueConstraints
-        Orville.ForeignKeyConstraint -> AddForeignKeys
+    mkConstraintAddAction condition stepType =
+      if condition
+        then []
+        else [(stepType, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
+    mkCheckConstraintAddActions =
+      mkConstraintAddAction
+        ( any
+            ( \existingKey ->
+                (Schema.constraintKeyType constraintKey, Schema.constraintKeyName constraintKey)
+                  == (Schema.constraintKeyType existingKey, Schema.constraintKeyName existingKey)
+            )
+            existingConstraints
+        )
+    mkColumnConstraintAddActions = mkConstraintAddAction (Set.member constraintKey existingConstraints)
   in
-    if Set.member constraintKey existingConstraints
-      then []
-      else [(stepType, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
+    case Orville.constraintKeyType constraintKey of
+      Orville.CheckConstraint -> mkCheckConstraintAddActions AddCheckConstraints
+      Orville.UniqueConstraint -> mkColumnConstraintAddActions AddUniqueConstraints
+      Orville.ForeignKeyConstraint -> mkColumnConstraintAddActions AddForeignKeys
 
 {- | Builds 'Expr.AlterTableAction' expressions to drop the given table
   constraint if it should not exist.
@@ -1077,23 +1094,32 @@ mkDropConstraintActions constraintsToKeep constraint =
     Nothing ->
       []
     Just constraintKey ->
-      if Set.member constraintKey constraintsToKeep
-        then []
-        else
-          let
-            constraintName =
-              Expr.constraintName
-                . PgCatalog.constraintNameToString
-                . PgCatalog.pgConstraintName
-                . PgCatalog.constraintRecord
-                $ constraint
-
-            stepType =
-              case Orville.constraintKeyType constraintKey of
-                Orville.UniqueConstraint -> DropUniqueConstraints
-                Orville.ForeignKeyConstraint -> DropForeignKeys
-          in
-            [(stepType, Expr.dropConstraint constraintName)]
+      let
+        constraintName =
+          Expr.constraintName
+            . PgCatalog.constraintNameToString
+            . PgCatalog.pgConstraintName
+            . PgCatalog.constraintRecord
+            $ constraint
+        mkConstraintDropAction condition stepType =
+          if condition
+            then []
+            else [(stepType, Expr.dropConstraint constraintName)]
+        mkCheckConstraintDropActions =
+          mkConstraintDropAction
+            ( any
+                ( \keepKey ->
+                    (Schema.constraintKeyType constraintKey, Schema.constraintKeyName constraintKey)
+                      == (Schema.constraintKeyType keepKey, Schema.constraintKeyName keepKey)
+                )
+                constraintsToKeep
+            )
+        mkColumnConstraintDropActions = mkConstraintDropAction (Set.member constraintKey constraintsToKeep)
+      in
+        case Orville.constraintKeyType constraintKey of
+          Orville.CheckConstraint -> mkCheckConstraintDropActions DropCheckConstraints
+          Orville.UniqueConstraint -> mkColumnConstraintDropActions DropUniqueConstraints
+          Orville.ForeignKeyConstraint -> mkColumnConstraintDropActions DropForeignKeys
 
 {- | Builds the orville migration key for a description of an existing constraint
   so that it can be compared with constraints found in a table definition.
@@ -1115,6 +1141,7 @@ pgConstraintMigrationKey constraintDesc =
       case pgConType of
         PgCatalog.UniqueConstraint -> Just Orville.UniqueConstraint
         PgCatalog.ForeignKeyConstraint -> Just Orville.ForeignKeyConstraint
+        PgCatalog.CheckConstraint -> Just Orville.CheckConstraint
         _ -> Nothing
 
     constraint =
@@ -1144,9 +1171,21 @@ pgConstraintMigrationKey constraintDesc =
   in
     do
       keyType <- toOrvilleConstraintKeyType (PgCatalog.pgConstraintType constraint)
+
+      let
+        keyName =
+          if keyType == Orville.CheckConstraint -- We currently only support validating constraint names for check constraints
+            then
+              Just
+                . ConstraintIdentifier.unqualifiedNameToConstraintId
+                . PgCatalog.constraintNameToString
+                $ PgCatalog.pgConstraintName constraint
+            else Nothing
+
       pure $
         Orville.ConstraintMigrationKey
           { Orville.constraintKeyType = keyType
+          , Orville.constraintKeyName = keyName
           , Orville.constraintKeyColumns =
               fmap
                 pgAttributeNamesToFieldNames
