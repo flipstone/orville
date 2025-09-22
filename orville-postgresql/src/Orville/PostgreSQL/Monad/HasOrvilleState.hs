@@ -52,19 +52,21 @@ import Orville.PostgreSQL.OrvilleState (OrvilleState)
 @since 1.0.0.0
 -}
 class HasOrvilleState m where
-  -- | Fetches the current 'OrvilleState' from the host Monad context. The
-  -- equivalent of 'ask' for 'ReaderT OrvilleState'.
-  --
-  -- @since 1.0.0.0
+  {- | Fetches the current 'OrvilleState' from the host Monad context. The
+  equivalent of 'ask' for 'ReaderT OrvilleState'.
+
+  @since 1.0.0.0
+  -}
   askOrvilleState :: m OrvilleState
 
-  -- | Applies a modification to the 'OrvilleState' that is local to the given
-  -- monad operation. Calls to 'askOrvilleState' made within the 'm a' provided
-  -- must return the modified state. The modified state must only apply to
-  -- the given 'm a' and not be persisted beyond it. The equivalent of 'local'
-  -- for 'ReaderT OrvilleState'.
-  --
-  -- @since 1.0.0.0
+  {- | Applies a modification to the 'OrvilleState' that is local to the given
+  monad operation. Calls to 'askOrvilleState' made within the 'm a' provided
+  must return the modified state. The modified state must only apply to
+  the given 'm a' and not be persisted beyond it. The equivalent of 'local'
+  for 'ReaderT OrvilleState'.
+
+  @since 1.0.0.0
+  -}
   localOrvilleState ::
     -- | The function to modify the 'OrvilleState'.
     (OrvilleState -> OrvilleState) ->

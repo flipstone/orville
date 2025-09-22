@@ -45,15 +45,17 @@ a Haskell value. With the type of the Haskell value as the second argument.
 @since 1.1.0.0
 -}
 class SqlComparable sqlAbstraction haskellValue | sqlAbstraction -> haskellValue where
-  -- | Uses the first argument to marshall a Haskell value its 'SqlValue.SqlValue' representation.
-  --
-  -- @since 1.1.0.0
+  {- | Uses the first argument to marshall a Haskell value its 'SqlValue.SqlValue' representation.
+
+  @since 1.1.0.0
+  -}
   toComparableSqlValue :: sqlAbstraction -> haskellValue -> SqlValue.SqlValue
 
-  -- | Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
-  -- "Orville.PostgreSQL.Expr" module.
-  --
-  -- @since 1.1.0.0
+  {- | Constructs the 'Expr.ValueExpression' for use in SQL expressions from the
+  "Orville.PostgreSQL.Expr" module.
+
+  @since 1.1.0.0
+  -}
   referenceValueExpression :: sqlAbstraction -> Expr.ValueExpression
 
 {- | Constructs a SqlValue "tuple" (i.e. NonEmpty list) for two items that can themselves be made to 'SqlValue.SqlValue'.

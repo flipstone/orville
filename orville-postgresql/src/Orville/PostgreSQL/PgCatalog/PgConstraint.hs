@@ -45,23 +45,28 @@ data PgConstraint = PgConstraint
   , pgConstraintType :: ConstraintType
   -- ^ The type of constraint.
   , pgConstraintRelationOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ of the table that the constraint is on
-  -- (or @0@ if not a table constraint).
+  {- ^ The PostgreSQL @oid@ of the table that the constraint is on
+  (or @0@ if not a table constraint).
+  -}
   , pgConstraintIndexOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
-  -- unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
+  {- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
+  unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
+  -}
   , pgConstraintKey :: Maybe [AttributeNumber]
-  -- ^ For table constraints, the attribute numbers of the constrained columns.
-  -- These correspond to the 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber'
-  -- field of 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
+  {- ^ For table constraints, the attribute numbers of the constrained columns.
+  These correspond to the 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber'
+  field of 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
+  -}
   , pgConstraintForeignRelationOid :: LibPQ.Oid
-  -- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the
-  -- foreign key references.
+  {- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the
+  foreign key references.
+  -}
   , pgConstraintForeignKey :: Maybe [AttributeNumber]
-  -- ^ For foreign key constraints, the attribute numbers of the referenced
-  -- columns. These correspond to the
-  -- 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber' field of
-  -- 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
+  {- ^ For foreign key constraints, the attribute numbers of the referenced
+  columns. These correspond to the
+  'Orville.PostgreSQL.PGCatalog.pgAttributeNumber' field of
+  'Orville.PostgreSQL.PGCatalog.PgAttribute'.
+  -}
   , pgConstraintForeignKeyOnUpdateType :: Maybe Orville.ForeignKeyAction
   -- ^ For foreign key constraints, the on update action type.
   , pgConstraintForeignKeyOnDeleteType :: Maybe Orville.ForeignKeyAction

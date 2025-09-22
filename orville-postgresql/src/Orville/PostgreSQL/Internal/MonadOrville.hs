@@ -89,17 +89,19 @@ class
 @since 1.0.0.0
 -}
 class MonadOrvilleControl m where
-  -- | Orville will use this function to lift the acquisition of connections
-  -- from the resource pool into the application monad.
-  --
-  -- @since 1.0.0.0
+  {- | Orville will use this function to lift the acquisition of connections
+  from the resource pool into the application monad.
+
+  @since 1.0.0.0
+  -}
   liftWithConnection ::
     (forall a. (Connection -> IO a) -> IO a) -> (Connection -> m b) -> m b
 
-  -- | Orville will use this function to lift exception catches into the
-  -- application monad.
-  --
-  -- @since 1.0.0.0
+  {- | Orville will use this function to lift exception catches into the
+  application monad.
+
+  @since 1.0.0.0
+  -}
   liftCatch ::
     Exception e =>
     (forall a. IO a -> (e -> IO a) -> IO a) ->
@@ -107,11 +109,12 @@ class MonadOrvilleControl m where
     (e -> m b) ->
     m b
 
-  -- | Orville will use this function to lift 'Control.Exception.mask' calls
-  -- into the application monad to guarantee resource cleanup is executed
-  -- even when asynchronous exceptions are thrown.
-  --
-  -- @since 1.0.0.0
+  {- | Orville will use this function to lift 'Control.Exception.mask' calls
+  into the application monad to guarantee resource cleanup is executed
+  even when asynchronous exceptions are thrown.
+
+  @since 1.0.0.0
+  -}
   liftMask ::
     (forall b. ((forall a. IO a -> IO a) -> IO b) -> IO b) ->
     ((forall a. m a -> m a) -> m c) ->

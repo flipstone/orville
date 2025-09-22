@@ -30,14 +30,17 @@ data PgAttributeDefault = PgAttributeDefault
   { pgAttributeDefaultOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ for the default value.
   , pgAttributeDefaultRelationOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ for the relation that this
-  -- attribute belongs to. References @pg_class.oid@.
+  {- ^ The PostgreSQL @oid@ for the relation that this
+  attribute belongs to. References @pg_class.oid@.
+  -}
   , pgAttributeDefaultAttributeNumber :: AttributeNumber
-  -- ^ The PostgreSQL attribute number for the column that this
-  -- default belongs to. References @pg_attribute.attnum@.
+  {- ^ The PostgreSQL attribute number for the column that this
+  default belongs to. References @pg_attribute.attnum@.
+  -}
   , pgAttributeDefaultExpression :: T.Text
-  -- ^ The PostgreSQL default value expression, as decompiled from the
-  -- @adbin@ column using the PostgreSQL @pg_get_expr@ function.
+  {- ^ The PostgreSQL default value expression, as decompiled from the
+  @adbin@ column using the PostgreSQL @pg_get_expr@ function.
+  -}
   }
 
 {- | An Orville 'Orville.TableDefinition' for querying the

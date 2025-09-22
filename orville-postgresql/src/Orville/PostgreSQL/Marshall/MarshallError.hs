@@ -36,15 +36,18 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 -}
 data MarshallError = MarshallError
   { marshallErrorDetailLevel :: ErrorDetailLevel
-  -- ^ The level of detail that will be used to render this error as a
-  -- message if 'show' is called.
+  {- ^ The level of detail that will be used to render this error as a
+  message if 'show' is called.
+  -}
   , marshallErrorRowIdentifier :: [(B8.ByteString, SqlValue.SqlValue)]
-  -- ^ The identifier of the row that caused the error. This is a list
-  -- of pairs of column name and value in their raw form from the database
-  -- to avoid further possible decoding errors when reading the values.
+  {- ^ The identifier of the row that caused the error. This is a list
+  of pairs of column name and value in their raw form from the database
+  to avoid further possible decoding errors when reading the values.
+  -}
   , marshallErrorDetails :: MarshallErrorDetails
-  -- ^ The detailed information about the error that occurred during
-  -- decoding.
+  {- ^ The detailed information about the error that occurred during
+  decoding.
+  -}
   }
 
 instance Show MarshallError where
@@ -118,8 +121,9 @@ presentSqlColumnValue detailLevel redacter (columnName, sqlValue) =
 @since 1.0.0.0
 -}
 data MarshallErrorDetails
-  = -- | Indicates that one or more values in a column could not be decoded,
-    -- either individually or as a group.
+  = {- | Indicates that one or more values in a column could not be decoded,
+    either individually or as a group.
+    -}
     DecodingError DecodingErrorDetails
   | -- | Indicates that an expected column was not found in the result set.
     MissingColumnError MissingColumnErrorDetails

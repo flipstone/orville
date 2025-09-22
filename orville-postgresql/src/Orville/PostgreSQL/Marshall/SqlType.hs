@@ -72,31 +72,38 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 -}
 data SqlType a = SqlType
   { sqlTypeExpr :: Expr.DataType
-  -- ^ The SQL data type expression to use when creating/migrating columns of
-  -- this type.
+  {- ^ The SQL data type expression to use when creating/migrating columns of
+  this type.
+  -}
   , sqlTypeReferenceExpr :: Maybe Expr.DataType
-  -- ^ The SQL data type expression to use when creating/migrating columns
-  -- with foreign keys to this type. This is used by 'foreignRefType' to build a
-  -- new SqlType when making foreign key fields.
+  {- ^ The SQL data type expression to use when creating/migrating columns
+  with foreign keys to this type. This is used by 'foreignRefType' to build a
+  new SqlType when making foreign key fields.
+  -}
   , sqlTypeOid :: LibPQ.Oid
-  -- ^ The Oid for the type in PostgreSQL. This will be used during
-  -- migrations to determine whether the column type needs to be altered.
+  {- ^ The Oid for the type in PostgreSQL. This will be used during
+  migrations to determine whether the column type needs to be altered.
+  -}
   , sqlTypeMaximumLength :: Maybe Int32
-  -- ^ The maximum length for types that take a type parameter (such as
-  -- @char@ and @varchar@). This will be used during migration to determine
-  -- whether the column type needs to be altered.
+  {- ^ The maximum length for types that take a type parameter (such as
+  @char@ and @varchar@). This will be used during migration to determine
+  whether the column type needs to be altered.
+  -}
   , sqlTypeToSql :: a -> SqlValue
-  -- ^ A function for converting Haskell values of this type into values to
-  -- be stored in the database.
+  {- ^ A function for converting Haskell values of this type into values to
+  be stored in the database.
+  -}
   , sqlTypeFromSql :: SqlValue -> Either String a
-  -- ^ A function for converting values of this type stored in the database
-  -- into Haskell values. This function should return 'Left' to indicate
-  -- an error if the conversion is impossible. Otherwise it should return
-  -- a 'Right' of the corresponding @a@ value.
+  {- ^ A function for converting values of this type stored in the database
+  into Haskell values. This function should return 'Left' to indicate
+  an error if the conversion is impossible. Otherwise it should return
+  a 'Right' of the corresponding @a@ value.
+  -}
   , sqlTypeDontDropImplicitDefaultDuringMigrate :: Bool
-  -- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pseudo-types that
-  -- create an implicit default value. This flag tells Orville's auto-migration
-  -- logic to ignore the default value rather than drop it as it normally would.
+  {- ^ The SERIAL and BIGSERIAL PostgreSQL types are really pseudo-types that
+  create an implicit default value. This flag tells Orville's auto-migration
+  logic to ignore the default value rather than drop it as it normally would.
+  -}
   }
 
 {- | 'integer' defines a 32-bit integer type. This corresponds to the "INTEGER" type in SQL.

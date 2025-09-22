@@ -50,21 +50,25 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
 -}
 data PgAttribute = PgAttribute
   { pgAttributeRelationOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ for the relation that this
-  -- attribute belongs to. References @pg_class.oid@.
+  {- ^ The PostgreSQL @oid@ for the relation that this
+  attribute belongs to. References @pg_class.oid@.
+  -}
   , pgAttributeName :: AttributeName
   -- ^ The name of the attribute.
   , pgAttributeNumber :: AttributeNumber
   -- ^ The PostgreSQL number of the attribute.
   , pgAttributeTypeOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ for the type of this attribute. References
-  -- @pg_type.oid@.
+  {- ^ The PostgreSQL @oid@ for the type of this attribute. References
+  @pg_type.oid@.
+  -}
   , pgAttributeLength :: Int16
-  -- ^ The length of this attribute\'s type (a copy of @pg_type.typlen@). Note
-  -- that this is _NOT_ the maximum length of a @varchar@ column!
+  {- ^ The length of this attribute\'s type (a copy of @pg_type.typlen@). Note
+  that this is _NOT_ the maximum length of a @varchar@ column!
+  -}
   , pgAttributeTypeModifier :: Int32
-  -- ^ Type-specific data supplied at creation time, such as the maximum length
-  -- of a @varchar@ column.
+  {- ^ Type-specific data supplied at creation time, such as the maximum length
+  of a @varchar@ column.
+  -}
   , pgAttributeIdentity :: Maybe Marshall.FieldIdentityGeneration
   -- ^ Indicates whether the column is an identity and how it is generated if at all.
   , pgAttributeIsDropped :: Bool

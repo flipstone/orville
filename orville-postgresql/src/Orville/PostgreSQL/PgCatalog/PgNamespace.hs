@@ -31,8 +31,9 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField)
 -}
 data PgNamespace = PgNamespace
   { pgNamespaceOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ for the namespace. This is referenced from
-  -- other tables, such as @pg_class@.
+  {- ^ The PostgreSQL @oid@ for the namespace. This is referenced from
+  other tables, such as @pg_class@.
+  -}
   , pgNamespaceName :: NamespaceName
   -- ^ The name of the namespace.
   }

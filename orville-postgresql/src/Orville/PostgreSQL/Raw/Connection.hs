@@ -125,14 +125,16 @@ createConnectionPool options = do
 @since 1.0.0.0
 -}
 data StripeOption
-  = -- | 'OneStripePerCapability' will cause the connection pool to be set up
-    -- with one stripe for each capability (processor thread) available to the
-    -- runtime. This is the best option for multi-threaded connection pool
-    -- performance.
+  = {- | 'OneStripePerCapability' will cause the connection pool to be set up
+    with one stripe for each capability (processor thread) available to the
+    runtime. This is the best option for multi-threaded connection pool
+    performance.
+    -}
     OneStripePerCapability
-  | -- | 'StripeCount' will cause the connection pool to be set up with
-    -- the specified number of stripes, regardless of how many capabilities
-    -- the runtime has.
+  | {- | 'StripeCount' will cause the connection pool to be set up with
+    the specified number of stripes, regardless of how many capabilities
+    the runtime has.
+    -}
     StripeCount Int
 
 {- | Values for the 'connectionMaxConnections' field of 'ConnectionOptions'.
@@ -140,16 +142,18 @@ data StripeOption
 @since 1.0.0.0
 -}
 data MaxConnections
-  = -- | 'MaxConnectionsTotal' creates a connection pool that will never
-    -- allocate more than the specified number of connections. The total count
-    -- of connections will be spread evenly across the all the stripes in the
-    -- pool. If the number of stripes does not divide the total count evenly,
-    -- any remainder will be unused.
+  = {- | 'MaxConnectionsTotal' creates a connection pool that will never
+    allocate more than the specified number of connections. The total count
+    of connections will be spread evenly across the all the stripes in the
+    pool. If the number of stripes does not divide the total count evenly,
+    any remainder will be unused.
+    -}
     MaxConnectionsTotal Int
-  | -- | 'MaxConnectionsPerStripe' creates a connection pool that will
-    -- allocate up to the specified number of connections in each stripe.
-    -- In this case the total possible number of simultaneous connections will
-    -- be this value multiplied by the number of stripes.
+  | {- | 'MaxConnectionsPerStripe' creates a connection pool that will
+    allocate up to the specified number of connections in each stripe.
+    In this case the total possible number of simultaneous connections will
+    be this value multiplied by the number of stripes.
+    -}
     MaxConnectionsPerStripe Int
 
 {- | Configuration options to pass to 'createConnectionPool' to specify the
@@ -251,10 +255,11 @@ data ConnectionContext = ConnectionContext
   { i_connUtilizationLock :: MVar ()
   -- ^ Used to serialize access to the connection for the purpose of issuing commands
   , i_connCloseLock :: MVar ()
-  -- ^ Used to guarantee that only one thread will close the connection. This
-  -- is separate from the utilization lock because a connection should still
-  -- be closeable if it is in use by another thread but should not be closed
-  -- by multiple threads simultaneously.
+  {- ^ Used to guarantee that only one thread will close the connection. This
+  is separate from the utilization lock because a connection should still
+  be closeable if it is in use by another thread but should not be closed
+  by multiple threads simultaneously.
+  -}
   , i_connState :: ConnectionState
   -- ^ The underlying connection, if open
   }
@@ -583,10 +588,11 @@ data SqlExecutionError = SqlExecutionError
   , sqlExecutionErrorMessage :: BS.ByteString
   -- ^ Error message reported by PostgreSQL.
   , sqlExecutionErrorSqlState :: Maybe BS.ByteString
-  -- ^ Any SQL state value reported by PostgreSQL. This can be used to
-  -- determine what kind of error happened without needing to parse the error
-  -- message. See
-  -- https://www.postgresql.org/docs/current/errcodes-appendix.html.
+  {- ^ Any SQL state value reported by PostgreSQL. This can be used to
+  determine what kind of error happened without needing to parse the error
+  message. See
+  https://www.postgresql.org/docs/current/errcodes-appendix.html.
+  -}
   , sqlExecutionErrorSqlQuery :: BS.ByteString
   -- ^ The SQL query that was being run when the error occurred.
   }

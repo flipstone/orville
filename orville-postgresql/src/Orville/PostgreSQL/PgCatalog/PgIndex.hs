@@ -34,23 +34,26 @@ data PgIndex = PgIndex
   { pgIndexPgClassOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ of the @pg_class@ entry for this index.
   , pgIndexRelationOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ of the @pg_class@ entry for the table that this
-  -- index is for.
+  {- ^ The PostgreSQL @oid@ of the @pg_class@ entry for the table that this
+  index is for.
+  -}
   , pgIndexAttributeNumbers :: [AttributeNumber]
-  -- ^ An array of attribute number references for the columns of the table
-  -- that are included in the index. An attribute number of @0@ indicates an
-  -- expression over the table's columns rather than just a reference to a
-  -- column.
-  --
-  -- In PostgreSQL 11+ this includes both key columns and non-key-included
-  -- columns. Orville is currently not aware of this distinction, however.
+  {- ^ An array of attribute number references for the columns of the table
+  that are included in the index. An attribute number of @0@ indicates an
+  expression over the table's columns rather than just a reference to a
+  column.
+
+  In PostgreSQL 11+ this includes both key columns and non-key-included
+  columns. Orville is currently not aware of this distinction, however.
+  -}
   , pgIndexIsUnique :: Bool
   -- ^ Indicates whether this is a unique index.
   , pgIndexIsPrimary :: Bool
   -- ^ Indicates whether this is the primary key index for the table.
   , pgIndexIsLive :: Bool
-  -- ^ When @False@, indicates that this index is in the process of being
-  -- dropped and should be ignored.
+  {- ^ When @False@, indicates that this index is in the process of being
+  dropped and should be ignored.
+  -}
   }
 
 {- | An Orville 'Orville.TableDefinition' for querying the

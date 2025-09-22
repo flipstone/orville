@@ -71,55 +71,63 @@ import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 @since 1.0.0.0
 -}
 data SchemaItem where
-  -- | Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
-  --
-  -- @since 1.0.0.0
+  {- | Constructs a 'SchemaItem' from a 'Orville.TableDefinition'.
+
+  @since 1.0.0.0
+  -}
   SchemaTable ::
     Orville.TableDefinition key writeEntity readEntity ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' that will drop the specified table if it is
-  --    found in the database.
-  --
-  -- @since 1.0.0.0
+  {- | Constructs a 'SchemaItem' that will drop the specified table if it is
+   found in the database.
+
+  @since 1.0.0.0
+  -}
   SchemaDropTable ::
     Orville.TableIdentifier ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
-  --
-  -- @since 1.0.0.0
+  {- | Constructs a 'SchemaItem' from a 'Orville.SequenceDefinition'.
+
+  @since 1.0.0.0
+  -}
   SchemaSequence ::
     Orville.SequenceDefinition ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' that will drop the specified table if it is
-  -- found in the database.
-  --
-  -- @since 1.0.0.0
+  {- | Constructs a 'SchemaItem' that will drop the specified table if it is
+  found in the database.
+
+  @since 1.0.0.0
+  -}
   SchemaDropSequence ::
     Orville.SequenceIdentifier ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
-  --
-  -- @since 1.1.0.0
+  {- | Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
+
+  @since 1.1.0.0
+  -}
   SchemaFunction ::
     Orville.FunctionDefinition ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' that will drop the specified table if it is
-  -- found in the database.
-  --
-  -- @since 1.1.0.0
+  {- | Constructs a 'SchemaItem' that will drop the specified table if it is
+  found in the database.
+
+  @since 1.1.0.0
+  -}
   SchemaDropFunction ::
     Orville.FunctionIdentifier ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' from a 'Orville.ExtensionName', that will load the extension.
-  --
-  -- @since 1.1.0.0
+  {- | Constructs a 'SchemaItem' from a 'Orville.ExtensionName', that will load the extension.
+
+  @since 1.1.0.0
+  -}
   SchemaExtension ::
     Orville.ExtensionIdentifier ->
     SchemaItem
-  -- | Constructs a 'SchemaItem' that will unload the postgresql extension if it is found in the
-  -- database.
-  --
-  -- @since 1.1.0.0
+  {- | Constructs a 'SchemaItem' that will unload the postgresql extension if it is found in the
+  database.
+
+  @since 1.1.0.0
+  -}
   SchemaDropExtension ::
     Orville.ExtensionIdentifier ->
     SchemaItem
@@ -325,32 +333,35 @@ and then use the record accessors to change any values you want to customize.
 -}
 data MigrationOptions = MigrationOptions
   { runSchemaChanges :: Bool
-  -- ^
-  --       Indicates whether the normal schema changes (other than concurrent index
-  --       creations) should be run. The default value is 'True'. You may want to
-  --       disable this if you wish to run concurrent index creations separately
-  --       from the rest of the schema changes.
-  --
-  --       @since 1.0.0.0
+  {- ^
+      Indicates whether the normal schema changes (other than concurrent index
+      creations) should be run. The default value is 'True'. You may want to
+      disable this if you wish to run concurrent index creations separately
+      from the rest of the schema changes.
+
+      @since 1.0.0.0
+  -}
   , runConcurrentIndexCreations :: Bool
-  -- ^
-  --       Indicates whether indexes with the 'Orville.Concurrent' creation strategy
-  --       will be created. The default value is 'True'. You may want to disable
-  --       this if you wish to run concurrent index creations separately from the
-  --       rest of the schema changes.
-  --
-  --       @since 1.0.0.0
+  {- ^
+      Indicates whether indexes with the 'Orville.Concurrent' creation strategy
+      will be created. The default value is 'True'. You may want to disable
+      this if you wish to run concurrent index creations separately from the
+      rest of the schema changes.
+
+      @since 1.0.0.0
+  -}
   , migrationLockOptions :: MigrationLock.MigrationLockOptions
-  -- ^
-  --       The 'MigrationLock.MigrationLockOptions' that will be used to ensure only
-  --       one application is running migrations at a time. The default value
-  --       is 'MigrationLock.defaultLockOptions'. You may want to change these if you
-  --       your application has special migration needs. For instance, you might specify
-  --       a custom lock id along with migrating just concurrent indexes to allow them
-  --       to run separately from the rest of the schema changes without blocking one
-  --       another.
-  --
-  --       @since 1.1.0.0
+  {- ^
+      The 'MigrationLock.MigrationLockOptions' that will be used to ensure only
+      one application is running migrations at a time. The default value
+      is 'MigrationLock.defaultLockOptions'. You may want to change these if you
+      your application has special migration needs. For instance, you might specify
+      a custom lock id along with migrating just concurrent indexes to allow them
+      to run separately from the rest of the schema changes without blocking one
+      another.
+
+      @since 1.1.0.0
+  -}
   }
 
 {- |

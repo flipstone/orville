@@ -243,19 +243,19 @@ prop_equalityAndOrPrecedence =
           fooField
             .== 10
             .|| fooField
-            ./= 20
+              ./= 20
             .&& fooField
-            .> 30
+              .> 30
             .|| fooField
-            .< 40
+              .< 40
             .&& fooField
-            .>= 50
+              .>= 50
             .|| fooField
-            .<= 60
+              .<= 60
             .&& fooField
-            .<- (70 :| [])
+              .<- (70 :| [])
             .|| fooField
-            .</- (80 :| [])
+              .</- (80 :| [])
       )
 
 prop_whereCombined :: Property.NamedProperty

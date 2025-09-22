@@ -30,8 +30,9 @@ data PgTrigger = PgTrigger
   { pgTriggerOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ for the relation.
   , pgTriggerRelationOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ of the relation that the trigger is onto.
-  -- References @pg_class.oid@.
+  {- ^ The PostgreSQL @oid@ of the relation that the trigger is onto.
+  References @pg_class.oid@.
+  -}
   , pgTriggerName :: TriggerName
   -- ^ The name of the trigger.
   , pgTriggerIsInternal :: Bool

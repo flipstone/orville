@@ -293,17 +293,19 @@ data TransactionEvent
     BeginTransaction
   | -- | Indicates that a new savepoint has been saved within a transaction.
     NewSavepoint Savepoint
-  | -- | Indicates that a previous savepoint has been released. It can no
-    -- longer be rolled back to.
+  | {- | Indicates that a previous savepoint has been released. It can no
+    longer be rolled back to.
+    -}
     ReleaseSavepoint Savepoint
-  | -- | Indicates that rollback was performed to a prior savepoint.
-    --
-    -- Note: It is possible to rollback to a savepoint prior to the most recent
-    -- one without releasing or rolling back to intermediate savepoints. Doing
-    -- so destroys any savepoints created after the given savepoint. Although
-    -- Orville currently always matches 'NewSavepoint' with either
-    -- 'ReleaseSavepoint' or 'RollbackToSavepoint', it is recommended that you
-    -- do not rely on this behavior.
+  | {- | Indicates that rollback was performed to a prior savepoint.
+
+    Note: It is possible to rollback to a savepoint prior to the most recent
+    one without releasing or rolling back to intermediate savepoints. Doing
+    so destroys any savepoints created after the given savepoint. Although
+    Orville currently always matches 'NewSavepoint' with either
+    'ReleaseSavepoint' or 'RollbackToSavepoint', it is recommended that you
+    do not rely on this behavior.
+    -}
     RollbackToSavepoint Savepoint
   | -- | Indicates that the transaction has been committed.
     CommitTransaction

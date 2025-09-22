@@ -81,30 +81,32 @@ indexCreationStrategy =
 @since 1.0.0.0
 -}
 data IndexCreationStrategy
-  = -- | The default strategy. The index will be added as part of a
-    --       database transaction along with all the other DDL being executed
-    --       to migrate the database schema. If any migration should fail, the
-    --       index creation will be rolled back as part of the transaction.
-    --       This is how schema migrations work in general in Orville.
+  = {- | The default strategy. The index will be added as part of a
+      database transaction along with all the other DDL being executed
+      to migrate the database schema. If any migration should fail, the
+      index creation will be rolled back as part of the transaction.
+      This is how schema migrations work in general in Orville.
+    -}
     Transactional
-  | -- | Creates the index using the @CONCURRENTLY@ keyword in PostgreSQL.
-    --       Index creation will not lock the table during creation, allowing
-    --       the application to access the table normally while the index is
-    --       created. Concurrent index creation cannot be done in a
-    --       transaction, so indexes created using @CONCURRENTLY@ are created
-    --       outside the normal schema transaction. Index creation may fail
-    --       when using the 'Concurrent' strategy. Orville has no special
-    --       provision to detect or recover from this failure currently. You
-    --       should manually check that index creation has succeeded. If
-    --       necessary, you can manually drop the index to cause Orville to
-    --       recreate it the next time migrations are run. Note that while the
-    --       table will not be locked, index migration will still block
-    --       application startup by default. See the information about schema
-    --       migration options in "Orville.PostgreSQL.AutoMigration" for
-    --       details about how to work around this if it is a problem for you.
-    --       Also, it a good idea to read the PostgreSQL docs about creating
-    --       indexes concurrently before you use this strategy. See
-    --       https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY.
+  | {- | Creates the index using the @CONCURRENTLY@ keyword in PostgreSQL.
+      Index creation will not lock the table during creation, allowing
+      the application to access the table normally while the index is
+      created. Concurrent index creation cannot be done in a
+      transaction, so indexes created using @CONCURRENTLY@ are created
+      outside the normal schema transaction. Index creation may fail
+      when using the 'Concurrent' strategy. Orville has no special
+      provision to detect or recover from this failure currently. You
+      should manually check that index creation has succeeded. If
+      necessary, you can manually drop the index to cause Orville to
+      recreate it the next time migrations are run. Note that while the
+      table will not be locked, index migration will still block
+      application startup by default. See the information about schema
+      migration options in "Orville.PostgreSQL.AutoMigration" for
+      details about how to work around this if it is a problem for you.
+      Also, it a good idea to read the PostgreSQL docs about creating
+      indexes concurrently before you use this strategy. See
+      https://www.postgresql.org/docs/current/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY.
+    -}
     Concurrent
   deriving
     ( -- | @since 1.0.0.0

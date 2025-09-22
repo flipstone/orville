@@ -61,10 +61,11 @@ updateExpr ::
   Maybe UpdateNamedOnly ->
   -- | The updates to be made to the table.
   SetClauseList ->
-  -- | An optional 'TableReferenceList' to allow columns from other tables to be included in the
-  -- 'SetClauseList' and 'WhereClause'
-  --
-  -- @since 1.1.0.0
+  {- | An optional 'TableReferenceList' to allow columns from other tables to be included in the
+  'SetClauseList' and 'WhereClause'
+
+  @since 1.1.0.0
+  -}
   Maybe TableReferenceList ->
   -- | An optional where clause to limit the rows updated.
   Maybe WhereClause ->

@@ -36,8 +36,9 @@ data PgClass = PgClass
   { pgClassOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ for the relation.
   , pgClassNamespaceOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
-  -- References @pg_namespace.oid@.
+  {- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
+  References @pg_namespace.oid@.
+  -}
   , pgClassRelationName :: RelationName
   -- ^ The name of the relation.
   , pgClassRelationKind :: RelationKind

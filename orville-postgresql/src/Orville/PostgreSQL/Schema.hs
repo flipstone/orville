@@ -14,7 +14,7 @@ therefore responsibility) over the definition of the schema.
 -}
 module Orville.PostgreSQL.Schema
   ( -- * Defining Tables
-      module Orville.PostgreSQL.Schema.TableDefinition
+    module Orville.PostgreSQL.Schema.TableDefinition
   , module Orville.PostgreSQL.Schema.TableIdentifier
   , module Orville.PostgreSQL.Schema.PrimaryKey
   , module Orville.PostgreSQL.Schema.IndexDefinition

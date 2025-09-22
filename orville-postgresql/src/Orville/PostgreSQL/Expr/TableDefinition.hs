@@ -239,8 +239,9 @@ alterColumnType ::
   ColumnName ->
   -- | The new type to use for the column.
   DataType ->
-  -- | An optional 'UsingClause' to indicate to the database how data from the
-  -- old type should be converted to the new type.
+  {- | An optional 'UsingClause' to indicate to the database how data from the
+  old type should be converted to the new type.
+  -}
   Maybe UsingClause ->
   AlterTableAction
 alterColumnType columnName dataType maybeUsingClause =

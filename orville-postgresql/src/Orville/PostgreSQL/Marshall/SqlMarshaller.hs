@@ -157,9 +157,10 @@ data SqlMarshaller a b where
   MarshallNest :: (a -> b) -> SqlMarshaller b c -> SqlMarshaller a c
   -- | Marshall a SQL column using the given 'FieldDefinition'.
   MarshallField :: FieldDefinition nullability a -> SqlMarshaller a a
-  -- | Marshall a SQL expression on selecting using the given 'SyntheticField'
-  -- to generate selects. SyntheticFields are implicitly read-only, as they
-  -- do not represent a column that can be inserted into.
+  {- | Marshall a SQL expression on selecting using the given 'SyntheticField'
+  to generate selects. SyntheticFields are implicitly read-only, as they
+  do not represent a column that can be inserted into.
+  -}
   MarshallSyntheticField :: SyntheticField a -> SqlMarshaller b a
   -- | Tag a maybe-mapped marshaller so we don't map it twice.
   MarshallMaybeTag :: SqlMarshaller (Maybe a) (Maybe b) -> SqlMarshaller (Maybe a) (Maybe b)

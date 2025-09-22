@@ -33,14 +33,16 @@ data PgProc = PgProc
   { pgProcOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ for the relation.
   , pgProcNamespaceOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
-  -- References @pg_namespace.oid@.
+  {- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
+  References @pg_namespace.oid@.
+  -}
   , pgProcName :: ProcName
   -- ^ The name of the proceduce or function.
   , pgProcSource :: T.Text
-  -- ^ How the function is executed by the PostgreSQL function handler. This
-  -- made the actual source code for interpreted languages, but could be almost
-  -- anything depending on the language.
+  {- ^ How the function is executed by the PostgreSQL function handler. This
+  made the actual source code for interpreted languages, but could be almost
+  anything depending on the language.
+  -}
   }
 
 {- | A Haskell type for the name of the trigger represented by a 'PgProc'.

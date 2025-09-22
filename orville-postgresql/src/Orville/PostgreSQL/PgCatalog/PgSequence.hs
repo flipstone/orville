@@ -27,8 +27,9 @@ data PgSequence = PgSequence
   { pgSequenceClassOid :: LibPQ.Oid
   -- ^ The PostgreSQL @oid@ of the @pg_class@ for this sequence.
   , pgSequenceTypeOid :: LibPQ.Oid
-  -- ^ The PostgreSQL @oid@ of the data type of the sequence. References
-  -- @pg_type.oid@.
+  {- ^ The PostgreSQL @oid@ of the data type of the sequence. References
+  @pg_type.oid@.
+  -}
   , pgSequenceStart :: Int64
   -- ^ The start value of the sequence.
   , pgSequenceIncrement :: Int64

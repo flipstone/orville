@@ -7,6 +7,7 @@ else
     exit 1;
   else
     docker compose build dev
+    echo $0
     exec docker compose run --rm dev $0 "$@"
   fi
 fi

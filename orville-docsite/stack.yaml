@@ -1,5 +1,3 @@
-resolver:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
-
+resolver: lts-24.11
 packages:
   - site-builder

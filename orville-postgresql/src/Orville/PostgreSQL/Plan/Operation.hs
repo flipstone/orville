@@ -68,25 +68,29 @@ data Operation param result = Operation
       Monad.MonadOrville m =>
       param ->
       m (Either AssertionFailed result)
-  -- ^ 'executeOperationOne' will be called when a plan is
-  -- executed with a single input parameter.
+  {- ^ 'executeOperationOne' will be called when a plan is
+  executed with a single input parameter.
+  -}
   , executeOperationMany ::
       forall m.
       Monad.MonadOrville m =>
       NonEmpty param ->
       m (Either AssertionFailed (Many param result))
-  -- ^ 'executeOperationMany' will be called when a plan is executed with
-  -- multiple input parameters (via 'Orville.PostgreSQL.Plan.planMany').
+  {- ^ 'executeOperationMany' will be called when a plan is executed with
+  multiple input parameters (via 'Orville.PostgreSQL.Plan.planMany').
+  -}
   , explainOperationOne :: Exp.Explanation
-  -- ^ 'explainOperationOne' will be called when producing an explanation
-  -- of what the plan will do when given one input parameter. Plans that do
-  -- not perform any interesting IO interactions should generally return an
-  -- empty explanation.
+  {- ^ 'explainOperationOne' will be called when producing an explanation
+  of what the plan will do when given one input parameter. Plans that do
+  not perform any interesting IO interactions should generally return an
+  empty explanation.
+  -}
   , explainOperationMany :: Exp.Explanation
-  -- ^ 'explainOperationMany' will be called when producing an explanation of
-  -- what the plan will do when given multiple input parameters (via
-  -- 'Orville.PostgreSQL.Plan.planMany'). Plans that do not perform any
-  -- interesting IO interactions should generally return an empty explanation.
+  {- ^ 'explainOperationMany' will be called when producing an explanation of
+  what the plan will do when given multiple input parameters (via
+  'Orville.PostgreSQL.Plan.planMany'). Plans that do not perform any
+  interesting IO interactions should generally return an empty explanation.
+  -}
   }
 
 {- | 'AssertionFailed' may be returned from the execute functions of an
@@ -185,27 +189,32 @@ assertRight =
 -}
 data WherePlanner param = WherePlanner
   { paramMarshaller :: forall entity. (entity -> param) -> Marshall.SqlMarshaller entity param
-  -- ^ The 'paramMarshaller' function provided here will be used to decode
-  -- the parameter field from the result set so that the row can be properly
-  -- associated with the input parameter that matched it.
+  {- ^ The 'paramMarshaller' function provided here will be used to decode
+  the parameter field from the result set so that the row can be properly
+  associated with the input parameter that matched it.
+  -}
   , executeOneWhereCondition :: param -> Expr.BooleanExpr
-  -- ^ 'executeOneWhereCondition' must build a where condition that will
-  -- match only those rows that match the input paramater.
+  {- ^ 'executeOneWhereCondition' must build a where condition that will
+  match only those rows that match the input paramater.
+  -}
   , executeManyWhereCondition :: NonEmpty param -> Expr.BooleanExpr
-  -- ^ 'executeManyWhereCondition' must build a where condition that will
-  -- match only those rows that match any (not all!) of the input parameters.
+  {- ^ 'executeManyWhereCondition' must build a where condition that will
+  match only those rows that match any (not all!) of the input parameters.
+  -}
   , explainOneWhereCondition :: Expr.BooleanExpr
-  -- ^ 'explainOneWhereCondition' must build a where condition that is suitable
-  -- to be used as an example of what 'executeManyWhereCondition' would return
-  -- when given a parameter. This where condition will be used when producing
-  -- explanations of plans. For example, this could fill in either an example
-  -- or dummy value.
+  {- ^ 'explainOneWhereCondition' must build a where condition that is suitable
+  to be used as an example of what 'executeManyWhereCondition' would return
+  when given a parameter. This where condition will be used when producing
+  explanations of plans. For example, this could fill in either an example
+  or dummy value.
+  -}
   , explainManyWhereCondition :: Expr.BooleanExpr
-  -- ^ 'explainManyWhereCondition' must build a where condition that is
-  -- suitable to be used as an example of what 'executeOneWhereCondition' would
-  -- return when given a list of parameters. This where condition will be
-  -- used when producing explanations of plans. For example, this could fill in
-  -- either an example or dummy value.
+  {- ^ 'explainManyWhereCondition' must build a where condition that is
+  suitable to be used as an example of what 'executeOneWhereCondition' would
+  return when given a list of parameters. This where condition will be
+  used when producing explanations of plans. For example, this could fill in
+  either an example or dummy value.
+  -}
   }
 
 {- | Builds a 'WherePlanner' that will match on a single
@@ -532,38 +541,44 @@ stringifyMarshaller marshaller =
 -}
 data SelectOperation param row result = SelectOperation
   { selectOne :: param -> Exec.Select row
-  -- ^ 'selectOne' will be called to build the 'Exec.Select' query that should
-  -- be run when there is a single input parameter while executing a plan.
-  -- Note that the "One-ness" here refers to the single input parameter
-  -- rather than the result. See 'produceResult' below for more information
-  -- about returning one value vs. many from a 'SelectOperation'.
+  {- ^ 'selectOne' will be called to build the 'Exec.Select' query that should
+  be run when there is a single input parameter while executing a plan.
+  Note that the "One-ness" here refers to the single input parameter
+  rather than the result. See 'produceResult' below for more information
+  about returning one value vs. many from a 'SelectOperation'.
+  -}
   , selectMany :: NonEmpty param -> Exec.Select row
-  -- ^ 'selectMany' will be called to build the 'Exec.Select' query that should
-  -- be run when there are multiple parameters while executing a plan.
-  -- Note that the "Many-ness" here refers to the multiple input parameters
-  -- rather than the result. See 'produceResult' below for more information
-  -- about returning one value vs. many from a 'SelectOperation'.
+  {- ^ 'selectMany' will be called to build the 'Exec.Select' query that should
+  be run when there are multiple parameters while executing a plan.
+  Note that the "Many-ness" here refers to the multiple input parameters
+  rather than the result. See 'produceResult' below for more information
+  about returning one value vs. many from a 'SelectOperation'.
+  -}
   , explainSelectOne :: Exec.Select row
-  -- ^ 'explainSelectOne' should show a representative query of what will
-  -- be returned when 'selectOne' is used. No input parameter is available
-  -- here to build the query, however, because this value is used to
-  -- explain a plan without actually running it.
+  {- ^ 'explainSelectOne' should show a representative query of what will
+  be returned when 'selectOne' is used. No input parameter is available
+  here to build the query, however, because this value is used to
+  explain a plan without actually running it.
+  -}
   , explainSelectMany :: Exec.Select row
-  -- ^ 'explainSelectMany' should show a representative query of what will
-  -- be returned when 'selectMany is used. No input parameters are available
-  -- here to build the query, however, because this value is used to
-  -- explain a plan without actually running it.
+  {- ^ 'explainSelectMany' should show a representative query of what will
+  be returned when 'selectMany is used. No input parameters are available
+  here to build the query, however, because this value is used to
+  explain a plan without actually running it.
+  -}
   , categorizeRow :: row -> param
-  -- ^ 'categorizeRow' will be used when a plan is executed with multiple
-  -- parameters to determine which input parameter the row should be
-  -- associated with.
+  {- ^ 'categorizeRow' will be used when a plan is executed with multiple
+  parameters to determine which input parameter the row should be
+  associated with.
+  -}
   , produceResult :: [row] -> result
-  -- ^ 'produceResult' will be used to convert the @row@ type returned by the
-  -- 'Exec.Select' queries for the operation input to the @result@ type that is
-  -- present as the output of the operation. The input rows will be all the
-  -- inputs associated with a single parameter. The @result@ type constructed
-  -- here need not be a single value. For instance, 'findAll' uses the list
-  -- type as the @result@ type and 'findOne' uses 'Maybe'.
+  {- ^ 'produceResult' will be used to convert the @row@ type returned by the
+  'Exec.Select' queries for the operation input to the @result@ type that is
+  present as the output of the operation. The input rows will be all the
+  inputs associated with a single parameter. The @result@ type constructed
+  here need not be a single value. For instance, 'findAll' uses the list
+  type as the @result@ type and 'findOne' uses 'Maybe'.
+  -}
   }
 
 {- | 'selectOperation' builds a primitive planning 'Operation' using the functions

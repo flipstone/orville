@@ -45,28 +45,32 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 -}
 data MigrationLockOptions = MigrationLockOptions
   { migrationLockId :: MigrationLockId
-  -- ^ Specifies the 'MigrationLockId' for the lock that will be acquired to ensure
-  -- only one process is attempting to migrate the schema at a time.
-  --
-  -- @since 1.1.0.0
+  {- ^ Specifies the 'MigrationLockId' for the lock that will be acquired to ensure
+  only one process is attempting to migrate the schema at a time.
+
+  @since 1.1.0.0
+  -}
   , maxLockAttempts :: Int
-  -- ^ The maximum number of times Orville will attempt to acquire the migration
-  -- lock. If the lock has not bene acquired after this many attempts, a
-  -- 'MigrationLockError' will be thrown as an exception.
-  --
-  -- @since 1.1.0.0
+  {- ^ The maximum number of times Orville will attempt to acquire the migration
+  lock. If the lock has not bene acquired after this many attempts, a
+  'MigrationLockError' will be thrown as an exception.
+
+  @since 1.1.0.0
+  -}
   , delayBetweenLockAttemptsMicros :: Int
-  -- ^ The minimum number of microseconds Orville will wait after a failed attempt to
-  -- acquire the lock before it tries again. A random variation will be added to this
-  -- to determine the delay after each failed attempt. See 'lockDelayVariationMicros'
-  --
-  -- @since 1.1.0.0
+  {- ^ The minimum number of microseconds Orville will wait after a failed attempt to
+  acquire the lock before it tries again. A random variation will be added to this
+  to determine the delay after each failed attempt. See 'lockDelayVariationMicros'
+
+  @since 1.1.0.0
+  -}
   , lockDelayVariationMicros :: Int
-  -- ^ The maximum variation to add to the delay before attempting to acquire the lock
-  -- again. The actual variation at each delay will be a pseudo-random number between
-  -- @0@ and 'lockDelayVariationMicros'.
-  --
-  -- @since 1.1.0.0
+  {- ^ The maximum variation to add to the delay before attempting to acquire the lock
+  again. The actual variation at each delay will be a pseudo-random number between
+  @0@ and 'lockDelayVariationMicros'.
+
+  @since 1.1.0.0
+  -}
   }
 
 {- | The default lock options use the 'defaultLockId', 25 attempts and randomized delay
