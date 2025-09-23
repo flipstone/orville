@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -e
+
+(cd orville-postgresql && ./scripts/build)
+(cd orville-docsite && ./scripts/build)

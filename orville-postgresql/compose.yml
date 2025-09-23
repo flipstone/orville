@@ -14,7 +14,7 @@ services:
       IN_DEV_CONTAINER: "true"
 
   tools:
-    image: ghcr.io/flipstone/haskell-tools:debian-ghc-9.10.2-8edd338
+    image: ghcr.io/flipstone/haskell-tools:debian-ghc-9.10.3-0c9045f
     volumes:
       - .:/orville-postgresql
     working_dir: /orville-postgresql
