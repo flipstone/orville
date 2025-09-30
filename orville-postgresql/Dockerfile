@@ -1,4 +1,4 @@
-FROM ghcr.io/flipstone/haskell-tools:debian-ghc-9.10.3-0c9045f
+FROM ghcr.io/flipstone/haskell-tools:debian-ghc-9.10.3-b5fe85f
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update &&\
