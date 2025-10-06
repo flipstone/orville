@@ -109,7 +109,7 @@ stack.yaml : diff
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="st">&lt; # extra-deps: []</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">---</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="va">&gt; extra-deps:</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;  - orville-postgresql-1.0.0.0</span></span></code></pre></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;  - orville-postgresql-1.1.0.0</span></span></code></pre></div>
 <p>Next, edit the <code>orville-getting-started.cabal</code> file to make it depend on
 Orville.</p>
 <div class="codeblock-label">
@@ -118,7 +118,7 @@ orville-getting-started.cabal : diff
 <div class="sourceCode" id="cb4"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">22c22</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;   build-depends:       base &gt;= 4.7 &amp;&amp; &lt; 5</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">---</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;   build-depends:       base &gt;= 4.7 &amp;&amp; &lt; 5, orville-postgresql ^&gt;= 1.0.0.0</span></span></code></pre></div>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;   build-depends:       base &gt;= 4.7 &amp;&amp; &lt; 5, orville-postgresql ^&gt;= 1.1.0.0</span></span></code></pre></div>
 <p>Here is a minimal program that simply computes 1+1 on the database. Replace
 the <code>src/Main.hs</code> with it.</p>
 <div class="codeblock-label">
