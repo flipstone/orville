@@ -5,10 +5,7 @@ service postgresql start
 # SNIPPET: initProject
 mkdir orville-getting-started
 cd orville-getting-started
-stack new orville-getting-started --bare simple --resolver lts-22.43
-# SNIPPET: hidden
-echo "system-ghc: true" >> stack.yaml
-echo "install-ghc: false" >> stack.yaml
+stack new orville-getting-started --bare simple --resolver lts-24.12
 # SNIPPET: hidden
 patch stack.yaml ../add-orville-extra-dep-to-stack-yaml.patch
 # SNIPPET: hidden
