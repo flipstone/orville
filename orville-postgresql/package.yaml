@@ -192,7 +192,7 @@ tests:
       - base >=4.8 && <5
       - bytestring >=0.10 && <0.13
       - containers >= 0.6 && < 0.9
-      - hedgehog >= 1.0.5 && <1.7
+      - hedgehog >= 1.0.5 && <1.8
       - postgresql-libpq >= 0.9.4.2 && <0.12
       - orville-postgresql
       - resource-pool <0.3 || (>= 0.4  && <0.6)
