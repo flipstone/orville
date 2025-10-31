@@ -7,9 +7,9 @@ services:
       - stack-root:/stack-root
     working_dir: /orville-postgresql
     depends_on:
-      - testdb-${PG_VERSION:-pg13}
+      - testdb-${PG_VERSION:-pg14}
     environment:
-      TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg13}"
+      TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg14}"
       STACK_ROOT: /stack-root
       IN_DEV_CONTAINER: "true"
 
@@ -20,12 +20,6 @@ services:
     working_dir: /orville-postgresql
     environment:
       IN_TOOLS_CONTAINER: "true"
-
-  testdb-pg13:
-    image: postgres:13.16-alpine
-    environment:
-      POSTGRES_USER: orville_test
-      POSTGRES_PASSWORD: orville
 
   testdb-pg14:
     image: postgres:14.13-alpine
@@ -47,6 +41,12 @@ services:
 
   testdb-pg17:
     image: postgres:17.0-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg18:
+    image: postgres:18.0-alpine
     environment:
       POSTGRES_USER: orville_test
       POSTGRES_PASSWORD: orville
