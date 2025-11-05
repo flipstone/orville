@@ -129,6 +129,7 @@ module Orville.PostgreSQL
   , TableIdentifier.tableIdToString
   , ConstraintDefinition.ConstraintDefinition
   , ConstraintDefinition.checkConstraint
+  , ConstraintDefinition.namedConstraint
   , ConstraintDefinition.uniqueConstraint
   , ConstraintDefinition.foreignKeyConstraint
   , ConstraintDefinition.foreignKeyConstraintWithOptions
@@ -139,8 +140,10 @@ module Orville.PostgreSQL
   , ConstraintDefinition.ForeignKeyAction (..)
   , ConstraintDefinition.ForeignReference (ForeignReference, localFieldName, foreignFieldName)
   , ConstraintDefinition.foreignReference
-  , ConstraintDefinition.ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyName, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction)
-  , ConstraintDefinition.ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint, CheckConstraint)
+  , ConstraintDefinition.ConstraintMigrationKey (NamedBasedConstraint, AttributeBasedConstraint)
+  , ConstraintDefinition.AttributeBasedConstraintKey (UniqueConstraint, ForeignKeyConstraint)
+  , ConstraintDefinition.UniqueConstraintMigrationData
+  , ConstraintDefinition.ForeignKeyConstraintMigrationData
   , ConstraintDefinition.constraintMigrationKey
   , ConstraintDefinition.constraintSqlExpr
   , IndexDefinition.IndexDefinition

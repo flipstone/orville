@@ -11,12 +11,15 @@ module Orville.PostgreSQL.Schema.ConstraintDefinition
   ( ConstraintDefinition
   , checkConstraint
   , uniqueConstraint
+  , namedConstraint
   , foreignKeyConstraint
   , foreignKeyConstraintWithOptions
   , ForeignReference (ForeignReference, localFieldName, foreignFieldName)
   , foreignReference
-  , ConstraintMigrationKey (ConstraintMigrationKey, constraintKeyType, constraintKeyName, constraintKeyColumns, constraintKeyForeignTable, constraintKeyForeignColumns, constraintKeyForeignKeyOnUpdateAction, constraintKeyForeignKeyOnDeleteAction)
-  , ConstraintKeyType (UniqueConstraint, ForeignKeyConstraint, CheckConstraint)
+  , ConstraintMigrationKey (NamedBasedConstraint, AttributeBasedConstraint)
+  , AttributeBasedConstraintKey (UniqueConstraint, ForeignKeyConstraint)
+  , UniqueConstraintMigrationData
+  , ForeignKeyConstraintMigrationData (..)
   , constraintMigrationKey
   , constraintSqlExpr
   , ForeignKeyAction (..)
@@ -113,19 +116,14 @@ data ConstraintDefinition = ConstraintDefinition
 {- | The key used by Orville to determine whether a constraint should be added to
   a table when performing auto-migrations. For most use cases, the constructor
   functions that build a 'ConstraintDefinition' will create this automatically
-  for you.
+  for you. A named based constraint migration key will only migrate the constraint if the
+  constraint name changes.
 
 @since 1.0.0.0
 -}
-data ConstraintMigrationKey = ConstraintMigrationKey
-  { constraintKeyType :: ConstraintKeyType
-  , constraintKeyName :: Maybe ConstraintIdentifier.ConstraintIdentifier
-  , constraintKeyColumns :: Maybe [FieldName.FieldName]
-  , constraintKeyForeignTable :: Maybe TableIdentifier.TableIdentifier
-  , constraintKeyForeignColumns :: Maybe [FieldName.FieldName]
-  , constraintKeyForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
-  , constraintKeyForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
-  }
+data ConstraintMigrationKey
+  = NamedBasedConstraint ConstraintIdentifier.ConstraintIdentifier
+  | AttributeBasedConstraint AttributeBasedConstraintKey
   deriving
     ( -- | @since 1.0.0.0
       Eq
@@ -135,21 +133,54 @@ data ConstraintMigrationKey = ConstraintMigrationKey
       Show
     )
 
-{- | The kind of constraint that is described by a 'ConstraintMigrationKey' (e.g.
-  unique, foreign key).
+{- | The data used by Orville to determine whether a constraint should be added to
+  a table when performing auto-migrations. For most use cases, the constructor
+  functions that build a 'ConstraintDefinition' will create this automatically
+  for you.
 
-@since 1.0.0.0
+@since 1.1.0.0.3
 -}
-data ConstraintKeyType
-  = UniqueConstraint
-  | ForeignKeyConstraint
-  | CheckConstraint
+data ForeignKeyConstraintMigrationData = ForeignKeyConstraintMigrationData
+  { foreignKeyConstraintMigrationDataColumns :: [FieldName.FieldName]
+  , foreignKeyConstraintMigrationDataForeignTable :: Maybe TableIdentifier.TableIdentifier
+  , foreignKeyConstraintMigrationDataForeignColumns :: [FieldName.FieldName]
+  , foreignKeyConstraintMigrationDataForeignKeyOnUpdateAction :: Maybe ForeignKeyAction
+  , foreignKeyConstraintMigrationDataForeignKeyOnDeleteAction :: Maybe ForeignKeyAction
+  }
   deriving
-    ( -- | @since 1.0.0.0
+    ( -- | @since 1.1.0.0.3
       Eq
-    , -- | @since 1.0.0.0
+    , -- | @since 1.1.0.0.3
       Ord
-    , -- | @since 1.0.0.0
+    , -- | @since 1.1.0.0.3
+      Show
+    )
+
+{- | The data used by Orville to determine whether a constraint should be added to
+  a table when performing auto-migrations. For most use cases, the constructor
+  functions that build a 'ConstraintDefinition' will create this automatically
+  for you.
+
+@since 1.1.0.0.3
+-}
+type UniqueConstraintMigrationData = [FieldName.FieldName]
+
+{- | The data used by Orville to determine whether a constraint should be added to
+  a table when performing auto-migrations. For most use cases, the constructor
+  functions that build a 'ConstraintDefinition' will create this automatically
+  for you.
+
+@since 1.1.0.0.3
+-}
+data AttributeBasedConstraintKey
+  = UniqueConstraint UniqueConstraintMigrationData
+  | ForeignKeyConstraint ForeignKeyConstraintMigrationData
+  deriving
+    ( -- | @since 1.1.0.0.3
+      Eq
+    , -- | @since 1.1.0.0.3
+      Ord
+    , -- | @since 1.1.0.0.3
       Show
     )
 
@@ -175,17 +206,7 @@ checkConstraint :: ConstraintIdentifier.ConstraintIdentifier -> RawSql.RawSql ->
 checkConstraint constraintIdentifier constraintConditionExpr =
   let
     expr = Expr.checkConstraint (ConstraintIdentifier.constraintIdUnqualifiedName constraintIdentifier) constraintConditionExpr
-
-    migrationKey =
-      ConstraintMigrationKey
-        { constraintKeyType = CheckConstraint
-        , constraintKeyName = Just constraintIdentifier
-        , constraintKeyColumns = Nothing
-        , constraintKeyForeignTable = Nothing
-        , constraintKeyForeignColumns = Nothing
-        , constraintKeyForeignKeyOnUpdateAction = Nothing
-        , constraintKeyForeignKeyOnDeleteAction = Nothing
-        }
+    migrationKey = NamedBasedConstraint constraintIdentifier
   in
     ConstraintDefinition
       { i_constraintSqlExpr = expr
@@ -200,19 +221,27 @@ checkConstraint constraintIdentifier constraintConditionExpr =
 uniqueConstraint :: NonEmpty FieldName.FieldName -> ConstraintDefinition
 uniqueConstraint fieldNames =
   let
-    expr =
-      Expr.uniqueConstraint . fmap FieldName.fieldNameToColumnName $ fieldNames
+    expr = Expr.uniqueConstraint . fmap FieldName.fieldNameToColumnName $ fieldNames
+    migrationKey = AttributeBasedConstraint . UniqueConstraint $ NEL.toList fieldNames
+  in
+    ConstraintDefinition
+      { i_constraintSqlExpr = expr
+      , i_constraintMigrationKey = migrationKey
+      }
 
-    migrationKey =
-      ConstraintMigrationKey
-        { constraintKeyType = UniqueConstraint
-        , constraintKeyName = Nothing
-        , constraintKeyColumns = Just (NEL.toList fieldNames)
-        , constraintKeyForeignTable = Nothing
-        , constraintKeyForeignColumns = Nothing
-        , constraintKeyForeignKeyOnUpdateAction = Nothing
-        , constraintKeyForeignKeyOnDeleteAction = Nothing
-        }
+{- | Allows very flexible support for constructing  a 'ConstraintDefinition' that will be automigrated
+  based solely on its name.
+
+  @since 1.1.0.0.3
+-}
+namedConstraint :: ConstraintIdentifier.ConstraintIdentifier -> RawSql.RawSql -> ConstraintDefinition
+namedConstraint constraintIdentifier constraintExpr =
+  let
+    expr =
+      Expr.namedConstraint
+        (ConstraintIdentifier.constraintIdUnqualifiedName constraintIdentifier)
+        constraintExpr
+    migrationKey = NamedBasedConstraint constraintIdentifier
   in
     ConstraintDefinition
       { i_constraintSqlExpr = expr
@@ -347,15 +376,15 @@ foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
         onDeleteExpr
 
     migrationKey =
-      ConstraintMigrationKey
-        { constraintKeyType = ForeignKeyConstraint
-        , constraintKeyName = Nothing
-        , constraintKeyColumns = Just (NEL.toList localFieldNames)
-        , constraintKeyForeignTable = Just foreignTableId
-        , constraintKeyForeignColumns = Just (NEL.toList foreignFieldNames)
-        , constraintKeyForeignKeyOnUpdateAction = Just updateAction
-        , constraintKeyForeignKeyOnDeleteAction = Just deleteAction
-        }
+      AttributeBasedConstraint $
+        ForeignKeyConstraint
+          ForeignKeyConstraintMigrationData
+            { foreignKeyConstraintMigrationDataColumns = NEL.toList localFieldNames
+            , foreignKeyConstraintMigrationDataForeignTable = Just foreignTableId
+            , foreignKeyConstraintMigrationDataForeignColumns = NEL.toList foreignFieldNames
+            , foreignKeyConstraintMigrationDataForeignKeyOnUpdateAction = Just updateAction
+            , foreignKeyConstraintMigrationDataForeignKeyOnDeleteAction = Just deleteAction
+            }
   in
     ConstraintDefinition
       { i_constraintSqlExpr = expr

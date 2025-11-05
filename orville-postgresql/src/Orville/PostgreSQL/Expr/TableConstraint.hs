@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Expr.TableConstraint
   ( TableConstraint
   , checkConstraint
   , uniqueConstraint
+  , namedConstraint
   , foreignKeyConstraint
   , ForeignKeyActionExpr
   , restrictExpr
@@ -66,7 +67,7 @@ checkConstraint constrName checkConstrExpr =
       <> checkConstrExpr
       <> RawSql.rightParen
 
-{- | Constructs a 'TableConstraint' will create a @UNIQUE@ constraint on the
+{- | Constructs a 'TableConstraint' that will create a @UNIQUE@ constraint on the
   given columns.
 
   @since 1.0.0.0
@@ -78,6 +79,19 @@ uniqueConstraint columnNames =
       <> RawSql.leftParen
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
+
+{- | Allows very flexible support for constructing  a 'TableConstraint' that will be automigrated
+  based solely on its name.
+
+  @since 1.1.0.0.3
+-}
+namedConstraint :: ConstraintName -> RawSql.RawSql -> TableConstraint
+namedConstraint constrName constraintExpr =
+  TableConstraint $
+    RawSql.fromString "CONSTRAINT "
+      <> RawSql.toRawSql constrName
+      <> RawSql.space
+      <> constraintExpr
 
 {- | Type to represent a foreign key action on a @FOREIGN KEY@ constraint. E.G.
 the @CASCADE@ in

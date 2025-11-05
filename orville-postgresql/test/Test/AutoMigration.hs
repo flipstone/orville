@@ -56,6 +56,7 @@ autoMigrationTests pool =
     , prop_altersColumnDefaultValue_Timelike pool
     , prop_respectsImplicitDefaultOnSerialFields pool
     , prop_addAndRemovesCheckConstraints pool
+    , prop_addNamedUniqueConstraint pool
     , prop_addAndRemovesUniqueConstraints pool
     , prop_addAndRemovesForeignKeyConstraints pool
     , prop_createsMissingSequences pool
@@ -884,6 +885,68 @@ prop_addAndRemovesCheckConstraints =
 
     Fold.traverse_ (PgAssert.assertCheckConstraintExists tableDesc) newConstrs
     length (PgCatalog.relationConstraints tableDesc) === length newConstraints
+
+prop_addNamedUniqueConstraint :: Property.NamedDBProperty
+prop_addNamedUniqueConstraint =
+  Property.namedDBProperty "Adds a named unique constraint" $ \pool -> do
+    let
+      genColumnList =
+        Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
+
+      genConstraintColumns :: HH.Gen ([String], [String], NEL.NonEmpty String, NEL.NonEmpty String)
+      genConstraintColumns = do
+        originalColumns <- Gen.filter (not . null) genColumnList
+        common <- Gen.element originalColumns
+        newColumns <- fmap (common :) genColumnList
+        subcolumns <- Gen.subsequence $ List.intersect originalColumns newColumns
+        originalConstraints <- Gen.just $ NEL.nonEmpty <$> Gen.shuffle subcolumns
+        newConstraints <- Gen.just $ NEL.nonEmpty <$> Gen.shuffle subcolumns
+        pure (originalColumns, newColumns, originalConstraints, newConstraints)
+
+    (originalColumns, newColumns, originalConstraintColumns, newConstraintColumns) <- HH.forAll genConstraintColumns
+
+    let
+      constraintName = "constraint_name"
+
+      columnsToDrop =
+        originalColumns \\ newColumns
+
+      originalConstraint =
+        mkNamedUniqueConstraint constraintName originalConstraintColumns
+
+      newConstraint =
+        mkNamedUniqueConstraint constraintName newConstraintColumns
+
+      originalTableDef =
+        Orville.addTableConstraints [originalConstraint] $
+          mkIntListTable "migration_test" originalColumns
+
+      newTableDef =
+        Orville.addTableConstraints [newConstraint] $
+          Orville.dropColumns columnsToDrop $
+            mkIntListTable "migration_test" newColumns
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTableDef]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    HH.annotate ("First time migration steps: " <> show (migrationPlanStepStrings firstTimePlan))
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    migrationPlanStepStrings secondTimePlan === []
+    tableDesc <- PgAssert.assertTableExists pool "migration_test"
+
+    -- We use originalConstraintColumns as we expect the constraint not to be migrated as the name is the same
+    PgAssert.assertUniqueConstraintExists tableDesc originalConstraintColumns
+    length (PgCatalog.relationConstraints tableDesc) === 1
 
 prop_addsAndRemovesMixedIndexes :: Property.NamedDBProperty
 prop_addsAndRemovesMixedIndexes =
@@ -1724,6 +1787,12 @@ intColumnsMarshallerWithComments columns =
 mkUniqueConstraint :: NEL.NonEmpty String -> Orville.ConstraintDefinition
 mkUniqueConstraint columnList =
   Orville.uniqueConstraint (fmap Orville.stringToFieldName columnList)
+
+mkNamedUniqueConstraint :: String -> NEL.NonEmpty String -> Orville.ConstraintDefinition
+mkNamedUniqueConstraint constrName columnList =
+  Orville.namedConstraint
+    (Schema.unqualifiedNameToConstraintId constrName)
+    (RawSql.toRawSql $ Expr.uniqueConstraint . fmap (Orville.fieldNameToColumnName . Orville.stringToFieldName) $ columnList)
 
 mkCheckConstraint :: String -> Orville.ConstraintDefinition
 mkCheckConstraint constrName =
