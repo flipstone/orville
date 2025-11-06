@@ -1792,7 +1792,7 @@ mkNamedUniqueConstraint :: String -> NEL.NonEmpty String -> Orville.ConstraintDe
 mkNamedUniqueConstraint constrName columnList =
   Orville.namedConstraint
     (Schema.unqualifiedNameToConstraintId constrName)
-    (RawSql.toRawSql $ Expr.uniqueConstraint . fmap (Orville.fieldNameToColumnName . Orville.stringToFieldName) $ columnList)
+    (RawSql.unsafeFromRawSql . RawSql.toRawSql $ Expr.uniqueConstraint . fmap (Orville.fieldNameToColumnName . Orville.stringToFieldName) $ columnList)
 
 mkCheckConstraint :: String -> Orville.ConstraintDefinition
 mkCheckConstraint constrName =

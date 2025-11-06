@@ -14,6 +14,7 @@ module Orville.PostgreSQL.Expr.TableConstraint
   , namedConstraint
   , foreignKeyConstraint
   , ForeignKeyActionExpr
+  , NamedConstraintBodyExpr
   , restrictExpr
   , cascadeExpr
   , setNullExpr
@@ -80,18 +81,39 @@ uniqueConstraint columnNames =
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
 
+{- | Type to represent the body of a named constraint E.G.
+
+> UNIQUE NULLS NOT DISTINCT (some_column)
+
+in
+
+> ALTER TABLE some_table ADD CONSTRAINT some_constraint_name UNIQUE NULLS NOT DISTINCT (some_column)
+
+'NamedConstraintBodyExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0.3
+-}
+newtype NamedConstraintBodyExpr
+  = NamedConstraintBodyExpr RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0.3
+      RawSql.SqlExpression
+    )
+
 {- | Allows very flexible support for constructing  a 'TableConstraint' that will be automigrated
   based solely on its name.
 
   @since 1.1.0.0.3
 -}
-namedConstraint :: ConstraintName -> RawSql.RawSql -> TableConstraint
+namedConstraint :: ConstraintName -> NamedConstraintBodyExpr -> TableConstraint
 namedConstraint constrName constraintExpr =
   TableConstraint $
     RawSql.fromString "CONSTRAINT "
       <> RawSql.toRawSql constrName
       <> RawSql.space
-      <> constraintExpr
+      <> RawSql.toRawSql constraintExpr
 
 {- | Type to represent a foreign key action on a @FOREIGN KEY@ constraint. E.G.
 the @CASCADE@ in

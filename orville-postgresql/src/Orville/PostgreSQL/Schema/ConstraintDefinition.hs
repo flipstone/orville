@@ -234,7 +234,7 @@ uniqueConstraint fieldNames =
 
   @since 1.1.0.0.3
 -}
-namedConstraint :: ConstraintIdentifier.ConstraintIdentifier -> RawSql.RawSql -> ConstraintDefinition
+namedConstraint :: ConstraintIdentifier.ConstraintIdentifier -> Expr.NamedConstraintBodyExpr -> ConstraintDefinition
 namedConstraint constraintIdentifier constraintExpr =
   let
     expr =

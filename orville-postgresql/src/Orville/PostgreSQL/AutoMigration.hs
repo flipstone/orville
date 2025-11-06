@@ -266,7 +266,7 @@ isMigrationStepTransactional stepWithType =
 -}
 data StepType
   = -- | @since 1.1.0.0.3
-    DropForeignKeys -- Foreign key constraints must be migrated before/after unique constraints
+    DropForeignKeys -- Foreign key constraints must be dropped before unique constraints
   | -- | @since 1.1.0.0.3
     DropConstraints
   | -- | @since 1.0.0.0
@@ -290,7 +290,7 @@ data StepType
   | -- | @since 1.1.0.0.3
     AddConstraints
   | -- | @since 1.1.0.0.3
-    AddForeignKeys
+    AddForeignKeys -- Foreign key constraints must be added after unique constraints
   | -- | @since 1.0.0.0
     AddIndexesConcurrently
   | -- | @since 1.1.0.0
@@ -1034,13 +1034,15 @@ mkAddConstraintActions ::
 mkAddConstraintActions currentNamespace existingConstraints constraintDef =
   let
     constraintKey = setDefaultSchemaNameOnConstraintKey currentNamespace $ Orville.constraintMigrationKey constraintDef
+    stepType =
+      case constraintKey of
+        Schema.NamedBasedConstraint _ -> AddConstraints
+        Schema.AttributeBasedConstraint (Schema.UniqueConstraint _) -> AddConstraints
+        Schema.AttributeBasedConstraint (Schema.ForeignKeyConstraint _) -> AddForeignKeys
   in
     if Set.member constraintKey existingConstraints
       then []
-      else case constraintKey of
-        Schema.NamedBasedConstraint _ -> [(AddConstraints, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
-        Schema.AttributeBasedConstraint (Schema.UniqueConstraint _) -> [(AddConstraints, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
-        Schema.AttributeBasedConstraint (Schema.ForeignKeyConstraint _) -> [(AddForeignKeys, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
+      else [(stepType, Expr.addConstraint (Orville.constraintSqlExpr constraintDef))]
 
 {- | Builds 'Expr.AlterTableAction' expressions to drop the given table
   constraint if it should not exist.
@@ -1149,12 +1151,12 @@ pgConstraintMigrationKeys constraintDesc =
     attributeBasedConstraints =
       case PgCatalog.pgConstraintType constraint of
         PgCatalog.UniqueConstraint ->
-          pure
+          Just
             . Schema.AttributeBasedConstraint
             $ Schema.UniqueConstraint
               fieldNames
         PgCatalog.ForeignKeyConstraint ->
-          pure
+          Just
             . Schema.AttributeBasedConstraint
             $ Schema.ForeignKeyConstraint
               Schema.ForeignKeyConstraintMigrationData
@@ -1166,14 +1168,14 @@ pgConstraintMigrationKeys constraintDesc =
                 , Schema.foreignKeyConstraintMigrationDataForeignKeyOnUpdateAction = PgCatalog.pgConstraintForeignKeyOnUpdateType $ PgCatalog.constraintRecord constraintDesc
                 , Schema.foreignKeyConstraintMigrationDataForeignKeyOnDeleteAction = PgCatalog.pgConstraintForeignKeyOnDeleteType $ PgCatalog.constraintRecord constraintDesc
                 }
-        _ -> []
+        _ -> Nothing
     isMigratableConstraint =
       PgCatalog.pgConstraintType constraint == PgCatalog.UniqueConstraint
         || PgCatalog.pgConstraintType constraint == PgCatalog.ForeignKeyConstraint
         || PgCatalog.pgConstraintType constraint == PgCatalog.CheckConstraint
   in
     if isMigratableConstraint
-      then Schema.NamedBasedConstraint constraintIdentifier : attributeBasedConstraints
+      then Schema.NamedBasedConstraint constraintIdentifier : Maybe.maybeToList attributeBasedConstraints
       else []
 
 {- | Builds migration steps to create an index if it does not exist.
