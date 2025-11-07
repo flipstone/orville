@@ -221,7 +221,7 @@ checkConstraint constraintIdentifier constraintConditionExpr =
 uniqueConstraint :: NonEmpty FieldName.FieldName -> ConstraintDefinition
 uniqueConstraint fieldNames =
   let
-    expr = Expr.uniqueConstraint . fmap FieldName.fieldNameToColumnName $ fieldNames
+    expr = Expr.unnamedConstraint . Expr.uniqueConstraint . fmap FieldName.fieldNameToColumnName $ fieldNames
     migrationKey = AttributeBasedConstraint . UniqueConstraint $ NEL.toList fieldNames
   in
     ConstraintDefinition
@@ -368,12 +368,13 @@ foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
     onDeleteExpr = fmap Expr.foreignKeyDeleteActionExpr $ foreignKeyActionToExpr deleteAction
 
     expr =
-      Expr.foreignKeyConstraint
-        (fmap FieldName.fieldNameToColumnName localFieldNames)
-        (TableIdentifier.tableIdQualifiedName foreignTableId)
-        (fmap FieldName.fieldNameToColumnName foreignFieldNames)
-        onUpdateExpr
-        onDeleteExpr
+      Expr.unnamedConstraint $
+        Expr.foreignKeyConstraint
+          (fmap FieldName.fieldNameToColumnName localFieldNames)
+          (TableIdentifier.tableIdQualifiedName foreignTableId)
+          (fmap FieldName.fieldNameToColumnName foreignFieldNames)
+          onUpdateExpr
+          onDeleteExpr
 
     migrationKey =
       AttributeBasedConstraint $

@@ -12,6 +12,7 @@ module Orville.PostgreSQL.Expr.TableConstraint
   , checkConstraint
   , uniqueConstraint
   , namedConstraint
+  , unnamedConstraint
   , foreignKeyConstraint
   , ForeignKeyActionExpr
   , TableConstraintBodyExpr
@@ -73,11 +74,10 @@ checkConstraint constrName checkConstrExpr =
 
   @since 1.0.0.0
 -}
-uniqueConstraint :: NonEmpty ColumnName -> TableConstraint
+uniqueConstraint :: NonEmpty ColumnName -> TableConstraintBodyExpr
 uniqueConstraint columnNames =
-  unnamedConstraint
-    . TableConstraintBodyExpr
-    $ RawSql.fromString "UNIQUE "
+  TableConstraintBodyExpr $
+    RawSql.fromString "UNIQUE "
       <> RawSql.leftParen
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
@@ -245,11 +245,10 @@ foreignKeyConstraint ::
   Maybe ForeignKeyUpdateActionExpr ->
   -- | An optional @ON DELETE@ foreign key action to perform.
   Maybe ForeignKeyDeleteActionExpr ->
-  TableConstraint
+  TableConstraintBodyExpr
 foreignKeyConstraint columnNames foreignTableName foreignColumnNames mbUpdateAction mbDeleteAction =
-  unnamedConstraint
-    . TableConstraintBodyExpr
-    $ RawSql.fromString "FOREIGN KEY "
+  TableConstraintBodyExpr $
+    RawSql.fromString "FOREIGN KEY "
       <> RawSql.leftParen
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
