@@ -14,7 +14,7 @@ module Orville.PostgreSQL.Expr.TableConstraint
   , namedConstraint
   , foreignKeyConstraint
   , ForeignKeyActionExpr
-  , NamedConstraintBodyExpr
+  , TableConstraintBodyExpr
   , restrictExpr
   , cascadeExpr
   , setNullExpr
@@ -75,13 +75,14 @@ checkConstraint constrName checkConstrExpr =
 -}
 uniqueConstraint :: NonEmpty ColumnName -> TableConstraint
 uniqueConstraint columnNames =
-  TableConstraint $
-    RawSql.fromString "UNIQUE "
+  unnamedConstraint
+    . TableConstraintBodyExpr
+    $ RawSql.fromString "UNIQUE "
       <> RawSql.leftParen
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
 
-{- | Type to represent the body of a named constraint E.G.
+{- | Type to represent the body of a constraint E.G.
 
 > UNIQUE NULLS NOT DISTINCT (some_column)
 
@@ -89,25 +90,33 @@ in
 
 > ALTER TABLE some_table ADD CONSTRAINT some_constraint_name UNIQUE NULLS NOT DISTINCT (some_column)
 
-'NamedConstraintBodyExpr' provides a 'RawSql.SqlExpression' instance. See
+'TableConstraintBodyExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
 @since 1.1.0.0.3
 -}
-newtype NamedConstraintBodyExpr
-  = NamedConstraintBodyExpr RawSql.RawSql
+newtype TableConstraintBodyExpr
+  = TableConstraintBodyExpr RawSql.RawSql
   deriving
     ( -- | @since 1.1.0.0.3
       RawSql.SqlExpression
     )
+
+{- | Constructs a 'TableConstraint' that will be automigrated
+  based on its attributes.
+
+  @since 1.1.0.0.3
+-}
+unnamedConstraint :: TableConstraintBodyExpr -> TableConstraint
+unnamedConstraint (TableConstraintBodyExpr sql) = TableConstraint sql
 
 {- | Allows very flexible support for constructing  a 'TableConstraint' that will be automigrated
   based solely on its name.
 
   @since 1.1.0.0.3
 -}
-namedConstraint :: ConstraintName -> NamedConstraintBodyExpr -> TableConstraint
+namedConstraint :: ConstraintName -> TableConstraintBodyExpr -> TableConstraint
 namedConstraint constrName constraintExpr =
   TableConstraint $
     RawSql.fromString "CONSTRAINT "
@@ -238,8 +247,9 @@ foreignKeyConstraint ::
   Maybe ForeignKeyDeleteActionExpr ->
   TableConstraint
 foreignKeyConstraint columnNames foreignTableName foreignColumnNames mbUpdateAction mbDeleteAction =
-  TableConstraint $
-    RawSql.fromString "FOREIGN KEY "
+  unnamedConstraint
+    . TableConstraintBodyExpr
+    $ RawSql.fromString "FOREIGN KEY "
       <> RawSql.leftParen
       <> RawSql.intercalate RawSql.comma columnNames
       <> RawSql.rightParen
