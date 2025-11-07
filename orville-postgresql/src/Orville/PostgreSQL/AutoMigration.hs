@@ -1062,14 +1062,18 @@ mkDropConstraintActions constraintsToKeep constraint =
         . PgCatalog.pgConstraintName
         . PgCatalog.constraintRecord
         $ constraint
+    mkStepAndAction stepType =
+      [(stepType, Expr.dropConstraint constraintName)]
   in
     if any (\ck -> Set.member ck constraintsToKeep) constraintKeys
       then []
       else case PgCatalog.pgConstraintType (PgCatalog.constraintRecord constraint) of
-        PgCatalog.ForeignKeyConstraint -> [(DropForeignKeys, Expr.dropConstraint constraintName)]
-        PgCatalog.UniqueConstraint -> [(DropConstraints, Expr.dropConstraint constraintName)]
-        PgCatalog.CheckConstraint -> [(DropConstraints, Expr.dropConstraint constraintName)]
-        _ -> []
+        PgCatalog.ForeignKeyConstraint -> mkStepAndAction DropForeignKeys
+        PgCatalog.UniqueConstraint -> mkStepAndAction DropConstraints
+        PgCatalog.CheckConstraint -> mkStepAndAction DropConstraints
+        PgCatalog.PrimaryKeyConstraint -> []
+        PgCatalog.ConstraintTrigger -> []
+        PgCatalog.ExclusionConstraint -> []
 
 {- | Sets the schema name on a constraint to the given namespace when the
   constraint has no namespace explicitly given. This is important for Orville
@@ -1170,9 +1174,13 @@ pgConstraintMigrationKeys constraintDesc =
                 }
         _ -> Nothing
     isMigratableConstraint =
-      PgCatalog.pgConstraintType constraint == PgCatalog.UniqueConstraint
-        || PgCatalog.pgConstraintType constraint == PgCatalog.ForeignKeyConstraint
-        || PgCatalog.pgConstraintType constraint == PgCatalog.CheckConstraint
+      case PgCatalog.pgConstraintType constraint of
+        PgCatalog.ForeignKeyConstraint -> True
+        PgCatalog.UniqueConstraint -> True
+        PgCatalog.CheckConstraint -> True
+        PgCatalog.PrimaryKeyConstraint -> False
+        PgCatalog.ConstraintTrigger -> False
+        PgCatalog.ExclusionConstraint -> False
   in
     if isMigratableConstraint
       then Schema.NamedBasedConstraint constraintIdentifier : Maybe.maybeToList attributeBasedConstraints
@@ -1388,13 +1396,9 @@ pgIndexMigrationKeys indexDesc =
         . PgCatalog.indexPgClass
         $ indexDesc
     mkAttributeBasedIndexKey =
-      case pgAttributeBasedIndexMigrationKey indexDesc of
-        Just standardKey ->
-          [IndexDefinition.AttributeBasedIndexKey standardKey]
-        Nothing ->
-          []
+      IndexDefinition.AttributeBasedIndexKey <$> pgAttributeBasedIndexMigrationKey indexDesc
   in
-    mkNamedIndexKey : mkAttributeBasedIndexKey
+    mkNamedIndexKey : Maybe.maybeToList mkAttributeBasedIndexKey
 
 pgAttributeBasedIndexMigrationKey ::
   PgCatalog.IndexDescription ->
