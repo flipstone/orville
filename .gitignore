@@ -13,9 +13,13 @@ session.vim
 
 # Ignore any local developer overrides to the docker-compose file
 docker-compose.override.yml
+docker-compose.override.yaml
 compose.override.yml
+compose.override.yaml
 docker-compose.tools-override.yml
+docker-compose.tools-override.yaml
 compose.tools-override.yml
+compose.tools-override.yaml
 
 # Ignore local stuff
 .local/
