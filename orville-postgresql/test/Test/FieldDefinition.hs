@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeApplications #-}
+
 module Test.FieldDefinition
   ( fieldDefinitionTests
   )
@@ -29,7 +31,8 @@ import qualified Test.Property as Property
 fieldDefinitionTests :: Orville.ConnectionPool -> Property.Group
 fieldDefinitionTests pool =
   Property.group "FieldDefinition" $
-    integerField pool
+    [prop_userData]
+      <> integerField pool
       <> bigIntegerField pool
       <> doubleField pool
       <> booleanField pool
@@ -42,6 +45,20 @@ fieldDefinitionTests pool =
       <> utcTimestampField pool
       <> localTimestampField pool
       <> jsonbField pool
+
+prop_userData :: Property.NamedProperty
+prop_userData =
+  Property.singletonNamedProperty "User data can be stored on FieldDefinition" $ do
+    let
+      fieldDef =
+        Marshall.addFieldUserData @Int 42
+          . Marshall.addFieldUserData "Life the universe and everything"
+          . Marshall.integerField
+          $ "foo"
+
+    Marshall.lookupFieldUserData @Double fieldDef === Nothing
+    Marshall.lookupFieldUserData @Int fieldDef === Just 42
+    Marshall.lookupFieldUserData fieldDef === Just "Life the universe and everything"
 
 integerField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
 integerField pool =
