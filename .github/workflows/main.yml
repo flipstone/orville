@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Find Stack Yamls
         id: set-output
-        uses: flipstone/github-actions/find-stack-ghc-yamls@3e77b573bad98ae3e316b1b912e21ec83932ca8d
+        uses: flipstone/github-actions/find-stack-ghc-yamls@d3da7b6361e88fc10557f8b6ca9aaf44e13f0f8e
         with:
           working-directory: orville-postgresql
   test:
@@ -70,7 +70,7 @@ jobs:
             ./stack-root
 
       - name: Setup Stack
-        uses: flipstone/github-actions/setup-dockerized-stack@3e77b573bad98ae3e316b1b912e21ec83932ca8d
+        uses: flipstone/github-actions/setup-dockerized-stack@d3da7b6361e88fc10557f8b6ca9aaf44e13f0f8e
         with:
           stack-root: ../stack-root
           working-directory: orville-postgresql
@@ -150,7 +150,7 @@ jobs:
             ./stack-root
 
       - name: Setup Stack
-        uses: flipstone/github-actions/setup-dockerized-stack@3e77b573bad98ae3e316b1b912e21ec83932ca8d
+        uses: flipstone/github-actions/setup-dockerized-stack@d3da7b6361e88fc10557f8b6ca9aaf44e13f0f8e
         with:
           stack-root: ../stack-root
           working-directory: orville-docsite
