@@ -31,6 +31,8 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , addForeignKeyConstraint
   , addForeignKeyConstraintWithOptions
   , addUniqueConstraint
+  , addFieldUserData
+  , lookupFieldUserData
   , fieldEquals
   , (.==)
   , fieldNotEquals
@@ -115,10 +117,12 @@ import Data.Int (Int16, Int32, Int64)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import qualified Data.Time as Time
+import Data.Typeable (Typeable)
 import qualified Data.UUID as UUID
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName, fieldNameToString, stringToFieldName)
+import qualified Orville.PostgreSQL.Internal.TypeMap as TypeMap
 import qualified Orville.PostgreSQL.Marshall.AliasName as AliasName
 import qualified Orville.PostgreSQL.Marshall.DefaultValue as DefaultValue
 import Orville.PostgreSQL.Marshall.SqlComparable (SqlComparable (referenceValueExpression, toComparableSqlValue))
@@ -144,6 +148,7 @@ data FieldDefinition nullability a = FieldDefinition
   , i_fieldDescription :: Maybe String
   , i_fieldTableConstraints :: [FieldName -> ConstraintDefinition.ConstraintDefinition]
   , i_fieldIdentity :: IdentityGADT nullability
+  , i_userData :: TypeMap.TypeMap
   }
 
 {- | Constructs the 'Expr.ValueExpression' for a field for use in SQL expressions
@@ -349,6 +354,64 @@ addUniqueConstraint fieldDef =
       ConstraintDefinition.uniqueConstraint (name :| [])
   in
     addFieldTableConstraints [constraintToAdd] fieldDef
+
+{- |
+Adds some custom user data to a 'FieldDefinition'. The data can then be
+retrieved later via 'lookupFieldUserData'. If there is already user data
+present of the same type, it will be replaced with the new value. User
+data of other types will not be changed or removed however. If desired,
+the type can be made explicit via use of @TypeApplications@. This is
+usually not required, however, since the type is inferred from the value
+being passed. For example, the following are equivalent:
+
+@@
+  data Foo = Bar
+
+  addFieldUserData Bar (textField "baz")
+  addFieldUserData @Foo Bar (textField "baz")
+@@
+
+@since 1.2.0.0
+-}
+addFieldUserData ::
+  Typeable a =>
+  a ->
+  FieldDefinition nullability b ->
+  FieldDefinition nullability b
+addFieldUserData a field =
+  FieldDefinition
+    { i_fieldName = i_fieldName field
+    , i_fieldType = i_fieldType field
+    , i_fieldNullability = i_fieldNullability field
+    , i_fieldDefaultValue = i_fieldDefaultValue field
+    , i_fieldDescription = i_fieldDescription field
+    , i_fieldTableConstraints = i_fieldTableConstraints field
+    , i_fieldIdentity = i_fieldIdentity field
+    , i_userData = TypeMap.insert a (i_userData field)
+    }
+
+{- |
+Retrieves customer user data that was added via 'addFieldUserData'. The
+type of data retrieved is inferred based on the type of @a@ required by
+the caller. If required, this can be made explicit via an appropriate
+type signature or @TypeApplications@ as desired. For example:
+
+@@
+  data Foo = Bar
+
+  lookupFieldUserData (textField "baz") -- when Foo can be inferred based on the usage
+  lookupFieldUserData (textField "baz") :: Maybe Foo
+  lookupFieldUserData @Foo (textField "baz")
+@@
+
+@since 1.2.0.0
+-}
+lookupFieldUserData ::
+  Typeable a =>
+  FieldDefinition nullability b ->
+  Maybe a
+lookupFieldUserData =
+  TypeMap.lookup . i_userData
 
 {- | Marshalls a Haskell value to be stored in the field to its 'SqlValue.SqlValue'
   representation and packages the result as a 'Expr.ValueExpression' so that
@@ -682,6 +745,7 @@ fieldOfType sqlType name =
     , i_fieldDescription = Nothing
     , i_fieldTableConstraints = mempty
     , i_fieldIdentity = AllowedIdentityButNotSetGADT
+    , i_userData = TypeMap.empty
     }
 
 {- | Makes a 'NotNull' field 'Nullable' by wrapping the Haskell type of the field in 'Maybe'. The
@@ -713,6 +777,7 @@ nullableField field =
       , i_fieldDescription = fieldDescription field
       , i_fieldTableConstraints = i_fieldTableConstraints field
       , i_fieldIdentity = NotIdentityGADT
+      , i_userData = i_userData field
       }
 
 {- | Adds a 'Maybe' wrapper to a field that is already nullable. (If your field is
@@ -747,6 +812,7 @@ asymmetricNullableField field =
       , i_fieldDescription = fieldDescription field
       , i_fieldTableConstraints = i_fieldTableConstraints field
       , i_fieldIdentity = i_fieldIdentity field
+      , i_userData = i_userData field
       }
 
 {- | Applies a 'SqlType.SqlType' conversion to a 'FieldDefinition'. You can
