@@ -17,15 +17,19 @@ import qualified Unsafe.Coerce as UnsafeCoerce
 
 {- |
   A type map can be used to store dynamic values keyed by their
-  type. Orville uses this internally to store custome user data to allow
+  type. Orville uses this internally to store custom user data to allow
   extensibility without needing to track all user data in every function's
   type signature that deals with the type the user data is attached to
   (e.g. FieldDefinition)
+
+  @since 1.2.0.0
 -}
 newtype TypeMap = TypeMap (Map.Map SomeTypeRep Any)
 
 {- |
   An empty 'TypeMap' with no values.
+
+  @since 1.2.0.0
 -}
 empty :: TypeMap
 empty = TypeMap Map.empty
@@ -33,6 +37,8 @@ empty = TypeMap Map.empty
 {- |
   Inserts a value into the 'TypeMap'. Any existing value of the same type
   will be overwritten.
+
+  @since 1.2.0.0
 -}
 insert :: forall a. Typeable a => a -> TypeMap -> TypeMap
 insert a (TypeMap m) =
@@ -44,8 +50,10 @@ insert a (TypeMap m) =
 
 {- |
   Looks up a value from the 'TypeMap'. The value retrieved is based on the
-  type of the return value based. Type applications can be used, if desired,
+  type of the return value. Type applications can be used, if desired,
   to determine the return type directly.
+
+  @since 1.2.0.0
 -}
 lookup :: forall a. Typeable a => TypeMap -> Maybe a
 lookup (TypeMap m) =

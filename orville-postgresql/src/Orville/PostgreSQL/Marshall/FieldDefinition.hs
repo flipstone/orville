@@ -357,12 +357,12 @@ addUniqueConstraint fieldDef =
 
 {- |
 Adds some custom user data to a 'FieldDefinition'. The data can then be
-retrieved later via 'lookupFieldUseData'. If there is already user data
+retrieved later via 'lookupFieldUserData'. If there is already user data
 present of the same type, it will be replaced with the new value. User
 data of other types will not be changed or removed however. If desired,
 the type can be made explicit via use of @TypeApplications@. This is
 usually not required, however, since the type is inferred from the value
-being passed. For example, the following are equivalent
+being passed. For example, the following are equivalent:
 
 @@
   data Foo = Bar
@@ -391,10 +391,10 @@ addFieldUserData a field =
     }
 
 {- |
-Retrieves customer user data that was added via 'addFieldUserdata'. The
+Retrieves customer user data that was added via 'addFieldUserData'. The
 type of data retrieved is inferred based on the type of @a@ required by
 the caller. If required, this can be made explicit via an appropriate
-type signature or @TypeApplications@ as desired. For example
+type signature or @TypeApplications@ as desired. For example:
 
 @@
   data Foo = Bar
@@ -403,6 +403,8 @@ type signature or @TypeApplications@ as desired. For example
   lookupFieldUserData (textField "baz") :: Maybe Foo
   lookupFieldUserData @Foo (textField "baz")
 @@
+
+@since 1.2.0.0
 -}
 lookupFieldUserData ::
   Typeable a =>
@@ -671,7 +673,7 @@ jsonbField = fieldOfType SqlType.jsonb
   from -4731 to 5874897 inclusive for this field, and sending a 'Time.Day' with a year outside
   of this range to the database will result in a PostgreSQL exception.
 
-/@since 1.0.0.0
+@since 1.0.0.0
 -}
 dateField ::
   -- | Name of the field in the database.
