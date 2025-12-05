@@ -4,10 +4,12 @@ module Test.SqlType
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
 import qualified Data.String as String
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TextEnc
 import qualified Data.Time as Time
 import Hedgehog ((===))
 import qualified Hedgehog as HH
@@ -272,6 +274,42 @@ fixedTextTests pool =
           , rawSqlValue = Just $ B8.pack "fghi"
           , sqlType = SqlType.fixedText 5
           , expectedValue = T.pack "fghi "
+          }
+    )
+  , ( String.fromString "Testing the decode of CHAR(1) with snowman"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "CHAR(1)"
+          , rawSqlValue = Just $ TextEnc.encodeUtf8 $ T.pack "☃"
+          , sqlType = SqlType.fixedText 1
+          , expectedValue = T.pack "☃"
+          }
+    )
+  , ( String.fromString "Testing the decode of CHAR(2) with multi-codepoint a with umlaut"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "CHAR(2)"
+          , rawSqlValue = Just $ TextEnc.encodeUtf8 $ T.pack "\x0061\x0308"
+          , sqlType = SqlType.fixedText 2
+          , expectedValue = T.pack "\x0061\x0308"
+          }
+    )
+  , ( String.fromString "Testing the decode of CHAR(1) with single-codepoint a with umlaut"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "CHAR(1)"
+          , rawSqlValue = Just $ TextEnc.encodeUtf8 $ T.pack "\x00e4"
+          , sqlType = SqlType.fixedText 1
+          , expectedValue = T.pack "\x00e4"
+          }
+    )
+  , ( String.fromString "Testing the decode of CHAR(1) with single-codepoint rocket"
+    , runDecodingTest pool $
+        DecodingTest
+          { sqlTypeDDL = "CHAR(1)"
+          , rawSqlValue = Just $ BS.pack [0xf0, 0x9f, 0x9a, 0x80]
+          , sqlType = SqlType.fixedText 1
+          , expectedValue = T.pack "\x1f680"
           }
     )
   ]
