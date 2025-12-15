@@ -11,9 +11,11 @@ module Orville.PostgreSQL.Schema.FunctionDefinition
   , functionIdentifier
   , functionName
   , functionSource
+  , functionAutoMigrationStep
   , mkTriggerFunction
   , mkFunction
   , mkCreateFunctionExpr
+  , FunctionAutoMigrationStep (BeforeTableMigration, AfterTableMigration)
   ) where
 
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -21,13 +23,17 @@ import Orville.PostgreSQL.Schema.FunctionArgument (FunctionArgument)
 import Orville.PostgreSQL.Schema.FunctionIdentifier (FunctionIdentifier, functionIdQualifiedName, setFunctionIdSchema, unqualifiedNameToFunctionId)
 
 {- | Contains the definition of a PostgreSQL function for Orville to use when creating
-  the function. Currently only functionality for creating trigger functions for use
-  with 'Orville.PostgreSQL.Schema.TriggerDefinition' is supported. You can create a
-  'FunctionDefintion' for a trigger via 'mkTriggerFunction'.
+  the function.
+  Only 'Orville.PostgreSQL.Schema.TriggerDefinition' is currently properly supported. You can create a
+  'FunctionDefintion' for a trigger via 'mkTriggerFunction' or use 'mkFunction' for (currently mostly unsupported) extra customization.
 
   When a 'FunctionDefinition' is included in a schema item list for auto-migration
   the function will be created if it does not exist, or recreated if the source
   code for the function does not match what is found in the database catalog.
+  The 'FunctionAutoMigrationStep' determines whether the function is migrated before or after tables.
+  If the function depends on tables existing it must come after table migration.
+  If the tables use the function (such as calling it to populate the default value for a field) then the function
+  must be migrated before the tables.
 
 @since 1.1.0.0
 -}
@@ -37,7 +43,18 @@ data FunctionDefinition = FunctionDefinition
   , i_functionReturnType :: Expr.ReturnType
   , i_functionLanguage :: Expr.LanguageName
   , i_functionSource :: String
+  , i_functionAutoMigrationStep :: FunctionAutoMigrationStep
   }
+
+{-
+  The 'FunctionAutoMigrationStep' determines whether the function is migrated before or after tables.
+  If the function depends on tables existing it must come after table migration.
+  If the tables use the function (such as calling it to populate the default value for a field) then the function
+  must be migrated before the tables.
+
+@since 1.1.0.0.4
+-}
+data FunctionAutoMigrationStep = BeforeTableMigration | AfterTableMigration
 
 {- | Sets the function's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a function has a schema name set, it will be
@@ -56,7 +73,7 @@ setFunctionSchema schemaName functionDef =
     }
 
 {- | Retrieves the 'FunctionIdentifier' for this function, which is set by the
-  name provided to 'mkTriggerFunction' and any calls made to
+  name provided to 'mkTriggerFunction' or 'mkFunction' and any calls made to
   'setFunctionSchema' thereafter.
 @since 1.1.0.0
 -}
@@ -73,7 +90,7 @@ functionName :: FunctionDefinition -> Expr.QualifiedOrUnqualified Expr.FunctionN
 functionName =
   functionIdQualifiedName . i_functionIdentifier
 
-{- | Retrieves the source that was passed to 'mkTriggerFunction' when the
+{- | Retrieves the source that was passed in when the
   'FunctionDefinition' was created.
 
 @since 1.1.0.0
@@ -81,6 +98,15 @@ functionName =
 functionSource :: FunctionDefinition -> String
 functionSource =
   i_functionSource
+
+{- | Retrieves the auto migration step type passed in when the
+  'FunctionDefinition' was created.
+
+@since 1.1.0.0.4
+-}
+functionAutoMigrationStep :: FunctionDefinition -> FunctionAutoMigrationStep
+functionAutoMigrationStep =
+  i_functionAutoMigrationStep
 
 {- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
   with a return type of @trigger@ using the specified lanugage and function
@@ -99,6 +125,7 @@ mkTriggerFunction name language source =
     , i_functionReturnType = Expr.returnTypeTrigger
     , i_functionLanguage = language
     , i_functionSource = source
+    , i_functionAutoMigrationStep = AfterTableMigration
     }
 
 {- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
@@ -109,16 +136,18 @@ mkFunction ::
   String ->
   [FunctionArgument] ->
   Expr.ReturnType ->
+  FunctionAutoMigrationStep ->
   Expr.LanguageName ->
   String ->
   FunctionDefinition
-mkFunction name args returnType language source =
+mkFunction name args returnType autoMigrationStep language source =
   FunctionDefinition
     { i_functionIdentifier = unqualifiedNameToFunctionId name
     , i_functionArguments = args
     , i_functionReturnType = returnType
     , i_functionLanguage = language
     , i_functionSource = source
+    , i_functionAutoMigrationStep = autoMigrationStep
     }
 
 {- | Builds a 'Expr.CreateFunctionExpr' that will create a SQL function matching
