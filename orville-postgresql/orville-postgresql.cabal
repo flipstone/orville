@@ -174,6 +174,7 @@ library
       Orville.PostgreSQL.PgCatalog.PgSequence
       Orville.PostgreSQL.PgCatalog.PgTrigger
       Orville.PostgreSQL.Schema.ConstraintIdentifier
+      Orville.PostgreSQL.Schema.FunctionArgument
       Paths_orville_postgresql
   hs-source-dirs:
       src

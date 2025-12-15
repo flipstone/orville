@@ -16,6 +16,8 @@ module Orville.PostgreSQL.Expr.Function
   , returns
   , ReturnType
   , returnTypeTrigger
+  , returnTypeText
+  , returnTypeUUID
   , FunctionLanguage
   , language
   , LanguageName
@@ -31,6 +33,7 @@ import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+import Orville.PostgreSQL.Schema.FunctionArgument (FunctionArgument)
 
 {- | Type to represent a SQL "DROP FUNCTION" statement. E.G.
 
@@ -92,11 +95,12 @@ Note: Orville does not currently support creating functions with arguments.
 createFunction ::
   Maybe OrReplace ->
   QualifiedOrUnqualified FunctionName ->
+  [FunctionArgument] ->
   FunctionReturns ->
   FunctionLanguage ->
   FunctionDefinition ->
   CreateFunctionExpr
-createFunction maybeOrReplace name functionReturns functionLanguage definition =
+createFunction maybeOrReplace name args functionReturns functionLanguage definition =
   CreateFunctionExpr $
     RawSql.intercalate
       RawSql.space
@@ -105,7 +109,7 @@ createFunction maybeOrReplace name functionReturns functionLanguage definition =
           , fmap RawSql.toRawSql maybeOrReplace
           , Just $ RawSql.fromString "FUNCTION"
           , Just $ RawSql.toRawSql name
-          , Just $ RawSql.fromString "()" -- currently we don't support specifying arguments
+          , Just $ RawSql.parenthesized (RawSql.intercalate RawSql.commaSpace $ RawSql.toRawSql <$> args)
           , Just $ RawSql.toRawSql functionReturns
           , Just $ RawSql.toRawSql functionLanguage
           , Just $ RawSql.toRawSql definition
@@ -164,6 +168,22 @@ newtype ReturnType
 returnTypeTrigger :: ReturnType
 returnTypeTrigger =
   ReturnType (RawSql.fromString "trigger")
+
+{- | The @text@ return type.
+
+@since 1.1.0.0.4
+-}
+returnTypeText :: ReturnType
+returnTypeText =
+  ReturnType (RawSql.fromString "text")
+
+{- | The @uuid@ return type.
+
+@since 1.1.0.0.4
+-}
+returnTypeUUID :: ReturnType
+returnTypeUUID =
+  ReturnType (RawSql.fromString "uuid")
 
 {- | Type to represent the language specifier given as part of a SQL "CREATE
 FUNCTION" statement. E.G. the @LANGUAGE plpgsql@ in

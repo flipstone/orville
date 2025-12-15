@@ -43,6 +43,7 @@ prop_triggers =
         Expr.createFunction
           (Just Expr.orReplace)
           triggerFunctionName
+          []
           (Expr.returns Expr.returnTypeTrigger)
           (Expr.language Expr.plpgsql)
           (Expr.asDefinition triggerBody)

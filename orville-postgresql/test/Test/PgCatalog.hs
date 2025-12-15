@@ -143,6 +143,7 @@ prop_queryPgTrigger =
         Expr.createFunction
           (Just Expr.orReplace)
           triggerFunctionName
+          []
           (Expr.returns Expr.returnTypeTrigger)
           (Expr.language Expr.plpgsql)
           (Expr.asDefinition "BEGIN return NEW; END")
@@ -194,6 +195,7 @@ prop_queryPgProc =
         Expr.createFunction
           (Just Expr.orReplace)
           procFunctionName
+          []
           (Expr.returns Expr.returnTypeTrigger)
           (Expr.language Expr.plpgsql)
           (Expr.asDefinition "BEGIN return NEW; END")

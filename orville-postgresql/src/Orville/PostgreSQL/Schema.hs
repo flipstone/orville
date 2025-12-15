@@ -29,6 +29,7 @@ module Orville.PostgreSQL.Schema
     -- * Definining Functions
   , module Orville.PostgreSQL.Schema.FunctionDefinition
   , module Orville.PostgreSQL.Schema.FunctionIdentifier
+  , module Orville.PostgreSQL.Schema.FunctionArgument
 
     -- * Using PostgreSQL Extensions
   , module Orville.PostgreSQL.Schema.ExtensionIdentifier
@@ -41,6 +42,7 @@ where
 import Orville.PostgreSQL.Schema.ConstraintDefinition
 import Orville.PostgreSQL.Schema.ConstraintIdentifier
 import Orville.PostgreSQL.Schema.ExtensionIdentifier
+import Orville.PostgreSQL.Schema.FunctionArgument
 import Orville.PostgreSQL.Schema.FunctionDefinition
 import Orville.PostgreSQL.Schema.FunctionIdentifier
 import Orville.PostgreSQL.Schema.IndexDefinition

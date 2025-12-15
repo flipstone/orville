@@ -12,10 +12,12 @@ module Orville.PostgreSQL.Schema.FunctionDefinition
   , functionName
   , functionSource
   , mkTriggerFunction
+  , mkFunction
   , mkCreateFunctionExpr
   ) where
 
 import qualified Orville.PostgreSQL.Expr as Expr
+import Orville.PostgreSQL.Schema.FunctionArgument (FunctionArgument)
 import Orville.PostgreSQL.Schema.FunctionIdentifier (FunctionIdentifier, functionIdQualifiedName, setFunctionIdSchema, unqualifiedNameToFunctionId)
 
 {- | Contains the definition of a PostgreSQL function for Orville to use when creating
@@ -31,6 +33,7 @@ import Orville.PostgreSQL.Schema.FunctionIdentifier (FunctionIdentifier, functio
 -}
 data FunctionDefinition = FunctionDefinition
   { i_functionIdentifier :: FunctionIdentifier
+  , i_functionArguments :: [FunctionArgument]
   , i_functionReturnType :: Expr.ReturnType
   , i_functionLanguage :: Expr.LanguageName
   , i_functionSource :: String
@@ -92,7 +95,28 @@ mkTriggerFunction ::
 mkTriggerFunction name language source =
   FunctionDefinition
     { i_functionIdentifier = unqualifiedNameToFunctionId name
+    , i_functionArguments = []
     , i_functionReturnType = Expr.returnTypeTrigger
+    , i_functionLanguage = language
+    , i_functionSource = source
+    }
+
+{- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
+  using the specified lanugage, return type and function body.
+@since 1.1.0.0.4
+-}
+mkFunction ::
+  String ->
+  [FunctionArgument] ->
+  Expr.ReturnType ->
+  Expr.LanguageName ->
+  String ->
+  FunctionDefinition
+mkFunction name args returnType language source =
+  FunctionDefinition
+    { i_functionIdentifier = unqualifiedNameToFunctionId name
+    , i_functionArguments = args
+    , i_functionReturnType = returnType
     , i_functionLanguage = language
     , i_functionSource = source
     }
@@ -110,6 +134,7 @@ mkCreateFunctionExpr functionDef maybeOrReplace =
   Expr.createFunction
     maybeOrReplace
     (functionName functionDef)
+    (i_functionArguments functionDef)
     (Expr.returns (i_functionReturnType functionDef))
     (Expr.language (i_functionLanguage functionDef))
     (Expr.asDefinition (i_functionSource functionDef))
