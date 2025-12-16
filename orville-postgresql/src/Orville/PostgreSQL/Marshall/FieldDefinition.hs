@@ -670,7 +670,7 @@ jsonbField = fieldOfType SqlType.jsonb
   PostgreSQL "DATE" type.
 
   This field cannot represent the full range of 'Time.Day' values. PostgreSQL supports years
-  from -4731 to 5874897 inclusive for this field, and sending a 'Time.Day' with a year outside
+  from -4712 to 5874897 inclusive for this field, and sending a 'Time.Day' with a year outside
   of this range to the database will result in a PostgreSQL exception.
 
 @since 1.0.0.0
@@ -685,7 +685,7 @@ dateField = fieldOfType SqlType.date
   PostgreSQL "TIMESTAMP with time zone" type.
 
   This field cannot represent the full range of 'Time.UTCTime' values. PostgreSQL supports years
-  from -4731 to 294276 inclusive for this field, and sending a 'Time.UTCTime' with a year outside
+  from -4712 to 294276 inclusive for this field, and sending a 'Time.UTCTime' with a year outside
   of this range to the database will result in a PostgreSQL exception.
 
 @since 1.0.0.0
@@ -700,7 +700,7 @@ utcTimestampField = fieldOfType SqlType.timestamp
   PostgreSQL "TIMESTAMP without time zone" type.
 
   This field cannot represent the full range of 'Time.LocalTime' values. PostgreSQL supports years
-  from -4731 to 294276 inclusive for this field, and sending a 'Time.LocalTime' with a year outside
+  from -4712 to 294276 inclusive for this field, and sending a 'Time.LocalTime' with a year outside
   of this range to the database will result in a PostgreSQL exception.
 
 @since 1.0.0.0

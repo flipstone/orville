@@ -119,7 +119,7 @@ pgLocalTime =
 
 pgDay :: HH.Gen Time.Day
 pgDay = do
-  year <- Gen.integral (Range.constantFrom 2000 (-4713) 294276)
+  year <- Gen.integral (Range.constantFrom 2000 (-4712) 294276)
   month <- Gen.integral (Range.constant 1 12)
   day <- Gen.integral (Range.constant 1 (Time.gregorianMonthLength year month))
 
@@ -131,7 +131,7 @@ pgDay = do
 -- Edge case to help catch mistakes in date parsing/printing
 feb29thBCE :: HH.Gen Time.Day
 feb29thBCE = do
-  year <- Gen.filter Time.isLeapYear (Gen.integral (Range.linear (-4713) 0))
+  year <- Gen.filter Time.isLeapYear (Gen.integral (Range.linear (-4712) 0))
   pure (Time.fromGregorian year 2 29)
 
 pgTimeOfDay :: HH.Gen Time.TimeOfDay
