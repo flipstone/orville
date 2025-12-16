@@ -280,7 +280,7 @@ data StepType
     DropExtensions
   | -- | @since 1.1.0.0
     AddExtensions
-  | -- | @since 1.1.0.0.4
+  | -- | @since 1.2.0.0
     AddFunctionsBeforeTables
   | -- | @since 1.0.0.0
     AddRemoveTablesAndColumns

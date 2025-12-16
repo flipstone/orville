@@ -52,7 +52,7 @@ data FunctionDefinition = FunctionDefinition
   If the tables use the function (such as calling it to populate the default value for a field) then the function
   must be migrated before the tables.
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 data FunctionAutoMigrationStep = BeforeTableMigration | AfterTableMigration
 
@@ -102,7 +102,7 @@ functionSource =
 {- | Retrieves the auto migration step type passed in when the
   'FunctionDefinition' was created.
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 functionAutoMigrationStep :: FunctionDefinition -> FunctionAutoMigrationStep
 functionAutoMigrationStep =
@@ -130,7 +130,7 @@ mkTriggerFunction name language source =
 
 {- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
   using the specified lanugage, return type and function body.
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 mkFunction ::
   String ->

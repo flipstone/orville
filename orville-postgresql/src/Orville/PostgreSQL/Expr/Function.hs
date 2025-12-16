@@ -80,25 +80,25 @@ the @CASCADE@ in
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
 SQL.
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 newtype DropFunctionActionExpr
   = DropFunctionActionExpr RawSql.RawSql
   deriving
-    ( -- | @since 1.1.0.0.4
+    ( -- | @since 1.2.0.0
       RawSql.SqlExpression
     )
 
 {- | The drop function action @RESTRICT@.
 
-  @since 1.1.0.0.4
+  @since 1.2.0.0
 -}
 dropFunctionRestrictExpr :: DropFunctionActionExpr
 dropFunctionRestrictExpr = DropFunctionActionExpr $ RawSql.fromString "RESTRICT"
 
 {- | The drop function action @CASCADE@.
 
-  @since 1.1.0.0.4
+  @since 1.2.0.0
 -}
 dropFunctionCascadeExpr :: DropFunctionActionExpr
 dropFunctionCascadeExpr = DropFunctionActionExpr $ RawSql.fromString "CASCADE"
@@ -206,7 +206,7 @@ returnTypeTrigger =
 
 {- | The @text@ return type.
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 returnTypeText :: ReturnType
 returnTypeText =
@@ -214,7 +214,7 @@ returnTypeText =
 
 {- | The @uuid@ return type.
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 returnTypeUUID :: ReturnType
 returnTypeUUID =

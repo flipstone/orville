@@ -5,7 +5,7 @@ Copyright : Flipstone Technology Partners 2025
 License   : MIT
 Stability : Stable
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 module Orville.PostgreSQL.Schema.FunctionArgument
   ( FunctionArgument
@@ -20,10 +20,10 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 Support for using this type in orville is currently very limited and experimental
 
-@since 1.1.0.0.4
+@since 1.2.0.0
 -}
 newtype FunctionArgument = FunctionArgument RawSql.RawSql
   deriving
-    ( -- \| @since 1.1.0.0.4
+    ( -- \| @since 1.2.0.0
       RawSql.SqlExpression
     )
