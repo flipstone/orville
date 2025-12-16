@@ -31,11 +31,11 @@ module Orville.PostgreSQL.Expr.Function
 import qualified Data.ByteString.Char8 as BS8
 import Data.Maybe (catMaybes)
 
+import Orville.PostgreSQL.Expr.FunctionArgument (FunctionArgument)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified)
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-import Orville.PostgreSQL.Schema.FunctionArgument (FunctionArgument)
 
 {- | Type to represent a SQL "DROP FUNCTION" statement. E.G.
 

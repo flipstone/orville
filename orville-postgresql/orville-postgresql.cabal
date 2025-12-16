@@ -61,6 +61,7 @@ library
       Orville.PostgreSQL.Expr.FetchClause
       Orville.PostgreSQL.Expr.Filter
       Orville.PostgreSQL.Expr.Function
+      Orville.PostgreSQL.Expr.FunctionArgument
       Orville.PostgreSQL.Expr.GroupBy
       Orville.PostgreSQL.Expr.IfExists
       Orville.PostgreSQL.Expr.IfNotExists
@@ -174,7 +175,6 @@ library
       Orville.PostgreSQL.PgCatalog.PgSequence
       Orville.PostgreSQL.PgCatalog.PgTrigger
       Orville.PostgreSQL.Schema.ConstraintIdentifier
-      Orville.PostgreSQL.Schema.FunctionArgument
       Paths_orville_postgresql
   hs-source-dirs:
       src

@@ -7,7 +7,7 @@ Stability : Stable
 
 @since 1.2.0.0
 -}
-module Orville.PostgreSQL.Schema.FunctionArgument
+module Orville.PostgreSQL.Expr.FunctionArgument
   ( FunctionArgument
   )
 where
@@ -24,6 +24,6 @@ Support for using this type in orville is currently very limited and experimenta
 -}
 newtype FunctionArgument = FunctionArgument RawSql.RawSql
   deriving
-    ( -- \| @since 1.2.0.0
+    ( -- | @since 1.2.0.0
       RawSql.SqlExpression
     )

@@ -68,6 +68,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.WhereClause
   , module Orville.PostgreSQL.Expr.Trigger
   , module Orville.PostgreSQL.Expr.Function
+  , module Orville.PostgreSQL.Expr.FunctionArgument
   , module Orville.PostgreSQL.Expr.OrReplace
   , module Orville.PostgreSQL.Expr.ConditionalExpr
   , module Orville.PostgreSQL.Expr.Window
@@ -98,6 +99,7 @@ import Orville.PostgreSQL.Expr.Extension
 import Orville.PostgreSQL.Expr.FetchClause
 import Orville.PostgreSQL.Expr.Filter
 import Orville.PostgreSQL.Expr.Function
+import Orville.PostgreSQL.Expr.FunctionArgument
 import Orville.PostgreSQL.Expr.GroupBy
 import Orville.PostgreSQL.Expr.IfExists
 import Orville.PostgreSQL.Expr.IfNotExists

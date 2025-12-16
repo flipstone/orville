@@ -57,6 +57,7 @@ library:
     - Orville.PostgreSQL.Expr.FetchClause
     - Orville.PostgreSQL.Expr.Filter
     - Orville.PostgreSQL.Expr.Function
+    - Orville.PostgreSQL.Expr.FunctionArgument
     - Orville.PostgreSQL.Expr.GroupBy
     - Orville.PostgreSQL.Expr.IfExists
     - Orville.PostgreSQL.Expr.IfNotExists

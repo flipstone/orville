@@ -19,7 +19,6 @@ module Orville.PostgreSQL.Schema.FunctionDefinition
   ) where
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Schema.FunctionArgument (FunctionArgument)
 import Orville.PostgreSQL.Schema.FunctionIdentifier (FunctionIdentifier, functionIdQualifiedName, setFunctionIdSchema, unqualifiedNameToFunctionId)
 
 {- | Contains the definition of a PostgreSQL function for Orville to use when creating
@@ -39,7 +38,7 @@ import Orville.PostgreSQL.Schema.FunctionIdentifier (FunctionIdentifier, functio
 -}
 data FunctionDefinition = FunctionDefinition
   { i_functionIdentifier :: FunctionIdentifier
-  , i_functionArguments :: [FunctionArgument]
+  , i_functionArguments :: [Expr.FunctionArgument]
   , i_functionReturnType :: Expr.ReturnType
   , i_functionLanguage :: Expr.LanguageName
   , i_functionSource :: String
@@ -119,14 +118,13 @@ mkTriggerFunction ::
   String ->
   FunctionDefinition
 mkTriggerFunction name language source =
-  FunctionDefinition
-    { i_functionIdentifier = unqualifiedNameToFunctionId name
-    , i_functionArguments = []
-    , i_functionReturnType = Expr.returnTypeTrigger
-    , i_functionLanguage = language
-    , i_functionSource = source
-    , i_functionAutoMigrationStep = AfterTableMigration
-    }
+  mkFunction
+    name
+    []
+    Expr.returnTypeTrigger
+    AfterTableMigration
+    language
+    source
 
 {- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
   using the specified lanugage, return type and function body.
@@ -134,7 +132,7 @@ mkTriggerFunction name language source =
 -}
 mkFunction ::
   String ->
-  [FunctionArgument] ->
+  [Expr.FunctionArgument] ->
   Expr.ReturnType ->
   FunctionAutoMigrationStep ->
   Expr.LanguageName ->
