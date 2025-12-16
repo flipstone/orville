@@ -1251,6 +1251,7 @@ prop_createsMissingFunctions =
             Expr.dropFunction
               (Just Expr.ifExists)
               (Orville.functionName functionDef)
+              Nothing
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaFunction functionDef]
 
     secondTimePlan <-
@@ -1289,7 +1290,7 @@ prop_recreatesAlteredFunctions =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $
-            Expr.dropFunction (Just Expr.ifExists) (Orville.functionName oldFunctionDef)
+            Expr.dropFunction (Just Expr.ifExists) (Orville.functionName oldFunctionDef) Nothing
           AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaFunction oldFunctionDef]
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaFunction newFunctionDef]
 
@@ -1362,7 +1363,7 @@ prop_createsMissingTriggers =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableWithTrigger
-          Orville.executeVoid Orville.DDLQuery $ Expr.dropFunction (Just Expr.ifExists) (Orville.functionName functionDef)
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropFunction (Just Expr.ifExists) (Orville.functionName functionDef) Nothing
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
 
     secondTimePlan <-
@@ -1413,7 +1414,7 @@ prop_dropsUnrequestedTriggers =
       HH.evalIO $
         Orville.runOrville pool $ do
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableWithoutTrigger
-          Orville.executeVoid Orville.DDLQuery $ Expr.dropFunction (Just Expr.ifExists) (Orville.functionName functionDef)
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropFunction (Just Expr.ifExists) (Orville.functionName functionDef) Nothing
           AutoMigration.autoMigrateSchema AutoMigration.defaultOptions schemaItemsWithTrigger
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItemsWithoutTrigger
 

@@ -605,7 +605,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
             Just _proc ->
               [ mkMigrationStepWithType
                   DropFunctions
-                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId))
+                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId) (Just Expr.dropFunctionCascadeExpr))
               ]
     SchemaExtension extension ->
       Right $

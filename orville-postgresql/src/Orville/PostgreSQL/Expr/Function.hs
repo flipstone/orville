@@ -10,6 +10,8 @@ Stability : Stable
 module Orville.PostgreSQL.Expr.Function
   ( DropFunctionExpr
   , dropFunction
+  , dropFunctionRestrictExpr
+  , dropFunctionCascadeExpr
   , CreateFunctionExpr
   , createFunction
   , FunctionReturns
@@ -56,8 +58,8 @@ newtype DropFunctionExpr
 
 @since 1.1.0.0
 -}
-dropFunction :: Maybe IfExists -> QualifiedOrUnqualified FunctionName -> DropFunctionExpr
-dropFunction maybeIfExists name =
+dropFunction :: Maybe IfExists -> QualifiedOrUnqualified FunctionName -> Maybe DropFunctionActionExpr -> DropFunctionExpr
+dropFunction maybeIfExists name dropAction =
   DropFunctionExpr $
     RawSql.intercalate
       RawSql.space
@@ -65,8 +67,41 @@ dropFunction maybeIfExists name =
           [ Just (RawSql.fromString "DROP FUNCTION")
           , fmap RawSql.toRawSql maybeIfExists
           , Just (RawSql.toRawSql name)
+          , fmap RawSql.toRawSql dropAction
           ]
       )
+
+{- | Type to represent a drop function action on a @DROP FUNCTION@ statement. E.G.
+the @CASCADE@ in
+
+> DROP FUNCTION function_name CASCADE
+
+'DropFunctionActionExpr' provides a 'RawSql.SqlExpression' instance. See
+'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
+SQL.
+
+@since 1.1.0.0.4
+-}
+newtype DropFunctionActionExpr
+  = DropFunctionActionExpr RawSql.RawSql
+  deriving
+    ( -- | @since 1.1.0.0.4
+      RawSql.SqlExpression
+    )
+
+{- | The drop function action @RESTRICT@.
+
+  @since 1.1.0.0.4
+-}
+dropFunctionRestrictExpr :: DropFunctionActionExpr
+dropFunctionRestrictExpr = DropFunctionActionExpr $ RawSql.fromString "RESTRICT"
+
+{- | The drop function action @CASCADE@.
+
+  @since 1.1.0.0.4
+-}
+dropFunctionCascadeExpr :: DropFunctionActionExpr
+dropFunctionCascadeExpr = DropFunctionActionExpr $ RawSql.fromString "CASCADE"
 
 {- | Type to represent a SQL "CREATE FUNCTION" statement. E.G.
 
