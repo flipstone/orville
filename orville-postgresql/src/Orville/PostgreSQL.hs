@@ -382,6 +382,7 @@ module Orville.PostgreSQL
   , FunctionDefinition.FunctionDefinition
   , FunctionDefinition.setFunctionSchema
   , FunctionDefinition.mkTriggerFunction
+  , FunctionDefinition.mkFunction
   , FunctionDefinition.mkCreateFunctionExpr
   , FunctionDefinition.functionName
   , FunctionDefinition.functionIdentifier

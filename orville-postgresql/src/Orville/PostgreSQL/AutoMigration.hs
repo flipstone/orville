@@ -248,8 +248,9 @@ isMigrationStepTransactional stepWithType =
     DropFunctions -> True
     DropExtensions -> True
     AddExtensions -> True
+    AddFunctionsBeforeTables -> True
     AddRemoveTablesAndColumns -> True
-    AddFunctions -> True
+    AddFunctionsAfterTables -> True
     AddTriggers -> True
     AddIndexesTransactionally -> True
     AddConstraints -> True
@@ -279,10 +280,12 @@ data StepType
     DropExtensions
   | -- | @since 1.1.0.0
     AddExtensions
+  | -- | @since 1.2.0.0
+    AddFunctionsBeforeTables
   | -- | @since 1.0.0.0
     AddRemoveTablesAndColumns
   | -- | @since 1.1.0.0
-    AddFunctions
+    AddFunctionsAfterTables
   | -- | @since 1.1.0.0
     AddTriggers
   | -- | @since 1.0.0.0
@@ -570,13 +573,16 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
     SchemaFunction functionDef ->
       Right $
         let
+          functionMigrationStep = case Schema.functionAutoMigrationStep functionDef of
+            Schema.BeforeTableMigration -> AddFunctionsBeforeTables
+            Schema.AfterTableMigration -> AddFunctionsAfterTables
           (schemaName, procName) =
             functionIdToPgCatalogNames currentNamespace (Orville.functionIdentifier functionDef)
         in
           case PgCatalog.lookupProcedure (schemaName, procName) dbDesc of
             Nothing ->
               [ mkMigrationStepWithType
-                  AddFunctions
+                  functionMigrationStep
                   (Orville.mkCreateFunctionExpr functionDef Nothing)
               ]
             Just pgProc ->
@@ -584,7 +590,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
                 then []
                 else
                   [ mkMigrationStepWithType
-                      AddFunctions
+                      functionMigrationStep
                       (Orville.mkCreateFunctionExpr functionDef (Just Expr.orReplace))
                   ]
     SchemaDropFunction functionId ->
@@ -599,7 +605,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
             Just _proc ->
               [ mkMigrationStepWithType
                   DropFunctions
-                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId))
+                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId) (Just Expr.dropFunctionCascadeExpr))
               ]
     SchemaExtension extension ->
       Right $

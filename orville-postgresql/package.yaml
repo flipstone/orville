@@ -1,6 +1,6 @@
 ---
 name: orville-postgresql
-version: '1.1.0.0.4' # Development version, breaking changes included, release scheduled to be 1.2.0.0
+version: '1.1.0.0.5' # Development version, breaking changes included, release scheduled to be 1.2.0.0
 synopsis: A Haskell library for PostgreSQL
 description:
   Orville's goal is to provide a powerful API for applications to access
@@ -57,6 +57,7 @@ library:
     - Orville.PostgreSQL.Expr.FetchClause
     - Orville.PostgreSQL.Expr.Filter
     - Orville.PostgreSQL.Expr.Function
+    - Orville.PostgreSQL.Expr.FunctionArgument
     - Orville.PostgreSQL.Expr.GroupBy
     - Orville.PostgreSQL.Expr.IfExists
     - Orville.PostgreSQL.Expr.IfNotExists

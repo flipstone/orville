@@ -1,0 +1,29 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
+{- |
+Copyright : Flipstone Technology Partners 2025
+License   : MIT
+Stability : Stable
+
+@since 1.2.0.0
+-}
+module Orville.PostgreSQL.Expr.FunctionArgument
+  ( FunctionArgument
+  )
+where
+
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
+
+{- | An argument passed to a function E.G. the @x int@ in
+
+> CREATE FUNCTION my_function(x int, y int) RETURNS text
+
+Support for using this type in orville is currently very limited and experimental
+
+@since 1.2.0.0
+-}
+newtype FunctionArgument = FunctionArgument RawSql.RawSql
+  deriving
+    ( -- | @since 1.2.0.0
+      RawSql.SqlExpression
+    )
