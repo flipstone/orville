@@ -1,0 +1,11 @@
+resolver: lts-24.12
+packages:
+  - .
+
+extra-deps:
+  - ../orville-postgresql
+  - mmzk-typeid-0.7.0.2
+
+flags:
+  orville-postgresql-typeid:
+    ci: true

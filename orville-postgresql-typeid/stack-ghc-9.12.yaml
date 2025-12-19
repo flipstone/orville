@@ -1,0 +1,6 @@
+<<: !include stack.yaml
+resolver: nightly-2025-09-11
+extra-deps:
+  - ../orville-postgresql
+  - mmzk-typeid-0.7.0.2
+  - random-1.2.1.3@sha256:117541ba0a177397a3333f94870f789ef050dca31b0688a19824b2bc401b8823,6237

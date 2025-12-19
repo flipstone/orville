@@ -1,0 +1,120 @@
+name: Orville Postgresql
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  find-stack-yamls:
+    name: Find stack.yamls for GHC Matrix
+    runs-on: ubuntu-22.04
+    outputs:
+      stack-yamls: ${{ steps.set-output.outputs.stack-yamls }}
+    steps:
+      - name: Find Stack Yamls
+        id: set-output
+        uses: flipstone/github-actions/find-stack-ghc-yamls@d3da7b6361e88fc10557f8b6ca9aaf44e13f0f8e
+        with:
+          working-directory: orville-postgresql
+  test:
+    name: Build and Test
+    needs: find-stack-yamls
+    runs-on: ubuntu-22.04
+    strategy:
+      max-parallel: 6
+      matrix:
+        pg-version: ["pg13", "pg17"]
+        stack-yaml: ${{ fromJson(needs.find-stack-yamls.outputs.stack-yamls) }}
+
+        include:
+          # Only test the default 'stack.yaml' for the "middle" postgresql versions to reduce the
+          # load on CI
+          - pg-version: "pg14"
+            stack-yaml: "stack.yaml"
+          - pg-version: "pg15"
+            stack-yaml: "stack.yaml"
+          - pg-version: "pg16"
+            stack-yaml: "stack.yaml"
+
+    permissions:
+      packages: write
+      contents: read
+      actions: read
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache
+        uses: actions/cache@v4
+        env:
+          cache-version: v3
+
+        with:
+          key: ${{ env.cache-version }}-${{ matrix.stack-yaml }}-${{ hashFiles( matrix.stack-yaml, 'orville-postgresql/package.yaml') }}
+          restore-keys: |
+            ${{ env.cache-version }}-${{ matrix.stack-yaml }}-
+          path: |
+            ./stack-root
+
+      - name: Setup Stack
+        uses: flipstone/github-actions/setup-dockerized-stack@d3da7b6361e88fc10557f8b6ca9aaf44e13f0f8e
+        with:
+          stack-root: ../stack-root
+          working-directory: orville-postgresql
+
+      - name: Run Tests
+        working-directory: orville-postgresql
+        env:
+          PG_VERSION: ${{ matrix.pg-version }}
+        run: ./scripts/test --stack-yaml ${{ matrix.stack-yaml }}
+
+  formatting-check:
+    name: Formatting Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Format and Check for Diff
+        working-directory: orville-postgresql
+        run: ./scripts/format-repo
+
+  cabal-check:
+    name: Cabal Check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Hackage issues
+        working-directory: orville-postgresql
+        run: docker compose run --rm dev cabal check
+
+  cabal-latest-build:
+    name: Cabal Build
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build with cabal and latest ghc+deps
+        # When a new ghc version is released, we might not be able to build all the dependencies for
+        # a little while. So we need to allow failure here. It is a very unfortunate situation that
+        # github does not give us a better UX for this as the closest thing to a required check is
+        # not configured here, but seemingly only through the api/webui for "branch protection"
+        continue-on-error: true
+        working-directory: orville-postgresql
+        run: ./scripts/cabal-latest

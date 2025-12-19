@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-dev-container.sh
+
+STACK_OPTIONS=""
+
+if [ "$CI" ]; then
+  STACK_OPTIONS="--lock-file error-on-write"
+else
+  STACK_OPTIONS="--fast"
+fi
+
+
+stack \
+  build \
+  --test \
+  $STACK_OPTIONS \
+  "$@"

@@ -1,0 +1,58 @@
+services:
+  dev:
+    build: .
+    volumes:
+      - .:/orville-postgresql-typeid
+      - ../orville-postgresql:/orville-postgresql
+      - stack-work:/orville-postgresql-typeid/.stack-work
+      - stack-root:/stack-root
+    working_dir: /orville-postgresql-typeid
+    depends_on:
+      - testdb-${PG_VERSION:-pg13}
+    environment:
+      TEST_CONN_HOST: "host=testdb-${PG_VERSION:-pg13}"
+      STACK_ROOT: /stack-root
+      IN_DEV_CONTAINER: "true"
+
+  tools:
+    image: ghcr.io/flipstone/haskell-tools:debian-ghc-9.10.3-1e1d10c
+    volumes:
+      - .:/orville-postgresql-typeid
+    working_dir: /orville-postgresql-typeid
+    environment:
+      IN_TOOLS_CONTAINER: "true"
+
+  testdb-pg13:
+    image: postgres:13.16-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg14:
+    image: postgres:14.13-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg15:
+    image: postgres:15.8-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg16:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+  testdb-pg17:
+    image: postgres:17.0-alpine
+    environment:
+      POSTGRES_USER: orville_test
+      POSTGRES_PASSWORD: orville
+
+
+volumes:
+  stack-root:
+  stack-work:

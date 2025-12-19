@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e
+
+source scripts/lib/run-in-dev-container.sh
+
+ghcup install ghc latest --set
+
+cabal update
+cabal test --flag ci
