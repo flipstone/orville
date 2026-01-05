@@ -28,6 +28,8 @@ connectionTests pool =
     , prop_truncateValuesAtUnsafeNulByte pool
     , prop_errorOnInvalidSql pool
     , prop_returningAConnectionToPoolWithOpenTransactionCausesException pool
+    , prop_acquiredConnectionNotDestroyed pool
+    , prop_poolUsableAfterDestroyingConnections pool
     ]
 
 prop_safeOrUnsafeNonNullBytes :: Property.NamedDBProperty
@@ -137,7 +139,7 @@ prop_errorOnInvalidSql =
 
         Conn.sqlExecutionErrorSqlState err === Just syntaxErrorState
       Right _ -> do
-        HH.footnote "Expected 'executeRow' to return failure, but it did not"
+        HH.footnote "Expected 'executeRaw' to return failure, but it did not"
         HH.failure
 
 prop_returningAConnectionToPoolWithOpenTransactionCausesException :: Property.NamedDBProperty
@@ -156,3 +158,55 @@ prop_returningAConnectionToPoolWithOpenTransactionCausesException =
       Right _ -> do
         HH.footnote "Expected 'withPoolConnection' to return failure, but it did not"
         HH.failure
+
+prop_acquiredConnectionNotDestroyed :: Property.NamedDBProperty
+prop_acquiredConnectionNotDestroyed =
+  Property.namedDBProperty "destroying all connections in the pool does not affect connections already acquired" $ \pool -> do
+    textBytes <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
+
+    value <-
+      MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
+        Conn.destroyAllConnections pool
+        result <-
+          Conn.executeRaw
+            connection
+            (B8.pack "SELECT $1::text")
+            [ Just $ PgTextFormatValue.fromByteString textBytes
+            ]
+
+        LibPQ.getvalue' result 0 0
+
+    value === Just textBytes
+
+prop_poolUsableAfterDestroyingConnections :: Property.NamedDBProperty
+prop_poolUsableAfterDestroyingConnections =
+  Property.namedDBProperty "the connection pool can be used after destroying all connections" $ \pool -> do
+    textBytes1 <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
+    textBytes2 <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
+
+    value1 <-
+      MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
+        result <-
+          Conn.executeRaw
+            connection
+            (B8.pack "SELECT $1::text")
+            [ Just $ PgTextFormatValue.fromByteString textBytes1
+            ]
+
+        LibPQ.getvalue' result 0 0
+
+    MIO.liftIO $ Conn.destroyAllConnections pool
+
+    value2 <-
+      MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
+        result <-
+          Conn.executeRaw
+            connection
+            (B8.pack "SELECT $1::text")
+            [ Just $ PgTextFormatValue.fromByteString textBytes2
+            ]
+
+        LibPQ.getvalue' result 0 0
+
+    value1 === Just textBytes1
+    value2 === Just textBytes2
