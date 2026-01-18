@@ -161,12 +161,12 @@ prop_returningAConnectionToPoolWithOpenTransactionCausesException =
 
 prop_acquiredConnectionNotDestroyed :: Property.NamedDBProperty
 prop_acquiredConnectionNotDestroyed =
-  Property.namedDBProperty "destroying all connections in the pool does not affect connections already acquired" $ \pool -> do
+  Property.namedDBProperty "destroying idle connections in the pool does not affect connections already acquired" $ \pool -> do
     textBytes <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
 
     value <-
       MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
-        Conn.destroyAllConnections pool
+        Conn.destroyIdleConnections pool
         result <-
           Conn.executeRaw
             connection
@@ -180,7 +180,7 @@ prop_acquiredConnectionNotDestroyed =
 
 prop_poolUsableAfterDestroyingConnections :: Property.NamedDBProperty
 prop_poolUsableAfterDestroyingConnections =
-  Property.namedDBProperty "the connection pool can be used after destroying all connections" $ \pool -> do
+  Property.namedDBProperty "the connection pool can be used after destroying idle connections" $ \pool -> do
     textBytes1 <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
     textBytes2 <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
 
@@ -195,7 +195,7 @@ prop_poolUsableAfterDestroyingConnections =
 
         LibPQ.getvalue' result 0 0
 
-    MIO.liftIO $ Conn.destroyAllConnections pool
+    MIO.liftIO $ Conn.destroyIdleConnections pool
 
     value2 <-
       MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do

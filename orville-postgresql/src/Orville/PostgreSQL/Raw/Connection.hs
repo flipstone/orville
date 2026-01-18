@@ -22,7 +22,7 @@ module Orville.PostgreSQL.Raw.Connection
   , StripeOption (OneStripePerCapability, StripeCount)
   , ConnectionPool
   , createConnectionPool
-  , destroyAllConnections
+  , destroyIdleConnections
   , Connection
   , withPoolConnection
   , executeRaw
@@ -121,20 +121,20 @@ createConnectionPool options = do
       connPerStripe
 #endif
 
-{- | Destroy (close) all connections currently in the connection pool,
-proactively freeing the associated resources and returning the pool to an
-empty state. This can be useful when it is known that all connections have
-become invalid or are no longer needed.
+{- | Destroy (close) connections currently in the connection pool, proactively
+freeing the associated resources and returning the pool to an empty state. This
+can be useful when it is known that all connections have become invalid or are
+no longer needed.
 
 Connections in use, such as in 'withPoolConnection', are not considered /in/ the
-pool and will not be immediately affected by 'destroyAllConnections'.
+pool and will not be immediately affected by 'destroyIdleConnections'.
 
 Any exceptions thrown by the destroy function are ignored.
 
 @since 1.1.1.0
 -}
-destroyAllConnections :: ConnectionPool -> IO ()
-destroyAllConnections (ConnectionPool pool) =
+destroyIdleConnections :: ConnectionPool -> IO ()
+destroyIdleConnections (ConnectionPool pool) =
   destroyAllResources pool
 
 {- | Values for the 'connectionPoolStripes' field of 'ConnectionOptions'.
