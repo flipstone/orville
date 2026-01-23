@@ -111,6 +111,7 @@ data ConstraintType
   | UniqueConstraint
   | ConstraintTrigger
   | ExclusionConstraint
+  | NotNullConstraint
   deriving
     ( -- | @since 1.0.0.0
       Show
@@ -135,6 +136,7 @@ constraintTypeToPgText conType =
       UniqueConstraint -> "u"
       ConstraintTrigger -> "t"
       ExclusionConstraint -> "x"
+      NotNullConstraint -> "n"
 
 {- | Attempts to parse a PostgreSQL single character textual value as a
   'ConstraintType'
@@ -152,6 +154,7 @@ pgTextToConstraintType text =
     "u" -> Right UniqueConstraint
     "t" -> Right ConstraintTrigger
     "x" -> Right ExclusionConstraint
+    "n" -> Right NotNullConstraint
     typ -> Left ("Unrecognized PostgreSQL constraint type: " <> typ)
 
 {- | Converts a 'Maybe Orville.ForeignKeyAction' to the corresponding single character

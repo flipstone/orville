@@ -724,7 +724,13 @@ prop_addAndRemovesUniqueConstraints =
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
 
     Fold.traverse_ (PgAssert.assertUniqueConstraintExists tableDesc) newConstraintColumns
-    length (PgCatalog.relationConstraints tableDesc) === length (List.nub newConstraintColumns)
+    -- We ignore NotNullConstraint because it isn't supported on PostgreSQL versions < 18
+    length
+      ( filter
+          (\a -> PgCatalog.pgConstraintType (PgCatalog.constraintRecord a) /= PgCatalog.NotNullConstraint)
+          $ PgCatalog.relationConstraints tableDesc
+      )
+      === length (List.nub newConstraintColumns)
 
 prop_addAndRemovesForeignKeyConstraints :: Property.NamedDBProperty
 prop_addAndRemovesForeignKeyConstraints =
@@ -836,7 +842,13 @@ prop_addAndRemovesForeignKeyConstraints =
     migrationPlanStepStrings secondTimePlan === []
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     Fold.traverse_ (PgAssert.assertForeignKeyConstraintExists tableDesc) newForeignKeyInfos
-    length (PgCatalog.relationConstraints tableDesc) === length (List.nub newForeignKeyInfos)
+    -- We ignore NotNullConstraint because it isn't supported on PostgreSQL versions < 18
+    length
+      ( filter
+          (\a -> PgCatalog.pgConstraintType (PgCatalog.constraintRecord a) /= PgCatalog.NotNullConstraint)
+          $ PgCatalog.relationConstraints tableDesc
+      )
+      === length (List.nub newForeignKeyInfos)
 
 prop_addAndRemovesCheckConstraints :: Property.NamedDBProperty
 prop_addAndRemovesCheckConstraints =
@@ -884,7 +896,13 @@ prop_addAndRemovesCheckConstraints =
     tableDesc <- PgAssert.assertTableExists pool "migration_check_test"
 
     Fold.traverse_ (PgAssert.assertCheckConstraintExists tableDesc) newConstrs
-    length (PgCatalog.relationConstraints tableDesc) === length newConstraints
+    -- We ignore NotNullConstraint because it isn't supported on PostgreSQL versions < 18
+    length
+      ( filter
+          (\a -> PgCatalog.pgConstraintType (PgCatalog.constraintRecord a) /= PgCatalog.NotNullConstraint)
+          $ PgCatalog.relationConstraints tableDesc
+      )
+      === length newConstraints
 
 prop_addNamedUniqueConstraint :: Property.NamedDBProperty
 prop_addNamedUniqueConstraint =
@@ -946,7 +964,13 @@ prop_addNamedUniqueConstraint =
 
     -- We use originalConstraintColumns as we expect the constraint not to be migrated as the name is the same
     PgAssert.assertUniqueConstraintExists tableDesc originalConstraintColumns
-    length (PgCatalog.relationConstraints tableDesc) === 1
+    -- We ignore NotNullConstraint because it isn't supported on PostgreSQL versions < 18
+    length
+      ( filter
+          (\a -> PgCatalog.pgConstraintType (PgCatalog.constraintRecord a) /= PgCatalog.NotNullConstraint)
+          $ PgCatalog.relationConstraints tableDesc
+      )
+      === 1
 
 prop_addsAndRemovesMixedIndexes :: Property.NamedDBProperty
 prop_addsAndRemovesMixedIndexes =

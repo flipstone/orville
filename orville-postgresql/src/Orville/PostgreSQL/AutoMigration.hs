@@ -1080,6 +1080,7 @@ mkDropConstraintActions constraintsToKeep constraint =
         PgCatalog.PrimaryKeyConstraint -> []
         PgCatalog.ConstraintTrigger -> []
         PgCatalog.ExclusionConstraint -> []
+        PgCatalog.NotNullConstraint -> []
 
 {- | Sets the schema name on a constraint to the given namespace when the
   constraint has no namespace explicitly given. This is important for Orville
@@ -1187,6 +1188,7 @@ pgConstraintMigrationKeys constraintDesc =
         PgCatalog.PrimaryKeyConstraint -> False
         PgCatalog.ConstraintTrigger -> False
         PgCatalog.ExclusionConstraint -> False
+        PgCatalog.NotNullConstraint -> False
   in
     if isMigratableConstraint
       then Schema.NamedBasedConstraint constraintIdentifier : Maybe.maybeToList attributeBasedConstraints
@@ -1380,6 +1382,8 @@ pgConstraintImpliedIndexOid pgConstraint =
     PgCatalog.ForeignKeyConstraint ->
       Nothing
     PgCatalog.ConstraintTrigger ->
+      Nothing
+    PgCatalog.NotNullConstraint ->
       Nothing
 
 {- | Builds the orville migration keys given a description of an existing index

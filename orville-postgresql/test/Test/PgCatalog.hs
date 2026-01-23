@@ -129,8 +129,11 @@ prop_queryPgConstraint =
         PgCatalog.pgConstraintTable
         (Orville.where_ $ Orville.fieldEquals PgCatalog.constraintRelationOidField pgClassOid)
 
-    map PgCatalog.pgConstraintType constraints === [PgCatalog.PrimaryKeyConstraint]
-    map PgCatalog.pgConstraintKey constraints === [Just [1]]
+    let
+      filterNotNulls =
+        filter (\a -> PgCatalog.pgConstraintType a /= PgCatalog.NotNullConstraint)
+    map PgCatalog.pgConstraintType (filterNotNulls constraints) === [PgCatalog.PrimaryKeyConstraint]
+    map PgCatalog.pgConstraintKey (filterNotNulls constraints) === [Just [1]]
 
 prop_queryPgTrigger :: Property.NamedDBProperty
 prop_queryPgTrigger =
