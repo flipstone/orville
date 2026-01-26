@@ -1,6 +1,6 @@
 ---
 name: orville-postgresql
-version: '1.1.0.0.5' # Development version, breaking changes included, release scheduled to be 1.2.0.0
+version: '1.1.1.0.0' # Development version, breaking changes included, release scheduled to be 1.2.0.0
 synopsis: A Haskell library for PostgreSQL
 description:
   Orville's goal is to provide a powerful API for applications to access
@@ -176,7 +176,7 @@ library:
     - containers >= 0.6 && < 0.9
     - network-uri >= 2.6 && < 2.7
     - random >= 1.0 && <2
-    - resource-pool <0.3 || (>= 0.4  && <0.6)
+    - resource-pool (>= 0.2.2.0 && <0.3) || (>= 0.4  && <0.6)
     - safe-exceptions >=0.1.7 && < 0.2
     - text (>= 1.2 && < 1.3) || (>=2.0 && <2.2)
     - time >=1.9.1 && < 1.16
@@ -196,7 +196,7 @@ tests:
       - hedgehog >= 1.0.5 && <1.8
       - postgresql-libpq >= 0.9.4.2 && <0.12
       - orville-postgresql
-      - resource-pool <0.3 || (>= 0.4  && <0.6)
+      - resource-pool (>= 0.2.2.0 && <0.3) || (>= 0.4  && <0.6)
       - safe-exceptions >=0.1.7 && < 0.2
       - text (>= 1.2 && < 1.3) || (>=2.0 && <2.2)
       - time >=1.9.1 && < 1.16
