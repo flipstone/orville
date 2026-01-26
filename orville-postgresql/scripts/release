@@ -28,6 +28,24 @@ case "$1" in
 
     ;;
 
+  publish-candidate)
+    version="$2"
+
+    if [ "$version" = "" ]; then
+      echo "Please specify the version number to publish."
+      exit 1
+    else
+      if (curl --fail --silent -o /dev/null https://hackage.haskell.org/package/orville-postgresql-$version/candidate); then
+        cabal upload --publish dist-newstyle/sdist/orville-postgresql-$version.tar.gz
+        cabal upload --publish -d dist-newstyle/docs/orville-postgresql-$version-docs.tar.gz
+      else
+        echo "No candidate found for version $version. Please use upload-candidate first and check the candidate before publishing"
+        exit 1
+      fi
+    fi
+
+    ;;
+
   *)
     echo "Unrecognized command: $1"
     exit 1
