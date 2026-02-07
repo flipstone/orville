@@ -24,17 +24,20 @@ module Orville.PostgreSQL.Execution.Insert
   , executeInsertReturnEntities
   , insertToTableReturning
   , insertToTable
+  , upsertToTable
+  , upsertToTableReturning
   , rawInsertExpr
   )
 where
 
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import Orville.PostgreSQL.Execution.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import Orville.PostgreSQL.Schema (TableDefinition, mkInsertExpr, tableMarshaller)
 
@@ -47,10 +50,13 @@ result set when it is executed.
 -}
 data Insert readEntity returningClause where
   Insert ::
-    AnnotatedSqlMarshaller writeEntity readEntity ->
+    Marshall.AnnotatedSqlMarshaller writeEntity readEntity ->
     Expr.InsertExpr ->
     Insert readEntity NoReturningClause
-  InsertReturning :: AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity ReturningClause
+  InsertReturning ::
+    Marshall.AnnotatedSqlMarshaller writeEntity readEntity ->
+    Expr.InsertExpr ->
+    Insert readEntity ReturningClause
 
 {- | Extracts the query that will be run when the insert is executed. Normally you
   don't want to extract the query and run it yourself, but this function is
@@ -112,6 +118,33 @@ insertToTableReturning ::
 insertToTableReturning =
   insertTable WithReturning
 
+{- | Builds an 'Insert' with an @ON CONFLICT@ clause that will insert new rows, or update conflicting rows
+  using a @SET@ clause derived from the writable columns of the table's @SqlMarshaller@.
+
+@since 1.1.1.0.1
+-}
+upsertToTable ::
+  TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  NonEmpty writeEntity ->
+  Insert readEntity NoReturningClause
+upsertToTable =
+  upsertTable WithoutReturning
+
+{- | Builds an 'Insert' with an @ON CONFLICT@ clause that will insert new rows, or update conflicting rows
+  using a @SET@ clause derived from the writable columns of the table's @SqlMarshaller@. Returns the inserted
+  and updated rows.
+
+@since 1.1.1.0.1
+-}
+upsertToTableReturning ::
+  TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  NonEmpty writeEntity ->
+  Insert readEntity ReturningClause
+upsertToTableReturning =
+  upsertTable WithReturning
+
 -- an internal helper function for creating an insert with a given `ReturningOption`
 insertTable ::
   ReturningOption returningClause ->
@@ -120,6 +153,40 @@ insertTable ::
   Insert readEntity returningClause
 insertTable returningOption tableDef entities =
   rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef Nothing entities)
+
+-- an internal helper function for creating an @insert ... on conflict <target> do update set ...@ with a given `ReturningOption`
+upsertTable ::
+  ReturningOption returningClause ->
+  TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  NE.NonEmpty writeEntity ->
+  Insert readEntity returningClause
+upsertTable returningOption tableDef target entities =
+  let
+    marshaller = tableMarshaller tableDef
+    unAnnTableMarshaller = Marshall.unannotatedSqlMarshaller marshaller
+
+    conflictSetItemExprs =
+      Marshall.foldMarshallerFields
+        unAnnTableMarshaller
+        []
+        ( Marshall.collectFromField
+            Marshall.ExcludeReadOnlyColumns
+            (const $ Expr.setColumnNameExcluded . Expr.unqualified . Marshall.fieldColumnName)
+        )
+
+    mkOnConflictExpr neSetItemExprs =
+      Expr.onConflictDoUpdate (Just target) neSetItemExprs Nothing
+  in
+    rawInsertExpr
+      returningOption
+      marshaller
+      ( mkInsertExpr
+          returningOption
+          tableDef
+          (fmap mkOnConflictExpr (NE.nonEmpty conflictSetItemExprs))
+          entities
+      )
 
 {- | Builds an 'Insert' that will execute the specified query and use the given
   'Orville.PostgreSQL.SqlMarshaller' to decode it. It is up to the caller to
@@ -135,6 +202,10 @@ insertTable returningOption tableDef entities =
 
 @since 1.0.0.0
 -}
-rawInsertExpr :: ReturningOption returningClause -> AnnotatedSqlMarshaller writeEntity readEntity -> Expr.InsertExpr -> Insert readEntity returningClause
+rawInsertExpr ::
+  ReturningOption returningClause ->
+  Marshall.AnnotatedSqlMarshaller writeEntity readEntity ->
+  Expr.InsertExpr ->
+  Insert readEntity returningClause
 rawInsertExpr WithReturning = InsertReturning
 rawInsertExpr WithoutReturning = Insert

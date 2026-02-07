@@ -22,6 +22,12 @@ module Orville.PostgreSQL.Execution.EntityOperations
   , updateFields
   , updateFieldsAndReturnEntities
   , updateFieldsAndReturnRowCount
+  , upsertEntity
+  , upsertEntityAndReturnRowCount
+  , upsertAndReturnEntity
+  , upsertEntities
+  , upsertEntitiesAndReturnRowCount
+  , upsertAndReturnEntities
   , deleteEntity
   , deleteEntityAndReturnRowCount
   , deleteAndReturnEntity
@@ -39,6 +45,7 @@ import Control.Exception (Exception, throwIO)
 import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NEL
 import Data.Maybe (listToMaybe)
 
 import qualified Orville.PostgreSQL.Execution.Delete as Delete
@@ -419,3 +426,99 @@ instance Show EmptyUpdateError where
 
 -- | @since 1.0.0.0
 instance Exception EmptyUpdateError
+
+{- |
+  Similar to 'insertAndReturnEntity', but uses an @ON CONFLICT@ clause with an optional
+  'Expr.ConflictTargetExpr' to update the row if it conflicts due to a constraint violation.
+
+@since 1.1.1.0.1
+-}
+upsertAndReturnEntity ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  writeEntity ->
+  m readEntity
+upsertAndReturnEntity tableDef target entity = do
+  returnedEntities <- upsertAndReturnEntities tableDef target (entity :| [])
+
+  RowCountExpectation.expectExactlyOneRow
+    "upsertAndReturnEntity RETURNING clause"
+    returnedEntities
+
+{- |
+  Similar to 'insertEntity', but uses an @ON CONFLICT@ clause with an optional
+  'Expr.ConflictTargetExpr' to update the row if it conflicts due to a constraint violation.
+
+@since 1.1.1.0.1
+-}
+upsertEntity ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  writeEntity ->
+  m ()
+upsertEntity tableDef target =
+  Monad.void . upsertEntityAndReturnRowCount tableDef target
+
+{- |
+  Similar to 'insertEntity', but uses an @ON CONFLICT@ clause with an optional
+  'Expr.ConflictTargetExpr' to update the row if it conflicts due to a constraint violation.
+  Returns the count of the affected rows.
+
+@since 1.1.1.0.1
+-}
+upsertEntityAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  writeEntity ->
+  m Int
+upsertEntityAndReturnRowCount tableDef target =
+  upsertEntitiesAndReturnRowCount tableDef target . pure
+
+{- |
+  Similar to 'insertAndReturnEntities', but uses an @ON CONFLICT@ clause with an optional
+  'Expr.ConflictTargetExpr' to update rows that conflict due to a constraint violation.
+
+@since 1.1.1.0.1
+-}
+upsertAndReturnEntities ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  NEL.NonEmpty writeEntity ->
+  m [readEntity]
+upsertAndReturnEntities tableDef target = do
+  Insert.executeInsertReturnEntities . Insert.upsertToTableReturning tableDef target
+
+{- |
+  Similar to 'insertEntities', but uses an @ON CONFLICT@ clause with an optional
+  'Expr.ConflictTargetExpr' to update rows that conflict due to a constraint violation.
+
+@since 1.1.1.0.1
+-}
+upsertEntities ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  NEL.NonEmpty writeEntity ->
+  m ()
+upsertEntities tableDef target =
+  Monad.void . upsertEntitiesAndReturnRowCount tableDef target
+
+{- |
+  Similar to 'insertEntitiesAndReturnRowCount', but uses an @ON CONFLICT@ clause with an optional
+  'Expr.ConflictTargetExpr' to update rows that conflict due to a constraint violation.
+  Returns the count of the affected rows.
+
+@since 1.1.1.0.1
+-}
+upsertEntitiesAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.ConflictTargetExpr ->
+  NEL.NonEmpty writeEntity ->
+  m Int
+upsertEntitiesAndReturnRowCount tableDef target =
+  Insert.executeInsert . Insert.upsertToTable tableDef target

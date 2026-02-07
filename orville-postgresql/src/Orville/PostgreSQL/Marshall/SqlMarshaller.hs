@@ -61,6 +61,7 @@ module Orville.PostgreSQL.Marshall.SqlMarshaller
   , marshallerGreaterThanOrEqualTo
   , marshallerIn
   , marshallerNotIn
+  , marshallerConflictTargetExpr
   )
 where
 
@@ -1114,3 +1115,22 @@ marshallerIn = SqlComparable.isIn
 -}
 marshallerNotIn :: SqlMarshaller writeEntity x -> NE.NonEmpty writeEntity -> Expr.BooleanExpr
 marshallerNotIn = SqlComparable.isNotIn
+
+{- | Builds a 'Expr.ConflictTargetExpr' using the writable columns in a 'SqlMarshaller'.
+  Returns 'Nothing' if the 'SqlMarshaller' has no writable columns.
+
+@since 1.1.1.0.1
+-}
+marshallerConflictTargetExpr :: SqlMarshaller writeEntity readEntity -> Maybe Expr.ConflictTargetExpr
+marshallerConflictTargetExpr marshaller =
+  let
+    colNames =
+      foldMarshallerFields
+        marshaller
+        []
+        ( collectFromField
+            ExcludeReadOnlyColumns
+            (const fieldColumnName)
+        )
+  in
+    fmap Expr.conflictTargetForColumnNames (NE.nonEmpty colNames)

@@ -7,24 +7,30 @@ module Test.Entities.CompositeKeyEntity
   , generate
   , generateCompositeKeyEntityId
   , generateCompositeKeyEntityName
+  , generateCompositeKeyEntityAge
   , generateNonEmpty
+  , generateList
   , withTable
   , compositeKeyEntityIdField
   , compositeKeyEntityNameField
   , compositeKeyEntityAgeField
+  , compositeKeyConflictTarget
   )
 where
 
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Function (on)
 import Data.Int (Int32)
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
+import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 
 import qualified Test.PgGen as PgGen
@@ -113,9 +119,19 @@ generateNonEmpty range =
     (NEL.nubBy ((==) `on` compositeKey))
     (Gen.nonEmpty range generate)
 
+generateList :: HH.Range Int -> HH.Gen [CompositeKeyEntity]
+generateList range =
+  fmap
+    (List.nubBy ((==) `on` compositeKey))
+    (Gen.list range generate)
+
 withTable :: MonadIO m => Orville.ConnectionPool -> Orville.Orville a -> m a
 withTable pool operation =
   liftIO $ do
     Conn.withPoolConnection pool $ \connection ->
       TestTable.dropAndRecreateTableDef connection table
     Orville.runOrville pool operation
+
+compositeKeyConflictTarget :: Expr.ConflictTargetExpr
+compositeKeyConflictTarget =
+  fromJust $ Orville.marshallerConflictTargetExpr compositeKeyMap
