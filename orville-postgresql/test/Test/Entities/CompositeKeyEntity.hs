@@ -14,7 +14,6 @@ module Test.Entities.CompositeKeyEntity
   , compositeKeyEntityIdField
   , compositeKeyEntityNameField
   , compositeKeyEntityAgeField
-  , compositeKeyConflictTarget
   )
 where
 
@@ -23,14 +22,12 @@ import Data.Function (on)
 import Data.Int (Int32)
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
-import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 
 import qualified Test.PgGen as PgGen
@@ -131,7 +128,3 @@ withTable pool operation =
     Conn.withPoolConnection pool $ \connection ->
       TestTable.dropAndRecreateTableDef connection table
     Orville.runOrville pool operation
-
-compositeKeyConflictTarget :: Expr.ConflictTargetExpr
-compositeKeyConflictTarget =
-  fromJust $ Orville.marshallerConflictTargetExpr compositeKeyMap

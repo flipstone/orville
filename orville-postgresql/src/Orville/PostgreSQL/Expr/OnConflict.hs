@@ -107,6 +107,7 @@ conflictTargetForIndexColumn colName mbWhere =
    conflicts.
 
    Note that this function assumes that the 'IndexBodyExpr' is parenthesized.
+
 @since 1.1.0.0
 -}
 conflictTargetForIndexExpr :: IndexBodyExpr -> Maybe WhereClause -> ConflictTargetExpr

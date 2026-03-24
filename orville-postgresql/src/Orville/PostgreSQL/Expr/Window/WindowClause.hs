@@ -48,7 +48,7 @@ appendNamedWindowDefinitionExpr (NamedWindowDefinitionExpr a) (NamedWindowDefini
   NamedWindowDefinitionExpr (a <> RawSql.commaSpace <> b)
 
 {- | Builds a 'NamedWindowDefinitionExpr' with the given name and 'WindowDefinitionExpr'.
-1
+
 @since 1.1.0.0
 -}
 namedWindowDefinition :: WindowName -> WindowDefinitionExpr -> NamedWindowDefinitionExpr
@@ -77,8 +77,8 @@ newtype WindowClause
       RawSql.SqlExpression
     )
 
-{- | Builds a full 'WindowClause' with the given windowing described in the 'NamedWindowDefinitionExpr'
-1
+{- | Builds a full 'WindowClause' with the given windowing described in the 'NamedWindowDefinitionExpr'.
+
 @since 1.1.0.0
 -}
 windowClause :: NamedWindowDefinitionExpr -> WindowClause

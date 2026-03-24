@@ -30,6 +30,8 @@ module Orville.PostgreSQL
   , EntityOperations.insertEntities
   , EntityOperations.insertEntitiesAndReturnRowCount
   , EntityOperations.insertAndReturnEntities
+  , EntityOperations.ConflictTarget (..)
+  , EntityOperations.ConflictTargetError (..)
   , EntityOperations.upsertEntity
   , EntityOperations.upsertEntityAndReturnRowCount
   , EntityOperations.upsertAndReturnEntity

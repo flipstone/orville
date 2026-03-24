@@ -215,6 +215,7 @@ test-suite spec
       Test.Entities.CompositeKeyEntity
       Test.Entities.Foo
       Test.Entities.FooChild
+      Test.Entities.UpsertEntity
       Test.Entities.User
       Test.EntityOperations
       Test.Execution

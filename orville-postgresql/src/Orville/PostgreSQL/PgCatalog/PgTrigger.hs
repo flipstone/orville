@@ -24,6 +24,7 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 
 {- | The Haskell representation of data read from the @pg_catalog.pg_trigger@
   table. Rows in this table correspond to triggers created on tables and views.
+
 @since 1.1.0.0
 -}
 data PgTrigger = PgTrigger

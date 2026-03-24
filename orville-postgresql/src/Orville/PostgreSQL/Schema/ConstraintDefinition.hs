@@ -30,6 +30,7 @@ module Orville.PostgreSQL.Schema.ConstraintDefinition
   , addConstraint
   , tableConstraintDefinitions
   , tableConstraintKeys
+  , constraintDefinitionConflictTargetExpr
   )
 where
 
@@ -391,3 +392,22 @@ foreignKeyConstraintWithOptions foreignTableId foreignReferences options =
       { i_constraintSqlExpr = expr
       , i_constraintMigrationKey = migrationKey
       }
+
+{- | Attempt to build a 'Expr.ConflictTargetExpr' for a 'ConstraintDefinition'. Will return
+  'Nothing' if the provided constraint is not a unique constraint.
+
+@since 1.1.1.0.1
+-}
+constraintDefinitionConflictTargetExpr :: ConstraintDefinition -> Maybe Expr.ConflictTargetExpr
+constraintDefinitionConflictTargetExpr constraintDef = case constraintMigrationKey constraintDef of
+  NamedBasedConstraint constraintIdentifier ->
+    Just
+      . Expr.conflictTargetForConstraint
+      $ ConstraintIdentifier.constraintIdUnqualifiedName constraintIdentifier
+  AttributeBasedConstraint attributeBasedKey -> case attributeBasedKey of
+    ForeignKeyConstraint _ ->
+      Nothing
+    UniqueConstraint fieldNames ->
+      fmap
+        (Expr.conflictTargetForColumnNames . fmap FieldName.fieldNameToColumnName)
+        (NEL.nonEmpty fieldNames)

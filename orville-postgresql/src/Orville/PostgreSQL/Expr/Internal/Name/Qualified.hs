@@ -94,6 +94,7 @@ newtype Qualified name
 Note: If you already have a 'Orville.PostgreSQL.Schema.TableIdentifier' in
 hand you should probably use
 'Orville.PostgreSQL.Schema.tableIdQualifiedName' instead.
+
 @since 1.0.0.0
 -}
 qualifyTable ::
@@ -131,6 +132,7 @@ qualifyFunction ::
 qualifyFunction = unsafeSchemaQualify
 
 {- | Qualifies an 'IndexName' with a 'SchemaName'.
+
 @since 1.1.0.0
 -}
 qualifyIndex ::
@@ -144,6 +146,7 @@ qualifyIndex = unsafeSchemaQualify
 Note: If you already have a 'Orville.PostgreSQL.Schema.ConstraintIdentifier' in
 hand you should probably use
 'Orville.PostgreSQL.Schema.constraintIdQualifiedName' instead.
+
 @since 1.2.0.0
 -}
 qualifyConstraint ::

@@ -24,7 +24,6 @@ module Test.Entities.Foo
   , hasAge
   , averageFooAge
   , nameAndAgeMarshaller
-  , idConflictTarget
   )
 where
 
@@ -43,7 +42,6 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 
 import qualified Test.PgGen as PgGen
@@ -169,7 +167,3 @@ nameAndAgeMarshaller =
     (,)
     (Orville.marshallField fst fooNameField)
     (Orville.marshallField snd fooAgeField)
-
-idConflictTarget :: Expr.ConflictTargetExpr
-idConflictTarget =
-  Expr.conflictTargetForColumnNames . pure $ Orville.fieldColumnName fooIdField
