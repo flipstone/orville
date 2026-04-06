@@ -7,7 +7,9 @@ module Test.Entities.CompositeKeyEntity
   , generate
   , generateCompositeKeyEntityId
   , generateCompositeKeyEntityName
+  , generateCompositeKeyEntityAge
   , generateNonEmpty
+  , generateList
   , withTable
   , compositeKeyEntityIdField
   , compositeKeyEntityNameField
@@ -18,6 +20,7 @@ where
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Function (on)
 import Data.Int (Int32)
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Text as T
 import qualified Hedgehog as HH
@@ -112,6 +115,12 @@ generateNonEmpty range =
   fmap
     (NEL.nubBy ((==) `on` compositeKey))
     (Gen.nonEmpty range generate)
+
+generateList :: HH.Range Int -> HH.Gen [CompositeKeyEntity]
+generateList range =
+  fmap
+    (List.nubBy ((==) `on` compositeKey))
+    (Gen.list range generate)
 
 withTable :: MonadIO m => Orville.ConnectionPool -> Orville.Orville a -> m a
 withTable pool operation =

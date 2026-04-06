@@ -74,6 +74,7 @@ setFunctionSchema schemaName functionDef =
 {- | Retrieves the 'FunctionIdentifier' for this function, which is set by the
   name provided to 'mkTriggerFunction' or 'mkFunction' and any calls made to
   'setFunctionSchema' thereafter.
+
 @since 1.1.0.0
 -}
 functionIdentifier :: FunctionDefinition -> FunctionIdentifier
@@ -110,6 +111,7 @@ functionAutoMigrationStep =
 {- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
   with a return type of @trigger@ using the specified lanugage and function
   body.
+
 @since 1.1.0.0
 -}
 mkTriggerFunction ::
@@ -128,6 +130,7 @@ mkTriggerFunction name language source =
 
 {- | Constructs a 'FunctionDefinition' that will create a PostgreSQL function
   using the specified lanugage, return type and function body.
+
 @since 1.2.0.0
 -}
 mkFunction ::

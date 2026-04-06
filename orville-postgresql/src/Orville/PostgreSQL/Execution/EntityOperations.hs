@@ -1,3 +1,5 @@
+{-# LANGUAGE GADTs #-}
+
 {- |
 Copyright : Flipstone Technology Partners 2023
 License   : MIT
@@ -22,6 +24,14 @@ module Orville.PostgreSQL.Execution.EntityOperations
   , updateFields
   , updateFieldsAndReturnEntities
   , updateFieldsAndReturnRowCount
+  , ConflictTarget (..)
+  , ConflictTargetError (..)
+  , upsertEntity
+  , upsertEntityAndReturnRowCount
+  , upsertAndReturnEntity
+  , upsertEntities
+  , upsertEntitiesAndReturnRowCount
+  , upsertAndReturnEntities
   , deleteEntity
   , deleteEntityAndReturnRowCount
   , deleteAndReturnEntity
@@ -39,6 +49,7 @@ import Control.Exception (Exception, throwIO)
 import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NEL
 import Data.Maybe (listToMaybe)
 
 import qualified Orville.PostgreSQL.Execution.Delete as Delete
@@ -48,6 +59,7 @@ import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Execution.Update as Update
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
+import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Monad as Monad
 import qualified Orville.PostgreSQL.Schema as Schema
 
@@ -419,3 +431,211 @@ instance Show EmptyUpdateError where
 
 -- | @since 1.0.0.0
 instance Exception EmptyUpdateError
+
+{- |
+  Specifies the target for the @ON CONFLICT@ clause of an upsert function.
+  See the [PostgreSQL documentation](https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT) for more information.
+
+@since 1.1.1.0.1
+-}
+data ConflictTarget where
+  {- | Upsert by the primary key of the table. May only be used with tables that have a primary key.
+
+  @since 1.1.1.0.1
+  -}
+  ByPrimaryKey :: ConflictTarget
+  {- | Upsert by a field, assuming PostgreSQL can infer an arbiter constraint/index from the field.
+
+  @since 1.1.1.0.1
+  -}
+  ByField :: Marshall.FieldDefinition nullability a -> ConflictTarget
+  {- | Upsert by the writable fields in a marshaller, assuming PostgreSQL can infer an arbiter constraint/index from the fields.
+
+  @since 1.1.1.0.1
+  -}
+  ByMarshaller :: Marshall.SqlMarshaller writeEntity readEntity -> ConflictTarget
+  {- | Upsert by a unique constraint.
+
+  @since 1.1.1.0.1
+  -}
+  ByConstraint :: Schema.ConstraintDefinition -> ConflictTarget
+  {- | Upsert with a custom 'Expr.ConflictTargetExpr'. This allows usage of more complex arbiter indexes, such
+  as a partial unique index.
+
+  @since 1.1.1.0.1
+  -}
+  ByConflictTargetExpr :: Expr.ConflictTargetExpr -> ConflictTarget
+
+{- |
+  An error resulting from attempting to construct an invalid 'Expr.ConflictTargetExpr'.
+
+  Maybe be thrown as an exception by the upsert functions if a valid 'Expr.ConflictTargetExpr' could not
+  be constructed for the provided 'ConflictTarget'.
+
+@since 1.1.1.0.1
+-}
+data ConflictTargetError
+  = {- | The provided conflict target was empty.
+
+    @since 1.1.1.0.1
+    -}
+    EmptyConflictTarget
+  | {- | The provided constraint was not a unique constraint.
+
+    @since 1.1.1.0.1
+    -}
+    NonUniqueConstraintConflictTarget
+  | {- | 'ByPrimaryKey' was used with a table that has no primary key.
+
+    @since 1.1.1.0.1
+    -}
+    NoPrimaryKey
+
+-- | @since 1.1.1.0.1
+instance Show ConflictTargetError where
+  show EmptyConflictTarget =
+    "ConflictTargetError: the provided conflict target was empty."
+  show NonUniqueConstraintConflictTarget =
+    "ConflictTargetError: the provided constraint was not a unique constraint."
+  show NoPrimaryKey =
+    "ConflictTargetError: ByPrimaryKey was used with a table that has no primary key."
+
+-- | @since 1.1.1.0.1
+instance Exception ConflictTargetError
+
+conflictTargetToConflictTargetExpr ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  Either ConflictTargetError Expr.ConflictTargetExpr
+conflictTargetToConflictTargetExpr tableDefinition conflictTarget = case conflictTarget of
+  ByPrimaryKey ->
+    case Schema.tablePrimaryKeyFieldNames tableDefinition of
+      Nothing -> Left NoPrimaryKey
+      Just fieldNames ->
+        Right
+          . Expr.conflictTargetForColumnNames
+          . fmap Marshall.fieldNameToColumnName
+          $ fieldNames
+  ByField fieldDefinition ->
+    Right
+      . Expr.conflictTargetForColumnNames
+      . pure
+      $ Marshall.fieldColumnName fieldDefinition
+  ByMarshaller marshaller ->
+    case Marshall.marshallerConflictTargetExpr marshaller of
+      Nothing -> Left EmptyConflictTarget
+      Just expr -> Right expr
+  ByConstraint constraintDef ->
+    case Schema.constraintDefinitionConflictTargetExpr constraintDef of
+      Nothing -> Left NonUniqueConstraintConflictTarget
+      Just expr -> Right expr
+  ByConflictTargetExpr expr ->
+    Right expr
+
+conflictTargetToConflictTargetExprOrThrow ::
+  MonadIO m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  m Expr.ConflictTargetExpr
+conflictTargetToConflictTargetExprOrThrow tableDef target =
+  case conflictTargetToConflictTargetExpr tableDef target of
+    Left err -> liftIO $ throwIO err
+    Right expr -> pure expr
+
+{- |
+  Similar to 'insertAndReturnEntity', but uses an @ON CONFLICT@ clause to update the row if it
+  conflicts with an arbiter constraint/index inferred from the provided 'ConflictTarget'.
+
+@since 1.1.1.0.1
+-}
+upsertAndReturnEntity ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  writeEntity ->
+  m readEntity
+upsertAndReturnEntity tableDef target entity = do
+  returnedEntities <- upsertAndReturnEntities tableDef target (entity :| [])
+
+  RowCountExpectation.expectExactlyOneRow
+    "upsertAndReturnEntity RETURNING clause"
+    returnedEntities
+
+{- |
+  Similar to 'insertEntity', but uses an @ON CONFLICT@ clause to update the row if it
+  conflicts with an arbiter constraint/index inferred from the provided 'ConflictTarget'.
+
+@since 1.1.1.0.1
+-}
+upsertEntity ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  writeEntity ->
+  m ()
+upsertEntity tableDef target =
+  Monad.void . upsertEntityAndReturnRowCount tableDef target
+
+{- |
+  Similar to 'insertEntity', but uses an @ON CONFLICT@ clause to update the row if it
+  conflicts with an arbiter constraint/index inferred from the provided 'ConflictTarget'.
+  Returns the count of the affected rows.
+
+@since 1.1.1.0.1
+-}
+upsertEntityAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  writeEntity ->
+  m Int
+upsertEntityAndReturnRowCount tableDef target =
+  upsertEntitiesAndReturnRowCount tableDef target . pure
+
+{- |
+  Similar to 'insertAndReturnEntities', but uses an @ON CONFLICT@ clause to update the row if it
+  conflicts with an arbiter constraint/index inferred from the provided 'ConflictTarget'.
+
+@since 1.1.1.0.1
+-}
+upsertAndReturnEntities ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  NEL.NonEmpty writeEntity ->
+  m [readEntity]
+upsertAndReturnEntities tableDef target entities = do
+  targetExpr <- conflictTargetToConflictTargetExprOrThrow tableDef target
+  Insert.executeInsertReturnEntities $ Insert.upsertToTableReturning tableDef targetExpr entities
+
+{- |
+  Similar to 'insertEntities', but uses an @ON CONFLICT@ clause to update the row if it
+  conflicts with an arbiter constraint/index inferred from the provided 'ConflictTarget'.
+
+@since 1.1.1.0.1
+-}
+upsertEntities ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  NEL.NonEmpty writeEntity ->
+  m ()
+upsertEntities tableDef target =
+  Monad.void . upsertEntitiesAndReturnRowCount tableDef target
+
+{- |
+  Similar to 'insertEntitiesAndReturnRowCount', but uses an @ON CONFLICT@ clause to update the row if it
+  conflicts with an arbiter constraint/index inferred from the provided 'ConflictTarget'.
+  Returns the count of the affected rows.
+
+@since 1.1.1.0.1
+-}
+upsertEntitiesAndReturnRowCount ::
+  Monad.MonadOrville m =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  ConflictTarget ->
+  NEL.NonEmpty writeEntity ->
+  m Int
+upsertEntitiesAndReturnRowCount tableDef target entities = do
+  targetExpr <- conflictTargetToConflictTargetExprOrThrow tableDef target
+  Insert.executeInsert $ Insert.upsertToTable tableDef targetExpr entities

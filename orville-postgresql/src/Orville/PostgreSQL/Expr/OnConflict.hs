@@ -16,6 +16,7 @@ module Orville.PostgreSQL.Expr.OnConflict
   , conflictTargetForIndexColumn
   , conflictTargetForIndexExpr
   , conflictTargetForConstraint
+  , conflictTargetForColumnNames
   , ConflictActionExpr
   , ConflictSetItemExpr
   , setColumnNameExcluded
@@ -106,6 +107,7 @@ conflictTargetForIndexColumn colName mbWhere =
    conflicts.
 
    Note that this function assumes that the 'IndexBodyExpr' is parenthesized.
+
 @since 1.1.0.0
 -}
 conflictTargetForIndexExpr :: IndexBodyExpr -> Maybe WhereClause -> ConflictTargetExpr
@@ -126,6 +128,14 @@ conflictTargetForIndexExpr idxBody mbWhere =
 conflictTargetForConstraint :: ConstraintName -> ConflictTargetExpr
 conflictTargetForConstraint constraintName =
   ConflictTargetExpr $ RawSql.fromString "ON CONSTRAINT " <> RawSql.toRawSql constraintName
+
+{- | Build a 'ConflictTargetExpr' from a non-empty list of column names.
+
+@since 1.1.1.0.1
+-}
+conflictTargetForColumnNames :: NonEmpty ColumnName -> ConflictTargetExpr
+conflictTargetForColumnNames =
+  ConflictTargetExpr . RawSql.parenthesized . RawSql.intercalate RawSql.commaSpace
 
 {- | Type to represent the action portion of the SQL 'ON CONFLICT target action'
 

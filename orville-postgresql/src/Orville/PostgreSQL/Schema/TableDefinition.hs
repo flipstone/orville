@@ -34,6 +34,7 @@ module Orville.PostgreSQL.Schema.TableDefinition
   , mkCreateTableExpr
   , mkTableColumnDefinitions
   , mkTablePrimaryKeyExpr
+  , tablePrimaryKeyFieldNames
   , mkInsertColumnList
   , mkInsertSource
   , mkTableReturningClause
@@ -48,7 +49,7 @@ import qualified Data.Text as T
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
-import Orville.PostgreSQL.Marshall.FieldDefinition (fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue, qualifiedFieldColumnName, qualifyField)
+import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue, qualifiedFieldColumnName, qualifyField)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
@@ -455,6 +456,21 @@ mkTablePrimaryKeyExpr tableDef =
   case i_tablePrimaryKey tableDef of
     TableHasKey primaryKey ->
       Just $ mkPrimaryKeyExpr primaryKey
+    TableHasNoKey ->
+      Nothing
+
+{- | Returns the field names of the primary key columns for this table, or 'Nothing' if the
+  table has no primary key.
+
+@since 1.1.1.0.1
+-}
+tablePrimaryKeyFieldNames ::
+  TableDefinition key writeEntity readEntity ->
+  Maybe (NE.NonEmpty FieldName)
+tablePrimaryKeyFieldNames tableDef =
+  case i_tablePrimaryKey tableDef of
+    TableHasKey primaryKey ->
+      Just $ primaryKeyFieldNames primaryKey
     TableHasNoKey ->
       Nothing
 

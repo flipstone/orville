@@ -30,6 +30,14 @@ module Orville.PostgreSQL
   , EntityOperations.insertEntities
   , EntityOperations.insertEntitiesAndReturnRowCount
   , EntityOperations.insertAndReturnEntities
+  , EntityOperations.ConflictTarget (..)
+  , EntityOperations.ConflictTargetError (..)
+  , EntityOperations.upsertEntity
+  , EntityOperations.upsertEntityAndReturnRowCount
+  , EntityOperations.upsertAndReturnEntity
+  , EntityOperations.upsertEntities
+  , EntityOperations.upsertEntitiesAndReturnRowCount
+  , EntityOperations.upsertAndReturnEntities
   , EntityOperations.updateEntity
   , EntityOperations.updateEntityAndReturnRowCount
   , EntityOperations.updateAndReturnEntity
@@ -263,6 +271,7 @@ module Orville.PostgreSQL
   , Marshall.aliasNameAndFieldNameToColumnName
   , Marshall.aliasNameToByteString
   , Marshall.byteStringToAliasName
+  , Marshall.marshallerConflictTargetExpr
   , DefaultValue.DefaultValue
   , DefaultValue.integerDefault
   , DefaultValue.smallIntegerDefault

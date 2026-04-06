@@ -15,14 +15,17 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Expr as Expr
 
 import qualified Test.Entities.CompositeKeyEntity as CompositeKeyEntity
 import qualified Test.Entities.Foo as Foo
+import qualified Test.Entities.UpsertEntity as UpsertEntity
 import qualified Test.Property as Property
 
 entityOperationsTests :: Orville.ConnectionPool -> Property.Group
 entityOperationsTests pool =
-  Property.group "EntityOperations" $
+  Property.group
+    "EntityOperations"
     [ prop_insertEntitiesFindEntitiesByRoundTrip pool
     , prop_insertEntitiesAffectedRows pool
     , prop_insertEntitiesFindFirstEntityByRoundTrip pool
@@ -50,6 +53,16 @@ entityOperationsTests pool =
     , prop_updateFieldsAffectedRows pool
     , prop_updateFieldsAndReturnEntities pool
     , prop_updateFieldsAndReturnEntities_NoMatch pool
+    , prop_upsertByPrimaryKeyRoundTrip pool
+    , prop_upsertByPrimaryKeyUpdatesExistingRow pool
+    , prop_upsertByFieldRoundTrip pool
+    , prop_upsertByConstraintRoundTrip pool
+    , prop_upsertByMarshallerRoundTrip pool
+    , prop_upsertByConflictTargetExprRoundTrip pool
+    , prop_upsertAndReturnEntity pool
+    , prop_upsertEntitiesAffectedRows pool
+    , prop_upsertEntitiesFindEntitiesRoundTrip pool
+    , prop_upsertEntitiesMixedInsertsAndUpdates pool
     ]
 
 prop_insertEntitiesFindEntitiesByRoundTrip :: Property.NamedDBProperty
@@ -495,3 +508,184 @@ prop_updateFieldsAndReturnEntities_NoMatch =
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
 
     updatedFoos === []
+
+prop_upsertByPrimaryKeyRoundTrip :: Property.NamedDBProperty
+prop_upsertByPrimaryKeyRoundTrip =
+  Property.namedDBProperty "upsertEntity ByPrimaryKey inserts entity" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+
+    retrieved <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table Orville.ByPrimaryKey entity
+        Orville.findEntitiesBy UpsertEntity.table mempty
+
+    retrieved === [entity]
+
+prop_upsertByPrimaryKeyUpdatesExistingRow :: Property.NamedDBProperty
+prop_upsertByPrimaryKeyUpdatesExistingRow =
+  Property.namedDBProperty "upsertEntity ByPrimaryKey updates existing row" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    let
+      updated = entity {UpsertEntity.upsertEntityValue = newValue}
+
+    (mbOriginal, mbUpdated) <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table Orville.ByPrimaryKey entity
+        mbOrig <- Orville.findEntity UpsertEntity.table (UpsertEntity.upsertEntityId entity)
+        Orville.upsertEntity UpsertEntity.table Orville.ByPrimaryKey updated
+        mbUpd <- Orville.findEntity UpsertEntity.table (UpsertEntity.upsertEntityId entity)
+        pure (mbOrig, mbUpd)
+
+    mbOriginal === Just entity
+    mbUpdated === Just updated
+
+prop_upsertByFieldRoundTrip :: Property.NamedDBProperty
+prop_upsertByFieldRoundTrip =
+  Property.namedDBProperty "upsertEntity ByField updates existing row" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    newId <- HH.forAll UpsertEntity.generateUpsertEntityId
+    let
+      conflicting =
+        entity
+          { UpsertEntity.upsertEntityId = newId
+          , UpsertEntity.upsertEntityValue = newValue
+          }
+
+    retrieved <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table (Orville.ByField UpsertEntity.upsertEntityCodeField) entity
+        Orville.upsertEntity UpsertEntity.table (Orville.ByField UpsertEntity.upsertEntityCodeField) conflicting
+        Orville.findEntitiesBy UpsertEntity.table mempty
+
+    retrieved === [conflicting]
+
+prop_upsertByConstraintRoundTrip :: Property.NamedDBProperty
+prop_upsertByConstraintRoundTrip =
+  Property.namedDBProperty "upsertEntity ByConstraint updates existing row" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    newId <- HH.forAll UpsertEntity.generateUpsertEntityId
+    let
+      conflicting =
+        entity
+          { UpsertEntity.upsertEntityId = newId
+          , UpsertEntity.upsertEntityValue = newValue
+          }
+
+    retrieved <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table (Orville.ByConstraint UpsertEntity.codeUniqueConstraint) entity
+        Orville.upsertEntity UpsertEntity.table (Orville.ByConstraint UpsertEntity.codeUniqueConstraint) conflicting
+        Orville.findEntitiesBy UpsertEntity.table mempty
+
+    retrieved === [conflicting]
+
+prop_upsertByMarshallerRoundTrip :: Property.NamedDBProperty
+prop_upsertByMarshallerRoundTrip =
+  Property.namedDBProperty "upsertEntity ByMarshaller updates existing row" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    newId <- HH.forAll UpsertEntity.generateUpsertEntityId
+    newCode <- HH.forAll UpsertEntity.generateUpsertEntityCode
+    let
+      conflicting =
+        entity
+          { UpsertEntity.upsertEntityId = newId
+          , UpsertEntity.upsertEntityCode = newCode
+          , UpsertEntity.upsertEntityValue = newValue
+          }
+
+    retrieved <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table (Orville.ByMarshaller UpsertEntity.groupMarshaller) entity
+        Orville.upsertEntity UpsertEntity.table (Orville.ByMarshaller UpsertEntity.groupMarshaller) conflicting
+        Orville.findEntitiesBy UpsertEntity.table mempty
+
+    retrieved === [conflicting]
+
+prop_upsertByConflictTargetExprRoundTrip :: Property.NamedDBProperty
+prop_upsertByConflictTargetExprRoundTrip =
+  Property.namedDBProperty "upsertEntity ByConflictTargetExpr updates existing row" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    let
+      updated = entity {UpsertEntity.upsertEntityValue = newValue}
+      target :: Orville.ConflictTarget
+      target =
+        Orville.ByConflictTargetExpr
+          . Expr.conflictTargetForColumnNames
+          . pure
+          $ Orville.fieldColumnName UpsertEntity.upsertEntityIdField
+
+    (mbOriginal, mbUpdated) <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table target entity
+        mbOrig <- Orville.findEntity UpsertEntity.table (UpsertEntity.upsertEntityId entity)
+        Orville.upsertEntity UpsertEntity.table target updated
+        mbUpd <- Orville.findEntity UpsertEntity.table (UpsertEntity.upsertEntityId entity)
+        pure (mbOrig, mbUpd)
+
+    mbOriginal === Just entity
+    mbUpdated === Just updated
+
+prop_upsertAndReturnEntity :: Property.NamedDBProperty
+prop_upsertAndReturnEntity =
+  Property.namedDBProperty "upsertAndReturnEntity returns the upserted entity" $ \pool -> do
+    entity <- HH.forAll UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    let
+      updated = entity {UpsertEntity.upsertEntityValue = newValue}
+
+    (originalReturned, updatedReturned) <-
+      UpsertEntity.withTable pool $ do
+        original <- Orville.upsertAndReturnEntity UpsertEntity.table Orville.ByPrimaryKey entity
+        upd <- Orville.upsertAndReturnEntity UpsertEntity.table Orville.ByPrimaryKey updated
+        pure (original, upd)
+
+    originalReturned === entity
+    updatedReturned === updated
+
+prop_upsertEntitiesAffectedRows :: Property.NamedDBProperty
+prop_upsertEntitiesAffectedRows =
+  Property.namedDBProperty "upsertEntitiesAndReturnRowCount returns the number of affected rows" $ \pool -> do
+    entities <- HH.forAll $ UpsertEntity.generateList (Range.linear 0 10)
+
+    affectedRows <-
+      UpsertEntity.withTable pool $ do
+        case NEL.nonEmpty entities of
+          Nothing -> pure 0
+          Just nonEmpty ->
+            Orville.upsertEntitiesAndReturnRowCount UpsertEntity.table Orville.ByPrimaryKey nonEmpty
+
+    affectedRows === length entities
+
+prop_upsertEntitiesFindEntitiesRoundTrip :: Property.NamedDBProperty
+prop_upsertEntitiesFindEntitiesRoundTrip =
+  Property.namedDBProperty "upsertEntities/findEntities form a round trip" $ \pool -> do
+    entities <- HH.forAll $ UpsertEntity.generateNonEmpty (Range.linear 1 5)
+
+    retrievedEntities <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntities UpsertEntity.table Orville.ByPrimaryKey entities
+        Orville.findEntities UpsertEntity.table (UpsertEntity.upsertEntityId <$> entities)
+
+    List.sortOn UpsertEntity.upsertEntityId retrievedEntities === List.sortOn UpsertEntity.upsertEntityId (NEL.toList entities)
+
+prop_upsertEntitiesMixedInsertsAndUpdates :: Property.NamedDBProperty
+prop_upsertEntitiesMixedInsertsAndUpdates =
+  Property.singletonNamedDBProperty "upsertEntities handles a batch with both inserts and updates" $ \pool -> do
+    existing <- HH.forAll UpsertEntity.generate
+    new <- HH.forAll $ Gen.filter (\e -> UpsertEntity.upsertEntityId e /= UpsertEntity.upsertEntityId existing) UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    let
+      updated = existing {UpsertEntity.upsertEntityValue = newValue}
+
+    retrievedEntities <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table Orville.ByPrimaryKey existing
+        Orville.upsertEntities UpsertEntity.table Orville.ByPrimaryKey (updated :| [new])
+        Orville.findEntitiesBy UpsertEntity.table mempty
+
+    List.sortOn UpsertEntity.upsertEntityId retrievedEntities === List.sortOn UpsertEntity.upsertEntityId [updated, new]
