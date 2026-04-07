@@ -33,6 +33,7 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
 
+import Orville.PostgreSQL.Batchable (Batchable)
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import Orville.PostgreSQL.Execution.ReturningOption (NoReturningClause, ReturningClause, ReturningOption (WithReturning, WithoutReturning))
@@ -101,7 +102,7 @@ executeInsertReturnEntities (InsertReturning marshaller expr) =
 insertToTable ::
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  Insert readEntity NoReturningClause
+  Batchable (Insert readEntity NoReturningClause)
 insertToTable =
   insertTable WithoutReturning
 
@@ -114,7 +115,7 @@ insertToTable =
 insertToTableReturning ::
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  Insert readEntity ReturningClause
+  Batchable (Insert readEntity ReturningClause)
 insertToTableReturning =
   insertTable WithReturning
 
@@ -127,7 +128,7 @@ upsertToTable ::
   TableDefinition key writeEntity readEntity ->
   Expr.ConflictTargetExpr ->
   NonEmpty writeEntity ->
-  Insert readEntity NoReturningClause
+  Batchable (Insert readEntity NoReturningClause)
 upsertToTable =
   upsertTable WithoutReturning
 
@@ -141,7 +142,7 @@ upsertToTableReturning ::
   TableDefinition key writeEntity readEntity ->
   Expr.ConflictTargetExpr ->
   NonEmpty writeEntity ->
-  Insert readEntity ReturningClause
+  Batchable (Insert readEntity ReturningClause)
 upsertToTableReturning =
   upsertTable WithReturning
 
@@ -150,9 +151,11 @@ insertTable ::
   ReturningOption returningClause ->
   TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
-  Insert readEntity returningClause
+  Batchable (Insert readEntity returningClause)
 insertTable returningOption tableDef entities =
-  rawInsertExpr returningOption (tableMarshaller tableDef) (mkInsertExpr returningOption tableDef Nothing entities)
+  fmap
+    (rawInsertExpr returningOption (tableMarshaller tableDef))
+    (mkInsertExpr returningOption tableDef Nothing entities)
 
 -- an internal helper function for creating an @insert ... on conflict <target> do update set ...@ with a given `ReturningOption`
 upsertTable ::
@@ -160,7 +163,7 @@ upsertTable ::
   TableDefinition key writeEntity readEntity ->
   Expr.ConflictTargetExpr ->
   NE.NonEmpty writeEntity ->
-  Insert readEntity returningClause
+  Batchable (Insert readEntity returningClause)
 upsertTable returningOption tableDef target entities =
   let
     marshaller = tableMarshaller tableDef
@@ -178,9 +181,8 @@ upsertTable returningOption tableDef target entities =
     mkOnConflictExpr neSetItemExprs =
       Expr.onConflictDoUpdate (Just target) neSetItemExprs Nothing
   in
-    rawInsertExpr
-      returningOption
-      marshaller
+    fmap
+      (rawInsertExpr returningOption marshaller)
       ( mkInsertExpr
           returningOption
           tableDef

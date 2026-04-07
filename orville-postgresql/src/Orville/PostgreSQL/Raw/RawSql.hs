@@ -47,6 +47,7 @@ module Orville.PostgreSQL.Raw.RawSql
   , unsafeSqlExpression
   , toBytesAndParams
   , toExampleBytes
+  , toParamCount
   , Quoting (Quoting, quoteStringLiteral, quoteIdentifier)
   , exampleQuoting
   )
@@ -247,6 +248,21 @@ toBytesAndParams quoting sql = do
 toExampleBytes :: SqlExpression sql => sql -> BS.ByteString
 toExampleBytes =
   fst . runIdentity . toBytesAndParams exampleQuoting
+
+{- |
+  Counts the number of parameters contained in the SQL expression.
+
+@since 1.2.0.0
+-}
+toParamCount :: SqlExpression sql => sql -> Int
+toParamCount sql =
+  case toRawSql sql of
+    SqlSection _ -> 0
+    Parameter _ -> 1
+    StringLiteral _ -> 0
+    Identifier _ -> 0
+    Append left right -> toParamCount left + toParamCount right
+    Empty -> 0
 
 {- | This is an internal datatype used during the SQL building process to track
   how many params have been seen so that placeholder indices (e.g. '$1', etc)

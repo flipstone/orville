@@ -38,6 +38,10 @@ module Orville.PostgreSQL
   , EntityOperations.upsertEntities
   , EntityOperations.upsertEntitiesAndReturnRowCount
   , EntityOperations.upsertAndReturnEntities
+  , EntityOperations.BatchInsertOption (InOneStatement, InBatches)
+  , EntityOperations.BatchInsertTransactionality (WithNewTransaction, WithoutNewTransaction)
+  , Batchable.BatchSize (BatchSize, BatchSizeAuto)
+  , Batchable.Batchable
   , EntityOperations.updateEntity
   , EntityOperations.updateEntityAndReturnRowCount
   , EntityOperations.updateAndReturnEntity
@@ -458,6 +462,7 @@ module Orville.PostgreSQL
   )
 where
 
+import qualified Orville.PostgreSQL.Batchable as Batchable
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Execution.Execute as Execute

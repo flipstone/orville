@@ -23,6 +23,7 @@ module Test.Entities.Foo
   , hasName
   , hasAge
   , averageFooAge
+  , fooMarshaller
   , nameAndAgeMarshaller
   )
 where

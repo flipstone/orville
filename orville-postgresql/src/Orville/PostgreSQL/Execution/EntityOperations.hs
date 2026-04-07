@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE GADTs #-}
 
 {- |
@@ -18,6 +19,8 @@ module Orville.PostgreSQL.Execution.EntityOperations
   , insertEntities
   , insertAndReturnEntities
   , insertEntitiesAndReturnRowCount
+  , BatchInsertOption (InOneStatement, InBatches)
+  , BatchInsertTransactionality (WithNewTransaction, WithoutNewTransaction)
   , updateEntity
   , updateEntityAndReturnRowCount
   , updateAndReturnEntity
@@ -48,14 +51,18 @@ where
 import Control.Exception (Exception, throwIO)
 import qualified Control.Monad as Monad
 import Control.Monad.IO.Class (MonadIO (liftIO))
+import qualified Data.DList as DList
+import Data.Foldable (traverse_)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NEL
 import Data.Maybe (listToMaybe)
 
+import Orville.PostgreSQL.Batchable (BatchSize, Batchable, toBatched, toUnbatched)
 import qualified Orville.PostgreSQL.Execution.Delete as Delete
 import qualified Orville.PostgreSQL.Execution.Insert as Insert
 import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
+import qualified Orville.PostgreSQL.Execution.Transaction as Transaction
 import qualified Orville.PostgreSQL.Execution.Update as Update
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Internal.RowCountExpectation as RowCountExpectation
@@ -86,7 +93,7 @@ insertEntityAndReturnRowCount ::
   writeEntity ->
   m Int
 insertEntityAndReturnRowCount entityTable entity =
-  insertEntitiesAndReturnRowCount entityTable (entity :| [])
+  insertEntitiesAndReturnRowCount InOneStatement entityTable (entity :| [])
 
 {- | Inserts an entity into the specified table, returning the data inserted into
   the database.
@@ -102,7 +109,7 @@ insertAndReturnEntity ::
   writeEntity ->
   m readEntity
 insertAndReturnEntity entityTable entity = do
-  returnedEntities <- insertAndReturnEntities entityTable (entity :| [])
+  returnedEntities <- insertAndReturnEntities InOneStatement entityTable (entity :| [])
 
   RowCountExpectation.expectExactlyOneRow
     "insertAndReturnEntity RETURNING clause"
@@ -114,11 +121,15 @@ insertAndReturnEntity entityTable entity = do
 -}
 insertEntities ::
   Monad.MonadOrville m =>
+  BatchInsertOption ->
   Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m ()
-insertEntities tableDef =
-  Monad.void . insertEntitiesAndReturnRowCount tableDef
+insertEntities batchOption tableDef =
+  executeBatchOption_
+    batchOption
+    Insert.executeInsert
+    . Insert.insertToTable tableDef
 
 {- | Inserts a non-empty list of entities into the specified table. Returns the
   number of rows affected by the query.
@@ -127,11 +138,17 @@ insertEntities tableDef =
 -}
 insertEntitiesAndReturnRowCount ::
   Monad.MonadOrville m =>
+  BatchInsertOption ->
   Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m Int
-insertEntitiesAndReturnRowCount tableDef =
-  Insert.executeInsert . Insert.insertToTable tableDef
+insertEntitiesAndReturnRowCount batchOption tableDef =
+  executeBatchOption
+    batchOption
+    Insert.executeInsert
+    0
+    (+)
+    . Insert.insertToTable tableDef
 
 {- | Inserts a non-empty list of entities into the specified table, returning the data that
   was inserted into the database.
@@ -143,11 +160,99 @@ insertEntitiesAndReturnRowCount tableDef =
 -}
 insertAndReturnEntities ::
   Monad.MonadOrville m =>
+  BatchInsertOption ->
   Schema.TableDefinition key writeEntity readEntity ->
   NonEmpty writeEntity ->
   m [readEntity]
-insertAndReturnEntities tableDef =
-  Insert.executeInsertReturnEntities . Insert.insertToTableReturning tableDef
+insertAndReturnEntities batchOption tableDef =
+  fmap DList.toList
+    . executeBatchOption
+      batchOption
+      (fmap DList.fromList . Insert.executeInsertReturnEntities)
+      DList.empty
+      (<>)
+    . Insert.insertToTableReturning tableDef
+
+executeBatchOption ::
+  Monad.MonadOrville m =>
+  BatchInsertOption ->
+  (batch -> m batchResult) ->
+  fullResult ->
+  (fullResult -> batchResult -> fullResult) ->
+  Batchable batch ->
+  m fullResult
+executeBatchOption batchOption runBatch initialAcc combine batchable =
+  case batchOption of
+    InOneStatement ->
+      combine initialAcc <$> runBatch (toUnbatched batchable)
+    InBatches batchSize transactionality ->
+      let
+        -- make sure to force the accumulator to WHNF at each batch
+        foldBatch !acc =
+          fmap (combine acc) . runBatch
+      in
+        withBatchInsertTransactionality
+          transactionality
+          (Monad.foldM foldBatch initialAcc . toBatched batchSize $ batchable)
+
+executeBatchOption_ ::
+  Monad.MonadOrville m =>
+  BatchInsertOption ->
+  (batch -> m result) ->
+  Batchable batch ->
+  m ()
+executeBatchOption_ batchOption runBatch batchable =
+  case batchOption of
+    InOneStatement ->
+      Monad.void . runBatch . toUnbatched $ batchable
+    InBatches batchSize transactionality ->
+      withBatchInsertTransactionality
+        transactionality
+        (traverse_ runBatch . toBatched batchSize $ batchable)
+
+{- | Controls whether a multi-entity insert is executed as a single SQL
+  statement or in multiple batches.
+
+  * 'InOneStatement' sends all entities in a single @INSERT@ statement. This
+    is the simplest option but may exceed PostgreSQL's parameter limit for very
+    large inserts.
+
+  * @'InBatches' batchSize transactionality@ splits the entities into batches
+    and executes a separate @INSERT@ for each batch. The 'BatchSize' controls
+    how many entities are included per batch, and the
+    'BatchInsertTransactionality' controls whether the batches are wrapped in
+    a transaction.
+
+@since 1.2.0.0
+-}
+data BatchInsertOption
+  = InOneStatement
+  | InBatches BatchSize BatchInsertTransactionality
+
+{- | Controls whether batched inserts are wrapped in a new transaction.
+
+  * 'WithNewTransaction' wraps all batches in a single transaction, ensuring
+    atomicity — either all batches succeed or none do.
+
+  * 'WithoutNewTransaction' does not start a new transaction. Use this when
+    you are already inside a transaction or when you do not need atomicity
+    across batches.
+
+@since 1.2.0.0
+-}
+data BatchInsertTransactionality
+  = WithNewTransaction
+  | WithoutNewTransaction
+
+withBatchInsertTransactionality ::
+  Monad.MonadOrville m =>
+  BatchInsertTransactionality ->
+  m a ->
+  m a
+withBatchInsertTransactionality transactionality =
+  case transactionality of
+    WithNewTransaction -> Transaction.withTransaction
+    WithoutNewTransaction -> id
 
 {- | Updates the row with the given key with the data given by @writeEntity@.
 
@@ -555,7 +660,7 @@ upsertAndReturnEntity ::
   writeEntity ->
   m readEntity
 upsertAndReturnEntity tableDef target entity = do
-  returnedEntities <- upsertAndReturnEntities tableDef target (entity :| [])
+  returnedEntities <- upsertAndReturnEntities InOneStatement tableDef target (entity :| [])
 
   RowCountExpectation.expectExactlyOneRow
     "upsertAndReturnEntity RETURNING clause"
@@ -590,7 +695,7 @@ upsertEntityAndReturnRowCount ::
   writeEntity ->
   m Int
 upsertEntityAndReturnRowCount tableDef target =
-  upsertEntitiesAndReturnRowCount tableDef target . pure
+  upsertEntitiesAndReturnRowCount InOneStatement tableDef target . pure
 
 {- |
   Similar to 'insertAndReturnEntities', but uses an @ON CONFLICT@ clause to update the row if it
@@ -600,13 +705,20 @@ upsertEntityAndReturnRowCount tableDef target =
 -}
 upsertAndReturnEntities ::
   Monad.MonadOrville m =>
+  BatchInsertOption ->
   Schema.TableDefinition key writeEntity readEntity ->
   ConflictTarget ->
   NEL.NonEmpty writeEntity ->
   m [readEntity]
-upsertAndReturnEntities tableDef target entities = do
+upsertAndReturnEntities batchOption tableDef target entities = do
   targetExpr <- conflictTargetToConflictTargetExprOrThrow tableDef target
-  Insert.executeInsertReturnEntities $ Insert.upsertToTableReturning tableDef targetExpr entities
+  fmap DList.toList
+    . executeBatchOption
+      batchOption
+      (fmap DList.fromList . Insert.executeInsertReturnEntities)
+      DList.empty
+      (<>)
+    $ Insert.upsertToTableReturning tableDef targetExpr entities
 
 {- |
   Similar to 'insertEntities', but uses an @ON CONFLICT@ clause to update the row if it
@@ -616,12 +728,17 @@ upsertAndReturnEntities tableDef target entities = do
 -}
 upsertEntities ::
   Monad.MonadOrville m =>
+  BatchInsertOption ->
   Schema.TableDefinition key writeEntity readEntity ->
   ConflictTarget ->
   NEL.NonEmpty writeEntity ->
   m ()
-upsertEntities tableDef target =
-  Monad.void . upsertEntitiesAndReturnRowCount tableDef target
+upsertEntities batchOption tableDef target entities = do
+  targetExpr <- conflictTargetToConflictTargetExprOrThrow tableDef target
+  executeBatchOption_
+    batchOption
+    Insert.executeInsert
+    $ Insert.upsertToTable tableDef targetExpr entities
 
 {- |
   Similar to 'insertEntitiesAndReturnRowCount', but uses an @ON CONFLICT@ clause to update the row if it
@@ -632,10 +749,16 @@ upsertEntities tableDef target =
 -}
 upsertEntitiesAndReturnRowCount ::
   Monad.MonadOrville m =>
+  BatchInsertOption ->
   Schema.TableDefinition key writeEntity readEntity ->
   ConflictTarget ->
   NEL.NonEmpty writeEntity ->
   m Int
-upsertEntitiesAndReturnRowCount tableDef target entities = do
+upsertEntitiesAndReturnRowCount batchOption tableDef target entities = do
   targetExpr <- conflictTargetToConflictTargetExprOrThrow tableDef target
-  Insert.executeInsert $ Insert.upsertToTable tableDef targetExpr entities
+  executeBatchOption
+    batchOption
+    Insert.executeInsert
+    0
+    (+)
+    $ Insert.upsertToTable tableDef targetExpr entities

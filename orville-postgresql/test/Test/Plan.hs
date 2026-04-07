@@ -98,7 +98,7 @@ prop_findMaybeOne =
     (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
     let
@@ -117,7 +117,7 @@ prop_findMaybeOneByMarshaller =
     (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan (targetName, targetAge)
 
     let
@@ -136,7 +136,7 @@ prop_planMany_findMaybeOne =
     (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
     let
@@ -162,7 +162,7 @@ prop_planMany_findMaybeOneByMarshaller =
       target = zip targetNames targetAges
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan target
 
     let
@@ -190,7 +190,7 @@ prop_findMaybeOneWhere =
     (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
     let
@@ -213,7 +213,7 @@ prop_findMaybeOneWhereByMarshaller =
     (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
     maybeResult <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan (targetName, targetAge)
 
     let
@@ -237,7 +237,7 @@ prop_planMany_findMaybeOneWhere =
     (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
     let
@@ -272,7 +272,7 @@ prop_planMany_findMaybeOneWhereByMarshaller =
 
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan target
 
     let
@@ -298,7 +298,7 @@ prop_findAll =
     (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
     let
@@ -317,7 +317,7 @@ prop_findAllByMarshaller =
     (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan (targetName, targetAge)
 
     let
@@ -336,7 +336,7 @@ prop_planMany_findAll =
     (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
     let
@@ -358,7 +358,7 @@ prop_planTraversable_Map_findAll =
       targetNamesMap = Map.fromList $ Monad.join zip targetNames
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNamesMap
 
     let
@@ -385,7 +385,7 @@ prop_planMany_findAllByMarshaller =
       target = zip targetNames targetAges
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan target
 
     let
@@ -409,7 +409,7 @@ prop_findAllWhere =
     (targetName, _, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetName
 
     let
@@ -432,7 +432,7 @@ prop_findAllWhereByMarshaller =
     (targetName, targetAge, foos) <- HH.forAll generateSearchTargetAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan (targetName, targetAge)
 
     let
@@ -456,7 +456,7 @@ prop_planMany_findAllWhere =
     (targetNames, _, foos) <- HH.forAll generateSearchTargetListAndSubjects
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan targetNames
 
     let
@@ -483,7 +483,7 @@ prop_planMany_findAllWhereByMarshaller =
       target = zip targetNames targetAges
     results <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan target
 
     let
@@ -544,7 +544,7 @@ prop_planMany_planEither =
 
     foundFoos <-
       Foo.withTable pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Plan.execute plan params
 
     assertEachManyResult params foundFoos $ \input foo ->
@@ -602,8 +602,8 @@ prop_planMany_bindAndUse =
 
     results <-
       FooChild.withTables pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty allFoos)
-        traverse_ (Orville.insertEntities FooChild.table) (NEL.nonEmpty allChildren)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty allFoos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement FooChild.table) (NEL.nonEmpty allChildren)
         Plan.execute plan allFooNames
 
     assertEachManyResult allFooNames results $ \fooName (foo, children) -> do
@@ -686,8 +686,8 @@ prop_planMany_bindAndUse_qualifiedDo =
 
     results <-
       FooChild.withTables pool $ do
-        traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty allFoos)
-        traverse_ (Orville.insertEntities FooChild.table) (NEL.nonEmpty allChildren)
+        traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty allFoos)
+        traverse_ (Orville.insertEntities Orville.InOneStatement FooChild.table) (NEL.nonEmpty allChildren)
         Plan.execute plan allFooNames
 
     assertEachManyResult allFooNames results $ \fooName (foo, children) -> do

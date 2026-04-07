@@ -12,6 +12,7 @@ import qualified System.Exit as SE
 import qualified Orville.PostgreSQL as Orville
 
 import qualified Test.AutoMigration as AutoMigration
+import qualified Test.Batchable as Batchable
 import qualified Test.Connection as Connection
 import qualified Test.Cursor as Cursor
 import qualified Test.EntityOperations as EntityOperations
@@ -83,6 +84,7 @@ main = do
       , ExprConditional.conditionalTests
       , ExprWindow.windowTests
       , ExprTextSearch.textSearchTests pool
+      , Batchable.batchableTests
       , FieldDefinition.fieldDefinitionTests pool
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool

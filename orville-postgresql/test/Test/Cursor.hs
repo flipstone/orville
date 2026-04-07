@@ -42,7 +42,7 @@ prop_withCursorFetch =
     actualRows <-
       Foo.withTable pool $ do
         Orville.withTransaction $ do
-          _ <- Orville.insertEntities Foo.table foos
+          _ <- Orville.insertEntities Orville.InOneStatement Foo.table foos
           Exec.withCursor Nothing Nothing selectAllFoosOrderedById $ \cursor ->
             Exec.fetch (Just $ Exec.forwardCount numToFetch) cursor
 
@@ -69,7 +69,7 @@ prop_withCursorMove =
     actualRows <-
       Foo.withTable pool $ do
         Orville.withTransaction $ do
-          _ <- Orville.insertEntities Foo.table foos
+          _ <- Orville.insertEntities Orville.InOneStatement Foo.table foos
           Exec.withCursor Nothing Nothing selectAllFoosOrderedById $ \cursor -> do
             Exec.move (Just $ Exec.forwardCount numToSkip) cursor
             Exec.fetch (Just $ Exec.forwardCount numToFetch) cursor

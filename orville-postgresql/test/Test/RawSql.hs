@@ -9,6 +9,7 @@ import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
@@ -28,6 +29,7 @@ rawSqlTests pool =
     , prop_escapesIdentifiersForExamples
     , prop_escapesStringLiteralsForConnections pool
     , prop_escapesIdentifiersForConnections pool
+    , prop_toParamCountIsAccurate
     ]
 
 prop_concatenatesSQLStrings :: Property.NamedProperty
@@ -157,3 +159,25 @@ prop_escapesIdentifiersForConnections =
           RawSql.toBytesAndParams (RawSql.connectionQuoting conn) rawSql
 
     actualBytes === expectedBytes
+
+prop_toParamCountIsAccurate :: Property.NamedProperty
+prop_toParamCountIsAccurate =
+  Property.singletonNamedProperty "toParamCount is accurate" $ do
+    let
+      genSqlAndParams =
+        Gen.choice
+          [ pure (RawSql.fromString "Foo", [0])
+          , pure (RawSql.parameter (SqlValue.fromInt8 0), [1])
+          , pure (RawSql.identifier (B8.pack "Bar"), [0])
+          , pure (RawSql.stringLiteral (B8.pack "Baz"), [0])
+          , pure (mempty, [0])
+          , (<>) <$> Gen.small genSqlAndParams <*> Gen.small genSqlAndParams
+          ]
+
+      showSqlAndParams :: (RawSql.RawSql, [Int]) -> String
+      showSqlAndParams (rawSql, params) =
+        show (RawSql.toExampleBytes rawSql, params)
+
+    (rawSql, params) <- HH.forAllWith showSqlAndParams genSqlAndParams
+
+    RawSql.toParamCount rawSql === sum params

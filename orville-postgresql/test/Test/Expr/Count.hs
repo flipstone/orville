@@ -83,7 +83,7 @@ prop_countColumn =
 
     result <-
       Foo.withTable pool $ do
-        Fold.traverse_ (Orville.insertEntities Foo.table) (NEL.nonEmpty foos)
+        Fold.traverse_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty foos)
         Orville.executeAndDecode Orville.SelectQuery sql marshaller
 
     result === [List.genericLength foos]

@@ -46,11 +46,13 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 
+import Orville.PostgreSQL.Batchable (Batchable, batchNonEmpty)
 import Orville.PostgreSQL.Execution.ReturningOption (ReturningOption (WithReturning, WithoutReturning))
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Internal.IndexDefinition (IndexDefinition, IndexMigrationKey, indexMigrationKey)
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, fieldColumnDefinition, fieldColumnName, fieldValueToSqlValue, qualifiedFieldColumnName, qualifyField)
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
@@ -496,6 +498,14 @@ mkTableReturningClause returningOption tableDef =
         . tableMarshaller
         $ tableDef
 
+{- | The maximum number of parameters that can be sent in a single PostgreSQL
+query. PostgreSQL uses a 16-bit integer to identify parameter placeholders,
+so the maximum is 65535.
+-}
+postgresqlMaxParams :: Int
+postgresqlMaxParams =
+  65535
+
 {- | Builds an 'Expr.InsertExpr' that will insert the given entities into the SQL
   table when it is executed. A @RETURNING@ clause will either be included to
   return the inserted rows or not, depending on the 'ReturningOption' given.
@@ -507,7 +517,7 @@ mkInsertExpr ::
   TableDefinition key writeEntity readEntity ->
   Maybe Expr.OnConflictExpr ->
   NE.NonEmpty writeEntity ->
-  Expr.InsertExpr
+  Batchable Expr.InsertExpr
 mkInsertExpr returningOption tableDef maybeOnConflict entities =
   let
     marshaller =
@@ -516,15 +526,40 @@ mkInsertExpr returningOption tableDef maybeOnConflict entities =
     insertColumnList =
       mkInsertColumnList marshaller
 
-    insertSource =
-      mkInsertSource marshaller entities
+    countInsertField :: MarshallerField writeEntity -> Int -> Int
+    countInsertField field =
+      case field of
+        Natural _qualfier _fieldDef (Just _writeAccessor) -> (+ 1)
+        Natural _qualfier _fieldDef Nothing -> id
+        Synthetic _syntheticField -> id
+
+    insertColumnCount =
+      foldMarshallerFields
+        marshaller
+        0
+        countInsertField
+
+    availableParams =
+      postgresqlMaxParams
+        - maybe 0 RawSql.toParamCount maybeOnConflict
+
+    autoBatchSize =
+      if insertColumnCount > 0
+        then availableParams `div` insertColumnCount
+        else maxBound
+
+    batches =
+      batchNonEmpty autoBatchSize entities
+
+    mkExprForBatch batch =
+      Expr.insertExpr
+        (tableName tableDef)
+        (Just insertColumnList)
+        (mkInsertSource marshaller batch)
+        maybeOnConflict
+        (mkTableReturningClause returningOption tableDef)
   in
-    Expr.insertExpr
-      (tableName tableDef)
-      (Just insertColumnList)
-      insertSource
-      maybeOnConflict
-      (mkTableReturningClause returningOption tableDef)
+    fmap mkExprForBatch batches
 
 {- | Builds an 'Expr.InsertColumnList' that specifies the columns for an
   insert statement in the order that they appear in the given 'SqlMarshaller'.

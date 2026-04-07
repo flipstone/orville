@@ -27,30 +27,33 @@ entityOperationsTests pool =
   Property.group
     "EntityOperations"
     [ prop_insertEntitiesFindEntitiesByRoundTrip pool
-    , prop_insertEntitiesAffectedRows pool
+    , prop_insertEntitiesAndReturnRowCount pool
+    , prop_insertEntitiesAndReturnRowCountBatched pool
+    , prop_insertAndReturnEntitiesBatched pool
     , prop_insertEntitiesFindFirstEntityByRoundTrip pool
     , prop_insertEntityFindEntityRoundTrip pool
     , prop_insertEntityFindEntitiesRoundTrip pool
+    , prop_insertEntityFindEntitiesRoundTripBatched pool
     , prop_insertEntityFindEntitiesCompositeKeyRoundTrip pool
     , prop_insertAndReturnEntity pool
     , prop_updateEntity pool
-    , prop_updateEntityAffectedRows pool
+    , prop_updateEntityAndReturnRowCount pool
     , prop_updateAndReturnEntity pool
     , prop_updateEntity_NoMatch pool
     , prop_updateAndReturnEntity_NoMatch pool
     , prop_deleteEntity pool
-    , prop_deleteEntityAffectedRows pool
+    , prop_deleteEntityAndReturnRowCount pool
     , prop_deleteAndReturnEntity pool
     , prop_deleteEntity_NoMatch pool
     , prop_deleteAndReturnEntity_NoMatch pool
     , prop_deleteEntities pool
-    , prop_deleteEntitiesAffectedRows pool
+    , prop_deleteEntitiesAndReturnRowCount pool
     , prop_deleteEntities_NoMatch pool
     , prop_deleteAndReturnEntities pool
     , prop_deleteAndReturnEntities_NoMatch pool
     , prop_updateFields pool
     , prop_updateFields_NoMatch pool
-    , prop_updateFieldsAffectedRows pool
+    , prop_updateFieldsAndReturnRowCount pool
     , prop_updateFieldsAndReturnEntities pool
     , prop_updateFieldsAndReturnEntities_NoMatch pool
     , prop_upsertByPrimaryKeyRoundTrip pool
@@ -60,9 +63,13 @@ entityOperationsTests pool =
     , prop_upsertByMarshallerRoundTrip pool
     , prop_upsertByConflictTargetExprRoundTrip pool
     , prop_upsertAndReturnEntity pool
-    , prop_upsertEntitiesAffectedRows pool
+    , prop_upsertEntitiesAndReturnRowCount pool
+    , prop_upsertEntitiesAndReturnRowCountBatched pool
     , prop_upsertEntitiesFindEntitiesRoundTrip pool
+    , prop_upsertEntitiesFindEntitiesRoundTripBatched pool
+    , prop_upsertAndReturnEntitiesBatched pool
     , prop_upsertEntitiesMixedInsertsAndUpdates pool
+    , prop_upsertEntitiesMixedInsertsAndUpdatesBatched pool
     ]
 
 prop_insertEntitiesFindEntitiesByRoundTrip :: Property.NamedDBProperty
@@ -87,7 +94,7 @@ prop_insertEntitiesFindFirstEntityByRoundTrip =
 
     mbRetrievedFoo <-
       Foo.withTable pool $ do
-        mapM_ (Orville.insertEntities Foo.table) (NEL.nonEmpty originalFoos)
+        mapM_ (Orville.insertEntities Orville.InOneStatement Foo.table) (NEL.nonEmpty originalFoos)
         Orville.findFirstEntityBy Foo.table mempty
 
     let
@@ -100,21 +107,49 @@ prop_insertEntitiesFindFirstEntityByRoundTrip =
     -- and assert which item is returned.
     length (Maybe.maybeToList mbRetrievedFoo) === expectedLength
 
-prop_insertEntitiesAffectedRows :: Property.NamedDBProperty
-prop_insertEntitiesAffectedRows =
-  Property.namedDBProperty "insertEntities returns the number of affected rows" $ \pool -> do
-    originalFoos <- HH.forAll $ Foo.generateList (Range.linear 0 10)
-
-    HH.cover 1 (String.fromString "empty list") (null originalFoos)
-    HH.cover 20 (String.fromString "non-empty list") (not (null originalFoos))
+prop_insertEntitiesAndReturnRowCount :: Property.NamedDBProperty
+prop_insertEntitiesAndReturnRowCount =
+  Property.namedDBProperty "insertEntitiesAndReturnRowCount returns the number of affected rows" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 10)
 
     affectedRows <-
       Foo.withTable pool $ do
-        case NEL.nonEmpty originalFoos of
-          Nothing -> pure 0
-          Just nonEmptyFoos -> Orville.insertEntitiesAndReturnRowCount Foo.table nonEmptyFoos
+        Orville.insertEntitiesAndReturnRowCount
+          Orville.InOneStatement
+          Foo.table
+          foos
 
-    affectedRows === length originalFoos
+    affectedRows === length foos
+
+prop_insertEntitiesAndReturnRowCountBatched :: Property.NamedDBProperty
+prop_insertEntitiesAndReturnRowCountBatched =
+  Property.namedDBProperty "insertEntitiesAndReturnRowCount returns the number of affected rows (batched)" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 10)
+    batchSize <- HH.forAll $ Gen.int (Range.linear 1 5)
+
+    affectedRows <-
+      Foo.withTable pool $ do
+        Orville.insertEntitiesAndReturnRowCount
+          (Orville.InBatches (Orville.BatchSize batchSize) Orville.WithNewTransaction)
+          Foo.table
+          foos
+
+    affectedRows === length foos
+
+prop_insertAndReturnEntitiesBatched :: Property.NamedDBProperty
+prop_insertAndReturnEntitiesBatched =
+  Property.singletonNamedDBProperty "insertAndReturnEntities returns the inserted entities (batched)" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 10)
+    batchSize <- HH.forAll $ Gen.int (Range.linear 1 5)
+
+    returnedFoos <-
+      Foo.withTable pool $ do
+        Orville.insertAndReturnEntities
+          (Orville.InBatches (Orville.BatchSize batchSize) Orville.WithNewTransaction)
+          Foo.table
+          foos
+
+    returnedFoos === NEL.toList foos
 
 prop_insertEntityFindEntityRoundTrip :: Property.NamedDBProperty
 prop_insertEntityFindEntityRoundTrip =
@@ -135,7 +170,23 @@ prop_insertEntityFindEntitiesRoundTrip =
 
     retrievedFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
+        Orville.findEntities Foo.table (Foo.fooId <$> foos)
+
+    List.sortOn Foo.fooId retrievedFoos === List.sortOn Foo.fooId (NEL.toList foos)
+
+prop_insertEntityFindEntitiesRoundTripBatched :: Property.NamedDBProperty
+prop_insertEntityFindEntitiesRoundTripBatched =
+  Property.singletonNamedDBProperty "insertEntity/findEntities form a round trip (batched)" $ \pool -> do
+    foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 10)
+    batchSize <- HH.forAll $ Gen.int (Range.linear 1 5)
+
+    retrievedFoos <-
+      Foo.withTable pool $ do
+        Orville.insertEntities
+          (Orville.InBatches (Orville.BatchSize batchSize) Orville.WithNewTransaction)
+          Foo.table
+          foos
         Orville.findEntities Foo.table (Foo.fooId <$> foos)
 
     List.sortOn Foo.fooId retrievedFoos === List.sortOn Foo.fooId (NEL.toList foos)
@@ -147,7 +198,7 @@ prop_insertEntityFindEntitiesCompositeKeyRoundTrip =
 
     retrievedCompositeKeyEntities <-
       CompositeKeyEntity.withTable pool $ do
-        Orville.insertEntities CompositeKeyEntity.table compositeKeyEntities
+        Orville.insertEntities Orville.InOneStatement CompositeKeyEntity.table compositeKeyEntities
         Orville.findEntities CompositeKeyEntity.table (CompositeKeyEntity.compositeKey <$> compositeKeyEntities)
 
     List.sortOn CompositeKeyEntity.compositeKey retrievedCompositeKeyEntities === List.sortOn CompositeKeyEntity.compositeKey (NEL.toList compositeKeyEntities)
@@ -177,9 +228,9 @@ prop_updateEntity =
 
     returnedFoo === [newFoo]
 
-prop_updateEntityAffectedRows :: Property.NamedDBProperty
-prop_updateEntityAffectedRows =
-  Property.singletonNamedDBProperty "updateEntity returns the number of affected rows" $ \pool -> do
+prop_updateEntityAndReturnRowCount :: Property.NamedDBProperty
+prop_updateEntityAndReturnRowCount =
+  Property.singletonNamedDBProperty "updateEntityAndReturnRowCount returns the number of affected rows" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
     newFoo <- HH.forAll Foo.generate
 
@@ -255,9 +306,9 @@ prop_deleteEntity =
 
     retrievedFoos === [anotherFoo]
 
-prop_deleteEntityAffectedRows :: Property.NamedDBProperty
-prop_deleteEntityAffectedRows =
-  Property.singletonNamedDBProperty "deleteEntity returns the number of affected rows" $ \pool -> do
+prop_deleteEntityAndReturnRowCount :: Property.NamedDBProperty
+prop_deleteEntityAndReturnRowCount =
+  Property.singletonNamedDBProperty "deleteEntityAndReturnRowCount returns the number of affected rows" $ \pool -> do
     originalFoo <- HH.forAll Foo.generate
     let
       withDifferentKey = Gen.filter $ (Foo.fooId originalFoo /=) . Foo.fooId
@@ -325,7 +376,7 @@ prop_deleteEntities =
 
     remainingFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.deleteEntities
           Foo.table
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
@@ -335,9 +386,9 @@ prop_deleteEntities =
 
     fmap Foo.fooId remainingFoos === []
 
-prop_deleteEntitiesAffectedRows :: Property.NamedDBProperty
-prop_deleteEntitiesAffectedRows =
-  Property.singletonNamedDBProperty "deleteEntities returns the number of affected rows" $ \pool -> do
+prop_deleteEntitiesAndReturnRowCount :: Property.NamedDBProperty
+prop_deleteEntitiesAndReturnRowCount =
+  Property.singletonNamedDBProperty "deleteEntitiesAndReturnRowCount returns the number of affected rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
     let
@@ -345,7 +396,7 @@ prop_deleteEntitiesAffectedRows =
 
     affectedRows <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.deleteEntitiesAndReturnRowCount
           Foo.table
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
@@ -363,7 +414,7 @@ prop_deleteEntities_NoMatch =
 
     remainingFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.deleteEntities
           Foo.table
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
@@ -383,7 +434,7 @@ prop_deleteAndReturnEntities =
 
     deletedFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.deleteAndReturnEntities
           Foo.table
           (Just (Orville.fieldIn Foo.fooIdField fooIds))
@@ -401,7 +452,7 @@ prop_deleteAndReturnEntities_NoMatch =
 
     deletedFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.deleteAndReturnEntities
           Foo.table
           (Just (Orville.fieldEquals Foo.fooIdField mismatchedId))
@@ -419,7 +470,7 @@ prop_updateFields =
 
     updatedFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.updateFields
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
@@ -442,7 +493,7 @@ prop_updateFields_NoMatch =
 
     foosAfterUpdate <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.updateFields
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
@@ -451,9 +502,9 @@ prop_updateFields_NoMatch =
 
     List.sortOn Foo.fooId foosAfterUpdate === List.sortOn Foo.fooId (NEL.toList foos)
 
-prop_updateFieldsAffectedRows :: Property.NamedDBProperty
-prop_updateFieldsAffectedRows =
-  Property.singletonNamedDBProperty "updateFields returns the number of affeted rows" $ \pool -> do
+prop_updateFieldsAndReturnRowCount :: Property.NamedDBProperty
+prop_updateFieldsAndReturnRowCount =
+  Property.singletonNamedDBProperty "updateFieldsAndReturnRowCount returns the number of affeted rows" $ \pool -> do
     foos <- HH.forAll $ Foo.generateNonEmpty (Range.linear 1 5)
 
     let
@@ -462,7 +513,7 @@ prop_updateFieldsAffectedRows =
 
     affectedRows <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.updateFieldsAndReturnRowCount
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
@@ -481,7 +532,7 @@ prop_updateFieldsAndReturnEntities =
 
     updatedFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
@@ -501,7 +552,7 @@ prop_updateFieldsAndReturnEntities_NoMatch =
 
     updatedFoos <-
       Foo.withTable pool $ do
-        Orville.insertEntities Foo.table foos
+        Orville.insertEntities Orville.InOneStatement Foo.table foos
         Orville.updateFieldsAndReturnEntities
           Foo.table
           (Orville.setField Foo.fooNameField updatedName :| [])
@@ -647,17 +698,34 @@ prop_upsertAndReturnEntity =
     originalReturned === entity
     updatedReturned === updated
 
-prop_upsertEntitiesAffectedRows :: Property.NamedDBProperty
-prop_upsertEntitiesAffectedRows =
+prop_upsertEntitiesAndReturnRowCount :: Property.NamedDBProperty
+prop_upsertEntitiesAndReturnRowCount =
   Property.namedDBProperty "upsertEntitiesAndReturnRowCount returns the number of affected rows" $ \pool -> do
-    entities <- HH.forAll $ UpsertEntity.generateList (Range.linear 0 10)
+    entities <- HH.forAll $ UpsertEntity.generateNonEmpty (Range.linear 1 10)
 
     affectedRows <-
       UpsertEntity.withTable pool $ do
-        case NEL.nonEmpty entities of
-          Nothing -> pure 0
-          Just nonEmpty ->
-            Orville.upsertEntitiesAndReturnRowCount UpsertEntity.table Orville.ByPrimaryKey nonEmpty
+        Orville.upsertEntitiesAndReturnRowCount
+          Orville.InOneStatement
+          UpsertEntity.table
+          Orville.ByPrimaryKey
+          entities
+
+    affectedRows === length entities
+
+prop_upsertEntitiesAndReturnRowCountBatched :: Property.NamedDBProperty
+prop_upsertEntitiesAndReturnRowCountBatched =
+  Property.namedDBProperty "upsertEntitiesAndReturnRowCount returns the number of affected rows (batched)" $ \pool -> do
+    entities <- HH.forAll $ UpsertEntity.generateNonEmpty (Range.linear 1 10)
+    batchSize <- HH.forAll $ Gen.int (Range.linear 1 5)
+
+    affectedRows <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntitiesAndReturnRowCount
+          (Orville.InBatches (Orville.BatchSize batchSize) Orville.WithNewTransaction)
+          UpsertEntity.table
+          Orville.ByPrimaryKey
+          entities
 
     affectedRows === length entities
 
@@ -668,10 +736,43 @@ prop_upsertEntitiesFindEntitiesRoundTrip =
 
     retrievedEntities <-
       UpsertEntity.withTable pool $ do
-        Orville.upsertEntities UpsertEntity.table Orville.ByPrimaryKey entities
+        Orville.upsertEntities Orville.InOneStatement UpsertEntity.table Orville.ByPrimaryKey entities
         Orville.findEntities UpsertEntity.table (UpsertEntity.upsertEntityId <$> entities)
 
     List.sortOn UpsertEntity.upsertEntityId retrievedEntities === List.sortOn UpsertEntity.upsertEntityId (NEL.toList entities)
+
+prop_upsertEntitiesFindEntitiesRoundTripBatched :: Property.NamedDBProperty
+prop_upsertEntitiesFindEntitiesRoundTripBatched =
+  Property.singletonNamedDBProperty "upsertEntities/findEntities form a round trip (batched)" $ \pool -> do
+    entities <- HH.forAll $ UpsertEntity.generateNonEmpty (Range.linear 1 5)
+    batchSize <- HH.forAll $ Gen.int (Range.linear 1 5)
+
+    retrievedEntities <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntities
+          (Orville.InBatches (Orville.BatchSize batchSize) Orville.WithNewTransaction)
+          UpsertEntity.table
+          Orville.ByPrimaryKey
+          entities
+        Orville.findEntities UpsertEntity.table (UpsertEntity.upsertEntityId <$> entities)
+
+    List.sortOn UpsertEntity.upsertEntityId retrievedEntities === List.sortOn UpsertEntity.upsertEntityId (NEL.toList entities)
+
+prop_upsertAndReturnEntitiesBatched :: Property.NamedDBProperty
+prop_upsertAndReturnEntitiesBatched =
+  Property.singletonNamedDBProperty "upsertAndReturnEntities returns the upserted entities (batched)" $ \pool -> do
+    entities <- HH.forAll $ UpsertEntity.generateNonEmpty (Range.linear 1 10)
+    batchSize <- HH.forAll $ Gen.int (Range.linear 1 5)
+
+    returnedEntities <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertAndReturnEntities
+          (Orville.InBatches (Orville.BatchSize batchSize) Orville.WithNewTransaction)
+          UpsertEntity.table
+          Orville.ByPrimaryKey
+          entities
+
+    List.sortOn UpsertEntity.upsertEntityId returnedEntities === List.sortOn UpsertEntity.upsertEntityId (NEL.toList entities)
 
 prop_upsertEntitiesMixedInsertsAndUpdates :: Property.NamedDBProperty
 prop_upsertEntitiesMixedInsertsAndUpdates =
@@ -685,7 +786,28 @@ prop_upsertEntitiesMixedInsertsAndUpdates =
     retrievedEntities <-
       UpsertEntity.withTable pool $ do
         Orville.upsertEntity UpsertEntity.table Orville.ByPrimaryKey existing
-        Orville.upsertEntities UpsertEntity.table Orville.ByPrimaryKey (updated :| [new])
+        Orville.upsertEntities Orville.InOneStatement UpsertEntity.table Orville.ByPrimaryKey (updated :| [new])
+        Orville.findEntitiesBy UpsertEntity.table mempty
+
+    List.sortOn UpsertEntity.upsertEntityId retrievedEntities === List.sortOn UpsertEntity.upsertEntityId [updated, new]
+
+prop_upsertEntitiesMixedInsertsAndUpdatesBatched :: Property.NamedDBProperty
+prop_upsertEntitiesMixedInsertsAndUpdatesBatched =
+  Property.singletonNamedDBProperty "upsertEntities handles a batch with both inserts and updates (batched)" $ \pool -> do
+    existing <- HH.forAll UpsertEntity.generate
+    new <- HH.forAll $ Gen.filter (\e -> UpsertEntity.upsertEntityId e /= UpsertEntity.upsertEntityId existing) UpsertEntity.generate
+    newValue <- HH.forAll UpsertEntity.generateUpsertEntityValue
+    let
+      updated = existing {UpsertEntity.upsertEntityValue = newValue}
+
+    retrievedEntities <-
+      UpsertEntity.withTable pool $ do
+        Orville.upsertEntity UpsertEntity.table Orville.ByPrimaryKey existing
+        Orville.upsertEntities
+          (Orville.InBatches (Orville.BatchSize 1) Orville.WithNewTransaction)
+          UpsertEntity.table
+          Orville.ByPrimaryKey
+          (updated :| [new])
         Orville.findEntitiesBy UpsertEntity.table mempty
 
     List.sortOn UpsertEntity.upsertEntityId retrievedEntities === List.sortOn UpsertEntity.upsertEntityId [updated, new]
