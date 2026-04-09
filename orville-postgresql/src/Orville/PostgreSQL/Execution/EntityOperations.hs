@@ -173,6 +173,9 @@ insertAndReturnEntities batchOption tableDef =
       (<>)
     . Insert.insertToTableReturning tableDef
 
+-- This is intentionally written in a form where the 'Batchable' argument is not
+-- listed syntatically as an argument to make it possible for GHC inline when
+-- only 4 arguments are passed
 executeBatchOption ::
   Monad.MonadOrville m =>
   BatchInsertOption ->
@@ -181,10 +184,10 @@ executeBatchOption ::
   (fullResult -> batchResult -> fullResult) ->
   Batchable batch ->
   m fullResult
-executeBatchOption batchOption runBatch initialAcc combine batchable =
+executeBatchOption batchOption runBatch initialAcc combine =
   case batchOption of
     InOneStatement ->
-      combine initialAcc <$> runBatch (toUnbatched batchable)
+      fmap (combine initialAcc) . runBatch . toUnbatched
     InBatches batchSize transactionality ->
       let
         -- make sure to force the accumulator to WHNF at each batch
@@ -193,22 +196,27 @@ executeBatchOption batchOption runBatch initialAcc combine batchable =
       in
         withBatchInsertTransactionality
           transactionality
-          (Monad.foldM foldBatch initialAcc . toBatched batchSize $ batchable)
+          . Monad.foldM foldBatch initialAcc
+          . toBatched batchSize
 
+-- This is intentionally written in a form where the 'Batchable' argument is not
+-- listed syntatically as an argument to make it possible for GHC inline when
+-- only 2 arguments are passed
 executeBatchOption_ ::
   Monad.MonadOrville m =>
   BatchInsertOption ->
   (batch -> m result) ->
   Batchable batch ->
   m ()
-executeBatchOption_ batchOption runBatch batchable =
+executeBatchOption_ batchOption runBatch =
   case batchOption of
     InOneStatement ->
-      Monad.void . runBatch . toUnbatched $ batchable
+      Monad.void . runBatch . toUnbatched
     InBatches batchSize transactionality ->
       withBatchInsertTransactionality
         transactionality
-        (traverse_ runBatch . toBatched batchSize $ batchable)
+        . traverse_ runBatch
+        . toBatched batchSize
 
 {- | Controls whether a multi-entity insert is executed as a single SQL
   statement or in multiple batches.
