@@ -518,7 +518,7 @@ mkInsertExpr ::
   Maybe Expr.OnConflictExpr ->
   NE.NonEmpty writeEntity ->
   Batchable Expr.InsertExpr
-mkInsertExpr returningOption tableDef maybeOnConflict entities =
+mkInsertExpr returningOption tableDef maybeOnConflict =
   let
     marshaller =
       unannotatedSqlMarshaller $ tableMarshaller tableDef
@@ -548,9 +548,6 @@ mkInsertExpr returningOption tableDef maybeOnConflict entities =
         then availableParams `div` insertColumnCount
         else maxBound
 
-    batches =
-      batchNonEmpty autoBatchSize entities
-
     mkExprForBatch batch =
       Expr.insertExpr
         (tableName tableDef)
@@ -559,7 +556,7 @@ mkInsertExpr returningOption tableDef maybeOnConflict entities =
         maybeOnConflict
         (mkTableReturningClause returningOption tableDef)
   in
-    fmap mkExprForBatch batches
+    fmap mkExprForBatch . batchNonEmpty autoBatchSize
 
 {- | Builds an 'Expr.InsertColumnList' that specifies the columns for an
   insert statement in the order that they appear in the given 'SqlMarshaller'.
