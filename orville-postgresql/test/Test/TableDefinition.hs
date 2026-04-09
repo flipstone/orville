@@ -345,7 +345,7 @@ prop_autoSizedBatchedInsertCountsOnConflictParams =
       onConflictExpr :: Expr.OnConflictExpr
       onConflictExpr =
         RawSql.unsafeFromRawSql
-          ( RawSql.fromString "ON CONFLICT DO NOTHING "
+          ( RawSql.toRawSql Expr.onConflictDoNothing
               <> onConflictWithParams
           )
 
