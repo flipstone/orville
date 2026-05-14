@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2025
+Copyright : Flipstone Technology Partners 2023-2026
 License   : MIT
 Stability : Stable
 
@@ -35,6 +35,8 @@ module Orville.PostgreSQL.Expr.TableDefinition
   , dropTableExpr
   , TruncateTableExpr
   , truncateTablesExpr
+  , enableRowLevelSecurityExpr
+  , disableRowLevelSecurityExpr
   )
 where
 
@@ -458,3 +460,27 @@ truncateTablesExpr :: NonEmpty (QualifiedOrUnqualified TableName) -> TruncateTab
 truncateTablesExpr tableNames =
   TruncateTableExpr $
     RawSql.fromString "TRUNCATE TABLE " <> RawSql.intercalate RawSql.commaSpace tableNames
+
+{- | Constructs an 'AlterTableExpr' that will enable row level security on the
+  specified table.
+
+  @since 1.2.0.0
+-}
+enableRowLevelSecurityExpr :: QualifiedOrUnqualified TableName -> AlterTableExpr
+enableRowLevelSecurityExpr tableName =
+  AlterTableExpr $
+    RawSql.fromString "ALTER TABLE "
+      <> RawSql.toRawSql tableName
+      <> RawSql.fromString " ENABLE ROW LEVEL SECURITY"
+
+{- | Constructs an 'AlterTableExpr' that will disable row level security on the
+  specified table.
+
+  @since 1.2.0.0
+-}
+disableRowLevelSecurityExpr :: QualifiedOrUnqualified TableName -> AlterTableExpr
+disableRowLevelSecurityExpr tableName =
+  AlterTableExpr $
+    RawSql.fromString "ALTER TABLE "
+      <> RawSql.toRawSql tableName
+      <> RawSql.fromString " DISABLE ROW LEVEL SECURITY"

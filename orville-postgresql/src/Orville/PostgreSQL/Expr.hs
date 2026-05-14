@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2025
+Copyright : Flipstone Technology Partners 2023-2026
 License   : MIT
 Stability : Stable
 
@@ -80,6 +80,7 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.FetchClause
   , module Orville.PostgreSQL.Expr.Values
   , module Orville.PostgreSQL.Expr.TextSearch
+  , module Orville.PostgreSQL.Expr.PolicyExpr
   )
 where
 
@@ -113,6 +114,7 @@ import Orville.PostgreSQL.Expr.OffsetExpr
 import Orville.PostgreSQL.Expr.OnConflict
 import Orville.PostgreSQL.Expr.OrReplace
 import Orville.PostgreSQL.Expr.OrderBy
+import Orville.PostgreSQL.Expr.PolicyExpr
 import Orville.PostgreSQL.Expr.Query
 import Orville.PostgreSQL.Expr.ReturningExpr
 import Orville.PostgreSQL.Expr.RowLocking
