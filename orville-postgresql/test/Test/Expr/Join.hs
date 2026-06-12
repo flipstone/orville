@@ -8,31 +8,33 @@ import Data.Function ((&))
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import qualified Test.Property as Property
 
-joinTests :: Property.Group
+joinTests :: Tasty.TestTree
 joinTests =
-  Property.group
+  Tasty.testGroup
     "Expr - Join"
-    [ prop_joinedTable
-    , prop_join
-    , prop_joining
+    [ TastyHH.testProperty "joinedTable produces a table ref that joins two tables together" prop_joinedTable
+    , TastyHH.testProperty "join allows 'joinedTable' to be used more naturally" prop_join
+    , TastyHH.testProperty "joining allows 'join' to be used without the user needing to use (&)" prop_joining
     ]
 
-prop_joinedTable :: Property.NamedProperty
+prop_joinedTable :: HH.Property
 prop_joinedTable =
-  Property.singletonNamedProperty "joinedTable produces a table ref that joins two tables together"
-    $ assertTableRefEquals
+  Property.singletonProperty $
+    assertTableRefEquals
       "\"foo\" LEFT JOIN \"bar\" ON TRUE"
-    $ Expr.joinedTable fooTableRef Expr.leftJoinType barTableRef joinOnTrue
+      (Expr.joinedTable fooTableRef Expr.leftJoinType barTableRef joinOnTrue)
 
-prop_join :: Property.NamedProperty
+prop_join :: HH.Property
 prop_join =
-  Property.singletonNamedProperty "join allows 'joinedTable' to be used more naturally" $
+  Property.singletonProperty $
     let
       joinedTableRef =
         fooTableRef
@@ -43,9 +45,9 @@ prop_join =
         "\"foo\" LEFT JOIN \"bar\" ON TRUE LEFT JOIN \"baz\" ON TRUE"
         joinedTableRef
 
-prop_joining :: Property.NamedProperty
+prop_joining :: HH.Property
 prop_joining =
-  Property.singletonNamedProperty "joining allows 'join' to be used without the user needing to use (&)" $
+  Property.singletonProperty $
     let
       joinedTableRef =
         Expr.joining

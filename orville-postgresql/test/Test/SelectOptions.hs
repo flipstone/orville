@@ -9,6 +9,8 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import Orville.PostgreSQL ((.&&), (./=), (.<), (.<-), (.</-), (.<=), (.==), (.>), (.>=), (.||))
 import qualified Orville.PostgreSQL as O
@@ -18,213 +20,287 @@ import qualified Orville.PostgreSQL.Marshall.FieldDefinition as FieldDef
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-selectOptionsTests :: Property.Group
+selectOptionsTests :: Tasty.TestTree
 selectOptionsTests =
-  Property.group
+  Tasty.testGroup
     "SelectOptions"
-    [ prop_emptyWhereClause
-    , prop_fieldEquals
-    , prop_fieldEqualsOperator
-    , prop_fieldNotEquals
-    , prop_fieldNotEqualsOperator
-    , prop_fieldIsDistinctFrom
-    , prop_fieldIsNotDistinctFrom
-    , prop_fieldLessThan
-    , prop_fieldLessThanOperator
-    , prop_fieldGreaterThan
-    , prop_fieldGreaterThanOperator
-    , prop_fieldLessThanOrEqualTo
-    , prop_fieldLessThanOrEqualToOperator
-    , prop_fieldGreaterThanOrEqualTo
-    , prop_fieldGreaterThanOrEqualToOperator
-    , prop_fieldIsNull
-    , prop_fieldIsNotNull
-    , prop_fieldLike
-    , prop_fieldLikeInsensitive
-    , prop_andExpr
-    , prop_andExprOperator
-    , prop_orExpr
-    , prop_orExprOperator
-    , prop_andExprOrRightAssociativity
-    , prop_equalityAndOrPrecedence
-    , prop_whereCombined
-    , prop_fieldIn
-    , prop_fieldInOperator
-    , prop_fieldNotIn
-    , prop_fieldNotInOperator
-    , prop_distinct
-    , prop_orderBy
-    , prop_orderByQualified
-    , prop_orderByCombined
-    , prop_groupBy
-    , prop_groupByCombined
-    , prop_forRowLock
+    [ TastyHH.testProperty
+        "emptySelectOptions yields no whereClause"
+        prop_emptyWhereClause
+    , TastyHH.testProperty
+        "fieldEquals generates expected sql"
+        prop_fieldEquals
+    , TastyHH.testProperty
+        ".== generates expected sql"
+        prop_fieldEqualsOperator
+    , TastyHH.testProperty
+        "fieldNotEquals generates expected sql"
+        prop_fieldNotEquals
+    , TastyHH.testProperty
+        "fieldIsDistinctFrom generates expected sql"
+        prop_fieldIsDistinctFrom
+    , TastyHH.testProperty
+        "fieldIsNotDistinctFrom generates expected sql"
+        prop_fieldIsNotDistinctFrom
+    , TastyHH.testProperty
+        "./= generates expected sql"
+        prop_fieldNotEqualsOperator
+    , TastyHH.testProperty
+        "fieldLessThan generates expected sql"
+        prop_fieldLessThan
+    , TastyHH.testProperty
+        ".< generates expected sql"
+        prop_fieldLessThanOperator
+    , TastyHH.testProperty
+        "fieldGreaterThan generates expected sql"
+        prop_fieldGreaterThan
+    , TastyHH.testProperty
+        ".> generates expected sql"
+        prop_fieldGreaterThanOperator
+    , TastyHH.testProperty
+        "fieldLessThanOrEqualTo generates expected sql"
+        prop_fieldLessThanOrEqualTo
+    , TastyHH.testProperty
+        ".<= generates expected sql"
+        prop_fieldLessThanOrEqualToOperator
+    , TastyHH.testProperty
+        "fieldGreaterThanOrEqualTo generates expected sql"
+        prop_fieldGreaterThanOrEqualTo
+    , TastyHH.testProperty
+        ".>= generates expected sql"
+        prop_fieldGreaterThanOrEqualToOperator
+    , TastyHH.testProperty
+        "fieldIsNull generates expected sql"
+        prop_fieldIsNull
+    , TastyHH.testProperty
+        "fieldIsNotNull generates expected sql"
+        prop_fieldIsNotNull
+    , TastyHH.testProperty
+        "fieldLike generates expected sql"
+        prop_fieldLike
+    , TastyHH.testProperty
+        "fieldLikeInsensitive generates expected sql"
+        prop_fieldLikeInsensitive
+    , TastyHH.testProperty
+        "andExpr generates expected sql"
+        prop_andExpr
+    , TastyHH.testProperty
+        ".&& generates expected sql"
+        prop_andExprOperator
+    , TastyHH.testProperty
+        "orExpr generates expected sql"
+        prop_orExpr
+    , TastyHH.testProperty
+        ".|| generates expected sql"
+        prop_orExprOperator
+    , TastyHH.testProperty
+        ".|| and .&& are right associative"
+        prop_andExprOrRightAssociativity
+    , TastyHH.testProperty
+        ".|| and .&& are have reasonable precedence to combine with .== and friends"
+        prop_equalityAndOrPrecedence
+    , TastyHH.testProperty
+        "combining SelectOptions ANDs the where clauses together"
+        prop_whereCombined
+    , TastyHH.testProperty
+        "fieldIn generates expected sql"
+        prop_fieldIn
+    , TastyHH.testProperty
+        ".<- generates expected sql"
+        prop_fieldInOperator
+    , TastyHH.testProperty
+        "fieldNotIn generates expected sql"
+        prop_fieldNotIn
+    , TastyHH.testProperty
+        ".</- generates expected sql"
+        prop_fieldNotInOperator
+    , TastyHH.testProperty
+        "distinct generates expected sql"
+        prop_distinct
+    , TastyHH.testProperty
+        "orderBy generates expected sql"
+        prop_orderBy
+    , TastyHH.testProperty
+        "orderBy generates expected sql"
+        prop_orderByQualified
+    , TastyHH.testProperty
+        "orderBy generates expected sql with multiple selectOptions"
+        prop_orderByCombined
+    , TastyHH.testProperty
+        "groupBy generates expected sql"
+        prop_groupBy
+    , TastyHH.testProperty
+        "groupBy generates expected sql with multiple selectOptions"
+        prop_groupByCombined
+    , TastyHH.testProperty
+        "forRowLock generates expected sql"
+        prop_forRowLock
     ]
 
-prop_emptyWhereClause :: Property.NamedProperty
+prop_emptyWhereClause :: HH.Property
 prop_emptyWhereClause =
-  Property.singletonNamedProperty "emptySelectOptions yields no whereClause" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       Nothing
       O.emptySelectOptions
 
-prop_fieldEquals :: Property.NamedProperty
+prop_fieldEquals :: HH.Property
 prop_fieldEquals =
-  Property.singletonNamedProperty "fieldEquals generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") = ($1)")
       (O.where_ $ O.fieldEquals fooField 0)
 
-prop_fieldEqualsOperator :: Property.NamedProperty
+prop_fieldEqualsOperator :: HH.Property
 prop_fieldEqualsOperator =
-  Property.singletonNamedProperty ".== generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") = ($1)")
       (O.where_ $ fooField .== 0)
 
-prop_fieldNotEquals :: Property.NamedProperty
+prop_fieldNotEquals :: HH.Property
 prop_fieldNotEquals =
-  Property.singletonNamedProperty "fieldNotEquals generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") <> ($1)")
       (O.where_ $ O.fieldNotEquals fooField 0)
 
-prop_fieldIsDistinctFrom :: Property.NamedProperty
+prop_fieldIsDistinctFrom :: HH.Property
 prop_fieldIsDistinctFrom =
-  Property.singletonNamedProperty "fieldIsDistinctFrom generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") IS DISTINCT FROM ($1)")
       (O.where_ $ O.fieldIsDistinctFrom fooField 0)
 
-prop_fieldIsNotDistinctFrom :: Property.NamedProperty
+prop_fieldIsNotDistinctFrom :: HH.Property
 prop_fieldIsNotDistinctFrom =
-  Property.singletonNamedProperty "fieldIsNotDistinctFrom generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") IS NOT DISTINCT FROM ($1)")
       (O.where_ $ O.fieldIsNotDistinctFrom fooField 0)
 
-prop_fieldNotEqualsOperator :: Property.NamedProperty
+prop_fieldNotEqualsOperator :: HH.Property
 prop_fieldNotEqualsOperator =
-  Property.singletonNamedProperty "./= generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") <> ($1)")
       (O.where_ $ fooField ./= 0)
 
-prop_fieldLessThan :: Property.NamedProperty
+prop_fieldLessThan :: HH.Property
 prop_fieldLessThan =
-  Property.singletonNamedProperty "fieldLessThan generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") < ($1)")
       (O.where_ $ O.fieldLessThan fooField 0)
 
-prop_fieldLessThanOperator :: Property.NamedProperty
+prop_fieldLessThanOperator :: HH.Property
 prop_fieldLessThanOperator =
-  Property.singletonNamedProperty ".< generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") < ($1)")
       (O.where_ $ fooField .< 0)
 
-prop_fieldGreaterThan :: Property.NamedProperty
+prop_fieldGreaterThan :: HH.Property
 prop_fieldGreaterThan =
-  Property.singletonNamedProperty "fieldGreaterThan generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") > ($1)")
       (O.where_ $ O.fieldGreaterThan fooField 0)
 
-prop_fieldGreaterThanOperator :: Property.NamedProperty
+prop_fieldGreaterThanOperator :: HH.Property
 prop_fieldGreaterThanOperator =
-  Property.singletonNamedProperty ".> generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") > ($1)")
       (O.where_ $ fooField .> 0)
 
-prop_fieldLessThanOrEqualTo :: Property.NamedProperty
+prop_fieldLessThanOrEqualTo :: HH.Property
 prop_fieldLessThanOrEqualTo =
-  Property.singletonNamedProperty "fieldLessThanOrEqualTo generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") <= ($1)")
       (O.where_ $ O.fieldLessThanOrEqualTo fooField 0)
 
-prop_fieldLessThanOrEqualToOperator :: Property.NamedProperty
+prop_fieldLessThanOrEqualToOperator :: HH.Property
 prop_fieldLessThanOrEqualToOperator =
-  Property.singletonNamedProperty ".<= generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") <= ($1)")
       (O.where_ $ fooField .<= 0)
 
-prop_fieldGreaterThanOrEqualTo :: Property.NamedProperty
+prop_fieldGreaterThanOrEqualTo :: HH.Property
 prop_fieldGreaterThanOrEqualTo =
-  Property.singletonNamedProperty "fieldGreaterThanOrEqualTo generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") >= ($1)")
       (O.where_ $ O.fieldGreaterThanOrEqualTo fooField 0)
 
-prop_fieldGreaterThanOrEqualToOperator :: Property.NamedProperty
+prop_fieldGreaterThanOrEqualToOperator :: HH.Property
 prop_fieldGreaterThanOrEqualToOperator =
-  Property.singletonNamedProperty ".>= generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") >= ($1)")
       (O.where_ $ fooField .>= 0)
 
-prop_fieldLike :: Property.NamedProperty
+prop_fieldLike :: HH.Property
 prop_fieldLike =
-  Property.singletonNamedProperty "fieldLike generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") LIKE ($1)")
       (O.where_ $ O.fieldLike fooField $ T.pack "%0%")
 
-prop_fieldLikeInsensitive :: Property.NamedProperty
+prop_fieldLikeInsensitive :: HH.Property
 prop_fieldLikeInsensitive =
-  Property.singletonNamedProperty "fieldLikeInsensitive generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") ILIKE ($1)")
       (O.where_ $ O.fieldLikeInsensitive fooField $ T.pack "%0%")
 
-prop_fieldIsNull :: Property.NamedProperty
+prop_fieldIsNull :: HH.Property
 prop_fieldIsNull =
-  Property.singletonNamedProperty "fieldIsNull generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE \"baz\" IS NULL")
       (O.where_ $ O.fieldIsNull bazField)
 
-prop_fieldIsNotNull :: Property.NamedProperty
+prop_fieldIsNotNull :: HH.Property
 prop_fieldIsNotNull =
-  Property.singletonNamedProperty "fieldIsNotNull generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE \"baz\" IS NOT NULL")
       (O.where_ $ O.fieldIsNotNull bazField)
 
-prop_andExpr :: Property.NamedProperty
+prop_andExpr :: HH.Property
 prop_andExpr =
-  Property.singletonNamedProperty "andExpr generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) AND ((\"bar\") = ($2))")
       (O.where_ $ Expr.andExpr (O.fieldEquals fooField 10) (O.fieldEquals barField 20))
 
-prop_andExprOperator :: Property.NamedProperty
+prop_andExprOperator :: HH.Property
 prop_andExprOperator =
-  Property.singletonNamedProperty ".&& generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) AND ((\"bar\") = ($2))")
       (O.where_ $ O.fieldEquals fooField 10 .&& O.fieldEquals barField 20)
 
-prop_orExpr :: Property.NamedProperty
+prop_orExpr :: HH.Property
 prop_orExpr =
-  Property.singletonNamedProperty "orExpr generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) OR ((\"bar\") = ($2))")
       (O.where_ $ Expr.orExpr (O.fieldEquals fooField 10) (O.fieldEquals barField 20))
 
-prop_orExprOperator :: Property.NamedProperty
+prop_orExprOperator :: HH.Property
 prop_orExprOperator =
-  Property.singletonNamedProperty ".|| generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) OR ((\"bar\") = ($2))")
       (O.where_ $ O.fieldEquals fooField 10 .|| O.fieldEquals barField 20)
 
-prop_andExprOrRightAssociativity :: Property.NamedProperty
+prop_andExprOrRightAssociativity :: HH.Property
 prop_andExprOrRightAssociativity =
-  Property.singletonNamedProperty ".|| and .&& are right associative" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) OR (((\"foo\") = ($2)) AND (((\"foo\") = ($3)) OR ((\"foo\") = ($4))))")
       ( O.where_ $
@@ -234,9 +310,9 @@ prop_andExprOrRightAssociativity =
             .|| O.fieldEquals fooField 40
       )
 
-prop_equalityAndOrPrecedence :: Property.NamedProperty
+prop_equalityAndOrPrecedence :: HH.Property
 prop_equalityAndOrPrecedence =
-  Property.singletonNamedProperty ".|| and .&& are have reasonable precedence to combine with .== and friends" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) OR (((\"foo\") <> ($2)) AND (((\"foo\") > ($3)) OR (((\"foo\") < ($4)) AND (((\"foo\") >= ($5)) OR (((\"foo\") <= ($6)) AND (((\"foo\") IN ($7)) OR ((\"foo\") NOT IN ($8))))))))")
       ( O.where_ $
@@ -258,53 +334,53 @@ prop_equalityAndOrPrecedence =
               .</- (80 :| [])
       )
 
-prop_whereCombined :: Property.NamedProperty
+prop_whereCombined :: HH.Property
 prop_whereCombined =
-  Property.singletonNamedProperty "combining SelectOptions ANDs the where clauses together" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE ((\"foo\") = ($1)) AND ((\"bar\") = ($2))")
       ( O.where_ (O.fieldEquals fooField 10)
           <> O.where_ (O.fieldEquals barField 20)
       )
 
-prop_fieldIn :: Property.NamedProperty
+prop_fieldIn :: HH.Property
 prop_fieldIn =
-  Property.singletonNamedProperty "fieldIn generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") IN ($1)")
       (O.where_ $ O.fieldIn fooField (10 :| []))
 
-prop_fieldInOperator :: Property.NamedProperty
+prop_fieldInOperator :: HH.Property
 prop_fieldInOperator =
-  Property.singletonNamedProperty ".<- generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") IN ($1)")
       (O.where_ $ fooField .<- (10 :| []))
 
-prop_fieldNotIn :: Property.NamedProperty
+prop_fieldNotIn :: HH.Property
 prop_fieldNotIn =
-  Property.singletonNamedProperty "fieldNotIn generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") NOT IN ($1, $2)")
       (O.where_ $ O.fieldNotIn fooField (10 :| [20]))
 
-prop_fieldNotInOperator :: Property.NamedProperty
+prop_fieldNotInOperator :: HH.Property
 prop_fieldNotInOperator =
-  Property.singletonNamedProperty ".</- generates expected sql" $
+  Property.singletonProperty $
     assertWhereClauseEquals
       (Just "WHERE (\"foo\") NOT IN ($1, $2)")
       (O.where_ $ fooField .</- (10 :| [20]))
 
-prop_distinct :: Property.NamedProperty
+prop_distinct :: HH.Property
 prop_distinct =
-  Property.singletonNamedProperty "distinct generates expected sql" $
+  Property.singletonProperty $
     assertDistinctEquals
       ("SELECT DISTINCT ")
       (O.distinct)
 
-prop_orderBy :: Property.NamedProperty
+prop_orderBy :: HH.Property
 prop_orderBy =
-  Property.singletonNamedProperty "orderBy generates expected sql" $
+  Property.singletonProperty $
     assertOrderByClauseEquals
       (Just "ORDER BY \"foo\" ASC, \"bar\" DESC")
       ( O.orderBy
@@ -313,9 +389,9 @@ prop_orderBy =
           )
       )
 
-prop_orderByQualified :: Property.NamedProperty
+prop_orderByQualified :: HH.Property
 prop_orderByQualified =
-  Property.singletonNamedProperty "orderBy generates expected sql" $
+  Property.singletonProperty $
     assertOrderByClauseEquals
       (Just "ORDER BY \"f\".\"foo\" ASC, \"bar\" DESC")
       ( O.orderBy
@@ -324,18 +400,18 @@ prop_orderByQualified =
           )
       )
 
-prop_orderByCombined :: Property.NamedProperty
+prop_orderByCombined :: HH.Property
 prop_orderByCombined =
-  Property.singletonNamedProperty "orderBy generates expected sql with multiple selectOptions" $
+  Property.singletonProperty $
     assertOrderByClauseEquals
       (Just "ORDER BY \"foo\" ASC, \"bar\" DESC")
       ( (O.orderBy $ O.orderByColumnName (Expr.unqualified (Expr.columnName "foo")) O.ascendingOrder)
           <> (O.orderBy $ O.orderByField barField O.descendingOrder)
       )
 
-prop_groupBy :: Property.NamedProperty
+prop_groupBy :: HH.Property
 prop_groupBy =
-  Property.singletonNamedProperty "groupBy generates expected sql" $
+  Property.singletonProperty $
     assertGroupByClauseEquals
       (Just "GROUP BY \"foo\", \"bar\"")
       ( O.groupBy . Expr.groupByColumnsExpr $
@@ -343,18 +419,18 @@ prop_groupBy =
             :| [Expr.unqualified (FieldDef.fieldColumnName barField)]
       )
 
-prop_groupByCombined :: Property.NamedProperty
+prop_groupByCombined :: HH.Property
 prop_groupByCombined =
-  Property.singletonNamedProperty "groupBy generates expected sql with multiple selectOptions" $
+  Property.singletonProperty $
     assertGroupByClauseEquals
       (Just "GROUP BY foo, \"bar\"")
       ( (O.groupBy . RawSql.unsafeSqlExpression $ "foo")
           <> (O.groupBy . Expr.groupByColumnsExpr $ ((Expr.unqualified (FieldDef.fieldColumnName barField)) :| []))
       )
 
-prop_forRowLock :: Property.NamedProperty
+prop_forRowLock :: HH.Property
 prop_forRowLock =
-  Property.singletonNamedProperty "forRowLock generates expected sql" $
+  Property.singletonProperty $
     assertRowLockingClauseEquals
       (Just "FOR UPDATE SKIP LOCKED")
       (O.forRowLock $ Expr.rowLockingClause Expr.updateStrength Nothing (Just Expr.skipLockedRowLockingOption))

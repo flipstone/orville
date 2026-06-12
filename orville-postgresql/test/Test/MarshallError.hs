@@ -10,6 +10,8 @@ import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
@@ -19,18 +21,18 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-marshallErrorTests :: Orville.ConnectionPool -> Property.Group
+marshallErrorTests :: Orville.ConnectionPool -> Tasty.TestTree
 marshallErrorTests pool =
-  Property.group
+  Tasty.testGroup
     "MarshallError"
-    [ prop_renderDecodingErrorWithFullDetails
-    , prop_renderDecodingErrorWithoutSchemaNames
-    , prop_renderDecodingErrorWithoutRowIdValues
-    , prop_renderDecodingErrorWithoutNonIdValues
-    , prop_renderDecodingErrorWithoutErrorMessage
-    , prop_renderMissingErrorDetailsWithFullDetails
-    , prop_renderMissingErrorDetailsWithoutSchemaNames
-    , prop_showMarshallErrorRaisedFromOrvilleContext pool
+    [ TastyHH.testProperty "Render decoding error with full details" prop_renderDecodingErrorWithFullDetails
+    , TastyHH.testProperty "Render decoding error without schema names" prop_renderDecodingErrorWithoutSchemaNames
+    , TastyHH.testProperty "Render decoding error without row id values" prop_renderDecodingErrorWithoutRowIdValues
+    , TastyHH.testProperty "Render decoding error without non id values" prop_renderDecodingErrorWithoutNonIdValues
+    , TastyHH.testProperty "Render decoding error without error message" prop_renderDecodingErrorWithoutErrorMessage
+    , TastyHH.testProperty "Render missing column error with full details" prop_renderMissingErrorDetailsWithFullDetails
+    , TastyHH.testProperty "Render missing column error without schema names" prop_renderMissingErrorDetailsWithoutSchemaNames
+    , TastyHH.testProperty "Showing a MarshallError raised from an Orville context" (prop_showMarshallErrorRaisedFromOrvilleContext pool)
     ]
 
 {- | Shared example used to test error detail level rendering of decoding errors below.
@@ -50,9 +52,9 @@ exampleDecodingError =
             }
     }
 
-prop_renderDecodingErrorWithFullDetails :: Property.NamedProperty
+prop_renderDecodingErrorWithFullDetails :: HH.Property
 prop_renderDecodingErrorWithFullDetails =
-  Property.singletonNamedProperty "Render decoding error with full details" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -64,9 +66,9 @@ prop_renderDecodingErrorWithFullDetails =
             \Unable to decode columns from result set: Failure. \
             \Value(s) that failed to decode: [bar = baz]"
 
-prop_renderDecodingErrorWithoutSchemaNames :: Property.NamedProperty
+prop_renderDecodingErrorWithoutSchemaNames :: HH.Property
 prop_renderDecodingErrorWithoutSchemaNames =
-  Property.singletonNamedProperty "Render decoding error without schema names" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -81,9 +83,9 @@ prop_renderDecodingErrorWithoutSchemaNames =
             \Unable to decode columns from result set: Failure. \
             \Value(s) that failed to decode: [[REDACTED] = baz]"
 
-prop_renderDecodingErrorWithoutRowIdValues :: Property.NamedProperty
+prop_renderDecodingErrorWithoutRowIdValues :: HH.Property
 prop_renderDecodingErrorWithoutRowIdValues =
-  Property.singletonNamedProperty "Render decoding error without row id values" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -98,9 +100,9 @@ prop_renderDecodingErrorWithoutRowIdValues =
             \Unable to decode columns from result set: Failure. \
             \Value(s) that failed to decode: [bar = baz]"
 
-prop_renderDecodingErrorWithoutNonIdValues :: Property.NamedProperty
+prop_renderDecodingErrorWithoutNonIdValues :: HH.Property
 prop_renderDecodingErrorWithoutNonIdValues =
-  Property.singletonNamedProperty "Render decoding error without non id values" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -115,9 +117,9 @@ prop_renderDecodingErrorWithoutNonIdValues =
             \Unable to decode columns from result set: Failure. \
             \Value(s) that failed to decode: [bar = [REDACTED]]"
 
-prop_renderDecodingErrorWithoutErrorMessage :: Property.NamedProperty
+prop_renderDecodingErrorWithoutErrorMessage :: HH.Property
 prop_renderDecodingErrorWithoutErrorMessage =
-  Property.singletonNamedProperty "Render decoding error without non id values" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -149,9 +151,9 @@ exampleMissingColumnError =
             }
     }
 
-prop_renderMissingErrorDetailsWithFullDetails :: Property.NamedProperty
+prop_renderMissingErrorDetailsWithFullDetails :: HH.Property
 prop_renderMissingErrorDetailsWithFullDetails =
-  Property.singletonNamedProperty "Render missing column error with full details" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -163,9 +165,9 @@ prop_renderMissingErrorDetailsWithFullDetails =
             \Column baz not found in results set. \
             \Actual columns were [bar, foo]"
 
-prop_renderMissingErrorDetailsWithoutSchemaNames :: Property.NamedProperty
+prop_renderMissingErrorDetailsWithoutSchemaNames :: HH.Property
 prop_renderMissingErrorDetailsWithoutSchemaNames =
-  Property.singletonNamedProperty "Render missing column error without schema names" $
+  Property.singletonProperty $
     let
       rendered =
         MarshallError.renderMarshallError
@@ -180,9 +182,9 @@ prop_renderMissingErrorDetailsWithoutSchemaNames =
             \Column [REDACTED] not found in results set. \
             \Actual columns were [[REDACTED], [REDACTED]]"
 
-prop_showMarshallErrorRaisedFromOrvilleContext :: Property.NamedDBProperty
-prop_showMarshallErrorRaisedFromOrvilleContext =
-  Property.namedDBProperty "Showing a MarshallError raised from an Orville context" $ \pool -> do
+prop_showMarshallErrorRaisedFromOrvilleContext :: Orville.ConnectionPool -> HH.Property
+prop_showMarshallErrorRaisedFromOrvilleContext pool =
+  HH.property $ do
     errorDetailLevel <- HH.forAll generateErrorDetailLevel
 
     let

@@ -56,7 +56,8 @@ newtype DefaultValue a
   = DefaultValue Expr.ValueExpression
 
 {- | Builds a default value for any 'Integral' type @n@ by converting it to an
-  'Integer'.
+  'Integer'. Note that this is only safe to use with 'Integral' values that fit into
+  a 64bit PostgreSQL @bigint@.
 
 @since 1.0.0.0
 -}
@@ -74,7 +75,7 @@ integralDefault n =
       then
         DefaultValue . RawSql.unsafeFromRawSql $
           RawSql.stringLiteral decimalBytes
-            <> RawSql.fromString "::integer"
+            <> RawSql.fromString "::bigint"
       else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
 
 {- | Builds a default value from an 'Int16' for use with small integer fields.
@@ -95,7 +96,7 @@ smallIntegerDefault = integralDefault
 integerDefault :: Int32 -> DefaultValue Int32
 integerDefault = integralDefault
 
-{- | Builds a default value from an 'Int16' for use with big integer fields.
+{- | Builds a default value from an 'Int64' for use with big integer fields.
 
   This is a specialization of 'integerDefault'.
 

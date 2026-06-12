@@ -9,6 +9,8 @@ import qualified Data.Int as Int
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -27,19 +29,20 @@ data FooBar = FooBar
 newtype DoubleRes = DoubleRes
   {doubleRes :: Double}
 
-aggregateTests :: Orville.ConnectionPool -> Property.Group
+aggregateTests :: Orville.ConnectionPool -> Tasty.TestTree
 aggregateTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Aggregate"
-    [ prop_avgAggregate pool
-    , prop_maxAggregate pool
-    , prop_minAggregate pool
-    , prop_sumAggregate pool
+    [ TastyHH.testProperty "avgAggregateFunction computes simple average" (prop_avgAggregate pool)
+    , TastyHH.testProperty "maxAggregateFunction computes maximum" (prop_maxAggregate pool)
+    , TastyHH.testProperty "minAggregateFunction computes minimum" (prop_minAggregate pool)
+    , TastyHH.testProperty "sumAggregateFunction computes simple sum" (prop_sumAggregate pool)
     ]
 
-prop_avgAggregate :: Property.NamedDBProperty
-prop_avgAggregate =
-  aggregateFunctionTest "avgAggregateFunction computes simple average" $
+prop_avgAggregate :: Orville.ConnectionPool -> HH.Property
+prop_avgAggregate pool =
+  aggregateFunctionTest
+    pool
     AggregateTest
       { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
@@ -53,9 +56,10 @@ prop_avgAggregate =
             Nothing
       }
 
-prop_maxAggregate :: Property.NamedDBProperty
-prop_maxAggregate =
-  aggregateFunctionTest "maxAggregateFunction computes maximum" $
+prop_maxAggregate :: Orville.ConnectionPool -> HH.Property
+prop_maxAggregate pool =
+  aggregateFunctionTest
+    pool
     AggregateTest
       { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
@@ -69,9 +73,10 @@ prop_maxAggregate =
             Nothing
       }
 
-prop_minAggregate :: Property.NamedDBProperty
-prop_minAggregate =
-  aggregateFunctionTest "minAggregateFunction computes minimum" $
+prop_minAggregate :: Orville.ConnectionPool -> HH.Property
+prop_minAggregate pool =
+  aggregateFunctionTest
+    pool
     AggregateTest
       { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
@@ -85,9 +90,10 @@ prop_minAggregate =
             Nothing
       }
 
-prop_sumAggregate :: Property.NamedDBProperty
-prop_sumAggregate =
-  aggregateFunctionTest "sumAggregateFunction computes simple sum" $
+prop_sumAggregate :: Orville.ConnectionPool -> HH.Property
+prop_sumAggregate pool =
+  aggregateFunctionTest
+    pool
     AggregateTest
       { valuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults =
@@ -107,9 +113,9 @@ data AggregateTest = AggregateTest
   , groupByExpectedQueryResults :: [DoubleRes]
   }
 
-aggregateFunctionTest :: String -> AggregateTest -> Property.NamedDBProperty
-aggregateFunctionTest testName test =
-  Property.singletonNamedDBProperty testName $ \pool -> do
+aggregateFunctionTest :: Orville.ConnectionPool -> AggregateTest -> HH.Property
+aggregateFunctionTest pool test =
+  Property.singletonProperty $ do
     rows <- MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       dropAndRecreateTestTable connection
 

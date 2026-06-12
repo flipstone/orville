@@ -10,6 +10,8 @@ import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
@@ -19,22 +21,22 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-rawSqlTests :: Orville.ConnectionPool -> Property.Group
+rawSqlTests :: Orville.ConnectionPool -> Tasty.TestTree
 rawSqlTests pool =
-  Property.group
+  Tasty.testGroup
     "RawSql"
-    [ prop_concatenatesSQLStrings
-    , prop_tracksPlaceholders
-    , prop_escapesStringLiteralsForExamples
-    , prop_escapesIdentifiersForExamples
-    , prop_escapesStringLiteralsForConnections pool
-    , prop_escapesIdentifiersForConnections pool
-    , prop_toParamCountIsAccurate
+    [ TastyHH.testProperty "Builds concatenated sql from strings" prop_concatenatesSQLStrings
+    , TastyHH.testProperty "Tracks value placeholders in concatenated order" prop_tracksPlaceholders
+    , TastyHH.testProperty "Escapes and quotes string literals for examples" prop_escapesStringLiteralsForExamples
+    , TastyHH.testProperty "Escapes and quotes identifiers for examples" prop_escapesIdentifiersForExamples
+    , TastyHH.testProperty "Escapes and quotes string literals for connections" (prop_escapesStringLiteralsForConnections pool)
+    , TastyHH.testProperty "Escapes and quotes identifiers for connections" (prop_escapesIdentifiersForConnections pool)
+    , TastyHH.testProperty "toParamCount is accurate" prop_toParamCountIsAccurate
     ]
 
-prop_concatenatesSQLStrings :: Property.NamedProperty
+prop_concatenatesSQLStrings :: HH.Property
 prop_concatenatesSQLStrings =
-  Property.singletonNamedProperty "Builds concatenated sql from strings" $ do
+  Property.singletonProperty $ do
     let
       rawSql =
         RawSql.fromString "SELECT * "
@@ -51,9 +53,9 @@ prop_concatenatesSQLStrings =
     actualBytes === expectedBytes
     actualParams === []
 
-prop_tracksPlaceholders :: Property.NamedProperty
+prop_tracksPlaceholders :: HH.Property
 prop_tracksPlaceholders =
-  Property.singletonNamedProperty "Tracks value placeholders in concatenated order" $ do
+  Property.singletonProperty $ do
     let
       rawSql =
         RawSql.fromString "SELECT * "
@@ -96,9 +98,9 @@ prop_tracksPlaceholders =
     actualBytes === expectedBytes
     actualParams === expectedParams
 
-prop_escapesStringLiteralsForExamples :: Property.NamedProperty
+prop_escapesStringLiteralsForExamples :: HH.Property
 prop_escapesStringLiteralsForExamples =
-  Property.singletonNamedProperty "Escapes and quotes string literals for examples" $ do
+  Property.singletonProperty $ do
     let
       rawSql =
         RawSql.stringLiteral (B8.pack "Hello W'orld")
@@ -111,9 +113,9 @@ prop_escapesStringLiteralsForExamples =
 
     actualBytes === expectedBytes
 
-prop_escapesIdentifiersForExamples :: Property.NamedProperty
+prop_escapesIdentifiersForExamples :: HH.Property
 prop_escapesIdentifiersForExamples =
-  Property.singletonNamedProperty "Escapes and quotes identifiers for examples" $ do
+  Property.singletonProperty $ do
     let
       rawSql =
         RawSql.identifier (B8.pack "Hello W\"orld")
@@ -126,9 +128,9 @@ prop_escapesIdentifiersForExamples =
 
     actualBytes === expectedBytes
 
-prop_escapesStringLiteralsForConnections :: Property.NamedDBProperty
-prop_escapesStringLiteralsForConnections =
-  Property.singletonNamedDBProperty "Escapes and quotes string literals for connections" $ \pool -> do
+prop_escapesStringLiteralsForConnections :: Orville.ConnectionPool -> HH.Property
+prop_escapesStringLiteralsForConnections pool =
+  Property.singletonProperty $ do
     let
       rawSql =
         RawSql.stringLiteral (B8.pack "Hello W'orld")
@@ -143,9 +145,9 @@ prop_escapesStringLiteralsForConnections =
 
     actualBytes === expectedBytes
 
-prop_escapesIdentifiersForConnections :: Property.NamedDBProperty
-prop_escapesIdentifiersForConnections =
-  Property.singletonNamedDBProperty "Escapes and quotes identifiers for connections" $ \pool -> do
+prop_escapesIdentifiersForConnections :: Orville.ConnectionPool -> HH.Property
+prop_escapesIdentifiersForConnections pool =
+  Property.singletonProperty $ do
     let
       rawSql =
         RawSql.identifier (B8.pack "Hello W\"orld")
@@ -160,9 +162,9 @@ prop_escapesIdentifiersForConnections =
 
     actualBytes === expectedBytes
 
-prop_toParamCountIsAccurate :: Property.NamedProperty
+prop_toParamCountIsAccurate :: HH.Property
 prop_toParamCountIsAccurate =
-  Property.singletonNamedProperty "toParamCount is accurate" $ do
+  HH.property $ do
     let
       genSqlAndParams =
         Gen.choice

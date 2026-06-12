@@ -16,6 +16,8 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
@@ -29,43 +31,69 @@ import Test.Orphans ()
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
-sqlMarshallerTests :: Property.Group
+sqlMarshallerTests :: Tasty.TestTree
 sqlMarshallerTests =
-  Property.group
+  Tasty.testGroup
     "SqlMarshaller"
-    [ property_returnPureValue
-    , property_combineWithApplicative
-    , property_marshellField_readSingleField
-    , prop_marshallField_missingColumn
-    , prop_marshallField_decodeValueFailure
-    , prop_marshallResultFromSql_Foo
-    , prop_marshallResultFromSql_FooWithQualifier
-    , prop_marshallResultFromSql_Bar
-    , prop_foldMarshallerFields
-    , prop_passMaybeThrough
-    , prop_partialMap
-    , prop_toComparableSqlValue
-    , prop_referenceValueExpression
+    [ TastyHH.testProperty
+        "Can read a pure Int via SqlMarshaller"
+        property_returnPureValue
+    , TastyHH.testProperty
+        "Can combine SqlMarshallers with <*>"
+        property_combineWithApplicative
+    , TastyHH.testProperty
+        "Read a single field from a result row using marshallField"
+        property_marshellField_readSingleField
+    , TastyHH.testProperty
+        "marshallField fails gracefully when decoding a non-existent column"
+        prop_marshallField_missingColumn
+    , TastyHH.testProperty
+        "marshallField fails gracefully when failing to decode a value"
+        prop_marshallField_decodeValueFailure
+    , TastyHH.testProperty
+        "marshallResultFromSql decodes all rows in Foo result set"
+        prop_marshallResultFromSql_Foo
+    , TastyHH.testProperty
+        "marshallResultFromSql decodes all rows in Foo result set, when given an alias for each field"
+        prop_marshallResultFromSql_FooWithQualifier
+    , TastyHH.testProperty
+        "marshallResultFromSql decodes all rows in Bar result set"
+        prop_marshallResultFromSql_Bar
+    , TastyHH.testProperty
+        "foldMarshallerFields collects all fields as their sql values"
+        prop_foldMarshallerFields
+    , TastyHH.testProperty
+        "can pass a Maybe through SqlMarshaller"
+        prop_passMaybeThrough
+    , TastyHH.testProperty
+        "can use marshallPartial to fail decoding with in a custom way"
+        prop_partialMap
+    , TastyHH.testProperty
+        "toComparableSqlValue encodes the marshaller's write entity as a row value"
+        prop_toComparableSqlValue
+    , TastyHH.testProperty
+        "referenceValueExpression returns a row value containing references to the marshaller's write fields"
+        prop_referenceValueExpression
     ]
 
-property_returnPureValue :: Property.NamedProperty
+property_returnPureValue :: HH.Property
 property_returnPureValue =
-  Property.namedProperty "Can read a pure Int via SqlMarshaller" $ do
+  HH.property $ do
     someInt <- HH.forAll generateInt
     result <- marshallTestRowFromSql (pure someInt) (Result.mkFakeLibPQResult [] [[]])
     Bifunctor.first show result === Right [someInt]
 
-property_combineWithApplicative :: Property.NamedProperty
+property_combineWithApplicative :: HH.Property
 property_combineWithApplicative =
-  Property.namedProperty "Can combine SqlMarshallers with <*>" $ do
+  HH.property $ do
     firstInt <- HH.forAll generateInt
     secondInt <- HH.forAll generateInt
     result <- marshallTestRowFromSql ((pure (+ firstInt)) <*> (pure secondInt)) (Result.mkFakeLibPQResult [] [[]])
     Bifunctor.first show result === Right [firstInt + secondInt]
 
-property_marshellField_readSingleField :: Property.NamedProperty
+property_marshellField_readSingleField :: HH.Property
 property_marshellField_readSingleField =
-  Property.namedProperty "Read a single field from a result row using marshallField" $ do
+  HH.property $ do
     targetName <- HH.forAll generateName
     targetValue <- HH.forAll generateInt32
 
@@ -86,9 +114,9 @@ property_marshellField_readSingleField =
     result <- marshallTestRowFromSql marshaller input
     Bifunctor.first show result === Right [targetValue]
 
-prop_marshallField_missingColumn :: Property.NamedProperty
+prop_marshallField_missingColumn :: HH.Property
 prop_marshallField_missingColumn =
-  Property.namedProperty "marshallField fails gracefully when decoding a non-existent column" $ do
+  HH.property $ do
     targetName <- HH.forAll generateName
     otherNames <- HH.forAll (generateNamesOtherThan targetName)
     otherValues <- HH.forAll (generateAssociatedValues otherNames generateInt32)
@@ -118,9 +146,9 @@ prop_marshallField_missingColumn =
     -- need an Eq instance
     Bifunctor.first show result === Left (show expectedError)
 
-prop_marshallField_decodeValueFailure :: Property.NamedProperty
+prop_marshallField_decodeValueFailure :: HH.Property
 prop_marshallField_decodeValueFailure =
-  Property.namedProperty "marshallField fails gracefully when failing to decode a value" $ do
+  HH.property $ do
     targetName <- HH.forAll generateName
     nonIntegerText <- HH.forAll (Gen.text (Range.linear 0 10) Gen.alpha)
 
@@ -148,9 +176,9 @@ prop_marshallField_decodeValueFailure =
             HH.footnote "Expected DecodingError error, but got another error instead."
             HH.failure
 
-prop_marshallResultFromSql_Foo :: Property.NamedProperty
+prop_marshallResultFromSql_Foo :: HH.Property
 prop_marshallResultFromSql_Foo =
-  Property.namedProperty "marshallResultFromSql decodes all rows in Foo result set" $ do
+  HH.property $ do
     foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
 
     let
@@ -168,9 +196,9 @@ prop_marshallResultFromSql_Foo =
     result <- marshallTestRowFromSql fooMarshaller input
     Bifunctor.first show result === Right foos
 
-prop_marshallResultFromSql_FooWithQualifier :: Property.NamedProperty
+prop_marshallResultFromSql_FooWithQualifier :: HH.Property
 prop_marshallResultFromSql_FooWithQualifier =
-  Property.namedProperty "marshallResultFromSql decodes all rows in Foo result set, when given an alias for each field" $ do
+  HH.property $ do
     foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
 
     let
@@ -188,9 +216,9 @@ prop_marshallResultFromSql_FooWithQualifier =
     result <- marshallTestRowFromSql fooMarshallerWithQualifierOnEachField input
     Bifunctor.first show result === Right foos
 
-prop_marshallResultFromSql_Bar :: Property.NamedProperty
+prop_marshallResultFromSql_Bar :: HH.Property
 prop_marshallResultFromSql_Bar =
-  Property.namedProperty "marshallResultFromSql decodes all rows in Bar result set" $ do
+  HH.property $ do
     bars <- HH.forAll $ Gen.list (Range.linear 0 10) generateBar
 
     let
@@ -208,9 +236,9 @@ prop_marshallResultFromSql_Bar =
     result <- marshallTestRowFromSql barMarshaller input
     Bifunctor.first show result === Right bars
 
-prop_foldMarshallerFields :: Property.NamedProperty
+prop_foldMarshallerFields :: HH.Property
 prop_foldMarshallerFields =
-  Property.namedProperty "foldMarshallerFields collects all fields as their sql values" $ do
+  HH.property $ do
     foo <- HH.forAll generateFoo
 
     let
@@ -237,16 +265,16 @@ prop_foldMarshallerFields =
 
     [actualFooRow] `assertEqualSqlRows` [expectedFooRow]
 
-prop_passMaybeThrough :: Property.NamedProperty
+prop_passMaybeThrough :: HH.Property
 prop_passMaybeThrough =
-  Property.namedProperty "can pass a Maybe through SqlMarshaller" $ do
+  HH.property $ do
     someMaybeBool <- HH.forAll $ Gen.maybe Gen.bool
     result <- marshallTestRowFromSql (pure someMaybeBool) (Result.mkFakeLibPQResult [] [[]])
     Bifunctor.first show result === Right [someMaybeBool]
 
-prop_partialMap :: Property.NamedProperty
+prop_partialMap :: HH.Property
 prop_partialMap =
-  Property.namedProperty "can use marshallPartial to fail decoding with in a custom way" $ do
+  HH.property $ do
     texts <- HH.forAll $ Gen.list (Range.linear 0 10) (PgGen.pgText (Range.linear 0 10))
 
     let
@@ -298,9 +326,9 @@ prop_partialMap =
     result <- marshallTestRowFromSql marshaller input
     Bifunctor.first show result === expected
 
-prop_toComparableSqlValue :: Property.NamedProperty
+prop_toComparableSqlValue :: HH.Property
 prop_toComparableSqlValue =
-  Property.namedProperty "toComparableSqlValue encodes the marshaller's write entity as a row value" $ do
+  HH.property $ do
     foo <- HH.forAll generateFoo
 
     let
@@ -312,9 +340,9 @@ prop_toComparableSqlValue =
 
     actual === expected
 
-prop_referenceValueExpression :: Property.NamedProperty
+prop_referenceValueExpression :: HH.Property
 prop_referenceValueExpression =
-  Property.singletonNamedProperty "referenceValueExpression returns a row value containing references to the marshaller's write fields" $ do
+  Property.singletonProperty $ do
     let
       alias = Marshall.stringToAliasName "f"
       expected =

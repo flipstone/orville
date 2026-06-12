@@ -19,10 +19,13 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
 import qualified Data.Map.Strict as Map
 import qualified Data.String as String
+import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Plan as Plan
@@ -40,46 +43,100 @@ import qualified Test.Property as Property
 
 {- ORMOLU_DISABLE -}
 {- disable formatting so fourmolu doesn't go haywire with the cpp within the list -}
-planTests :: Orville.ConnectionPool -> Property.Group
+planTests :: Orville.ConnectionPool -> Tasty.TestTree
 planTests pool =
-  Property.group "Plan" $
-    [ prop_askParam pool
-    , prop_findMaybeOne pool
-    , prop_findMaybeOneByMarshaller pool
-    , prop_findMaybeOneWhere pool
-    , prop_findMaybeOneWhereByMarshaller pool
-    , prop_findAll pool
-    , prop_findAllByMarshaller pool
-    , prop_findAllWhere pool
-    , prop_findAllWhereByMarshaller pool
-    , prop_planMany_findMaybeOne pool
-    , prop_planMany_findMaybeOneByMarshaller pool
-    , prop_planMany_findMaybeOneWhere pool
-    , prop_planMany_findMaybeOneWhereByMarshaller pool
-    , prop_planMany_findAll pool
-    , prop_planTraversable_Map_findAll pool
-    , prop_planMany_findAllByMarshaller pool
-    , prop_planMany_findAllWhere pool
-    , prop_planMany_findAllWhereByMarshaller pool
-    , prop_planEither pool
-    , prop_planMany_planEither pool
-    , prop_bindAndUse pool
-    , prop_planMany_bindAndUse pool
-    , prop_planMany_findOne_dedupesInClauses pool
+  Tasty.testGroup "Plan" $
+    [ TastyHH.testProperty
+        "askParam returns the plan's parameter"
+        (prop_askParam pool)
+    , TastyHH.testProperty
+        "findMaybeOne finds a row where the field matches (if any)"
+        (prop_findMaybeOne pool)
+    , TastyHH.testProperty
+        "findMaybeOneByMarshaller finds a row where the marshaller matches (if any)"
+        (prop_findMaybeOneByMarshaller pool)
+    , TastyHH.testProperty
+        "findMaybeOneWhere finds a row where the field matches (if any), with the given condition"
+        (prop_findMaybeOneWhere pool)
+    , TastyHH.testProperty
+        "findMaybeOneWhereByMarshaller finds a row where the marshaller matches (if any), with the given condition"
+        (prop_findMaybeOneWhereByMarshaller pool)
+    , TastyHH.testProperty
+        "findAll finds all rows where the field matches"
+        (prop_findAll pool)
+    , TastyHH.testProperty
+        "findAllByMarshaller finds all rows where the marshaller matches"
+        (prop_findAllByMarshaller pool)
+    , TastyHH.testProperty
+        "findAllWhere finds all rows where the field matches, with the given condition"
+        (prop_findAllWhere pool)
+    , TastyHH.testProperty
+        "findAllWhereByMarshaller finds all rows where the marshaller matches, with the given condition"
+        (prop_findAllWhereByMarshaller pool)
+    , TastyHH.testProperty
+        "(planMany findMaybeOne) finds a row where the field matches for each input"
+        (prop_planMany_findMaybeOne pool)
+    , TastyHH.testProperty
+        "(planMany findMaybeOneByMarshaller) finds a row where the marshaller matches for each input"
+        (prop_planMany_findMaybeOneByMarshaller pool)
+    , TastyHH.testProperty
+        "(planMany findMaybeOneWhere) finds a row where the field matches for each input, with the given condition"
+        (prop_planMany_findMaybeOneWhere pool)
+    , TastyHH.testProperty
+        "(planMany findMaybeOneWhereByMarshaller) finds a row where the marshaller matches for each input, with the given condition"
+        (prop_planMany_findMaybeOneWhereByMarshaller pool)
+    , TastyHH.testProperty
+        "(planMany findAll) finds all rows where the field matches for each element in a list of inputs"
+        (prop_planMany_findAll pool)
+    , TastyHH.testProperty
+        "(planTraversable findAll) finds all rows where the field matches for each element in a map of inputs"
+        (prop_planTraversable_Map_findAll pool)
+    , TastyHH.testProperty
+        "(planMany findAllByMarshaller) finds all rows where the marshaller matches for each list of inputs"
+        (prop_planMany_findAllByMarshaller pool)
+    , TastyHH.testProperty
+        "(planMany findAllWhere) finds all rows where the field matches for each element in a list of inputs, with the given condition"
+        (prop_planMany_findAllWhere pool)
+    , TastyHH.testProperty
+        "(planMany findAllWhereByMarshaller) finds all rows where the marshaller matches for each list of inputs, with the given condition"
+        (prop_planMany_findAllWhereByMarshaller pool)
+    , TastyHH.testProperty
+        "planEither executes either the right or left plan based on input"
+        (prop_planEither pool)
+    , TastyHH.testProperty
+        "(planMany planEither) executes either the right and left plans with appropriate inputs"
+        (prop_planMany_planEither pool)
+    , TastyHH.testProperty
+        "bind/use allows caller to use plan output as input for another plan"
+        (prop_bindAndUse pool)
+    , TastyHH.testProperty
+        "(planMany bind/use) allows caller to use plan output as input for another plan"
+        (prop_planMany_bindAndUse pool)
+    , TastyHH.testProperty
+        "planMany/findOne dedupes in clause to avoid PostgreSQL parameter limit"
+        (prop_planMany_findOne_dedupesInClauses pool)
 #if defined(MIN_VERSION_GLASGOW_HASKELL)
 #if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
-    , prop_bindAndUse_qualifiedDo pool
-    , prop_planMany_bindAndUse_qualifiedDo pool
+    , TastyHH.testProperty
+        "bind/use allows caller to use plan output as input for another plan (QualifiedDo version)"
+        (prop_bindAndUse_qualifiedDo pool)
+    , TastyHH.testProperty
+        "(planMany bind/use) allows caller to use plan output as input for another plan (QualifiedDo version)"
+        (prop_planMany_bindAndUse_qualifiedDo pool)
 #endif
 #endif
-    , prop_assert pool
-    , prop_explain
+    , TastyHH.testProperty
+        "assert raises an AssertionError in IO"
+        (prop_assert pool)
+    , TastyHH.testProperty
+        "explain shows the SQL steps that will be executed"
+        prop_explain
     ]
 {- ORMOLU_ENABLE -}
 
-prop_askParam :: Property.NamedDBProperty
-prop_askParam =
-  Property.namedDBProperty "askParam returns the plan's parameter" $ \pool -> do
+prop_askParam :: Orville.ConnectionPool -> HH.Property
+prop_askParam pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope Int Int
       plan = Plan.askParam
@@ -88,9 +145,9 @@ prop_askParam =
     resultParam <- MIO.liftIO $ Orville.runOrville pool (Plan.execute plan inputParam)
     resultParam === inputParam
 
-prop_findMaybeOne :: Property.NamedDBProperty
-prop_findMaybeOne =
-  Property.namedDBProperty "findMaybeOne finds a row where the field matches (if any)" $ \pool -> do
+prop_findMaybeOne :: Orville.ConnectionPool -> HH.Property
+prop_findMaybeOne pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
       plan = Plan.findMaybeOne Foo.table Foo.fooNameField
@@ -107,9 +164,9 @@ prop_findMaybeOne =
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
 
-prop_findMaybeOneByMarshaller :: Property.NamedDBProperty
-prop_findMaybeOneByMarshaller =
-  Property.namedDBProperty "findMaybeOneByMarshaller finds a row where the marshaller matches (if any)" $ \pool -> do
+prop_findMaybeOneByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_findMaybeOneByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo)
       plan = Plan.findMaybeOneByMarshaller Foo.table Foo.nameAndAgeMarshaller
@@ -126,9 +183,9 @@ prop_findMaybeOneByMarshaller =
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
 
-prop_planMany_findMaybeOne :: Property.NamedDBProperty
-prop_planMany_findMaybeOne =
-  Property.namedDBProperty "(planMany findMaybeOne) finds a row where the field matches for each input" $ \pool -> do
+prop_planMany_findMaybeOne :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findMaybeOne pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
       plan = Plan.planMany $ Plan.findMaybeOne Foo.table Foo.fooNameField
@@ -150,9 +207,9 @@ prop_planMany_findMaybeOne =
         (\foo -> Foo.hasName targetName foo && isMatch foo)
         foos
 
-prop_planMany_findMaybeOneByMarshaller :: Property.NamedDBProperty
-prop_planMany_findMaybeOneByMarshaller =
-  Property.namedDBProperty "(planMany findMaybeOneByMarshaller) finds a row where the marshaller matches for each input" $ \pool -> do
+prop_planMany_findMaybeOneByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findMaybeOneByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo))
       plan = Plan.planMany $ Plan.findMaybeOneByMarshaller Foo.table Foo.nameAndAgeMarshaller
@@ -176,9 +233,9 @@ prop_planMany_findMaybeOneByMarshaller =
         (\foo -> Foo.hasName name foo && Foo.hasAge age foo && isMatch foo)
         foos
 
-prop_findMaybeOneWhere :: Property.NamedDBProperty
-prop_findMaybeOneWhere =
-  Property.namedDBProperty "findMaybeOneWhere finds a row where the field matches (if any), with the given condition" $ \pool -> do
+prop_findMaybeOneWhere :: Orville.ConnectionPool -> HH.Property
+prop_findMaybeOneWhere pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope Foo.FooName (Maybe Foo.Foo)
       plan =
@@ -199,9 +256,9 @@ prop_findMaybeOneWhere =
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
 
-prop_findMaybeOneWhereByMarshaller :: Property.NamedDBProperty
-prop_findMaybeOneWhereByMarshaller =
-  Property.namedDBProperty "findMaybeOneWhereByMarshaller finds a row where the marshaller matches (if any), with the given condition" $ \pool -> do
+prop_findMaybeOneWhereByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_findMaybeOneWhereByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo)
       plan =
@@ -222,9 +279,9 @@ prop_findMaybeOneWhereByMarshaller =
     coverSearchResultCases isMatch foos
     assertMatchIsFromPredicate maybeResult isMatch foos
 
-prop_planMany_findMaybeOneWhere :: Property.NamedDBProperty
-prop_planMany_findMaybeOneWhere =
-  Property.namedDBProperty "(planMany findMaybeOneWhere) finds a row where the field matches for each input, with the given condition" $ \pool -> do
+prop_planMany_findMaybeOneWhere :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findMaybeOneWhere pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Maybe Foo.Foo))
       plan =
@@ -253,9 +310,9 @@ prop_planMany_findMaybeOneWhere =
         (\foo -> Foo.hasName targetName foo && isMatch foo)
         foos
 
-prop_planMany_findMaybeOneWhereByMarshaller :: Property.NamedDBProperty
-prop_planMany_findMaybeOneWhereByMarshaller =
-  Property.namedDBProperty "(planMany findMaybeOneWhereByMarshaller) finds a row where the marshaller matches for each input, with the given condition" $ \pool -> do
+prop_planMany_findMaybeOneWhereByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findMaybeOneWhereByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) (Maybe Foo.Foo))
       plan =
@@ -288,9 +345,9 @@ prop_planMany_findMaybeOneWhereByMarshaller =
         (\foo -> Foo.hasName name foo && Foo.hasAge age foo && isMatch foo)
         foos
 
-prop_findAll :: Property.NamedDBProperty
-prop_findAll =
-  Property.namedDBProperty "findAll finds all rows where the field matches" $ \pool -> do
+prop_findAll :: Orville.ConnectionPool -> HH.Property
+prop_findAll pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
       plan = Plan.findAll Foo.table Foo.fooNameField
@@ -307,9 +364,9 @@ prop_findAll =
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
 
-prop_findAllByMarshaller :: Property.NamedDBProperty
-prop_findAllByMarshaller =
-  Property.namedDBProperty "findAllByMarshaller finds all rows where the marshaller matches" $ \pool -> do
+prop_findAllByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_findAllByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) [Foo.Foo]
       plan = Plan.findAllByMarshaller Foo.table Foo.nameAndAgeMarshaller
@@ -326,9 +383,9 @@ prop_findAllByMarshaller =
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
 
-prop_planMany_findAll :: Property.NamedDBProperty
-prop_planMany_findAll =
-  Property.namedDBProperty "(planMany findAll) finds all rows where the field matches for each element in a list of inputs" $ \pool -> do
+prop_planMany_findAll :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findAll pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
       plan = Plan.planMany (Plan.findAll Foo.table Foo.fooNameField)
@@ -346,9 +403,9 @@ prop_planMany_findAll =
     assertEachManyResult targetNames results $ \targetName foundFoos ->
       assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName targetName foo && isMatch foo) foos
 
-prop_planTraversable_Map_findAll :: Property.NamedDBProperty
-prop_planTraversable_Map_findAll =
-  Property.namedDBProperty "(planTraversable findAll) finds all rows where the field matches for each element in a map of inputs" $ \pool -> do
+prop_planTraversable_Map_findAll :: Orville.ConnectionPool -> HH.Property
+prop_planTraversable_Map_findAll pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Map.Map Foo.FooName Foo.FooName) (Map.Map Foo.FooName [Foo.Foo])
       plan = Plan.planTraversable (Plan.findAll Foo.table Foo.fooNameField)
@@ -373,9 +430,9 @@ prop_planTraversable_Map_findAll =
       )
       targetNames
 
-prop_planMany_findAllByMarshaller :: Property.NamedDBProperty
-prop_planMany_findAllByMarshaller =
-  Property.namedDBProperty "(planMany findAllByMarshaller) finds all rows where the marshaller matches for each list of inputs" $ \pool -> do
+prop_planMany_findAllByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findAllByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) [Foo.Foo])
       plan = Plan.planMany (Plan.findAllByMarshaller Foo.table Foo.nameAndAgeMarshaller)
@@ -395,9 +452,9 @@ prop_planMany_findAllByMarshaller =
     assertEachManyResult target results $ \(name, age) foundFoos ->
       assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName name foo && Foo.hasAge age foo) foos
 
-prop_findAllWhere :: Property.NamedDBProperty
-prop_findAllWhere =
-  Property.namedDBProperty "findAllWhere finds all rows where the field matches, with the given condition" $ \pool -> do
+prop_findAllWhere :: Orville.ConnectionPool -> HH.Property
+prop_findAllWhere pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope Foo.FooName [Foo.Foo]
       plan =
@@ -418,9 +475,9 @@ prop_findAllWhere =
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
 
-prop_findAllWhereByMarshaller :: Property.NamedDBProperty
-prop_findAllWhereByMarshaller =
-  Property.namedDBProperty "findAllWhereByMarshaller finds all rows where the marshaller matches, with the given condition" $ \pool -> do
+prop_findAllWhereByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_findAllWhereByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Foo.FooName, Foo.FooAge) [Foo.Foo]
       plan =
@@ -441,9 +498,9 @@ prop_findAllWhereByMarshaller =
     coverSearchResultCases isMatch foos
     assertAllMatchesFound Foo.fooId results isMatch foos
 
-prop_planMany_findAllWhere :: Property.NamedDBProperty
-prop_planMany_findAllWhere =
-  Property.namedDBProperty "(planMany findAllWhere) finds all rows where the field matches for each element in a list of inputs, with the given condition" $ \pool -> do
+prop_planMany_findAllWhere :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findAllWhere pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName [Foo.Foo])
       plan =
@@ -466,9 +523,9 @@ prop_planMany_findAllWhere =
     assertEachManyResult targetNames results $ \targetName foundFoos ->
       assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName targetName foo && isMatch foo) foos
 
-prop_planMany_findAllWhereByMarshaller :: Property.NamedDBProperty
-prop_planMany_findAllWhereByMarshaller =
-  Property.namedDBProperty "(planMany findAllWhereByMarshaller) finds all rows where the marshaller matches for each list of inputs, with the given condition" $ \pool -> do
+prop_planMany_findAllWhereByMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findAllWhereByMarshaller pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [(Foo.FooName, Foo.FooAge)] (Many.Many (Foo.FooName, Foo.FooAge) [Foo.Foo])
       plan =
@@ -493,9 +550,9 @@ prop_planMany_findAllWhereByMarshaller =
     assertEachManyResult target results $ \(name, age) foundFoos ->
       assertAllMatchesFound Foo.fooId foundFoos (\foo -> Foo.hasName name foo && Foo.hasAge age foo && isMatch foo) foos
 
-prop_planEither :: Property.NamedDBProperty
-prop_planEither =
-  Property.namedDBProperty "planEither executes either the right or left plan based on input" $ \pool -> do
+prop_planEither :: Orville.ConnectionPool -> HH.Property
+prop_planEither pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Either Foo.FooId Foo.FooName) Foo.Foo
       plan =
@@ -518,9 +575,9 @@ prop_planEither =
 
     foundFoo === foo
 
-prop_planMany_planEither :: Property.NamedDBProperty
-prop_planMany_planEither =
-  Property.namedDBProperty "(planMany planEither) executes either the right and left plans with appropriate inputs" $ \pool -> do
+prop_planMany_planEither :: Orville.ConnectionPool -> HH.Property
+prop_planMany_planEither pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [Either Foo.FooId Foo.FooName] (Many.Many (Either Foo.FooId Foo.FooName) Foo.Foo)
       plan =
@@ -554,9 +611,9 @@ prop_planMany_planEither =
         Right fooName ->
           Foo.fooName foo === fooName
 
-prop_bindAndUse :: Property.NamedDBProperty
-prop_bindAndUse =
-  Property.namedDBProperty "bind/use allows caller to use plan output as input for another plan" $ \pool -> do
+prop_bindAndUse :: Orville.ConnectionPool -> HH.Property
+prop_bindAndUse pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope Foo.FooName (Foo.Foo, [FooChild.FooChild])
       plan =
@@ -579,9 +636,9 @@ prop_bindAndUse =
 
     result === (foo, [fooChild])
 
-prop_planMany_bindAndUse :: Property.NamedDBProperty
-prop_planMany_bindAndUse =
-  Property.namedDBProperty "(planMany bind/use) allows caller to use plan output as input for another plan" $ \pool -> do
+prop_planMany_bindAndUse :: Orville.ConnectionPool -> HH.Property
+prop_planMany_bindAndUse pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Foo.Foo, [FooChild.FooChild]))
       plan =
@@ -610,15 +667,16 @@ prop_planMany_bindAndUse =
       Foo.fooName foo === fooName
       assertAllMatchesFound FooChild.fooChildId children (FooChild.isChildOf foo) allChildren
 
-prop_planMany_findOne_dedupesInClauses :: Property.NamedDBProperty
-prop_planMany_findOne_dedupesInClauses =
-  Property.singletonNamedDBProperty "planMany/findOne dedupes in clause to avoid PostgreSQL parameter limit" $ \pool -> do
+prop_planMany_findOne_dedupesInClauses :: Orville.ConnectionPool -> HH.Property
+prop_planMany_findOne_dedupesInClauses pool =
+  Property.singletonProperty $ do
     let
       plan :: Plan.Plan scope [Foo.FooId] (Many.Many Foo.FooId Foo.Foo)
       plan =
         Plan.planMany (Plan.findOne Foo.table Foo.fooIdField)
 
-    unsavedFoo <- HH.forAll Foo.generate
+      unsavedFoo =
+        Foo.Foo 1 (T.pack "Foo") 1
 
     results <-
       FooChild.withTables pool $ do
@@ -633,9 +691,9 @@ prop_planMany_findOne_dedupesInClauses =
 
 #if defined(MIN_VERSION_GLASGOW_HASKELL)
 #if MIN_VERSION_GLASGOW_HASKELL(9,0,1,0)
-prop_bindAndUse_qualifiedDo :: Property.NamedDBProperty
-prop_bindAndUse_qualifiedDo =
-  Property.namedDBProperty "bind/use allows caller to use plan output as input for another plan (QualifiedDo version)" $ \pool -> do
+prop_bindAndUse_qualifiedDo :: Orville.ConnectionPool -> HH.Property
+prop_bindAndUse_qualifiedDo pool =
+  HH.property $ do
     let plan :: Plan.Plan scope Foo.FooName (Foo.Foo, [FooChild.FooChild])
         plan = PlanSyntax.do
           foo <- Plan.findOne Foo.table Foo.fooNameField
@@ -661,9 +719,9 @@ prop_bindAndUse_qualifiedDo =
 
     result === (foo, [fooChild])
 
-prop_planMany_bindAndUse_qualifiedDo :: Property.NamedDBProperty
-prop_planMany_bindAndUse_qualifiedDo =
-  Property.namedDBProperty "(planMany bind/use) allows caller to use plan output as input for another plan (QualifiedDo version)" $ \pool -> do
+prop_planMany_bindAndUse_qualifiedDo :: Orville.ConnectionPool -> HH.Property
+prop_planMany_bindAndUse_qualifiedDo pool =
+  HH.property $ do
     let plan :: Plan.Plan scope [Foo.FooName] (Many.Many Foo.FooName (Foo.Foo, [FooChild.FooChild]))
         plan =
           Plan.planMany $ PlanSyntax.do
@@ -696,9 +754,9 @@ prop_planMany_bindAndUse_qualifiedDo =
 #endif
 #endif
 
-prop_assert :: Property.NamedDBProperty
-prop_assert =
-  Property.namedDBProperty "assert raises an AssertionError in IO" $ \pool -> do
+prop_assert :: Orville.ConnectionPool -> HH.Property
+prop_assert pool =
+  HH.property $ do
     let
       plan :: Plan.Plan scope (Either String ()) ()
       plan =
@@ -708,9 +766,9 @@ prop_assert =
     result <- MIO.liftIO $ Exception.try $ Orville.runOrville pool (Plan.execute plan input)
     Either.isLeft (result :: Either Plan.AssertionFailed ()) === Either.isLeft input
 
-prop_explain :: Property.NamedProperty
+prop_explain :: HH.Property
 prop_explain =
-  Property.namedProperty "explain shows the SQL steps that will be executed" $ do
+  Property.singletonProperty $ do
     let
       plan :: Plan.Plan scope Foo.FooName [FooChild.FooChild]
       plan =

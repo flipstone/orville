@@ -11,6 +11,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -18,7 +20,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
-
 import Test.Expr.TestSchema
   ( assertEqualFooBarRows
   , dropAndRecreateTestTable
@@ -29,18 +30,24 @@ import Test.Expr.TestSchema
   )
 import qualified Test.Property as Property
 
-sqlCommenterTests :: Orville.ConnectionPool -> Property.Group
+sqlCommenterTests :: Orville.ConnectionPool -> Tasty.TestTree
 sqlCommenterTests pool =
-  Property.group
+  Tasty.testGroup
     "SqlCommenterAttributes"
-    [ prop_sqlcommenterAttributesEscaped
-    , prop_sqlCommenterInsertExpr pool
-    , prop_sqlCommenterOrvilleState pool
+    [ TastyHH.testProperty
+        "SqlCommenterAttributes are escaped and put at end of raw sql"
+        prop_sqlcommenterAttributesEscaped
+    , TastyHH.testProperty
+        "sqlcommenter support does not impact ability of insertExpr inserting values"
+        (prop_sqlCommenterInsertExpr pool)
+    , TastyHH.testProperty
+        "sqlcommenter support in OrvilleState does not impact execution"
+        (prop_sqlCommenterOrvilleState pool)
     ]
 
-prop_sqlcommenterAttributesEscaped :: Property.NamedProperty
+prop_sqlcommenterAttributesEscaped :: HH.Property
 prop_sqlcommenterAttributesEscaped =
-  Property.singletonNamedProperty "SqlCommenterAttributes are escaped and put at end of raw sql" $ do
+  Property.singletonProperty $ do
     let
       rawSql :: RawSql.RawSql
       rawSql =
@@ -59,9 +66,9 @@ prop_sqlcommenterAttributesEscaped =
     actualBytes HH.=== expectedBytes
     actualParams HH.=== []
 
-prop_sqlCommenterInsertExpr :: Property.NamedDBProperty
-prop_sqlCommenterInsertExpr =
-  Property.singletonNamedDBProperty "sqlcommenter support does not impact ability of insertExpr inserting values" $ \pool -> do
+prop_sqlCommenterInsertExpr :: Orville.ConnectionPool -> HH.Property
+prop_sqlCommenterInsertExpr pool =
+  Property.singletonProperty $ do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
@@ -81,9 +88,9 @@ prop_sqlCommenterInsertExpr =
 
     assertEqualFooBarRows rows (NE.toList fooBars)
 
-prop_sqlCommenterOrvilleState :: Property.NamedDBProperty
-prop_sqlCommenterOrvilleState =
-  Property.singletonNamedDBProperty "sqlcommenter support in OrvilleState does not impact execution" $ \pool -> do
+prop_sqlCommenterOrvilleState :: Orville.ConnectionPool -> HH.Property
+prop_sqlCommenterOrvilleState pool =
+  Property.singletonProperty $ do
     let
       selectOne =
         RawSql.fromString "SELECT 1 as number"

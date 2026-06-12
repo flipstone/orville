@@ -13,6 +13,8 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
@@ -20,21 +22,36 @@ import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
-connectionTests :: Conn.ConnectionPool -> Property.Group
+connectionTests :: Conn.ConnectionPool -> Tasty.TestTree
 connectionTests pool =
-  Property.Group "Connection" $
-    [ prop_safeOrUnsafeNonNullBytes pool
-    , prop_errorOnSafeNulByte pool
-    , prop_truncateValuesAtUnsafeNulByte pool
-    , prop_errorOnInvalidSql pool
-    , prop_returningAConnectionToPoolWithOpenTransactionCausesException pool
-    , prop_acquiredConnectionNotDestroyed pool
-    , prop_poolUsableAfterDestroyingConnections pool
+  Tasty.testGroup
+    "Connection"
+    [ TastyHH.testProperty
+        "executeRaw can pass non-null bytes equivalents whether checked for NUL or not"
+        (prop_safeOrUnsafeNonNullBytes pool)
+    , TastyHH.testProperty
+        "executeRaw returns error if nul byte is given using safe constructor"
+        (prop_errorOnSafeNulByte pool)
+    , TastyHH.testProperty
+        "executeRaw truncates values at the nul byte given using unsafe constructor"
+        (prop_truncateValuesAtUnsafeNulByte pool)
+    , TastyHH.testProperty
+        "executeRaw returns error if invalid sql is given"
+        (prop_errorOnInvalidSql pool)
+    , TastyHH.testProperty
+        "returning a connection to the pool with an open transaction causes an exception"
+        (prop_returningAConnectionToPoolWithOpenTransactionCausesException pool)
+    , TastyHH.testProperty
+        "destroying idle connections in the pool does not affect connections already acquired"
+        (prop_acquiredConnectionNotDestroyed pool)
+    , TastyHH.testProperty
+        "the connection pool can be used after destroying idle connections"
+        (prop_poolUsableAfterDestroyingConnections pool)
     ]
 
-prop_safeOrUnsafeNonNullBytes :: Property.NamedDBProperty
-prop_safeOrUnsafeNonNullBytes =
-  Property.namedDBProperty "executeRaw can pass non-null bytes equivalents whether checked for NUL or not" $ \pool -> do
+prop_safeOrUnsafeNonNullBytes :: Conn.ConnectionPool -> HH.Property
+prop_safeOrUnsafeNonNullBytes pool =
+  HH.property $ do
     text <- HH.forAll $ PgGen.pgText (Range.linear 0 256)
 
     let
@@ -55,9 +72,9 @@ prop_safeOrUnsafeNonNullBytes =
 
     value === Just (B8.pack "t")
 
-prop_errorOnSafeNulByte :: Property.NamedDBProperty
-prop_errorOnSafeNulByte =
-  Property.namedDBProperty "executeRaw returns error if nul byte is given using safe constructor" $ \pool -> do
+prop_errorOnSafeNulByte :: Conn.ConnectionPool -> HH.Property
+prop_errorOnSafeNulByte pool =
+  HH.property $ do
     textBefore <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
     textAfter <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
 
@@ -84,9 +101,9 @@ prop_errorOnSafeNulByte =
         HH.footnote "Expected 'executeRaw' to return failure, but it did not"
         HH.failure
 
-prop_truncateValuesAtUnsafeNulByte :: Property.NamedDBProperty
-prop_truncateValuesAtUnsafeNulByte =
-  Property.namedDBProperty "executeRaw truncates values at the nul byte given using unsafe constructor" $ \pool -> do
+prop_truncateValuesAtUnsafeNulByte :: Conn.ConnectionPool -> HH.Property
+prop_truncateValuesAtUnsafeNulByte pool =
+  HH.property $ do
     textBefore <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
     textAfter <- HH.forAll $ PgGen.pgText (Range.linear 0 32)
 
@@ -114,11 +131,9 @@ prop_truncateValuesAtUnsafeNulByte =
 
     value === Just bytesBefore
 
-prop_errorOnInvalidSql :: Property.NamedDBProperty
-prop_errorOnInvalidSql =
-  -- Note: we only run this test once to cut down on the number of errors
-  -- printed out by the database server when running tests repeatedly.
-  Property.singletonNamedDBProperty "executeRaw returns error if invalid sql is given" $ \pool -> do
+prop_errorOnInvalidSql :: Conn.ConnectionPool -> HH.Property
+prop_errorOnInvalidSql pool =
+  Property.singletonProperty $ do
     -- We generate non-empty queries here becaues libpq returns different
     -- error details when an empty string is passed
     randomText <- HH.forAll $ PgGen.pgText (Range.constant 1 16)
@@ -142,9 +157,9 @@ prop_errorOnInvalidSql =
         HH.footnote "Expected 'executeRaw' to return failure, but it did not"
         HH.failure
 
-prop_returningAConnectionToPoolWithOpenTransactionCausesException :: Property.NamedDBProperty
-prop_returningAConnectionToPoolWithOpenTransactionCausesException =
-  Property.singletonNamedDBProperty "returning a connection to the pool with an open transaction causes an exception" $ \pool -> do
+prop_returningAConnectionToPoolWithOpenTransactionCausesException :: Conn.ConnectionPool -> HH.Property
+prop_returningAConnectionToPoolWithOpenTransactionCausesException pool =
+  Property.singletonProperty $ do
     result <-
       MIO.liftIO . E.try . Conn.withPoolConnection pool $ \connection ->
         Conn.executeRaw
@@ -159,9 +174,9 @@ prop_returningAConnectionToPoolWithOpenTransactionCausesException =
         HH.footnote "Expected 'withPoolConnection' to return failure, but it did not"
         HH.failure
 
-prop_acquiredConnectionNotDestroyed :: Property.NamedDBProperty
-prop_acquiredConnectionNotDestroyed =
-  Property.namedDBProperty "destroying idle connections in the pool does not affect connections already acquired" $ \pool -> do
+prop_acquiredConnectionNotDestroyed :: Conn.ConnectionPool -> HH.Property
+prop_acquiredConnectionNotDestroyed pool =
+  HH.property $ do
     textBytes <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
 
     value <-
@@ -178,9 +193,9 @@ prop_acquiredConnectionNotDestroyed =
 
     value === Just textBytes
 
-prop_poolUsableAfterDestroyingConnections :: Property.NamedDBProperty
-prop_poolUsableAfterDestroyingConnections =
-  Property.namedDBProperty "the connection pool can be used after destroying idle connections" $ \pool -> do
+prop_poolUsableAfterDestroyingConnections :: Conn.ConnectionPool -> HH.Property
+prop_poolUsableAfterDestroyingConnections pool =
+  HH.property $ do
     textBytes1 <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
     textBytes2 <- fmap Enc.encodeUtf8 . HH.forAll $ PgGen.pgText (Range.linear 0 256)
 

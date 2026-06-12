@@ -7,30 +7,36 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL.Batchable as Batchable
 
-import qualified Test.Property as Property
-
-batchableTests :: Property.Group
+batchableTests :: Tasty.TestTree
 batchableTests =
-  Property.group
+  Tasty.testGroup
     "Batchable"
-    [ prop_nonEmptyToUnbatched
-    , prop_nonEmptyToBatchedReturnsAllItems
-    , prop_nonEmptyToBatchedSizesBatchesCorrectly
+    [ TastyHH.testProperty
+        "(toUnbatched . batchNonEmpty) returns the original list"
+        prop_nonEmptyToUnbatched
+    , TastyHH.testProperty
+        "(toBatched . batchNonEmpty) returns all items in the original list, in order"
+        prop_nonEmptyToBatchedReturnsAllItems
+    , TastyHH.testProperty
+        "(toBatched . batchNonEmpty) sizes batches correctly"
+        prop_nonEmptyToBatchedSizesBatchesCorrectly
     ]
 
-prop_nonEmptyToUnbatched :: Property.NamedProperty
+prop_nonEmptyToUnbatched :: HH.Property
 prop_nonEmptyToUnbatched =
-  Property.namedProperty "(toUnbatched . batchNonEmpty) returns the original list" $ do
+  HH.property $ do
     autoSize <- HH.forAll (Gen.int (Range.linear 1 10))
     list <- HH.forAll $ Gen.nonEmpty (Range.linear 1 100) (Gen.int (Range.linear 10 99))
     (Batchable.toUnbatched . Batchable.batchNonEmpty autoSize $ list) === list
 
-prop_nonEmptyToBatchedReturnsAllItems :: Property.NamedProperty
+prop_nonEmptyToBatchedReturnsAllItems :: HH.Property
 prop_nonEmptyToBatchedReturnsAllItems =
-  Property.namedProperty "(toBatched . batchNonEmpty) returns all items in the original list, in order" $ do
+  HH.property $ do
     autoSize <- HH.forAll (Gen.int (Range.linear 1 10))
     list <- HH.forAll $ Gen.nonEmpty (Range.linear 1 100) (Gen.int (Range.linear 10 99))
     batchSize <-
@@ -50,9 +56,9 @@ prop_nonEmptyToBatchedReturnsAllItems =
 
     allBatchedItems === NE.toList list
 
-prop_nonEmptyToBatchedSizesBatchesCorrectly :: Property.NamedProperty
+prop_nonEmptyToBatchedSizesBatchesCorrectly :: HH.Property
 prop_nonEmptyToBatchedSizesBatchesCorrectly =
-  Property.namedProperty "(toBatched . batchNonEmpty) sizes batches correctly" $ do
+  HH.property $ do
     autoSize <- HH.forAll (Gen.int (Range.linear 1 10))
     list <- HH.forAll $ Gen.nonEmpty (Range.linear 1 100) (Gen.int (Range.linear 10 99))
     batchSize <-

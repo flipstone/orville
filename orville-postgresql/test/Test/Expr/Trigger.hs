@@ -3,6 +3,9 @@ module Test.Expr.Trigger
   ) where
 
 import qualified Control.Monad.IO.Class as MIO
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -13,16 +16,16 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Test.Expr.TestSchema (assertEqualFooBarRows, dropAndRecreateTestTable, findAllFooBars, fooBarTable, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-triggerTests :: Orville.ConnectionPool -> Property.Group
+triggerTests :: Orville.ConnectionPool -> Tasty.TestTree
 triggerTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Trigger"
-    [ prop_triggers pool
+    [ TastyHH.testProperty "creates a trigger on a table" (prop_triggers pool)
     ]
 
-prop_triggers :: Property.NamedDBProperty
-prop_triggers =
-  Property.singletonNamedDBProperty "creates a trigger on a table" $ \pool -> do
+prop_triggers :: Orville.ConnectionPool -> HH.Property
+prop_triggers pool =
+  Property.singletonProperty $ do
     let
       fooBars =
         pure $ mkFooBar 1 "dog"

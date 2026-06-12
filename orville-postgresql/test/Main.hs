@@ -4,10 +4,9 @@ module Main
   )
 where
 
-import qualified Control.Monad as Monad
 import qualified Hedgehog as HH
 import qualified System.Environment as Env
-import qualified System.Exit as SE
+import qualified Test.Tasty as Tasty
 
 import qualified Orville.PostgreSQL as Orville
 
@@ -42,7 +41,6 @@ import qualified Test.PgCatalog as PgCatalog
 import qualified Test.PgTime as PgTime
 import qualified Test.Plan as Plan
 import qualified Test.PostgreSQLAxioms as PostgreSQLAxioms
-import qualified Test.Property as Property
 import qualified Test.RawSql as RawSql
 import qualified Test.ReservedWords as ReservedWords
 import qualified Test.SelectOptions as SelectOptions
@@ -57,8 +55,9 @@ main :: IO ()
 main = do
   pool <- createTestConnectionPool
 
-  summary <-
-    Property.checkGroups
+  Tasty.defaultMain $
+    Tasty.testGroup
+      "orville-postgresql"
       [ Connection.connectionTests pool
       , RawSql.rawSqlTests pool
       , Execution.executionTests pool
@@ -101,8 +100,6 @@ main = do
       , SqlCommenter.sqlCommenterTests pool
       ]
 
-  Monad.unless (Property.allPassed summary) SE.exitFailure
-
 createTestConnectionPool :: IO Orville.ConnectionPool
 createTestConnectionPool = do
   connStr <- lookupConnStr
@@ -117,10 +114,10 @@ createTestConnectionPool = do
       , Orville.connectionPoolMaxConnections = Orville.MaxConnectionsPerStripe 2
       }
 
-recheckDBProperty :: HH.Size -> HH.Seed -> Property.NamedDBProperty -> IO ()
-recheckDBProperty size seed namedProperty = do
+recheckDBProperty :: HH.Size -> HH.Seed -> (Orville.ConnectionPool -> HH.Property) -> IO ()
+recheckDBProperty size seed mkProperty = do
   pool <- createTestConnectionPool
-  HH.recheck size seed (snd $ namedProperty pool)
+  HH.recheck size seed (mkProperty pool)
 
 lookupConnStr :: IO String
 lookupConnStr = do

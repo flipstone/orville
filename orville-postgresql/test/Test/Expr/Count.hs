@@ -9,6 +9,8 @@ import qualified Data.List.NonEmpty as NEL
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -16,17 +18,17 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 
-countTests :: Orville.ConnectionPool -> Property.Group
+countTests :: Orville.ConnectionPool -> Tasty.TestTree
 countTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Count"
-    [ prop_count1 pool
-    , prop_countColumn pool
+    [ TastyHH.testProperty "SELECT COUNT(1)" (prop_count1 pool)
+    , TastyHH.testProperty "SELECT COUNT(column)" (prop_countColumn pool)
     ]
 
-prop_count1 :: Property.NamedDBProperty
-prop_count1 =
-  Property.singletonNamedDBProperty "SELECT COUNT(1)" $ \pool -> do
+prop_count1 :: Orville.ConnectionPool -> HH.Property
+prop_count1 pool =
+  Property.singletonProperty $ do
     let
       sql =
         Expr.queryExpr
@@ -48,9 +50,9 @@ prop_count1 =
 
     result === [1]
 
-prop_countColumn :: Property.NamedDBProperty
-prop_countColumn =
-  Property.singletonNamedDBProperty "In transaction" $ \pool -> do
+prop_countColumn :: Orville.ConnectionPool -> HH.Property
+prop_countColumn pool =
+  Property.singletonProperty $ do
     let
       sql =
         Expr.queryExpr

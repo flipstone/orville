@@ -8,6 +8,9 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -24,16 +27,17 @@ data FooBar = FooBar
   , bar :: String
   }
 
-groupByOrderByTests :: Orville.ConnectionPool -> Property.Group
+groupByOrderByTests :: Orville.ConnectionPool -> Tasty.TestTree
 groupByOrderByTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - GroupBy and OrderBy"
-    [ prop_groupByOrderByExpr pool
+    [ TastyHH.testProperty "GroupBy and OrderBy clauses can be used together" (prop_groupByOrderByExpr pool)
     ]
 
-prop_groupByOrderByExpr :: Property.NamedDBProperty
-prop_groupByOrderByExpr =
-  groupByOrderByTest "GroupBy and OrderBy clauses can be used together" $
+prop_groupByOrderByExpr :: Orville.ConnectionPool -> HH.Property
+prop_groupByOrderByExpr pool =
+  groupByOrderByTest
+    pool
     GroupByOrderByTest
       { valuesToInsert = NE.fromList [FooBar 1 "shiba", FooBar 2 "dingo", FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "shiba"]
       , expectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 1 "shiba"]
@@ -78,9 +82,9 @@ mkGroupByOrderByTestExpectedRows test =
   in
     fmap mkRow (expectedQueryResults test)
 
-groupByOrderByTest :: String -> GroupByOrderByTest -> Property.NamedDBProperty
-groupByOrderByTest testName test =
-  Property.singletonNamedDBProperty testName $ \pool -> do
+groupByOrderByTest :: Orville.ConnectionPool -> GroupByOrderByTest -> HH.Property
+groupByOrderByTest pool test =
+  Property.singletonProperty $ do
     rows <- MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       dropAndRecreateTestTable connection
 

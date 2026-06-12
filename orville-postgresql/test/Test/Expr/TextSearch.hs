@@ -8,6 +8,9 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -19,19 +22,20 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-textSearchTests :: Orville.ConnectionPool -> Property.Group
+textSearchTests :: Orville.ConnectionPool -> Tasty.TestTree
 textSearchTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - TSVector"
-    [ prop_matchesOneRow pool
-    , prop_toTSRank pool
-    , prop_plainToTSQuery pool
-    , prop_setTSWeight pool
+    [ TastyHH.testProperty "TSVector @@ TSQuery finds one result" (prop_matchesOneRow pool)
+    , TastyHH.testProperty "Calculates rank of TSVector and TSQuery" (prop_toTSRank pool)
+    , TastyHH.testProperty "Creates TSQuery from plain text" (prop_plainToTSQuery pool)
+    , TastyHH.testProperty "Sets weight on a TSVector" (prop_setTSWeight pool)
     ]
 
-prop_matchesOneRow :: Property.NamedDBProperty
-prop_matchesOneRow =
-  tsVectorTest "TSVector @@ TSQuery finds one result" $
+prop_matchesOneRow :: Orville.ConnectionPool -> HH.Property
+prop_matchesOneRow pool =
+  tsVectorTest
+    pool
     TSVectorTest
       { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "ant", mkFooBar 2 "bee", mkFooBar 3 "chihuahua"]
       , tsVectorExpectedQueryResults = [mkFooBar 2 "bee"]
@@ -49,9 +53,10 @@ prop_matchesOneRow =
       , orderByClause = Nothing
       }
 
-prop_setTSWeight :: Property.NamedDBProperty
-prop_setTSWeight =
-  tsVectorTest "Sets weight on a TSVector" $
+prop_setTSWeight :: Orville.ConnectionPool -> HH.Property
+prop_setTSWeight pool =
+  tsVectorTest
+    pool
     TSVectorTest
       { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "weighted"]
       , tsVectorExpectedQueryResults = [mkFooBar 1 "weighted"]
@@ -66,9 +71,10 @@ prop_setTSWeight =
       , orderByClause = Nothing
       }
 
-prop_plainToTSQuery :: Property.NamedDBProperty
-prop_plainToTSQuery =
-  tsVectorTest "Creates TSQuery from plain text" $
+prop_plainToTSQuery :: Orville.ConnectionPool -> HH.Property
+prop_plainToTSQuery pool =
+  tsVectorTest
+    pool
     TSVectorTest
       { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "plain query"]
       , tsVectorExpectedQueryResults = [mkFooBar 1 "plain query"]
@@ -80,9 +86,10 @@ prop_plainToTSQuery =
       , orderByClause = Nothing
       }
 
-prop_toTSRank :: Property.NamedDBProperty
-prop_toTSRank =
-  tsVectorTest "Calculates rank of TSVector and TSQuery" $
+prop_toTSRank :: Orville.ConnectionPool -> HH.Property
+prop_toTSRank pool =
+  tsVectorTest
+    pool
     TSVectorTest
       { tsVectorValuesToInsert = NE.fromList [mkFooBar 1 "foo", mkFooBar 2 "bar"]
       , tsVectorExpectedQueryResults = [mkFooBar 2 "bar", mkFooBar 1 "foo"]
@@ -107,9 +114,9 @@ data TSVectorTest = TSVectorTest
   , tsVectorExpectedQueryResults :: [FooBar]
   }
 
-tsVectorTest :: String -> TSVectorTest -> Property.NamedDBProperty
-tsVectorTest testName test =
-  Property.singletonNamedDBProperty testName $ \pool -> do
+tsVectorTest :: Orville.ConnectionPool -> TSVectorTest -> HH.Property
+tsVectorTest pool test =
+  Property.singletonProperty $ do
     rows <-
       MIO.liftIO $
         Conn.withPoolConnection pool $ \connection -> do

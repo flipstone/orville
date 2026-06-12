@@ -7,59 +7,61 @@ import qualified Data.ByteString.Char8 as B8
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import qualified Test.Property as Property
 
-vacuumTests :: Property.Group
+vacuumTests :: Tasty.TestTree
 vacuumTests =
-  Property.group
+  Tasty.testGroup
     "Expr - Vacuum"
-    [ prop_vacuumNoOptionsSingleTable
-    , prop_vacuumNoOptionsTwoTables
-    , prop_vacuumOneOptionSingleTable
-    , prop_vacuumOneOptionTwoTables
-    , prop_vacuumTwoOptionsOneTable
-    , prop_vacuumTwoOptionsTwoTables
+    [ TastyHH.testProperty "vacuumExpr with empty options and a single table generates expected sql" prop_vacuumNoOptionsSingleTable
+    , TastyHH.testProperty "vacuumExpr with empty options and a pair of tables generates expected sql" prop_vacuumNoOptionsTwoTables
+    , TastyHH.testProperty "vacuumExpr with one option and a single table generates expected sql" prop_vacuumOneOptionSingleTable
+    , TastyHH.testProperty "vacuumExpr with one option and a pair of tables generates expected sql" prop_vacuumOneOptionTwoTables
+    , TastyHH.testProperty "vacuumExpr with two options and a single table generates expected sql" prop_vacuumTwoOptionsOneTable
+    , TastyHH.testProperty "vacuumExpr with two options and a pair of tables generates expected sql" prop_vacuumTwoOptionsTwoTables
     ]
 
-prop_vacuumNoOptionsSingleTable :: Property.NamedProperty
+prop_vacuumNoOptionsSingleTable :: HH.Property
 prop_vacuumNoOptionsSingleTable =
-  Property.singletonNamedProperty "vacuumExpr with empty options and a single table generates expected sql" $
+  Property.singletonProperty $
     assertVacuumEquals
       "VACUUM \"foo\""
       []
       singleTable
 
-prop_vacuumNoOptionsTwoTables :: Property.NamedProperty
+prop_vacuumNoOptionsTwoTables :: HH.Property
 prop_vacuumNoOptionsTwoTables =
-  Property.singletonNamedProperty "vacuumExpr with empty options and a pair of tables generates expected sql" $
+  Property.singletonProperty $
     assertVacuumEquals
       "VACUUM \"foo\", \"bar\""
       []
       twoTables
 
-prop_vacuumOneOptionSingleTable :: Property.NamedProperty
+prop_vacuumOneOptionSingleTable :: HH.Property
 prop_vacuumOneOptionSingleTable =
-  Property.singletonNamedProperty "vacuumExpr with one option and a single table generates expected sql" $
+  Property.singletonProperty $
     assertVacuumEquals
       "VACUUM (FULL TRUE) \"foo\""
       [Expr.vacuumFull True]
       singleTable
 
-prop_vacuumOneOptionTwoTables :: Property.NamedProperty
+prop_vacuumOneOptionTwoTables :: HH.Property
 prop_vacuumOneOptionTwoTables =
-  Property.singletonNamedProperty "vacuumExpr with one option and a pair of tables generates expected sql" $
+  Property.singletonProperty $
     assertVacuumEquals
       "VACUUM (FULL TRUE) \"foo\", \"bar\""
       [Expr.vacuumFull True]
       twoTables
 
-prop_vacuumTwoOptionsOneTable :: Property.NamedProperty
+prop_vacuumTwoOptionsOneTable :: HH.Property
 prop_vacuumTwoOptionsOneTable =
-  Property.singletonNamedProperty "vacuumExpr with two options and a single table generates expected sql" $
+  Property.singletonProperty $
     assertVacuumEquals
       "VACUUM (FULL TRUE, VERBOSE TRUE) \"foo\""
       [ Expr.vacuumFull True
@@ -67,9 +69,9 @@ prop_vacuumTwoOptionsOneTable =
       ]
       singleTable
 
-prop_vacuumTwoOptionsTwoTables :: Property.NamedProperty
+prop_vacuumTwoOptionsTwoTables :: HH.Property
 prop_vacuumTwoOptionsTwoTables =
-  Property.singletonNamedProperty "vacuumExpr with two options and a pair of tables generates expected sql" $
+  Property.singletonProperty $
     assertVacuumEquals
       "VACUUM (FULL TRUE, VERBOSE TRUE) \"foo\", \"bar\""
       [ Expr.vacuumFull True

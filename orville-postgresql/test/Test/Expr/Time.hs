@@ -12,6 +12,8 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 import qualified Text.Printf as Printf
 
 import qualified Orville.PostgreSQL as Orville
@@ -21,17 +23,17 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
 import qualified Test.Property as Property
 
-timeTests :: Orville.ConnectionPool -> Property.Group
+timeTests :: Orville.ConnectionPool -> Tasty.TestTree
 timeTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Time"
-    [ prop_now pool
-    , prop_makeInterval pool
+    [ TastyHH.testProperty "now()" (prop_now pool)
+    , TastyHH.testProperty "make_interval()" (prop_makeInterval pool)
     ]
 
-prop_now :: Property.NamedDBProperty
-prop_now =
-  Property.singletonNamedDBProperty "now()" $ \pool -> do
+prop_now :: Orville.ConnectionPool -> HH.Property
+prop_now pool =
+  Property.singletonProperty $ do
     let
       sql =
         Expr.queryExpr
@@ -54,9 +56,9 @@ prop_now =
     today <- fmap Time.utctDay (HH.evalIO Time.getCurrentTime)
     fmap Time.utctDay result === [today]
 
-prop_makeInterval :: Property.NamedDBProperty
-prop_makeInterval =
-  Property.namedDBProperty "make_interval()" $ \pool -> do
+prop_makeInterval :: Orville.ConnectionPool -> HH.Property
+prop_makeInterval pool =
+  HH.property $ do
     intervalValues <- HH.forAllWith (T.unpack . renderExpectedValue) $ do
       years <- Gen.integral (Range.linear 1 100)
       months <- Gen.integral (Range.linear 1 11)
