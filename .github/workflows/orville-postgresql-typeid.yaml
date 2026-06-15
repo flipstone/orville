@@ -14,7 +14,7 @@ defaults:
 jobs:
   find-stack-yamls:
     name: Find stack.yamls for GHC Matrix
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       stack-yamls: ${{ steps.set-output.outputs.stack-yamls }}
     steps:
@@ -26,7 +26,7 @@ jobs:
   test:
     name: Build and Test
     needs: find-stack-yamls
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       max-parallel: 6
       matrix:
@@ -49,16 +49,16 @@ jobs:
       actions: read
     steps:
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         env:
           cache-version: v3
 
@@ -83,10 +83,10 @@ jobs:
 
   formatting-check:
     name: Formatting Check
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Format and Check for Diff
         working-directory: orville-postgresql-typeid
@@ -94,10 +94,10 @@ jobs:
 
   cabal-check:
     name: Cabal Check
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check for Hackage issues
         working-directory: orville-postgresql-typeid
@@ -105,10 +105,10 @@ jobs:
 
   cabal-latest-build:
     name: Cabal Build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build with cabal and latest ghc+deps
         # When a new ghc version is released, we might not be able to build all the dependencies for
