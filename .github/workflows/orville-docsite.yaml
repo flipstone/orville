@@ -43,7 +43,7 @@ jobs:
             ./stack-root
 
       - name: Setup Stack
-        uses: flipstone/github-actions/setup-dockerized-stack@d3da7b6361e88fc10557f8b6ca9aaf44e13f0f8e
+        uses: flipstone/github-actions/setup-dockerized-stack@2c1f2781f8a1b92a0ad82223adf77bbf24b262c2
         with:
           stack-root: ../stack-root
           working-directory: orville-docsite
