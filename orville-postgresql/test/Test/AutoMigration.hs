@@ -76,6 +76,9 @@ autoMigrationTests pool =
     , prop_modifiesTableComment pool
     , prop_addsColumnCommmentsOnCreateTable pool
     , prop_modifiesColumnComments pool
+    , prop_createsMissingPolicies pool
+    , prop_dropsRequestedPolicies pool
+    , prop_altersModifiedPolicies pool
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -1451,6 +1454,121 @@ prop_dropsUnrequestedTriggers =
     length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     fooRelation <- PgAssert.assertTableExists pool "foo"
     _ <- PgAssert.assertTriggerDoesNotExist fooRelation "before_insert_trigger"
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_createsMissingPolicies :: Property.NamedDBProperty
+prop_createsMissingPolicies =
+  Property.singletonNamedDBProperty "Creates missing policies" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+      newTableDef =
+        Orville.addTablePolicies [policyDef] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_dropsRequestedPolicies :: Property.NamedDBProperty
+prop_dropsRequestedPolicies =
+  Property.singletonNamedDBProperty "Drops requested policies" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+      tableWithPolicy =
+        Orville.addTablePolicies [policyDef] originalTableDef
+      tableWithDrop =
+        Orville.dropPolicies ["migration_test_policy"] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithDrop]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithDrop]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_altersModifiedPolicies :: Property.NamedDBProperty
+prop_altersModifiedPolicies =
+  Property.singletonNamedDBProperty "Alters modified policies" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+      modifiedPolicyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          (Just (Expr.policyUsingExpr (Expr.literalBooleanExpr True)))
+          Nothing
+      tableWithPolicy =
+        Orville.addTablePolicies [policyDef] originalTableDef
+      tableWithModifiedPolicy =
+        Orville.addTablePolicies [modifiedPolicyDef] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithModifiedPolicy]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithModifiedPolicy]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
     migrationPlanStepStrings secondTimePlan === []
 
 prop_loadsMissingExtensions :: Property.NamedDBProperty

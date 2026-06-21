@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2025
+Copyright : Flipstone Technology Partners 2023-2026
 License   : MIT
 Stability : Stable
 
@@ -38,6 +38,12 @@ module Orville.PostgreSQL.Schema.TableDefinition
   , mkInsertColumnList
   , mkInsertSource
   , mkTableReturningClause
+  , tablePolicies
+  , addTablePolicies
+  , dropPolicies
+  , policiesToDrop
+  , tableRowLevelSecurity
+  , setRowLevelSecurityEnabled
   )
 where
 
@@ -54,6 +60,7 @@ import Orville.PostgreSQL.Marshall.FieldDefinition (FieldName, fieldColumnDefini
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), ReadOnlyColumnOption (ExcludeReadOnlyColumns, IncludeReadOnlyColumns), SqlMarshaller, annotateSqlMarshaller, annotateSqlMarshallerEmptyAnnotation, collectFromField, foldMarshallerFields, mapSqlMarshaller, marshallerDerivedColumns, marshallerTableConstraints, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Orville.PostgreSQL.Schema.ConstraintDefinition (ConstraintDefinition, TableConstraints, addConstraint, constraintSqlExpr, emptyTableConstraints, tableConstraintDefinitions)
+import Orville.PostgreSQL.Schema.PolicyDefinition (PolicyDefinition)
 import Orville.PostgreSQL.Schema.PrimaryKey (PrimaryKey, mkPrimaryKeyExpr, primaryKeyFieldNames)
 import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
 import Orville.PostgreSQL.Schema.TriggerDefinition (TriggerDefinition, TriggerMigrationKey, triggerMigrationKey)
@@ -82,6 +89,9 @@ data TableDefinition key writeEntity readEntity = TableDefinition
   , i_tableIndexes :: Map.Map IndexMigrationKey IndexDefinition
   , i_tableTriggers :: Map.Map TriggerMigrationKey TriggerDefinition
   , i_tableComment :: Maybe T.Text
+  , i_tablePolicyDefinitions :: Set.Set PolicyDefinition
+  , i_tablePoliciesToDrop :: Set.Set String
+  , i_tableRowLevelSecurity :: Bool
   }
 
 {- | 'HasKey' is a type with no constructors. It is used only at the type level
@@ -135,6 +145,9 @@ mkTableDefinition name primaryKey marshaller =
     , i_tableIndexes = Map.empty
     , i_tableTriggers = Map.empty
     , i_tableComment = Nothing
+    , i_tablePolicyDefinitions = Set.empty
+    , i_tablePoliciesToDrop = Set.empty
+    , i_tableRowLevelSecurity = False
     }
 
 {- | Constructs a new 'TableDefinition' with the minimal fields required for
@@ -161,6 +174,9 @@ mkTableDefinitionWithoutKey name marshaller =
     , i_tableIndexes = Map.empty
     , i_tableTriggers = Map.empty
     , i_tableComment = Nothing
+    , i_tablePolicyDefinitions = Set.empty
+    , i_tablePoliciesToDrop = Set.empty
+    , i_tableRowLevelSecurity = False
     }
 
 {- | Annotates a 'TableDefinition' with a direction to drop columns if they are
@@ -362,7 +378,7 @@ tableTriggers =
 
 {- | Adds the given table triggers to the table definition.
 
-  Note: If multiple wriggers are added with the same 'Expr.TriggerName', only
+  Note: If multiple triggers are added with the same 'Expr.TriggerName', only
   the last one that is added will be part of the 'TableDefinition'. Any
   previously-added constraint with the same key is replaced by the new one.
 
@@ -642,3 +658,75 @@ collectSqlValue entry encodeRest entity =
       encodeRest entity
     Synthetic _ ->
       encodeRest entity
+
+{- | Retrieves all the table policy definitions that have been added to the table via
+  'addTablePolicyDefinitions'.
+
+@since 1.2.0.0
+-}
+tablePolicies ::
+  TableDefinition key writeEntity readEntity ->
+  Set.Set PolicyDefinition
+tablePolicies =
+  i_tablePolicyDefinitions
+
+{- | Adds the given table policy definitions to the table definition.
+
+@since 1.2.0.0
+-}
+addTablePolicies ::
+  [PolicyDefinition] ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+addTablePolicies policyDefs tableDef =
+  tableDef
+    { i_tablePolicyDefinitions = Set.fromList policyDefs
+    }
+
+{- | Annotates a 'TableDefinition' with a direction to drop policies if they are
+  found in the database. Orville does not drop policies during auto-migration
+  unless they are explicitly requested to be dropped via 'dropPolicies'.
+
+@since 1.2.0.0
+-}
+dropPolicies ::
+  -- | Policies that should be dropped from the table
+  [String] ->
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+dropPolicies policies tableDef =
+  tableDef
+    { i_tablePoliciesToDrop = i_tablePoliciesToDrop tableDef <> Set.fromList policies
+    }
+
+{- | Returns the set of policies that have been marked for dropping by 'dropPolicies'.
+
+@since 1.2.0.0
+-}
+policiesToDrop ::
+  TableDefinition key writeEntity readEntity ->
+  Set.Set String
+policiesToDrop =
+  i_tablePoliciesToDrop
+
+{- | Returns whether row level security is enabled for this table definition.
+
+@since 1.2.0.0
+-}
+tableRowLevelSecurity ::
+  TableDefinition key writeEntity readEntity ->
+  Bool
+tableRowLevelSecurity =
+  i_tableRowLevelSecurity
+
+{- | Constructs a new 'TableDefinition' with row level security enabled. This is
+  the same as 'mkTableDefinition' but with row level security turned on, which
+  will cause the auto migration to enable row level security on the table.
+
+@since 1.2.0.0
+-}
+setRowLevelSecurityEnabled ::
+  TableDefinition key writeEntity readEntity ->
+  TableDefinition key writeEntity readEntity
+setRowLevelSecurityEnabled tableDef =
+  tableDef {i_tableRowLevelSecurity = True}

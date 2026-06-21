@@ -3,7 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2025
+Copyright : Flipstone Technology Partners 2023-2026
 License   : MIT
 Stability : Stable
 
@@ -241,6 +241,7 @@ mkMigrationStepWithType stepType sql =
 isMigrationStepTransactional :: MigrationStepWithType -> Bool
 isMigrationStepTransactional stepWithType =
   case migrationStepType stepWithType of
+    DropPolicyDefinitions -> True
     DropForeignKeys -> True
     DropConstraints -> True
     DropIndexes -> True
@@ -257,6 +258,7 @@ isMigrationStepTransactional stepWithType =
     AddForeignKeys -> True
     AddIndexesConcurrently -> False
     SetComments -> True
+    AddPolicyDefinitions -> True
 
 {- | Indicates the kind of operation being performed by a 'MigrationStep' so
   that the steps can be ordered in a sequence that is guaranteed to succeed.
@@ -266,7 +268,9 @@ isMigrationStepTransactional stepWithType =
 @since 1.0.0.0
 -}
 data StepType
-  = -- | @since 1.1.0.0.3
+  = -- | @since 1.2.0.0
+    DropPolicyDefinitions
+  | -- | @since 1.1.0.0.3
     DropForeignKeys -- Foreign key constraints must be dropped before unique constraints
   | -- | @since 1.1.0.0.3
     DropConstraints
@@ -298,6 +302,8 @@ data StepType
     AddIndexesConcurrently
   | -- | @since 1.1.0.0
     SetComments
+  | -- | @since 1.2.0.0
+    AddPolicyDefinitions
   deriving
     ( -- | @since 1.0.0.0
       Eq
@@ -439,8 +445,9 @@ generateMigrationPlanWithoutLock schemaItems =
         Maybe.mapMaybe schemaItemPgCatalogExtension schemaItems
 
     dbDesc <- PgCatalog.describeDatabase pgCatalogRelations pgCatalogFunctions pgCatalogExtensions
+    existingPolicies <- queryExistingPolicies currentNamespace schemaItems
 
-    case traverse (calculateMigrationSteps currentNamespace dbDesc) schemaItems of
+    case traverse (calculateMigrationSteps currentNamespace dbDesc existingPolicies) schemaItems of
       Left err ->
         liftIO . throwIO $ err
       Right migrationSteps ->
@@ -496,9 +503,10 @@ executeMigrationStepsWithoutTransaction =
 calculateMigrationSteps ::
   PgCatalog.NamespaceName ->
   PgCatalog.DatabaseDescription ->
+  Map.Map Orville.TableIdentifier (Set.Set Schema.PolicyDefinition) ->
   SchemaItem ->
   Either MigrationDataError [MigrationStepWithType]
-calculateMigrationSteps currentNamespace dbDesc schemaItem =
+calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
   case schemaItem of
     SchemaTable tableDef ->
       Right $
@@ -512,12 +520,20 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
             Nothing ->
               mkCreateTableSteps currentNamespace tableDef
             Just relationDesc ->
-              mkAlterTableSteps currentNamespace relationDesc tableDef
+              mkAlterTableSteps currentNamespace existingPolicies relationDesc tableDef
     SchemaDropTable tableId ->
       Right $
         let
           (schemaName, tableName) =
             tableIdToPgCatalogNames currentNamespace tableId
+
+          qualifiedTableId = setSchemaNameOnTableId currentNamespace tableId
+          existing = Maybe.fromMaybe Set.empty $ Map.lookup qualifiedTableId existingPolicies
+
+          dropPolicySteps =
+            [ mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr qualifiedTableId pd)
+            | pd <- Set.toList existing
+            ]
         in
           case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
             Nothing ->
@@ -529,7 +545,7 @@ calculateMigrationSteps currentNamespace dbDesc schemaItem =
                     Nothing
                     (Orville.tableIdQualifiedName tableId)
               in
-                [mkMigrationStepWithType AddRemoveTablesAndColumns dropTableExpr]
+                dropPolicySteps <> [mkMigrationStepWithType AddRemoveTablesAndColumns dropTableExpr]
     SchemaSequence sequenceDef ->
       let
         (schemaName, sequenceName) =
@@ -651,6 +667,9 @@ mkCreateTableSteps currentNamespace tableDef =
     tableName =
       Orville.tableName tableDef
 
+    tableId =
+      setSchemaNameOnTableId currentNamespace (Orville.tableIdentifier tableDef)
+
     -- constraints are not included in the create table expression because
     -- they are added in a separate migration step to avoid ordering problems
     -- when creating multiple tables with interrelated foreign keys.
@@ -677,12 +696,27 @@ mkCreateTableSteps currentNamespace tableDef =
       concatMap
         (mkAddTriggerSteps Set.empty tableName)
         (Orville.tableTriggers tableDef)
+
+    desiredPolicies = Orville.tablePolicies tableDef
+    wantsRLS = Orville.tableRowLevelSecurity tableDef
+
+    enableRLSSteps =
+      if wantsRLS && not (Set.null desiredPolicies)
+        then [mkMigrationStepWithType AddPolicyDefinitions (Expr.enableRowLevelSecurityExpr tableName)]
+        else []
+
+    addPolicySteps =
+      [ mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
+      | pd <- Set.toList desiredPolicies
+      ]
   in
     mkMigrationStepWithType AddRemoveTablesAndColumns createTableExpr
       : mkConstraintSteps tableName addConstraintActions
         <> addIndexSteps
         <> addTriggerSteps
         <> commentSteps
+        <> enableRLSSteps
+        <> addPolicySteps
 
 mkCreateTableCommentSteps ::
   Orville.TableDefinition key writeEntity readEntity ->
@@ -738,10 +772,11 @@ mkCreateTableCommentSteps tableDef =
 -}
 mkAlterTableSteps ::
   PgCatalog.NamespaceName ->
+  Map.Map Orville.TableIdentifier (Set.Set Schema.PolicyDefinition) ->
   PgCatalog.RelationDescription ->
   Orville.TableDefinition key writeEntity readEntity ->
   [MigrationStepWithType]
-mkAlterTableSteps currentNamespace relationDesc tableDef =
+mkAlterTableSteps currentNamespace existingPolicies relationDesc tableDef =
   let
     addAlterColumnActions =
       concat $
@@ -833,6 +868,43 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
 
     commentSteps = mkCommentSteps relationDesc tableDef
 
+    tableId =
+      setSchemaNameOnTableId currentNamespace (Orville.tableIdentifier tableDef)
+
+    desiredPolicies = Orville.tablePolicies tableDef
+    polsToDrop = Orville.policiesToDrop tableDef
+    existing = Maybe.fromMaybe Set.empty $ Map.lookup tableId existingPolicies
+    existingByName = Map.fromList [(Schema.policyDefinitionPolicyName pd, pd) | pd <- Set.toList existing]
+    wantsRLS = Orville.tableRowLevelSecurity tableDef
+
+    -- Create policies that don't exist yet
+    createPolicySteps =
+      [ mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
+      | pd <- Set.toList desiredPolicies
+      , not $ Map.member (Schema.policyDefinitionPolicyName pd) existingByName
+      ]
+
+    -- Alter policies that exist but have changed
+    alterPolicySteps =
+      [ mkMigrationStepWithType AddPolicyDefinitions (Schema.mkAlterPolicyExpr tableId desiredPd)
+      | desiredPd <- Set.toList desiredPolicies
+      , Just existingPd <- [Map.lookup (Schema.policyDefinitionPolicyName desiredPd) existingByName]
+      , existingPd /= desiredPd
+      ]
+
+    -- Drop policies that are explicitly marked for dropping
+    dropPolicySteps =
+      [ mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr tableId existingPd)
+      | existingPd <- Set.toList existing
+      , Set.member (Schema.policyDefinitionPolicyName existingPd) polsToDrop
+      ]
+
+    -- Enable RLS if the table should have it and we're adding new policies
+    enableRLSSteps =
+      if wantsRLS && not (null createPolicySteps)
+        then [mkMigrationStepWithType AddPolicyDefinitions (Expr.enableRowLevelSecurityExpr tableName)]
+        else []
+
     tableName =
       Orville.tableName tableDef
   in
@@ -843,10 +915,14 @@ mkAlterTableSteps currentNamespace relationDesc tableDef =
       <> addTriggerSteps
       <> dropTriggerSteps
       <> commentSteps
+      <> dropPolicySteps
+      <> enableRLSSteps
+      <> createPolicySteps
+      <> alterPolicySteps
 
 {- | Consolidates alter table actions (which should all be related to adding and
   dropping constraints) into migration steps based on their 'StepType'. Actions
-  with the same 'StepType' will be performed togethir in a single @ALTER TABLE@
+  with the same 'StepType' will be performed together in a single @ALTER TABLE@
   statement.
 
 @since 1.0.0.0
@@ -1673,3 +1749,128 @@ findCurrentNamespace = do
         throwIO $ UnableToDiscoverCurrentSchema "No results returned by current_schema query"
       _ ->
         throwIO $ UnableToDiscoverCurrentSchema "Multiple results returned by current_schema query"
+
+-- Policy migration support
+
+-- | Represents a policy as discovered from the pg_policies catalog view
+data PgPolicyRow = PgPolicyRow
+  { pgPolicySchemaName :: T.Text
+  , pgPolicyTableName :: T.Text
+  , pgPolicyPolicyName :: T.Text
+  , pgPolicyRoles :: T.Text
+  , pgPolicyQual :: Maybe T.Text
+  , pgPolicyWithCheck :: Maybe T.Text
+  }
+
+pgPolicyMarshaller :: Orville.SqlMarshaller w PgPolicyRow
+pgPolicyMarshaller =
+  PgPolicyRow
+    <$> Orville.marshallReadOnlyField pgPolicySchemaNameField
+    <*> Orville.marshallReadOnlyField pgPolicyTableNameField
+    <*> Orville.marshallReadOnlyField pgPolicyPolicyNameField
+    <*> Orville.marshallReadOnlyField pgPolicyRolesField
+    <*> Orville.marshallReadOnlyField pgPolicyQualField
+    <*> Orville.marshallReadOnlyField pgPolicyWithCheckField
+
+pgPolicySchemaNameField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicySchemaNameField = Orville.unboundedTextField "schemaname"
+
+pgPolicyTableNameField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyTableNameField = Orville.unboundedTextField "tablename"
+
+pgPolicyPolicyNameField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyPolicyNameField = Orville.unboundedTextField "policyname"
+
+pgPolicyRolesField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyRolesField = Orville.unboundedTextField "roles"
+
+pgPolicyQualField :: Orville.FieldDefinition Orville.Nullable (Maybe T.Text)
+pgPolicyQualField = Orville.nullableField $ Orville.unboundedTextField "qual"
+
+pgPolicyWithCheckField :: Orville.FieldDefinition Orville.Nullable (Maybe T.Text)
+pgPolicyWithCheckField = Orville.nullableField $ Orville.unboundedTextField "with_check"
+
+pgPoliciesTable :: Orville.TableDefinition Orville.NoKey PgPolicyRow PgPolicyRow
+pgPoliciesTable =
+  Orville.setTableSchema "pg_catalog" $
+    Orville.mkTableDefinitionWithoutKey "pg_policies" pgPolicyMarshaller
+
+pgPolicyToDefinition :: PgPolicyRow -> Schema.PolicyDefinition
+pgPolicyToDefinition row =
+  let
+    -- pg_policies.roles is a name[] column represented as text like "{role1,role2}"
+    rawRoles = pgPolicyRoles row
+    strippedRoles = T.dropWhile (== '{') . T.dropWhileEnd (== '}') $ rawRoles
+    rolesList = T.splitOn (T.pack ",") strippedRoles
+    roles = Set.fromList . fmap T.unpack $ rolesList
+
+    -- If the only role is "public", this means no specific roles were set
+    mbRoles =
+      if roles == Set.singleton "public"
+        then Nothing
+        else Just roles
+
+    mbUsing =
+      fmap (RawSql.unsafeSqlExpression . (\s -> "(" <> s <> ")") . T.unpack) $ pgPolicyQual row
+
+    mbCheck =
+      fmap (RawSql.unsafeSqlExpression . (\s -> "(" <> s <> ")") . T.unpack) $ pgPolicyWithCheck row
+  in
+    Schema.mkPolicyDefinition
+      (T.unpack $ pgPolicyPolicyName row)
+      mbRoles
+      mbUsing
+      mbCheck
+
+-- | Query existing policies for all tables mentioned in the schema items
+queryExistingPolicies ::
+  Orville.MonadOrville m =>
+  PgCatalog.NamespaceName ->
+  [SchemaItem] ->
+  m (Map.Map Orville.TableIdentifier (Set.Set Schema.PolicyDefinition))
+queryExistingPolicies currentNamespace schemaItems =
+  let
+    getTableName item =
+      case item of
+        SchemaTable tableDef ->
+          Just . T.pack . Orville.tableIdUnqualifiedNameString . Orville.tableIdentifier $ tableDef
+        SchemaDropTable tableId ->
+          Just . T.pack . Orville.tableIdUnqualifiedNameString $ tableId
+        _ -> Nothing
+
+    tableNames = Maybe.mapMaybe getTableName schemaItems
+  in
+    case tableNames of
+      [] -> pure Map.empty
+      (firstName : restNames) -> do
+        let
+          nonEmptyTableNames = firstName :| restNames
+          schemaNameStr = PgCatalog.namespaceNameToString currentNamespace
+          whereCondition =
+            Orville.fieldIn pgPolicyTableNameField nonEmptyTableNames
+              `Orville.andExpr` Orville.fieldEquals pgPolicySchemaNameField (T.pack schemaNameStr)
+
+        pgPolicies <- Orville.findEntitiesBy pgPoliciesTable (Orville.where_ whereCondition)
+        pure $
+          foldl
+            ( \acc row ->
+                let
+                  tableId =
+                    Orville.setTableIdSchema (T.unpack $ pgPolicySchemaName row) $
+                      Orville.unqualifiedNameToTableId (T.unpack $ pgPolicyTableName row)
+                in
+                  Map.insertWith
+                    (<>)
+                    tableId
+                    (Set.singleton $ pgPolicyToDefinition row)
+                    acc
+            )
+            Map.empty
+            pgPolicies
+
+-- | Sets the schema name on a table identifier if it doesn't already have one
+setSchemaNameOnTableId :: PgCatalog.NamespaceName -> Orville.TableIdentifier -> Orville.TableIdentifier
+setSchemaNameOnTableId currentNamespace tableId =
+  case Orville.tableIdSchemaNameString tableId of
+    Just _ -> tableId
+    Nothing -> Orville.setTableIdSchema (PgCatalog.namespaceNameToString currentNamespace) tableId

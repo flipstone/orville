@@ -1,5 +1,5 @@
 {- |
-Copyright : Flipstone Technology Partners 2023-2025
+Copyright : Flipstone Technology Partners 2023-2026
 License   : MIT
 Stability : Stable
 
@@ -121,6 +121,12 @@ module Orville.PostgreSQL
   , TableDefinition.addTableIndexes
   , TableDefinition.tableTriggers
   , TableDefinition.addTableTriggers
+  , TableDefinition.tablePolicies
+  , TableDefinition.addTablePolicies
+  , TableDefinition.dropPolicies
+  , TableDefinition.policiesToDrop
+  , TableDefinition.tableRowLevelSecurity
+  , TableDefinition.setRowLevelSecurityEnabled
   , TableDefinition.dropColumns
   , TableDefinition.columnsToDrop
   , TableDefinition.tableIdentifier
@@ -391,6 +397,14 @@ module Orville.PostgreSQL
   , SequenceIdentifier.sequenceIdSchemaNameString
   , SequenceIdentifier.sequenceIdToString
 
+    -- * Functions for defining and working with policies
+  , PolicyDefinition.PolicyDefinition
+  , PolicyDefinition.mkPolicyDefinition
+  , PolicyDefinition.policyDefinitionPolicyName
+  , PolicyDefinition.policyDefinitionPolicyRoles
+  , PolicyDefinition.policyDefinitionUsingExpr
+  , PolicyDefinition.policyDefinitionCheckExpr
+
     -- * Functions for defining and working with PostgreSQL functions
   , FunctionDefinition.FunctionDefinition
   , FunctionDefinition.setFunctionSchema
@@ -488,6 +502,7 @@ import qualified Orville.PostgreSQL.Schema.ExtensionIdentifier as ExtensionIdent
 import qualified Orville.PostgreSQL.Schema.FunctionDefinition as FunctionDefinition
 import qualified Orville.PostgreSQL.Schema.FunctionIdentifier as FunctionIdentifier
 import qualified Orville.PostgreSQL.Schema.IndexDefinition as IndexDefinition
+import qualified Orville.PostgreSQL.Schema.PolicyDefinition as PolicyDefinition
 import qualified Orville.PostgreSQL.Schema.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Schema.SequenceDefinition as SequenceDefinition
 import qualified Orville.PostgreSQL.Schema.SequenceIdentifier as SequenceIdentifier

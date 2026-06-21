@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.39.6.
 --
 -- see: https://github.com/sol/hpack
 
 name:           orville-postgresql
-version:        1.1.1.0.1
+version:        1.1.1.0.2
 synopsis:       A Haskell library for PostgreSQL
 description:    Orville's goal is to provide a powerful API for applications to access PostgreSQL databases with minimal use of sophisticated language techniques or extensions. See https://github.com/flipstone/orville for more details.
 category:       database, library, postgresql
@@ -146,6 +146,7 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.FunctionName
       Orville.PostgreSQL.Expr.Internal.Name.Identifier
       Orville.PostgreSQL.Expr.Internal.Name.IndexName
+      Orville.PostgreSQL.Expr.Internal.Name.PolicyName
       Orville.PostgreSQL.Expr.Internal.Name.Qualified
       Orville.PostgreSQL.Expr.Internal.Name.SavepointName
       Orville.PostgreSQL.Expr.Internal.Name.SchemaName
@@ -153,6 +154,10 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
+      Orville.PostgreSQL.Expr.PolicyExpr
+      Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
+      Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr
+      Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName
@@ -176,6 +181,7 @@ library
       Orville.PostgreSQL.PgCatalog.PgSequence
       Orville.PostgreSQL.PgCatalog.PgTrigger
       Orville.PostgreSQL.Schema.ConstraintIdentifier
+      Orville.PostgreSQL.Schema.PolicyDefinition
       Paths_orville_postgresql
   hs-source-dirs:
       src

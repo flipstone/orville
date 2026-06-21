@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-missing-import-lists #-}
 
 {- |
-Copyright : Flipstone Technology Partners 2023-2024
+Copyright : Flipstone Technology Partners 2023-2026
 License   : MIT
 Stability : Stable
 
@@ -20,6 +20,7 @@ import Orville.PostgreSQL.Expr.Internal.Name.ExtensionName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.FunctionName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.Identifier as Export
 import Orville.PostgreSQL.Expr.Internal.Name.IndexName as Export
+import Orville.PostgreSQL.Expr.Internal.Name.PolicyName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.Qualified as Export
 import Orville.PostgreSQL.Expr.Internal.Name.SavepointName as Export
 import Orville.PostgreSQL.Expr.Internal.Name.SchemaName as Export
