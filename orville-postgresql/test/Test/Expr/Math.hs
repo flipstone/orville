@@ -11,32 +11,32 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 
-import qualified Test.Property as Property
-
-mathTests :: Orville.ConnectionPool -> Property.Group
+mathTests :: Orville.ConnectionPool -> Tasty.TestTree
 mathTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Math"
-    [ prop_plus pool
-    , prop_minus pool
-    , prop_multiply pool
-    , prop_divide pool
-    , prop_exponentiate pool
-    , prop_bitwiseAnd pool
-    , prop_bitwiseOr pool
-    , prop_bitwiseXor pool
-    , prop_bitwiseShiftLeft pool
-    , prop_bitwiseShiftRight pool
+    [ TastyHH.testProperty "plus" (prop_plus pool)
+    , TastyHH.testProperty "minus" (prop_minus pool)
+    , TastyHH.testProperty "multiply" (prop_multiply pool)
+    , TastyHH.testProperty "divide" (prop_divide pool)
+    , TastyHH.testProperty "exponentiate" (prop_exponentiate pool)
+    , TastyHH.testProperty "bitwiseAnd" (prop_bitwiseAnd pool)
+    , TastyHH.testProperty "bitwiseOr" (prop_bitwiseOr pool)
+    , TastyHH.testProperty "bitwiseXor" (prop_bitwiseXor pool)
+    , TastyHH.testProperty "bitwiseShiftLeft" (prop_bitwiseShiftLeft pool)
+    , TastyHH.testProperty "bitwiseShiftRight" (prop_bitwiseShiftRight pool)
     ]
 
-prop_plus :: Property.NamedDBProperty
-prop_plus =
-  Property.namedDBProperty "plus" $ \pool -> do
+prop_plus :: Orville.ConnectionPool -> HH.Property
+prop_plus pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
     m <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
 
@@ -48,9 +48,9 @@ prop_plus =
 
     result === (n + m)
 
-prop_minus :: Property.NamedDBProperty
-prop_minus =
-  Property.namedDBProperty "minus" $ \pool -> do
+prop_minus :: Orville.ConnectionPool -> HH.Property
+prop_minus pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
     m <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
 
@@ -62,9 +62,9 @@ prop_minus =
 
     result === (n - m)
 
-prop_multiply :: Property.NamedDBProperty
-prop_multiply =
-  Property.namedDBProperty "multiply" $ \pool -> do
+prop_multiply :: Orville.ConnectionPool -> HH.Property
+prop_multiply pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
     m <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
 
@@ -76,9 +76,9 @@ prop_multiply =
 
     result === (n * m)
 
-prop_divide :: Property.NamedDBProperty
-prop_divide =
-  Property.namedDBProperty "divide" $ \pool -> do
+prop_divide :: Orville.ConnectionPool -> HH.Property
+prop_divide pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linearFrom 0 (-100) 100))
     m <- HH.forAll (Gen.filter (/= 0) (Gen.integral (Range.linearFrom 0 (-100) 100)))
 
@@ -90,9 +90,9 @@ prop_divide =
 
     result === (n `quot` m)
 
-prop_exponentiate :: Property.NamedDBProperty
-prop_exponentiate =
-  Property.namedDBProperty "exponentiate" $ \pool -> do
+prop_exponentiate :: Orville.ConnectionPool -> HH.Property
+prop_exponentiate pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linear 0 10))
     m <- HH.forAll (Gen.integral (Range.linear 0 10))
 
@@ -104,9 +104,9 @@ prop_exponentiate =
 
     result === (n ^ m)
 
-prop_bitwiseAnd :: Property.NamedDBProperty
-prop_bitwiseAnd =
-  Property.namedDBProperty "bitwiseAnd" $ \pool -> do
+prop_bitwiseAnd :: Orville.ConnectionPool -> HH.Property
+prop_bitwiseAnd pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
     m <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
 
@@ -118,9 +118,9 @@ prop_bitwiseAnd =
 
     result === (n .&. m)
 
-prop_bitwiseOr :: Property.NamedDBProperty
-prop_bitwiseOr =
-  Property.namedDBProperty "bitwiseOr" $ \pool -> do
+prop_bitwiseOr :: Orville.ConnectionPool -> HH.Property
+prop_bitwiseOr pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
     m <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
 
@@ -132,9 +132,9 @@ prop_bitwiseOr =
 
     result === (n .|. m)
 
-prop_bitwiseXor :: Property.NamedDBProperty
-prop_bitwiseXor =
-  Property.namedDBProperty "bitwiseXor" $ \pool -> do
+prop_bitwiseXor :: Orville.ConnectionPool -> HH.Property
+prop_bitwiseXor pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
     m <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
 
@@ -146,9 +146,9 @@ prop_bitwiseXor =
 
     result === Bits.xor n m
 
-prop_bitwiseShiftLeft :: Property.NamedDBProperty
-prop_bitwiseShiftLeft =
-  Property.namedDBProperty "bitwiseShiftLeft" $ \pool -> do
+prop_bitwiseShiftLeft :: Orville.ConnectionPool -> HH.Property
+prop_bitwiseShiftLeft pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
     m <- HH.forAll (Gen.integral (Range.linear 0 64))
 
@@ -160,9 +160,9 @@ prop_bitwiseShiftLeft =
 
     result === Bits.shiftL n (m `mod` 32)
 
-prop_bitwiseShiftRight :: Property.NamedDBProperty
-prop_bitwiseShiftRight =
-  Property.namedDBProperty "bitwiseShiftRight" $ \pool -> do
+prop_bitwiseShiftRight :: Orville.ConnectionPool -> HH.Property
+prop_bitwiseShiftRight pool =
+  HH.property $ do
     n <- HH.forAll (Gen.integral (Range.linear 0 0xFFFFFFF))
     m <- HH.forAll (Gen.integral (Range.linear 0 64))
 

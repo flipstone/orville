@@ -12,20 +12,23 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 import qualified Orville.TypeId.FieldDefinition as TypeIdFieldDefinition
 import qualified Orville.TypeId.FunctionDefinitions as TypeIdFunctionDefinitions
-import qualified Test.Property as Property
 
-typeIdTests :: Orville.ConnectionPool -> Property.Group
+typeIdTests :: Orville.ConnectionPool -> Tasty.TestTree
 typeIdTests pool =
-  Property.group
+  Tasty.testGroup
     "TypeID"
-    [ prop_checkKindIDDefaultValue pool
+    [ TastyHH.testProperty
+        "Checks that a reasonable value is generated from a KindID default value"
+        (prop_checkKindIDDefaultValue pool)
     ]
 
-prop_checkKindIDDefaultValue :: Property.NamedDBProperty
-prop_checkKindIDDefaultValue =
-  Property.singletonNamedDBProperty "Checks that a reasonable value is generated from a KindID default value" $ \pool -> do
+prop_checkKindIDDefaultValue :: Orville.ConnectionPool -> HH.Property
+prop_checkKindIDDefaultValue pool =
+  HH.withTests 1 . HH.property $ do
     -- Load required functions
     HH.evalIO $ Orville.runOrville pool $ do
       Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateFunctionExpr TypeIdFunctionDefinitions.uuidGenerateV7 (Just Expr.orReplace)

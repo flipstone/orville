@@ -10,23 +10,24 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Exec
 
 import qualified Test.Entities.Foo as Foo
-import qualified Test.Property as Property
 
-cursorTests :: Orville.ConnectionPool -> Property.Group
+cursorTests :: Orville.ConnectionPool -> Tasty.TestTree
 cursorTests pool =
-  Property.group "Cursor" $
-    [ prop_withCursorFetch pool
-    , prop_withCursorMove pool
+  Tasty.testGroup "Cursor" $
+    [ TastyHH.testProperty "withCursor - fetch" (prop_withCursorFetch pool)
+    , TastyHH.testProperty "withCursor - move" (prop_withCursorMove pool)
     ]
 
-prop_withCursorFetch :: Property.NamedDBProperty
-prop_withCursorFetch =
-  Property.namedDBProperty "withCursor - fetch" $ \pool -> do
+prop_withCursorFetch :: Orville.ConnectionPool -> HH.Property
+prop_withCursorFetch pool =
+  HH.property $ do
     foos <- HH.forAll (Foo.generateNonEmpty (Range.linear 1 20))
     -- A fetch count of 0 has the special meaning of "current row" in
     -- PostgreSQL so we avoid generating 0 for the fetch count in this test
@@ -48,9 +49,9 @@ prop_withCursorFetch =
 
     expectedRows === actualRows
 
-prop_withCursorMove :: Property.NamedDBProperty
-prop_withCursorMove =
-  Property.namedDBProperty "withCursor - move" $ \pool -> do
+prop_withCursorMove :: Orville.ConnectionPool -> HH.Property
+prop_withCursorMove pool =
+  HH.property $ do
     foos <- HH.forAll (Foo.generateNonEmpty (Range.linear 1 20))
     -- A fetch count of 0 has the special meaning of "current row" in
     -- PostgreSQL so we avoid generating any scenario that would give us a

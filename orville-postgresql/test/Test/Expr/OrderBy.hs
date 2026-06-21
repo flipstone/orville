@@ -5,6 +5,9 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List.NonEmpty as NE
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -15,22 +18,23 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import Test.Expr.TestSchema (FooBar (..), assertEqualFooBarRows, barColumn, dropAndRecreateTestTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-orderByTests :: Orville.ConnectionPool -> Property.Group
+orderByTests :: Orville.ConnectionPool -> Tasty.TestTree
 orderByTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - OrderBy"
-    [ prop_ascendingExpr pool
-    , prop_descendingExpr pool
-    , prop_appendOrderByExpr pool
-    , prop_orderByColumnsExpr pool
-    , prop_ascendingOrderWithExpr pool
-    , prop_descendingOrderWithExpr pool
-    , prop_distinctOnExpr pool
+    [ TastyHH.testProperty "ascendingExpr sorts a text column" (prop_ascendingExpr pool)
+    , TastyHH.testProperty "descendingExpr sorts a text column" (prop_descendingExpr pool)
+    , TastyHH.testProperty "appendOrderByExpr causes ordering on both columns" (prop_appendOrderByExpr pool)
+    , TastyHH.testProperty "orderByColumnsExpr orders by columns" (prop_orderByColumnsExpr pool)
+    , TastyHH.testProperty "ascendingOrderWith sorts columns with nulls first/last" (prop_ascendingOrderWithExpr pool)
+    , TastyHH.testProperty "descendingOrderWith sorts columns with nulls first/last" (prop_descendingOrderWithExpr pool)
+    , TastyHH.testProperty "descendingExpr sorts a text column as expected with distinctOn" (prop_distinctOnExpr pool)
     ]
 
-prop_ascendingExpr :: Property.NamedDBProperty
-prop_ascendingExpr =
-  orderByTest "ascendingExpr sorts a text column" $
+prop_ascendingExpr :: Orville.ConnectionPool -> HH.Property
+prop_ascendingExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog", mkFooBar 3 "dog"]
@@ -41,9 +45,10 @@ prop_ascendingExpr =
             Expr.orderByColumnName barColumn Expr.ascendingOrder
       }
 
-prop_descendingExpr :: Property.NamedDBProperty
-prop_descendingExpr =
-  orderByTest "descendingExpr sorts a text column" $
+prop_descendingExpr :: Orville.ConnectionPool -> HH.Property
+prop_descendingExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "dog", mkFooBar 2 "dingo"]
@@ -54,9 +59,10 @@ prop_descendingExpr =
             Expr.orderByColumnName barColumn Expr.descendingOrder
       }
 
-prop_appendOrderByExpr :: Property.NamedDBProperty
-prop_appendOrderByExpr =
-  orderByTest "appendOrderByExpr causes ordering on both columns" $
+prop_appendOrderByExpr :: Orville.ConnectionPool -> HH.Property
+prop_appendOrderByExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
@@ -69,9 +75,10 @@ prop_appendOrderByExpr =
               (Expr.orderByColumnName fooColumn Expr.descendingOrder)
       }
 
-prop_orderByColumnsExpr :: Property.NamedDBProperty
-prop_orderByColumnsExpr =
-  orderByTest "orderByColumnsExpr orders by columns" $
+prop_orderByColumnsExpr :: Orville.ConnectionPool -> HH.Property
+prop_orderByColumnsExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "dog", mkFooBar 1 "dog"]
@@ -84,9 +91,10 @@ prop_orderByColumnsExpr =
                 NE.:| [(fooColumn, Expr.descendingOrder)]
       }
 
-prop_ascendingOrderWithExpr :: Property.NamedDBProperty
-prop_ascendingOrderWithExpr =
-  orderByTest "ascendingOrderWith sorts columns with nulls first/last" $
+prop_ascendingOrderWithExpr :: Orville.ConnectionPool -> HH.Property
+prop_ascendingOrderWithExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert =
           NE.fromList [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
@@ -101,9 +109,10 @@ prop_ascendingOrderWithExpr =
               (Expr.orderByColumnName barColumn $ Expr.ascendingOrderWith Expr.NullsLast)
       }
 
-prop_descendingOrderWithExpr :: Property.NamedDBProperty
-prop_descendingOrderWithExpr =
-  orderByTest "descendingOrderWith sorts columns with nulls first/last" $
+prop_descendingOrderWithExpr :: Orville.ConnectionPool -> HH.Property
+prop_descendingOrderWithExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert =
           NE.fromList [FooBar Nothing Nothing, FooBar (Just 1) Nothing, mkFooBar 2 "dog", FooBar Nothing (Just "dog")]
@@ -118,9 +127,10 @@ prop_descendingOrderWithExpr =
               (Expr.orderByColumnName barColumn $ Expr.descendingOrderWith Expr.NullsLast)
       }
 
-prop_distinctOnExpr :: Property.NamedDBProperty
-prop_distinctOnExpr =
-  orderByTest "descendingExpr sorts a text column as expected with distinctOn" $
+prop_distinctOnExpr :: Orville.ConnectionPool -> HH.Property
+prop_distinctOnExpr pool =
+  orderByTest
+    pool
     OrderByTest
       { orderByValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "dog"]
       , orderByExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 1 "dog"]
@@ -140,9 +150,9 @@ data OrderByTest = OrderByTest
   , orderByExpectedQueryResults :: [FooBar]
   }
 
-orderByTest :: String -> OrderByTest -> Property.NamedDBProperty
-orderByTest testName test =
-  Property.singletonNamedDBProperty testName $ \pool -> do
+orderByTest :: Orville.ConnectionPool -> OrderByTest -> HH.Property
+orderByTest pool test =
+  Property.singletonProperty $ do
     rows <-
       MIO.liftIO $ do
         Conn.withPoolConnection pool $ \connection -> do

@@ -5,6 +5,9 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import Hedgehog ((===))
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -13,17 +16,17 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
-sequenceDefinitionTests :: Orville.ConnectionPool -> Property.Group
+sequenceDefinitionTests :: Orville.ConnectionPool -> Tasty.TestTree
 sequenceDefinitionTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - SequenceDefinition"
-    [ prop_createWithNoOptions pool
-    , prop_createWithWithOptions pool
+    [ TastyHH.testProperty "Create sequence with no options" (prop_createWithNoOptions pool)
+    , TastyHH.testProperty "Create sequence with options" (prop_createWithWithOptions pool)
     ]
 
-prop_createWithNoOptions :: Property.NamedDBProperty
-prop_createWithNoOptions =
-  Property.singletonNamedDBProperty "Create sequence with no options" $ \pool -> do
+prop_createWithNoOptions :: Orville.ConnectionPool -> HH.Property
+prop_createWithNoOptions pool =
+  Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName
@@ -32,9 +35,9 @@ prop_createWithNoOptions =
     _ <- PgAssert.assertSequenceExists pool sequenceNameString
     pure ()
 
-prop_createWithWithOptions :: Property.NamedDBProperty
-prop_createWithWithOptions =
-  Property.singletonNamedDBProperty "Create sequence with no options" $ \pool -> do
+prop_createWithWithOptions :: Orville.ConnectionPool -> HH.Property
+prop_createWithWithOptions pool =
+  Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName

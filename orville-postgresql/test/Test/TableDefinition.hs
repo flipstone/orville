@@ -13,6 +13,8 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Batchable as Batchable
@@ -31,24 +33,42 @@ import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-tableDefinitionTests :: Orville.ConnectionPool -> Property.Group
+tableDefinitionTests :: Orville.ConnectionPool -> Tasty.TestTree
 tableDefinitionTests pool =
-  Property.group
+  Tasty.testGroup
     "TableDefinition"
-    [ prop_roundTrip pool
-    , prop_readOnlyFields pool
-    , prop_primaryKey pool
-    , prop_checkConstraint pool
-    , prop_uniqueConstraint pool
-    , prop_fieldConstraints
-    , prop_insertDefaultValuesWithEmptyMarshaller pool
-    , prop_autoSizedBatchedInsert pool
-    , prop_autoSizedBatchedInsertCountsOnConflictParams
+    [ TastyHH.testProperty
+        "Creates a table that can round trip an entity through it"
+        (prop_roundTrip pool)
+    , TastyHH.testProperty
+        "Creates a table that can read from read only fields"
+        (prop_readOnlyFields pool)
+    , TastyHH.testProperty
+        "Creates a primary key that rejects duplicate records"
+        (prop_primaryKey pool)
+    , TastyHH.testProperty
+        "Creates a check constraint and checks a valid and invalid insert"
+        (prop_checkConstraint pool)
+    , TastyHH.testProperty
+        "Creates a unique constraint that rejects duplicate records"
+        (prop_uniqueConstraint pool)
+    , TastyHH.testProperty
+        "Includes field constraints in table constraints"
+        prop_fieldConstraints
+    , TastyHH.testProperty
+        "Inserts default values when table marshaller is empty"
+        (prop_insertDefaultValuesWithEmptyMarshaller pool)
+    , TastyHH.testProperty
+        "Auto-sized batched insert keeps parameter count below postgresql max"
+        (prop_autoSizedBatchedInsert pool)
+    , TastyHH.testProperty
+        "Auto-sized batched insert accounts for on conflict params"
+        prop_autoSizedBatchedInsertCountsOnConflictParams
     ]
 
-prop_roundTrip :: Property.NamedDBProperty
-prop_roundTrip =
-  Property.namedDBProperty "Creates a table that can round trip an entity through it" $ \pool -> do
+prop_roundTrip :: Orville.ConnectionPool -> HH.Property
+prop_roundTrip pool =
+  HH.property $ do
     originalFoo <- HH.forAll Foo.generate
 
     let
@@ -72,9 +92,9 @@ prop_roundTrip =
 
     foosFromDB === [originalFoo]
 
-prop_readOnlyFields :: Property.NamedDBProperty
-prop_readOnlyFields =
-  Property.namedDBProperty "Creates a table that can read from read only fields" $ \pool -> do
+prop_readOnlyFields :: Orville.ConnectionPool -> HH.Property
+prop_readOnlyFields pool =
+  HH.property $ do
     originalBar <- HH.forAll Bar.generate
 
     let
@@ -98,9 +118,9 @@ prop_readOnlyFields =
 
     fmap Bar.barName barsFromDB === [Bar.barName originalBar]
 
-prop_primaryKey :: Property.NamedDBProperty
-prop_primaryKey =
-  Property.singletonNamedDBProperty "Creates a primary key that rejects duplicate records" $ \pool -> do
+prop_primaryKey :: Orville.ConnectionPool -> HH.Property
+prop_primaryKey pool =
+  Property.singletonProperty $ do
     originalFoo <- HH.forAll Foo.generate
 
     let
@@ -126,9 +146,9 @@ prop_primaryKey =
       Left err ->
         Conn.sqlExecutionErrorSqlState err === Just (B8.pack "23505")
 
-prop_uniqueConstraint :: Property.NamedDBProperty
-prop_uniqueConstraint =
-  Property.singletonNamedDBProperty "Creates a unique constraint that rejects duplicate records" $ \pool -> do
+prop_uniqueConstraint :: Orville.ConnectionPool -> HH.Property
+prop_uniqueConstraint pool =
+  Property.singletonProperty $ do
     originalFoo <- HH.forAll Foo.generate
 
     let
@@ -159,9 +179,9 @@ prop_uniqueConstraint =
       Left err ->
         Conn.sqlExecutionErrorSqlState err === Just (B8.pack "23505")
 
-prop_checkConstraint :: Property.NamedDBProperty
-prop_checkConstraint =
-  Property.singletonNamedDBProperty "Creates a check constraint and checks a valid and invalid insert" $ \pool -> do
+prop_checkConstraint :: Orville.ConnectionPool -> HH.Property
+prop_checkConstraint pool =
+  Property.singletonProperty $ do
     originalFoo <- HH.forAll Foo.generate
 
     let
@@ -200,9 +220,9 @@ prop_checkConstraint =
       Left err ->
         Conn.sqlExecutionErrorSqlState err === Just (B8.pack "23514")
 
-prop_fieldConstraints :: Property.NamedProperty
+prop_fieldConstraints :: HH.Property
 prop_fieldConstraints =
-  Property.singletonNamedProperty "Includes field constraints in table constraints" $ do
+  Property.singletonProperty $ do
     let
       foreignTableId =
         Orville.unqualifiedNameToTableId "foreign_table"
@@ -245,9 +265,9 @@ prop_fieldConstraints =
 
     tableConstraintKeys tableWithFieldConstraints === tableConstraintKeys tableWithTableConstraints
 
-prop_insertDefaultValuesWithEmptyMarshaller :: Property.NamedDBProperty
-prop_insertDefaultValuesWithEmptyMarshaller =
-  Property.singletonNamedDBProperty "Inserts default values when table marshaller is empty" $ \pool -> do
+prop_insertDefaultValuesWithEmptyMarshaller :: Orville.ConnectionPool -> HH.Property
+prop_insertDefaultValuesWithEmptyMarshaller pool =
+  Property.singletonProperty $ do
     let
       table :: TableDefinition.TableDefinition (Orville.HasKey Bar.BarId) () ()
       table =
@@ -276,9 +296,9 @@ prop_insertDefaultValuesWithEmptyMarshaller =
 
     result === expectedResult
 
-prop_autoSizedBatchedInsert :: Property.NamedDBProperty
-prop_autoSizedBatchedInsert =
-  Property.singletonNamedDBProperty "Auto-sized batched insert keeps parameter count below postgresql max" $ \pool -> do
+prop_autoSizedBatchedInsert :: Orville.ConnectionPool -> HH.Property
+prop_autoSizedBatchedInsert pool =
+  Property.singletonProperty $ do
     let
       columnCount =
         Orville.foldMarshallerFields
@@ -308,9 +328,9 @@ prop_autoSizedBatchedInsert =
       TestTable.dropAndRecreateTableDef connection Foo.table
       traverse_ (RawSql.executeVoid connection) insertExprs
 
-prop_autoSizedBatchedInsertCountsOnConflictParams :: Property.NamedProperty
+prop_autoSizedBatchedInsertCountsOnConflictParams :: HH.Property
 prop_autoSizedBatchedInsertCountsOnConflictParams =
-  Property.singletonNamedProperty "Auto-sized batched insert accounts for on conflict params" $ do
+  Property.singletonProperty $ do
     let
       columnCount =
         Orville.foldMarshallerFields

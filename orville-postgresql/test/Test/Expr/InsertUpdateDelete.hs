@@ -6,6 +6,9 @@ where
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -17,27 +20,27 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (assertEqualFooBarRows, barColumn, barColumnRef, dropAndRecreateTestTable, findAllFooBars, findAllFooBarsInTable, fooBarTable, fooColumn, insertFooBarSource, mkFooBar)
 import qualified Test.Property as Property
 
-insertUpdateDeleteTests :: Orville.ConnectionPool -> Property.Group
+insertUpdateDeleteTests :: Orville.ConnectionPool -> Tasty.TestTree
 insertUpdateDeleteTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Insert/Update/Delete/Truncate"
-    [ prop_insertExpr pool
-    , prop_insertExprWithOnConflictDoNothing pool
-    , prop_insertExprWithReturning pool
-    , prop_updateExpr pool
-    , prop_updateExprWithWhere pool
-    , prop_updateExprWithReturning pool
-    , prop_deleteExpr pool
-    , prop_deleteExprWithWhere pool
-    , prop_deleteExprWithReturning pool
-    , prop_truncateTablesExpr pool
-    , prop_insertExprWithOnConflictDoUpdate pool
-    , prop_updateTableRefList pool
+    [ TastyHH.testProperty "insertExpr inserts values" (prop_insertExpr pool)
+    , TastyHH.testProperty "insertExpr with on conflict do nothing does not modify table" (prop_insertExprWithOnConflictDoNothing pool)
+    , TastyHH.testProperty "insertExpr with returning clause returns the requested columns" (prop_insertExprWithReturning pool)
+    , TastyHH.testProperty "updateExpr updates rows in the db" (prop_updateExpr pool)
+    , TastyHH.testProperty "updateExpr uses a where clause when given" (prop_updateExprWithWhere pool)
+    , TastyHH.testProperty "updateExpr with returning clause returns the new records" (prop_updateExprWithReturning pool)
+    , TastyHH.testProperty "deleteExpr deletes rows in the db" (prop_deleteExpr pool)
+    , TastyHH.testProperty "deleteExpr uses a where clause when given" (prop_deleteExprWithWhere pool)
+    , TastyHH.testProperty "deleteExpr with returning returns the original rows" (prop_deleteExprWithReturning pool)
+    , TastyHH.testProperty "truncateTablesExpr clears out inserted values from all tables" (prop_truncateTablesExpr pool)
+    , TastyHH.testProperty "insertExpr with on conflict do update updates conflicting row" (prop_insertExprWithOnConflictDoUpdate pool)
+    , TastyHH.testProperty "updateExpr includes a tableReferenceList to allow where condition to reference another table" (prop_updateTableRefList pool)
     ]
 
-prop_insertExpr :: Property.NamedDBProperty
-prop_insertExpr =
-  Property.singletonNamedDBProperty "insertExpr inserts values" $ \pool -> do
+prop_insertExpr :: Orville.ConnectionPool -> HH.Property
+prop_insertExpr pool =
+  Property.singletonProperty $ do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
@@ -55,9 +58,9 @@ prop_insertExpr =
 
     assertEqualFooBarRows rows (NE.toList fooBars)
 
-prop_insertExprWithOnConflictDoNothing :: Property.NamedDBProperty
-prop_insertExprWithOnConflictDoNothing =
-  Property.singletonNamedDBProperty "insertExpr with on conflict do nothing does not modify table" $ \pool -> do
+prop_insertExprWithOnConflictDoNothing :: Orville.ConnectionPool -> HH.Property
+prop_insertExprWithOnConflictDoNothing pool =
+  Property.singletonProperty $ do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       addIndex = RawSql.fromString "CREATE UNIQUE INDEX ON " <> RawSql.toRawSql fooBarTable <> RawSql.fromString "( foo )"
@@ -80,9 +83,9 @@ prop_insertExprWithOnConflictDoNothing =
 
     assertEqualFooBarRows rows (NE.toList fooBars)
 
-prop_insertExprWithOnConflictDoUpdate :: Property.NamedDBProperty
-prop_insertExprWithOnConflictDoUpdate =
-  Property.singletonNamedDBProperty "insertExpr with on conflict do update updates conflicting row" $ \pool -> do
+prop_insertExprWithOnConflictDoUpdate :: Orville.ConnectionPool -> HH.Property
+prop_insertExprWithOnConflictDoUpdate pool =
+  Property.singletonProperty $ do
     let
       fooBars0 = pure $ mkFooBar 1 "dog"
       fooBars1 = pure $ mkFooBar 1 "eagel"
@@ -111,9 +114,9 @@ prop_insertExprWithOnConflictDoUpdate =
 
     assertEqualFooBarRows rows (NE.toList fooBars1)
 
-prop_insertExprWithReturning :: Property.NamedDBProperty
-prop_insertExprWithReturning =
-  Property.singletonNamedDBProperty "insertExpr with returning clause returns the requested columns" $ \pool -> do
+prop_insertExprWithReturning :: Orville.ConnectionPool -> HH.Property
+prop_insertExprWithReturning pool =
+  Property.singletonProperty $ do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
@@ -135,9 +138,9 @@ prop_insertExprWithReturning =
 
     assertEqualFooBarRows rows (NE.toList fooBars)
 
-prop_updateExpr :: Property.NamedDBProperty
-prop_updateExpr =
-  Property.singletonNamedDBProperty "updateExpr updates rows in the db" $ \pool -> do
+prop_updateExpr :: Orville.ConnectionPool -> HH.Property
+prop_updateExpr pool =
+  Property.singletonProperty $ do
     let
       oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       newFooBars = NE.fromList [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
@@ -167,9 +170,9 @@ prop_updateExpr =
 
     assertEqualFooBarRows rows (NE.toList newFooBars)
 
-prop_updateExprWithWhere :: Property.NamedDBProperty
-prop_updateExprWithWhere =
-  Property.singletonNamedDBProperty "updateExpr uses a where clause when given" $ \pool -> do
+prop_updateExprWithWhere :: Orville.ConnectionPool -> HH.Property
+prop_updateExprWithWhere pool =
+  Property.singletonProperty $ do
     let
       oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       newFooBars = NE.fromList [mkFooBar 1 "ferret", mkFooBar 2 "cat"]
@@ -199,9 +202,9 @@ prop_updateExprWithWhere =
 
     assertEqualFooBarRows rows (NE.toList newFooBars)
 
-prop_updateExprWithReturning :: Property.NamedDBProperty
-prop_updateExprWithReturning =
-  Property.singletonNamedDBProperty "updateExpr with returning clause returns the new records" $ \pool -> do
+prop_updateExprWithReturning :: Orville.ConnectionPool -> HH.Property
+prop_updateExprWithReturning pool =
+  Property.singletonProperty $ do
     let
       oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       newFooBars = NE.fromList [mkFooBar 1 "ferret", mkFooBar 2 "ferret"]
@@ -229,9 +232,9 @@ prop_updateExprWithReturning =
 
     assertEqualFooBarRows rows (NE.toList newFooBars)
 
-prop_deleteExpr :: Property.NamedDBProperty
-prop_deleteExpr =
-  Property.singletonNamedDBProperty "deleteExpr deletes rows in the db" $ \pool -> do
+prop_deleteExpr :: Orville.ConnectionPool -> HH.Property
+prop_deleteExpr pool =
+  Property.singletonProperty $ do
     let
       oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
@@ -257,9 +260,9 @@ prop_deleteExpr =
 
     assertEqualFooBarRows rows []
 
-prop_deleteExprWithWhere :: Property.NamedDBProperty
-prop_deleteExprWithWhere =
-  Property.singletonNamedDBProperty "deleteExpr uses a where clause when given" $ \pool -> do
+prop_deleteExprWithWhere :: Orville.ConnectionPool -> HH.Property
+prop_deleteExprWithWhere pool =
+  Property.singletonProperty $ do
     let
       oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       newFooBars = pure $ mkFooBar 2 "cat"
@@ -286,9 +289,9 @@ prop_deleteExprWithWhere =
 
     assertEqualFooBarRows rows (NE.toList newFooBars)
 
-prop_deleteExprWithReturning :: Property.NamedDBProperty
-prop_deleteExprWithReturning =
-  Property.singletonNamedDBProperty "deleteExpr with returning returns the original rows" $ \pool -> do
+prop_deleteExprWithReturning :: Orville.ConnectionPool -> HH.Property
+prop_deleteExprWithReturning pool =
+  Property.singletonProperty $ do
     let
       oldFooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
 
@@ -312,9 +315,9 @@ prop_deleteExprWithReturning =
 
     assertEqualFooBarRows rows (NE.toList oldFooBars)
 
-prop_truncateTablesExpr :: Property.NamedDBProperty
-prop_truncateTablesExpr =
-  Property.singletonNamedDBProperty "truncateTablesExpr clears out inserted values from all tables" $ \pool -> do
+prop_truncateTablesExpr :: Orville.ConnectionPool -> HH.Property
+prop_truncateTablesExpr pool =
+  Property.singletonProperty $ do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat"]
       fooBar2Table =
@@ -360,9 +363,9 @@ prop_truncateTablesExpr =
     assertEqualFooBarRows fooBarRows []
     assertEqualFooBarRows fooBar2Rows []
 
-prop_updateTableRefList :: Property.NamedDBProperty
-prop_updateTableRefList =
-  Property.singletonNamedDBProperty "updateExpr includes a tableReferenceList to allow where condition to reference another table" $ \pool -> do
+prop_updateTableRefList :: Orville.ConnectionPool -> HH.Property
+prop_updateTableRefList pool =
+  Property.singletonProperty $ do
     let
       fooBars = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "cat", mkFooBar 3 "ferret"]
       fooBars2 = NE.fromList [mkFooBar 1 "bird", mkFooBar 3 "fish", mkFooBar 4 "snake"]

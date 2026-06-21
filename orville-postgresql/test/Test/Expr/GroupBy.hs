@@ -8,6 +8,9 @@ import qualified Data.ByteString.Char8 as B8
 import qualified Data.Int as Int
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -24,17 +27,18 @@ data FooBar = FooBar
   , bar :: String
   }
 
-groupByTests :: Orville.ConnectionPool -> Property.Group
+groupByTests :: Orville.ConnectionPool -> Tasty.TestTree
 groupByTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - GroupBy"
-    [ prop_groupByColumnsExpr pool
-    , prop_appendGroupByExpr pool
+    [ TastyHH.testProperty "groupByColumnsExpr groups by columns" (prop_groupByColumnsExpr pool)
+    , TastyHH.testProperty "appendGroupByExpr causes grouping on both clauses" (prop_appendGroupByExpr pool)
     ]
 
-prop_groupByColumnsExpr :: Property.NamedDBProperty
-prop_groupByColumnsExpr =
-  groupByTest "groupByColumnsExpr groups by columns" $
+prop_groupByColumnsExpr :: Orville.ConnectionPool -> HH.Property
+prop_groupByColumnsExpr pool =
+  groupByTest
+    pool
     GroupByTest
       { groupByValuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 3 "dog"]
       , groupByExpectedQueryResults = [FooBar 3 "dog", FooBar 2 "dingo", FooBar 1 "dog"]
@@ -44,9 +48,10 @@ prop_groupByColumnsExpr =
               barColumn NE.:| [fooColumn]
       }
 
-prop_appendGroupByExpr :: Property.NamedDBProperty
-prop_appendGroupByExpr =
-  groupByTest "appendGroupByExpr causes grouping on both clauses" $
+prop_appendGroupByExpr :: Orville.ConnectionPool -> HH.Property
+prop_appendGroupByExpr pool =
+  groupByTest
+    pool
     GroupByTest
       { groupByValuesToInsert = NE.fromList [FooBar 1 "dog", FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo", FooBar 1 "dog", FooBar 2 "dingo"]
       , groupByExpectedQueryResults = [FooBar 2 "dingo", FooBar 1 "dog", FooBar 3 "dingo"]
@@ -87,9 +92,9 @@ mkGroupByTestExpectedRows test =
   in
     fmap mkRow (groupByExpectedQueryResults test)
 
-groupByTest :: String -> GroupByTest -> Property.NamedDBProperty
-groupByTest testName test =
-  Property.singletonNamedDBProperty testName $ \pool -> do
+groupByTest :: Orville.ConnectionPool -> GroupByTest -> HH.Property
+groupByTest pool test =
+  Property.singletonProperty $ do
     rows <- MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       dropAndRecreateTestTable connection
 

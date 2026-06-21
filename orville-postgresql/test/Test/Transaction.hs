@@ -15,6 +15,8 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 import qualified UnliftIO
 import qualified UnliftIO.Concurrent as Concurrent
 
@@ -29,27 +31,54 @@ import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 import qualified Test.Transaction.Util as TransactionUtil
 
-transactionTests :: Orville.ConnectionPool -> Property.Group
+transactionTests :: Orville.ConnectionPool -> Tasty.TestTree
 transactionTests pool =
-  Property.group "Transaction" $
-    [ prop_transactionsWithoutExceptionsCommit pool
-    , prop_transactionWithInstructionsToCommitCommit pool
-    , prop_exceptionsLeadToTransactionRollback pool
-    , prop_savepointsRollbackInnerTransactionsOnException pool
-    , prop_savepointsAllowInnerTransactionsToRollback pool
-    , prop_callbacksMadeForTransactionCommit pool
-    , prop_callbacksMadeForTransactionRollbackByException pool
-    , prop_callbacksMadeForTransactionRollbackByInstruction pool
-    , prop_usesCustomBeginTransactionSql pool
-    , prop_inWithTransaction pool
-    , prop_rollbackCallbackInInvalidTransaction pool
-    , prop_transactionCleanupRunsAfterBeginTransactionFails pool
-    , prop_transactionCleanupCannotBeInterrupted pool
+  Tasty.testGroup
+    "Transaction"
+    [ TastyHH.testProperty
+        "Transactions without exceptions perform a commit"
+        (prop_transactionsWithoutExceptionsCommit pool)
+    , TastyHH.testProperty
+        "Transactions with instructions to commit, commit"
+        (prop_transactionWithInstructionsToCommitCommit pool)
+    , TastyHH.testProperty
+        "Exceptions within transaction blocks execute rollbock"
+        (prop_exceptionsLeadToTransactionRollback pool)
+    , TastyHH.testProperty
+        "Savepoints allow inner transactions to throw and rollback while outer transactions commit"
+        (prop_savepointsRollbackInnerTransactionsOnException pool)
+    , TastyHH.testProperty
+        "Savepoints allow inner transactions to rollback while outer transactions commit"
+        (prop_savepointsAllowInnerTransactionsToRollback pool)
+    , TastyHH.testProperty
+        "Callbacks are delivered for a transaction that is commited"
+        (prop_callbacksMadeForTransactionCommit pool)
+    , TastyHH.testProperty
+        "Callbacks are delivered for a transaction this is rolled back by an exception"
+        (prop_callbacksMadeForTransactionRollbackByException pool)
+    , TastyHH.testProperty
+        "Callbacks are delivered for a transaction this is rolled back by an instruction"
+        (prop_callbacksMadeForTransactionRollbackByInstruction pool)
+    , TastyHH.testProperty
+        "Uses custom begin transaction sql"
+        (prop_usesCustomBeginTransactionSql pool)
+    , TastyHH.testProperty
+        "inWithTransaction returns InWithTransaction inside of withTransaction"
+        (prop_inWithTransaction pool)
+    , TastyHH.testProperty
+        "withTransaction triggers the rollback callback if the LibPQ transaction status is TransInError"
+        (prop_rollbackCallbackInInvalidTransaction pool)
+    , TastyHH.testProperty
+        "withTransaction runs cleanup after failed begin callback"
+        (prop_transactionCleanupRunsAfterBeginTransactionFails pool)
+    , TastyHH.testProperty
+        "withTransaction - finishTransaction cannot be interrupted by an async exception"
+        (prop_transactionCleanupCannotBeInterrupted pool)
     ]
 
-prop_transactionsWithoutExceptionsCommit :: Property.NamedDBProperty
-prop_transactionsWithoutExceptionsCommit =
-  Property.namedDBProperty "Transactions without exceptions perform a commit" $ \pool -> do
+prop_transactionsWithoutExceptionsCommit :: Orville.ConnectionPool -> HH.Property
+prop_transactionsWithoutExceptionsCommit pool =
+  HH.property $ do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     tracers <-
@@ -64,9 +93,9 @@ prop_transactionsWithoutExceptionsCommit =
 
     length tracers === nestingLevel
 
-prop_transactionWithInstructionsToCommitCommit :: Property.NamedDBProperty
-prop_transactionWithInstructionsToCommitCommit =
-  Property.namedDBProperty "Transactions with instructions to commit, commit" $ \pool -> do
+prop_transactionWithInstructionsToCommitCommit :: Orville.ConnectionPool -> HH.Property
+prop_transactionWithInstructionsToCommitCommit pool =
+  HH.property $ do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     tracers <-
@@ -83,9 +112,9 @@ prop_transactionWithInstructionsToCommitCommit =
 
     length tracers === nestingLevel
 
-prop_exceptionsLeadToTransactionRollback :: Property.NamedDBProperty
-prop_exceptionsLeadToTransactionRollback =
-  Property.namedDBProperty "Exceptions within transaction blocks execute rollbock" $ \pool -> do
+prop_exceptionsLeadToTransactionRollback :: Orville.ConnectionPool -> HH.Property
+prop_exceptionsLeadToTransactionRollback pool =
+  HH.property $ do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     tracers <-
@@ -103,9 +132,9 @@ prop_exceptionsLeadToTransactionRollback =
 
     length tracers === 0
 
-prop_savepointsRollbackInnerTransactionsOnException :: Property.NamedDBProperty
-prop_savepointsRollbackInnerTransactionsOnException =
-  Property.namedDBProperty "Savepoints allow inner transactions to throw and rollback while outer transactions commit" $ \pool -> do
+prop_savepointsRollbackInnerTransactionsOnException :: Orville.ConnectionPool -> HH.Property
+prop_savepointsRollbackInnerTransactionsOnException pool =
+  HH.property $ do
     outerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
     innerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
@@ -132,9 +161,9 @@ prop_savepointsRollbackInnerTransactionsOnException =
 
     length tracers === outerNestingLevel
 
-prop_savepointsAllowInnerTransactionsToRollback :: Property.NamedDBProperty
-prop_savepointsAllowInnerTransactionsToRollback =
-  Property.namedDBProperty "Savepoints allow inner transactions to rollback while outer transactions commit" $ \pool -> do
+prop_savepointsAllowInnerTransactionsToRollback :: Orville.ConnectionPool -> HH.Property
+prop_savepointsAllowInnerTransactionsToRollback pool =
+  HH.property $ do
     outerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
     innerNestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
@@ -165,9 +194,9 @@ prop_savepointsAllowInnerTransactionsToRollback =
 
     length tracers === outerNestingLevel
 
-prop_callbacksMadeForTransactionCommit :: Property.NamedDBProperty
-prop_callbacksMadeForTransactionCommit =
-  Property.namedDBProperty "Callbacks are delivered for a transaction that is commited" $ \pool -> do
+prop_callbacksMadeForTransactionCommit :: Orville.ConnectionPool -> HH.Property
+prop_callbacksMadeForTransactionCommit pool =
+  HH.property $ do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     allEvents <-
@@ -183,9 +212,9 @@ prop_callbacksMadeForTransactionCommit =
 
     allEvents === expectedEvents
 
-prop_callbacksMadeForTransactionRollbackByException :: Property.NamedDBProperty
-prop_callbacksMadeForTransactionRollbackByException =
-  Property.namedDBProperty "Callbacks are delivered for a transaction this is rolled back by an exception" $ \pool -> do
+prop_callbacksMadeForTransactionRollbackByException :: Orville.ConnectionPool -> HH.Property
+prop_callbacksMadeForTransactionRollbackByException pool =
+  HH.property $ do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     allEvents <- captureTransactionCallbackEvents pool $
@@ -201,9 +230,9 @@ prop_callbacksMadeForTransactionRollbackByException =
 
     allEvents === expectedEvents
 
-prop_callbacksMadeForTransactionRollbackByInstruction :: Property.NamedDBProperty
-prop_callbacksMadeForTransactionRollbackByInstruction =
-  Property.namedDBProperty "Callbacks are delivered for a transaction this is rolled back by an instruction" $ \pool -> do
+prop_callbacksMadeForTransactionRollbackByInstruction :: Orville.ConnectionPool -> HH.Property
+prop_callbacksMadeForTransactionRollbackByInstruction pool =
+  HH.property $ do
     nestingLevel <- HH.forAll TransactionUtil.genNestingLevel
 
     allEvents <- captureTransactionCallbackEvents pool $
@@ -219,9 +248,9 @@ prop_callbacksMadeForTransactionRollbackByInstruction =
 
     allEvents === expectedEvents
 
-prop_usesCustomBeginTransactionSql :: Property.NamedDBProperty
-prop_usesCustomBeginTransactionSql =
-  Property.namedDBProperty "Uses custom begin transaction sql" $ \pool -> do
+prop_usesCustomBeginTransactionSql :: Orville.ConnectionPool -> HH.Property
+prop_usesCustomBeginTransactionSql pool =
+  HH.property $ do
     customExpr <-
       HH.forAllWith (show . RawSql.toExampleBytes) $
         Gen.element
@@ -247,9 +276,9 @@ prop_usesCustomBeginTransactionSql =
           , (Orville.OtherQuery, RawSql.toExampleBytes customExpr)
           ]
 
-prop_inWithTransaction :: Property.NamedDBProperty
-prop_inWithTransaction =
-  Property.singletonNamedDBProperty "inWithTransaction returns InWithTransaction inside of withTransaction" $ \pool -> do
+prop_inWithTransaction :: Orville.ConnectionPool -> HH.Property
+prop_inWithTransaction pool =
+  Property.singletonProperty $ do
     (inside, insideSavepoint, outsideBefore, outsideAfter) <- HH.evalIO . Orville.runOrville pool $ do
       outsideBefore <- Orville.inWithTransaction
       inside <- Orville.withTransaction Orville.inWithTransaction
@@ -261,9 +290,9 @@ prop_inWithTransaction =
     outsideBefore === Nothing
     outsideAfter === Nothing
 
-prop_rollbackCallbackInInvalidTransaction :: Property.NamedDBProperty
-prop_rollbackCallbackInInvalidTransaction =
-  Property.singletonNamedDBProperty "withTransaction triggers the rollback callback if the LibPQ transaction status is TransInError" $ \pool -> do
+prop_rollbackCallbackInInvalidTransaction :: Orville.ConnectionPool -> HH.Property
+prop_rollbackCallbackInInvalidTransaction pool =
+  Property.singletonProperty $ do
     let
       badQuery = RawSql.fromString "bad"
 
@@ -276,9 +305,9 @@ prop_rollbackCallbackInInvalidTransaction =
 
     allEvents === [Orville.BeginTransaction, Orville.RollbackTransaction]
 
-prop_transactionCleanupRunsAfterBeginTransactionFails :: Property.NamedDBProperty
-prop_transactionCleanupRunsAfterBeginTransactionFails =
-  Property.singletonNamedDBProperty "withTransaction runs cleanup after failed begin callback" $ \pool -> do
+prop_transactionCleanupRunsAfterBeginTransactionFails :: Orville.ConnectionPool -> HH.Property
+prop_transactionCleanupRunsAfterBeginTransactionFails pool =
+  Property.singletonProperty $ do
     block <- UnliftIO.newEmptyMVar
     cancel <- UnliftIO.newEmptyMVar
     let
@@ -304,9 +333,9 @@ prop_transactionCleanupRunsAfterBeginTransactionFails =
 
     status === Just LibPQ.TransIdle
 
-prop_transactionCleanupCannotBeInterrupted :: Property.NamedDBProperty
-prop_transactionCleanupCannotBeInterrupted =
-  Property.singletonNamedDBProperty "withTransaction - finishTransaction cannot be interrupted by an async exception" $ \pool -> do
+prop_transactionCleanupCannotBeInterrupted :: Orville.ConnectionPool -> HH.Property
+prop_transactionCleanupCannotBeInterrupted pool =
+  Property.singletonProperty $ do
     cancel <- UnliftIO.newEmptyMVar
     let
       run :: Reader.ReaderT Orville.OrvilleState IO a -> IO a

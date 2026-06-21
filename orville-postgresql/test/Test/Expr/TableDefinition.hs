@@ -5,6 +5,9 @@ where
 
 import qualified Control.Monad.IO.Class as MIO
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -12,20 +15,20 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
-tableDefinitionTests :: Orville.ConnectionPool -> Property.Group
+tableDefinitionTests :: Orville.ConnectionPool -> Tasty.TestTree
 tableDefinitionTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - TableDefinition"
-    [ prop_createWithOneColumn pool
-    , prop_createWithMultipleColumns pool
-    , prop_renameTable pool
-    , prop_addOneColumn pool
-    , prop_addMultipleColumns pool
+    [ TastyHH.testProperty "Create table creates a table with one column" (prop_createWithOneColumn pool)
+    , TastyHH.testProperty "Create table creates a table with multiple columns" (prop_createWithMultipleColumns pool)
+    , TastyHH.testProperty "Rename table results in the new name existing and the old name not" (prop_renameTable pool)
+    , TastyHH.testProperty "Alter table adds one column" (prop_addOneColumn pool)
+    , TastyHH.testProperty "Alter table adds multiple columns" (prop_addMultipleColumns pool)
     ]
 
-prop_createWithOneColumn :: Property.NamedDBProperty
-prop_createWithOneColumn =
-  Property.singletonNamedDBProperty "Create table creates a table with one column" $ \pool -> do
+prop_createWithOneColumn :: Orville.ConnectionPool -> HH.Property
+prop_createWithOneColumn pool =
+  Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
@@ -34,9 +37,9 @@ prop_createWithOneColumn =
     tableDesc <- PgAssert.assertTableExists pool tableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString]
 
-prop_createWithMultipleColumns :: Property.NamedDBProperty
-prop_createWithMultipleColumns =
-  Property.singletonNamedDBProperty "Create table creates a table with multiple columns" $ \pool -> do
+prop_createWithMultipleColumns :: Orville.ConnectionPool -> HH.Property
+prop_createWithMultipleColumns pool =
+  Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
@@ -45,9 +48,9 @@ prop_createWithMultipleColumns =
     tableDesc <- PgAssert.assertTableExists pool tableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString, column1AlwaysNameString, column1ByDefaultNameString, column2NameString]
 
-prop_renameTable :: Property.NamedDBProperty
-prop_renameTable =
-  Property.singletonNamedDBProperty "Rename table results in the new name existing and the old name not" $ \pool -> do
+prop_renameTable :: Orville.ConnectionPool -> HH.Property
+prop_renameTable pool =
+  Property.singletonProperty $ do
     let
       newTableNameString = "renamed_" <> tableNameString
       newTableName = Expr.unqualified $ Expr.tableName newTableNameString
@@ -62,9 +65,9 @@ prop_renameTable =
     tableDesc <- PgAssert.assertTableExists pool newTableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString]
 
-prop_addOneColumn :: Property.NamedDBProperty
-prop_addOneColumn =
-  Property.singletonNamedDBProperty "Alter table adds one column" $ \pool -> do
+prop_addOneColumn :: Orville.ConnectionPool -> HH.Property
+prop_addOneColumn pool =
+  Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName
@@ -74,9 +77,9 @@ prop_addOneColumn =
     tableDesc <- PgAssert.assertTableExists pool tableNameString
     PgAssert.assertColumnNamesEqual tableDesc [column1NameString]
 
-prop_addMultipleColumns :: Property.NamedDBProperty
-prop_addMultipleColumns =
-  Property.singletonNamedDBProperty "Alter table adds multiple columns" $ \pool -> do
+prop_addMultipleColumns :: Orville.ConnectionPool -> HH.Property
+prop_addMultipleColumns pool =
+  Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
         Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) exprTableName

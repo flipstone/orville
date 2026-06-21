@@ -22,6 +22,8 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
@@ -39,48 +41,114 @@ import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-autoMigrationTests :: Orville.ConnectionPool -> Property.Group
+autoMigrationTests :: Orville.ConnectionPool -> Tasty.TestTree
 autoMigrationTests pool =
-  Property.group
+  Tasty.testGroup
     "AutoMigration"
-    [ prop_altersColumnAddIdentity pool
-    , prop_raisesErrorIfMigrationLockIsLocked pool
-    , prop_releasesMigrationLockOnError pool
-    , prop_createsMissingTables pool
-    , prop_dropsRequestedTables pool
-    , prop_addsAndRemovesColumns pool
-    , prop_columnsWithSystemNameConflictsRaiseError pool
-    , prop_altersColumnDataType pool
-    , prop_altersColumnDefaultValue_TextNumeric pool
-    , prop_altersColumnDefaultValue_Bool pool
-    , prop_altersColumnDefaultValue_Timelike pool
-    , prop_respectsImplicitDefaultOnSerialFields pool
-    , prop_addAndRemovesCheckConstraints pool
-    , prop_addNamedUniqueConstraint pool
-    , prop_addAndRemovesUniqueConstraints pool
-    , prop_addAndRemovesForeignKeyConstraints pool
-    , prop_createsMissingSequences pool
-    , prop_dropsRequestedSequences pool
-    , prop_altersModifiedSequences pool
-    , prop_addsAndRemovesMixedIndexes pool
-    , prop_arbitrarySchemaInitialMigration pool
-    , prop_createsMissingFunctions pool
-    , prop_recreatesAlteredFunctions pool
-    , prop_dropsRequestedFunctions pool
-    , prop_createsMissingTriggers pool
-    , prop_dropsUnrequestedTriggers pool
-    , prop_loadsMissingExtensions pool
-    , prop_unloadsPresentExtensions pool
-    , prop_addsTableComment pool
-    , prop_removesTableComment pool
-    , prop_modifiesTableComment pool
-    , prop_addsColumnCommmentsOnCreateTable pool
-    , prop_modifiesColumnComments pool
+    [ TastyHH.testProperty
+        "Alters an existing column to add IDENTITY"
+        (prop_altersColumnAddIdentity pool)
+    , TastyHH.testProperty
+        "Raises an error when the migration lock is hold"
+        (prop_raisesErrorIfMigrationLockIsLocked pool)
+    , TastyHH.testProperty
+        "Releases the migration lock on error"
+        (prop_releasesMigrationLockOnError pool)
+    , TastyHH.testProperty
+        "Creates missing tables"
+        (prop_createsMissingTables pool)
+    , TastyHH.testProperty
+        "Drops requested tables"
+        (prop_dropsRequestedTables pool)
+    , TastyHH.testProperty
+        "Adds and removes columns"
+        (prop_addsAndRemovesColumns pool)
+    , TastyHH.testProperty
+        "An error is raised trying to add a column that conflicts with a system name"
+        (prop_columnsWithSystemNameConflictsRaiseError pool)
+    , TastyHH.testProperty
+        "Alters data type on existing column"
+        (prop_altersColumnDataType pool)
+    , TastyHH.testProperty
+        "Alters default value on existing column (text/numeric)"
+        (prop_altersColumnDefaultValue_TextNumeric pool)
+    , TastyHH.testProperty
+        "Alters default value on existing column (boolean)"
+        (prop_altersColumnDefaultValue_Bool pool)
+    , TastyHH.testProperty
+        "Alters default value on existing column (timelike)"
+        (prop_altersColumnDefaultValue_Timelike pool)
+    , TastyHH.testProperty
+        "Respects implicit default on serial fields"
+        (prop_respectsImplicitDefaultOnSerialFields pool)
+    , TastyHH.testProperty
+        "Adds and removes check constraints"
+        (prop_addAndRemovesCheckConstraints pool)
+    , TastyHH.testProperty
+        "Adds a named unique constraint"
+        (prop_addNamedUniqueConstraint pool)
+    , TastyHH.testProperty
+        "Adds and removes unique constraints"
+        (prop_addAndRemovesUniqueConstraints pool)
+    , TastyHH.testProperty
+        "Adds and removes foreign key constraints"
+        (prop_addAndRemovesForeignKeyConstraints pool)
+    , TastyHH.testProperty
+        "Creates missing sequences"
+        (prop_createsMissingSequences pool)
+    , TastyHH.testProperty
+        "Drops requested sequences"
+        (prop_dropsRequestedSequences pool)
+    , TastyHH.testProperty
+        "Alters modified sequences"
+        (prop_altersModifiedSequences pool)
+    , TastyHH.testProperty
+        "Adds and removes named indexes"
+        (prop_addsAndRemovesMixedIndexes pool)
+    , TastyHH.testProperty
+        "An arbitrary list of schema items can be created from scratch"
+        (prop_arbitrarySchemaInitialMigration pool)
+    , TastyHH.testProperty
+        "Creates missing functions"
+        (prop_createsMissingFunctions pool)
+    , TastyHH.testProperty
+        "Recreates functions with altered source code"
+        (prop_recreatesAlteredFunctions pool)
+    , TastyHH.testProperty
+        "Drops requested functions"
+        (prop_dropsRequestedFunctions pool)
+    , TastyHH.testProperty
+        "Creates missing triggers"
+        (prop_createsMissingTriggers pool)
+    , TastyHH.testProperty
+        "Drops unrequested triggers"
+        (prop_dropsUnrequestedTriggers pool)
+    , TastyHH.testProperty
+        "Loads missing extensions"
+        (prop_loadsMissingExtensions pool)
+    , TastyHH.testProperty
+        "Unloads present extensions"
+        (prop_unloadsPresentExtensions pool)
+    , TastyHH.testProperty
+        "Adds a comment to a table"
+        (prop_addsTableComment pool)
+    , TastyHH.testProperty
+        "Removes a comment from a table"
+        (prop_removesTableComment pool)
+    , TastyHH.testProperty
+        "Modifies the comment on a table"
+        (prop_modifiesTableComment pool)
+    , TastyHH.testProperty
+        "Adds column comments when creating table"
+        (prop_addsColumnCommmentsOnCreateTable pool)
+    , TastyHH.testProperty
+        "Modifies column comments"
+        (prop_modifiesColumnComments pool)
     ]
 
-prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
-prop_raisesErrorIfMigrationLockIsLocked =
-  Property.singletonNamedDBProperty "Raises an error when the migration lock is hold" $ \pool -> do
+prop_raisesErrorIfMigrationLockIsLocked :: Orville.ConnectionPool -> HH.Property
+prop_raisesErrorIfMigrationLockIsLocked pool =
+  Property.singletonProperty $ do
     let
       testLockOptions =
         AutoMigration.defaultLockOptions
@@ -106,9 +174,9 @@ prop_raisesErrorIfMigrationLockIsLocked =
         HH.annotate "Expected MigrationLockError error to be thrown, but it was not"
         HH.failure
 
-prop_releasesMigrationLockOnError :: Property.NamedDBProperty
-prop_releasesMigrationLockOnError =
-  Property.singletonNamedDBProperty "Releases the migration lock on error" $ \pool -> do
+prop_releasesMigrationLockOnError :: Orville.ConnectionPool -> HH.Property
+prop_releasesMigrationLockOnError pool =
+  Property.singletonProperty $ do
     HH.evalIO $
       Orville.runOrville pool $
         -- Acquire a connection before running a second orville context to
@@ -136,9 +204,9 @@ data SimulatedError = SimulatedError
 
 instance ExSafe.Exception SimulatedError
 
-prop_createsMissingTables :: Property.NamedDBProperty
-prop_createsMissingTables =
-  Property.singletonNamedDBProperty "Creates missing tables" $ \pool -> do
+prop_createsMissingTables :: Orville.ConnectionPool -> HH.Property
+prop_createsMissingTables pool =
+  Property.singletonProperty $ do
     let
       fooTableId =
         Orville.tableIdentifier Foo.table
@@ -162,9 +230,9 @@ prop_createsMissingTables =
         (Orville.tableIdUnqualifiedNameString fooTableId)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_dropsRequestedTables :: Property.NamedDBProperty
-prop_dropsRequestedTables =
-  Property.singletonNamedDBProperty "Drops requested tables" $ \pool -> do
+prop_dropsRequestedTables :: Orville.ConnectionPool -> HH.Property
+prop_dropsRequestedTables pool =
+  Property.singletonProperty $ do
     let
       fooTableId =
         Orville.tableIdentifier Foo.table
@@ -186,9 +254,9 @@ prop_dropsRequestedTables =
     PgAssert.assertTableDoesNotExist pool (Orville.tableIdUnqualifiedNameString fooTableId)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_addsTableComment :: Property.NamedDBProperty
-prop_addsTableComment =
-  Property.singletonNamedDBProperty "Adds a comment to a table" $ \pool -> do
+prop_addsTableComment :: Orville.ConnectionPool -> HH.Property
+prop_addsTableComment pool =
+  Property.singletonProperty $ do
     let
       comment = String.fromString "This is a comment"
 
@@ -213,9 +281,9 @@ prop_addsTableComment =
     PgAssert.assertTableHasComment pool (Orville.tableIdUnqualifiedNameString fooTableId) comment
     migrationPlanStepStrings secondTimePlan === []
 
-prop_removesTableComment :: Property.NamedDBProperty
-prop_removesTableComment =
-  Property.singletonNamedDBProperty "Removes a comment from a table" $ \pool -> do
+prop_removesTableComment :: Orville.ConnectionPool -> HH.Property
+prop_removesTableComment pool =
+  Property.singletonProperty $ do
     let
       comment = String.fromString "This is a comment"
 
@@ -240,9 +308,9 @@ prop_removesTableComment =
     PgAssert.assertTableDoesNotHaveComment pool (Orville.tableIdUnqualifiedNameString fooTableId)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_modifiesTableComment :: Property.NamedDBProperty
-prop_modifiesTableComment =
-  Property.singletonNamedDBProperty "Modifies the comment on a table" $ \pool -> do
+prop_modifiesTableComment :: Orville.ConnectionPool -> HH.Property
+prop_modifiesTableComment pool =
+  Property.singletonProperty $ do
     let
       oldComment = String.fromString "This is a comment"
       newComment = String.fromString "This is a new comment"
@@ -275,9 +343,9 @@ prop_modifiesTableComment =
     PgAssert.assertTableHasComment pool (Orville.tableIdUnqualifiedNameString fooTableId) newComment
     migrationPlanStepStrings secondTimePlan === []
 
-prop_addsColumnCommmentsOnCreateTable :: Property.NamedDBProperty
-prop_addsColumnCommmentsOnCreateTable =
-  Property.singletonNamedDBProperty "Adds column comments when creating table" $ \pool -> do
+prop_addsColumnCommmentsOnCreateTable :: Orville.ConnectionPool -> HH.Property
+prop_addsColumnCommmentsOnCreateTable pool =
+  Property.singletonProperty $ do
     let
       columnsAndComments = [("foo", Just "foo comment"), ("bar", Nothing), ("baz", Just "baz comment")]
       tableName = "migration_test"
@@ -299,9 +367,9 @@ prop_addsColumnCommmentsOnCreateTable =
     PgAssert.assertTableColumnsHaveOrDoNotHaveComments pool tableName columnsAndComments
     migrationPlanStepStrings secondTimePlan === []
 
-prop_modifiesColumnComments :: Property.NamedDBProperty
-prop_modifiesColumnComments =
-  Property.singletonNamedDBProperty "Modifies column comments" $ \pool -> do
+prop_modifiesColumnComments :: Orville.ConnectionPool -> HH.Property
+prop_modifiesColumnComments pool =
+  Property.singletonProperty $ do
     let
       initialColumnsAndComments = [("foo", Just "foo comment"), ("bar", Nothing), ("baz", Nothing)]
       finalColumnsAndComments = [("foo", Nothing), ("bar", Just "bar comment"), ("baz", Just "baz comment")]
@@ -331,9 +399,9 @@ prop_modifiesColumnComments =
     length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     length (AutoMigration.migrationPlanSteps secondTimePlan) === 3
 
-prop_addsAndRemovesColumns :: Property.NamedDBProperty
-prop_addsAndRemovesColumns =
-  Property.namedDBProperty "Adds and removes columns" $ \pool -> do
+prop_addsAndRemovesColumns :: Orville.ConnectionPool -> HH.Property
+prop_addsAndRemovesColumns pool =
+  HH.property $ do
     let
       genColumnList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -369,9 +437,9 @@ prop_addsAndRemovesColumns =
     tableDesc <- PgAssert.assertTableExists pool "migration_test"
     PgAssert.assertColumnNamesEqual tableDesc newColumns
 
-prop_columnsWithSystemNameConflictsRaiseError :: Property.NamedDBProperty
-prop_columnsWithSystemNameConflictsRaiseError =
-  Property.singletonNamedDBProperty "An error is raised trying to add a column that conflicts with a system name" $ \pool -> do
+prop_columnsWithSystemNameConflictsRaiseError :: Orville.ConnectionPool -> HH.Property
+prop_columnsWithSystemNameConflictsRaiseError pool =
+  Property.singletonProperty $ do
     let
       tableWithSystemAttributeNames =
         Orville.mkTableDefinitionWithoutKey
@@ -417,9 +485,9 @@ describeField :: SomeField -> String
 describeField (SomeField field) =
   B8.unpack (RawSql.toExampleBytes $ Orville.fieldColumnDefinition field)
 
-prop_altersColumnDataType :: Property.NamedDBProperty
-prop_altersColumnDataType =
-  Property.namedDBProperty "Alters data type on existing column" $ \pool -> do
+prop_altersColumnDataType :: Orville.ConnectionPool -> HH.Property
+prop_altersColumnDataType pool =
+  HH.property $ do
     let
       baseFieldDefs =
         -- Serial columns are omitted from this list currently because
@@ -501,9 +569,9 @@ genFieldWithMaybeDefault defaultGen mkDefaultValue fieldDef = do
       Just def ->
         Orville.setDefaultValue (mkDefaultValue def) fieldDef
 
-prop_altersColumnDefaultValue_TextNumeric :: Property.NamedDBProperty
-prop_altersColumnDefaultValue_TextNumeric =
-  Property.namedDBProperty "Alters default value on existing column (text/numeric)" $ \pool -> do
+prop_altersColumnDefaultValue_TextNumeric :: Orville.ConnectionPool -> HH.Property
+prop_altersColumnDefaultValue_TextNumeric pool =
+  HH.property $ do
     let
       genDefaultText =
         PgGen.pgText (Range.linear 0 10)
@@ -526,9 +594,9 @@ prop_altersColumnDefaultValue_TextNumeric =
         , SomeField <$> genFieldWithMaybeDefault genDefaultDouble Orville.doubleDefault (Orville.doubleField "column")
         ]
 
-prop_altersColumnAddIdentity :: Property.NamedDBProperty
-prop_altersColumnAddIdentity =
-  Property.namedDBProperty "Alters an existing column to add IDENTITY" $ \pool -> do
+prop_altersColumnAddIdentity :: Orville.ConnectionPool -> HH.Property
+prop_altersColumnAddIdentity pool =
+  HH.property $ do
     colIdentity <- HH.forAll Gen.enumBounded
 
     let
@@ -566,17 +634,17 @@ prop_altersColumnAddIdentity =
     PgAssert.assertFieldIdentityGenerationMatches newTableDesc "column" (Just colIdentity)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_altersColumnDefaultValue_Bool :: Property.NamedDBProperty
-prop_altersColumnDefaultValue_Bool =
-  Property.namedDBProperty "Alters default value on existing column (boolean)" $ \pool -> do
+prop_altersColumnDefaultValue_Bool :: Orville.ConnectionPool -> HH.Property
+prop_altersColumnDefaultValue_Bool pool =
+  HH.property $ do
     assertDefaultValuesMigrateProperly pool $
       Gen.choice
         [ SomeField <$> genFieldWithMaybeDefault Gen.bool Orville.booleanDefault (Orville.booleanField "column")
         ]
 
-prop_altersColumnDefaultValue_Timelike :: Property.NamedDBProperty
-prop_altersColumnDefaultValue_Timelike =
-  Property.namedDBProperty "Alters default value on existing column (timelike)" $ \pool -> do
+prop_altersColumnDefaultValue_Timelike :: Orville.ConnectionPool -> HH.Property
+prop_altersColumnDefaultValue_Timelike pool =
+  HH.property $ do
     assertDefaultValuesMigrateProperly pool $
       Gen.choice
         [ -- Fields without default, or with specific times for the default
@@ -589,9 +657,9 @@ prop_altersColumnDefaultValue_Timelike =
         , pure . SomeField $ Orville.setDefaultValue Orville.currentDateDefault (Orville.dateField "column")
         ]
 
-prop_respectsImplicitDefaultOnSerialFields :: Property.NamedDBProperty
-prop_respectsImplicitDefaultOnSerialFields =
-  Property.namedDBProperty "Respects implicit default on serial fields" $ \pool -> do
+prop_respectsImplicitDefaultOnSerialFields :: Orville.ConnectionPool -> HH.Property
+prop_respectsImplicitDefaultOnSerialFields pool =
+  HH.property $ do
     SomeField fieldDef <-
       HH.forAllWith describeField $
         Gen.element
@@ -664,9 +732,9 @@ assertDefaultValuesMigrateProperly pool genSomeField = do
   PgAssert.assertColumnDefaultMatches newTableDesc "column" (Orville.fieldDefaultValue newField)
   migrationPlanStepStrings secondTimePlan === []
 
-prop_addAndRemovesUniqueConstraints :: Property.NamedDBProperty
-prop_addAndRemovesUniqueConstraints =
-  Property.namedDBProperty "Adds and removes unique constraints" $ \pool -> do
+prop_addAndRemovesUniqueConstraints :: Orville.ConnectionPool -> HH.Property
+prop_addAndRemovesUniqueConstraints pool =
+  HH.property $ do
     let
       genColumnList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -732,9 +800,9 @@ prop_addAndRemovesUniqueConstraints =
       )
       === length (List.nub newConstraintColumns)
 
-prop_addAndRemovesForeignKeyConstraints :: Property.NamedDBProperty
-prop_addAndRemovesForeignKeyConstraints =
-  Property.namedDBProperty "Adds and removes foreign key constraints" $ \pool -> do
+prop_addAndRemovesForeignKeyConstraints :: Orville.ConnectionPool -> HH.Property
+prop_addAndRemovesForeignKeyConstraints pool =
+  HH.property $ do
     let
       genColumnList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -850,9 +918,9 @@ prop_addAndRemovesForeignKeyConstraints =
       )
       === length (List.nub newForeignKeyInfos)
 
-prop_addAndRemovesCheckConstraints :: Property.NamedDBProperty
-prop_addAndRemovesCheckConstraints =
-  Property.namedDBProperty "Adds and removes check constraints" $ \pool -> do
+prop_addAndRemovesCheckConstraints :: Orville.ConnectionPool -> HH.Property
+prop_addAndRemovesCheckConstraints pool =
+  HH.property $ do
     let
       genConstrList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -904,9 +972,9 @@ prop_addAndRemovesCheckConstraints =
       )
       === length newConstraints
 
-prop_addNamedUniqueConstraint :: Property.NamedDBProperty
-prop_addNamedUniqueConstraint =
-  Property.namedDBProperty "Adds a named unique constraint" $ \pool -> do
+prop_addNamedUniqueConstraint :: Orville.ConnectionPool -> HH.Property
+prop_addNamedUniqueConstraint pool =
+  HH.property $ do
     let
       genColumnList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -972,9 +1040,9 @@ prop_addNamedUniqueConstraint =
       )
       === 1
 
-prop_addsAndRemovesMixedIndexes :: Property.NamedDBProperty
-prop_addsAndRemovesMixedIndexes =
-  Property.namedDBProperty "Adds and removes named indexes" $ \pool -> do
+prop_addsAndRemovesMixedIndexes :: Orville.ConnectionPool -> HH.Property
+prop_addsAndRemovesMixedIndexes pool =
+  HH.property $ do
     let
       genColumnList =
         Gen.subsequence ["foo", "bar", "baz", "bat", "bax"]
@@ -1068,9 +1136,9 @@ prop_addsAndRemovesMixedIndexes =
       newTestIndexes
     length (PgCatalog.relationIndexes newTableWithSchemaDesc) === length (List.nub newTestIndexes)
 
-prop_createsMissingSequences :: Property.NamedDBProperty
-prop_createsMissingSequences =
-  Property.singletonNamedDBProperty "Creates missing sequences" $ \pool -> do
+prop_createsMissingSequences :: Orville.ConnectionPool -> HH.Property
+prop_createsMissingSequences pool =
+  Property.singletonProperty $ do
     let
       sequenceDef =
         Orville.mkSequenceDefinition "migration_test_sequence"
@@ -1096,9 +1164,9 @@ prop_createsMissingSequences =
         (Orville.sequenceIdUnqualifiedNameString sequenceId)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_dropsRequestedSequences :: Property.NamedDBProperty
-prop_dropsRequestedSequences =
-  Property.singletonNamedDBProperty "Drops requested sequences" $ \pool -> do
+prop_dropsRequestedSequences :: Orville.ConnectionPool -> HH.Property
+prop_dropsRequestedSequences pool =
+  Property.singletonProperty $ do
     let
       sequenceDef =
         Orville.mkSequenceDefinition "migration_test_sequence"
@@ -1122,9 +1190,9 @@ prop_dropsRequestedSequences =
     PgAssert.assertSequenceDoesNotExist pool (Orville.sequenceIdUnqualifiedNameString sequenceId)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_altersModifiedSequences :: Property.NamedDBProperty
-prop_altersModifiedSequences =
-  Property.namedDBProperty "Alters modified sequences" $ \pool -> do
+prop_altersModifiedSequences :: Orville.ConnectionPool -> HH.Property
+prop_altersModifiedSequences pool =
+  HH.property $ do
     let
       baseSequenceDef =
         Orville.mkSequenceDefinition "migration_test_sequence"
@@ -1222,9 +1290,9 @@ assertSequenceExistsMatching pool sequenceDef = do
   PgCatalog.pgSequenceCache pgSequence === Orville.sequenceCache sequenceDef
   PgCatalog.pgSequenceCycle pgSequence === Orville.sequenceCycle sequenceDef
 
-prop_arbitrarySchemaInitialMigration :: Property.NamedDBProperty
-prop_arbitrarySchemaInitialMigration =
-  Property.namedDBProperty "An arbitrary list of schema items can be created from scratch" $ \pool -> do
+prop_arbitrarySchemaInitialMigration :: Orville.ConnectionPool -> HH.Property
+prop_arbitrarySchemaInitialMigration pool =
+  HH.property $ do
     testTables <- HH.forAll $ generateTestTables (Range.constant 0 10)
 
     HH.cover 75 (String.fromString "With Tables") (not . null $ testTables)
@@ -1255,9 +1323,9 @@ prop_arbitrarySchemaInitialMigration =
     migrationPlanStepStrings migrationPlanAfterMigration === []
     Fold.traverse_ (assertTableStructure pool) testTables
 
-prop_createsMissingFunctions :: Property.NamedDBProperty
-prop_createsMissingFunctions =
-  Property.singletonNamedDBProperty "Creates missing functions" $ \pool -> do
+prop_createsMissingFunctions :: Orville.ConnectionPool -> HH.Property
+prop_createsMissingFunctions pool =
+  Property.singletonProperty $ do
     let
       functionDef =
         Orville.mkTriggerFunction
@@ -1291,9 +1359,9 @@ prop_createsMissingFunctions =
 
     migrationPlanStepStrings secondTimePlan === []
 
-prop_recreatesAlteredFunctions :: Property.NamedDBProperty
-prop_recreatesAlteredFunctions =
-  Property.singletonNamedDBProperty "Recreates functions with altered source code" $ \pool -> do
+prop_recreatesAlteredFunctions :: Orville.ConnectionPool -> HH.Property
+prop_recreatesAlteredFunctions pool =
+  Property.singletonProperty $ do
     let
       oldFunctionDef =
         Orville.mkTriggerFunction
@@ -1331,9 +1399,9 @@ prop_recreatesAlteredFunctions =
 
     migrationPlanStepStrings secondTimePlan === []
 
-prop_dropsRequestedFunctions :: Property.NamedDBProperty
-prop_dropsRequestedFunctions =
-  Property.singletonNamedDBProperty "Drops requested functions" $ \pool -> do
+prop_dropsRequestedFunctions :: Orville.ConnectionPool -> HH.Property
+prop_dropsRequestedFunctions pool =
+  Property.singletonProperty $ do
     let
       functionDef =
         Orville.mkTriggerFunction
@@ -1360,9 +1428,9 @@ prop_dropsRequestedFunctions =
     PgAssert.assertFunctionDoesNotExist pool (Orville.functionIdUnqualifiedNameString functionId)
     migrationPlanStepStrings secondTimePlan === []
 
-prop_createsMissingTriggers :: Property.NamedDBProperty
-prop_createsMissingTriggers =
-  Property.singletonNamedDBProperty "Creates missing triggers" $ \pool -> do
+prop_createsMissingTriggers :: Orville.ConnectionPool -> HH.Property
+prop_createsMissingTriggers pool =
+  Property.singletonProperty $ do
     let
       functionDef =
         Orville.mkTriggerFunction
@@ -1403,9 +1471,9 @@ prop_createsMissingTriggers =
 
     migrationPlanStepStrings secondTimePlan === []
 
-prop_dropsUnrequestedTriggers :: Property.NamedDBProperty
-prop_dropsUnrequestedTriggers =
-  Property.singletonNamedDBProperty "Drops unrequested triggers" $ \pool -> do
+prop_dropsUnrequestedTriggers :: Orville.ConnectionPool -> HH.Property
+prop_dropsUnrequestedTriggers pool =
+  Property.singletonProperty $ do
     let
       functionDef =
         Orville.mkTriggerFunction
@@ -1453,9 +1521,9 @@ prop_dropsUnrequestedTriggers =
     _ <- PgAssert.assertTriggerDoesNotExist fooRelation "before_insert_trigger"
     migrationPlanStepStrings secondTimePlan === []
 
-prop_loadsMissingExtensions :: Property.NamedDBProperty
-prop_loadsMissingExtensions =
-  Property.singletonNamedDBProperty "Loads missing extensions" $ \pool -> do
+prop_loadsMissingExtensions :: Orville.ConnectionPool -> HH.Property
+prop_loadsMissingExtensions pool =
+  Property.singletonProperty $ do
     let
       schemaItems =
         [ AutoMigration.SchemaExtension $ Orville.nameToExtensionId "pg_trgm"
@@ -1477,9 +1545,9 @@ prop_loadsMissingExtensions =
     _ <- PgAssert.assertExtensionLoaded pool "pg_trgm"
     migrationPlanStepStrings secondTimePlan === []
 
-prop_unloadsPresentExtensions :: Property.NamedDBProperty
-prop_unloadsPresentExtensions =
-  Property.singletonNamedDBProperty "Unloads present extensions" $ \pool -> do
+prop_unloadsPresentExtensions :: Orville.ConnectionPool -> HH.Property
+prop_unloadsPresentExtensions pool =
+  Property.singletonProperty $ do
     let
       pgtrgmExtension = Orville.nameToExtensionId "pg_trgm"
 

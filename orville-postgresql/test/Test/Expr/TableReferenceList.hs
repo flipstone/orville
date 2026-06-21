@@ -6,25 +6,27 @@ import qualified Data.ByteString.Char8 as B8
 import GHC.Stack (HasCallStack, withFrozenCallStack)
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import qualified Test.Property as Property
 
-tableReferenceListTests :: Property.Group
+tableReferenceListTests :: Tasty.TestTree
 tableReferenceListTests =
-  Property.group
+  Tasty.testGroup
     "Expr - TableReferenceList"
-    [ prop_tableReferenceList
+    [ TastyHH.testProperty "creates a comma delimited table list" prop_tableReferenceList
     ]
 
-prop_tableReferenceList :: Property.NamedProperty
+prop_tableReferenceList :: HH.Property
 prop_tableReferenceList =
-  Property.singletonNamedProperty "creates a comma delimited table list"
-    $ assertTableReferenteListEquals
+  Property.singletonProperty $
+    assertTableReferenteListEquals
       "\"foo\", \"bar\""
-    $ Expr.tableReferenceList [fooTable, barTable]
+      (Expr.tableReferenceList [fooTable, barTable])
 
 assertTableReferenteListEquals ::
   (HH.MonadTest m, HasCallStack) =>

@@ -4,8 +4,9 @@ module Test.ReservedWords
 where
 
 import qualified Control.Monad.IO.Class as MIO
-import qualified Data.String as String
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
@@ -14,12 +15,11 @@ import qualified Test.Entities.User as User
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 
-reservedWordsTests :: Orville.ConnectionPool -> Property.Group
+reservedWordsTests :: Orville.ConnectionPool -> Tasty.TestTree
 reservedWordsTests pool =
-  Property.group "ReservedWords" $
-    [
-      ( String.fromString "Can insert and select an entity with reserved words in its schema"
-      , Property.singletonProperty $ do
+  Tasty.testGroup "ReservedWords" $
+    [ TastyHH.testProperty "Can insert and select an entity with reserved words in its schema" $
+        Property.singletonProperty $ do
           originalUser <- HH.forAll User.generate
 
           usersFromDB <-
@@ -32,5 +32,4 @@ reservedWordsTests pool =
                 Orville.findEntitiesBy User.table mempty
 
           usersFromDB HH.=== [originalUser]
-      )
     ]
