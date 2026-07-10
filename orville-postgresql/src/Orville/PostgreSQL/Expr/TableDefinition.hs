@@ -468,10 +468,10 @@ truncateTablesExpr tableNames =
 -}
 enableRowLevelSecurityExpr :: QualifiedOrUnqualified TableName -> AlterTableExpr
 enableRowLevelSecurityExpr tableName =
-  AlterTableExpr $
-    RawSql.fromString "ALTER TABLE "
-      <> RawSql.toRawSql tableName
-      <> RawSql.fromString " ENABLE ROW LEVEL SECURITY"
+  alterTableExpr tableName
+    . pure
+    . AlterTableAction
+    $ RawSql.fromString "ENABLE ROW LEVEL SECURITY"
 
 {- | Constructs an 'AlterTableExpr' that will disable row level security on the
   specified table.
@@ -480,7 +480,7 @@ enableRowLevelSecurityExpr tableName =
 -}
 disableRowLevelSecurityExpr :: QualifiedOrUnqualified TableName -> AlterTableExpr
 disableRowLevelSecurityExpr tableName =
-  AlterTableExpr $
-    RawSql.fromString "ALTER TABLE "
-      <> RawSql.toRawSql tableName
-      <> RawSql.fromString " DISABLE ROW LEVEL SECURITY"
+  alterTableExpr tableName
+    . pure
+    . AlterTableAction
+    $ RawSql.fromString "DISABLE ROW LEVEL SECURITY"

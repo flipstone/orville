@@ -15,7 +15,9 @@ import Data.Int (Int32)
 import Data.List ((\\))
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
+import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
+import qualified Data.Set as Set
 import qualified Data.String as String
 import qualified Data.Text as T
 import Hedgehog ((===))
@@ -79,6 +81,20 @@ autoMigrationTests pool =
     , prop_createsMissingPolicies pool
     , prop_dropsRequestedPolicies pool
     , prop_altersModifiedPolicies pool
+    , prop_createsRestrictivePolicies pool
+    , prop_recreatesPoliciesWithChangedPermission pool
+    , prop_recreatesPoliciesWithChangedCommand pool
+    , prop_managesPoliciesOnSchemaQualifiedTables pool
+    , prop_enablesRowLevelSecurityWithoutPolicyCreation pool
+    , prop_disablesRowLevelSecurityWhenNotRequested pool
+    , prop_altersPoliciesWhoseLiteralsDifferOnlyByCase pool
+    , prop_managesPolicyRoleTargets pool
+    , prop_managesPoliciesWithCheckExprs pool
+    , prop_managesPoliciesWithMultipleRoles pool
+    , prop_managesMultiplePoliciesOnOneTable pool
+    , prop_altersPoliciesWithQuotedIdentifiers pool
+    , prop_altersPoliciesWithEscapedQuoteLiterals pool
+    , prop_addTablePoliciesAccumulates
     ]
 
 prop_raisesErrorIfMigrationLockIsLocked :: Property.NamedDBProperty
@@ -1471,6 +1487,8 @@ prop_createsMissingPolicies =
           Nothing
           Nothing
           Nothing
+          Nothing
+          Nothing
       newTableDef =
         Orville.addTablePolicies [policyDef] originalTableDef
 
@@ -1502,6 +1520,8 @@ prop_dropsRequestedPolicies =
       policyDef =
         Orville.mkPolicyDefinition
           "migration_test_policy"
+          Nothing
+          Nothing
           Nothing
           Nothing
           Nothing
@@ -1541,9 +1561,13 @@ prop_altersModifiedPolicies =
           Nothing
           Nothing
           Nothing
+          Nothing
+          Nothing
       modifiedPolicyDef =
         Orville.mkPolicyDefinition
           "migration_test_policy"
+          Nothing
+          Nothing
           Nothing
           (Just (Expr.policyUsingExpr (Expr.literalBooleanExpr True)))
           Nothing
@@ -1570,6 +1594,618 @@ prop_altersModifiedPolicies =
 
     HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
     migrationPlanStepStrings secondTimePlan === []
+
+prop_createsRestrictivePolicies :: Property.NamedDBProperty
+prop_createsRestrictivePolicies =
+  Property.singletonNamedDBProperty "Creates restrictive policies" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          (Just Orville.PolicyRestrictive)
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+      newTableDef =
+        Orville.addTablePolicies [policyDef] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_recreatesPoliciesWithChangedPermission :: Property.NamedDBProperty
+prop_recreatesPoliciesWithChangedPermission =
+  Property.singletonNamedDBProperty "Recreates policies whose permission changed" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      permissivePolicyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+      restrictivePolicyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          (Just Orville.PolicyRestrictive)
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+      tableWithPermissivePolicy =
+        Orville.addTablePolicies [permissivePolicyDef] originalTableDef
+      tableWithRestrictivePolicy =
+        Orville.addTablePolicies [restrictivePolicyDef] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPermissivePolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithRestrictivePolicy]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 2
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithRestrictivePolicy]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_recreatesPoliciesWithChangedCommand :: Property.NamedDBProperty
+prop_recreatesPoliciesWithChangedCommand =
+  Property.singletonNamedDBProperty "Recreates policies whose command changed" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      mkCommandPolicy command =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          (Just command)
+          Nothing
+          Nothing
+          Nothing
+      tableWithSelectPolicy =
+        Orville.addTablePolicies [mkCommandPolicy Orville.PolicyCommandSelect] originalTableDef
+      tableWithUpdatePolicy =
+        Orville.addTablePolicies [mkCommandPolicy Orville.PolicyCommandUpdate] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithSelectPolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithSelectPolicy]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    migrationPlanStepStrings firstTimePlan === []
+
+    recreatePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUpdatePolicy]
+
+    HH.annotate ("Recreate steps: " <> show (migrationPlanStepStrings recreatePlan))
+    length (AutoMigration.migrationPlanSteps recreatePlan) === 2
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions recreatePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUpdatePolicy]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_managesPoliciesOnSchemaQualifiedTables :: Property.NamedDBProperty
+prop_managesPoliciesOnSchemaQualifiedTables =
+  Property.singletonNamedDBProperty "Manages policies on tables with an explicit schema" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.setTableSchema "orville_migration_schema" $
+          Orville.mkTableDefinitionWithoutKey
+            "policy_migration_test"
+            (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+      newTableDef =
+        Orville.addTablePolicies [policyDef] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP SCHEMA IF EXISTS orville_migration_schema CASCADE"
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE SCHEMA orville_migration_schema"
+          Orville.executeVoid Orville.DDLQuery $ Schema.mkCreateTableExpr originalTableDef
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTableDef]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_enablesRowLevelSecurityWithoutPolicyCreation :: Property.NamedDBProperty
+prop_enablesRowLevelSecurityWithoutPolicyCreation =
+  Property.singletonNamedDBProperty "Enables row level security even when only dropping policies" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+      tableWithPolicy =
+        Orville.addTablePolicies [policyDef] originalTableDef
+      tableWithRLSAndDrop =
+        Orville.setRowLevelSecurityEnabled $
+          Orville.dropPolicies ["migration_test_policy"] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithRLSAndDrop]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 2
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithRLSAndDrop]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_disablesRowLevelSecurityWhenNotRequested :: Property.NamedDBProperty
+prop_disablesRowLevelSecurityWhenNotRequested =
+  Property.singletonNamedDBProperty "Disables row level security when the definition does not enable it" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      tableWithRLS =
+        Orville.setRowLevelSecurityEnabled originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithRLS]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTableDef]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+
+    -- Once RLS is disabled, the plan must be empty: no DISABLE statement is
+    -- emitted for a table whose relrowsecurity is already false
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTableDef]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_altersPoliciesWhoseLiteralsDifferOnlyByCase :: Property.NamedDBProperty
+prop_altersPoliciesWhoseLiteralsDifferOnlyByCase =
+  Property.singletonNamedDBProperty "Alters policies whose string literals differ only by case" $ \pool -> do
+    let
+      originalField = Orville.unboundedTextField "name"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+
+      -- These expressions are written to match the deparsed form PostgreSQL
+      -- returns in pg_policies (including the parentheses PostgreSQL puts
+      -- around operator expressions) so that matching policies produce empty
+      -- plans
+      mkNamePolicy literal =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          (Just . Expr.policyUsingExpr . RawSql.unsafeSqlExpression $ "(name = '" <> literal <> "'::text)")
+          Nothing
+
+      tableWithLowercaseLiteral =
+        Orville.addTablePolicies [mkNamePolicy "abc"] originalTableDef
+      tableWithUppercaseLiteral =
+        Orville.addTablePolicies [mkNamePolicy "ABC"] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithLowercaseLiteral]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUppercaseLiteral]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUppercaseLiteral]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_managesPolicyRoleTargets :: Property.NamedDBProperty
+prop_managesPolicyRoleTargets =
+  Property.singletonNamedDBProperty "Creates and alters policies with role targets" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      -- "orville_test" is the role the test suite connects as, so it is
+      -- guaranteed to exist
+      namedRolePolicy =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          (Just . Set.singleton $ Orville.PolicyRoleNamed "orville_test")
+          Nothing
+          Nothing
+      publicPolicy =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          (Just $ Set.singleton Orville.PolicyRolePublic)
+          Nothing
+          Nothing
+      tableWithNamedRole =
+        Orville.addTablePolicies [namedRolePolicy] originalTableDef
+      tableWithPublic =
+        Orville.addTablePolicies [publicPolicy] originalTableDef
+
+    namedRolePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithNamedRole]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithNamedRole]
+
+    HH.annotate ("Named role steps: " <> show (migrationPlanStepStrings namedRolePlan))
+    migrationPlanStepStrings namedRolePlan === []
+
+    alterToPublicPlan <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPublic]
+
+    HH.annotate ("Alter to public steps: " <> show (migrationPlanStepStrings alterToPublicPlan))
+    length (AutoMigration.migrationPlanSteps alterToPublicPlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions alterToPublicPlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPublic]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_managesPoliciesWithCheckExprs :: Property.NamedDBProperty
+prop_managesPoliciesWithCheckExprs =
+  Property.singletonNamedDBProperty "Creates and alters policies with WITH CHECK expressions" $ \pool -> do
+    let
+      originalField = Orville.unboundedTextField "name"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      mkCheckPolicy literal =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          (Just . Expr.policyCheckExpr . RawSql.unsafeSqlExpression $ "(name = '" <> literal <> "'::text)")
+      tableWithAbcCheck =
+        Orville.addTablePolicies [mkCheckPolicy "abc"] originalTableDef
+      tableWithXyzCheck =
+        Orville.addTablePolicies [mkCheckPolicy "xyz"] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithAbcCheck]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithAbcCheck]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    migrationPlanStepStrings firstTimePlan === []
+
+    alterPlan <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithXyzCheck]
+
+    HH.annotate ("Alter steps: " <> show (migrationPlanStepStrings alterPlan))
+    length (AutoMigration.migrationPlanSteps alterPlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions alterPlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithXyzCheck]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_managesPoliciesWithMultipleRoles :: Property.NamedDBProperty
+prop_managesPoliciesWithMultipleRoles =
+  Property.singletonNamedDBProperty "Creates policies applying to multiple roles" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      multiRolePolicy =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          ( Just $
+              Set.fromList
+                [ Orville.PolicyRoleNamed "orville_test"
+                , Orville.PolicyRoleNamed "orville_migration_role"
+                ]
+          )
+          Nothing
+          Nothing
+      tableWithPolicy =
+        Orville.addTablePolicies [multiRolePolicy] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          -- The table (and with it any policy referencing the role) must be
+          -- dropped before the role so the role drop doesn't fail on a
+          -- dependency from a previous test run
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP ROLE IF EXISTS orville_migration_role"
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE ROLE orville_migration_role"
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    migrationPlanStepStrings firstTimePlan === []
+
+prop_managesMultiplePoliciesOnOneTable :: Property.NamedDBProperty
+prop_managesMultiplePoliciesOnOneTable =
+  Property.singletonNamedDBProperty "Creates, alters and drops multiple policies in one plan" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      mkSimplePolicy name mbUsing =
+        Orville.mkPolicyDefinition name Nothing Nothing Nothing mbUsing Nothing
+      policyToAlter = mkSimplePolicy "migration_policy_alter" Nothing
+      alteredPolicy = mkSimplePolicy "migration_policy_alter" (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr True)
+      policyToDrop = mkSimplePolicy "migration_policy_drop" Nothing
+      policyToCreate = mkSimplePolicy "migration_policy_create" Nothing
+
+      originalTable =
+        Orville.addTablePolicies [policyToAlter, policyToDrop] originalTableDef
+      newTable =
+        Orville.dropPolicies ["migration_policy_drop"] $
+          Orville.addTablePolicies [alteredPolicy, policyToCreate] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable originalTable]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTable]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    length (AutoMigration.migrationPlanSteps firstTimePlan) === 3
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable newTable]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_altersPoliciesWithQuotedIdentifiers :: Property.NamedDBProperty
+prop_altersPoliciesWithQuotedIdentifiers =
+  Property.singletonNamedDBProperty "Distinguishes quoted identifiers that differ only by case" $ \pool -> do
+    let
+      -- Two columns whose names differ only by case, both requiring quoting
+      -- in the deparsed policy expressions
+      marshaller =
+        (,)
+          <$> Orville.marshallField fst (Orville.unboundedTextField "UserId")
+          <*> Orville.marshallField snd (Orville.unboundedTextField "USERID")
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey "policy_migration_test" marshaller
+      mkIdentPolicy columnName =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          (Just . Expr.policyUsingExpr . RawSql.unsafeSqlExpression $ "(\"" <> columnName <> "\" = 'x'::text)")
+          Nothing
+      tableWithMixedCaseColumn =
+        Orville.addTablePolicies [mkIdentPolicy "UserId"] originalTableDef
+      tableWithUpperCaseColumn =
+        Orville.addTablePolicies [mkIdentPolicy "USERID"] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithMixedCaseColumn]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithMixedCaseColumn]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    migrationPlanStepStrings firstTimePlan === []
+
+    alterPlan <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUpperCaseColumn]
+
+    HH.annotate ("Alter steps: " <> show (migrationPlanStepStrings alterPlan))
+    length (AutoMigration.migrationPlanSteps alterPlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions alterPlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUpperCaseColumn]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_altersPoliciesWithEscapedQuoteLiterals :: Property.NamedDBProperty
+prop_altersPoliciesWithEscapedQuoteLiterals =
+  Property.singletonNamedDBProperty "Distinguishes literals containing escaped quotes by case" $ \pool -> do
+    let
+      originalField = Orville.unboundedTextField "name"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      -- The literals contain an escaped quote ('') followed by a letter that
+      -- differs only by case, so a comparison that mishandled the escaped
+      -- quote would treat the letter as being outside the literal and fold it
+      mkQuotePolicy literal =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          (Just . Expr.policyUsingExpr . RawSql.unsafeSqlExpression $ "(name = '" <> literal <> "'::text)")
+          Nothing
+      tableWithUppercaseLiteral =
+        Orville.addTablePolicies [mkQuotePolicy "it''S"] originalTableDef
+      tableWithLowercaseLiteral =
+        Orville.addTablePolicies [mkQuotePolicy "it''s"] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUppercaseLiteral]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithUppercaseLiteral]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    migrationPlanStepStrings firstTimePlan === []
+
+    alterPlan <-
+      HH.evalIO $
+        Orville.runOrville pool $
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithLowercaseLiteral]
+
+    HH.annotate ("Alter steps: " <> show (migrationPlanStepStrings alterPlan))
+    length (AutoMigration.migrationPlanSteps alterPlan) === 1
+
+    secondTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          AutoMigration.executeMigrationPlan AutoMigration.defaultOptions alterPlan
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithLowercaseLiteral]
+
+    HH.annotate ("Second time steps: " <> show (migrationPlanStepStrings secondTimePlan))
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_addTablePoliciesAccumulates :: Property.NamedProperty
+prop_addTablePoliciesAccumulates =
+  Property.singletonNamedProperty "addTablePolicies accumulates policies across calls, replacing by name" $ do
+    let
+      mkNamedPolicy name mbPermission =
+        Orville.mkPolicyDefinition name mbPermission Nothing Nothing Nothing Nothing
+      tableDef =
+        Orville.addTablePolicies [mkNamedPolicy "policy_one" (Just Orville.PolicyRestrictive)] $
+          Orville.addTablePolicies
+            [ mkNamedPolicy "policy_one" Nothing
+            , mkNamedPolicy "policy_two" Nothing
+            ]
+            ( Orville.mkTableDefinitionWithoutKey
+                "policy_migration_test"
+                (Orville.marshallField id (Orville.integerField "column"))
+            )
+      policies = Orville.tablePolicies tableDef
+
+    Map.keys policies === ["policy_one", "policy_two"]
+    fmap Orville.policyDefinitionPermission (Map.lookup "policy_one" policies) === Just Orville.PolicyRestrictive
+    fmap Orville.policyDefinitionPermission (Map.lookup "policy_two" policies) === Just Orville.PolicyPermissive
 
 prop_loadsMissingExtensions :: Property.NamedDBProperty
 prop_loadsMissingExtensions =

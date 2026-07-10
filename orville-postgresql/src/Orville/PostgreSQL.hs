@@ -399,8 +399,13 @@ module Orville.PostgreSQL
 
     -- * Functions for defining and working with policies
   , PolicyDefinition.PolicyDefinition
+  , PolicyDefinition.PolicyPermission (PolicyPermissive, PolicyRestrictive)
+  , PolicyDefinition.PolicyCommand (PolicyCommandAll, PolicyCommandSelect, PolicyCommandInsert, PolicyCommandUpdate, PolicyCommandDelete)
+  , PolicyDefinition.PolicyRole (PolicyRolePublic, PolicyRoleCurrentRole, PolicyRoleCurrentUser, PolicyRoleSessionUser, PolicyRoleNamed)
   , PolicyDefinition.mkPolicyDefinition
   , PolicyDefinition.policyDefinitionPolicyName
+  , PolicyDefinition.policyDefinitionPermission
+  , PolicyDefinition.policyDefinitionCommand
   , PolicyDefinition.policyDefinitionPolicyRoles
   , PolicyDefinition.policyDefinitionUsingExpr
   , PolicyDefinition.policyDefinitionCheckExpr

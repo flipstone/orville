@@ -27,6 +27,7 @@ import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
 import qualified Test.Expr.Join as ExprJoin
 import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
+import qualified Test.Expr.Policy as ExprPolicy
 import qualified Test.Expr.SequenceDefinition as ExprSequenceDefinition
 import qualified Test.Expr.TableDefinition as ExprTableDefinition
 import qualified Test.Expr.TableReferenceList as ExprTableReferenceList
@@ -78,6 +79,7 @@ main = do
       , ExprMath.mathTests pool
       , ExprTime.timeTests pool
       , ExprTrigger.triggerTests pool
+      , ExprPolicy.policyTests pool
       , ExprVacuum.vacuumTests
       , ExprJoin.joinTests
       , ExprTableReferenceList.tableReferenceListTests

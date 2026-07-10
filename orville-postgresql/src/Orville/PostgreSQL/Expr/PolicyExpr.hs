@@ -11,6 +11,8 @@ module Orville.PostgreSQL.Expr.PolicyExpr
   ( module Export
   ) where
 
-import Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr as Export
+-- The compare functions are internal helpers and are deliberately excluded
+-- from the public re-export.
+import Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr as Export hiding (comparePolicyCheckExpr, comparePolicyUsingExpr)
 import Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr as Export
 import Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole as Export

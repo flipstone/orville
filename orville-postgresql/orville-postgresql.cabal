@@ -237,6 +237,7 @@ test-suite spec
       Test.Expr.Join
       Test.Expr.Math
       Test.Expr.OrderBy
+      Test.Expr.Policy
       Test.Expr.SequenceDefinition
       Test.Expr.TableDefinition
       Test.Expr.TableReferenceList

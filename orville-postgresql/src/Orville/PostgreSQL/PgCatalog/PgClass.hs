@@ -16,6 +16,7 @@ module Orville.PostgreSQL.PgCatalog.PgClass
   , relationNameField
   , namespaceOidField
   , relationKindField
+  , relationRowSecurityField
   )
 where
 
@@ -43,6 +44,8 @@ data PgClass = PgClass
   -- ^ The name of the relation.
   , pgClassRelationKind :: RelationKind
   -- ^ The kind of relation (table, view, etc).
+  , pgClassRowSecurity :: Bool
+  -- ^ Whether row-level security is enabled for the relation.
   }
 
 {- | A Haskell type for the name of the relation represented by a 'PgClass'.
@@ -113,6 +116,7 @@ pgClassMarshaller =
     <*> Orville.marshallField pgClassNamespaceOid namespaceOidField
     <*> Orville.marshallField pgClassRelationName relationNameField
     <*> Orville.marshallField pgClassRelationKind relationKindField
+    <*> Orville.marshallField pgClassRowSecurity relationRowSecurityField
 
 {- | The @relnamespace@ column of the @pg_catalog.pg_class@ table.
 
@@ -130,6 +134,14 @@ relationNameField :: Orville.FieldDefinition Orville.NotNull RelationName
 relationNameField =
   Orville.coerceField $
     Orville.unboundedTextField "relname"
+
+{- | The @relrowsecurity@ column of the @pg_catalog.pg_class@ table.
+
+@since 1.2.0.0
+-}
+relationRowSecurityField :: Orville.FieldDefinition Orville.NotNull Bool
+relationRowSecurityField =
+  Orville.booleanField "relrowsecurity"
 
 {- | The @relkind@ column of the @pg_catalog.pg_class@ table.
 

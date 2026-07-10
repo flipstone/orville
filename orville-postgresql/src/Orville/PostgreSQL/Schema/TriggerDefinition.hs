@@ -25,7 +25,7 @@ import qualified Orville.PostgreSQL.Expr as Expr
 
 {- | Defines a trigger that can be added to a
   'Orville.PostgreSQL.TableDefinition'. Use one of the constructor functions
-  below (such as 'mkNamedTriggerDefinition') to construct the constraint
+  below (such as 'mkNamedTriggerDefinition') to construct the trigger
   definition you wish to have and then use 'Orville.PostgreSQL.addTableTriggers'
   to add them to your table definition. Orville will then add the trigger next
   time you run auto-migrations.

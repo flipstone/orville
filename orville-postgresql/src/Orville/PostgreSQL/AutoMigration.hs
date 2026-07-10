@@ -54,6 +54,7 @@ import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.Internal.Extra.NonEmpty as ExtraNonEmpty
 import qualified Orville.PostgreSQL.Internal.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Internal.MigrationLock as MigrationLock
 import qualified Orville.PostgreSQL.Marshall as Marshall
@@ -503,7 +504,7 @@ executeMigrationStepsWithoutTransaction =
 calculateMigrationSteps ::
   PgCatalog.NamespaceName ->
   PgCatalog.DatabaseDescription ->
-  Map.Map Orville.TableIdentifier (Set.Set Schema.PolicyDefinition) ->
+  Map.Map Orville.TableIdentifier (Map.Map String Schema.PolicyDefinition) ->
   SchemaItem ->
   Either MigrationDataError [MigrationStepWithType]
 calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
@@ -528,12 +529,10 @@ calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
             tableIdToPgCatalogNames currentNamespace tableId
 
           qualifiedTableId = setSchemaNameOnTableId currentNamespace tableId
-          existing = Maybe.fromMaybe Set.empty $ Map.lookup qualifiedTableId existingPolicies
+          existing = Map.findWithDefault Map.empty qualifiedTableId existingPolicies
 
-          dropPolicySteps =
-            [ mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr qualifiedTableId pd)
-            | pd <- Set.toList existing
-            ]
+          dropPolicySteps = fmap mkStep $ Map.elems existing
+          mkStep pd = mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr qualifiedTableId pd)
         in
           case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
             Nothing ->
@@ -700,15 +699,16 @@ mkCreateTableSteps currentNamespace tableDef =
     desiredPolicies = Orville.tablePolicies tableDef
     wantsRLS = Orville.tableRowLevelSecurity tableDef
 
+    -- Enable RLS whenever the table definition asks for it, regardless of
+    -- whether any policies are defined. A freshly created table always
+    -- starts with RLS disabled, so no disable step is ever needed here.
     enableRLSSteps =
-      if wantsRLS && not (Set.null desiredPolicies)
+      if wantsRLS
         then [mkMigrationStepWithType AddPolicyDefinitions (Expr.enableRowLevelSecurityExpr tableName)]
         else []
 
-    addPolicySteps =
-      [ mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
-      | pd <- Set.toList desiredPolicies
-      ]
+    addPolicySteps = fmap mkStep $ Map.elems desiredPolicies
+    mkStep pd = mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
   in
     mkMigrationStepWithType AddRemoveTablesAndColumns createTableExpr
       : mkConstraintSteps tableName addConstraintActions
@@ -772,7 +772,7 @@ mkCreateTableCommentSteps tableDef =
 -}
 mkAlterTableSteps ::
   PgCatalog.NamespaceName ->
-  Map.Map Orville.TableIdentifier (Set.Set Schema.PolicyDefinition) ->
+  Map.Map Orville.TableIdentifier (Map.Map String Schema.PolicyDefinition) ->
   PgCatalog.RelationDescription ->
   Orville.TableDefinition key writeEntity readEntity ->
   [MigrationStepWithType]
@@ -873,37 +873,67 @@ mkAlterTableSteps currentNamespace existingPolicies relationDesc tableDef =
 
     desiredPolicies = Orville.tablePolicies tableDef
     polsToDrop = Orville.policiesToDrop tableDef
-    existing = Maybe.fromMaybe Set.empty $ Map.lookup tableId existingPolicies
-    existingByName = Map.fromList [(Schema.policyDefinitionPolicyName pd, pd) | pd <- Set.toList existing]
+    existing = Map.findWithDefault Map.empty tableId existingPolicies
     wantsRLS = Orville.tableRowLevelSecurity tableDef
+
+    -- Policies that exist under both names, paired for comparison
+    matchedPolicies = Map.elems $ Map.intersectionWith (,) existing desiredPolicies
 
     -- Create policies that don't exist yet
     createPolicySteps =
-      [ mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
-      | pd <- Set.toList desiredPolicies
-      , not $ Map.member (Schema.policyDefinitionPolicyName pd) existingByName
-      ]
+      fmap
+        (mkMigrationStepWithType AddPolicyDefinitions . Schema.mkCreatePolicyExpr tableId)
+        (Map.elems $ Map.difference desiredPolicies existing)
+
+    -- ALTER POLICY cannot change whether a policy is permissive or
+    -- restrictive, nor the command it applies to, so policies where either
+    -- changed must be dropped and recreated instead of altered
+    requiresRecreate existingPd desiredPd =
+      Schema.policyDefinitionPermission existingPd /= Schema.policyDefinitionPermission desiredPd
+        || Schema.policyDefinitionCommand existingPd /= Schema.policyDefinitionCommand desiredPd
 
     -- Alter policies that exist but have changed
     alterPolicySteps =
       [ mkMigrationStepWithType AddPolicyDefinitions (Schema.mkAlterPolicyExpr tableId desiredPd)
-      | desiredPd <- Set.toList desiredPolicies
-      , Just existingPd <- [Map.lookup (Schema.policyDefinitionPolicyName desiredPd) existingByName]
+      | (existingPd, desiredPd) <- matchedPolicies
       , existingPd /= desiredPd
+      , not (requiresRecreate existingPd desiredPd)
       ]
+
+    -- Recreate policies whose permissive/restrictive setting or command has
+    -- changed
+    recreatePolicySteps =
+      concat
+        [ [ mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr tableId existingPd)
+          , mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId desiredPd)
+          ]
+        | (existingPd, desiredPd) <- matchedPolicies
+        , requiresRecreate existingPd desiredPd
+        ]
 
     -- Drop policies that are explicitly marked for dropping
     dropPolicySteps =
       [ mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr tableId existingPd)
-      | existingPd <- Set.toList existing
+      | existingPd <- Map.elems existing
       , Set.member (Schema.policyDefinitionPolicyName existingPd) polsToDrop
       ]
 
-    -- Enable RLS if the table should have it and we're adding new policies
-    enableRLSSteps =
-      if wantsRLS && not (null createPolicySteps)
-        then [mkMigrationStepWithType AddPolicyDefinitions (Expr.enableRowLevelSecurityExpr tableName)]
-        else []
+    -- Enable or disable RLS so that the table matches the table definition,
+    -- regardless of whether any policies are being created, altered or
+    -- dropped. When the table's current setting already matches, no step is
+    -- emitted; in particular no DISABLE statement is issued for tables that
+    -- already have RLS disabled.
+    rlsCurrentlyEnabled =
+      PgCatalog.pgClassRowSecurity (PgCatalog.relationRecord relationDesc)
+
+    rowLevelSecuritySteps =
+      case (wantsRLS, rlsCurrentlyEnabled) of
+        (True, False) ->
+          [mkMigrationStepWithType AddPolicyDefinitions (Expr.enableRowLevelSecurityExpr tableName)]
+        (False, True) ->
+          [mkMigrationStepWithType DropPolicyDefinitions (Expr.disableRowLevelSecurityExpr tableName)]
+        _ ->
+          []
 
     tableName =
       Orville.tableName tableDef
@@ -916,9 +946,10 @@ mkAlterTableSteps currentNamespace existingPolicies relationDesc tableDef =
       <> dropTriggerSteps
       <> commentSteps
       <> dropPolicySteps
-      <> enableRLSSteps
+      <> rowLevelSecuritySteps
       <> createPolicySteps
       <> alterPolicySteps
+      <> recreatePolicySteps
 
 {- | Consolidates alter table actions (which should all be related to adding and
   dropping constraints) into migration steps based on their 'StepType'. Actions
@@ -1757,6 +1788,8 @@ data PgPolicyRow = PgPolicyRow
   { pgPolicySchemaName :: T.Text
   , pgPolicyTableName :: T.Text
   , pgPolicyPolicyName :: T.Text
+  , pgPolicyPermissive :: T.Text
+  , pgPolicyCmd :: T.Text
   , pgPolicyRoles :: T.Text
   , pgPolicyQual :: Maybe T.Text
   , pgPolicyWithCheck :: Maybe T.Text
@@ -1768,6 +1801,8 @@ pgPolicyMarshaller =
     <$> Orville.marshallReadOnlyField pgPolicySchemaNameField
     <*> Orville.marshallReadOnlyField pgPolicyTableNameField
     <*> Orville.marshallReadOnlyField pgPolicyPolicyNameField
+    <*> Orville.marshallReadOnlyField pgPolicyPermissiveField
+    <*> Orville.marshallReadOnlyField pgPolicyCmdField
     <*> Orville.marshallReadOnlyField pgPolicyRolesField
     <*> Orville.marshallReadOnlyField pgPolicyQualField
     <*> Orville.marshallReadOnlyField pgPolicyWithCheckField
@@ -1780,6 +1815,12 @@ pgPolicyTableNameField = Orville.unboundedTextField "tablename"
 
 pgPolicyPolicyNameField :: Orville.FieldDefinition Orville.NotNull T.Text
 pgPolicyPolicyNameField = Orville.unboundedTextField "policyname"
+
+pgPolicyPermissiveField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyPermissiveField = Orville.unboundedTextField "permissive"
+
+pgPolicyCmdField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyCmdField = Orville.unboundedTextField "cmd"
 
 pgPolicyRolesField :: Orville.FieldDefinition Orville.NotNull T.Text
 pgPolicyRolesField = Orville.unboundedTextField "roles"
@@ -1802,71 +1843,91 @@ pgPolicyToDefinition row =
     rawRoles = pgPolicyRoles row
     strippedRoles = T.dropWhile (== '{') . T.dropWhileEnd (== '}') $ rawRoles
     rolesList = T.splitOn (T.pack ",") strippedRoles
-    roles = Set.fromList . fmap T.unpack $ rolesList
 
-    -- If the only role is "public", this means no specific roles were set
-    mbRoles =
-      if roles == Set.singleton "public"
-        then Nothing
-        else Just roles
+    -- PostgreSQL reports policies with no specific roles as applying to
+    -- "public". CURRENT_ROLE, CURRENT_USER and SESSION_USER never appear
+    -- here because PostgreSQL resolves them to concrete roles when the
+    -- policy is created.
+    parseRole roleText =
+      if roleText == T.pack "public"
+        then Schema.PolicyRolePublic
+        else Schema.PolicyRoleNamed (T.unpack roleText)
 
+    roles = Set.fromList . fmap parseRole $ rolesList
+
+    -- The parenthesization matches what 'Expr.policyUsingExpr' and
+    -- 'Expr.policyCheckExpr' produce so the expressions compare consistently
     mbUsing =
-      fmap (RawSql.unsafeSqlExpression . (\s -> "(" <> s <> ")") . T.unpack) $ pgPolicyQual row
+      fmap (RawSql.unsafeFromRawSql . RawSql.parenthesized . RawSql.fromText) $ pgPolicyQual row
 
     mbCheck =
-      fmap (RawSql.unsafeSqlExpression . (\s -> "(" <> s <> ")") . T.unpack) $ pgPolicyWithCheck row
+      fmap (RawSql.unsafeFromRawSql . RawSql.parenthesized . RawSql.fromText) $ pgPolicyWithCheck row
+
+    -- pg_policies.permissive contains either 'PERMISSIVE' or 'RESTRICTIVE'
+    permission =
+      if T.toUpper (pgPolicyPermissive row) == T.pack "RESTRICTIVE"
+        then Schema.PolicyRestrictive
+        else Schema.PolicyPermissive
+
+    -- pg_policies.cmd contains 'ALL', 'SELECT', 'INSERT', 'UPDATE' or 'DELETE'
+    command =
+      case T.unpack (T.toUpper (pgPolicyCmd row)) of
+        "SELECT" -> Schema.PolicyCommandSelect
+        "INSERT" -> Schema.PolicyCommandInsert
+        "UPDATE" -> Schema.PolicyCommandUpdate
+        "DELETE" -> Schema.PolicyCommandDelete
+        _ -> Schema.PolicyCommandAll
   in
     Schema.mkPolicyDefinition
       (T.unpack $ pgPolicyPolicyName row)
-      mbRoles
+      (Just permission)
+      (Just command)
+      (Just roles)
       mbUsing
       mbCheck
 
--- | Query existing policies for all tables mentioned in the schema items
+{- | Query existing policies for all tables mentioned in the schema items,
+matching each table in the schema it belongs to (either the schema
+explicitly set on the table or the current namespace)
+-}
 queryExistingPolicies ::
   Orville.MonadOrville m =>
   PgCatalog.NamespaceName ->
   [SchemaItem] ->
-  m (Map.Map Orville.TableIdentifier (Set.Set Schema.PolicyDefinition))
+  m (Map.Map Orville.TableIdentifier (Map.Map String Schema.PolicyDefinition))
 queryExistingPolicies currentNamespace schemaItems =
   let
-    getTableName item =
+    getPgCatalogNames item =
       case item of
         SchemaTable tableDef ->
-          Just . T.pack . Orville.tableIdUnqualifiedNameString . Orville.tableIdentifier $ tableDef
+          Just . tableIdToPgCatalogNames currentNamespace . Orville.tableIdentifier $ tableDef
         SchemaDropTable tableId ->
-          Just . T.pack . Orville.tableIdUnqualifiedNameString $ tableId
+          Just $ tableIdToPgCatalogNames currentNamespace tableId
         _ -> Nothing
 
-    tableNames = Maybe.mapMaybe getTableName schemaItems
+    tableCondition (schemaName, tableName) =
+      Orville.fieldEquals pgPolicySchemaNameField (T.pack $ PgCatalog.namespaceNameToString schemaName)
+        `Orville.andExpr` Orville.fieldEquals pgPolicyTableNameField (T.pack $ PgCatalog.relationNameToString tableName)
+
+    policyMapEntry row =
+      let
+        policyDef = pgPolicyToDefinition row
+      in
+        ( Orville.setTableIdSchema (T.unpack $ pgPolicySchemaName row) $
+            Orville.unqualifiedNameToTableId (T.unpack $ pgPolicyTableName row)
+        , Map.singleton (Schema.policyDefinitionPolicyName policyDef) policyDef
+        )
   in
-    case tableNames of
-      [] -> pure Map.empty
-      (firstName : restNames) -> do
+    case nonEmpty (Maybe.mapMaybe getPgCatalogNames schemaItems) of
+      Nothing -> pure Map.empty
+      Just tableCatalogNames -> do
         let
-          nonEmptyTableNames = firstName :| restNames
-          schemaNameStr = PgCatalog.namespaceNameToString currentNamespace
           whereCondition =
-            Orville.fieldIn pgPolicyTableNameField nonEmptyTableNames
-              `Orville.andExpr` Orville.fieldEquals pgPolicySchemaNameField (T.pack schemaNameStr)
+            ExtraNonEmpty.foldl1' Orville.orExpr $
+              fmap tableCondition tableCatalogNames
 
         pgPolicies <- Orville.findEntitiesBy pgPoliciesTable (Orville.where_ whereCondition)
-        pure $
-          foldl
-            ( \acc row ->
-                let
-                  tableId =
-                    Orville.setTableIdSchema (T.unpack $ pgPolicySchemaName row) $
-                      Orville.unqualifiedNameToTableId (T.unpack $ pgPolicyTableName row)
-                in
-                  Map.insertWith
-                    (<>)
-                    tableId
-                    (Set.singleton $ pgPolicyToDefinition row)
-                    acc
-            )
-            Map.empty
-            pgPolicies
+        pure . Map.fromListWith (<>) . fmap policyMapEntry $ pgPolicies
 
 -- | Sets the schema name on a table identifier if it doesn't already have one
 setSchemaNameOnTableId :: PgCatalog.NamespaceName -> Orville.TableIdentifier -> Orville.TableIdentifier
