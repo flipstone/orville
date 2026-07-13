@@ -38,9 +38,11 @@ module Orville.PostgreSQL.AutoMigration
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Exception.Safe (Exception, throwIO)
 import Control.Monad (guard, when)
 import Control.Monad.IO.Class (liftIO)
+import qualified Data.Attoparsec.Text as AttoText
 import Data.Foldable (traverse_)
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
@@ -1790,7 +1792,7 @@ data PgPolicyRow = PgPolicyRow
   , pgPolicyPolicyName :: T.Text
   , pgPolicyPermissive :: T.Text
   , pgPolicyCmd :: T.Text
-  , pgPolicyRoles :: T.Text
+  , pgPolicyRoles :: [T.Text]
   , pgPolicyQual :: Maybe T.Text
   , pgPolicyWithCheck :: Maybe T.Text
   }
@@ -1822,8 +1824,67 @@ pgPolicyPermissiveField = Orville.unboundedTextField "permissive"
 pgPolicyCmdField :: Orville.FieldDefinition Orville.NotNull T.Text
 pgPolicyCmdField = Orville.unboundedTextField "cmd"
 
-pgPolicyRolesField :: Orville.FieldDefinition Orville.NotNull T.Text
-pgPolicyRolesField = Orville.unboundedTextField "roles"
+-- pg_policies.roles is a name[] column, marshalled via its text
+-- representation
+pgPolicyRolesField :: Orville.FieldDefinition Orville.NotNull [T.Text]
+pgPolicyRolesField =
+  Orville.convertField
+    (Orville.tryConvertSqlType nameListToPgArrayText pgArrayTextToNameList)
+    (Orville.unboundedTextField "roles")
+
+{- | Parses the text representation of a PostgreSQL array of names (e.g. the
+  @roles@ column of @pg_policies@) into its elements. PostgreSQL renders
+  elements containing special characters (commas, braces, quotes, backslashes,
+  whitespace) double-quoted, using backslash escapes for quotes and
+  backslashes within them.
+-}
+pgArrayTextToNameList :: T.Text -> Either String [T.Text]
+pgArrayTextToNameList text =
+  let
+    quotedChunk =
+      AttoText.takeWhile1 (\c -> c /= '"' && c /= '\\')
+        <|> (AttoText.char '\\' *> (T.singleton <$> AttoText.anyChar))
+
+    quotedElement = do
+      _ <- AttoText.char '"'
+      chunks <- AttoText.many' quotedChunk
+      _ <- AttoText.char '"'
+      pure (T.concat chunks)
+
+    unquotedElement =
+      AttoText.takeWhile1 (\c -> c /= ',' && c /= '{' && c /= '}' && c /= '"' && c /= '\\')
+
+    element = quotedElement <|> unquotedElement
+
+    parser = do
+      _ <- AttoText.char '{'
+      elements <- AttoText.sepBy element (AttoText.char ',')
+      _ <- AttoText.char '}'
+      AttoText.endOfInput
+      pure elements
+  in
+    case AttoText.parseOnly parser text of
+      Left err -> Left ("Unable to decode PostgreSQL array as name list: " <> err)
+      Right names -> Right names
+
+{- | Renders a list of names in PostgreSQL's array text syntax. Every element
+  is rendered double-quoted, which is valid regardless of its content, with
+  quotes and backslashes escaped. This is the inverse of
+  'pgArrayTextToNameList'.
+-}
+nameListToPgArrayText :: [T.Text] -> T.Text
+nameListToPgArrayText names =
+  let
+    escapeChar c =
+      case c of
+        '"' -> T.pack "\\\""
+        '\\' -> T.pack "\\\\"
+        _ -> T.singleton c
+
+    quoteName name =
+      T.pack "\"" <> T.concatMap escapeChar name <> T.pack "\""
+  in
+    T.pack "{" <> T.intercalate (T.pack ",") (fmap quoteName names) <> T.pack "}"
 
 pgPolicyQualField :: Orville.FieldDefinition Orville.Nullable (Maybe T.Text)
 pgPolicyQualField = Orville.nullableField $ Orville.unboundedTextField "qual"
@@ -1839,11 +1900,6 @@ pgPoliciesTable =
 pgPolicyToDefinition :: PgPolicyRow -> Schema.PolicyDefinition
 pgPolicyToDefinition row =
   let
-    -- pg_policies.roles is a name[] column represented as text like "{role1,role2}"
-    rawRoles = pgPolicyRoles row
-    strippedRoles = T.dropWhile (== '{') . T.dropWhileEnd (== '}') $ rawRoles
-    rolesList = T.splitOn (T.pack ",") strippedRoles
-
     -- PostgreSQL reports policies with no specific roles as applying to
     -- "public". CURRENT_ROLE, CURRENT_USER and SESSION_USER never appear
     -- here because PostgreSQL resolves them to concrete roles when the
@@ -1853,7 +1909,7 @@ pgPolicyToDefinition row =
         then Schema.PolicyRolePublic
         else Schema.PolicyRoleNamed (T.unpack roleText)
 
-    roles = Set.fromList . fmap parseRole $ rolesList
+    roles = Set.fromList . fmap parseRole $ pgPolicyRoles row
 
     -- The parenthesization matches what 'Expr.policyUsingExpr' and
     -- 'Expr.policyCheckExpr' produce so the expressions compare consistently

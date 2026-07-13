@@ -73,6 +73,9 @@ library:
     - Orville.PostgreSQL.Expr.OrReplace
     - Orville.PostgreSQL.Expr.OrderBy
     - Orville.PostgreSQL.Expr.PolicyExpr
+    - Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
+    - Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr
+    - Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole
     - Orville.PostgreSQL.Expr.Query
     - Orville.PostgreSQL.Expr.ReturningExpr
     - Orville.PostgreSQL.Expr.RowLocking

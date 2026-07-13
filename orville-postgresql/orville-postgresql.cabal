@@ -77,6 +77,9 @@ library
       Orville.PostgreSQL.Expr.OrReplace
       Orville.PostgreSQL.Expr.OrderBy
       Orville.PostgreSQL.Expr.PolicyExpr
+      Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
+      Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr
+      Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole
       Orville.PostgreSQL.Expr.Query
       Orville.PostgreSQL.Expr.ReturningExpr
       Orville.PostgreSQL.Expr.RowLocking
@@ -156,9 +159,6 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
-      Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
-      Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr
-      Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole
       Orville.PostgreSQL.Internal.Bracket
       Orville.PostgreSQL.Internal.Extra.NonEmpty
       Orville.PostgreSQL.Internal.FieldName

@@ -91,6 +91,7 @@ autoMigrationTests pool =
     , prop_managesPolicyRoleTargets pool
     , prop_managesPoliciesWithCheckExprs pool
     , prop_managesPoliciesWithMultipleRoles pool
+    , prop_managesPoliciesWithQuotedRoleNames pool
     , prop_managesMultiplePoliciesOnOneTable pool
     , prop_altersPoliciesWithQuotedIdentifiers pool
     , prop_altersPoliciesWithEscapedQuoteLiterals pool
@@ -2034,6 +2035,50 @@ prop_managesPoliciesWithMultipleRoles =
           Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
           Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP ROLE IF EXISTS orville_migration_role"
           Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE ROLE orville_migration_role"
+          AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+          AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
+
+    HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
+    migrationPlanStepStrings firstTimePlan === []
+
+prop_managesPoliciesWithQuotedRoleNames :: Property.NamedDBProperty
+prop_managesPoliciesWithQuotedRoleNames =
+  Property.singletonNamedDBProperty "Parses policy role names containing special characters" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      -- The double quote, comma and spaces force PostgreSQL to render this
+      -- role quoted and escaped in the pg_policies roles array, alongside the
+      -- unquoted orville_test element
+      weirdRoleName = "orville \"quoted\", role"
+      quotedRolePolicy =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          ( Just $
+              Set.fromList
+                [ Orville.PolicyRoleNamed weirdRoleName
+                , Orville.PolicyRoleNamed "orville_test"
+                ]
+          )
+          Nothing
+          Nothing
+      tableWithPolicy =
+        Orville.addTablePolicies [quotedRolePolicy] originalTableDef
+
+    firstTimePlan <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          -- The table (and with it any policy referencing the role) must be
+          -- dropped before the role so the role drop doesn't fail on a
+          -- dependency from a previous test run
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP ROLE IF EXISTS \"orville \"\"quoted\"\", role\""
+          Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE ROLE \"orville \"\"quoted\"\", role\""
           AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithPolicy]
 
