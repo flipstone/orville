@@ -2195,6 +2195,8 @@ prop_addTablePoliciesAccumulates =
         Orville.addTablePolicies [mkNamedPolicy "policy_one" (Just Orville.PolicyRestrictive)] $
           Orville.addTablePolicies
             [ mkNamedPolicy "policy_one" Nothing
+            , -- Duplicate names within a single call: the later list element wins
+              mkNamedPolicy "policy_two" (Just Orville.PolicyRestrictive)
             , mkNamedPolicy "policy_two" Nothing
             ]
             ( Orville.mkTableDefinitionWithoutKey

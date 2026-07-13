@@ -76,6 +76,7 @@ library
       Orville.PostgreSQL.Expr.OnConflict
       Orville.PostgreSQL.Expr.OrReplace
       Orville.PostgreSQL.Expr.OrderBy
+      Orville.PostgreSQL.Expr.PolicyExpr
       Orville.PostgreSQL.Expr.Query
       Orville.PostgreSQL.Expr.ReturningExpr
       Orville.PostgreSQL.Expr.RowLocking
@@ -130,6 +131,7 @@ library
       Orville.PostgreSQL.Schema.FunctionDefinition
       Orville.PostgreSQL.Schema.FunctionIdentifier
       Orville.PostgreSQL.Schema.IndexDefinition
+      Orville.PostgreSQL.Schema.PolicyDefinition
       Orville.PostgreSQL.Schema.PrimaryKey
       Orville.PostgreSQL.Schema.SequenceDefinition
       Orville.PostgreSQL.Schema.SequenceIdentifier
@@ -154,7 +156,6 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.TableName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
-      Orville.PostgreSQL.Expr.PolicyExpr
       Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
       Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr
       Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole
@@ -181,7 +182,6 @@ library
       Orville.PostgreSQL.PgCatalog.PgSequence
       Orville.PostgreSQL.PgCatalog.PgTrigger
       Orville.PostgreSQL.Schema.ConstraintIdentifier
-      Orville.PostgreSQL.Schema.PolicyDefinition
       Paths_orville_postgresql
   hs-source-dirs:
       src

@@ -45,6 +45,7 @@ import Orville.PostgreSQL.Schema.ExtensionIdentifier
 import Orville.PostgreSQL.Schema.FunctionDefinition
 import Orville.PostgreSQL.Schema.FunctionIdentifier
 import Orville.PostgreSQL.Schema.IndexDefinition
+
 import Orville.PostgreSQL.Schema.PolicyDefinition
 import Orville.PostgreSQL.Schema.PrimaryKey
 import Orville.PostgreSQL.Schema.SequenceDefinition

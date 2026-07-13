@@ -72,6 +72,7 @@ library:
     - Orville.PostgreSQL.Expr.OnConflict
     - Orville.PostgreSQL.Expr.OrReplace
     - Orville.PostgreSQL.Expr.OrderBy
+    - Orville.PostgreSQL.Expr.PolicyExpr
     - Orville.PostgreSQL.Expr.Query
     - Orville.PostgreSQL.Expr.ReturningExpr
     - Orville.PostgreSQL.Expr.RowLocking
@@ -126,6 +127,7 @@ library:
     - Orville.PostgreSQL.Schema.FunctionDefinition
     - Orville.PostgreSQL.Schema.FunctionIdentifier
     - Orville.PostgreSQL.Schema.IndexDefinition
+    - Orville.PostgreSQL.Schema.PolicyDefinition
     - Orville.PostgreSQL.Schema.PrimaryKey
     - Orville.PostgreSQL.Schema.SequenceDefinition
     - Orville.PostgreSQL.Schema.SequenceIdentifier

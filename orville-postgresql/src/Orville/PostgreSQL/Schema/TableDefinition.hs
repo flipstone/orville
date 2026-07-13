@@ -47,6 +47,7 @@ module Orville.PostgreSQL.Schema.TableDefinition
   )
 where
 
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -318,6 +319,11 @@ tableConstraintsFromMarshaller =
   added will be part of the 'TableDefinition'. Any previously-added constraint
   with the same key is replaced by the new one.
 
+  Note: Versions prior to 1.2.0.0 had a bug where, when a single call included
+  multiple constraints with the same key, the first one in the list was kept
+  rather than the last. As of 1.2.0.0 the last one is kept, as described
+  above.
+
 @since 1.0.0.0
 -}
 addTableConstraints ::
@@ -325,13 +331,17 @@ addTableConstraints ::
   TableDefinition key writeEntity readEntity ->
   TableDefinition key writeEntity readEntity
 addTableConstraints constraintDefs tableDef =
-  tableDef
-    { i_tableConstraintsFromTable =
-        foldr
-          addConstraint
-          (i_tableConstraintsFromTable tableDef)
-          constraintDefs
-    }
+  let
+    addTableConstraint constraints constraintDef =
+      addConstraint constraintDef constraints
+  in
+    tableDef
+      { i_tableConstraintsFromTable =
+          List.foldl'
+            addTableConstraint
+            (i_tableConstraintsFromTable tableDef)
+            constraintDefs
+      }
 
 {- | Retrieves all the table indexes that have been added to the table via
   'addTableIndexes'.
@@ -350,6 +360,11 @@ tableIndexes =
   the last one that is added will be part of the 'TableDefinition'. Any
   previously-added index with the same key is replaced by the new one.
 
+  Note: Versions prior to 1.2.0.0 had a bug where, when a single call included
+  multiple indexes with the same key, the first one in the list was kept
+  rather than the last. As of 1.2.0.0 the last one is kept, as described
+  above.
+
 @since 1.0.0.0
 -}
 addTableIndexes ::
@@ -358,11 +373,11 @@ addTableIndexes ::
   TableDefinition key writeEntity readEntity
 addTableIndexes indexDefs tableDef =
   let
-    addIndex index =
-      Map.insert (indexMigrationKey index) index
+    addIndex indexes index =
+      Map.insert (indexMigrationKey index) index indexes
   in
     tableDef
-      { i_tableIndexes = foldr addIndex (i_tableIndexes tableDef) indexDefs
+      { i_tableIndexes = List.foldl' addIndex (i_tableIndexes tableDef) indexDefs
       }
 
 {- | Retrieves all the table indexes that have been added to the table via
@@ -382,6 +397,11 @@ tableTriggers =
   the last one that is added will be part of the 'TableDefinition'. Any
   previously-added trigger with the same key is replaced by the new one.
 
+  Note: Versions prior to 1.2.0.0 had a bug where, when a single call included
+  multiple triggers with the same name, the first one in the list was kept
+  rather than the last. As of 1.2.0.0 the last one is kept, as described
+  above.
+
   Also Note: Orville does not currently support migrating triggers based on
   their definition structure. If a trigger with the same name already exists
   on the table at the time of migration nothing will be done to updated it.
@@ -396,11 +416,11 @@ addTableTriggers ::
   TableDefinition key writeEntity readEntity
 addTableTriggers triggerDefs tableDef =
   let
-    addTrigger trigger =
-      Map.insert (triggerMigrationKey trigger) trigger
+    addTrigger triggers trigger =
+      Map.insert (triggerMigrationKey trigger) trigger triggers
   in
     tableDef
-      { i_tableTriggers = foldr addTrigger (i_tableTriggers tableDef) triggerDefs
+      { i_tableTriggers = List.foldl' addTrigger (i_tableTriggers tableDef) triggerDefs
       }
 
 {- | Returns the primary key for the table, as defined at construction via
@@ -684,11 +704,11 @@ addTablePolicies ::
   TableDefinition key writeEntity readEntity
 addTablePolicies policyDefs tableDef =
   let
-    addPolicy policyDef =
-      Map.insert (policyDefinitionPolicyName policyDef) policyDef
+    addPolicy policyMap policyDef =
+      Map.insert (policyDefinitionPolicyName policyDef) policyDef policyMap
   in
     tableDef
-      { i_tablePolicyDefinitions = foldr addPolicy (i_tablePolicyDefinitions tableDef) policyDefs
+      { i_tablePolicyDefinitions = List.foldl' addPolicy (i_tablePolicyDefinitions tableDef) policyDefs
       }
 
 {- | Annotates a 'TableDefinition' with a direction to drop policies if they are
