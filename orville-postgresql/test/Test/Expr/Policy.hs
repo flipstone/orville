@@ -47,8 +47,8 @@ prop_createPolicyWithAllClauses =
           findTestPolicies
 
     fmap PgCatalog.pgPolicyPolicyName policies === [T.pack "expr_test_policy"]
-    fmap PgCatalog.pgPolicyPermissive policies === [T.pack "RESTRICTIVE"]
-    fmap PgCatalog.pgPolicyCmd policies === [T.pack "UPDATE"]
+    fmap PgCatalog.pgPolicyPermissive policies === [Orville.PolicyRestrictive]
+    fmap PgCatalog.pgPolicyCmd policies === [Orville.PolicyCommandUpdate]
     fmap PgCatalog.pgPolicyRoles policies === [[T.pack "orville_test"]]
 
 prop_specialRoleTargets :: Property.NamedDBProperty

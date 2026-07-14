@@ -1863,26 +1863,11 @@ pgPolicyToDefinition row =
 
     mbCheck =
       fmap (RawSql.unsafeFromRawSql . RawSql.parenthesized . RawSql.fromText) $ PgCatalog.pgPolicyWithCheck row
-
-    -- pg_policies.permissive contains either 'PERMISSIVE' or 'RESTRICTIVE'
-    permission =
-      if T.toUpper (PgCatalog.pgPolicyPermissive row) == T.pack "RESTRICTIVE"
-        then Schema.PolicyRestrictive
-        else Schema.PolicyPermissive
-
-    -- pg_policies.cmd contains 'ALL', 'SELECT', 'INSERT', 'UPDATE' or 'DELETE'
-    command =
-      case T.unpack (T.toUpper (PgCatalog.pgPolicyCmd row)) of
-        "SELECT" -> Schema.PolicyCommandSelect
-        "INSERT" -> Schema.PolicyCommandInsert
-        "UPDATE" -> Schema.PolicyCommandUpdate
-        "DELETE" -> Schema.PolicyCommandDelete
-        _ -> Schema.PolicyCommandAll
   in
     Schema.mkPolicyDefinition
       (T.unpack $ PgCatalog.pgPolicyPolicyName row)
-      (Just permission)
-      (Just command)
+      (Just $ PgCatalog.pgPolicyPermissive row)
+      (Just $ PgCatalog.pgPolicyCmd row)
       (Just roles)
       mbUsing
       mbCheck

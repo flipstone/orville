@@ -41,12 +41,10 @@ data PgPolicy = PgPolicy
   -- ^ The name of the table the policy is on.
   , pgPolicyPolicyName :: T.Text
   -- ^ The name of the policy.
-  , pgPolicyPermissive :: T.Text
-  -- ^ Either @PERMISSIVE@ or @RESTRICTIVE@.
-  , pgPolicyCmd :: T.Text
-  {- ^ The command the policy applies to: @ALL@, @SELECT@, @INSERT@,
-  @UPDATE@ or @DELETE@.
-  -}
+  , pgPolicyPermissive :: Orville.PolicyPermission
+  -- ^ Whether the policy is permissive or restrictive.
+  , pgPolicyCmd :: Orville.PolicyCommand
+  -- ^ The command the policy applies to.
   , pgPolicyRoles :: [T.Text]
   {- ^ The names of the roles the policy applies to. Policies that apply to
   all roles are reported as applying to the single role @public@.
@@ -103,21 +101,81 @@ pgPolicyPolicyNameField :: Orville.FieldDefinition Orville.NotNull T.Text
 pgPolicyPolicyNameField =
   Orville.unboundedTextField "policyname"
 
-{- | The @permissive@ column of the @pg_catalog.pg_policies@ view.
+{- | The @permissive@ column of the @pg_catalog.pg_policies@ view. Values
+  other than @PERMISSIVE@ or @RESTRICTIVE@ fail to decode.
 
 @since 1.2.0.0
 -}
-pgPolicyPermissiveField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyPermissiveField :: Orville.FieldDefinition Orville.NotNull Orville.PolicyPermission
 pgPolicyPermissiveField =
-  Orville.unboundedTextField "permissive"
+  Orville.convertField
+    (Orville.tryConvertSqlType policyPermissionToPgText pgTextToPolicyPermission)
+    (Orville.unboundedTextField "permissive")
 
-{- | The @cmd@ column of the @pg_catalog.pg_policies@ view.
+{- | Converts an 'Orville.PolicyPermission' to the textual representation used
+  in the @permissive@ column of the @pg_catalog.pg_policies@ view.
+
+  See also 'pgTextToPolicyPermission'.
+-}
+policyPermissionToPgText :: Orville.PolicyPermission -> T.Text
+policyPermissionToPgText permission =
+  T.pack $
+    case permission of
+      Orville.PolicyPermissive -> "PERMISSIVE"
+      Orville.PolicyRestrictive -> "RESTRICTIVE"
+
+{- | Attempts to parse a value from the @permissive@ column of the
+  @pg_catalog.pg_policies@ view as an 'Orville.PolicyPermission'.
+
+  See also 'policyPermissionToPgText'.
+-}
+pgTextToPolicyPermission :: T.Text -> Either String Orville.PolicyPermission
+pgTextToPolicyPermission text =
+  case T.unpack (T.toUpper text) of
+    "PERMISSIVE" -> Right Orville.PolicyPermissive
+    "RESTRICTIVE" -> Right Orville.PolicyRestrictive
+    other -> Left ("Unrecognized PostgreSQL policy permissive value: " <> other)
+
+{- | The @cmd@ column of the @pg_catalog.pg_policies@ view. Values other than
+  @ALL@, @SELECT@, @INSERT@, @UPDATE@ or @DELETE@ fail to decode.
 
 @since 1.2.0.0
 -}
-pgPolicyCmdField :: Orville.FieldDefinition Orville.NotNull T.Text
+pgPolicyCmdField :: Orville.FieldDefinition Orville.NotNull Orville.PolicyCommand
 pgPolicyCmdField =
-  Orville.unboundedTextField "cmd"
+  Orville.convertField
+    (Orville.tryConvertSqlType policyCommandToPgText pgTextToPolicyCommand)
+    (Orville.unboundedTextField "cmd")
+
+{- | Converts an 'Orville.PolicyCommand' to the textual representation used in
+  the @cmd@ column of the @pg_catalog.pg_policies@ view.
+
+  See also 'pgTextToPolicyCommand'.
+-}
+policyCommandToPgText :: Orville.PolicyCommand -> T.Text
+policyCommandToPgText command =
+  T.pack $
+    case command of
+      Orville.PolicyCommandAll -> "ALL"
+      Orville.PolicyCommandSelect -> "SELECT"
+      Orville.PolicyCommandInsert -> "INSERT"
+      Orville.PolicyCommandUpdate -> "UPDATE"
+      Orville.PolicyCommandDelete -> "DELETE"
+
+{- | Attempts to parse a value from the @cmd@ column of the
+  @pg_catalog.pg_policies@ view as an 'Orville.PolicyCommand'.
+
+  See also 'policyCommandToPgText'.
+-}
+pgTextToPolicyCommand :: T.Text -> Either String Orville.PolicyCommand
+pgTextToPolicyCommand text =
+  case T.unpack (T.toUpper text) of
+    "ALL" -> Right Orville.PolicyCommandAll
+    "SELECT" -> Right Orville.PolicyCommandSelect
+    "INSERT" -> Right Orville.PolicyCommandInsert
+    "UPDATE" -> Right Orville.PolicyCommandUpdate
+    "DELETE" -> Right Orville.PolicyCommandDelete
+    other -> Left ("Unrecognized PostgreSQL policy command value: " <> other)
 
 {- | The @roles@ column of the @pg_catalog.pg_policies@ view, a @name[]@
   column marshalled via its text representation.
