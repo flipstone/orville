@@ -380,7 +380,7 @@ addTableIndexes indexDefs tableDef =
       { i_tableIndexes = List.foldl' addIndex (i_tableIndexes tableDef) indexDefs
       }
 
-{- | Retrieves all the table indexes that have been added to the table via
+{- | Retrieves all the table triggers that have been added to the table via
   'addTableTriggers'.
 
 @since 1.1.0.0

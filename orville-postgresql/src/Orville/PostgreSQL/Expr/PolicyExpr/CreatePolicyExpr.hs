@@ -42,7 +42,7 @@ import Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole (PolicyRoleExpr)
 
 {- | Type to represent a SQL @CREATE POLICY@ statement. E.G.
 
-> CREATE POLICY "some_policy" ON "some_table" TO "some_role" USING (...) WITH CHECK (...)
+> CREATE POLICY "some_policy" ON "some_table" AS PERMISSIVE FOR ALL TO "some_role" USING (...) WITH CHECK (...)
 
 'CreatePolicyExpr' provides a 'RawSql.SqlExpression' instance. See
 'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
@@ -188,8 +188,7 @@ ASCII case outside quoted regions so that expressions compare consistently
 against the deparsed forms PostgreSQL returns in @pg_policies@. See
 'caseFoldOutsideQuotes' for details.
 
-This function is internal to Orville and is not exported from the public
-modules.
+@since 1.2.0.0
 -}
 comparePolicyUsingExpr :: PolicyUsingExpr -> PolicyUsingExpr -> Ordering
 comparePolicyUsingExpr =
@@ -217,8 +216,7 @@ ASCII case outside quoted regions so that expressions compare consistently
 against the deparsed forms PostgreSQL returns in @pg_policies@. See
 'caseFoldOutsideQuotes' for details.
 
-This function is internal to Orville and is not exported from the public
-modules.
+@since 1.2.0.0
 -}
 comparePolicyCheckExpr :: PolicyCheckExpr -> PolicyCheckExpr -> Ordering
 comparePolicyCheckExpr =

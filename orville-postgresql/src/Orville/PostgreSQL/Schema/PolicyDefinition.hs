@@ -33,8 +33,15 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, tableIdQualif
 
 {- | Defines a PostgreSQL row-level security policy that can be added to a table.
 
-The Using and Check Exprs are rendered for comparison against PostgreSQL's @pg_policies@ view,
-and must match the @qual@ and @with_check@ columns exactly, respectively.
+  Auto-migration compares the @USING@ and @WITH CHECK@ expressions against the
+  @qual@ and @with_check@ columns of PostgreSQL's @pg_policies@ view,
+  case-insensitively outside of string literals and quoted identifiers. Those
+  columns hold the expressions as PostgreSQL deparses them — with the
+  parentheses it adds around operator expressions, explicit casts such as
+  @::text@, and identifiers quoted only where necessary — so expressions
+  should be written in that form. An expression that differs from the
+  deparsed form only cosmetically will cause auto-migration to emit an
+  @ALTER POLICY@ step on every run.
 
 @since 1.2.0.0
 -}
@@ -55,10 +62,11 @@ instance Eq PolicyDefinition where
 instance Ord PolicyDefinition where
   compare = comparePolicyDefinition
 
-{- | Compares 'PolicyDefinition's field by field, using the internal
-  case-insensitive comparisons for the @USING@ and @WITH CHECK@ expressions so
-  that definitions compare consistently against policies loaded from
-  PostgreSQL's @pg_policies@ view.
+{- | Compares 'PolicyDefinition's field by field, using
+  'CreatePolicyExpr.comparePolicyUsingExpr' and
+  'CreatePolicyExpr.comparePolicyCheckExpr' for the @USING@ and @WITH CHECK@
+  expressions so that definitions compare consistently against policies
+  loaded from PostgreSQL's @pg_policies@ view.
 -}
 comparePolicyDefinition :: PolicyDefinition -> PolicyDefinition -> Ordering
 comparePolicyDefinition left right =

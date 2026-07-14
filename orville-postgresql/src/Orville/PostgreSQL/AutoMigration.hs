@@ -533,8 +533,8 @@ calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
           qualifiedTableId = setSchemaNameOnTableId currentNamespace tableId
           existing = Map.findWithDefault Map.empty qualifiedTableId existingPolicies
 
-          dropPolicySteps = fmap mkStep $ Map.elems existing
-          mkStep pd = mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr qualifiedTableId pd)
+          dropPolicySteps = fmap mkDropPolicyStep $ Map.elems existing
+          mkDropPolicyStep pd = mkMigrationStepWithType DropPolicyDefinitions (Schema.mkDropPolicyExpr qualifiedTableId pd)
         in
           case PgCatalog.lookupRelation (schemaName, tableName) dbDesc of
             Nothing ->
@@ -709,8 +709,8 @@ mkCreateTableSteps currentNamespace tableDef =
         then [mkMigrationStepWithType AddPolicyDefinitions (Expr.enableRowLevelSecurityExpr tableName)]
         else []
 
-    addPolicySteps = fmap mkStep $ Map.elems desiredPolicies
-    mkStep pd = mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
+    addPolicySteps = fmap mkAddPolicyStep $ Map.elems desiredPolicies
+    mkAddPolicyStep pd = mkMigrationStepWithType AddPolicyDefinitions (Schema.mkCreatePolicyExpr tableId pd)
   in
     mkMigrationStepWithType AddRemoveTablesAndColumns createTableExpr
       : mkConstraintSteps tableName addConstraintActions
