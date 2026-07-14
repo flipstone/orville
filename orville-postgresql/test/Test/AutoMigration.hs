@@ -93,6 +93,7 @@ autoMigrationTests pool =
     , prop_managesPoliciesWithMultipleRoles pool
     , prop_managesPoliciesWithQuotedRoleNames pool
     , prop_managesMultiplePoliciesOnOneTable pool
+    , prop_conflictingPolicyDefinitionsRaiseError pool
     , prop_altersPoliciesWithQuotedIdentifiers pool
     , prop_altersPoliciesWithEscapedQuoteLiterals pool
     , prop_addTablePoliciesAccumulates
@@ -2084,6 +2085,42 @@ prop_managesPoliciesWithQuotedRoleNames =
 
     HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
     migrationPlanStepStrings firstTimePlan === []
+
+prop_conflictingPolicyDefinitionsRaiseError :: Property.NamedDBProperty
+prop_conflictingPolicyDefinitionsRaiseError =
+  Property.singletonNamedDBProperty "An error is raised when a policy is both defined and marked for dropping" $ \pool -> do
+    let
+      originalField = Orville.integerField "column"
+      originalTableDef =
+        Orville.mkTableDefinitionWithoutKey
+          "policy_migration_test"
+          (Orville.marshallField id originalField)
+      policyDef =
+        Orville.mkPolicyDefinition
+          "migration_test_policy"
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+          Nothing
+      conflictedTableDef =
+        Orville.dropPolicies ["migration_test_policy"] $
+          Orville.addTablePolicies [policyDef] originalTableDef
+
+    result <-
+      HH.evalIO $
+        Orville.runOrville pool $ do
+          Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTableDef
+          ExSafe.try $
+            AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable conflictedTableDef]
+
+    case result of
+      Left err -> do
+        HH.annotate (show (err :: AutoMigration.MigrationDataError))
+        HH.assert $ List.isInfixOf "migration_test_policy" (show err)
+      Right plan -> do
+        HH.annotate ("Expected plan generation to fail, but got steps: " <> show (migrationPlanStepStrings plan))
+        HH.failure
 
 prop_managesMultiplePoliciesOnOneTable :: Property.NamedDBProperty
 prop_managesMultiplePoliciesOnOneTable =

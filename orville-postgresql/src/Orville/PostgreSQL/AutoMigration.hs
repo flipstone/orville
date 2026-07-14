@@ -315,13 +315,16 @@ data StepType
     )
 
 {- | A 'MigrationDataError' will be thrown from the migration functions if data
-  necessary for migration cannot be found.
+  necessary for migration cannot be found or if the schema items given are
+  invalid.
 
 @since 1.0.0.0
 -}
 data MigrationDataError
   = UnableToDiscoverCurrentSchema String
   | PgCatalogInvariantViolated String
+  | -- | @since 1.2.0.0
+    ConflictingPolicyDefinitions Orville.TableIdentifier (Set.Set String)
   deriving
     ( -- | @since 1.0.0.0
       Show
@@ -512,18 +515,30 @@ calculateMigrationSteps ::
 calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
   case schemaItem of
     SchemaTable tableDef ->
-      Right $
-        let
-          (schemaName, tableName) =
-            tableIdToPgCatalogNames
-              currentNamespace
-              (Orville.tableIdentifier tableDef)
-        in
-          case PgCatalog.lookupRelationOfKind PgCatalog.OrdinaryTable (schemaName, tableName) dbDesc of
-            Nothing ->
-              mkCreateTableSteps currentNamespace tableDef
-            Just relationDesc ->
-              mkAlterTableSteps currentNamespace existingPolicies relationDesc tableDef
+      let
+        (schemaName, tableName) =
+          tableIdToPgCatalogNames
+            currentNamespace
+            (Orville.tableIdentifier tableDef)
+
+        -- A policy cannot be both defined via 'Orville.addTablePolicies' and
+        -- marked for dropping via 'Orville.dropPolicies'
+        conflictingPolicyNames =
+          Map.keysSet (Orville.tablePolicies tableDef)
+            `Set.intersection` Orville.policiesToDrop tableDef
+      in
+        if not (Set.null conflictingPolicyNames)
+          then
+            Left $
+              ConflictingPolicyDefinitions
+                (setSchemaNameOnTableId currentNamespace (Orville.tableIdentifier tableDef))
+                conflictingPolicyNames
+          else Right $
+            case PgCatalog.lookupRelationOfKind PgCatalog.OrdinaryTable (schemaName, tableName) dbDesc of
+              Nothing ->
+                mkCreateTableSteps currentNamespace tableDef
+              Just relationDesc ->
+                mkAlterTableSteps currentNamespace existingPolicies relationDesc tableDef
     SchemaDropTable tableId ->
       Right $
         let

@@ -696,6 +696,10 @@ tablePolicies =
   last one that is added will be part of the 'TableDefinition'. Any
   previously-added policy with the same name is replaced by the new one.
 
+  Adding a policy that is also named in 'dropPolicies' is a conflict:
+  auto-migration will refuse to generate a plan for the table and throw an
+  'Orville.PostgreSQL.AutoMigration.MigrationDataError'.
+
 @since 1.2.0.0
 -}
 addTablePolicies ::
@@ -714,6 +718,10 @@ addTablePolicies policyDefs tableDef =
 {- | Annotates a 'TableDefinition' with a direction to drop policies if they are
   found in the database. Orville does not drop policies during auto-migration
   unless they are explicitly requested to be dropped via 'dropPolicies'.
+
+  Naming a policy here that is also added via 'addTablePolicies' is a
+  conflict: auto-migration will refuse to generate a plan for the table and
+  throw an 'Orville.PostgreSQL.AutoMigration.MigrationDataError'.
 
 @since 1.2.0.0
 -}
