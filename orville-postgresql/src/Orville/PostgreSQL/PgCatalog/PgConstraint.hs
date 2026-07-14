@@ -17,7 +17,6 @@ module Orville.PostgreSQL.PgCatalog.PgConstraint
   )
 where
 
-import qualified Data.Attoparsec.Text as AttoText
 import qualified Data.List as List
 import qualified Data.String as String
 import qualified Data.Text as T
@@ -26,6 +25,7 @@ import qualified Data.Text.Lazy.Builder as LTB
 import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
+import qualified Orville.PostgreSQL.Internal.PgArrayText as PgArrayText
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumberParser, attributeNumberTextBuilder)
 
@@ -307,18 +307,8 @@ constraintForeignKeyOnDeleteTypeField =
     (Orville.unboundedTextField "confdeltype")
 
 pgArrayTextToAttributeNumberList :: T.Text -> Either String [AttributeNumber]
-pgArrayTextToAttributeNumberList text =
-  let
-    parser = do
-      _ <- AttoText.char '{'
-      attNums <- AttoText.sepBy attributeNumberParser (AttoText.char ',')
-      _ <- AttoText.char '}'
-      AttoText.endOfInput
-      pure attNums
-  in
-    case AttoText.parseOnly parser text of
-      Left err -> Left ("Unable to decode PostgreSQL Array as AttributeNumber list: " <> err)
-      Right nums -> Right nums
+pgArrayTextToAttributeNumberList =
+  PgArrayText.pgArrayTextToList "AttributeNumber list" attributeNumberParser
 
 attributeNumberListToPgArrayText :: [AttributeNumber] -> T.Text
 attributeNumberListToPgArrayText attNums =

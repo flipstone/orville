@@ -31,6 +31,7 @@ module Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
 
 import qualified Data.ByteString as BS
 import Data.Function (on)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Word as Word
 
 import Orville.PostgreSQL.Expr.Name (QualifiedOrUnqualified, TableName)
@@ -227,6 +228,13 @@ comparePolicyCheckExpr =
 Note that this parenthesizes the 'BooleanExpr' in order to match the @qual@
 column in @pg_policies@.
 
+The 'BooleanExpr' must not contain bind parameters: @CREATE POLICY@ and
+@ALTER POLICY@ are DDL statements and PostgreSQL does not accept parameters
+in them. Many Orville 'BooleanExpr' combinators (such as @fieldEquals@) pass
+values as parameters, so values used in policy expressions must be rendered
+inline as literals instead. Auto-migration rejects policy definitions whose
+expressions contain parameters when generating a plan.
+
 @since 1.2.0.0
 -}
 policyUsingExpr :: BooleanExpr -> PolicyUsingExpr
@@ -236,6 +244,9 @@ policyUsingExpr = PolicyUsingExpr . RawSql.parenthesized
 
 Note that this parenthesizes the 'BooleanExpr' in order to match the
 @with_check@ column in @pg_policies@.
+
+The 'BooleanExpr' must not contain bind parameters — see 'policyUsingExpr'
+for details.
 
 @since 1.2.0.0
 -}
@@ -259,7 +270,7 @@ createPolicyExpr ::
   QualifiedOrUnqualified TableName ->
   Maybe PolicyPermissionExpr ->
   Maybe PolicyCommandExpr ->
-  Maybe [PolicyRoleExpr] ->
+  Maybe (NonEmpty PolicyRoleExpr) ->
   Maybe PolicyUsingExpr ->
   Maybe PolicyCheckExpr ->
   CreatePolicyExpr
@@ -303,7 +314,7 @@ createPolicyExpr name tableName mbPermission mbCommand mbRoles mbUsing mbCheck =
 alterPolicyExpr ::
   PolicyName ->
   QualifiedOrUnqualified TableName ->
-  Maybe [PolicyRoleExpr] ->
+  Maybe (NonEmpty PolicyRoleExpr) ->
   Maybe PolicyUsingExpr ->
   Maybe PolicyCheckExpr ->
   AlterPolicyExpr
@@ -322,7 +333,7 @@ alterPolicyExpr name tableName mbRoles mbUsing mbCheck =
 @CREATE POLICY@ and @ALTER POLICY@ statements.
 -}
 policyClauses ::
-  Maybe [PolicyRoleExpr] ->
+  Maybe (NonEmpty PolicyRoleExpr) ->
   Maybe PolicyUsingExpr ->
   Maybe PolicyCheckExpr ->
   [RawSql.RawSql]

@@ -3,12 +3,14 @@ module Test.Expr.Policy
   ) where
 
 import qualified Data.List as List
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
+import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import qualified Test.Property as Property
@@ -25,7 +27,7 @@ policyTests pool =
 
 prop_createPolicyWithAllClauses :: Property.NamedDBProperty
 prop_createPolicyWithAllClauses =
-  Property.singletonNamedDBProperty "creates a policy with AS, TO, USING and WITH CHECK clauses" $ \pool -> do
+  Property.singletonNamedDBProperty "creates a policy with AS, FOR, TO, USING and WITH CHECK clauses" $ \pool -> do
     let
       createPolicy =
         Expr.createPolicyExpr
@@ -33,7 +35,7 @@ prop_createPolicyWithAllClauses =
           testTableName
           (Just Expr.policyRestrictive)
           (Just Expr.policyCommandUpdate)
-          (Just [Expr.namedPolicyRole "orville_test"])
+          (Just (Expr.namedPolicyRole "orville_test" :| []))
           (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr True)
           (Just . Expr.policyCheckExpr $ Expr.literalBooleanExpr False)
 
@@ -44,10 +46,10 @@ prop_createPolicyWithAllClauses =
           Orville.executeVoid Orville.DDLQuery createPolicy
           findTestPolicies
 
-    fmap policyRowPolicyName policies === [T.pack "expr_test_policy"]
-    fmap policyRowPermissive policies === [T.pack "RESTRICTIVE"]
-    fmap policyRowCmd policies === [T.pack "UPDATE"]
-    fmap policyRowRoles policies === [T.pack "{orville_test}"]
+    fmap PgCatalog.pgPolicyPolicyName policies === [T.pack "expr_test_policy"]
+    fmap PgCatalog.pgPolicyPermissive policies === [T.pack "RESTRICTIVE"]
+    fmap PgCatalog.pgPolicyCmd policies === [T.pack "UPDATE"]
+    fmap PgCatalog.pgPolicyRoles policies === [[T.pack "orville_test"]]
 
 prop_specialRoleTargets :: Property.NamedDBProperty
 prop_specialRoleTargets =
@@ -59,7 +61,7 @@ prop_specialRoleTargets =
           testTableName
           Nothing
           Nothing
-          (Just [role])
+          (Just (role :| []))
           Nothing
           Nothing
 
@@ -76,14 +78,12 @@ prop_specialRoleTargets =
     -- PostgreSQL resolves CURRENT_ROLE, CURRENT_USER and SESSION_USER to the
     -- concrete role at the time the policy is created. The test suite
     -- connects as "orville_test".
-    fmap policyRowRoles (List.sortOn policyRowPolicyName policies)
-      === fmap
-        T.pack
-        [ "{orville_test}"
-        , "{orville_test}"
-        , "{orville_test}"
-        , "{public}"
-        ]
+    fmap PgCatalog.pgPolicyRoles (List.sortOn PgCatalog.pgPolicyPolicyName policies)
+      === [ [T.pack "orville_test"]
+          , [T.pack "orville_test"]
+          , [T.pack "orville_test"]
+          , [T.pack "public"]
+          ]
 
 prop_alterPolicy :: Property.NamedDBProperty
 prop_alterPolicy =
@@ -95,7 +95,7 @@ prop_alterPolicy =
           testTableName
           Nothing
           Nothing
-          (Just [Expr.namedPolicyRole "orville_test"])
+          (Just (Expr.namedPolicyRole "orville_test" :| []))
           (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr True)
           Nothing
 
@@ -103,7 +103,7 @@ prop_alterPolicy =
         Expr.alterPolicyExpr
           (Expr.policyName "expr_test_policy")
           testTableName
-          (Just [Expr.publicPolicyRole])
+          (Just (Expr.publicPolicyRole :| []))
           (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr False)
           (Just . Expr.policyCheckExpr $ Expr.literalBooleanExpr True)
 
@@ -115,7 +115,7 @@ prop_alterPolicy =
           Orville.executeVoid Orville.DDLQuery alterPolicy
           findTestPolicies
 
-    fmap policyRowRoles policies === [T.pack "{public}"]
+    fmap PgCatalog.pgPolicyRoles policies === [[T.pack "public"]]
 
 prop_dropPolicyIfExists :: Property.NamedDBProperty
 prop_dropPolicyIfExists =
@@ -142,7 +142,7 @@ prop_dropPolicyIfExists =
             Expr.dropPolicy Nothing (Expr.policyName "expr_test_policy") testTableName
           findTestPolicies
 
-    fmap policyRowPolicyName policies === []
+    fmap PgCatalog.pgPolicyPolicyName policies === []
 
 testTableName :: Expr.QualifiedOrUnqualified Expr.TableName
 testTableName =
@@ -153,27 +153,7 @@ recreateTestTable = do
   Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "DROP TABLE IF EXISTS expr_policy_test"
   Orville.executeVoid Orville.DDLQuery $ RawSql.fromString "CREATE TABLE expr_policy_test (name TEXT)"
 
-findTestPolicies :: Orville.Orville [PolicyRow]
+findTestPolicies :: Orville.Orville [PgCatalog.PgPolicy]
 findTestPolicies =
-  Orville.findEntitiesBy pgPoliciesTable . Orville.where_ $
-    Orville.fieldEquals (Orville.unboundedTextField "tablename") (T.pack "expr_policy_test")
-
-data PolicyRow = PolicyRow
-  { policyRowPolicyName :: T.Text
-  , policyRowPermissive :: T.Text
-  , policyRowCmd :: T.Text
-  , policyRowRoles :: T.Text
-  }
-
-pgPoliciesTable :: Orville.TableDefinition Orville.NoKey PolicyRow PolicyRow
-pgPoliciesTable =
-  Orville.setTableSchema "pg_catalog" $
-    Orville.mkTableDefinitionWithoutKey "pg_policies" policyRowMarshaller
-
-policyRowMarshaller :: Orville.SqlMarshaller w PolicyRow
-policyRowMarshaller =
-  PolicyRow
-    <$> Orville.marshallReadOnlyField (Orville.unboundedTextField "policyname")
-    <*> Orville.marshallReadOnlyField (Orville.unboundedTextField "permissive")
-    <*> Orville.marshallReadOnlyField (Orville.unboundedTextField "cmd")
-    <*> Orville.marshallReadOnlyField (Orville.unboundedTextField "roles")
+  Orville.findEntitiesBy PgCatalog.pgPoliciesTable . Orville.where_ $
+    Orville.fieldEquals PgCatalog.pgPolicyTableNameField (T.pack "expr_policy_test")

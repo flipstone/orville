@@ -24,6 +24,7 @@ module Orville.PostgreSQL.Schema.PolicyDefinition
 
 import qualified Data.Functor.Classes as Classes
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as NEL
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
@@ -40,8 +41,8 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, tableIdQualif
   parentheses it adds around operator expressions, explicit casts such as
   @::text@, and identifiers quoted only where necessary — so expressions
   should be written in that form. An expression that differs from the
-  deparsed form only cosmetically will cause auto-migration to emit an
-  @ALTER POLICY@ step on every run.
+  deparsed form only cosmetically will cause auto-migration to drop and
+  re-create the policy on every run.
 
 @since 1.2.0.0
 -}
@@ -127,7 +128,7 @@ data PolicyCommand
   created or altered, and reports the resolved role name in @pg_policies@.
   Auto-migration compares policy definitions against @pg_policies@, so a
   definition using one of these special targets will never match the existing
-  policy and will produce an @ALTER POLICY@ step on every migration run. Use
+  policy and will drop and re-create the policy on every migration run. Use
   'PolicyRoleNamed' for policies managed by auto-migration.
 
   'PolicyRoleCurrentRole' requires PostgreSQL 14 or later.
@@ -166,6 +167,13 @@ data PolicyRole
   omitted, and Orville includes the resulting clauses explicitly in the
   generated SQL.
 
+  The role set is also normalized to mirror how PostgreSQL treats role
+  targets, so that definitions compare consistently against @pg_policies@:
+  a 'PolicyRoleNamed' @"public"@ is the PUBLIC pseudo-role and becomes
+  'PolicyRolePublic', and a set containing 'PolicyRolePublic' collapses to
+  just 'PolicyRolePublic' (PostgreSQL ignores any other role targets given
+  alongside @PUBLIC@, since all roles are members of it).
+
 @since 1.2.0.0
 -}
 mkPolicyDefinition ::
@@ -178,14 +186,19 @@ mkPolicyDefinition ::
   PolicyDefinition
 mkPolicyDefinition name mbPermission mbCommand mbRoles mbUsing mbCheck =
   let
-    roles = Maybe.fromMaybe Set.empty mbRoles
+    normalizeRole role =
+      case role of
+        PolicyRoleNamed "public" -> PolicyRolePublic
+        _ -> role
+
+    roles = Set.map normalizeRole (Maybe.fromMaybe Set.empty mbRoles)
   in
     PolicyDefinition
       { i_policyName = name
       , i_policyPermission = Maybe.fromMaybe PolicyPermissive mbPermission
       , i_policyCommand = Maybe.fromMaybe PolicyCommandAll mbCommand
       , i_policyRoles =
-          if Set.null roles
+          if Set.null roles || Set.member PolicyRolePublic roles
             then Set.singleton PolicyRolePublic
             else roles
       , i_usingExpr = mbUsing
@@ -260,7 +273,7 @@ mkCreatePolicyExpr tableId policyDefinition =
     (tableIdQualifiedName tableId)
     (Just . policyPermissionExpr . policyDefinitionPermission $ policyDefinition)
     (Just . policyCommandExpr . policyDefinitionCommand $ policyDefinition)
-    (Just . List.map policyRoleExpr . Set.toList $ i_policyRoles policyDefinition)
+    (NEL.nonEmpty . List.map policyRoleExpr . Set.toList $ i_policyRoles policyDefinition)
     (i_usingExpr policyDefinition)
     (i_checkExpr policyDefinition)
 
@@ -303,7 +316,7 @@ mkAlterPolicyExpr tableId policyDefinition =
   Expr.alterPolicyExpr
     (Expr.policyName $ policyDefinitionPolicyName policyDefinition)
     (tableIdQualifiedName tableId)
-    (Just . List.map policyRoleExpr . Set.toList $ i_policyRoles policyDefinition)
+    (NEL.nonEmpty . List.map policyRoleExpr . Set.toList $ i_policyRoles policyDefinition)
     (i_usingExpr policyDefinition)
     (i_checkExpr policyDefinition)
 

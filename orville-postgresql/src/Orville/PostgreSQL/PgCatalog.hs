@@ -22,6 +22,7 @@ import Orville.PostgreSQL.PgCatalog.PgDescription as Export
 import Orville.PostgreSQL.PgCatalog.PgExtension as Export
 import Orville.PostgreSQL.PgCatalog.PgIndex as Export
 import Orville.PostgreSQL.PgCatalog.PgNamespace as Export
+import Orville.PostgreSQL.PgCatalog.PgPolicy as Export
 import Orville.PostgreSQL.PgCatalog.PgProc as Export
 import Orville.PostgreSQL.PgCatalog.PgSequence as Export
 import Orville.PostgreSQL.PgCatalog.PgTrigger as Export
