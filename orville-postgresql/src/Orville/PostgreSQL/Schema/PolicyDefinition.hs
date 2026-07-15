@@ -14,6 +14,9 @@ module Orville.PostgreSQL.Schema.PolicyDefinition
   , policyDefinitionPermission
   , policyDefinitionCommand
   , policyDefinitionPolicyRoles
+  , policyDefinitionCommandExpr
+  , policyDefinitionPermissionExpr
+  , policyDefinitionRoleExpr
   , policyDefinitionUsingExpr
   , policyDefinitionCheckExpr
   , mkPolicyDefinition
@@ -271,20 +274,20 @@ mkCreatePolicyExpr tableId policyDefinition =
   Expr.createPolicyExpr
     (Expr.policyName $ policyDefinitionPolicyName policyDefinition)
     (tableIdQualifiedName tableId)
-    (Just . policyPermissionExpr . policyDefinitionPermission $ policyDefinition)
-    (Just . policyCommandExpr . policyDefinitionCommand $ policyDefinition)
-    (NEL.nonEmpty . List.map policyRoleExpr . Set.toList $ i_policyRoles policyDefinition)
+    (Just . policyDefinitionPermissionExpr . policyDefinitionPermission $ policyDefinition)
+    (Just . policyDefinitionCommandExpr . policyDefinitionCommand $ policyDefinition)
+    (NEL.nonEmpty . List.map policyDefinitionRoleExpr . Set.toList $ i_policyRoles policyDefinition)
     (i_usingExpr policyDefinition)
     (i_checkExpr policyDefinition)
 
-policyPermissionExpr :: PolicyPermission -> Expr.PolicyPermissionExpr
-policyPermissionExpr permission =
+policyDefinitionPermissionExpr :: PolicyPermission -> Expr.PolicyPermissionExpr
+policyDefinitionPermissionExpr permission =
   case permission of
     PolicyPermissive -> Expr.policyPermissive
     PolicyRestrictive -> Expr.policyRestrictive
 
-policyCommandExpr :: PolicyCommand -> Expr.PolicyCommandExpr
-policyCommandExpr command =
+policyDefinitionCommandExpr :: PolicyCommand -> Expr.PolicyCommandExpr
+policyDefinitionCommandExpr command =
   case command of
     PolicyCommandAll -> Expr.policyCommandAll
     PolicyCommandSelect -> Expr.policyCommandSelect
@@ -292,8 +295,8 @@ policyCommandExpr command =
     PolicyCommandUpdate -> Expr.policyCommandUpdate
     PolicyCommandDelete -> Expr.policyCommandDelete
 
-policyRoleExpr :: PolicyRole -> Expr.PolicyRoleExpr
-policyRoleExpr role =
+policyDefinitionRoleExpr :: PolicyRole -> Expr.PolicyRoleExpr
+policyDefinitionRoleExpr role =
   case role of
     PolicyRolePublic -> Expr.publicPolicyRole
     PolicyRoleCurrentRole -> Expr.currentRolePolicyRole
@@ -316,7 +319,7 @@ mkAlterPolicyExpr tableId policyDefinition =
   Expr.alterPolicyExpr
     (Expr.policyName $ policyDefinitionPolicyName policyDefinition)
     (tableIdQualifiedName tableId)
-    (NEL.nonEmpty . List.map policyRoleExpr . Set.toList $ i_policyRoles policyDefinition)
+    (NEL.nonEmpty . List.map policyDefinitionRoleExpr . Set.toList $ i_policyRoles policyDefinition)
     (i_usingExpr policyDefinition)
     (i_checkExpr policyDefinition)
 

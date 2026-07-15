@@ -409,6 +409,9 @@ module Orville.PostgreSQL
   , PolicyDefinition.policyDefinitionPolicyRoles
   , PolicyDefinition.policyDefinitionUsingExpr
   , PolicyDefinition.policyDefinitionCheckExpr
+  , PolicyDefinition.policyDefinitionCommandExpr
+  , PolicyDefinition.policyDefinitionPermissionExpr
+  , PolicyDefinition.policyDefinitionRoleExpr
 
     -- * Functions for defining and working with PostgreSQL functions
   , FunctionDefinition.FunctionDefinition
