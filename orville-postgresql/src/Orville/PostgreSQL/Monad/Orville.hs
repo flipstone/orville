@@ -46,6 +46,8 @@ newtype Orville a = Orville
     , HasOrvilleState.HasOrvilleState
     , ExSafe.MonadThrow
     , ExSafe.MonadCatch
+    , -- | @since 1.2.0.0
+      ExSafe.MonadMask
     )
 
 {- | Runs an 'Orville' operation in the 'IO' monad using the given connection
