@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # One PR for all action bumps rather than one PR per action.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # The haskell-tools base in each sub-project's Dockerfile. Directories are
+  # listed explicitly rather than globbed with "/**" so the scanned set stays
+  # predictable; add one when a new Dockerfile lands.
+  - package-ecosystem: "docker"
+    directories:
+      - "/orville-postgresql"
+      - "/orville-postgresql-typeid"
+      - "/orville-docsite"
+    schedule:
+      interval: "weekly"
+
+  # The haskell-tools `tools` service in each sub-project's compose file. It is
+  # pinned to a release tag plus digest, which is what makes it visible to
+  # Dependabot at all; a per-commit sha tag is not comparable. Bumps stay
+  # within the pinned GHC version, since the GHC version sits in the part of
+  # the tag Dependabot treats as an opaque prefix.
+  #
+  # postgres is ignored deliberately. The testdb-pg13..pg18 services are a
+  # version matrix: each one pins the oldest patch of a major on purpose so the
+  # suite proves Orville still supports that major. Letting Dependabot bump
+  # them would collapse the matrix onto whatever is newest, which is precisely
+  # what these pins exist to prevent.
+  - package-ecosystem: "docker-compose"
+    directories:
+      - "/orville-postgresql"
+      - "/orville-postgresql-typeid"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "postgres"
