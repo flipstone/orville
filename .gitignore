@@ -40,3 +40,4 @@ orville-docsite/site-builder/_site
 orville-docsite/samples/getting-started/orville-getting-started
 orville-docsite/samples/adding-orville-new-readert/src
 orville-docsite/samples/adding-orville-existing-readert/src
+.env
