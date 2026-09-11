@@ -50,4 +50,11 @@ jobs:
 
       - name: Run Tests
         working-directory: orville-docsite
+        env:
+          # The getting-started sample runs `stack new`, which fetches its
+          # template through the GitHub REST API. Hosted runners share IPs, so
+          # the 60/hour unauthenticated limit is easily exhausted; stack sends
+          # GITHUB_TOKEN as Basic auth when it is set. compose.yaml passes the
+          # variable into the dev container.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/build

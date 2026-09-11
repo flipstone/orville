@@ -4,6 +4,9 @@ services:
     environment:
       STACK_ROOT: /stack-root
       IN_DEV_CONTAINER: "true"
+      # Passed through from the host when set, so `stack new` in the samples
+      # can authenticate its GitHub API template fetch in CI.
+      GITHUB_TOKEN:
     volumes:
       - .:/orville-docsite
       - stack-root:/stack-root
