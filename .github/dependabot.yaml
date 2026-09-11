@@ -1,4 +1,14 @@
 version: 2
+
+# haskell-tools is pinned in three Dockerfiles (docker ecosystem) and two
+# compose files (docker-compose ecosystem). A per-ecosystem group would still
+# open two PRs per release; a multi-ecosystem group folds all five references
+# into one PR. The schedule lives on the group; members inherit it.
+multi-ecosystem-groups:
+  haskell-tools:
+    schedule:
+      interval: "weekly"
+
 updates:
   # One PR for all action bumps rather than one PR per action.
   - package-ecosystem: "github-actions"
@@ -12,14 +22,17 @@ updates:
 
   # The haskell-tools base in each sub-project's Dockerfile. Directories are
   # listed explicitly rather than globbed with "/**" so the scanned set stays
-  # predictable; add one when a new Dockerfile lands.
+  # predictable; add one when a new Dockerfile lands. `patterns` is required
+  # on a multi-ecosystem group member and names the dependency as Dependabot
+  # does in its PR titles.
   - package-ecosystem: "docker"
     directories:
       - "/orville-postgresql"
       - "/orville-postgresql-typeid"
       - "/orville-docsite"
-    schedule:
-      interval: "weekly"
+    patterns:
+      - "flipstone/haskell-tools"
+    multi-ecosystem-group: "haskell-tools"
 
   # The haskell-tools `tools` service in each sub-project's compose file. It is
   # pinned to a release tag plus digest, which is what makes it visible to
@@ -36,7 +49,8 @@ updates:
     directories:
       - "/orville-postgresql"
       - "/orville-postgresql-typeid"
-    schedule:
-      interval: "weekly"
+    patterns:
+      - "flipstone/haskell-tools"
+    multi-ecosystem-group: "haskell-tools"
     ignore:
       - dependency-name: "postgres"
