@@ -32,9 +32,9 @@ newtype WindowName
   = WindowName Identifier
   deriving
     ( -- | @since 1.1.0.0
-      RawSql.SqlExpression
-    , -- | @since 1.1.0.0
       IdentifierExpression
+    , -- | @since 1.1.0.0
+      RawSql.SqlExpression
     )
 
 {- | Construct a 'WindowName' from a 'String' with proper escaping as part of the generated SQL.

@@ -16,7 +16,6 @@ import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import qualified Test.Property as Property
 
 marshallErrorTests :: Orville.ConnectionPool -> Property.Group

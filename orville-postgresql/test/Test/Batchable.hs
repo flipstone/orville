@@ -9,7 +9,6 @@ import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.Batchable as Batchable
-
 import qualified Test.Property as Property
 
 batchableTests :: Property.Group

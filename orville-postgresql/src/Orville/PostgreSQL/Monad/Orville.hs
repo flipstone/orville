@@ -37,17 +37,17 @@ newtype Orville a = Orville
   { unwrapOrville :: ReaderT OrvilleState.OrvilleState IO a
   }
   deriving
-    ( Functor
+    ( -- | @since 1.2.0.0
+      ExSafe.MonadMask
     , Applicative
+    , ExSafe.MonadCatch
+    , ExSafe.MonadThrow
+    , Functor
+    , HasOrvilleState.HasOrvilleState
     , Monad
     , MonadIO
-    , MonadOrville.MonadOrvilleControl
     , MonadOrville.MonadOrville
-    , HasOrvilleState.HasOrvilleState
-    , ExSafe.MonadThrow
-    , ExSafe.MonadCatch
-    , -- | @since 1.2.0.0
-      ExSafe.MonadMask
+    , MonadOrville.MonadOrvilleControl
     )
 
 {- | Runs an 'Orville' operation in the 'IO' monad using the given connection

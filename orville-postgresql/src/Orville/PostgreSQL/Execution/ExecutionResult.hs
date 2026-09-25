@@ -33,13 +33,13 @@ newtype Column
   = Column Int
   deriving
     ( -- | @since 1.0.0.0
-      Eq
-    , -- | @since 1.0.0.0
-      Ord
-    , -- | @since 1.0.0.0
       Enum
     , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
       Num
+    , -- | @since 1.0.0.0
+      Ord
     )
 
 {- | A trivial wrapper for `Int` to help keep track of column vs row number.
@@ -50,13 +50,13 @@ newtype Row
   = Row Int
   deriving
     ( -- | @since 1.0.0.0
-      Eq
-    , -- | @since 1.0.0.0
-      Ord
-    , -- | @since 1.0.0.0
       Enum
     , -- | @since 1.0.0.0
+      Eq
+    , -- | @since 1.0.0.0
       Num
+    , -- | @since 1.0.0.0
+      Ord
     )
 
 {- | 'ExecutionResult' is a common interface for types that represent a result set

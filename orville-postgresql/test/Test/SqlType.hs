@@ -19,7 +19,6 @@ import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import qualified Test.Property as Property
 
 sqlTypeTests :: Orville.ConnectionPool -> Property.Group

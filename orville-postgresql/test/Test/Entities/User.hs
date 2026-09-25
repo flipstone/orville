@@ -10,13 +10,12 @@ import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
-
 import qualified Test.PgGen as PgGen
 
 data User = User
   { user :: T.Text
   }
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 table :: Orville.TableDefinition Orville.NoKey User User
 table =

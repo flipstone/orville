@@ -10,7 +10,6 @@ import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.PgTime as PgTime
-
 import qualified Test.Property as Property
 
 pgTimeTests :: Orville.ConnectionPool -> Property.Group

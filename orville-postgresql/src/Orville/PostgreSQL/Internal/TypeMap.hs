@@ -7,13 +7,12 @@ module Orville.PostgreSQL.Internal.TypeMap
   , lookup
   ) where
 
-import Prelude (Maybe, fmap)
-
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (Proxy))
 import GHC.Base (Any)
 import Type.Reflection (SomeTypeRep, Typeable, someTypeRep)
 import qualified Unsafe.Coerce as UnsafeCoerce
+import Prelude (Maybe, fmap)
 
 {- |
   A type map can be used to store dynamic values keyed by their

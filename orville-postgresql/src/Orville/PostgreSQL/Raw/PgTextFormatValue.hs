@@ -57,9 +57,9 @@ data NULByteFoundError
   = NULByteFoundError
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
+    , -- | @since 1.0.0.0
+      Show
     )
 
 -- | @since 1.0.0.0

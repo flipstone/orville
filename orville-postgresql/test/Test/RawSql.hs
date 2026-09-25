@@ -16,7 +16,6 @@ import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import qualified Test.Property as Property
 
 rawSqlTests :: Orville.ConnectionPool -> Property.Group

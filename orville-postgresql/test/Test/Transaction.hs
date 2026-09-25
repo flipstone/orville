@@ -24,7 +24,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.OrvilleState as OrvilleState
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable
 import qualified Test.Transaction.Util as TransactionUtil

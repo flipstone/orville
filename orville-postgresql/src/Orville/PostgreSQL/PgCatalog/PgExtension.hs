@@ -38,11 +38,11 @@ newtype ExtensionName
   = ExtensionName T.Text
   deriving
     ( -- | @since 1.1.0.0
-      Show
-    , -- | @since 1.1.0.0
       Eq
     , -- | @since 1.1.0.0
       Ord
+    , -- | @since 1.1.0.0
+      Show
     , -- | @since 1.1.0.0
       String.IsString
     )

@@ -12,6 +12,7 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
+
 import qualified Orville.TypeId.FieldDefinition as TypeIdFieldDefinition
 import qualified Orville.TypeId.FunctionDefinitions as TypeIdFunctionDefinitions
 import qualified Test.Property as Property

@@ -9,7 +9,6 @@ import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
-
 import qualified Test.Entities.User as User
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable

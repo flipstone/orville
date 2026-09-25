@@ -20,9 +20,9 @@ module Orville.PostgreSQL.Expr.Insert
   )
 where
 
+import qualified Data.List.NonEmpty as NE
 import Data.Maybe (catMaybes)
 
-import qualified Data.List.NonEmpty as NE
 import Orville.PostgreSQL.Expr.Name (ColumnName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.OnConflict (OnConflictExpr)
 import Orville.PostgreSQL.Expr.ReturningExpr (ReturningExpr)

@@ -56,9 +56,9 @@ newtype TableConstraints
   = TableConstraints (Map.Map ConstraintMigrationKey ConstraintDefinition)
   deriving
     ( -- | @since 1.0.0.0
-      Semigroup
-    , -- | @since 1.0.0.0
       Monoid
+    , -- | @since 1.0.0.0
+      Semigroup
     )
 
 {- | Constructs an empty 'TableConstraints'.
@@ -312,11 +312,11 @@ data ForeignKeyAction
   | SetDefault
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
     , -- | @since 1.0.0.0
       Ord
+    , -- | @since 1.0.0.0
+      Show
     )
 
 foreignKeyActionToExpr :: ForeignKeyAction -> Maybe Expr.ForeignKeyActionExpr

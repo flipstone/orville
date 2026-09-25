@@ -10,7 +10,6 @@ import qualified System.Environment as Env
 import qualified System.Exit as SE
 
 import qualified Orville.PostgreSQL as Orville
-
 import qualified Test.AutoMigration as AutoMigration
 import qualified Test.Batchable as Batchable
 import qualified Test.Connection as Connection

@@ -15,7 +15,6 @@ import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
-
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 import qualified Test.TestTable as TestTable

@@ -17,8 +17,8 @@ module Orville.PostgreSQL.PgCatalog.PgTrigger
 
 import qualified Data.String as String
 import qualified Data.Text as T
-
 import qualified Database.PostgreSQL.LibPQ as LibPQ
+
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 
@@ -48,11 +48,11 @@ newtype TriggerName
   = TriggerName T.Text
   deriving
     ( -- | @since 1.1.0.0
-      Show
-    , -- | @since 1.1.0.0
       Eq
     , -- | @since 1.1.0.0
       Ord
+    , -- | @since 1.1.0.0
+      Show
     , -- | @since 1.1.0.0
       String.IsString
     )

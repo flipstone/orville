@@ -18,7 +18,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlCommenter as SqlCommenter
-
 import Test.Expr.TestSchema
   ( assertEqualFooBarRows
   , dropAndRecreateTestTable

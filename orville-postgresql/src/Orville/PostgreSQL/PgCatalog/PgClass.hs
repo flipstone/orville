@@ -56,11 +56,11 @@ newtype RelationName
   = RelationName T.Text
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
     , -- | @since 1.0.0.0
       Ord
+    , -- | @since 1.0.0.0
+      Show
     , -- | @since 1.0.0.0
       String.IsString
     )
@@ -91,9 +91,9 @@ data RelationKind
   | PartitionedIndex
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
+    , -- | @since 1.0.0.0
+      Show
     )
 
 {- | An Orville 'Orville.TableDefinition' for querying the

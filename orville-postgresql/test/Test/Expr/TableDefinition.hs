@@ -8,7 +8,6 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
-
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 

@@ -23,7 +23,6 @@ import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import Test.Expr.TestSchema (assertEqualSqlRows)
 import Test.Orphans ()
 import qualified Test.PgGen as PgGen

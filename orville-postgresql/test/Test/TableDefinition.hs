@@ -25,7 +25,6 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema as Schema
 import qualified Orville.PostgreSQL.Schema.ConstraintDefinition as ConstraintDefinition
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
-
 import qualified Test.Entities.Bar as Bar
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property

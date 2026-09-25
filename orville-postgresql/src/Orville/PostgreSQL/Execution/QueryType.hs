@@ -27,15 +27,15 @@ data QueryType
   | OtherQuery
   deriving
     ( -- | @since 1.0.0.0
-      Ord
-    , -- | @since 1.0.0.0
-      Eq
+      Bounded
     , -- | @since 1.0.0.0
       Enum
     , -- | @since 1.0.0.0
-      Bounded
+      Eq
     , -- | @since 1.0.0.0
-      Show
+      Ord
     , -- | @since 1.0.0.0
       Read
+    , -- | @since 1.0.0.0
+      Show
     )

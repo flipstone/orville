@@ -40,10 +40,10 @@ module Orville.PostgreSQL.Expr.SequenceDefinition
 where
 
 -- to avoid conflict with cycle
-import Prelude (Bool, Maybe (Just), fmap, ($), (.), (<>))
 
 import Data.Int (Int64)
 import Data.Maybe (catMaybes)
+import Prelude (Bool, Maybe (Just), fmap, ($), (.), (<>))
 
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified, SequenceName, functionName)

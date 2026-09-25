@@ -23,7 +23,6 @@ import qualified Hedgehog.Internal.Property as Property
 import qualified Hedgehog.Internal.Report as Report
 import qualified Hedgehog.Internal.Runner as Runner
 import qualified Hedgehog.Internal.Seed as Seed
-
 import qualified Orville.PostgreSQL as Orville
 
 type NamedProperty = (HH.PropertyName, HH.Property)

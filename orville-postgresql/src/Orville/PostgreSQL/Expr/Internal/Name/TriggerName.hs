@@ -32,9 +32,9 @@ newtype TriggerName
   = TriggerName Identifier
   deriving
     ( -- | @since 1.1.0.0
-      RawSql.SqlExpression
-    , -- | @since 1.1.0.0
       IdentifierExpression
+    , -- | @since 1.1.0.0
+      RawSql.SqlExpression
     )
 
 {- | Construct a 'TriggerName' from a 'String' with proper escaping as part of the generated SQL.

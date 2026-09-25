@@ -29,7 +29,6 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
-
 import qualified Test.PgGen as PgGen
 import qualified Test.TestTable as TestTable
 

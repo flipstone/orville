@@ -18,7 +18,6 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import qualified Test.Property as Property
 
 timeTests :: Orville.ConnectionPool -> Property.Group

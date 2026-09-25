@@ -13,7 +13,6 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Exec
-
 import qualified Test.Entities.Foo as Foo
 import qualified Test.Property as Property
 

@@ -337,7 +337,7 @@ data ForeignKeyInfo = ForeignKeyInfo
   , foreignKeyInfoOnUpdate :: Orville.ForeignKeyAction
   , foreignKeyInfoOnDelete :: Orville.ForeignKeyAction
   }
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 assertForeignKeyConstraintExists ::
   (HH.MonadTest m, HasCallStack) =>

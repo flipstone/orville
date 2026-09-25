@@ -82,11 +82,11 @@ newtype ConstraintName
   = ConstraintName T.Text
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
     , -- | @since 1.0.0.0
       Ord
+    , -- | @since 1.0.0.0
+      Show
     , -- | @since 1.0.0.0
       String.IsString
     )
@@ -114,9 +114,9 @@ data ConstraintType
   | NotNullConstraint
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
+    , -- | @since 1.0.0.0
+      Show
     )
 
 {- | Converts a 'ConstraintType' to the corresponding single character text

@@ -33,7 +33,6 @@ import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Schema as Schema
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
-
 import qualified Test.Entities.Foo as Foo
 import Test.Orphans ()
 import qualified Test.PgAssert as PgAssert
@@ -2222,7 +2221,7 @@ data TestIndex = TestIndex
   , testIndexCreationStrategy :: Orville.IndexCreationStrategy
   , testIndexColumns :: NEL.NonEmpty String
   }
-  deriving (Show, Eq)
+  deriving (Eq, Show)
 
 data TestForeignKey = TestForeignKey
   { testForeignKeyReferences :: NEL.NonEmpty (String, String)

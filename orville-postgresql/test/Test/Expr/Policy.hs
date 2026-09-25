@@ -12,7 +12,6 @@ import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-
 import qualified Test.Property as Property
 
 policyTests :: Orville.ConnectionPool -> Property.Group

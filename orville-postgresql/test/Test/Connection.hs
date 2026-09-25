@@ -16,7 +16,6 @@ import qualified Hedgehog.Range as Range
 
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.PgTextFormatValue as PgTextFormatValue
-
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 

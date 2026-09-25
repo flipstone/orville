@@ -9,7 +9,6 @@ import qualified Hedgehog as HH
 
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-
 import qualified Test.Property as Property
 
 tableReferenceListTests :: Property.Group

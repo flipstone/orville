@@ -15,7 +15,6 @@ import qualified Hedgehog.Range as Range
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import qualified Test.Property as Property
 
 mathTests :: Orville.ConnectionPool -> Property.Group

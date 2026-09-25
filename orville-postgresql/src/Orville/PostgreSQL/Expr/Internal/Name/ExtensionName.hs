@@ -31,9 +31,9 @@ newtype ExtensionName
   = ExtensionName Identifier
   deriving
     ( -- | @since 1.1.0.0
-      RawSql.SqlExpression
-    , -- | @since 1.1.0.0
       IdentifierExpression
+    , -- | @since 1.1.0.0
+      RawSql.SqlExpression
     )
 
 {- | Construct an 'ExtensionName' from a 'String'.

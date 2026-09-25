@@ -131,11 +131,11 @@ newtype AttributeName
   = AttributeName T.Text
   deriving
     ( -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
       Eq
     , -- | @since 1.0.0.0
       Ord
+    , -- | @since 1.0.0.0
+      Show
     , -- | @since 1.0.0.0
       String.IsString
     )
@@ -156,19 +156,19 @@ newtype AttributeNumber
   = AttributeNumber Int16
   deriving
     ( -- | @since 1.0.0.0
-      Show
+      Enum
     , -- | @since 1.0.0.0
       Eq
     , -- | @since 1.0.0.0
-      Ord
-    , -- | @since 1.0.0.0
-      Enum
+      Integral
     , -- | @since 1.0.0.0
       Num
     , -- | @since 1.0.0.0
-      Integral
+      Ord
     , -- | @since 1.0.0.0
       Real
+    , -- | @since 1.0.0.0
+      Show
     )
 
 {- | Converts an 'AttributeNumber' to an integer.

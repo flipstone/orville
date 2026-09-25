@@ -132,15 +132,15 @@ data NullsOrder
   | NullsLast
   deriving
     ( -- | @since 1.0.0.0
-      Eq
-    , -- | @since 1.0.0.0
-      Show
-    , -- | @since 1.0.0.0
-      Ord
+      Bounded
     , -- | @since 1.0.0.0
       Enum
     , -- | @since 1.0.0.0
-      Bounded
+      Eq
+    , -- | @since 1.0.0.0
+      Ord
+    , -- | @since 1.0.0.0
+      Show
     )
 
 {- | The SQL ASC order direction.

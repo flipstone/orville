@@ -19,11 +19,10 @@ module Orville.PostgreSQL.Plan.Many
   )
 where
 
-import Prelude (Either (Left, Right), Functor (fmap), Maybe (Just, Nothing), Ord, ($), (.), (<*>))
-
 import qualified Data.Either as Either
 import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
+import Prelude (Either (Left, Right), Functor (fmap), Maybe (Just, Nothing), Ord, ($), (.), (<*>))
 
 {- | 'NotAKey' is returned from various 'Many' related functions when presented
   with an input parameter that was not one of the original inputs that the

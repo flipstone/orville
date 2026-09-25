@@ -6,10 +6,10 @@ where
 
 import qualified Control.Monad as Monad
 import qualified Hedgehog as HH
+import qualified Orville.PostgreSQL as Orville
 import qualified System.Environment as Env
 import qualified System.Exit as SE
 
-import qualified Orville.PostgreSQL as Orville
 import qualified Test.Property as Property
 import qualified Test.TypeId as TypeId
 

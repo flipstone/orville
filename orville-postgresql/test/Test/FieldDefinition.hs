@@ -23,7 +23,6 @@ import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
-
 import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property

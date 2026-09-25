@@ -19,7 +19,6 @@ import qualified Hedgehog.Gen as Gen
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
-
 import qualified Test.Entities.Foo as Foo
 import qualified Test.PgGen as PgGen
 import qualified Test.TestTable as TestTable

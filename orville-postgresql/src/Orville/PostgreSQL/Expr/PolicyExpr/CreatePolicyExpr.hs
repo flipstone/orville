@@ -34,12 +34,10 @@ import Data.Function (on)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Word as Word
 
-import Orville.PostgreSQL.Expr.Name (QualifiedOrUnqualified, TableName)
+import Orville.PostgreSQL.Expr.Name (PolicyName, QualifiedOrUnqualified, TableName)
+import Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole (PolicyRoleExpr)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
-
-import Orville.PostgreSQL.Expr.Name (PolicyName)
-import Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole (PolicyRoleExpr)
 
 {- | Type to represent a SQL @CREATE POLICY@ statement. E.G.
 
