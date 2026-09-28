@@ -478,24 +478,19 @@ marshallResultFromSqlUsingRowIdExtractor errorDetailLevel rowIdExtractor marshal
 
 traverseSequence :: (a -> IO (Either err b)) -> [a] -> IO (Either err [b])
 traverseSequence f =
-  go
+  go []
  where
-  go as =
+  go acc as =
     case as of
       [] ->
-        pure (Right [])
+        pure (Right (reverse acc))
       a : rest -> do
         eitherB <- f a
         case eitherB of
           Left err ->
             pure (Left err)
-          Right b -> do
-            eitherBS <- go rest
-            case eitherBS of
-              Left err ->
-                pure (Left err)
-              Right bs ->
-                pure (Right (b : bs))
+          Right b ->
+            go (b : acc) rest
 
 {- | Attempts to decode a result set row that has already been fetched from the
   database server into a Haskell value. If the decoding fails, a

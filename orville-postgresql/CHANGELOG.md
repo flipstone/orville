@@ -32,6 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Decoding a large result set is much faster. Rows are now decoded in constant
+  stack space; previously the stack grew by one frame per row, which made each
+  decoded value cost several microseconds on results with tens of thousands of
+  rows.
 - `addTableConstraints`, `addTableIndexes` and `addTableTriggers` now keep the
   last item when a single call passes multiple items with the same migration
   key, as documented. Previously the first item in the list won.
