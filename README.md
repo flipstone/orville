@@ -43,11 +43,11 @@ maintained. This is currently versions 14,15,16,17, and 18.
 
 See the tutorials, in order of increasing complexity:
 
-* [Getting Started](GETTING-STARTED.md)
-* [Using SqlMarshaller](SQL-MARSHALLER.md)
-* [Using Plans](PLAN.md)
-* [Using Migrations](MIGRATION.md)
-* [Using JSON](JSON.md)
+* [Getting Started](https://flipstone.github.io/orville/tutorials/getting-started.html)
+* [Using SqlMarshaller](https://flipstone.github.io/orville/tutorials/using-sql-marshaller.html)
+* [Using Plans](https://flipstone.github.io/orville/tutorials/using-plans.html)
+* [Using Migrations](https://flipstone.github.io/orville/tutorials/using-migrations.html)
+* [Using JSON](https://flipstone.github.io/orville/tutorials/using-json.html)
 
 Additional documentation is available in the Haddocks.
 
