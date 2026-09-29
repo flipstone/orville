@@ -1,4 +1,5 @@
 -- SNIPPET: moduleHeader
+{-# LANGUAGE QualifiedDo #-}
 module Main
   ( main
   ) where
@@ -6,6 +7,7 @@ module Main
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 import qualified Orville.PostgreSQL.Plan as Plan
+import qualified Orville.PostgreSQL.Plan.Syntax as PlanSyntax
 
 import           Data.List (sort)
 import           Data.List.NonEmpty (NonEmpty((:|)))
@@ -176,3 +178,37 @@ main = do
       `Plan.chain` Plan.planList studentToClassesPlan
     )
     (T.pack "Name")
+-- SNIPPET: explainRepeatedSubPlan
+  let
+    findStudentByName :: Plan.Plan scope StudentName Student
+    findStudentByName =
+      Plan.findOne studentTable studentNameField
+
+    studentAndAgeRepeated :: Plan.Plan scope StudentName (Student, StudentAge)
+    studentAndAgeRepeated =
+      (,)
+        <$> findStudentByName
+        <*> (studentAge <$> findStudentByName)
+  print ("repeated", Plan.explain studentAndAgeRepeated)
+-- SNIPPET: explainMappedSubPlan
+  let
+    studentAndAgeMapped :: Plan.Plan scope StudentName (Student, StudentAge)
+    studentAndAgeMapped =
+      (\student -> (student, studentAge student)) <$> findStudentByName
+  print ("mapped", Plan.explain studentAndAgeMapped)
+-- SNIPPET: explainBoundSubPlan
+  let
+    studentAndAgeBound :: Plan.Plan scope StudentName (Student, StudentAge)
+    studentAndAgeBound =
+      Plan.bind findStudentByName $ \student ->
+        (,)
+          <$> Plan.use student
+          <*> Plan.use (studentAge <$> student)
+  print ("bound", Plan.explain studentAndAgeBound)
+-- SNIPPET: explainDoSubPlan
+  let
+    studentAndAgeDo :: Plan.Plan scope StudentName (Student, StudentAge)
+    studentAndAgeDo = PlanSyntax.do
+      student <- findStudentByName
+      (,) <$> Plan.use student <*> Plan.use (studentAge <$> student)
+  print ("do", Plan.explain studentAndAgeDo)

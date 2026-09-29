@@ -74,6 +74,7 @@ planTests pool =
 #endif
     , prop_assert pool
     , prop_explain
+    , prop_explain_applyRepeatsSubPlans
     ]
 {- ORMOLU_ENABLE -}
 
@@ -724,6 +725,23 @@ prop_explain =
     explanation
       === [ "SELECT \"name\",\"id\",\"name\",\"age\" FROM \"foo\" WHERE (\"name\") = ($1)"
           , "SELECT \"foo_id\",\"id\",\"foo_id\" FROM \"foo_child\" WHERE (\"foo_id\") = ($1)"
+          ]
+
+prop_explain_applyRepeatsSubPlans :: Property.NamedProperty
+prop_explain_applyRepeatsSubPlans =
+  Property.singletonNamedProperty "explain shows a repeated sub-plan once per occurrence" $ do
+    let
+      findFoo :: Plan.Plan scope Foo.FooName Foo.Foo
+      findFoo =
+        Plan.findOne Foo.table Foo.fooNameField
+
+      plan :: Plan.Plan scope Foo.FooName (Foo.Foo, Foo.Foo)
+      plan =
+        (,) <$> findFoo <*> findFoo
+
+    Plan.explain plan
+      === [ "SELECT \"name\",\"id\",\"name\",\"age\" FROM \"foo\" WHERE (\"name\") = ($1)"
+          , "SELECT \"name\",\"id\",\"name\",\"age\" FROM \"foo\" WHERE (\"name\") = ($1)"
           ]
 
 {- | Generates a list of Foos that along with FooName and FooAge that could plausibly be found in the
