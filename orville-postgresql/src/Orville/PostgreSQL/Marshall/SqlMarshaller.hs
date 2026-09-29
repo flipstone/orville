@@ -480,6 +480,9 @@ traverseSequence :: (a -> IO (Either err b)) -> [a] -> IO (Either err [b])
 traverseSequence f =
   go []
  where
+  -- This is implemented with tail recursion to avoid building a deep stack
+  -- because this function is called with @safe@ FFI functions from @libpq@,
+  -- which have increased overhead with deep stacks
   go acc as =
     case as of
       [] ->
