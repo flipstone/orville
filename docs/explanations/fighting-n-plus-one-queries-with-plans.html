@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Orville - Fighting N+1 Queries with Plans (Upcoming)</title>
+        <title>Orville - Fighting N+1 Queries with Plans</title>
         <link rel="stylesheet" href="../css/syntax.css" />
         <link rel="stylesheet" href="../css/default.css" />
     </head>
@@ -57,7 +57,7 @@
           
             <a href="../explanations/building-sql-expressions.html">Building SQL Expressions (Upcoming)</a>
           
-            <a href="../explanations/fighting-n-plus-one-queries-with-plans.html">Fighting N+1 Queries with Plans (Upcoming)</a>
+            <a href="../explanations/fighting-n-plus-one-queries-with-plans.html">Fighting N+1 Queries with Plans</a>
           
             <a href="../explanations/handling-failure.html">Handling Failure (Upcoming)</a>
           
@@ -76,10 +76,477 @@
       </section>
 
       <main role="main">
-        <h1>Fighting N+1 Queries with Plans (Upcoming)</h1>
+        <h1>Fighting N+1 Queries with Plans</h1>
         <article>
   <section>
-    <p>Coming Soon</p>
+    <p>An N+1 query problem is a slow data access pattern. Your code runs one query
+to get a list of rows. Then it runs one more query for each of those rows. For
+100 rows, the database receives 101 separate queries. One query with a join or
+an <code>IN</code> condition gives the same data in a single round trip.</p>
+<p>This page explains why the N+1 problem is so easy to create, and what causes
+it. It then explains how Orville’s <code>Plan</code> API removes the cause. The
+<a href="../tutorials/using-plans.html">Using Plans</a> tutorial shows the API step by
+step. This page explains why plans have the shape that they have.</p>
+<p>All code on this page comes from one sample program. It uses three tables:
+authors, books, and reviews. Each book has one author, and each book has zero
+or more reviews.</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ot">{-# LANGUAGE QualifiedDo #-}</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="dt">Main</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  ( main</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  ) <span class="kw">where</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL</span> <span class="kw">as</span> <span class="dt">O</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL.AutoMigration</span> <span class="kw">as</span> <span class="dt">AutoMigration</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL.Plan</span> <span class="kw">as</span> <span class="dt">Plan</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL.Plan.Syntax</span> <span class="kw">as</span> <span class="dt">PlanSyntax</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Control.Monad</span> (forM, forM_)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Control.Monad.IO.Class</span> (liftIO)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.List</span> (sortOn)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span>           <span class="dt">Data.List.NonEmpty</span> (<span class="dt">NonEmpty</span>((:|)))</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Int</span> <span class="kw">as</span> <span class="dt">Int</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.IORef</span> <span class="kw">as</span> <span class="dt">IORef</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text</span> <span class="kw">as</span> <span class="dt">T</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="co">------------</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co">-- Author --</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co">------------</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">AuthorId</span> <span class="ot">=</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Author</span> <span class="ot">=</span> <span class="dt">Author</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> authorId ::</span> <span class="dt">AuthorId</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> authorName ::</span> <span class="dt">T.Text</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="ot">authorIdField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">AuthorId</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>authorIdField <span class="ot">=</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>  O.integerField <span class="st">&quot;id&quot;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="ot">authorNameField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">T.Text</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>authorNameField <span class="ot">=</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  O.unboundedTextField <span class="st">&quot;name&quot;</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="ot">authorMarshaller ::</span> <span class="dt">O.SqlMarshaller</span> <span class="dt">Author</span> <span class="dt">Author</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>authorMarshaller <span class="ot">=</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Author</span></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;$&gt;</span> O.marshallField authorId authorIdField</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> O.marshallField authorName authorNameField</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="ot">authorTable ::</span> <span class="dt">O.TableDefinition</span> (<span class="dt">O.HasKey</span> <span class="dt">AuthorId</span>) <span class="dt">Author</span> <span class="dt">Author</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>authorTable <span class="ot">=</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>  O.mkTableDefinition <span class="st">&quot;n_plus_one_author&quot;</span> (O.primaryKey authorIdField) authorMarshaller</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a><span class="co">----------</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="co">-- Book --</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="co">----------</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> <span class="dt">BookId</span> <span class="ot">=</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Book</span> <span class="ot">=</span> <span class="dt">Book</span></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> bookId ::</span> <span class="dt">BookId</span></span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> bookTitle ::</span> <span class="dt">T.Text</span></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> bookAuthorId ::</span> <span class="dt">AuthorId</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a><span class="ot">bookIdField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">BookId</span></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>bookIdField <span class="ot">=</span></span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>  O.integerField <span class="st">&quot;id&quot;</span></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a><span class="ot">bookTitleField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">T.Text</span></span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>bookTitleField <span class="ot">=</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>  O.unboundedTextField <span class="st">&quot;title&quot;</span></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a><span class="ot">bookAuthorIdField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">AuthorId</span></span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>bookAuthorIdField <span class="ot">=</span></span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>  O.integerField <span class="st">&quot;author_id&quot;</span></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a><span class="ot">bookMarshaller ::</span> <span class="dt">O.SqlMarshaller</span> <span class="dt">Book</span> <span class="dt">Book</span></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>bookMarshaller <span class="ot">=</span></span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Book</span></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;$&gt;</span> O.marshallField bookId bookIdField</span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> O.marshallField bookTitle bookTitleField</span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> O.marshallField bookAuthorId bookAuthorIdField</span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a><span class="ot">bookTable ::</span> <span class="dt">O.TableDefinition</span> (<span class="dt">O.HasKey</span> <span class="dt">BookId</span>) <span class="dt">Book</span> <span class="dt">Book</span></span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>bookTable <span class="ot">=</span></span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>  O.addTableConstraints</span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>    [ O.foreignKeyConstraint (O.tableIdentifier authorTable) <span class="op">$</span></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>        O.foreignReference (O.fieldName bookAuthorIdField) (O.fieldName authorIdField) <span class="op">:|</span> []</span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>  <span class="op">$</span> O.mkTableDefinition <span class="st">&quot;n_plus_one_book&quot;</span> (O.primaryKey bookIdField) bookMarshaller</span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a><span class="co">------------</span></span>
+<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a><span class="co">-- Review --</span></span>
+<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a><span class="co">------------</span></span>
+<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Review</span> <span class="ot">=</span> <span class="dt">Review</span></span>
+<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> reviewId ::</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span></span>
+<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> reviewBookId ::</span> <span class="dt">BookId</span></span>
+<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> reviewStars ::</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span></span>
+<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a><span class="ot">reviewIdField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span></span>
+<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>reviewIdField <span class="ot">=</span></span>
+<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>  O.integerField <span class="st">&quot;id&quot;</span></span>
+<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a><span class="ot">reviewBookIdField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">BookId</span></span>
+<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>reviewBookIdField <span class="ot">=</span></span>
+<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>  O.integerField <span class="st">&quot;book_id&quot;</span></span>
+<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a><span class="ot">reviewStarsField ::</span> <span class="dt">O.FieldDefinition</span> <span class="dt">O.NotNull</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span></span>
+<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>reviewStarsField <span class="ot">=</span></span>
+<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a>  O.integerField <span class="st">&quot;stars&quot;</span></span>
+<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a><span class="ot">reviewMarshaller ::</span> <span class="dt">O.SqlMarshaller</span> <span class="dt">Review</span> <span class="dt">Review</span></span>
+<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>reviewMarshaller <span class="ot">=</span></span>
+<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Review</span></span>
+<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;$&gt;</span> O.marshallField reviewId reviewIdField</span>
+<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> O.marshallField reviewBookId reviewBookIdField</span>
+<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> O.marshallField reviewStars reviewStarsField</span>
+<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a><span class="ot">reviewTable ::</span> <span class="dt">O.TableDefinition</span> (<span class="dt">O.HasKey</span> <span class="dt">Int</span><span class="op">.</span><span class="dt">Int32</span>) <span class="dt">Review</span> <span class="dt">Review</span></span>
+<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a>reviewTable <span class="ot">=</span></span>
+<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a>  O.addTableConstraints</span>
+<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a>    [ O.foreignKeyConstraint (O.tableIdentifier bookTable) <span class="op">$</span></span>
+<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a>        O.foreignReference (O.fieldName reviewBookIdField) (O.fieldName bookIdField) <span class="op">:|</span> []</span>
+<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a>  <span class="op">$</span> O.mkTableDefinition <span class="st">&quot;n_plus_one_review&quot;</span> (O.primaryKey reviewIdField) reviewMarshaller</span>
+<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>The <code>main</code> function creates the tables and adds two authors, five books, and
+six reviews:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  pool <span class="ot">&lt;-</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    O.createConnectionPool</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">O.ConnectionOptions</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>          { O.connectionString <span class="ot">=</span> <span class="st">&quot;host=localhost user=postgres password=postgres&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  O.runOrville pool <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">AutoMigration.SchemaTable</span> authorTable</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">AutoMigration.SchemaTable</span> bookTable</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">AutoMigration.SchemaTable</span> reviewTable</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    O.deleteEntities reviewTable <span class="dt">Nothing</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    O.deleteEntities bookTable <span class="dt">Nothing</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    O.deleteEntities authorTable <span class="dt">Nothing</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mapM_</span> (O.insertEntity authorTable)</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">Author</span> <span class="dv">1</span> (T.pack <span class="st">&quot;Fyodor Dostoyevsky&quot;</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Author</span> <span class="dv">2</span> (T.pack <span class="st">&quot;Frank Herbert&quot;</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mapM_</span> (O.insertEntity bookTable)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">Book</span> <span class="dv">1</span> (T.pack <span class="st">&quot;Brothers Karamazov&quot;</span>) <span class="dv">1</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">2</span> (T.pack <span class="st">&quot;The Idiot&quot;</span>) <span class="dv">1</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">3</span> (T.pack <span class="st">&quot;Crime and Punishment&quot;</span>) <span class="dv">1</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">4</span> (T.pack <span class="st">&quot;Dune&quot;</span>) <span class="dv">2</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">5</span> (T.pack <span class="st">&quot;God Emperor of Dune&quot;</span>) <span class="dv">2</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mapM_</span> (O.insertEntity reviewTable)</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">Review</span> <span class="dv">1</span> <span class="dv">1</span> <span class="dv">5</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">2</span> <span class="dv">1</span> <span class="dv">4</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">5</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">5</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">5</span> <span class="dv">4</span> <span class="dv">5</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">6</span> <span class="dv">4</span> <span class="dv">3</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<h2 id="how-an-n1-problem-starts">How an N+1 problem starts</h2>
+<p>In many object-relational mappers (ORMs), the problem hides behind normal
+field access. In Python, the code <code>book.author.name</code> looks like a read from
+memory. But the ORM can send a query to the database to load <code>author</code>. If you
+put that line in a <code>for</code> loop over all books, you get one query for the books
+and one query for each book. Nothing in the code tells you this. GraphQL
+resolvers have the same risk, because one field of a result can require a
+query of its own.</p>
+<p>If you access a record field, Orville does not load data. A <code>Book</code> is a plain
+Haskell record, and <code>bookAuthorId</code> is a plain function. Every query is an
+explicit call in a <code>MonadOrville</code> monad. This makes queries easier to see, but
+it does not stop N+1 queries. The code below gets all the books, and then it
+gets the author of each book, one book at a time:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ot">booksInOrder ::</span> <span class="dt">O.SelectOptions</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>booksInOrder <span class="ot">=</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  O.orderBy (O.orderByField bookIdField O.ascendingOrder)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ot">naiveAuthorNames ::</span> <span class="dt">O.Orville</span> [<span class="dt">T.Text</span>]</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>naiveAuthorNames <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  books <span class="ot">&lt;-</span> O.findEntitiesBy bookTable booksInOrder</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  forM books <span class="op">$</span> \book <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    maybeAuthor <span class="ot">&lt;-</span> O.findEntity authorTable (bookAuthorId book)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> (<span class="fu">maybe</span> (T.pack <span class="st">&quot;unknown&quot;</span>) authorName maybeAuthor)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>To count the queries, the sample adds a SQL execution callback. Orville calls
+the callback for each SQL statement that it sends. The callback adds one to a
+counter for each <code>SELECT</code>:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">countSelectQueries ::</span> <span class="dt">O.Orville</span> a <span class="ot">-&gt;</span> <span class="dt">O.Orville</span> (a, <span class="dt">Int</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>countSelectQueries action <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  counter <span class="ot">&lt;-</span> liftIO (IORef.newIORef <span class="dv">0</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    countSelects queryType _sql runQuery <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>      <span class="kw">case</span> queryType <span class="kw">of</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="dt">O.SelectQuery</span> <span class="ot">-&gt;</span> IORef.modifyIORef' counter (<span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        _ <span class="ot">-&gt;</span> <span class="fu">pure</span> ()</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>      runQuery</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> O.localOrvilleState (O.addSqlExecutionCallback countSelects) action</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  count <span class="ot">&lt;-</span> liftIO (IORef.readIORef counter)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> (result, count)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>  (naiveNames, naiveCount) <span class="ot">&lt;-</span> O.runOrville pool (countSelectQueries naiveAuthorNames)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span> naiveNames</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">putStrLn</span> (<span class="st">&quot;Loop: &quot;</span> <span class="op">&lt;&gt;</span> <span class="fu">show</span> naiveCount <span class="op">&lt;&gt;</span> <span class="st">&quot; SELECT queries&quot;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>With five books, the loop sends six <code>SELECT</code> queries: one for the books and
+five for the authors. The code is correct, and with test data it is fast. With
+production data, the number of queries grows with the number of rows.</p>
+<h2 id="the-cause-is-the-loop-not-the-objects">The cause is the loop, not the objects</h2>
+<p>The same problem occurs in languages that have no objects. PL/pgSQL runs
+inside PostgreSQL and has no ORM, but a <code>FOR</code> loop can still run a query for
+each row of another query:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">FOR</span> book <span class="kw">IN</span> <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> books <span class="cf">LOOP</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">RETURN</span> <span class="kw">QUERY</span> <span class="kw">SELECT</span> name <span class="kw">FROM</span> authors <span class="kw">WHERE</span> <span class="kw">id</span> <span class="op">=</span> book.author_id;</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">END</span> <span class="cf">LOOP</span>;</span></code></pre></div>
+<p>The cause of the N+1 problem is one capability: the program can look at the
+rows from one query and decide which queries to run next. A monad gives you
+exactly this capability. In a <code>MonadOrville</code> block, the result of one query is
+a normal Haskell value. You can loop over it, pattern match on it, or recurse
+on it. Code review and discipline are the only protection. Each <code>forM</code>, each
+helper function that runs a query, and each call to that helper from a loop is
+a possible N+1 problem.</p>
+<p>One way to remove the problem is to remove the capability. The Datalog query
+language is an example of this idea. Datalog removes unbounded recursion from
+Prolog. As a result, every Datalog query terminates in polynomial time. A
+language with less power gives stronger guarantees. The Acadia query language
+uses the same idea to prevent N+1 queries. Evan Czaplicki describes it in
+<a href="https://acadia.engineering/blog/solving-the-1-plus-N-query-problem">Solving the 1+N Query
+Problem</a>.</p>
+<p>Orville cannot remove loops from Haskell. Instead, it gives you a smaller
+language inside Haskell for loading related data. That language is <code>Plan</code>.</p>
+<h2 id="a-plan-works-on-one-input-or-on-many-inputs">A plan works on one input or on many inputs</h2>
+<p>A <code>Plan scope param result</code> is a description of queries. It is not an action.
+When you execute it, it takes a <code>param</code> value and produces a <code>result</code> value.
+This plan finds the author of a book:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ot">authorOfBookPlan ::</span> <span class="dt">Plan.Plan</span> scope <span class="dt">Book</span> <span class="dt">Author</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>authorOfBookPlan <span class="ot">=</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  Plan.focusParam bookAuthorId (Plan.findOne authorTable authorIdField)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ot">plannedAuthorNames ::</span> <span class="dt">O.Orville</span> [<span class="dt">T.Text</span>]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>plannedAuthorNames <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  books <span class="ot">&lt;-</span> O.findEntitiesBy bookTable booksInOrder</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  authors <span class="ot">&lt;-</span> Plan.execute (Plan.planList authorOfBookPlan) books</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> (<span class="fu">fmap</span> authorName authors)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>The plan is written for one book. <code>Plan.planList</code> changes it into a plan for a
+list of books. The new plan does not run the original plan once per book.
+Orville runs each query of the plan one time, with an <code>IN</code> condition that
+contains the values from all the inputs. Then it matches each result row to
+the input that asked for it.</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>  (plannedNames, plannedCount) <span class="ot">&lt;-</span> O.runOrville pool (countSelectQueries plannedAuthorNames)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span> plannedNames</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">putStrLn</span> (<span class="st">&quot;Plan: &quot;</span> <span class="op">&lt;&gt;</span> <span class="fu">show</span> plannedCount <span class="op">&lt;&gt;</span> <span class="st">&quot; SELECT queries&quot;</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>This version sends two <code>SELECT</code> queries: one for the books and one for the
+authors of all the books. With 5,000 books, it still sends two queries. The
+results come back in the same order as the inputs. If two books have the same
+author, each book still gets its own result.</p>
+<p>The books query in this example is not part of a plan. You do not need to
+write your whole program with plans. You can use a plan at the place where
+code starts to load related data for many rows.</p>
+<h2 id="why-a-plan-cannot-become-a-loop">Why a plan cannot become a loop</h2>
+<p>A plan is safe because of the things that it does not let you do. The types
+make the restriction, so the compiler enforces it.</p>
+<p><code>Plan</code> has <code>Functor</code> and <code>Applicative</code> instances. It has no <code>Monad</code> instance.
+To use the result of one step in a later step, you use <code>Plan.bind</code>, or the
+<code>do</code> notation from <code>Orville.PostgreSQL.Plan.Syntax</code>. The value that <code>bind</code>
+gives you is not the result. It is a <code>Planned scope param a</code> value, which
+represents the result. When the plan runs for one input, the <code>Planned</code> value
+contains one result. When it runs for many inputs, it contains one result for
+each input. When <code>Plan.explain</code> looks at the plan, it contains no data at all.</p>
+<p>Your code does not know which of these cases applies. Because of this,
+<code>Planned</code> supports only two operations. You can change the values inside it
+with <code>fmap</code>, and you can give it to a later step with <code>Plan.use</code> or
+<code>Plan.using</code>. You cannot pattern match on it, and you cannot loop over it. The
+next step of the plan cannot depend on the data in a result. It can only
+receive that data as input.</p>
+<p>This code does not compile, because <code>books</code> is a <code>Planned</code> value and not a
+list:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- This does not compile.</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ot">authorsOneByOne ::</span> <span class="dt">Plan.Plan</span> scope <span class="dt">AuthorId</span> [<span class="dt">Author</span>]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>authorsOneByOne <span class="ot">=</span> PlanSyntax.do</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  books <span class="ot">&lt;-</span> Plan.findAll bookTable bookAuthorIdField</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">traverse</span> (\book <span class="ot">-&gt;</span> <span class="op">...</span>) books</span></code></pre></div>
+<p>The <code>scope</code> type variable closes one more gap. <code>Plan.planList</code> and
+<code>Plan.planMany</code> accept only a plan that works for every <code>scope</code>. A plan that
+you wrote for exactly one input cannot be given to them. Thus each plan that
+you can use with many inputs is also correct with many inputs.</p>
+<p>Plans can still branch. <code>Plan.planEither</code> takes one plan for <code>Left</code> inputs and
+one plan for <code>Right</code> inputs. With many inputs, Orville splits the inputs into
+two groups and runs each plan one time for its group. <code>Plan.planMaybe</code> and
+<code>Plan.chainMaybe</code> use <code>planEither</code> for optional values. If a group is empty,
+Orville does not send its query.</p>
+<h2 id="plans-compose">Plans compose</h2>
+<p>A plan is a normal Haskell value. You can give it a name, put it in a module,
+and use it in larger plans. The plan below loads a book with its author and
+its reviews. It uses <code>authorOfBookPlan</code> from above as one of its steps:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">BookDetails</span> <span class="ot">=</span> <span class="dt">BookDetails</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  {<span class="ot"> detailsBook ::</span> <span class="dt">Book</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> detailsAuthor ::</span> <span class="dt">Author</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  ,<span class="ot"> detailsReviews ::</span> [<span class="dt">Review</span>]</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="ot">bookDetailsPlan ::</span> <span class="dt">Plan.Plan</span> scope <span class="dt">Book</span> <span class="dt">BookDetails</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>bookDetailsPlan <span class="ot">=</span> PlanSyntax.do</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  book <span class="ot">&lt;-</span> Plan.askParam</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  author <span class="ot">&lt;-</span> authorOfBookPlan</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  reviews <span class="ot">&lt;-</span> Plan.focusParam bookId (Plan.findAll reviewTable reviewBookIdField)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  <span class="dt">BookDetails</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;$&gt;</span> Plan.use book</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> Plan.use author</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> Plan.use reviews</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p><code>Plan.explain</code> shows the SQL that a plan sends, without a connection to the
+database. The sample explains the plan for one book, and then the same plan
+for a list of books:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mapM_</span> <span class="fu">putStrLn</span> (Plan.explain bookDetailsPlan)</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">putStrLn</span> <span class="st">&quot;---&quot;</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mapM_</span> <span class="fu">putStrLn</span> (Plan.explain (Plan.planList bookDetailsPlan))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>Both explanations contain two queries. Only the <code>WHERE</code> condition changes,
+from <code>=</code> to <code>IN</code>. The number of queries comes from the structure of the plan,
+so you know it before you run the plan. You can also put this number in a unit
+test. If a change adds a query to a plan, the test fails.</p>
+<p>Plans also nest. The next plan loads an author, the books of that author, and
+the details of each book. The inner step is <code>Plan.planList bookDetailsPlan</code>:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ot">authorBibliographyPlan ::</span> <span class="dt">Plan.Plan</span> scope <span class="dt">AuthorId</span> (<span class="dt">Author</span>, [<span class="dt">BookDetails</span>])</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>authorBibliographyPlan <span class="ot">=</span> PlanSyntax.do</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  author <span class="ot">&lt;-</span> Plan.findOne authorTable authorIdField</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  books <span class="ot">&lt;-</span> Plan.findAll bookTable bookAuthorIdField</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  details <span class="ot">&lt;-</span> Plan.using books (Plan.planList bookDetailsPlan)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  (,) <span class="op">&lt;$&gt;</span> Plan.use author <span class="op">&lt;*&gt;</span> Plan.use details</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>The sample executes this plan for two authors. It prints each book with a
+small helper function:</p>
+<div class="codeblock-label">
+src/Main.hs : haskell
+</div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ot">describeBook ::</span> <span class="dt">BookDetails</span> <span class="ot">-&gt;</span> <span class="dt">String</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>describeBook details <span class="ot">=</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">concat</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    [ T.unpack (bookTitle (detailsBook details))</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot; by &quot;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    , T.unpack (authorName (detailsAuthor details))</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot;, &quot;</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    , <span class="fu">show</span> (<span class="fu">length</span> (detailsReviews details))</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    , <span class="st">&quot; review(s)&quot;</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>  (bibliographies, bibliographyCount) <span class="ot">&lt;-</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    O.runOrville pool <span class="op">.</span> countSelectQueries <span class="op">$</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>      Plan.execute (Plan.planList authorBibliographyPlan) [<span class="dv">1</span>, <span class="dv">2</span>]</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>  forM_ bibliographies <span class="op">$</span> \(author, details) <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">putStrLn</span> (T.unpack (authorName author))</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    forM_ (sortOn (bookId <span class="op">.</span> detailsBook) details) <span class="op">$</span> \detail <span class="ot">-&gt;</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">putStrLn</span> (<span class="st">&quot;  &quot;</span> <span class="op">&lt;&gt;</span> describeBook detail)</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">putStrLn</span> (<span class="st">&quot;Bibliographies: &quot;</span> <span class="op">&lt;&gt;</span> <span class="fu">show</span> bibliographyCount <span class="op">&lt;&gt;</span> <span class="st">&quot; SELECT queries&quot;</span>)</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>The plan sends four queries: authors, books, authors of the books, and
+reviews. A version with <code>forM</code> loops sends 14 queries for the same data. That
+is two queries for each author and two queries for each book. With more data,
+the loop version sends more queries. The plan version still sends four.</p>
+<h2 id="what-plans-do-not-promise">What plans do not promise</h2>
+<p>Plans give you one specific guarantee. A plan sends at most one query for each
+step in its structure, and the number of rows does not change this number.
+Some other things are not guaranteed.</p>
+<p>Orville does not make joins from plans. Each step is a separate query, and
+Orville runs the steps in order. A plan with four steps needs four round trips
+to the database. A single hand-written join can need only one. If a step must
+be a join, you can write the query yourself and add it to a plan with
+<code>Plan.planOperation</code> or <code>Plan.planSelect</code>.</p>
+<p>Plans do not guarantee that a query terminates or that it is fast. A plan is a
+Haskell value, and Haskell lets you define a plan that refers to itself
+without end. A single query can also be slow, e.g. if the column in the
+<code>WHERE</code> condition has no index. Orville does not make sure that an index exists. A very large
+input list also makes a very large <code>IN</code> condition.</p>
+<p>Plans do not protect code that is outside a plan. If you call <code>Plan.execute</code>
+inside a <code>forM</code> loop, you have an N+1 problem again. But the place that you
+must examine is smaller: the calls to <code>execute</code>, and not every function that
+loads data.</p>
+<h2 id="summary">Summary</h2>
+<p>The N+1 problem comes from one capability: code that uses query results to
+decide which queries to run next. A <code>Plan</code> does not have this capability. The
+results of a step are available only as <code>Planned</code> values. Your code can
+transform them and give them to later steps, but it cannot loop over them.
+Because of this restriction, Orville can run a plan for one input or for many
+inputs with the same number of queries.</p>
+<p>To learn the API step by step, read the <a href="../tutorials/using-plans.html">Using
+Plans</a> tutorial. For the full list of plan
+functions, read the documentation of the <code>Orville.PostgreSQL.Plan</code> module on
+Hackage.</p>
+<p>To run the sample yourself, build and run it like this:</p>
+<div class="codeblock-label">
+shell
+</div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">stack</span> build</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">stack</span> exec fighting-n-plus-one</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>The output is:</p>
+<div class="codeblock-label">
+output : plaintext
+</div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>[&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Octavia E. Butler&quot;,&quot;Octavia E. Butler&quot;]</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>Loop: 6 SELECT queries</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>[&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Octavia E. Butler&quot;,&quot;Octavia E. Butler&quot;]</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>Plan: 2 SELECT queries</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>SELECT &quot;id&quot;,&quot;id&quot;,&quot;name&quot; FROM &quot;n_plus_one_author&quot; WHERE (&quot;id&quot;) = ($1)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>SELECT &quot;book_id&quot;,&quot;id&quot;,&quot;book_id&quot;,&quot;stars&quot; FROM &quot;n_plus_one_review&quot; WHERE (&quot;book_id&quot;) = ($1)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>---</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>SELECT &quot;id&quot;,&quot;id&quot;,&quot;name&quot; FROM &quot;n_plus_one_author&quot; WHERE (&quot;id&quot;) IN ($1, $2)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>SELECT &quot;book_id&quot;,&quot;id&quot;,&quot;book_id&quot;,&quot;stars&quot; FROM &quot;n_plus_one_review&quot; WHERE (&quot;book_id&quot;) IN ($1, $2)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>Ursula K. Le Guin</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  A Wizard of Earthsea by Ursula K. Le Guin, 2 review(s)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  The Dispossessed by Ursula K. Le Guin, 1 review(s)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  The Left Hand of Darkness by Ursula K. Le Guin, 0 review(s)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>Octavia E. Butler</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  Kindred by Octavia E. Butler, 3 review(s)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  Parable of the Sower by Octavia E. Butler, 0 review(s)</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>Bibliographies: 4 SELECT queries</span></code></pre></div>
   </section>
 </article>
 

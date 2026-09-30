@@ -1,0 +1,17 @@
+["Ursula K. Le Guin","Ursula K. Le Guin","Ursula K. Le Guin","Octavia E. Butler","Octavia E. Butler"]
+Loop: 6 SELECT queries
+["Ursula K. Le Guin","Ursula K. Le Guin","Ursula K. Le Guin","Octavia E. Butler","Octavia E. Butler"]
+Plan: 2 SELECT queries
+SELECT "id","id","name" FROM "n_plus_one_author" WHERE ("id") = ($1)
+SELECT "book_id","id","book_id","stars" FROM "n_plus_one_review" WHERE ("book_id") = ($1)
+---
+SELECT "id","id","name" FROM "n_plus_one_author" WHERE ("id") IN ($1, $2)
+SELECT "book_id","id","book_id","stars" FROM "n_plus_one_review" WHERE ("book_id") IN ($1, $2)
+Ursula K. Le Guin
+  A Wizard of Earthsea by Ursula K. Le Guin, 2 review(s)
+  The Dispossessed by Ursula K. Le Guin, 1 review(s)
+  The Left Hand of Darkness by Ursula K. Le Guin, 0 review(s)
+Octavia E. Butler
+  Kindred by Octavia E. Butler, 3 review(s)
+  Parable of the Sower by Octavia E. Butler, 0 review(s)
+Bibliographies: 4 SELECT queries
