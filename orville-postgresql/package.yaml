@@ -200,6 +200,8 @@ tests:
       - bytestring >=0.10 && <0.13
       - containers >= 0.6 && < 0.9
       - hedgehog >= 1.0.5 && <1.8
+      - tasty >= 1.4 && <1.6
+      - tasty-hedgehog >= 1.1 && <1.5
       - postgresql-libpq >= 0.9.4.2 && <0.12
       - orville-postgresql
       - resource-pool (>= 0.2.2.0 && <0.3) || (>= 0.4  && <0.6)

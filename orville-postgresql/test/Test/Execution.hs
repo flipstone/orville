@@ -7,24 +7,34 @@ import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-executionTests :: Orville.ConnectionPool -> Property.Group
+executionTests :: Orville.ConnectionPool -> Tasty.TestTree
 executionTests pool =
-  Property.group
+  Tasty.testGroup
     "Execution"
-    [ prop_executeVoidCallbacks pool
-    , prop_executeAndDecodeCallbacks pool
-    , prop_executeAndReturnAffectedRows pool
-    , prop_executeAndReturnAffectedRowsCallbacks pool
+    [ TastyHH.testProperty
+        "executeVoid makes execution callbacks"
+        (prop_executeVoidCallbacks pool)
+    , TastyHH.testProperty
+        "executeAndDecode makes execution callbacks"
+        (prop_executeAndDecodeCallbacks pool)
+    , TastyHH.testProperty
+        "executeAndReturnAffectedRows works as advertised"
+        (prop_executeAndReturnAffectedRows pool)
+    , TastyHH.testProperty
+        "executeAndReturnAffectedRows makes execution callbacks"
+        (prop_executeAndReturnAffectedRowsCallbacks pool)
     ]
 
-prop_executeVoidCallbacks :: Property.NamedDBProperty
-prop_executeVoidCallbacks =
-  Property.singletonNamedDBProperty "exceuteVoid makes execution callbacks" $ \pool -> do
+prop_executeVoidCallbacks :: Orville.ConnectionPool -> HH.Property
+prop_executeVoidCallbacks pool =
+  Property.singletonProperty $ do
     traceRef <- HH.evalIO $ IORef.newIORef []
 
     let
@@ -44,9 +54,9 @@ prop_executeVoidCallbacks =
           , ("Inner", Orville.SelectQuery, RawSql.toExampleBytes selectOne)
           ]
 
-prop_executeAndDecodeCallbacks :: Property.NamedDBProperty
-prop_executeAndDecodeCallbacks =
-  Property.singletonNamedDBProperty "exceuteAndDecode makes execution callbacks" $ \pool -> do
+prop_executeAndDecodeCallbacks :: Orville.ConnectionPool -> HH.Property
+prop_executeAndDecodeCallbacks pool =
+  Property.singletonProperty $ do
     traceRef <- HH.evalIO $ IORef.newIORef []
 
     let
@@ -70,9 +80,9 @@ prop_executeAndDecodeCallbacks =
           , ("Inner", Orville.SelectQuery, RawSql.toExampleBytes selectOne)
           ]
 
-prop_executeAndReturnAffectedRows :: Property.NamedDBProperty
-prop_executeAndReturnAffectedRows =
-  Property.singletonNamedDBProperty "executeAndReturnAffectedRows works as advertised" $ \pool -> do
+prop_executeAndReturnAffectedRows :: Orville.ConnectionPool -> HH.Property
+prop_executeAndReturnAffectedRows pool =
+  Property.singletonProperty $ do
     let
       selectOne =
         RawSql.fromString "SELECT 1 as number"
@@ -83,9 +93,9 @@ prop_executeAndReturnAffectedRows =
 
     affectedRows === 1
 
-prop_executeAndReturnAffectedRowsCallbacks :: Property.NamedDBProperty
-prop_executeAndReturnAffectedRowsCallbacks =
-  Property.singletonNamedDBProperty "executeAndReturnAffectedRows makes execution callbacks" $ \pool -> do
+prop_executeAndReturnAffectedRowsCallbacks :: Orville.ConnectionPool -> HH.Property
+prop_executeAndReturnAffectedRowsCallbacks pool =
+  Property.singletonProperty $ do
     traceRef <- HH.evalIO $ IORef.newIORef []
 
     let

@@ -8,6 +8,8 @@ import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
@@ -15,30 +17,36 @@ import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-postgreSQLAxiomTests :: Orville.ConnectionPool -> Property.Group
+postgreSQLAxiomTests :: Orville.ConnectionPool -> Tasty.TestTree
 postgreSQLAxiomTests pool =
-  Property.group
+  Tasty.testGroup
     "PostgreSQL Axioms"
-    [ prop_smallIntegerBounds pool
-    , prop_integerBounds pool
-    , prop_bigIntegerBounds pool
+    [ TastyHH.testProperty
+        "smallinteger bounds match Haskell Int16"
+        (prop_smallIntegerBounds pool)
+    , TastyHH.testProperty
+        "integer bounds match Haskell Int32"
+        (prop_integerBounds pool)
+    , TastyHH.testProperty
+        "bigInteger bounds match Haskell Int64"
+        (prop_bigIntegerBounds pool)
     ]
 
-prop_smallIntegerBounds :: Property.NamedDBProperty
-prop_smallIntegerBounds =
-  Property.singletonNamedDBProperty "smallinteger bounds match Haskell Int16" $ \pool -> do
+prop_smallIntegerBounds :: Orville.ConnectionPool -> HH.Property
+prop_smallIntegerBounds pool =
+  Property.singletonProperty $ do
     assertPostgreSQLMinValueMatchesHaskell pool SqlType.smallInteger
     assertPostgreSQLMaxValueMatchesHaskell pool SqlType.smallInteger
 
-prop_integerBounds :: Property.NamedDBProperty
-prop_integerBounds =
-  Property.singletonNamedDBProperty "integer bounds match Haskell Int32" $ \pool -> do
+prop_integerBounds :: Orville.ConnectionPool -> HH.Property
+prop_integerBounds pool =
+  Property.singletonProperty $ do
     assertPostgreSQLMinValueMatchesHaskell pool SqlType.integer
     assertPostgreSQLMaxValueMatchesHaskell pool SqlType.integer
 
-prop_bigIntegerBounds :: Property.NamedDBProperty
-prop_bigIntegerBounds =
-  Property.singletonNamedDBProperty "bigInteger bounds match Haskell Int64" $ \pool -> do
+prop_bigIntegerBounds :: Orville.ConnectionPool -> HH.Property
+prop_bigIntegerBounds pool =
+  Property.singletonProperty $ do
     assertPostgreSQLMinValueMatchesHaskell pool SqlType.bigInteger
     assertPostgreSQLMaxValueMatchesHaskell pool SqlType.bigInteger
 

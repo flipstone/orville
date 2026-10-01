@@ -7,6 +7,8 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Text as T
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -14,19 +16,27 @@ import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.Property as Property
 
-policyTests :: Orville.ConnectionPool -> Property.Group
+policyTests :: Orville.ConnectionPool -> Tasty.TestTree
 policyTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Policy"
-    [ prop_createPolicyWithAllClauses pool
-    , prop_specialRoleTargets pool
-    , prop_alterPolicy pool
-    , prop_dropPolicyIfExists pool
+    [ TastyHH.testProperty
+        "creates a policy with AS, FOR, TO, USING and WITH CHECK clauses"
+        (prop_createPolicyWithAllClauses pool)
+    , TastyHH.testProperty
+        "creates policies with the special role targets"
+        (prop_specialRoleTargets pool)
+    , TastyHH.testProperty
+        "alters the roles and expressions of a policy"
+        (prop_alterPolicy pool)
+    , TastyHH.testProperty
+        "drops policies, tolerating missing ones with IF EXISTS"
+        (prop_dropPolicyIfExists pool)
     ]
 
-prop_createPolicyWithAllClauses :: Property.NamedDBProperty
-prop_createPolicyWithAllClauses =
-  Property.singletonNamedDBProperty "creates a policy with AS, FOR, TO, USING and WITH CHECK clauses" $ \pool -> do
+prop_createPolicyWithAllClauses :: Orville.ConnectionPool -> HH.Property
+prop_createPolicyWithAllClauses pool =
+  Property.singletonProperty $ do
     let
       createPolicy =
         Expr.createPolicyExpr
@@ -50,9 +60,9 @@ prop_createPolicyWithAllClauses =
     fmap PgCatalog.pgPolicyCmd policies === [Orville.PolicyCommandUpdate]
     fmap PgCatalog.pgPolicyRoles policies === [[T.pack "orville_test"]]
 
-prop_specialRoleTargets :: Property.NamedDBProperty
-prop_specialRoleTargets =
-  Property.singletonNamedDBProperty "creates policies with the special role targets" $ \pool -> do
+prop_specialRoleTargets :: Orville.ConnectionPool -> HH.Property
+prop_specialRoleTargets pool =
+  Property.singletonProperty $ do
     let
       mkPolicy name role =
         Expr.createPolicyExpr
@@ -84,9 +94,9 @@ prop_specialRoleTargets =
           , [T.pack "public"]
           ]
 
-prop_alterPolicy :: Property.NamedDBProperty
-prop_alterPolicy =
-  Property.singletonNamedDBProperty "alters the roles and expressions of a policy" $ \pool -> do
+prop_alterPolicy :: Orville.ConnectionPool -> HH.Property
+prop_alterPolicy pool =
+  Property.singletonProperty $ do
     let
       createPolicy =
         Expr.createPolicyExpr
@@ -116,9 +126,9 @@ prop_alterPolicy =
 
     fmap PgCatalog.pgPolicyRoles policies === [[T.pack "public"]]
 
-prop_dropPolicyIfExists :: Property.NamedDBProperty
-prop_dropPolicyIfExists =
-  Property.singletonNamedDBProperty "drops policies, tolerating missing ones with IF EXISTS" $ \pool -> do
+prop_dropPolicyIfExists :: Orville.ConnectionPool -> HH.Property
+prop_dropPolicyIfExists pool =
+  Property.singletonProperty $ do
     let
       createPolicy =
         Expr.createPolicyExpr

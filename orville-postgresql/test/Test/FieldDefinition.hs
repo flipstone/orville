@@ -15,6 +15,8 @@ import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -27,27 +29,29 @@ import Test.Expr.TestSchema (sqlRowsToText)
 import qualified Test.PgGen as PgGen
 import qualified Test.Property as Property
 
-fieldDefinitionTests :: Orville.ConnectionPool -> Property.Group
+fieldDefinitionTests :: Orville.ConnectionPool -> Tasty.TestTree
 fieldDefinitionTests pool =
-  Property.group "FieldDefinition" $
-    [prop_userData]
-      <> integerField pool
-      <> bigIntegerField pool
-      <> doubleField pool
-      <> booleanField pool
-      <> unboundedTextField pool
-      <> boundedTextField pool
-      <> fixedTextField pool
-      <> textSearchVectorField pool
-      <> uuidField pool
-      <> dateField pool
-      <> utcTimestampField pool
-      <> localTimestampField pool
-      <> jsonbField pool
+  Tasty.testGroup
+    "FieldDefinition"
+    [ TastyHH.testProperty "User data can be stored on FieldDefinition" prop_userData
+    , integerField pool
+    , bigIntegerField pool
+    , doubleField pool
+    , booleanField pool
+    , unboundedTextField pool
+    , boundedTextField pool
+    , fixedTextField pool
+    , textSearchVectorField pool
+    , uuidField pool
+    , dateField pool
+    , utcTimestampField pool
+    , localTimestampField pool
+    , jsonbField pool
+    ]
 
-prop_userData :: Property.NamedProperty
+prop_userData :: HH.Property
 prop_userData =
-  Property.singletonNamedProperty "User data can be stored on FieldDefinition" $ do
+  Property.singletonProperty $ do
     let
       fieldDef =
         Marshall.addFieldUserData @Int 42
@@ -59,7 +63,7 @@ prop_userData =
     Marshall.lookupFieldUserData @Int fieldDef === Just 42
     Marshall.lookupFieldUserData fieldDef === Just "Life the universe and everything"
 
-integerField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+integerField :: Orville.ConnectionPool -> Tasty.TestTree
 integerField pool =
   testFieldProperties pool "integerField" $
     FieldDefinitionTest
@@ -68,7 +72,7 @@ integerField pool =
       , roundTripGen = PgGen.pgInt32
       }
 
-bigIntegerField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+bigIntegerField :: Orville.ConnectionPool -> Tasty.TestTree
 bigIntegerField pool =
   testFieldProperties pool "bigIntegerField" $
     FieldDefinitionTest
@@ -77,7 +81,7 @@ bigIntegerField pool =
       , roundTripGen = Gen.integral (Range.linearFrom 0 minBound maxBound)
       }
 
-doubleField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+doubleField :: Orville.ConnectionPool -> Tasty.TestTree
 doubleField pool =
   testFieldProperties pool "doubleField" $
     FieldDefinitionTest
@@ -86,7 +90,7 @@ doubleField pool =
       , roundTripGen = PgGen.pgDouble
       }
 
-booleanField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+booleanField :: Orville.ConnectionPool -> Tasty.TestTree
 booleanField pool =
   testFieldProperties pool "booleanField" $
     FieldDefinitionTest
@@ -95,7 +99,7 @@ booleanField pool =
       , roundTripGen = Gen.bool
       }
 
-unboundedTextField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+unboundedTextField :: Orville.ConnectionPool -> Tasty.TestTree
 unboundedTextField pool =
   testFieldProperties pool "unboundedTextField" $
     FieldDefinitionTest
@@ -104,7 +108,7 @@ unboundedTextField pool =
       , roundTripGen = PgGen.pgText (Range.constant 0 1024)
       }
 
-boundedTextField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+boundedTextField :: Orville.ConnectionPool -> Tasty.TestTree
 boundedTextField pool =
   testFieldProperties pool "boundedTextField" $
     FieldDefinitionTest
@@ -113,7 +117,7 @@ boundedTextField pool =
       , roundTripGen = PgGen.pgText (Range.constant 0 4)
       }
 
-fixedTextField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+fixedTextField :: Orville.ConnectionPool -> Tasty.TestTree
 fixedTextField pool =
   testFieldProperties pool "fixedTextField" $
     FieldDefinitionTest
@@ -122,7 +126,7 @@ fixedTextField pool =
       , roundTripGen = PgGen.pgText (Range.constant 4 4)
       }
 
-textSearchVectorField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+textSearchVectorField :: Orville.ConnectionPool -> Tasty.TestTree
 textSearchVectorField pool =
   testFieldProperties pool "textSearchVectorField" $
     FieldDefinitionTest
@@ -131,7 +135,7 @@ textSearchVectorField pool =
       , roundTripGen = tsVectorGen
       }
 
-uuidField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+uuidField :: Orville.ConnectionPool -> Tasty.TestTree
 uuidField pool =
   testFieldProperties pool "uuidField" $
     FieldDefinitionTest
@@ -140,7 +144,7 @@ uuidField pool =
       , roundTripGen = uuidGen
       }
 
-dateField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+dateField :: Orville.ConnectionPool -> Tasty.TestTree
 dateField pool =
   testFieldProperties pool "dateField" $
     FieldDefinitionTest
@@ -152,7 +156,7 @@ dateField pool =
       , roundTripGen = PgGen.pgDay
       }
 
-utcTimestampField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+utcTimestampField :: Orville.ConnectionPool -> Tasty.TestTree
 utcTimestampField pool =
   testFieldProperties pool "utcTimestampField" $
     FieldDefinitionTest
@@ -164,7 +168,7 @@ utcTimestampField pool =
       , roundTripGen = PgGen.pgUTCTime
       }
 
-localTimestampField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+localTimestampField :: Orville.ConnectionPool -> Tasty.TestTree
 localTimestampField pool =
   testFieldProperties pool "localTimestampField" $
     FieldDefinitionTest
@@ -176,7 +180,7 @@ localTimestampField pool =
       , roundTripGen = PgGen.pgLocalTime
       }
 
-jsonbField :: Orville.ConnectionPool -> [(HH.PropertyName, HH.Property)]
+jsonbField :: Orville.ConnectionPool -> Tasty.TestTree
 jsonbField pool =
   testFieldProperties pool "jsonbField" $
     FieldDefinitionTest
@@ -190,19 +194,16 @@ testFieldProperties ::
   Orville.ConnectionPool ->
   String ->
   FieldDefinitionTest a ->
-  [(HH.PropertyName, HH.Property)]
+  Tasty.TestTree
 testFieldProperties pool fieldDefName roundTripTest =
-  ( ( String.fromString (fieldDefName <> " - can round trip values (not null)")
-    , HH.property $ runRoundTripTest pool roundTripTest
+  Tasty.testGroup
+    fieldDefName
+    ( [ TastyHH.testProperty (fieldDefName <> " - can round trip values (not null)") (HH.property $ runRoundTripTest pool roundTripTest)
+      , TastyHH.testProperty (fieldDefName <> " - can round trip values (nullable)") (HH.property $ runNullableRoundTripTest pool roundTripTest)
+      , TastyHH.testProperty (fieldDefName <> " - cannot insert null values into a not null field") (Property.singletonProperty (runNullCounterExampleTest pool roundTripTest))
+      ]
+        ++ fmap (testDefaultValueProperties pool fieldDefName roundTripTest) (roundTripDefaultValueTests roundTripTest)
     )
-      : ( String.fromString (fieldDefName <> " - can round trip values (nullable)")
-        , HH.property $ runNullableRoundTripTest pool roundTripTest
-        )
-      : ( String.fromString (fieldDefName <> " - cannot insert null values into a not null field")
-        , Property.singletonProperty $ runNullCounterExampleTest pool roundTripTest
-        )
-      : map (testDefaultValueProperties pool fieldDefName roundTripTest) (roundTripDefaultValueTests roundTripTest)
-  )
 
 testDefaultValueProperties ::
   (Show a, Eq a) =>
@@ -210,19 +211,17 @@ testDefaultValueProperties ::
   String ->
   FieldDefinitionTest a ->
   DefaultValueTest a ->
-  (HH.PropertyName, HH.Property)
+  Tasty.TestTree
 testDefaultValueProperties pool fieldDefName roundTripTest defaultValueTest =
   case defaultValueTest of
     RoundTripDefaultTest mkDefaultValue ->
-      ( String.fromString (fieldDefName <> " - can round trip a value inserted via a column default")
-      , Property.singletonProperty $
+      TastyHH.testProperty (fieldDefName <> " - can round trip a value inserted via a column default") $
+        HH.property $
           runDefaultValueFieldDefinitionTest pool roundTripTest mkDefaultValue
-      )
     InsertOnlyDefaultTest defaultValue ->
-      ( String.fromString (fieldDefName <> " - can insert an insert-only default value")
-      , Property.singletonProperty $
+      TastyHH.testProperty (fieldDefName <> " - can insert an insert-only default value") $
+        Property.singletonProperty $
           runDefaultValueInsertOnlyTest pool roundTripTest defaultValue
-      )
 
 -- This generator generates alphanumeric values currently because of syntax
 -- issues with random characters being generated. There is a story to built

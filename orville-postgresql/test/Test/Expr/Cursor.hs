@@ -10,6 +10,8 @@ import qualified Data.Int as Int
 import qualified Data.List.NonEmpty as NE
 import Hedgehog ((===))
 import qualified Hedgehog as HH
+import qualified Test.Tasty as Tasty
+import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Execution as Execution
@@ -20,32 +22,32 @@ import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (FooBar, assertEqualFooBarRows, findAllFooBars, mkFooBar, withFooBarData)
 import qualified Test.Property as Property
 
-cursorTests :: Orville.ConnectionPool -> Property.Group
+cursorTests :: Orville.ConnectionPool -> Tasty.TestTree
 cursorTests pool =
-  Property.group
+  Tasty.testGroup
     "Expr - Cursor"
-    [ prop_cursorInTransaction pool
-    , prop_cursorOutsideTransactionWithHold pool
-    , prop_cursorCloseAll pool
-    , prop_cursorMove pool
-    , prop_cursorNoScroll pool
-    , prop_cursorFetchAll pool
-    , prop_cursorFetchRowCount pool
-    , prop_cursorFetchForward pool
-    , prop_cursorFetchForwardCount pool
-    , prop_cursorFetchForwardAll pool
-    , prop_cursorFetchBackward pool
-    , prop_cursorFetchBackwardCount pool
-    , prop_cursorFetchBackwardAll pool
-    , prop_cursorFetchFirstLast pool
-    , prop_cursorFetchNextPrior pool
-    , prop_cursorFetchAbsolute pool
-    , prop_cursorFetchRelative pool
+    [ TastyHH.testProperty "In transaction" (prop_cursorInTransaction pool)
+    , TastyHH.testProperty "Outside transaction (with hold)" (prop_cursorOutsideTransactionWithHold pool)
+    , TastyHH.testProperty "Close all cursors" (prop_cursorCloseAll pool)
+    , TastyHH.testProperty "Move" (prop_cursorMove pool)
+    , TastyHH.testProperty "No scroll" (prop_cursorNoScroll pool)
+    , TastyHH.testProperty "Fetch all" (prop_cursorFetchAll pool)
+    , TastyHH.testProperty "Fetch row count" (prop_cursorFetchRowCount pool)
+    , TastyHH.testProperty "Fetch forward" (prop_cursorFetchForward pool)
+    , TastyHH.testProperty "Fetch forward count" (prop_cursorFetchForwardCount pool)
+    , TastyHH.testProperty "Fetch forward all" (prop_cursorFetchForwardAll pool)
+    , TastyHH.testProperty "Fetch backward" (prop_cursorFetchBackward pool)
+    , TastyHH.testProperty "Fetch backward count" (prop_cursorFetchBackwardCount pool)
+    , TastyHH.testProperty "Fetch backward all" (prop_cursorFetchBackwardAll pool)
+    , TastyHH.testProperty "Fetch first/last" (prop_cursorFetchFirstLast pool)
+    , TastyHH.testProperty "Fetch next/prior" (prop_cursorFetchNextPrior pool)
+    , TastyHH.testProperty "Fetch absolute" (prop_cursorFetchAbsolute pool)
+    , TastyHH.testProperty "Fetch relative" (prop_cursorFetchRelative pool)
     ]
 
-prop_cursorInTransaction :: Property.NamedDBProperty
-prop_cursorInTransaction =
-  Property.singletonNamedDBProperty "In transaction" $ \pool -> do
+prop_cursorInTransaction :: Orville.ConnectionPool -> HH.Property
+prop_cursorInTransaction pool =
+  Property.singletonProperty $ do
     result <-
       withFooBarData pool (NE.fromList [row 1, row 2]) $ \connection ->
         withTestTransaction connection $
@@ -55,9 +57,9 @@ prop_cursorInTransaction =
 
     assertEqualFooBarRows result [row 1]
 
-prop_cursorOutsideTransactionWithHold :: Property.NamedDBProperty
-prop_cursorOutsideTransactionWithHold =
-  Property.singletonNamedDBProperty "Outside transaction (with hold)" $ \pool -> do
+prop_cursorOutsideTransactionWithHold :: Orville.ConnectionPool -> HH.Property
+prop_cursorOutsideTransactionWithHold pool =
+  Property.singletonProperty $ do
     result <-
       withFooBarData pool (NE.fromList [row 1, row 2]) $ \connection ->
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
@@ -66,9 +68,9 @@ prop_cursorOutsideTransactionWithHold =
 
     assertEqualFooBarRows result [row 1]
 
-prop_cursorCloseAll :: Property.NamedDBProperty
-prop_cursorCloseAll =
-  Property.singletonNamedDBProperty "Close all cursors" $ \pool -> do
+prop_cursorCloseAll :: Orville.ConnectionPool -> HH.Property
+prop_cursorCloseAll pool =
+  Property.singletonProperty $ do
     MIO.liftIO . Conn.withPoolConnection pool $ \connection -> do
       let
         cursorName :: Expr.CursorName
@@ -85,9 +87,9 @@ prop_cursorCloseAll =
       -- As long as close doesn't raise an exception, the test passes
       ExSafe.bracket_ declare close (pure ())
 
-prop_cursorMove :: Property.NamedDBProperty
-prop_cursorMove =
-  Property.singletonNamedDBProperty "Move" $ \pool -> do
+prop_cursorMove :: Orville.ConnectionPool -> HH.Property
+prop_cursorMove pool =
+  Property.singletonProperty $ do
     result <-
       withFooBarData pool (NE.fromList [row 1, row 2, row 3]) $ \connection ->
         withTestCursor connection Nothing (Just Expr.withHold) findAllFooBars $ \cursorName -> do
@@ -97,9 +99,9 @@ prop_cursorMove =
 
     assertEqualFooBarRows result [row 3]
 
-prop_cursorNoScroll :: Property.NamedDBProperty
-prop_cursorNoScroll =
-  Property.singletonNamedDBProperty "Move" $ \pool -> do
+prop_cursorNoScroll :: Orville.ConnectionPool -> HH.Property
+prop_cursorNoScroll pool =
+  Property.singletonProperty $ do
     scrollBackResult <-
       withFooBarData pool (NE.fromList [row 1, row 2]) $ \connection ->
         withTestCursor connection (Just Expr.noScroll) (Just Expr.withHold) findAllFooBars $ \cursorName -> do
@@ -115,9 +117,9 @@ prop_cursorNoScroll =
         -- on a non-scrollable cursor
         Conn.sqlExecutionErrorSqlState err === Just (B8.pack "55000")
 
-prop_cursorFetchAll :: Property.NamedDBProperty
-prop_cursorFetchAll =
-  Property.singletonNamedDBProperty "Fetch all" $ \pool -> do
+prop_cursorFetchAll :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchAll pool =
+  Property.singletonProperty $ do
     [first] <-
       runFetchDirectionsOnData
         pool
@@ -127,9 +129,9 @@ prop_cursorFetchAll =
 
     assertEqualFooBarRows first [row 1, row 2]
 
-prop_cursorFetchRowCount :: Property.NamedDBProperty
-prop_cursorFetchRowCount =
-  Property.singletonNamedDBProperty "Fetch row count" $ \pool -> do
+prop_cursorFetchRowCount :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchRowCount pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -140,9 +142,9 @@ prop_cursorFetchRowCount =
     assertEqualFooBarRows first [row 1, row 2]
     assertEqualFooBarRows second [row 3]
 
-prop_cursorFetchForward :: Property.NamedDBProperty
-prop_cursorFetchForward =
-  Property.singletonNamedDBProperty "Fetch forward" $ \pool -> do
+prop_cursorFetchForward :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchForward pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -153,9 +155,9 @@ prop_cursorFetchForward =
     assertEqualFooBarRows first [row 1]
     assertEqualFooBarRows second [row 2]
 
-prop_cursorFetchForwardCount :: Property.NamedDBProperty
-prop_cursorFetchForwardCount =
-  Property.singletonNamedDBProperty "Fetch forward count" $ \pool -> do
+prop_cursorFetchForwardCount :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchForwardCount pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -166,9 +168,9 @@ prop_cursorFetchForwardCount =
     assertEqualFooBarRows first [row 1, row 2]
     assertEqualFooBarRows second [row 3]
 
-prop_cursorFetchForwardAll :: Property.NamedDBProperty
-prop_cursorFetchForwardAll =
-  Property.singletonNamedDBProperty "Fetch forward all" $ \pool -> do
+prop_cursorFetchForwardAll :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchForwardAll pool =
+  Property.singletonProperty $ do
     [first] <-
       runFetchDirectionsOnData
         pool
@@ -178,9 +180,9 @@ prop_cursorFetchForwardAll =
 
     assertEqualFooBarRows first [row 1, row 2]
 
-prop_cursorFetchBackward :: Property.NamedDBProperty
-prop_cursorFetchBackward =
-  Property.singletonNamedDBProperty "Fetch backward" $ \pool -> do
+prop_cursorFetchBackward :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchBackward pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -191,9 +193,9 @@ prop_cursorFetchBackward =
     assertEqualFooBarRows first [row 1, row 2]
     assertEqualFooBarRows second [row 1]
 
-prop_cursorFetchBackwardCount :: Property.NamedDBProperty
-prop_cursorFetchBackwardCount =
-  Property.singletonNamedDBProperty "Fetch backward count" $ \pool -> do
+prop_cursorFetchBackwardCount :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchBackwardCount pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -204,9 +206,9 @@ prop_cursorFetchBackwardCount =
     assertEqualFooBarRows first [row 1, row 2, row 3]
     assertEqualFooBarRows second [row 2, row 1]
 
-prop_cursorFetchBackwardAll :: Property.NamedDBProperty
-prop_cursorFetchBackwardAll =
-  Property.singletonNamedDBProperty "Fetch backward all" $ \pool -> do
+prop_cursorFetchBackwardAll :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchBackwardAll pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -217,9 +219,9 @@ prop_cursorFetchBackwardAll =
     assertEqualFooBarRows first [row 1, row 2, row 3]
     assertEqualFooBarRows second [row 3, row 2, row 1]
 
-prop_cursorFetchFirstLast :: Property.NamedDBProperty
-prop_cursorFetchFirstLast =
-  Property.singletonNamedDBProperty "Fetch first/last" $ \pool -> do
+prop_cursorFetchFirstLast :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchFirstLast pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -230,9 +232,9 @@ prop_cursorFetchFirstLast =
     assertEqualFooBarRows first [row 1]
     assertEqualFooBarRows second [row 3]
 
-prop_cursorFetchNextPrior :: Property.NamedDBProperty
-prop_cursorFetchNextPrior =
-  Property.singletonNamedDBProperty "Fetch next/prior" $ \pool -> do
+prop_cursorFetchNextPrior :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchNextPrior pool =
+  Property.singletonProperty $ do
     [first, second, third] <-
       runFetchDirectionsOnData
         pool
@@ -244,9 +246,9 @@ prop_cursorFetchNextPrior =
     assertEqualFooBarRows second [row 2]
     assertEqualFooBarRows third [row 1]
 
-prop_cursorFetchAbsolute :: Property.NamedDBProperty
-prop_cursorFetchAbsolute =
-  Property.singletonNamedDBProperty "Fetch absolute" $ \pool -> do
+prop_cursorFetchAbsolute :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchAbsolute pool =
+  Property.singletonProperty $ do
     [first, second] <-
       runFetchDirectionsOnData
         pool
@@ -257,9 +259,9 @@ prop_cursorFetchAbsolute =
     assertEqualFooBarRows first [row 3]
     assertEqualFooBarRows second [row 3]
 
-prop_cursorFetchRelative :: Property.NamedDBProperty
-prop_cursorFetchRelative =
-  Property.singletonNamedDBProperty "Fetch relative" $ \pool -> do
+prop_cursorFetchRelative :: Orville.ConnectionPool -> HH.Property
+prop_cursorFetchRelative pool =
+  Property.singletonProperty $ do
     [first, second, third, fourth] <-
       runFetchDirectionsOnData
         pool
