@@ -202,7 +202,7 @@ testFieldProperties pool fieldDefName roundTripTest =
       , TastyHH.testProperty (fieldDefName <> " - can round trip values (nullable)") (HH.property $ runNullableRoundTripTest pool roundTripTest)
       , TastyHH.testProperty (fieldDefName <> " - cannot insert null values into a not null field") (Property.singletonProperty (runNullCounterExampleTest pool roundTripTest))
       ]
-        ++ fmap (testDefaultValueProperties pool fieldDefName roundTripTest) (roundTripDefaultValueTests roundTripTest)
+        <> fmap (testDefaultValueProperties pool fieldDefName roundTripTest) (roundTripDefaultValueTests roundTripTest)
     )
 
 testDefaultValueProperties ::
