@@ -5,6 +5,14 @@
   into Orville's native 'Plan.Plan' (via 'toPlan') or compiled to a single SQL
   query that chains CTEs and returns nested results as jsonb.
 
+  The language is a sequence of let-bindings written with @QualifiedDo@: each
+  bound step becomes a named CTE, and later steps refer to earlier results
+  through opaque references, mirroring how Orville's native plan @bind@ hands
+  out 'Plan.Planned' values. References are parametric (the plan type is
+  abstract in the reference type), so a plan can be interpreted with
+  references instantiated as CTE names, as result decoders, or as native
+  'Plan.Planned' values.
+
   Every value crossing a step boundary server-side is represented as jsonb.
   Scalar and column values are cast to @text@ before being placed into jsonb,
   so that the strings coming back are byte-identical to what libpq's text mode
@@ -13,16 +21,23 @@
   'Exec.mkFakeLibPQResult'.
 -}
 module Orville.JsonPlan
-  ( JsonPlan (..)
-  , Projection
-  , fieldProjection
-  , JsonDecoder (..)
-  , entityDecoder
+  ( JsonPlan
+  , (>>=)
+  , (>>)
+  , findOne
+  , findAll
+  , use
+  , pair
+  , Arg
+  , rootParam
+  , refField
   , toPlan
   , executeJsonPlan
   , executeJsonPlanList
   , compiledSqlText
   ) where
+
+import Prelude hiding ((>>), (>>=))
 
 import Control.Exception (throwIO)
 import Control.Monad.IO.Class (liftIO)
@@ -44,144 +59,206 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import qualified Orville.PostgreSQL.Schema as Schema
 
-{- | The restricted plan vocabulary. Each constructor has both a native
-  interpretation ('toPlan') and a jsonb/CTE compilation
-  ('executeJsonPlanList'). Arbitrary Haskell functions are permitted only
-  inside 'Projection', paired with the SQL expression they correspond to.
+{- | The restricted plan vocabulary. Steps are sequenced with '(>>=)' (via
+  @QualifiedDo@), which hands the body an opaque @ref@ naming the step's
+  result. A plan must be parametric in @ref@ to be executed or embedded,
+  which prevents references from escaping their plan or being inspected.
 -}
-data JsonPlan param result where
+data JsonPlan ref param result where
   FindOne ::
-    (Show param, Ord param) =>
+    (Show a, Ord a) =>
     Schema.TableDefinition key writeEntity readEntity ->
-    Marshall.FieldDefinition nullability param ->
-    JsonPlan param readEntity
+    Marshall.FieldDefinition nullability a ->
+    Arg ref param a ->
+    JsonPlan ref param readEntity
   FindAll ::
-    Ord param =>
+    Ord a =>
     Schema.TableDefinition key writeEntity readEntity ->
-    Marshall.FieldDefinition nullability param ->
-    JsonPlan param [readEntity]
-  Focus ::
-    Projection a b ->
-    JsonPlan b result ->
-    JsonPlan a result
-  Chain ::
-    JsonPlan a b ->
-    JsonPlan b c ->
-    JsonPlan a c
-  WithParam ::
-    JsonDecoder param ->
-    JsonPlan param result ->
-    JsonPlan param (param, result)
+    Marshall.FieldDefinition nullability a ->
+    Arg ref param a ->
+    JsonPlan ref param [readEntity]
+  Bind ::
+    JsonPlan ref param a ->
+    (ref a -> JsonPlan ref param b) ->
+    JsonPlan ref param b
+  Use ::
+    ref a ->
+    JsonPlan ref param a
+  Pair ::
+    ref a ->
+    ref b ->
+    JsonPlan ref param (a, b)
 
-{- | A parameter projection carrying both interpretations: a Haskell accessor
-  for native execution, and the field whose column name and SQL type give the
-  jsonb path and cast for compiled execution. The caller is trusted to keep
-  the two in agreement, the same contract 'Marshall.marshallField' already
-  relies on.
+{- | The lookup argument of a step: either the plan's input parameter or a
+  field projected out of a previously bound result.
 -}
-data Projection a b where
-  FieldProjection ::
-    (a -> b) ->
-    Marshall.FieldDefinition nullability b ->
-    Projection a b
+data Arg ref param a where
+  RootParam :: Arg ref param param
+  RefField ::
+    (b -> a) ->
+    Marshall.FieldDefinition nullability a ->
+    ref b ->
+    Arg ref param a
 
-fieldProjection ::
-  (a -> b) ->
-  Marshall.FieldDefinition nullability b ->
-  Projection a b
-fieldProjection =
-  FieldProjection
-
-{- | Decodes one jsonb boundary value back into a Haskell value. Runs in 'IO'
-  because the underlying 'Marshall.marshallResultFromSql' does.
+{- | Binds a step's result for use in the rest of the plan. Written as
+  @x <- step@ inside a qualified @do@ block.
 -}
-newtype JsonDecoder a = JsonDecoder
-  { runJsonDecoder :: Aeson.Value -> IO (Either String a)
-  }
+(>>=) ::
+  JsonPlan ref param a ->
+  (ref a -> JsonPlan ref param b) ->
+  JsonPlan ref param b
+(>>=) =
+  Bind
 
--- | Decodes a jsonb object built by the compiled query for a table's row.
-entityDecoder ::
+-- | Sequences a step whose result is not needed later.
+(>>) ::
+  JsonPlan ref param a ->
+  JsonPlan ref param b ->
+  JsonPlan ref param b
+(>>) step rest =
+  Bind step (\_ -> rest)
+
+-- | Finds the single row whose field matches the argument, failing if none does.
+findOne ::
+  (Show a, Ord a) =>
   Schema.TableDefinition key writeEntity readEntity ->
-  JsonDecoder readEntity
-entityDecoder tableDef =
-  JsonDecoder $ \value ->
-    case value of
-      Aeson.Object obj -> do
-        decoded <- decodeEntityObjects tableDef [obj]
-        pure $
-          case decoded of
-            Left err -> Left err
-            Right [entity] -> Right entity
-            Right _ -> Left "entityDecoder: expected exactly one decoded row"
-      _ ->
-        pure (Left "entityDecoder: expected a JSON object")
+  Marshall.FieldDefinition nullability a ->
+  Arg ref param a ->
+  JsonPlan ref param readEntity
+findOne =
+  FindOne
 
--- | Embeds a 'JsonPlan' into Orville's native plan language.
-toPlan :: JsonPlan param result -> Plan.Plan scope param result
-toPlan jsonPlan =
-  case jsonPlan of
-    FindOne tableDef fieldDef ->
-      Plan.findOne tableDef fieldDef
-    FindAll tableDef fieldDef ->
-      Plan.findAll tableDef fieldDef
-    Focus (FieldProjection accessor _) subPlan ->
-      Plan.focusParam accessor (toPlan subPlan)
-    Chain firstPlan secondPlan ->
-      Plan.chain (toPlan firstPlan) (toPlan secondPlan)
-    WithParam _ subPlan ->
-      (,) <$> Plan.askParam <*> toPlan subPlan
+-- | Finds all rows whose field matches the argument.
+findAll ::
+  Ord a =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability a ->
+  Arg ref param a ->
+  JsonPlan ref param [readEntity]
+findAll =
+  FindAll
+
+-- | Produces a previously bound result as the plan's (or block's) result.
+use :: ref a -> JsonPlan ref param a
+use =
+  Use
+
+-- | Produces two previously bound results as a tuple.
+pair :: ref a -> ref b -> JsonPlan ref param (a, b)
+pair =
+  Pair
+
+-- | The plan's input parameter, used as a step's lookup argument.
+rootParam :: Arg ref param param
+rootParam =
+  RootParam
+
+{- | A field of a previously bound result, used as a step's lookup argument.
+  Carries both interpretations: a Haskell accessor for native execution, and
+  the field whose column name and SQL type give the jsonb path and cast for
+  compiled execution. The caller is trusted to keep the two in agreement, the
+  same contract 'Marshall.marshallField' already relies on.
+-}
+refField ::
+  (b -> a) ->
+  Marshall.FieldDefinition nullability a ->
+  ref b ->
+  Arg ref param a
+refField =
+  RefField
+
+--
+-- Embedding into the native plan language
+--
+
+{- | Embeds a 'JsonPlan' into Orville's native plan language. References are
+  interpreted directly as native 'Plan.Planned' values: 'Bind' maps onto
+  'Plan.bind' and 'use' onto 'Plan.use'.
+-}
+toPlan ::
+  (forall ref. JsonPlan ref param result) ->
+  Plan.Plan scope param result
+toPlan plan =
+  toPlanNode plan
+
+toPlanNode ::
+  JsonPlan (Plan.Planned scope param) param result ->
+  Plan.Plan scope param result
+toPlanNode plan =
+  case plan of
+    FindOne tableDef fieldDef arg ->
+      Plan.chain (argToPlan arg) (Plan.findOne tableDef fieldDef)
+    FindAll tableDef fieldDef arg ->
+      Plan.chain (argToPlan arg) (Plan.findAll tableDef fieldDef)
+    Bind step continue ->
+      Plan.bind (toPlanNode step) (toPlanNode . continue)
+    Use planned ->
+      Plan.use planned
+    Pair plannedA plannedB ->
+      (,) <$> Plan.use plannedA <*> Plan.use plannedB
+
+argToPlan ::
+  Arg (Plan.Planned scope param) param a ->
+  Plan.Plan scope param a
+argToPlan arg =
+  case arg of
+    RootParam ->
+      Plan.askParam
+    RefField accessor _ planned ->
+      Plan.use (fmap accessor planned)
+
+--
+-- Execution of the compiled form
+--
 
 -- | Runs the compiled, single-query form of the plan for one parameter.
 executeJsonPlan ::
   O.MonadOrville m =>
-  JsonPlan param result ->
+  (forall ref. JsonPlan ref param result) ->
   param ->
   m result
-executeJsonPlan plan param = do
-  results <- executeJsonPlanList plan [param]
+executeJsonPlan plan planParam = do
+  results <- executeJsonPlanList plan [planParam]
   case results of
     [one] -> pure one
     _ -> liftIO . throwIO . userError $ "jsonplan: expected exactly one result row"
 
 {- | Runs the compiled form of the plan for many parameters in one SQL query.
   Results are returned in parameter order. Decoding failures are thrown as
-  exceptions, mirroring how native plan execution throws 'AssertionFailed'.
+  exceptions, mirroring how native plan execution throws 'Plan.AssertionFailed'.
 -}
 executeJsonPlanList ::
   O.MonadOrville m =>
-  JsonPlan param result ->
+  (forall ref. JsonPlan ref param result) ->
   [param] ->
   m [result]
 executeJsonPlanList plan params =
   case NEL.nonEmpty params of
     Nothing ->
       pure []
-    Just someParams ->
-      case rootParamToSql plan of
-        Left err ->
-          liftIO . throwIO . userError $ err
-        Right encoder -> do
-          let
-            query = compileJsonPlan plan (fmap encoder someParams)
-          jsonTexts <- Exec.executeAndDecode Exec.SelectQuery query resultTextMarshaller
-          liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
+    Just someParams -> do
+      let
+        query = compileJsonPlan plan someParams
+      jsonTexts <- Exec.executeAndDecode Exec.SelectQuery query resultTextMarshaller
+      liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
 
 -- | Renders the SQL that 'executeJsonPlanList' would run, for inspection.
 compiledSqlText ::
-  JsonPlan param result ->
+  (forall ref. JsonPlan ref param result) ->
   NEL.NonEmpty param ->
-  Either String String
+  String
 compiledSqlText plan params =
-  case rootParamToSql plan of
-    Left err ->
-      Left err
-    Right encoder ->
-      Right . BS8.unpack . RawSql.toExampleBytes $
-        compileJsonPlan plan (fmap encoder params)
+  BS8.unpack . RawSql.toExampleBytes $ compileJsonPlan plan params
 
 --
 -- Compilation to SQL
 --
+
+-- | The compile-time interpretation of a reference: the index of the CTE
+--   holding the referenced step's boundary values.
+newtype CteRef a = CteRef
+  { cteRefIndex :: Int
+  }
 
 raw :: String -> RawSql.RawSql
 raw =
@@ -193,78 +270,87 @@ cteName index =
 
 {- | Compiles a plan node into a list of (name, body) CTEs. Every CTE has the
   shape @(i, v)@: @i@ is the input parameter's position and @v@ is the jsonb
-  boundary value for that parameter at this step. Each step preserves the set
-  of @i@ values exactly.
+  boundary value for that parameter at this node. Each node preserves the set
+  of @i@ values exactly, so later nodes can join earlier ones on @i@. Returns
+  the CTEs the node adds, the index of the CTE holding the node's result, and
+  the next free index.
 -}
 compileNode ::
-  JsonPlan param result ->
-  RawSql.RawSql ->
+  JsonPlan CteRef param result ->
   Int ->
-  ([(RawSql.RawSql, RawSql.RawSql)], RawSql.RawSql, Int)
-compileNode plan inputCte nextIndex =
+  ([(RawSql.RawSql, RawSql.RawSql)], Int, Int)
+compileNode plan nextIndex =
   case plan of
-    FindOne tableDef fieldDef ->
+    FindOne tableDef fieldDef arg ->
       let
-        name = cteName nextIndex
         body =
-          raw "SELECT " <> inputCte <> raw ".i, coalesce((SELECT "
+          raw "SELECT " <> argSourceCte arg <> raw ".i, coalesce((SELECT "
             <> entityJsonExpr tableDef
             <> raw " FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
-            <> raw " t WHERE " <> fieldMatchesBoundary fieldDef inputCte
-            <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> inputCte
+            <> raw " t WHERE " <> fieldMatchesArg fieldDef arg
+            <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> argSourceCte arg
       in
-        ([(name, body)], name, nextIndex + 1)
-    FindAll tableDef fieldDef ->
+        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+    FindAll tableDef fieldDef arg ->
       let
-        name = cteName nextIndex
         body =
-          raw "SELECT " <> inputCte <> raw ".i, (SELECT coalesce(jsonb_agg("
+          raw "SELECT " <> argSourceCte arg <> raw ".i, (SELECT coalesce(jsonb_agg("
             <> entityJsonExpr tableDef
             <> raw "), '[]'::jsonb) FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
-            <> raw " t WHERE " <> fieldMatchesBoundary fieldDef inputCte
-            <> raw ") AS v FROM " <> inputCte
+            <> raw " t WHERE " <> fieldMatchesArg fieldDef arg
+            <> raw ") AS v FROM " <> argSourceCte arg
       in
-        ([(name, body)], name, nextIndex + 1)
-    Focus (FieldProjection _ fieldDef) subPlan ->
+        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+    Bind step continue ->
       let
-        name = cteName nextIndex
+        (stepCtes, stepOut, afterStep) = compileNode step nextIndex
+        (bodyCtes, bodyOut, afterBody) = compileNode (continue (CteRef stepOut)) afterStep
+      in
+        (stepCtes <> bodyCtes, bodyOut, afterBody)
+    Use ref ->
+      ([], cteRefIndex ref, nextIndex)
+    Pair refA refB ->
+      let
         body =
-          raw "SELECT " <> inputCte <> raw ".i, (" <> inputCte <> raw ".v -> "
-            <> RawSql.stringLiteral (fieldColumnBytes fieldDef)
-            <> raw ") AS v FROM " <> inputCte
-        (subSteps, subOut, afterSub) = compileNode subPlan name (nextIndex + 1)
+          raw "SELECT l.i, jsonb_build_object('fst', l.v, 'snd', r.v) AS v FROM "
+            <> cteName (cteRefIndex refA) <> raw " l JOIN "
+            <> cteName (cteRefIndex refB) <> raw " r ON r.i = l.i"
       in
-        ((name, body) : subSteps, subOut, afterSub)
-    Chain firstPlan secondPlan ->
-      let
-        (firstSteps, firstOut, afterFirst) = compileNode firstPlan inputCte nextIndex
-        (secondSteps, secondOut, afterSecond) = compileNode secondPlan firstOut afterFirst
-      in
-        (firstSteps <> secondSteps, secondOut, afterSecond)
-    WithParam _ subPlan ->
-      let
-        (subSteps, subOut, afterSub) = compileNode subPlan inputCte nextIndex
-        name = cteName afterSub
-        body =
-          raw "SELECT " <> inputCte <> raw ".i, jsonb_build_object('fst', "
-            <> inputCte <> raw ".v, 'snd', " <> subOut <> raw ".v) AS v FROM "
-            <> inputCte <> raw " JOIN " <> subOut <> raw " ON "
-            <> subOut <> raw ".i = " <> inputCte <> raw ".i"
-      in
-        (subSteps <> [(name, body)], name, afterSub + 1)
+        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
 
-{- | Builds the where condition matching a table field against the incoming
-  boundary value. The boundary scalar is a jsonb string holding the value's
-  text rendering, so it is extracted with @#>> '{}'@ and cast back to the
-  field's SQL type to keep the comparison (and any index) native.
+-- | The CTE an argument's value is read from, which is also the source of the
+--   @i@ values for the step consuming the argument.
+argSourceCte :: Arg CteRef param a -> RawSql.RawSql
+argSourceCte arg =
+  case arg of
+    RootParam ->
+      cteName 0
+    RefField _ _ ref ->
+      cteName (cteRefIndex ref)
+
+-- | The jsonb expression holding an argument's boundary value, relative to
+--   the argument's source CTE.
+argJsonbExpr :: Arg CteRef param a -> RawSql.RawSql
+argJsonbExpr arg =
+  case arg of
+    RootParam ->
+      cteName 0 <> raw ".v"
+    RefField _ fieldDef ref ->
+      cteName (cteRefIndex ref) <> raw ".v -> "
+        <> RawSql.stringLiteral (fieldColumnBytes fieldDef)
+
+{- | Builds the where condition matching a table field against an argument.
+  The boundary scalar is a jsonb string holding the value's text rendering,
+  so it is extracted with @#>> '{}'@ and cast back to the field's SQL type to
+  keep the comparison (and any index) native.
 -}
-fieldMatchesBoundary ::
+fieldMatchesArg ::
   Marshall.FieldDefinition nullability a ->
-  RawSql.RawSql ->
+  Arg CteRef param a ->
   RawSql.RawSql
-fieldMatchesBoundary fieldDef inputCte =
+fieldMatchesArg fieldDef arg =
   raw "t." <> RawSql.toRawSql (Marshall.fieldColumnName fieldDef)
-    <> raw " = ((" <> inputCte <> raw ".v #>> '{}')::"
+    <> raw " = (((" <> argJsonbExpr arg <> raw ") #>> '{}')::"
     <> RawSql.toRawSql (Marshall.sqlTypeExpr (Marshall.fieldType fieldDef))
     <> raw ")"
 
@@ -305,27 +391,35 @@ fieldColumnBytes =
   Marshall.fieldNameToByteString . Marshall.fieldName
 
 compileJsonPlan ::
-  JsonPlan param result ->
-  NEL.NonEmpty SqlValue.SqlValue ->
+  (forall ref. JsonPlan ref param result) ->
+  NEL.NonEmpty param ->
   RawSql.RawSql
-compileJsonPlan plan sqlParams =
+compileJsonPlan plan params =
   let
     rootCte = cteName 0
 
-    valuesRow index sqlValue =
+    mbEncoder = rootParamEncoder plan
+
+    paramJsonb planParam =
+      case mbEncoder of
+        Just encoder ->
+          raw "to_jsonb(" <> RawSql.parameter (encoder planParam) <> raw "::text)"
+        Nothing ->
+          raw "'null'::jsonb"
+
+    valuesRow index planParam =
       RawSql.leftParen
         <> RawSql.intDecLiteral index
-        <> raw ", to_jsonb("
-        <> RawSql.parameter sqlValue
-        <> raw "::text)"
+        <> RawSql.commaSpace
+        <> paramJsonb planParam
         <> RawSql.rightParen
 
     valuesRows =
       RawSql.intercalate
         RawSql.commaSpace
-        (zipWith valuesRow [0 ..] (NEL.toList sqlParams))
+        (zipWith valuesRow [0 ..] (NEL.toList params))
 
-    (steps, outCte, _) = compileNode plan rootCte 1
+    (steps, outIndex, _) = compileNode plan 1
 
     renderStep (name, body) =
       name <> raw " AS (" <> body <> RawSql.rightParen
@@ -337,36 +431,57 @@ compileJsonPlan plan sqlParams =
     raw "WITH "
       <> RawSql.intercalate RawSql.commaSpace cteList
       <> raw " SELECT ("
-      <> outCte
+      <> cteName outIndex
       <> raw ".v)::text AS v FROM "
-      <> outCte
+      <> cteName outIndex
       <> raw " ORDER BY "
-      <> outCte
+      <> cteName outIndex
       <> raw ".i"
 
-{- | Finds the encoder for the plan's root parameter by walking to the
-  leftmost operation. A plan whose first step is a bare projection has no SQL
-  rendering for its parameter type; that is a prototype limitation.
+{- | Finds the encoder for the plan's input parameter from the first step that
+  consumes it. A plan that never consumes the parameter needs no encoding;
+  its root CTE carries only the row indexes.
 -}
-rootParamToSql ::
-  JsonPlan param result ->
-  Either String (param -> SqlValue.SqlValue)
-rootParamToSql plan =
+rootParamEncoder ::
+  JsonPlan CteRef param result ->
+  Maybe (param -> SqlValue.SqlValue)
+rootParamEncoder plan =
   case plan of
-    FindOne _ fieldDef ->
-      Right (Marshall.fieldValueToSqlValue fieldDef)
-    FindAll _ fieldDef ->
-      Right (Marshall.fieldValueToSqlValue fieldDef)
-    Chain firstPlan _ ->
-      rootParamToSql firstPlan
-    WithParam _ subPlan ->
-      rootParamToSql subPlan
-    Focus _ _ ->
-      Left "jsonplan: cannot encode the root parameter of a plan that begins with a projection"
+    FindOne _ fieldDef arg ->
+      argParamEncoder fieldDef arg
+    FindAll _ fieldDef arg ->
+      argParamEncoder fieldDef arg
+    Bind step continue ->
+      case rootParamEncoder step of
+        Just encoder -> Just encoder
+        Nothing -> rootParamEncoder (continue (CteRef 0))
+    Use _ ->
+      Nothing
+    Pair _ _ ->
+      Nothing
+
+argParamEncoder ::
+  Marshall.FieldDefinition nullability a ->
+  Arg CteRef param a ->
+  Maybe (param -> SqlValue.SqlValue)
+argParamEncoder fieldDef arg =
+  case arg of
+    RootParam ->
+      Just (Marshall.fieldValueToSqlValue fieldDef)
+    RefField _ _ _ ->
+      Nothing
 
 --
 -- Decoding results
 --
+
+{- | Decodes one jsonb boundary value back into a Haskell value. Doubles as
+  the decode-time interpretation of a reference. Runs in 'IO' because the
+  underlying 'Marshall.marshallResultFromSql' does.
+-}
+newtype JsonDecoder a = JsonDecoder
+  { runJsonDecoder :: Aeson.Value -> IO (Either String a)
+  }
 
 resultTextMarshaller :: Marshall.AnnotatedSqlMarshaller T.Text T.Text
 resultTextMarshaller =
@@ -384,17 +499,17 @@ decodeBoundaryText decoder jsonText =
         Left err -> throwIO . userError $ "jsonplan: " <> err
         Right result -> pure result
 
-planDecoder :: JsonPlan param result -> JsonDecoder result
+planDecoder :: JsonPlan JsonDecoder param result -> JsonDecoder result
 planDecoder plan =
   case plan of
-    FindOne tableDef _ ->
+    FindOne tableDef _ _ ->
       JsonDecoder $ \value ->
         case value of
           Aeson.Null ->
-            pure (Left "FindOne: no row matched the parameter")
+            pure (Left "findOne: no row matched the argument")
           _ ->
             runJsonDecoder (entityDecoder tableDef) value
-    FindAll tableDef _ ->
+    FindAll tableDef _ _ ->
       JsonDecoder $ \value ->
         case value of
           Aeson.Array elements ->
@@ -402,30 +517,47 @@ planDecoder plan =
               Left err -> pure (Left err)
               Right objects -> decodeEntityObjects tableDef objects
           _ ->
-            pure (Left "FindAll: expected a JSON array")
-    Focus _ subPlan ->
-      planDecoder subPlan
-    Chain _ secondPlan ->
-      planDecoder secondPlan
-    WithParam paramDecoder subPlan ->
+            pure (Left "findAll: expected a JSON array")
+    Bind step continue ->
+      planDecoder (continue (planDecoder step))
+    Use decoder ->
+      decoder
+    Pair decoderA decoderB ->
       JsonDecoder $ \value ->
         case value of
           Aeson.Object obj ->
             let
               lookupKey key =
                 case AesonKeyMap.lookup (AesonKey.fromString key) obj of
-                  Nothing -> Left ("WithParam: missing key " <> key)
+                  Nothing -> Left ("pair: missing key " <> key)
                   Just el -> Right el
             in
               case (,) <$> lookupKey "fst" <*> lookupKey "snd" of
                 Left err ->
                   pure (Left err)
                 Right (fstValue, sndValue) -> do
-                  decodedParam <- runJsonDecoder paramDecoder fstValue
-                  decodedResult <- runJsonDecoder (planDecoder subPlan) sndValue
-                  pure ((,) <$> decodedParam <*> decodedResult)
+                  decodedFst <- runJsonDecoder decoderA fstValue
+                  decodedSnd <- runJsonDecoder decoderB sndValue
+                  pure ((,) <$> decodedFst <*> decodedSnd)
           _ ->
-            pure (Left "WithParam: expected a JSON object")
+            pure (Left "pair: expected a JSON object")
+
+-- | Decodes a jsonb object built by the compiled query for a table's row.
+entityDecoder ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  JsonDecoder readEntity
+entityDecoder tableDef =
+  JsonDecoder $ \value ->
+    case value of
+      Aeson.Object obj -> do
+        decoded <- decodeEntityObjects tableDef [obj]
+        pure $
+          case decoded of
+            Left err -> Left err
+            Right [entity] -> Right entity
+            Right _ -> Left "entityDecoder: expected exactly one decoded row"
+      _ ->
+        pure (Left "entityDecoder: expected a JSON object")
 
 asObject :: Aeson.Value -> Either String Aeson.Object
 asObject value =

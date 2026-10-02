@@ -1,3 +1,5 @@
+{-# LANGUAGE QualifiedDo #-}
+
 module Main
   ( main
   ) where
@@ -72,17 +74,11 @@ bookTable =
         <*> O.marshallField bookTitle bookTitleField
     )
 
-authorWithBooks :: JP.JsonPlan T.Text (Author, [Book])
-authorWithBooks =
-  JP.Chain
-    (JP.FindOne authorTable authorNameField)
-    ( JP.WithParam
-        (JP.entityDecoder authorTable)
-        ( JP.Focus
-            (JP.fieldProjection authorId authorIdField)
-            (JP.FindAll bookTable bookAuthorIdField)
-        )
-    )
+authorWithBooks :: JP.JsonPlan ref T.Text (Author, [Book])
+authorWithBooks = JP.do
+  author <- JP.findOne authorTable authorNameField JP.rootParam
+  books <- JP.findAll bookTable bookAuthorIdField (JP.refField authorId authorIdField author)
+  JP.pair author books
 
 main :: IO ()
 main = do
@@ -141,9 +137,7 @@ runDemo = do
   liftIO . mapM_ putStrLn $ Plan.explain (Plan.planList (JP.toPlan authorWithBooks))
 
   liftIO (putStrLn "\n--- compiled single query ---")
-  case JP.compiledSqlText authorWithBooks nonEmptyNames of
-    Left err -> liftIO (putStrLn ("compile error: " <> err))
-    Right sql -> liftIO (putStrLn sql)
+  liftIO (putStrLn (JP.compiledSqlText authorWithBooks nonEmptyNames))
 
   nativeResults <- Plan.execute (Plan.planList (JP.toPlan authorWithBooks)) names
   compiledResults <- JP.executeJsonPlanList authorWithBooks names
