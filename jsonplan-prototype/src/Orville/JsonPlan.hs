@@ -1055,11 +1055,112 @@ compileJsonPlan ::
   NEL.NonEmpty param ->
   Either JsonPlanError RawSql.RawSql
 compileJsonPlan plan params =
-  case planRenderingError plan of
+  case orElseError (planShapeError plan) (planRenderingError plan) of
     Just err ->
       Left err
     Nothing ->
       Right (compileCheckedJsonPlan plan params)
+
+orElseError :: Maybe e -> Maybe e -> Maybe e
+orElseError firstError secondError =
+  case firstError of
+    Just err -> Just err
+    Nothing -> secondError
+
+{- | The boundary shape a reference points at. Field projections only have a
+  server-side meaning against a single entity row.
+-}
+data BoundaryShape
+  = EntityShape
+  | NonEntityShape String
+
+-- | The shape-checking interpretation of a reference.
+newtype ShapeRef a = ShapeRef
+  { shapeRefShape :: BoundaryShape
+  }
+
+{- | Finds the first field projection applied to a reference without an
+  entity boundary, if any.
+-}
+planShapeError :: JsonPlan ShapeRef param result -> Maybe JsonPlanError
+planShapeError plan =
+  case plan of
+    FindOne _ _ arg ->
+      argShapeError arg
+    FindMaybeOne _ _ arg ->
+      argShapeError arg
+    FindAll _ _ arg ->
+      argShapeError arg
+    FindAllWhere _ _ _ arg ->
+      argShapeError arg
+    SelectWhere _ _ ->
+      Nothing
+    FindAllEach _ _ arg innerPlan ->
+      orElseError
+        (argShapeError arg)
+        (planShapeError (innerPlan (ShapeRef EntityShape)))
+    Bind step continue ->
+      orElseError
+        (planShapeError step)
+        (planShapeError (continue (ShapeRef (boundaryShapeOf step))))
+    Use _ ->
+      Nothing
+    Result _ ->
+      Nothing
+    Flat flatRow ->
+      flatRowShapeError flatRow
+
+boundaryShapeOf :: JsonPlan ShapeRef param result -> BoundaryShape
+boundaryShapeOf plan =
+  case plan of
+    FindOne _ _ _ ->
+      EntityShape
+    FindMaybeOne _ _ _ ->
+      NonEntityShape "findMaybeOne"
+    FindAll _ _ _ ->
+      NonEntityShape "findAll"
+    FindAllWhere _ _ _ _ ->
+      NonEntityShape "findAllWhere"
+    SelectWhere _ _ ->
+      NonEntityShape "selectWhere"
+    FindAllEach _ _ _ _ ->
+      NonEntityShape "findAllEach"
+    Bind step continue ->
+      boundaryShapeOf (continue (ShapeRef (boundaryShapeOf step)))
+    Use ref ->
+      shapeRefShape ref
+    Result _ ->
+      NonEntityShape "result"
+    Flat _ ->
+      NonEntityShape "flat"
+
+argShapeError :: Arg ShapeRef param a -> Maybe JsonPlanError
+argShapeError arg =
+  case arg of
+    RootParam ->
+      Nothing
+    RefField _ fieldDef ref ->
+      case shapeRefShape ref of
+        EntityShape ->
+          Nothing
+        NonEntityShape stepKind ->
+          Just (RefFieldOnNonEntity stepKind (BS8.unpack (fieldColumnBytes fieldDef)))
+
+flatRowShapeError :: FlatRow ShapeRef param a -> Maybe JsonPlanError
+flatRowShapeError flatRow =
+  case flatRow of
+    PureFlat _ ->
+      Nothing
+    ApFlat functionRow argRow ->
+      orElseError (flatRowShapeError functionRow) (flatRowShapeError argRow)
+    RefCol _ fieldDef ref ->
+      case shapeRefShape ref of
+        EntityShape ->
+          Nothing
+        NonEntityShape stepKind ->
+          Just (RefFieldOnNonEntity stepKind (BS8.unpack (fieldColumnBytes fieldDef)))
+    AggCol _ _ arg _ ->
+      argShapeError arg
 
 {- | Finds the first column without a wire-text rendering among the tables
   whose rows cross a boundary of this plan, if any.
@@ -1240,6 +1341,11 @@ data JsonPlanError
   | -- | A column (table name, column name) has a SQL type without a known
     --   wire-text rendering, so the plan cannot be compiled.
     ColumnNotWireRenderable String String
+  | -- | A field (column name) was projected from a reference whose boundary
+    --   (named by its step kind) is not a single entity row, so the
+    --   projection has no server-side meaning and the plan cannot be
+    --   compiled.
+    RefFieldOnNonEntity String String
   deriving Show
 
 instance Exception.Exception JsonPlanError where
@@ -1265,6 +1371,12 @@ renderJsonPlanError err =
         <> " of table "
         <> tableName
         <> " has a SQL type with no known wire-text rendering, so the plan cannot be compiled; it can still be executed natively via toPlan"
+    RefFieldOnNonEntity stepKind columnName ->
+      "jsonplan: refField on column "
+        <> columnName
+        <> " references a "
+        <> stepKind
+        <> " result, which is not a single entity row; only findOne rows and findAllEach element rows can be projected. The plan can still be executed natively via toPlan"
 
 -- | Why a jsonb boundary value could not be decoded.
 data DecodeError

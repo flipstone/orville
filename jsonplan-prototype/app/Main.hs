@@ -5,6 +5,7 @@ module Main
   ) where
 
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.Either as Either
 import qualified Data.Int as Int
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)))
@@ -122,6 +123,11 @@ authorLibrary = JP.do
       bookAuthor <-
         JP.findOne authorTable authorIdField (JP.refField bookAuthorId bookAuthorIdField book)
       JP.result ((,) <$> JP.refValue book <*> JP.refValue bookAuthor)
+
+unprojectableMaybeAuthor :: JP.JsonPlan ref T.Text [Author]
+unprojectableMaybeAuthor = JP.do
+  maybeAnn <- JP.findMaybeOne authorTable authorNameField JP.rootParam
+  JP.findAll authorTable authorIdField (JP.refField (maybe 0 authorId) authorIdField maybeAnn)
 
 data AuthorReportRow = AuthorReportRow
   { reportRowName :: T.Text
@@ -250,6 +256,10 @@ runDemo = do
 
   MIO.liftIO (putStrLn "\n--- compiled flat report query ---")
   MIO.liftIO (putStrLn (renderedSql (JP.compiledSqlText authorReportPlan nonEmptyNames)))
+
+  let shapeCheckResult = JP.compiledSqlText unprojectableMaybeAuthor nonEmptyNames
+  MIO.liftIO (putStrLn "\n--- refField shape rejection ---")
+  MIO.liftIO (putStrLn (renderedSql shapeCheckResult))
   nativeFlatReport <- Plan.execute (Plan.planList (JP.toPlan authorReportPlan)) names
   compiledFlatReport <- JP.executeJsonPlanList authorReportPlan names
 
@@ -268,6 +278,7 @@ runDemo = do
     libraryMatch =
       fmap normalizeLibrary nativeLibraries == fmap normalizeLibrary compiledLibraries
     flatMatch = nativeFlatReport == compiledFlatReport
+    shapeRejected = Either.isLeft shapeCheckResult
 
   MIO.liftIO (putStrLn "\n--- results ---")
   MIO.liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
@@ -292,6 +303,7 @@ runDemo = do
       <> ", 3-ary match: " <> show overviewMatch
       <> ", each match: " <> show libraryMatch
       <> ", flat match: " <> show flatMatch
+      <> ", shape rejected: " <> show shapeRejected
 
   if batchedMatch
     && singleMatch
@@ -300,5 +312,6 @@ runDemo = do
     && overviewMatch
     && libraryMatch
     && flatMatch
+    && shapeRejected
     then MIO.liftIO (putStrLn "PASS")
     else MIO.liftIO (putStrLn "FAIL" >> Exit.exitFailure)
