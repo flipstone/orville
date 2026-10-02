@@ -111,6 +111,37 @@ authorLibrary = JP.do
         JP.findOne authorTable authorIdField (JP.refField bookAuthorId bookAuthorIdField book)
       JP.result ((,) <$> JP.refValue book <*> JP.refValue bookAuthor)
 
+data AuthorReportRow = AuthorReportRow
+  { reportRowName :: T.Text
+  , reportRowBookCount :: Int.Int32
+  , reportRowTitles :: T.Text
+  }
+  deriving (Eq, Show)
+
+countBooks :: JP.Aggregation Book Int.Int32
+countBooks =
+  JP.aggregation
+    (fromIntegral . length)
+    (RawSql.fromString "count(*)::int")
+    O.integer
+
+joinedTitles :: JP.Aggregation Book T.Text
+joinedTitles =
+  JP.aggregation
+    (T.intercalate (T.pack ", ") . fmap bookTitle . List.sortOn bookId)
+    (RawSql.fromString "coalesce(string_agg(t.\"title\", ', ' ORDER BY t.\"id\"), '')")
+    O.unboundedText
+
+authorReportPlan :: JP.JsonPlan ref T.Text AuthorReportRow
+authorReportPlan = JP.do
+  author <- JP.findOne authorTable authorNameField JP.rootParam
+  JP.flat
+    ( AuthorReportRow
+        <$> JP.refCol authorName authorNameField author
+        <*> JP.aggCol bookTable bookAuthorIdField (JP.refField authorId authorIdField author) countBooks
+        <*> JP.aggCol bookTable bookAuthorIdField (JP.refField authorId authorIdField author) joinedTitles
+    )
+
 authorBookCount :: JP.JsonQuery T.Text (T.Text, Int)
 authorBookCount =
   Profunctor.dimap
@@ -198,6 +229,11 @@ runDemo = do
   nativeLibraries <- Plan.execute (Plan.planList (JP.toPlan authorLibrary)) names
   compiledLibraries <- JP.executeJsonPlanList authorLibrary names
 
+  liftIO (putStrLn "\n--- compiled flat report query ---")
+  liftIO (putStrLn (JP.compiledSqlText authorReportPlan nonEmptyNames))
+  nativeFlatReport <- Plan.execute (Plan.planList (JP.toPlan authorReportPlan)) names
+  compiledFlatReport <- JP.executeJsonPlanList authorReportPlan names
+
   let
     normalize = fmap (\(author, books) -> (author, List.sortOn bookId books))
     normalizeOne (author, books) = (author, List.sortOn bookId books)
@@ -212,6 +248,7 @@ runDemo = do
     normalizeLibrary = List.sortOn (bookId . fst)
     libraryMatch =
       fmap normalizeLibrary nativeLibraries == fmap normalizeLibrary compiledLibraries
+    flatMatch = nativeFlatReport == compiledFlatReport
 
   liftIO (putStrLn "\n--- results ---")
   liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
@@ -226,6 +263,8 @@ runDemo = do
   liftIO (putStrLn ("compiled (3-ary)  : " <> show (fmap normalizeOverview compiledOverviews)))
   liftIO (putStrLn ("native   (each)   : " <> show (fmap normalizeLibrary nativeLibraries)))
   liftIO (putStrLn ("compiled (each)   : " <> show (fmap normalizeLibrary compiledLibraries)))
+  liftIO (putStrLn ("native   (flat)   : " <> show nativeFlatReport))
+  liftIO (putStrLn ("compiled (flat)   : " <> show compiledFlatReport))
   liftIO . putStrLn $
     "\nbatched match: " <> show batchedMatch
       <> ", single match: " <> show singleMatch
@@ -233,7 +272,14 @@ runDemo = do
       <> ", dimap match: " <> show countMatch
       <> ", 3-ary match: " <> show overviewMatch
       <> ", each match: " <> show libraryMatch
+      <> ", flat match: " <> show flatMatch
 
-  if batchedMatch && singleMatch && maybeMatch && countMatch && overviewMatch && libraryMatch
+  if batchedMatch
+    && singleMatch
+    && maybeMatch
+    && countMatch
+    && overviewMatch
+    && libraryMatch
+    && flatMatch
     then liftIO (putStrLn "PASS")
     else liftIO (putStrLn "FAIL" >> Exit.exitFailure)

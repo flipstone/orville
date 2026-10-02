@@ -35,6 +35,12 @@ module Orville.JsonPlan
   , JsonResult
   , refValue
   , result
+  , FlatRow
+  , flat
+  , refCol
+  , aggCol
+  , Aggregation
+  , aggregation
   , Arg
   , rootParam
   , refField
@@ -62,7 +68,9 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as AesonKey
 import qualified Data.Aeson.KeyMap as AesonKeyMap
 import qualified Data.ByteString.Char8 as BS8
+import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
+import qualified Data.Maybe as Maybe
 import qualified Data.Profunctor as Profunctor
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
@@ -130,6 +138,9 @@ data JsonPlan ref param result where
   Result ::
     JsonResult ref a ->
     JsonPlan ref param a
+  Flat ::
+    FlatRow ref param a ->
+    JsonPlan ref param a
 
 {- | Assembles a plan's (or block's) result from previously bound references
   and pure values, via the 'Applicative' instance. The combining functions
@@ -151,6 +162,60 @@ instance Functor (JsonResult ref) where
 instance Applicative (JsonResult ref) where
   pure = PureResult
   (<*>) = ApplyResult
+
+{- | Assembles a flat, report-shaped result row from scalar columns of bound
+  references and server-side aggregates, via the 'Applicative' instance. A
+  plan ending in a flat row compiles to a query returning ordinary SQL
+  columns: no jsonb envelope and no text casts, so the values are decoded
+  from the real libpq result by an ordinary 'Marshall.SqlMarshaller'.
+-}
+data FlatRow ref param a where
+  PureFlat :: a -> FlatRow ref param a
+  ApFlat ::
+    FlatRow ref param (a -> b) ->
+    FlatRow ref param a ->
+    FlatRow ref param b
+  RefCol ::
+    (b -> a) ->
+    Marshall.FieldDefinition nullability a ->
+    ref b ->
+    FlatRow ref param a
+  AggCol ::
+    Ord k =>
+    Schema.TableDefinition key writeEntity readEntity ->
+    Marshall.FieldDefinition nullability k ->
+    Arg ref param k ->
+    Aggregation readEntity a ->
+    FlatRow ref param a
+
+instance Functor (FlatRow ref param) where
+  fmap f =
+    ApFlat (PureFlat f)
+
+instance Applicative (FlatRow ref param) where
+  pure = PureFlat
+  (<*>) = ApFlat
+
+{- | A reduction of related rows to one value, carrying both interpretations:
+  a Haskell fold for native execution and a SQL aggregate expression (over
+  the table alias @t@) for compiled execution. The caller is trusted to keep
+  the two in agreement, including any ordering the fold depends on, and the
+  SQL expression must never produce NULL. The aggregate's SQL type governs
+  how the compiled value is decoded.
+-}
+data Aggregation entity a = Aggregation
+  { aggregationFold :: [entity] -> a
+  , aggregationSql :: RawSql.RawSql
+  , aggregationType :: Marshall.SqlType a
+  }
+
+aggregation ::
+  ([entity] -> a) ->
+  RawSql.RawSql ->
+  Marshall.SqlType a ->
+  Aggregation entity a
+aggregation =
+  Aggregation
 
 {- | The lookup argument of a step: either the plan's input parameter or a
   field projected out of a previously bound result.
@@ -268,6 +333,36 @@ result :: JsonResult ref a -> JsonPlan ref param a
 result =
   Result
 
+{- | Produces a flat row as the plan's result. A flat row must be the plan's
+  final node: binding it and referencing the binding is not supported by the
+  compiled interpretation.
+-}
+flat :: FlatRow ref param a -> JsonPlan ref param a
+flat =
+  Flat
+
+-- | A scalar column of a previously bound row, for use in a flat row.
+refCol ::
+  (b -> a) ->
+  Marshall.FieldDefinition nullability a ->
+  ref b ->
+  FlatRow ref param a
+refCol =
+  RefCol
+
+{- | An aggregate over the rows whose field matches the argument, reduced to
+  one value, for use in a flat row.
+-}
+aggCol ::
+  Ord k =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability k ->
+  Arg ref param k ->
+  Aggregation readEntity a ->
+  FlatRow ref param a
+aggCol =
+  AggCol
+
 -- | Produces two previously bound results as a tuple.
 pair :: ref a -> ref b -> JsonPlan ref param (a, b)
 pair refA refB =
@@ -332,6 +427,23 @@ toPlanNode plan =
       Plan.use planned
     Result jsonResult ->
       resultToPlan jsonResult
+    Flat flatRow ->
+      flatRowToPlan flatRow
+
+flatRowToPlan ::
+  FlatRow (Plan.Planned scope param) param a ->
+  Plan.Plan scope param a
+flatRowToPlan flatRow =
+  case flatRow of
+    PureFlat value ->
+      pure value
+    ApFlat functionRow argRow ->
+      flatRowToPlan functionRow <*> flatRowToPlan argRow
+    RefCol accessor _ planned ->
+      Plan.use (fmap accessor planned)
+    AggCol tableDef fieldDef arg agg ->
+      fmap (aggregationFold agg) $
+        Plan.chain (argToPlan arg) (Plan.findAll tableDef fieldDef)
 
 resultToPlan ::
   JsonResult (Plan.Planned scope param) a ->
@@ -389,10 +501,19 @@ executeJsonPlanList plan params =
       let
         query = compileJsonPlan plan someParams
         expectedCount = NEL.length someParams
-      jsonTexts <- Exec.executeAndDecode Exec.SelectQuery query resultTextMarshaller
-      if length jsonTexts == expectedCount
-        then liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
-        else liftIO . throwIO $ ResultRowCountMismatch expectedCount (length jsonTexts)
+      results <-
+        case terminalFlatRow plan of
+          Just flatRow ->
+            Exec.executeAndDecode
+              Exec.SelectQuery
+              query
+              (Marshall.annotateSqlMarshallerEmptyAnnotation (flatRowMarshaller flatRow))
+          Nothing -> do
+            jsonTexts <- Exec.executeAndDecode Exec.SelectQuery query resultTextMarshaller
+            liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
+      if length results == expectedCount
+        then pure results
+        else liftIO . throwIO $ ResultRowCountMismatch expectedCount (length results)
 
 -- | Renders the SQL that 'executeJsonPlanList' would run, for inspection.
 compiledSqlText ::
@@ -561,6 +682,92 @@ compileNode plan rootIndex nextIndex =
       ([], cteRefIndex ref, nextIndex)
     Result jsonResult ->
       ([(cteName nextIndex, resultCteBody rootIndex (resultLeafRefs jsonResult))], nextIndex, nextIndex + 1)
+    Flat flatRow ->
+      ([(cteName nextIndex, flatCteBody rootIndex flatRow)], nextIndex, nextIndex + 1)
+
+{- | The CTE body for a flat row: the root CTE's keys joined with every
+  referenced CTE, projecting each column as an ordinary SQL value under a
+  positional alias. Scalar columns are extracted from entity boundaries and
+  cast back to their field's type; aggregate columns become correlated
+  aggregate subqueries over their table.
+-}
+flatCteBody :: Int -> FlatRow CteRef param a -> RawSql.RawSql
+flatCteBody rootIndex flatRow =
+  let
+    (columnSqls, _) = flatColumnSqls rootIndex flatRow 0
+    joinIndexes =
+      List.nub (List.filter (/= rootIndex) (flatRowRefIndexes rootIndex flatRow))
+    joinClause cteIndex =
+      raw " JOIN " <> cteName cteIndex <> raw " ON "
+        <> cteName cteIndex <> raw ".i = " <> cteName rootIndex <> raw ".i"
+    selectColumns =
+      (cteName rootIndex <> raw ".i") : columnSqls
+  in
+    raw "SELECT "
+      <> RawSql.intercalate RawSql.commaSpace selectColumns
+      <> raw " FROM " <> cteName rootIndex
+      <> foldMap joinClause joinIndexes
+
+flatColumnSqls :: Int -> FlatRow CteRef param a -> Int -> ([RawSql.RawSql], Int)
+flatColumnSqls rootIndex flatRow columnIndex =
+  case flatRow of
+    PureFlat _ ->
+      ([], columnIndex)
+    ApFlat functionRow argRow ->
+      let
+        (functionSqls, afterFunction) = flatColumnSqls rootIndex functionRow columnIndex
+        (argSqls, afterArg) = flatColumnSqls rootIndex argRow afterFunction
+      in
+        (functionSqls <> argSqls, afterArg)
+    RefCol _ fieldDef ref ->
+      let
+        columnSql =
+          raw "(((" <> cteName (cteRefIndex ref) <> raw ".v -> "
+            <> RawSql.stringLiteral (fieldColumnBytes fieldDef)
+            <> raw ") #>> '{}')::" <> fieldCastExpr fieldDef
+            <> raw ") AS " <> raw (flatColumnName columnIndex)
+      in
+        ([columnSql], columnIndex + 1)
+    AggCol tableDef fieldDef arg agg ->
+      let
+        columnSql =
+          raw "(SELECT " <> aggregationSql agg <> raw " FROM "
+            <> RawSql.toRawSql (Schema.tableName tableDef)
+            <> raw " t WHERE " <> fieldMatchesArg fieldDef rootIndex arg
+            <> raw ") AS " <> raw (flatColumnName columnIndex)
+      in
+        ([columnSql], columnIndex + 1)
+
+flatRowRefIndexes :: Int -> FlatRow CteRef param a -> [Int]
+flatRowRefIndexes rootIndex flatRow =
+  case flatRow of
+    PureFlat _ ->
+      []
+    ApFlat functionRow argRow ->
+      flatRowRefIndexes rootIndex functionRow <> flatRowRefIndexes rootIndex argRow
+    RefCol _ _ ref ->
+      [cteRefIndex ref]
+    AggCol _ _ arg _ ->
+      case arg of
+        RootParam -> [rootIndex]
+        RefField _ _ ref -> [cteRefIndex ref]
+
+flatColumnName :: Int -> String
+flatColumnName columnIndex =
+  "c" <> show columnIndex
+
+-- | Finds the flat row a plan ends in, if any, by walking its bindings.
+terminalFlatRow ::
+  JsonPlan CteRef param result ->
+  Maybe (FlatRow CteRef param result)
+terminalFlatRow plan =
+  case plan of
+    Flat flatRow ->
+      Just flatRow
+    Bind _ continue ->
+      terminalFlatRow (continue (CteRef 0))
+    _ ->
+      Nothing
 
 -- | The shared CTE body for the list-producing steps: the matched rows become
 --   a jsonb array boundary value, empty when nothing matches.
@@ -670,8 +877,22 @@ fieldMatchesArg ::
 fieldMatchesArg fieldDef rootIndex arg =
   raw "t." <> RawSql.toRawSql (Marshall.fieldColumnName fieldDef)
     <> raw " = (((" <> argJsonbExpr rootIndex arg <> raw ") #>> '{}')::"
-    <> RawSql.toRawSql (Marshall.sqlTypeExpr (Marshall.fieldType fieldDef))
+    <> fieldCastExpr fieldDef
     <> raw ")"
+
+{- | The type to use when casting a boundary value back to a field's type.
+  Uses the reference data type when the field's type has one, so that
+  pseudo-types like SERIAL cast to their underlying type.
+-}
+fieldCastExpr :: Marshall.FieldDefinition nullability a -> RawSql.RawSql
+fieldCastExpr fieldDef =
+  let
+    sqlType = Marshall.fieldType fieldDef
+  in
+    RawSql.toRawSql $
+      Maybe.fromMaybe
+        (Marshall.sqlTypeExpr sqlType)
+        (Marshall.sqlTypeReferenceExpr sqlType)
 
 {- | Builds the jsonb_build_object expression for a table row, with every
   column cast to text so the client can replay the strings through the
@@ -746,13 +967,17 @@ compileJsonPlan plan params =
     cteList =
       (rootCte <> raw " (i, v) AS (VALUES " <> valuesRows <> RawSql.rightParen)
         : fmap renderStep steps
+
+    finalSelect =
+      case terminalFlatRow plan of
+        Just _ ->
+          raw " SELECT * FROM " <> cteName outIndex
+        Nothing ->
+          raw " SELECT (" <> cteName outIndex <> raw ".v)::text AS v FROM " <> cteName outIndex
   in
     raw "WITH "
       <> RawSql.intercalate RawSql.commaSpace cteList
-      <> raw " SELECT ("
-      <> cteName outIndex
-      <> raw ".v)::text AS v FROM "
-      <> cteName outIndex
+      <> finalSelect
       <> raw " ORDER BY "
       <> cteName outIndex
       <> raw ".i"
@@ -786,6 +1011,24 @@ rootParamEncoder plan =
       Nothing
     Result _ ->
       Nothing
+    Flat flatRow ->
+      flatRowParamEncoder flatRow
+
+flatRowParamEncoder ::
+  FlatRow CteRef param a ->
+  Maybe (param -> SqlValue.SqlValue)
+flatRowParamEncoder flatRow =
+  case flatRow of
+    PureFlat _ ->
+      Nothing
+    ApFlat functionRow argRow ->
+      case flatRowParamEncoder functionRow of
+        Just encoder -> Just encoder
+        Nothing -> flatRowParamEncoder argRow
+    RefCol _ _ _ ->
+      Nothing
+    AggCol _ fieldDef arg _ ->
+      argParamEncoder fieldDef arg
 
 argParamEncoder ::
   Marshall.FieldDefinition nullability a ->
@@ -841,6 +1084,8 @@ data DecodeError
   | MissingResultKey String
   | -- | An entity object held an unexpected number of rows.
     UnexpectedEntityCount Int
+  | -- | A flat row was bound mid-plan instead of being the plan's final node.
+    FlatRowNotTerminal
   | -- | The table's marshaller rejected the replayed column values.
     EntityMarshallError Marshall.MarshallError
   deriving Show
@@ -858,6 +1103,8 @@ renderDecodeError err =
       "result: missing key " <> key
     UnexpectedEntityCount count ->
       "expected exactly one decoded row, got " <> show count
+    FlatRowNotTerminal ->
+      "flat: a flat row must be the plan's final node"
     EntityMarshallError marshallError ->
       Marshall.renderMarshallError
         ErrorDetailLevel.maximalErrorDetailLevel
@@ -931,6 +1178,44 @@ planDecoder plan =
       decoder
     Result jsonResult ->
       resultDecoder jsonResult
+    Flat _ ->
+      JsonDecoder $ \_ ->
+        pure (Left FlatRowNotTerminal)
+
+{- | Builds the marshaller that decodes a flat row from the compiled query's
+  ordinary result columns, assigning positional column names in spine order,
+  matching how the flat row was compiled.
+-}
+flatRowMarshaller :: FlatRow ref param a -> Marshall.SqlMarshaller () a
+flatRowMarshaller flatRow =
+  let
+    (marshaller, _) = flatRowMarshallerFrom flatRow 0
+  in
+    marshaller
+
+flatRowMarshallerFrom ::
+  FlatRow ref param a ->
+  Int ->
+  (Marshall.SqlMarshaller () a, Int)
+flatRowMarshallerFrom flatRow columnIndex =
+  case flatRow of
+    PureFlat value ->
+      (pure value, columnIndex)
+    ApFlat functionRow argRow ->
+      let
+        (functionMarshaller, afterFunction) = flatRowMarshallerFrom functionRow columnIndex
+        (argMarshaller, afterArg) = flatRowMarshallerFrom argRow afterFunction
+      in
+        (functionMarshaller <*> argMarshaller, afterArg)
+    RefCol _ fieldDef _ ->
+      (flatColumnMarshaller columnIndex (Marshall.fieldType fieldDef), columnIndex + 1)
+    AggCol _ _ _ agg ->
+      (flatColumnMarshaller columnIndex (aggregationType agg), columnIndex + 1)
+
+flatColumnMarshaller :: Int -> Marshall.SqlType a -> Marshall.SqlMarshaller () a
+flatColumnMarshaller columnIndex sqlType =
+  Marshall.marshallReadOnlyField
+    (Marshall.fieldOfType sqlType (flatColumnName columnIndex))
 
 decodeElements :: JsonDecoder a -> [Aeson.Value] -> IO (Either DecodeError [a])
 decodeElements decoder elements =
