@@ -1,7 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 
-{- | Unit tests feeding hostile boundary JSON directly to plan decoders, plus
-  the failure path of a compiled findOne that matches nothing.
+{- | Unit tests feeding hostile boundary JSON and composite text directly to
+  plan decoders, plus the failure path of a compiled findOne that matches
+  nothing.
 -}
 module Test.Decoders
   ( tests
@@ -25,7 +26,10 @@ tests pool =
     [ (fromString "result decoder rejects non-objects", singleton resultRejectsNonObject)
     , (fromString "result decoder reports missing keys", singleton resultReportsMissingKey)
     , (fromString "findAll decoder rejects non-arrays", singleton findAllRejectsNonArray)
-    , (fromString "findAll decoder rejects non-object elements", singleton findAllRejectsNonObjectElements)
+    , (fromString "findAll decoder rejects non-string elements", singleton findAllRejectsNonStringElements)
+    , (fromString "entity decoder rejects non-strings", singleton entityRejectsNonString)
+    , (fromString "entity decoder rejects malformed composites", singleton entityRejectsMalformedComposite)
+    , (fromString "entity decoder reports arity mismatches", singleton entityReportsArityMismatch)
     , (fromString "entity decoder reports marshalling failures", singleton entityReportsMarshallFailure)
     , (fromString "compiled findOne miss throws NoRowMatched", singleton (findOneMissThrows pool))
     ]
@@ -90,20 +94,53 @@ findAllRejectsNonArray = do
     )
     decoded
 
-findAllRejectsNonObjectElements :: HH.PropertyT IO ()
-findAllRejectsNonObjectElements = do
+findAllRejectsNonStringElements :: HH.PropertyT IO ()
+findAllRejectsNonStringElements = do
   decoded <- HH.evalIO (decodeValue F.booksByAuthorId (Aeson.toJSON [True]))
   expectDecodeError
     ( \err ->
         case err of
-          JP.ExpectedJsonObject context -> context == "entity element"
+          JP.ExpectedJsonString context -> context == "entity element"
+          _ -> False
+    )
+    decoded
+
+entityRejectsNonString :: HH.PropertyT IO ()
+entityRejectsNonString = do
+  decoded <- HH.evalIO (decodeValue F.maybeAuthor (Aeson.object []))
+  expectDecodeError
+    ( \err ->
+        case err of
+          JP.ExpectedJsonString context -> context == "entity"
+          _ -> False
+    )
+    decoded
+
+entityRejectsMalformedComposite :: HH.PropertyT IO ()
+entityRejectsMalformedComposite = do
+  decoded <- HH.evalIO (decodeValue F.maybeAuthor (Aeson.String (T.pack "not a composite")))
+  expectDecodeError
+    ( \err ->
+        case err of
+          JP.MalformedCompositeText _ -> True
+          _ -> False
+    )
+    decoded
+
+entityReportsArityMismatch :: HH.PropertyT IO ()
+entityReportsArityMismatch = do
+  decoded <- HH.evalIO (decodeValue F.maybeAuthor (Aeson.String (T.pack "(1,x)")))
+  expectDecodeError
+    ( \err ->
+        case err of
+          JP.CompositeArityMismatch expected actual -> expected == 3 && actual == 2
           _ -> False
     )
     decoded
 
 entityReportsMarshallFailure :: HH.PropertyT IO ()
 entityReportsMarshallFailure = do
-  decoded <- HH.evalIO (decodeValue F.maybeAuthor (Aeson.object []))
+  decoded <- HH.evalIO (decodeValue F.maybeAuthor (Aeson.String (T.pack "(abc,def,ghi)")))
   expectDecodeError
     ( \err ->
         case err of

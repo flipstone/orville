@@ -1,10 +1,11 @@
 {-# LANGUAGE GADTs #-}
 
-{- | Property tests for the wire-text law: for every supported field type,
-  the server-side rendering used in compiled boundaries must be
-  byte-identical to libpq's text-mode output and decode to the same value.
+{- | Property tests for the composite-text law: for every supported field
+  type, parsing the composite text rendering used in compiled boundaries
+  must recover libpq's text-mode output byte-identically and decode to the
+  same value.
 -}
-module Test.WireTextLaw
+module Test.CompositeTextLaw
   ( tests
   ) where
 
@@ -22,7 +23,7 @@ import qualified Test.Fixtures as F
 tests :: O.ConnectionPool -> HH.Group
 tests pool =
   HH.Group
-    (fromString "Test.WireTextLaw")
+    (fromString "Test.CompositeTextLaw")
     (fmap (probeProperty pool) fieldProbes)
 
 data FieldProbe where
@@ -38,7 +39,7 @@ probeProperty pool (FieldProbe probeName fieldDef gen) =
   ( fromString probeName
   , HH.property $ do
       value <- HH.forAll gen
-      lawResult <- HH.evalIO (O.runOrville pool (JP.checkWireTextLaw fieldDef value))
+      lawResult <- HH.evalIO (O.runOrville pool (JP.checkCompositeTextLaw fieldDef value))
       lawResult HH.=== Right ()
   )
 

@@ -2,8 +2,9 @@
 {-# LANGUAGE RankNTypes #-}
 
 {- | Unit tests for the compile-time pre-checks: boundary shape rejection for
-  field projections and wire-text rendering rejection for unknown type oids.
-  These are pure and need no database.
+  field projections, and the absence of any type-oid restriction now that
+  composite text rendering works for every type. These are pure and need no
+  database.
 -}
 module Test.CompileChecks
   ( tests
@@ -34,7 +35,7 @@ tests =
     , (fromString "rejects refField on a reference rebound through use", singleton rejectsReboundListRef)
     , (fromString "accepts refField on a findOne reference rebound through use", singleton acceptsReboundEntityRef)
     , (fromString "rejects refField on a findMaybeOne reference", singleton rejectsMaybeRef)
-    , (fromString "rejects a column type with an unknown oid", singleton rejectsUnknownOid)
+    , (fromString "accepts a column type with an unknown oid", singleton acceptsUnknownOid)
     ]
 
 singleton :: HH.PropertyT IO () -> HH.Property
@@ -145,14 +146,6 @@ weirdPlan :: JP.JsonPlan ref Int.Int32 (Int.Int32, T.Text)
 weirdPlan =
   JP.findOne weirdTable (O.integerField "id") JP.rootParam
 
-rejectsUnknownOid :: HH.PropertyT IO ()
-rejectsUnknownOid =
-  expectCompileError
-    isUnrenderableWeird
-    (JP.compiledSqlText weirdPlan (1 :| []))
-
-isUnrenderableWeird :: JP.JsonPlanError -> Bool
-isUnrenderableWeird err =
-  case err of
-    JP.ColumnNotWireRenderable _ columnName -> columnName == "weird"
-    _ -> False
+acceptsUnknownOid :: HH.PropertyT IO ()
+acceptsUnknownOid =
+  Either.isRight (JP.compiledSqlText weirdPlan (1 :| [])) === True

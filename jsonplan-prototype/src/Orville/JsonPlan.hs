@@ -13,12 +13,14 @@
   references instantiated as CTE names, as result decoders, or as native
   'Plan.Planned' values.
 
-  Every value crossing a step boundary server-side is represented as jsonb.
-  Scalar and column values are cast to @text@ before being placed into jsonb,
-  so that the strings coming back are byte-identical to what libpq's text mode
-  would deliver. Decoding therefore reuses the table's existing
-  'Marshall.SqlMarshaller' by replaying the strings through a
-  'Exec.mkFakeLibPQResult'.
+  Every value crossing to the client is carried in a jsonb envelope. Entity
+  rows cross as composite text leaves: an anonymous @ROW@ of the row's columns
+  rendered to text, so each field's string is produced by its type's own
+  output function and is byte-identical to what libpq's text mode would
+  deliver. Decoding splits the composite and replays the strings through the
+  table's existing 'Marshall.SqlMarshaller' via 'Exec.mkFakeLibPQResult'.
+  Between steps, found rows additionally stay typed server-side, so field
+  projections compile to native field selection.
 -}
 module Orville.JsonPlan
   ( JsonPlan
@@ -58,7 +60,7 @@ module Orville.JsonPlan
   , renderJsonPlanError
   , DecodeError (..)
   , renderDecodeError
-  , checkWireTextLaw
+  , checkCompositeTextLaw
   , JsonDecoder (..)
   , planDecoder
   ) where
@@ -378,9 +380,9 @@ rootParam =
 
 {- | A field of a previously bound result, used as a step's lookup argument.
   Carries both interpretations: a Haskell accessor for native execution, and
-  the field whose column name and SQL type give the jsonb path and cast for
-  compiled execution. The caller is trusted to keep the two in agreement, the
-  same contract 'Marshall.marshallField' already relies on.
+  the field whose column name gives the native field selection for compiled
+  execution. The caller is trusted to keep the two in agreement, the same
+  contract 'Marshall.marshallField' already relies on.
 -}
 refField ::
   (b -> a) ->
@@ -597,45 +599,46 @@ jsonQuerySqlText ::
 jsonQuerySqlText (JsonQuery pre plan _) queryParams =
   compiledSqlText plan (fmap pre queryParams)
 
-{- | Checks the wire-text law for a field against the database: rendering a
-  value of the field's type to wire text server-side must be byte-identical
-  to libpq's text-mode output for the same value, and decoding the rendering
-  must give the same Haskell value as decoding the text-mode output. This is
-  the invariant compiled plan execution rests on; test suites should check it
-  for custom field types.
+{- | Checks the composite-text law for a field against the database: wrapping
+  a value of the field's type in a composite row and parsing the row's text
+  rendering must recover libpq's text-mode output byte-identically, and both
+  texts must decode to the same Haskell value. This is the invariant compiled
+  plan execution rests on. PostgreSQL builds composite text from each type's
+  own output function, so the law is expected to hold universally; the check
+  guards the composite parser and any exotic type's output quirks.
 -}
-checkWireTextLaw ::
+checkCompositeTextLaw ::
   (O.MonadOrville m, Eq a) =>
   Marshall.FieldDefinition nullability a ->
   a ->
   m (Either String ())
-checkWireTextLaw fieldDef value =
-  case wireTextRenderingForField fieldDef of
-    NoWireTextRendering ->
-      pure (Left "the field's SQL type has no wire-text rendering")
-    rendering -> do
-      let
-        typedValue =
-          RawSql.leftParen
-            <> RawSql.parameter (Marshall.fieldValueToSqlValue fieldDef value)
-            <> raw "::"
-            <> fieldCastExpr fieldDef
-            <> RawSql.rightParen
-        query =
-          raw "SELECT "
-            <> typedValue
-            <> raw " AS wire, ("
-            <> applyWireTextRendering rendering typedValue
-            <> raw ")::text AS rendered"
-      probeRows <- Exec.executeAndDecode Exec.SelectQuery query wireProbeMarshaller
-      pure $
-        case probeRows of
-          [(wireText, renderedText)] ->
-            if wireText /= renderedText
+checkCompositeTextLaw fieldDef value = do
+  let
+    typedValue =
+      RawSql.leftParen
+        <> RawSql.parameter (Marshall.fieldValueToSqlValue fieldDef value)
+        <> raw "::"
+        <> fieldCastExpr fieldDef
+        <> RawSql.rightParen
+    query =
+      raw "SELECT "
+        <> typedValue
+        <> raw " AS wire, (ROW("
+        <> typedValue
+        <> raw "))::text AS rendered"
+  probeRows <- Exec.executeAndDecode Exec.SelectQuery query wireProbeMarshaller
+  pure $
+    case probeRows of
+      [(wireText, renderedText)] ->
+        case parseCompositeText renderedText of
+          Left problem ->
+            Left ("parsing the rendered composite failed: " <> problem)
+          Right [Just fieldText] ->
+            if fieldText /= wireText
               then
                 Left $
                   "wire text " <> show wireText
-                    <> " differs from rendered text " <> show renderedText
+                    <> " differs from the composite field " <> show fieldText
               else
                 let
                   decodeText probeText =
@@ -643,17 +646,21 @@ checkWireTextLaw fieldDef value =
                       (Marshall.fieldType fieldDef)
                       (SqlValue.fromText probeText)
                 in
-                  case (decodeText wireText, decodeText renderedText) of
-                    (Right fromWire, Right fromRendered) ->
-                      if fromWire == fromRendered
+                  case (decodeText wireText, decodeText fieldText) of
+                    (Right fromWire, Right fromField) ->
+                      if fromWire == fromField
                         then Right ()
-                        else Left "decoding the rendering differs from decoding the wire text"
+                        else Left "decoding the composite field differs from decoding the wire text"
                     (Left err, _) ->
                       Left ("decoding the wire text failed: " <> err)
                     (_, Left err) ->
-                      Left ("decoding the rendering failed: " <> err)
-          _ ->
-            Left "expected exactly one probe row"
+                      Left ("decoding the composite field failed: " <> err)
+          Right [Nothing] ->
+            Left "the rendered composite field was NULL"
+          Right fields ->
+            Left ("expected one composite field, got " <> show (length fields))
+      _ ->
+        Left "expected exactly one probe row"
 
 wireProbeMarshaller :: Marshall.AnnotatedSqlMarshaller (T.Text, T.Text) (T.Text, T.Text)
 wireProbeMarshaller =
@@ -666,11 +673,43 @@ wireProbeMarshaller =
 -- Compilation to SQL
 --
 
--- | The compile-time interpretation of a reference: the index of the CTE
---   holding the referenced step's boundary values.
+-- | The compile-time interpretation of a reference: the CTE holding the
+--   referenced step's values.
 newtype CteRef a = CteRef
-  { cteRefIndex :: Int
+  { cteRefOut :: CteOut
   }
+
+-- | A compiled node's output CTE: its index and the shape of its value columns.
+data CteOut = CteOut
+  { cteOutIndex :: Int
+  , cteOutShape :: CteShape
+  }
+
+{- | The column shape of a CTE. An entity CTE carries the found row twice:
+  typed (@v@, the table's row type, so later steps project fields natively)
+  and rendered (@b@, the row's composite text, for crossing to the client),
+  both NULL when no row was found. Every other CTE carries one jsonb
+  boundary value @v@.
+-}
+data CteShape
+  = EntityCte
+  | JsonbCte
+
+cteRefIndex :: CteRef a -> Int
+cteRefIndex =
+  cteOutIndex . cteRefOut
+
+{- | The jsonb expression holding a CTE's client-bound value, relative to the
+  given alias. An entity CTE's composite text becomes a jsonb string, or SQL
+  NULL for a missing row, which jsonb contexts turn into a JSON null.
+-}
+cteBoundaryExpr :: CteShape -> RawSql.RawSql -> RawSql.RawSql
+cteBoundaryExpr shape alias =
+  case shape of
+    EntityCte ->
+      raw "to_jsonb(" <> alias <> raw ".b)"
+    JsonbCte ->
+      alias <> raw ".v"
 
 raw :: String -> RawSql.RawSql
 raw =
@@ -680,33 +719,38 @@ cteName :: Int -> RawSql.RawSql
 cteName index =
   raw ("jp" <> show index)
 
-{- | Compiles a plan node into a list of (name, body) CTEs. Every CTE has the
-  shape @(i, v)@: @i@ is the key of the row the value belongs to and @v@ is
-  the jsonb boundary value for that row at this node. Each node preserves the
-  set of @i@ values of its root CTE exactly, so later nodes can join earlier
-  ones on @i@. At the top level the root CTE is the parameter CTE and @i@ is
-  the parameter's position; inside a 'findAllEach' sub-plan the root CTE is
-  the element CTE and @i@ is a synthetic per-element key. Takes the index of
-  the node's root CTE and the next free index; returns the CTEs the node
-  adds, the index of the CTE holding the node's result, and the next free
-  index.
+{- | Compiles a plan node into a list of (name, body) CTEs. Every CTE keys its
+  rows by @i@, the key of the row the values belong to, and carries value
+  columns per its 'CteShape'. Each node preserves the set of @i@ values of
+  its root CTE exactly, so later nodes can join earlier ones on @i@. At the
+  top level the root CTE is the parameter CTE and @i@ is the parameter's
+  position; inside a 'findAllEach' sub-plan the root CTE is the element CTE
+  and @i@ is a synthetic per-element key. Takes the index of the node's root
+  CTE and the next free index; returns the CTEs the node adds, the CTE
+  holding the node's result, and the next free index.
 -}
 compileNode ::
   JsonPlan CteRef param result ->
   Int ->
   Int ->
-  ([(RawSql.RawSql, RawSql.RawSql)], Int, Int)
+  ([(RawSql.RawSql, RawSql.RawSql)], CteOut, Int)
 compileNode plan rootIndex nextIndex =
   case plan of
     FindOne tableDef fieldDef arg ->
-      ([(cteName nextIndex, findOneCteBody tableDef fieldDef rootIndex arg)], nextIndex, nextIndex + 1)
+      ( [(cteName nextIndex, findOneCteBody tableDef fieldDef rootIndex arg)]
+      , CteOut nextIndex EntityCte
+      , nextIndex + 1
+      )
     FindMaybeOne tableDef fieldDef arg ->
-      ([(cteName nextIndex, findOneCteBody tableDef fieldDef rootIndex arg)], nextIndex, nextIndex + 1)
+      ( [(cteName nextIndex, findMaybeOneCteBody tableDef fieldDef rootIndex arg)]
+      , CteOut nextIndex JsonbCte
+      , nextIndex + 1
+      )
     FindAll tableDef fieldDef arg ->
       let
         body = findAllCteBody tableDef (fieldMatchesArg fieldDef rootIndex arg) (argSourceCte rootIndex arg)
       in
-        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+        ([(cteName nextIndex, body)], CteOut nextIndex JsonbCte, nextIndex + 1)
     FindAllWhere tableDef fieldDef cond arg ->
       let
         whereSql =
@@ -714,35 +758,37 @@ compileNode plan rootIndex nextIndex =
             <> raw " AND (" <> RawSql.toRawSql cond <> RawSql.rightParen
         body = findAllCteBody tableDef whereSql (argSourceCte rootIndex arg)
       in
-        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+        ([(cteName nextIndex, body)], CteOut nextIndex JsonbCte, nextIndex + 1)
     SelectWhere tableDef cond ->
       let
         whereSql = RawSql.leftParen <> RawSql.toRawSql cond <> RawSql.rightParen
         body = findAllCteBody tableDef whereSql (cteName rootIndex)
       in
-        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+        ([(cteName nextIndex, body)], CteOut nextIndex JsonbCte, nextIndex + 1)
     FindAllEach tableDef fieldDef arg innerPlan ->
       let
         sourceCte = argSourceCte rootIndex arg
         elementIndex = nextIndex
         elementBody =
-          raw "SELECT " <> sourceCte <> raw ".i AS outer_i, row_number() OVER () AS i, "
-            <> entityJsonExpr tableDef
-            <> raw " AS v FROM " <> sourceCte
+          raw "SELECT " <> sourceCte <> raw ".i AS outer_i, row_number() OVER () AS i, t AS v, "
+            <> rowTextExpr tableDef
+            <> raw " AS b FROM " <> sourceCte
             <> raw " JOIN " <> RawSql.toRawSql (Schema.tableName tableDef)
             <> raw " t ON " <> fieldMatchesArg fieldDef rootIndex arg
         (innerCtes, innerOut, afterInner) =
-          compileNode (innerPlan (CteRef elementIndex)) elementIndex (elementIndex + 1)
+          compileNode (innerPlan (CteRef (CteOut elementIndex EntityCte))) elementIndex (elementIndex + 1)
         aggBody =
-          raw "SELECT " <> sourceCte <> raw ".i, coalesce((SELECT jsonb_agg(innerVals.v ORDER BY innerVals.i) FROM "
+          raw "SELECT " <> sourceCte <> raw ".i, coalesce((SELECT jsonb_agg("
+            <> cteBoundaryExpr (cteOutShape innerOut) (raw "innerVals")
+            <> raw " ORDER BY innerVals.i) FROM "
             <> cteName elementIndex <> raw " elemRows JOIN "
-            <> cteName innerOut <> raw " innerVals ON innerVals.i = elemRows.i WHERE elemRows.outer_i = "
+            <> cteName (cteOutIndex innerOut) <> raw " innerVals ON innerVals.i = elemRows.i WHERE elemRows.outer_i = "
             <> sourceCte <> raw ".i), '[]'::jsonb) AS v FROM " <> sourceCte
         ctes =
           (cteName elementIndex, elementBody)
             : innerCtes <> [(cteName afterInner, aggBody)]
       in
-        (ctes, afterInner, afterInner + 1)
+        (ctes, CteOut afterInner JsonbCte, afterInner + 1)
     Bind step continue ->
       let
         (stepCtes, stepOut, afterStep) = compileNode step rootIndex nextIndex
@@ -750,17 +796,23 @@ compileNode plan rootIndex nextIndex =
       in
         (stepCtes <> bodyCtes, bodyOut, afterBody)
     Use ref ->
-      ([], cteRefIndex ref, nextIndex)
+      ([], cteRefOut ref, nextIndex)
     Result jsonResult ->
-      ([(cteName nextIndex, resultCteBody rootIndex (resultLeafRefs jsonResult))], nextIndex, nextIndex + 1)
+      ( [(cteName nextIndex, resultCteBody rootIndex (resultLeafRefs jsonResult))]
+      , CteOut nextIndex JsonbCte
+      , nextIndex + 1
+      )
     Flat flatRow ->
-      ([(cteName nextIndex, flatCteBody rootIndex flatRow)], nextIndex, nextIndex + 1)
+      ( [(cteName nextIndex, flatCteBody rootIndex flatRow)]
+      , CteOut nextIndex JsonbCte
+      , nextIndex + 1
+      )
 
 {- | The CTE body for a flat row: the root CTE's keys joined with every
   referenced CTE, projecting each column as an ordinary SQL value under a
-  positional alias. Scalar columns are extracted from entity boundaries and
-  cast back to their field's type; aggregate columns become correlated
-  aggregate subqueries over their table.
+  positional alias. Scalar columns are native field selections on entity
+  rows; aggregate columns become correlated aggregate subqueries over their
+  table.
 -}
 flatCteBody :: Int -> FlatRow CteRef param a -> RawSql.RawSql
 flatCteBody rootIndex flatRow =
@@ -793,10 +845,9 @@ flatColumnSqls rootIndex flatRow columnIndex =
     RefCol _ fieldDef ref ->
       let
         columnSql =
-          raw "(((" <> cteName (cteRefIndex ref) <> raw ".v -> "
-            <> RawSql.stringLiteral (fieldColumnBytes fieldDef)
-            <> raw ") #>> '{}')::" <> fieldCastExpr fieldDef
-            <> raw ") AS " <> raw (flatColumnName columnIndex)
+          RawSql.leftParen <> cteName (cteRefIndex ref) <> raw ".v)."
+            <> RawSql.identifier (fieldColumnBytes fieldDef)
+            <> raw " AS " <> raw (flatColumnName columnIndex)
       in
         ([columnSql], columnIndex + 1)
     AggCol tableDef fieldDef arg agg ->
@@ -836,12 +887,12 @@ terminalFlatRow plan =
     Flat flatRow ->
       Just flatRow
     Bind _ continue ->
-      terminalFlatRow (continue (CteRef 0))
+      terminalFlatRow (continue (CteRef (CteOut 0 JsonbCte)))
     _ ->
       Nothing
 
 -- | The shared CTE body for the list-producing steps: the matched rows become
---   a jsonb array boundary value, empty when nothing matches.
+--   a jsonb array of composite text leaves, empty when nothing matches.
 findAllCteBody ::
   Schema.TableDefinition key writeEntity readEntity ->
   RawSql.RawSql ->
@@ -849,58 +900,57 @@ findAllCteBody ::
   RawSql.RawSql
 findAllCteBody tableDef whereSql sourceCte =
   raw "SELECT " <> sourceCte <> raw ".i, (SELECT coalesce(jsonb_agg("
-    <> entityJsonExpr tableDef
+    <> rowTextExpr tableDef
     <> raw "), '[]'::jsonb) FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
     <> raw " t WHERE " <> whereSql
     <> raw ") AS v FROM " <> sourceCte
 
--- | The CTE indexes referenced by a result assembly, in spine order. The
---   positions match the keys used by the assembly's boundary object.
-resultLeafRefs :: JsonResult CteRef a -> [Int]
+-- | The CTEs referenced by a result assembly, in spine order. The positions
+--   match the keys used by the assembly's boundary object.
+resultLeafRefs :: JsonResult CteRef a -> [CteOut]
 resultLeafRefs jsonResult =
   case jsonResult of
     UseRef ref ->
-      [cteRefIndex ref]
+      [cteRefOut ref]
     PureResult _ ->
       []
     ApplyResult functionResult argResult ->
       resultLeafRefs functionResult <> resultLeafRefs argResult
 
 {- | The CTE body for a result assembly: the referenced CTEs joined on the row
-  index, built into one jsonb object with positional keys. An assembly of
-  only pure values has a null boundary and keeps the row indexes from the
-  parameter CTE.
+  index, their boundary values built into one jsonb object with positional
+  keys. An assembly of only pure values has a null boundary and keeps the row
+  indexes from the parameter CTE.
 -}
-resultCteBody :: Int -> [Int] -> RawSql.RawSql
-resultCteBody rootIndex leafIndexes =
-  case leafIndexes of
+resultCteBody :: Int -> [CteOut] -> RawSql.RawSql
+resultCteBody rootIndex leaves =
+  case leaves of
     [] ->
       raw "SELECT " <> cteName rootIndex <> raw ".i, 'null'::jsonb AS v FROM " <> cteName rootIndex
-    firstIndex : restIndexes ->
+    firstLeaf : restLeaves ->
       let
         alias position = raw ("r" <> show (position :: Int))
-        keyedValue position =
+        keyedValue (position, leaf) =
           RawSql.stringLiteral (BS8.pack (resultKeyName position))
             <> RawSql.commaSpace
-            <> alias position <> raw ".v"
-        joinClause (position, cteIndex) =
-          raw " JOIN " <> cteName cteIndex <> raw " " <> alias position
+            <> cteBoundaryExpr (cteOutShape leaf) (alias position)
+        joinClause (position, leaf) =
+          raw " JOIN " <> cteName (cteOutIndex leaf) <> raw " " <> alias position
             <> raw " ON " <> alias position <> raw ".i = r0.i"
         keyedValues =
-          RawSql.intercalate
-            RawSql.commaSpace
-            (fmap keyedValue [0 .. length leafIndexes - 1])
+          fmap keyedValue (zip [0 ..] leaves)
       in
-        raw "SELECT r0.i, jsonb_build_object(" <> keyedValues <> raw ") AS v FROM "
-          <> cteName firstIndex <> raw " r0"
-          <> foldMap joinClause (zip [1 ..] restIndexes)
+        raw "SELECT r0.i, " <> jsonbBuildObjectChunked keyedValues <> raw " AS v FROM "
+          <> cteName (cteOutIndex firstLeaf) <> raw " r0"
+          <> foldMap joinClause (zip [1 ..] restLeaves)
 
 resultKeyName :: Int -> String
 resultKeyName position =
   "r" <> show position
 
--- | The shared CTE body for the single-row lookups: a missing row becomes a
---   jsonb null boundary value.
+{- | The CTE body for 'findOne': an entity CTE holding the matched row typed
+  and as composite text, both NULL when no row matches.
+-}
 findOneCteBody ::
   Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability a ->
@@ -908,9 +958,30 @@ findOneCteBody ::
   Arg CteRef param a ->
   RawSql.RawSql
 findOneCteBody tableDef fieldDef rootIndex arg =
-  raw "SELECT " <> argSourceCte rootIndex arg <> raw ".i, coalesce((SELECT "
-    <> entityJsonExpr tableDef
-    <> raw " FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
+  let
+    matchedRow selected =
+      raw "(SELECT " <> selected
+        <> raw " FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
+        <> raw " t WHERE " <> fieldMatchesArg fieldDef rootIndex arg
+        <> raw " LIMIT 1)"
+  in
+    raw "SELECT " <> argSourceCte rootIndex arg <> raw ".i, "
+      <> matchedRow (raw "t") <> raw " AS v, "
+      <> matchedRow (rowTextExpr tableDef) <> raw " AS b FROM "
+      <> argSourceCte rootIndex arg
+
+-- | The CTE body for 'findMaybeOne': a missing row becomes a jsonb null
+--   boundary value directly, since the result is never projected.
+findMaybeOneCteBody ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability a ->
+  Int ->
+  Arg CteRef param a ->
+  RawSql.RawSql
+findMaybeOneCteBody tableDef fieldDef rootIndex arg =
+  raw "SELECT " <> argSourceCte rootIndex arg <> raw ".i, coalesce((SELECT to_jsonb("
+    <> rowTextExpr tableDef
+    <> raw ") FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
     <> raw " t WHERE " <> fieldMatchesArg fieldDef rootIndex arg
     <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> argSourceCte rootIndex arg
 
@@ -924,22 +995,28 @@ argSourceCte rootIndex arg =
     RefField _ _ ref ->
       cteName (cteRefIndex ref)
 
--- | The jsonb expression holding an argument's boundary value, relative to
---   the argument's source CTE.
-argJsonbExpr :: Int -> Arg CteRef param a -> RawSql.RawSql
-argJsonbExpr rootIndex arg =
+{- | The SQL expression for an argument's value, relative to the argument's
+  source CTE. The root parameter crosses as a jsonb string holding the
+  value's text rendering, so it is extracted and cast back to the matched
+  field's SQL type to keep the comparison (and any index) native; a projected
+  field is native field selection on the referenced entity row.
+-}
+argValueExpr ::
+  Marshall.FieldDefinition nullability a ->
+  Int ->
+  Arg CteRef param a ->
+  RawSql.RawSql
+argValueExpr fieldDef rootIndex arg =
   case arg of
     RootParam ->
-      cteName rootIndex <> raw ".v"
-    RefField _ fieldDef ref ->
-      cteName (cteRefIndex ref) <> raw ".v -> "
-        <> RawSql.stringLiteral (fieldColumnBytes fieldDef)
+      raw "((" <> cteName rootIndex <> raw ".v #>> '{}')::"
+        <> fieldCastExpr fieldDef
+        <> RawSql.rightParen
+    RefField _ projectedField ref ->
+      RawSql.leftParen <> cteName (cteRefIndex ref) <> raw ".v)."
+        <> RawSql.identifier (fieldColumnBytes projectedField)
 
-{- | Builds the where condition matching a table field against an argument.
-  The boundary scalar is a jsonb string holding the value's text rendering,
-  so it is extracted with @#>> '{}'@ and cast back to the field's SQL type to
-  keep the comparison (and any index) native.
--}
+-- | Builds the where condition matching a table field against an argument.
 fieldMatchesArg ::
   Marshall.FieldDefinition nullability a ->
   Int ->
@@ -947,9 +1024,7 @@ fieldMatchesArg ::
   RawSql.RawSql
 fieldMatchesArg fieldDef rootIndex arg =
   raw "t." <> RawSql.toRawSql (Marshall.fieldColumnName fieldDef)
-    <> raw " = (((" <> argJsonbExpr rootIndex arg <> raw ") #>> '{}')::"
-    <> fieldCastExpr fieldDef
-    <> raw ")"
+    <> raw " = " <> argValueExpr fieldDef rootIndex arg
 
 {- | The type to use when casting a boundary value back to a field's type.
   Uses the reference data type when the field's type has one, so that
@@ -965,123 +1040,55 @@ fieldCastExpr fieldDef =
         (Marshall.sqlTypeExpr sqlType)
         (Marshall.sqlTypeReferenceExpr sqlType)
 
-{- | Builds the jsonb object expression for a table row, with every column
-  cast to text so the client can replay the strings through the table's
-  marshaller. The columns are built in chunks of jsonb_build_object calls
-  concatenated with @||@ to stay under PostgreSQL's 100-argument limit on
-  function calls.
+{- | The composite text expression for a table row: an anonymous @ROW@ of the
+  marshaller's columns in marshaller order (so the client can map the fields
+  back positionally), rendered to text by PostgreSQL's composite output
+  routine. Each field's string is produced by its type's own output function,
+  which is exactly what libpq's text mode delivers, so after composite
+  unquoting the strings replay through the table's 'Marshall.SqlMarshaller'
+  unchanged. Row constructors are not subject to PostgreSQL's 100-argument
+  limit on function calls, so no chunking is needed.
 -}
-entityJsonExpr ::
+rowTextExpr ::
   Schema.TableDefinition key writeEntity readEntity ->
   RawSql.RawSql
-entityJsonExpr tableDef =
-  let
-    fieldPair column =
-      RawSql.stringLiteral (tableColumnName column)
-        <> RawSql.commaSpace
-        <> applyWireTextRendering
-          (tableColumnWireRendering column)
-          (tableColumnSelectSql column)
+rowTextExpr tableDef =
+  raw "ROW("
+    <> RawSql.intercalate
+      RawSql.commaSpace
+      (fmap tableColumnSelectSql (tableColumns tableDef))
+    <> raw ")::text"
 
+{- | Builds a jsonb object from rendered key-value pairs, in chunks of
+  jsonb_build_object calls concatenated with @||@ to stay under PostgreSQL's
+  100-argument limit on function calls.
+-}
+jsonbBuildObjectChunked :: [RawSql.RawSql] -> RawSql.RawSql
+jsonbBuildObjectChunked keyedValues =
+  let
     buildObject chunk =
       raw "jsonb_build_object("
-        <> RawSql.intercalate RawSql.commaSpace (fmap fieldPair chunk)
+        <> RawSql.intercalate RawSql.commaSpace chunk
         <> raw ")"
   in
     RawSql.leftParen
-      <> RawSql.intercalate
-        (raw " || ")
-        (fmap buildObject (columnChunks (tableColumns tableDef)))
+      <> RawSql.intercalate (raw " || ") (fmap buildObject (pairChunks keyedValues))
       <> RawSql.rightParen
 
-columnChunks :: [TableColumn] -> [[TableColumn]]
-columnChunks columns =
-  case columns of
+pairChunks :: [RawSql.RawSql] -> [[RawSql.RawSql]]
+pairChunks keyedValues =
+  case keyedValues of
     [] -> []
-    _ -> List.take 25 columns : columnChunks (List.drop 25 columns)
+    _ -> List.take 25 keyedValues : pairChunks (List.drop 25 keyedValues)
 
-{- | One column of a table's jsonb entity boundary: the key it is stored
-  under (also the column name the decoder replays it as), the expression
-  that selects it, relative to the table alias @t@, and how it renders to
-  wire text.
+{- | One column of a table's composite text leaf: the column name the decoder
+  replays it as, and the expression that selects it, relative to the table
+  alias @t@. The list order of 'tableColumns' is the composite's field order.
 -}
 data TableColumn = TableColumn
   { tableColumnName :: BS8.ByteString
   , tableColumnSelectSql :: RawSql.RawSql
-  , tableColumnWireRendering :: WireTextRendering
   }
-
-{- | How a column renders into a boundary so that the resulting string is
-  byte-identical to what libpq's text mode would deliver for the column. A
-  plain @::text@ cast is correct for most types, but some diverge from their
-  output function under the cast and carry a repair expression instead; a
-  type we cannot vouch for has no rendering and compilation refuses it.
--}
-data WireTextRendering
-  = CastToText
-  | RenderWireTextVia (RawSql.RawSql -> RawSql.RawSql)
-  | NoWireTextRendering
-
-{- | Looks up the wire-text rendering for a field by its SQL type's oid,
-  compared against the oids of Orville's built-in types. Custom types built
-  with convertSqlType keep their base type's oid and are covered; a type
-  with an unrecognized oid gets no rendering.
--}
-wireTextRenderingForField ::
-  Marshall.FieldDefinition nullability a ->
-  WireTextRendering
-wireTextRenderingForField fieldDef =
-  let
-    sqlType = Marshall.fieldType fieldDef
-    fieldOid = Marshall.sqlTypeOid sqlType
-    oidOfType otherType = Marshall.sqlTypeOid otherType
-
-    booleanCase selectSql =
-      raw "CASE WHEN " <> selectSql <> raw " THEN 't' ELSE 'f' END"
-
-    fixedTextPad maxLen selectSql =
-      raw "rpad(" <> selectSql <> raw "::text, "
-        <> RawSql.intDecLiteral (fromIntegral maxLen)
-        <> RawSql.rightParen
-
-    castSafeOids =
-      [ oidOfType Marshall.integer
-      , oidOfType Marshall.bigInteger
-      , oidOfType Marshall.smallInteger
-      , oidOfType Marshall.double
-      , oidOfType Marshall.unboundedText
-      , oidOfType (Marshall.boundedText 1)
-      , oidOfType Marshall.date
-      , oidOfType Marshall.timestamp
-      , oidOfType Marshall.timestampWithoutZone
-      , oidOfType Marshall.uuid
-      , oidOfType Marshall.textSearchVector
-      , oidOfType Marshall.jsonb
-      , oidOfType Marshall.oid
-      ]
-  in
-    if fieldOid == oidOfType Marshall.boolean
-      then RenderWireTextVia booleanCase
-      else
-        if fieldOid == oidOfType (Marshall.fixedText 1)
-          then case Marshall.sqlTypeMaximumLength sqlType of
-            Just maxLen -> RenderWireTextVia (fixedTextPad maxLen)
-            Nothing -> NoWireTextRendering
-          else
-            if List.elem fieldOid castSafeOids
-              then CastToText
-              else NoWireTextRendering
-
-{- | Renders a column to wire text. Compilation rejects plans containing
-  columns without a rendering before this is reached, so a missing rendering
-  falls back to the plain cast.
--}
-applyWireTextRendering :: WireTextRendering -> RawSql.RawSql -> RawSql.RawSql
-applyWireTextRendering rendering selectSql =
-  case rendering of
-    CastToText -> selectSql <> raw "::text"
-    RenderWireTextVia render -> render selectSql
-    NoWireTextRendering -> selectSql <> raw "::text"
 
 tableColumns ::
   Schema.TableDefinition key writeEntity readEntity ->
@@ -1102,7 +1109,6 @@ collectTableColumn entry columns =
       TableColumn
         (fieldColumnBytes fieldDef)
         (raw "t." <> RawSql.identifier (fieldColumnBytes fieldDef))
-        (wireTextRenderingForField fieldDef)
         : columns
     Marshall.Synthetic synthField ->
       TableColumn
@@ -1111,7 +1117,6 @@ collectTableColumn entry columns =
             <> RawSql.toRawSql (Marshall.syntheticFieldExpression synthField)
             <> RawSql.rightParen
         )
-        CastToText
         : columns
 
 fieldColumnBytes :: Marshall.FieldDefinition nullability a -> BS8.ByteString
@@ -1123,7 +1128,7 @@ compileJsonPlan ::
   NEL.NonEmpty param ->
   Either JsonPlanError RawSql.RawSql
 compileJsonPlan plan params =
-  case orElseError (planShapeError plan) (planRenderingError plan) of
+  case planShapeError plan of
     Just err ->
       Left err
     Nothing ->
@@ -1230,57 +1235,6 @@ flatRowShapeError flatRow =
     AggCol _ _ arg _ ->
       argShapeError arg
 
-{- | Finds the first column without a wire-text rendering among the tables
-  whose rows cross a boundary of this plan, if any.
--}
-planRenderingError :: JsonPlan CteRef param result -> Maybe JsonPlanError
-planRenderingError plan =
-  case plan of
-    FindOne tableDef _ _ ->
-      tableRenderingError tableDef
-    FindMaybeOne tableDef _ _ ->
-      tableRenderingError tableDef
-    FindAll tableDef _ _ ->
-      tableRenderingError tableDef
-    FindAllWhere tableDef _ _ _ ->
-      tableRenderingError tableDef
-    SelectWhere tableDef _ ->
-      tableRenderingError tableDef
-    FindAllEach tableDef _ _ innerPlan ->
-      case tableRenderingError tableDef of
-        Just err -> Just err
-        Nothing -> planRenderingError (innerPlan (CteRef 0))
-    Bind step continue ->
-      case planRenderingError step of
-        Just err -> Just err
-        Nothing -> planRenderingError (continue (CteRef 0))
-    Use _ ->
-      Nothing
-    Result _ ->
-      Nothing
-    Flat _ ->
-      Nothing
-
-tableRenderingError ::
-  Schema.TableDefinition key writeEntity readEntity ->
-  Maybe JsonPlanError
-tableRenderingError tableDef =
-  let
-    hasNoRendering column =
-      case tableColumnWireRendering column of
-        NoWireTextRendering -> True
-        CastToText -> False
-        RenderWireTextVia _ -> False
-
-    tableNameString =
-      BS8.unpack (RawSql.toExampleBytes (RawSql.toRawSql (Schema.tableName tableDef)))
-  in
-    case List.filter hasNoRendering (tableColumns tableDef) of
-      [] ->
-        Nothing
-      column : _ ->
-        Just (ColumnNotWireRenderable tableNameString (BS8.unpack (tableColumnName column)))
-
 compileCheckedJsonPlan ::
   (forall ref. JsonPlan ref param result) ->
   NEL.NonEmpty param ->
@@ -1310,7 +1264,9 @@ compileCheckedJsonPlan plan params =
         RawSql.commaSpace
         (zipWith valuesRow [0 ..] (NEL.toList params))
 
-    (steps, outIndex, _) = compileNode plan 0 1
+    (steps, outCte, _) = compileNode plan 0 1
+
+    outName = cteName (cteOutIndex outCte)
 
     renderStep (name, body) =
       name <> raw " AS (" <> body <> RawSql.rightParen
@@ -1322,15 +1278,18 @@ compileCheckedJsonPlan plan params =
     finalSelect =
       case terminalFlatRow plan of
         Just _ ->
-          raw " SELECT * FROM " <> cteName outIndex
+          raw " SELECT * FROM " <> outName
         Nothing ->
-          raw " SELECT (" <> cteName outIndex <> raw ".v)::text AS v FROM " <> cteName outIndex
+          raw " SELECT coalesce("
+            <> cteBoundaryExpr (cteOutShape outCte) outName
+            <> raw ", 'null'::jsonb)::text AS v FROM "
+            <> outName
   in
     raw "WITH "
       <> RawSql.intercalate RawSql.commaSpace cteList
       <> finalSelect
       <> raw " ORDER BY "
-      <> cteName outIndex
+      <> outName
       <> raw ".i"
 
 {- | Finds the encoder for the plan's input parameter from the first step that
@@ -1357,7 +1316,7 @@ rootParamEncoder plan =
     Bind step continue ->
       case rootParamEncoder step of
         Just encoder -> Just encoder
-        Nothing -> rootParamEncoder (continue (CteRef 0))
+        Nothing -> rootParamEncoder (continue (CteRef (CteOut 0 JsonbCte)))
     Use _ ->
       Nothing
     Result _ ->
@@ -1406,9 +1365,6 @@ data JsonPlanError
     --   were input parameters. The compiler guarantees these counts match,
     --   so this indicates a bug in the compiler itself.
     ResultRowCountMismatch Int Int
-  | -- | A column (table name, column name) has a SQL type without a known
-    --   wire-text rendering, so the plan cannot be compiled.
-    ColumnNotWireRenderable String String
   | -- | A field (column name) was projected from a reference whose boundary
     --   (named by its step kind) is not a single entity row, so the
     --   projection has no server-side meaning and the plan cannot be
@@ -1433,12 +1389,6 @@ renderJsonPlanError err =
         <> " rows for "
         <> show expected
         <> " parameters; this is a bug in the jsonplan compiler"
-    ColumnNotWireRenderable tableName columnName ->
-      "jsonplan: column "
-        <> columnName
-        <> " of table "
-        <> tableName
-        <> " has a SQL type with no known wire-text rendering, so the plan cannot be compiled; it can still be executed natively via toPlan"
     RefFieldOnNonEntity stepKind columnName ->
       "jsonplan: refField on column "
         <> columnName
@@ -1454,6 +1404,13 @@ data DecodeError
     ExpectedJsonArray String
   | -- | A boundary was not the expected JSON object; carries the context.
     ExpectedJsonObject String
+  | -- | A boundary was not the expected JSON string; carries the context.
+    ExpectedJsonString String
+  | -- | A composite text rendering could not be parsed; carries the problem.
+    MalformedCompositeText String
+  | -- | A composite held a different number of fields than the table's
+    --   marshaller expects: expected count, actual count.
+    CompositeArityMismatch Int Int
   | MissingResultKey String
   | -- | An entity object held an unexpected number of rows.
     UnexpectedEntityCount Int
@@ -1472,6 +1429,12 @@ renderDecodeError err =
       stepKind <> ": expected a JSON array"
     ExpectedJsonObject context ->
       context <> ": expected a JSON object"
+    ExpectedJsonString context ->
+      context <> ": expected a JSON string"
+    MalformedCompositeText problem ->
+      "malformed composite text: " <> problem
+    CompositeArityMismatch expected actual ->
+      "composite row has " <> show actual <> " fields, expected " <> show expected
     MissingResultKey key ->
       "result: missing key " <> key
     UnexpectedEntityCount count ->
@@ -1615,9 +1578,9 @@ entityArrayDecoder stepKind tableDef =
     JsonDecoder $ \value ->
       case value of
         Aeson.Array elements ->
-          case traverse asObject (Vector.toList elements) of
+          case traverse (compositeFields "entity element") (Vector.toList elements) of
             Left err -> pure (Left err)
-            Right objects -> decodeEntityObjects tableDef columnNames objects
+            Right rows -> decodeEntityRows tableDef columnNames rows
         _ ->
           pure (Left (ExpectedJsonArray stepKind))
 
@@ -1665,7 +1628,7 @@ decodeResultSpine jsonResult obj keyIndex =
               Left err -> Left err
               Right (argValue, finalKeyIndex) -> Right (functionValue argValue, finalKeyIndex)
 
--- | Decodes a jsonb object built by the compiled query for a table's row.
+-- | Decodes a composite text leaf built by the compiled query for a table's row.
 entityDecoder ::
   Schema.TableDefinition key writeEntity readEntity ->
   JsonDecoder readEntity
@@ -1674,51 +1637,123 @@ entityDecoder tableDef =
     columnNames = fmap tableColumnName (tableColumns tableDef)
   in
     JsonDecoder $ \value ->
-      case value of
-        Aeson.Object obj -> do
-          decoded <- decodeEntityObjects tableDef columnNames [obj]
+      case compositeFields "entity" value of
+        Left err ->
+          pure (Left err)
+        Right fields -> do
+          decoded <- decodeEntityRows tableDef columnNames [fields]
           pure $
             case decoded of
               Left err -> Left err
               Right [entity] -> Right entity
               Right entities -> Left (UnexpectedEntityCount (length entities))
-        _ ->
-          pure (Left (ExpectedJsonObject "entity"))
 
-asObject :: Aeson.Value -> Either DecodeError Aeson.Object
-asObject value =
+-- | Extracts a composite text leaf's fields from its jsonb boundary value.
+compositeFields :: String -> Aeson.Value -> Either DecodeError [Maybe T.Text]
+compositeFields context value =
   case value of
-    Aeson.Object obj -> Right obj
-    _ -> Left (ExpectedJsonObject "entity element")
+    Aeson.String compositeText ->
+      case parseCompositeText compositeText of
+        Left problem -> Left (MalformedCompositeText problem)
+        Right fields -> Right fields
+    _ ->
+      Left (ExpectedJsonString context)
 
-{- | The heart of the @::text@ trick: each jsonb entity object holds every
-  column's text-mode rendering (or JSON null). Replaying those strings
-  through a fake libpq result lets the table's unmodified 'SqlMarshaller'
-  decode them, 'Marshall.sqlTypeFromSql' legs and all.
+{- | The heart of the composite-leaf representation: each leaf holds every
+  column's text-mode rendering in marshaller column order (or NULL).
+  Replaying those strings through a fake libpq result lets the table's
+  unmodified 'Marshall.SqlMarshaller' decode them,
+  'Marshall.sqlTypeFromSql' legs and all.
 -}
-decodeEntityObjects ::
+decodeEntityRows ::
   Schema.TableDefinition key writeEntity readEntity ->
   [BS8.ByteString] ->
-  [Aeson.Object] ->
+  [[Maybe T.Text]] ->
   IO (Either DecodeError [readEntity])
-decodeEntityObjects tableDef columnNames objects =
+decodeEntityRows tableDef columnNames rows =
   let
-    columnValue obj name =
-      case AesonKeyMap.lookup (AesonKey.fromText (Enc.decodeUtf8 name)) obj of
-        Just (Aeson.String textValue) -> SqlValue.fromText textValue
-        _ -> SqlValue.sqlNull
+    columnCount = length columnNames
 
-    fakeResult =
-      Exec.mkFakeLibPQResult
-        columnNames
-        (fmap (\obj -> fmap (columnValue obj) columnNames) objects)
-  in do
-    marshalled <-
-      Marshall.marshallResultFromSql
-        ErrorDetailLevel.maximalErrorDetailLevel
-        (Schema.tableMarshaller tableDef)
-        fakeResult
-    pure $
-      case marshalled of
-        Left err -> Left (EntityMarshallError err)
-        Right entities -> Right entities
+    rowValues fields =
+      if length fields == columnCount
+        then Right (fmap (maybe SqlValue.sqlNull SqlValue.fromText) fields)
+        else Left (CompositeArityMismatch columnCount (length fields))
+  in
+    case traverse rowValues rows of
+      Left err ->
+        pure (Left err)
+      Right sqlRows -> do
+        marshalled <-
+          Marshall.marshallResultFromSql
+            ErrorDetailLevel.maximalErrorDetailLevel
+            (Schema.tableMarshaller tableDef)
+            (Exec.mkFakeLibPQResult columnNames sqlRows)
+        pure $
+          case marshalled of
+            Left err -> Left (EntityMarshallError err)
+            Right entities -> Right entities
+
+{- | Parses PostgreSQL's composite text output format: a parenthesized,
+  comma-separated field list where an empty field is NULL and a field
+  containing special characters is double-quoted with embedded quotes and
+  backslashes doubled (or backslash-escaped).
+-}
+parseCompositeText :: T.Text -> Either String [Maybe T.Text]
+parseCompositeText compositeText =
+  case T.uncons compositeText of
+    Just ('(', afterOpen) ->
+      parseCompositeFields afterOpen []
+    _ ->
+      Left "expected '(' at the start of a composite value"
+
+parseCompositeFields :: T.Text -> [Maybe T.Text] -> Either String [Maybe T.Text]
+parseCompositeFields input parsedFields =
+  case parseCompositeField input of
+    Left err ->
+      Left err
+    Right (field, rest) ->
+      case T.uncons rest of
+        Just (',', afterComma) ->
+          parseCompositeFields afterComma (field : parsedFields)
+        Just (')', afterClose)
+          | T.null afterClose ->
+              Right (reverse (field : parsedFields))
+          | otherwise ->
+              Left "unexpected input after the closing ')'"
+        _ ->
+          Left "expected ',' or ')' after a composite field"
+
+parseCompositeField :: T.Text -> Either String (Maybe T.Text, T.Text)
+parseCompositeField input =
+  case T.uncons input of
+    Just ('"', afterQuote) ->
+      fmap
+        (\(fieldText, rest) -> (Just fieldText, rest))
+        (parseQuotedField afterQuote mempty)
+    _ ->
+      let
+        (fieldText, rest) = T.span (\c -> c /= ',' && c /= ')') input
+      in
+        Right (if T.null fieldText then Nothing else Just fieldText, rest)
+
+parseQuotedField :: T.Text -> T.Text -> Either String (T.Text, T.Text)
+parseQuotedField input parsedText =
+  let
+    (plain, rest) = T.break (\c -> c == '"' || c == '\\') input
+  in
+    case T.uncons rest of
+      Nothing ->
+        Left "unterminated quoted composite field"
+      Just (special, afterSpecial)
+        | special == '\\' ->
+            case T.uncons afterSpecial of
+              Nothing ->
+                Left "unterminated escape in a quoted composite field"
+              Just (escaped, remaining) ->
+                parseQuotedField remaining (parsedText <> plain <> T.singleton escaped)
+        | otherwise ->
+            case T.uncons afterSpecial of
+              Just ('"', remaining) ->
+                parseQuotedField remaining (parsedText <> plain <> T.singleton '"')
+              _ ->
+                Right (parsedText <> plain, afterSpecial)

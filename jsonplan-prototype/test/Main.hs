@@ -9,10 +9,10 @@ import qualified System.Exit as Exit
 import qualified Orville.PostgreSQL as O
 
 import qualified Test.CompileChecks as CompileChecks
+import qualified Test.CompositeTextLaw as CompositeTextLaw
 import qualified Test.Decoders as Decoders
 import qualified Test.Equivalence as Equivalence
 import qualified Test.Fixtures as Fixtures
-import qualified Test.WireTextLaw as WireTextLaw
 
 main :: IO ()
 main = do
@@ -21,7 +21,7 @@ main = do
   results <-
     traverse
       HH.checkSequential
-      [ WireTextLaw.tests pool
+      [ CompositeTextLaw.tests pool
       , Equivalence.tests pool
       , CompileChecks.tests
       , Decoders.tests pool

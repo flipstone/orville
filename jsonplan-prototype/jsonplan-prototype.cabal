@@ -50,10 +50,10 @@ test-suite jsonplan-test
   main-is: Main.hs
   other-modules:
       Test.CompileChecks
+      Test.CompositeTextLaw
       Test.Decoders
       Test.Equivalence
       Test.Fixtures
-      Test.WireTextLaw
       Paths_jsonplan_prototype
   hs-source-dirs:
       test
