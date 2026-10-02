@@ -27,8 +27,13 @@ module Orville.JsonPlan
   , findOne
   , findMaybeOne
   , findAll
+  , findAllWhere
+  , selectWhere
   , use
   , pair
+  , JsonResult
+  , refValue
+  , result
   , Arg
   , rootParam
   , refField
@@ -65,6 +70,7 @@ import qualified Data.Vector as Vector
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution as Exec
+import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
 import qualified Orville.PostgreSQL.Plan as Plan
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
@@ -95,6 +101,17 @@ data JsonPlan ref param result where
     Marshall.FieldDefinition nullability a ->
     Arg ref param a ->
     JsonPlan ref param [readEntity]
+  FindAllWhere ::
+    Ord a =>
+    Schema.TableDefinition key writeEntity readEntity ->
+    Marshall.FieldDefinition nullability a ->
+    Expr.BooleanExpr ->
+    Arg ref param a ->
+    JsonPlan ref param [readEntity]
+  SelectWhere ::
+    Schema.TableDefinition key writeEntity readEntity ->
+    Expr.BooleanExpr ->
+    JsonPlan ref param [readEntity]
   Bind ::
     JsonPlan ref param a ->
     (ref a -> JsonPlan ref param b) ->
@@ -102,10 +119,30 @@ data JsonPlan ref param result where
   Use ::
     ref a ->
     JsonPlan ref param a
-  Pair ::
-    ref a ->
-    ref b ->
-    JsonPlan ref param (a, b)
+  Result ::
+    JsonResult ref a ->
+    JsonPlan ref param a
+
+{- | Assembles a plan's (or block's) result from previously bound references
+  and pure values, via the 'Applicative' instance. The combining functions
+  run client-side after decoding, so they are unrestricted; server-side the
+  assembly compiles to a single jsonb object holding each referenced value.
+-}
+data JsonResult ref a where
+  UseRef :: ref a -> JsonResult ref a
+  PureResult :: a -> JsonResult ref a
+  ApplyResult ::
+    JsonResult ref (a -> b) ->
+    JsonResult ref a ->
+    JsonResult ref b
+
+instance Functor (JsonResult ref) where
+  fmap f =
+    ApplyResult (PureResult f)
+
+instance Applicative (JsonResult ref) where
+  pure = PureResult
+  (<*>) = ApplyResult
 
 {- | The lookup argument of a step: either the plan's input parameter or a
   field projected out of a previously bound result.
@@ -169,15 +206,48 @@ findAll ::
 findAll =
   FindAll
 
+{- | Finds all rows whose field matches the argument and that also satisfy the
+  given condition.
+-}
+findAllWhere ::
+  Ord a =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability a ->
+  Expr.BooleanExpr ->
+  Arg ref param a ->
+  JsonPlan ref param [readEntity]
+findAllWhere =
+  FindAllWhere
+
+{- | Finds all rows satisfying the given condition, independent of the plan's
+  parameter and of any bound reference.
+-}
+selectWhere ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  Expr.BooleanExpr ->
+  JsonPlan ref param [readEntity]
+selectWhere =
+  SelectWhere
+
 -- | Produces a previously bound result as the plan's (or block's) result.
 use :: ref a -> JsonPlan ref param a
 use =
   Use
 
+-- | A previously bound result, for use in a 'result' assembly.
+refValue :: ref a -> JsonResult ref a
+refValue =
+  UseRef
+
+-- | Produces an assembly of previously bound results as the plan's result.
+result :: JsonResult ref a -> JsonPlan ref param a
+result =
+  Result
+
 -- | Produces two previously bound results as a tuple.
 pair :: ref a -> ref b -> JsonPlan ref param (a, b)
-pair =
-  Pair
+pair refA refB =
+  Result ((,) <$> UseRef refA <*> UseRef refB)
 
 -- | The plan's input parameter, used as a step's lookup argument.
 rootParam :: Arg ref param param
@@ -223,12 +293,29 @@ toPlanNode plan =
       Plan.chain (argToPlan arg) (Plan.findMaybeOne tableDef fieldDef)
     FindAll tableDef fieldDef arg ->
       Plan.chain (argToPlan arg) (Plan.findAll tableDef fieldDef)
+    FindAllWhere tableDef fieldDef cond arg ->
+      Plan.chain (argToPlan arg) (Plan.findAllWhere tableDef fieldDef cond)
+    SelectWhere tableDef cond ->
+      Plan.focusParam (const ()) $
+        Plan.planSelect (Exec.selectTable tableDef (O.where_ cond))
     Bind step continue ->
       Plan.bind (toPlanNode step) (toPlanNode . continue)
     Use planned ->
       Plan.use planned
-    Pair plannedA plannedB ->
-      (,) <$> Plan.use plannedA <*> Plan.use plannedB
+    Result jsonResult ->
+      resultToPlan jsonResult
+
+resultToPlan ::
+  JsonResult (Plan.Planned scope param) a ->
+  Plan.Plan scope param a
+resultToPlan jsonResult =
+  case jsonResult of
+    UseRef planned ->
+      Plan.use planned
+    PureResult value ->
+      pure value
+    ApplyResult functionResult argResult ->
+      resultToPlan functionResult <*> resultToPlan argResult
 
 argToPlan ::
   Arg (Plan.Planned scope param) param a ->
@@ -392,12 +479,21 @@ compileNode plan nextIndex =
       ([(cteName nextIndex, findOneCteBody tableDef fieldDef arg)], nextIndex, nextIndex + 1)
     FindAll tableDef fieldDef arg ->
       let
-        body =
-          raw "SELECT " <> argSourceCte arg <> raw ".i, (SELECT coalesce(jsonb_agg("
-            <> entityJsonExpr tableDef
-            <> raw "), '[]'::jsonb) FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
-            <> raw " t WHERE " <> fieldMatchesArg fieldDef arg
-            <> raw ") AS v FROM " <> argSourceCte arg
+        body = findAllCteBody tableDef (fieldMatchesArg fieldDef arg) (argSourceCte arg)
+      in
+        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+    FindAllWhere tableDef fieldDef cond arg ->
+      let
+        whereSql =
+          fieldMatchesArg fieldDef arg
+            <> raw " AND (" <> RawSql.toRawSql cond <> RawSql.rightParen
+        body = findAllCteBody tableDef whereSql (argSourceCte arg)
+      in
+        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+    SelectWhere tableDef cond ->
+      let
+        whereSql = RawSql.leftParen <> RawSql.toRawSql cond <> RawSql.rightParen
+        body = findAllCteBody tableDef whereSql (cteName 0)
       in
         ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
     Bind step continue ->
@@ -408,14 +504,67 @@ compileNode plan nextIndex =
         (stepCtes <> bodyCtes, bodyOut, afterBody)
     Use ref ->
       ([], cteRefIndex ref, nextIndex)
-    Pair refA refB ->
+    Result jsonResult ->
+      ([(cteName nextIndex, resultCteBody (resultLeafRefs jsonResult))], nextIndex, nextIndex + 1)
+
+-- | The shared CTE body for the list-producing steps: the matched rows become
+--   a jsonb array boundary value, empty when nothing matches.
+findAllCteBody ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  RawSql.RawSql ->
+  RawSql.RawSql ->
+  RawSql.RawSql
+findAllCteBody tableDef whereSql sourceCte =
+  raw "SELECT " <> sourceCte <> raw ".i, (SELECT coalesce(jsonb_agg("
+    <> entityJsonExpr tableDef
+    <> raw "), '[]'::jsonb) FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
+    <> raw " t WHERE " <> whereSql
+    <> raw ") AS v FROM " <> sourceCte
+
+-- | The CTE indexes referenced by a result assembly, in spine order. The
+--   positions match the keys used by the assembly's boundary object.
+resultLeafRefs :: JsonResult CteRef a -> [Int]
+resultLeafRefs jsonResult =
+  case jsonResult of
+    UseRef ref ->
+      [cteRefIndex ref]
+    PureResult _ ->
+      []
+    ApplyResult functionResult argResult ->
+      resultLeafRefs functionResult <> resultLeafRefs argResult
+
+{- | The CTE body for a result assembly: the referenced CTEs joined on the row
+  index, built into one jsonb object with positional keys. An assembly of
+  only pure values has a null boundary and keeps the row indexes from the
+  parameter CTE.
+-}
+resultCteBody :: [Int] -> RawSql.RawSql
+resultCteBody leafIndexes =
+  case leafIndexes of
+    [] ->
+      raw "SELECT " <> cteName 0 <> raw ".i, 'null'::jsonb AS v FROM " <> cteName 0
+    firstIndex : restIndexes ->
       let
-        body =
-          raw "SELECT l.i, jsonb_build_object('fst', l.v, 'snd', r.v) AS v FROM "
-            <> cteName (cteRefIndex refA) <> raw " l JOIN "
-            <> cteName (cteRefIndex refB) <> raw " r ON r.i = l.i"
+        alias position = raw ("r" <> show (position :: Int))
+        keyedValue position =
+          RawSql.stringLiteral (BS8.pack (resultKeyName position))
+            <> RawSql.commaSpace
+            <> alias position <> raw ".v"
+        joinClause (position, cteIndex) =
+          raw " JOIN " <> cteName cteIndex <> raw " " <> alias position
+            <> raw " ON " <> alias position <> raw ".i = r0.i"
+        keyedValues =
+          RawSql.intercalate
+            RawSql.commaSpace
+            (fmap keyedValue [0 .. length leafIndexes - 1])
       in
-        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+        raw "SELECT r0.i, jsonb_build_object(" <> keyedValues <> raw ") AS v FROM "
+          <> cteName firstIndex <> raw " r0"
+          <> foldMap joinClause (zip [1 ..] restIndexes)
+
+resultKeyName :: Int -> String
+resultKeyName position =
+  "r" <> show position
 
 -- | The shared CTE body for the single-row lookups: a missing row becomes a
 --   jsonb null boundary value.
@@ -566,13 +715,17 @@ rootParamEncoder plan =
       argParamEncoder fieldDef arg
     FindAll _ fieldDef arg ->
       argParamEncoder fieldDef arg
+    FindAllWhere _ fieldDef _ arg ->
+      argParamEncoder fieldDef arg
+    SelectWhere _ _ ->
+      Nothing
     Bind step continue ->
       case rootParamEncoder step of
         Just encoder -> Just encoder
         Nothing -> rootParamEncoder (continue (CteRef 0))
     Use _ ->
       Nothing
-    Pair _ _ ->
+    Result _ ->
       Nothing
 
 argParamEncoder ::
@@ -626,7 +779,7 @@ data DecodeError
     NoRowMatched
   | ExpectedJsonArray
   | ExpectedJsonObject
-  | MissingPairKey String
+  | MissingResultKey String
   | -- | An entity object held an unexpected number of rows.
     UnexpectedEntityCount Int
   | -- | The table's marshaller rejected the replayed column values.
@@ -642,8 +795,8 @@ renderDecodeError err =
       "findAll: expected a JSON array"
     ExpectedJsonObject ->
       "expected a JSON object"
-    MissingPairKey key ->
-      "pair: missing key " <> key
+    MissingResultKey key ->
+      "result: missing key " <> key
     UnexpectedEntityCount count ->
       "expected exactly one decoded row, got " <> show count
     EntityMarshallError marshallError ->
@@ -677,7 +830,7 @@ decodeBoundaryText decoder jsonText =
       decoded <- runJsonDecoder decoder value
       case decoded of
         Left err -> throwIO (BoundaryDecodeFailed err)
-        Right result -> pure result
+        Right decodedValue -> pure decodedValue
 
 planDecoder :: JsonPlan JsonDecoder param result -> JsonDecoder result
 planDecoder plan =
@@ -698,37 +851,74 @@ planDecoder plan =
             decoded <- runJsonDecoder (entityDecoder tableDef) value
             pure (fmap Just decoded)
     FindAll tableDef _ _ ->
-      JsonDecoder $ \value ->
-        case value of
-          Aeson.Array elements ->
-            case traverse asObject (Vector.toList elements) of
-              Left err -> pure (Left err)
-              Right objects -> decodeEntityObjects tableDef objects
-          _ ->
-            pure (Left ExpectedJsonArray)
+      entityArrayDecoder tableDef
+    FindAllWhere tableDef _ _ _ ->
+      entityArrayDecoder tableDef
+    SelectWhere tableDef _ ->
+      entityArrayDecoder tableDef
     Bind step continue ->
       planDecoder (continue (planDecoder step))
     Use decoder ->
       decoder
-    Pair decoderA decoderB ->
-      JsonDecoder $ \value ->
-        case value of
-          Aeson.Object obj ->
-            let
-              lookupKey key =
-                case AesonKeyMap.lookup (AesonKey.fromString key) obj of
-                  Nothing -> Left (MissingPairKey key)
-                  Just el -> Right el
-            in
-              case (,) <$> lookupKey "fst" <*> lookupKey "snd" of
-                Left err ->
-                  pure (Left err)
-                Right (fstValue, sndValue) -> do
-                  decodedFst <- runJsonDecoder decoderA fstValue
-                  decodedSnd <- runJsonDecoder decoderB sndValue
-                  pure ((,) <$> decodedFst <*> decodedSnd)
-          _ ->
-            pure (Left ExpectedJsonObject)
+    Result jsonResult ->
+      resultDecoder jsonResult
+
+entityArrayDecoder ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  JsonDecoder [readEntity]
+entityArrayDecoder tableDef =
+  JsonDecoder $ \value ->
+    case value of
+      Aeson.Array elements ->
+        case traverse asObject (Vector.toList elements) of
+          Left err -> pure (Left err)
+          Right objects -> decodeEntityObjects tableDef objects
+      _ ->
+        pure (Left ExpectedJsonArray)
+
+resultDecoder :: JsonResult JsonDecoder a -> JsonDecoder a
+resultDecoder jsonResult =
+  JsonDecoder $ \value ->
+    let
+      decodeFromObject obj = do
+        decoded <- decodeResultSpine jsonResult obj 0
+        pure (fmap fst decoded)
+    in
+      case value of
+        Aeson.Object obj -> decodeFromObject obj
+        Aeson.Null -> decodeFromObject AesonKeyMap.empty
+        _ -> pure (Left ExpectedJsonObject)
+
+{- | Decodes a result assembly against its boundary object, assigning keys to
+  references in spine order, matching how the assembly was compiled.
+-}
+decodeResultSpine ::
+  JsonResult JsonDecoder a ->
+  Aeson.Object ->
+  Int ->
+  IO (Either DecodeError (a, Int))
+decodeResultSpine jsonResult obj keyIndex =
+  case jsonResult of
+    PureResult value ->
+      pure (Right (value, keyIndex))
+    UseRef decoder ->
+      case AesonKeyMap.lookup (AesonKey.fromString (resultKeyName keyIndex)) obj of
+        Nothing ->
+          pure (Left (MissingResultKey (resultKeyName keyIndex)))
+        Just el -> do
+          decoded <- runJsonDecoder decoder el
+          pure (fmap (\value -> (value, keyIndex + 1)) decoded)
+    ApplyResult functionResult argResult -> do
+      decodedFunction <- decodeResultSpine functionResult obj keyIndex
+      case decodedFunction of
+        Left err ->
+          pure (Left err)
+        Right (functionValue, nextKeyIndex) -> do
+          decodedArg <- decodeResultSpine argResult obj nextKeyIndex
+          pure $
+            case decodedArg of
+              Left err -> Left err
+              Right (argValue, finalKeyIndex) -> Right (functionValue argValue, finalKeyIndex)
 
 -- | Decodes a jsonb object built by the compiled query for a table's row.
 entityDecoder ::

@@ -85,6 +85,23 @@ maybeAuthor :: JP.JsonPlan ref T.Text (Maybe Author)
 maybeAuthor =
   JP.findMaybeOne authorTable authorNameField JP.rootParam
 
+authorOverview :: JP.JsonPlan ref T.Text (Author, [Book], [Author])
+authorOverview = JP.do
+  author <- JP.findOne authorTable authorNameField JP.rootParam
+  laterBooks <-
+    JP.findAllWhere
+      bookTable
+      bookAuthorIdField
+      (O.fieldGreaterThan bookIdField 10)
+      (JP.refField authorId authorIdField author)
+  otherAuthors <- JP.selectWhere authorTable (O.fieldGreaterThan authorIdField 1)
+  JP.result
+    ( (,,)
+        <$> JP.refValue author
+        <*> JP.refValue laterBooks
+        <*> JP.refValue otherAuthors
+    )
+
 authorBookCount :: JP.JsonQuery T.Text (T.Text, Int)
 authorBookCount =
   Profunctor.dimap
@@ -165,6 +182,10 @@ runDemo = do
   nativeCounts <- Plan.execute (Plan.planList (JP.jsonQueryToPlan authorBookCount)) paddedNames
   compiledCounts <- JP.executeJsonQueryList authorBookCount paddedNames
 
+  let overviewNames = fmap T.pack ["Ann", "Cid"]
+  nativeOverviews <- Plan.execute (Plan.planList (JP.toPlan authorOverview)) overviewNames
+  compiledOverviews <- JP.executeJsonPlanList authorOverview overviewNames
+
   let
     normalize = fmap (\(author, books) -> (author, List.sortOn bookId books))
     normalizeOne (author, books) = (author, List.sortOn bookId books)
@@ -172,6 +193,10 @@ runDemo = do
     singleMatch = normalizeOne nativeSingle == normalizeOne compiledSingle
     maybeMatch = nativeMaybes == compiledMaybes
     countMatch = nativeCounts == compiledCounts
+    normalizeOverview (author, books, authors) =
+      (author, List.sortOn bookId books, List.sortOn authorId authors)
+    overviewMatch =
+      fmap normalizeOverview nativeOverviews == fmap normalizeOverview compiledOverviews
 
   liftIO (putStrLn "\n--- results ---")
   liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
@@ -182,12 +207,15 @@ runDemo = do
   liftIO (putStrLn ("compiled (maybe)  : " <> show compiledMaybes))
   liftIO (putStrLn ("native   (dimap)  : " <> show nativeCounts))
   liftIO (putStrLn ("compiled (dimap)  : " <> show compiledCounts))
+  liftIO (putStrLn ("native   (3-ary)  : " <> show (fmap normalizeOverview nativeOverviews)))
+  liftIO (putStrLn ("compiled (3-ary)  : " <> show (fmap normalizeOverview compiledOverviews)))
   liftIO . putStrLn $
     "\nbatched match: " <> show batchedMatch
       <> ", single match: " <> show singleMatch
       <> ", maybe match: " <> show maybeMatch
       <> ", dimap match: " <> show countMatch
+      <> ", 3-ary match: " <> show overviewMatch
 
-  if batchedMatch && singleMatch && maybeMatch && countMatch
+  if batchedMatch && singleMatch && maybeMatch && countMatch && overviewMatch
     then liftIO (putStrLn "PASS")
     else liftIO (putStrLn "FAIL" >> Exit.exitFailure)
