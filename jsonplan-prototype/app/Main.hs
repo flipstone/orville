@@ -9,6 +9,7 @@ import qualified Data.Int as Int
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Maybe as Maybe
+import qualified Data.Profunctor as Profunctor
 import qualified Data.Text as T
 import qualified System.Environment as Env
 import qualified System.Exit as Exit
@@ -84,6 +85,13 @@ maybeAuthor :: JP.JsonPlan ref T.Text (Maybe Author)
 maybeAuthor =
   JP.findMaybeOne authorTable authorNameField JP.rootParam
 
+authorBookCount :: JP.JsonQuery T.Text (T.Text, Int)
+authorBookCount =
+  Profunctor.dimap
+    T.strip
+    (\(author, books) -> (authorName author, length books))
+    (JP.jsonQuery authorWithBooks)
+
 main :: IO ()
 main = do
   mbConnString <- Env.lookupEnv "JSONPLAN_CONN"
@@ -153,12 +161,17 @@ runDemo = do
   nativeMaybes <- Plan.execute (Plan.planList (JP.toPlan maybeAuthor)) maybeNames
   compiledMaybes <- JP.executeJsonPlanList maybeAuthor maybeNames
 
+  let paddedNames = fmap T.pack ["  Ann", "Bob  ", " Cid "]
+  nativeCounts <- Plan.execute (Plan.planList (JP.jsonQueryToPlan authorBookCount)) paddedNames
+  compiledCounts <- JP.executeJsonQueryList authorBookCount paddedNames
+
   let
     normalize = fmap (\(author, books) -> (author, List.sortOn bookId books))
     normalizeOne (author, books) = (author, List.sortOn bookId books)
     batchedMatch = normalize nativeResults == normalize compiledResults
     singleMatch = normalizeOne nativeSingle == normalizeOne compiledSingle
     maybeMatch = nativeMaybes == compiledMaybes
+    countMatch = nativeCounts == compiledCounts
 
   liftIO (putStrLn "\n--- results ---")
   liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
@@ -167,11 +180,14 @@ runDemo = do
   liftIO (putStrLn ("compiled (single) : " <> show (normalizeOne compiledSingle)))
   liftIO (putStrLn ("native   (maybe)  : " <> show nativeMaybes))
   liftIO (putStrLn ("compiled (maybe)  : " <> show compiledMaybes))
+  liftIO (putStrLn ("native   (dimap)  : " <> show nativeCounts))
+  liftIO (putStrLn ("compiled (dimap)  : " <> show compiledCounts))
   liftIO . putStrLn $
     "\nbatched match: " <> show batchedMatch
       <> ", single match: " <> show singleMatch
       <> ", maybe match: " <> show maybeMatch
+      <> ", dimap match: " <> show countMatch
 
-  if batchedMatch && singleMatch && maybeMatch
+  if batchedMatch && singleMatch && maybeMatch && countMatch
     then liftIO (putStrLn "PASS")
     else liftIO (putStrLn "FAIL" >> Exit.exitFailure)

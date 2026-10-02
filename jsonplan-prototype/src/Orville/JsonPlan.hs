@@ -36,6 +36,12 @@ module Orville.JsonPlan
   , executeJsonPlan
   , executeJsonPlanList
   , compiledSqlText
+  , JsonQuery
+  , jsonQuery
+  , jsonQueryToPlan
+  , executeJsonQuery
+  , executeJsonQueryList
+  , jsonQuerySqlText
   , JsonPlanError (..)
   , renderJsonPlanError
   , DecodeError (..)
@@ -51,6 +57,7 @@ import qualified Data.Aeson.Key as AesonKey
 import qualified Data.Aeson.KeyMap as AesonKeyMap
 import qualified Data.ByteString.Char8 as BS8
 import qualified Data.List.NonEmpty as NEL
+import qualified Data.Profunctor as Profunctor
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Vector as Vector
@@ -279,6 +286,74 @@ compiledSqlText ::
   String
 compiledSqlText plan params =
   BS8.unpack . RawSql.toExampleBytes $ compileJsonPlan plan params
+
+--
+-- Profunctor wrapper
+--
+
+{- | A complete, executable query: a compilable plan together with pure pre-
+  and post-processing at its client-side ends. Unlike values flowing between
+  a plan's steps, the parameter is a Haskell value when the query is built
+  and the result is a Haskell value after the single query returns, so
+  arbitrary functions may be applied at both ends without being serialized.
+  That makes 'JsonQuery' a lawful 'Profunctor.Profunctor' even though the
+  plan language itself has no @fmap@. Keeping the mappings outside the plan
+  also keeps them away from references: a mapped value can never be bound and
+  projected server-side, so the compiled and native interpretations cannot
+  disagree.
+-}
+data JsonQuery param result where
+  JsonQuery ::
+    (param -> planParam) ->
+    (forall ref. JsonPlan ref planParam planResult) ->
+    (planResult -> result) ->
+    JsonQuery param result
+
+instance Profunctor.Profunctor JsonQuery where
+  dimap f g (JsonQuery pre plan post) =
+    JsonQuery (pre . f) plan (g . post)
+
+-- | Wraps a plan as a query with no pre- or post-processing.
+jsonQuery ::
+  (forall ref. JsonPlan ref param result) ->
+  JsonQuery param result
+jsonQuery plan =
+  JsonQuery id plan id
+
+{- | Embeds a query into Orville's native plan language: the pre-processing
+  maps onto 'Plan.focusParam' and the post-processing onto @fmap@.
+-}
+jsonQueryToPlan ::
+  JsonQuery param result ->
+  Plan.Plan scope param result
+jsonQueryToPlan (JsonQuery pre plan post) =
+  fmap post (Plan.focusParam pre (toPlan plan))
+
+-- | Runs the compiled, single-query form of the query for one parameter.
+executeJsonQuery ::
+  O.MonadOrville m =>
+  JsonQuery param result ->
+  param ->
+  m result
+executeJsonQuery (JsonQuery pre plan post) queryParam =
+  fmap post (executeJsonPlan plan (pre queryParam))
+
+-- | Runs the compiled form of the query for many parameters in one SQL query.
+executeJsonQueryList ::
+  O.MonadOrville m =>
+  JsonQuery param result ->
+  [param] ->
+  m [result]
+executeJsonQueryList (JsonQuery pre plan post) queryParams =
+  fmap (fmap post) (executeJsonPlanList plan (fmap pre queryParams))
+
+-- | Renders the SQL that 'executeJsonQueryList' would run, for inspection.
+jsonQuerySqlText ::
+  JsonQuery param result ->
+  NEL.NonEmpty param ->
+  String
+jsonQuerySqlText (JsonQuery pre plan _) queryParams =
+  compiledSqlText plan (fmap pre queryParams)
 
 --
 -- Compilation to SQL

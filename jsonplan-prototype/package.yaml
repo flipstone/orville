@@ -9,6 +9,7 @@ dependencies:
   - aeson
   - bytestring
   - orville-postgresql
+  - profunctors
   - text
   - vector
 
