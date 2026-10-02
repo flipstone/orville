@@ -339,9 +339,12 @@ isInSubquery =
   such as @WHERE foo NOT IN (SELECT id FROM bar)@. It is up to the caller to
   ensure the subquery selects a single column of a compatible type, or one
   column per writable column when the comparable is a
-  'Orville.PostgreSQL.SqlMarshaller'. If the subquery returns any @NULL@, the
-  condition is never true, so no rows match. Frequently you would not want to
-  use this directly, but instead use
+  'Orville.PostgreSQL.SqlMarshaller'. When comparing a single column, if the
+  subquery returns any @NULL@, the condition is never true, so no rows match.
+  When comparing a 'Orville.PostgreSQL.SqlMarshaller' row, a returned row
+  containing @NULL@ has this effect only if all of its non-@NULL@ columns equal
+  the compared row. Frequently you would not want to use this directly, but
+  instead use
   'Orville.PostgreSQL.Marshall.FieldDefinition.fieldNotInSubquery'.
 
 @since 1.2.0.0
