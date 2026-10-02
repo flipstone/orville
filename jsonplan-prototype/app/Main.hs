@@ -24,6 +24,7 @@ import qualified Orville.JsonPlan as JP
 data Author = Author
   { authorId :: Int.Int32
   , authorName :: T.Text
+  , authorShelf :: T.Text
   }
   deriving (Eq, Show)
 
@@ -31,6 +32,7 @@ data Book = Book
   { bookId :: Int.Int32
   , bookAuthorId :: Int.Int32
   , bookTitle :: T.Text
+  , bookInPrint :: Bool
   }
   deriving (Eq, Show)
 
@@ -42,6 +44,10 @@ authorNameField :: O.FieldDefinition O.NotNull T.Text
 authorNameField =
   O.unboundedTextField "name"
 
+authorShelfField :: O.FieldDefinition O.NotNull T.Text
+authorShelfField =
+  O.fixedTextField "shelf" 3
+
 authorTable :: O.TableDefinition (O.HasKey Int.Int32) Author Author
 authorTable =
   O.mkTableDefinition
@@ -50,6 +56,7 @@ authorTable =
     ( Author
         <$> O.marshallField authorId authorIdField
         <*> O.marshallField authorName authorNameField
+        <*> O.marshallField authorShelf authorShelfField
     )
 
 bookIdField :: O.FieldDefinition O.NotNull Int.Int32
@@ -64,6 +71,10 @@ bookTitleField :: O.FieldDefinition O.NotNull T.Text
 bookTitleField =
   O.unboundedTextField "title"
 
+bookInPrintField :: O.FieldDefinition O.NotNull Bool
+bookInPrintField =
+  O.booleanField "in_print"
+
 bookTable :: O.TableDefinition (O.HasKey Int.Int32) Book Book
 bookTable =
   O.mkTableDefinition
@@ -73,6 +84,7 @@ bookTable =
         <$> O.marshallField bookId bookIdField
         <*> O.marshallField bookAuthorId bookAuthorIdField
         <*> O.marshallField bookTitle bookTitleField
+        <*> O.marshallField bookInPrint bookInPrintField
     )
 
 authorWithBooks :: JP.JsonPlan ref T.Text (Author, [Book])
@@ -178,23 +190,30 @@ resetSchema = do
   O.executeVoid Exec.DDLQuery (RawSql.fromString "DROP TABLE IF EXISTS jsonplan_book")
   O.executeVoid Exec.DDLQuery (RawSql.fromString "DROP TABLE IF EXISTS jsonplan_author")
   O.executeVoid Exec.DDLQuery $
-    RawSql.fromString "CREATE TABLE jsonplan_author (id integer PRIMARY KEY, name text NOT NULL)"
+    RawSql.fromString
+      "CREATE TABLE jsonplan_author (id integer PRIMARY KEY, name text NOT NULL, shelf char(3) NOT NULL)"
   O.executeVoid Exec.DDLQuery $
     RawSql.fromString
-      "CREATE TABLE jsonplan_book (id integer PRIMARY KEY, author_id integer NOT NULL, title text NOT NULL)"
+      "CREATE TABLE jsonplan_book (id integer PRIMARY KEY, author_id integer NOT NULL, title text NOT NULL, in_print boolean NOT NULL)"
 
 seedData :: O.MonadOrville m => m ()
 seedData = do
   O.insertEntities O.InOneStatement authorTable $
-      Author 1 (T.pack "Ann")
-        :| [ Author 2 (T.pack "Bob")
-           , Author 3 (T.pack "Cid")
+      Author 1 (T.pack "Ann") (T.pack "A")
+        :| [ Author 2 (T.pack "Bob") (T.pack "B2")
+           , Author 3 (T.pack "Cid") (T.pack "C")
            ]
   O.insertEntities O.InOneStatement bookTable $
-    Book 10 1 (T.pack "Ann's First")
-      :| [ Book 11 1 (T.pack "Ann's Second")
-         , Book 12 3 (T.pack "Cid's Only")
+    Book 10 1 (T.pack "Ann's First") True
+      :| [ Book 11 1 (T.pack "Ann's Second") False
+         , Book 12 3 (T.pack "Cid's Only") True
          ]
+
+renderedSql :: Either JP.JsonPlanError String -> String
+renderedSql compileResult =
+  case compileResult of
+    Left err -> JP.renderJsonPlanError err
+    Right sql -> sql
 
 runDemo :: O.MonadOrville m => m ()
 runDemo = do
@@ -206,7 +225,7 @@ runDemo = do
   MIO.liftIO . mapM_ putStrLn $ Plan.explain (Plan.planList (JP.toPlan authorWithBooks))
 
   MIO.liftIO (putStrLn "\n--- compiled single query ---")
-  MIO.liftIO (putStrLn (JP.compiledSqlText authorWithBooks nonEmptyNames))
+  MIO.liftIO (putStrLn (renderedSql (JP.compiledSqlText authorWithBooks nonEmptyNames)))
 
   nativeResults <- Plan.execute (Plan.planList (JP.toPlan authorWithBooks)) names
   compiledResults <- JP.executeJsonPlanList authorWithBooks names
@@ -230,7 +249,7 @@ runDemo = do
   compiledLibraries <- JP.executeJsonPlanList authorLibrary names
 
   MIO.liftIO (putStrLn "\n--- compiled flat report query ---")
-  MIO.liftIO (putStrLn (JP.compiledSqlText authorReportPlan nonEmptyNames))
+  MIO.liftIO (putStrLn (renderedSql (JP.compiledSqlText authorReportPlan nonEmptyNames)))
   nativeFlatReport <- Plan.execute (Plan.planList (JP.toPlan authorReportPlan)) names
   compiledFlatReport <- JP.executeJsonPlanList authorReportPlan names
 

@@ -498,8 +498,11 @@ executeJsonPlanList plan params =
     Nothing ->
       pure []
     Just someParams -> do
+      query <-
+        case compileJsonPlan plan someParams of
+          Left err -> MIO.liftIO (Exception.throwIO err)
+          Right compiled -> pure compiled
       let
-        query = compileJsonPlan plan someParams
         expectedCount = NEL.length someParams
       results <-
         case terminalFlatRow plan of
@@ -519,9 +522,9 @@ executeJsonPlanList plan params =
 compiledSqlText ::
   (forall ref. JsonPlan ref param result) ->
   NEL.NonEmpty param ->
-  String
+  Either JsonPlanError String
 compiledSqlText plan params =
-  BS8.unpack . RawSql.toExampleBytes $ compileJsonPlan plan params
+  fmap (BS8.unpack . RawSql.toExampleBytes) (compileJsonPlan plan params)
 
 --
 -- Profunctor wrapper
@@ -587,7 +590,7 @@ executeJsonQueryList (JsonQuery pre plan post) queryParams =
 jsonQuerySqlText ::
   JsonQuery param result ->
   NEL.NonEmpty param ->
-  String
+  Either JsonPlanError String
 jsonQuerySqlText (JsonQuery pre plan _) queryParams =
   compiledSqlText plan (fmap pre queryParams)
 
@@ -908,8 +911,9 @@ entityJsonExpr tableDef =
     fieldPair column =
       RawSql.stringLiteral (tableColumnName column)
         <> RawSql.commaSpace
-        <> tableColumnSelectSql column
-        <> raw "::text"
+        <> applyWireTextRendering
+          (tableColumnWireRendering column)
+          (tableColumnSelectSql column)
 
     buildObject chunk =
       raw "jsonb_build_object("
@@ -929,13 +933,87 @@ columnChunks columns =
     _ -> List.take 25 columns : columnChunks (List.drop 25 columns)
 
 {- | One column of a table's jsonb entity boundary: the key it is stored
-  under (also the column name the decoder replays it as) and the expression
-  that selects it, relative to the table alias @t@.
+  under (also the column name the decoder replays it as), the expression
+  that selects it, relative to the table alias @t@, and how it renders to
+  wire text.
 -}
 data TableColumn = TableColumn
   { tableColumnName :: BS8.ByteString
   , tableColumnSelectSql :: RawSql.RawSql
+  , tableColumnWireRendering :: WireTextRendering
   }
+
+{- | How a column renders into a boundary so that the resulting string is
+  byte-identical to what libpq's text mode would deliver for the column. A
+  plain @::text@ cast is correct for most types, but some diverge from their
+  output function under the cast and carry a repair expression instead; a
+  type we cannot vouch for has no rendering and compilation refuses it.
+-}
+data WireTextRendering
+  = CastToText
+  | RenderWireTextVia (RawSql.RawSql -> RawSql.RawSql)
+  | NoWireTextRendering
+
+{- | Looks up the wire-text rendering for a field by its SQL type's oid,
+  compared against the oids of Orville's built-in types. Custom types built
+  with convertSqlType keep their base type's oid and are covered; a type
+  with an unrecognized oid gets no rendering.
+-}
+wireTextRenderingForField ::
+  Marshall.FieldDefinition nullability a ->
+  WireTextRendering
+wireTextRenderingForField fieldDef =
+  let
+    sqlType = Marshall.fieldType fieldDef
+    fieldOid = Marshall.sqlTypeOid sqlType
+    oidOfType otherType = Marshall.sqlTypeOid otherType
+
+    booleanCase selectSql =
+      raw "CASE WHEN " <> selectSql <> raw " THEN 't' ELSE 'f' END"
+
+    fixedTextPad maxLen selectSql =
+      raw "rpad(" <> selectSql <> raw "::text, "
+        <> RawSql.intDecLiteral (fromIntegral maxLen)
+        <> RawSql.rightParen
+
+    castSafeOids =
+      [ oidOfType Marshall.integer
+      , oidOfType Marshall.bigInteger
+      , oidOfType Marshall.smallInteger
+      , oidOfType Marshall.double
+      , oidOfType Marshall.unboundedText
+      , oidOfType (Marshall.boundedText 1)
+      , oidOfType Marshall.date
+      , oidOfType Marshall.timestamp
+      , oidOfType Marshall.timestampWithoutZone
+      , oidOfType Marshall.uuid
+      , oidOfType Marshall.textSearchVector
+      , oidOfType Marshall.jsonb
+      , oidOfType Marshall.oid
+      ]
+  in
+    if fieldOid == oidOfType Marshall.boolean
+      then RenderWireTextVia booleanCase
+      else
+        if fieldOid == oidOfType (Marshall.fixedText 1)
+          then case Marshall.sqlTypeMaximumLength sqlType of
+            Just maxLen -> RenderWireTextVia (fixedTextPad maxLen)
+            Nothing -> NoWireTextRendering
+          else
+            if List.elem fieldOid castSafeOids
+              then CastToText
+              else NoWireTextRendering
+
+{- | Renders a column to wire text. Compilation rejects plans containing
+  columns without a rendering before this is reached, so a missing rendering
+  falls back to the plain cast.
+-}
+applyWireTextRendering :: WireTextRendering -> RawSql.RawSql -> RawSql.RawSql
+applyWireTextRendering rendering selectSql =
+  case rendering of
+    CastToText -> selectSql <> raw "::text"
+    RenderWireTextVia render -> render selectSql
+    NoWireTextRendering -> selectSql <> raw "::text"
 
 tableColumns ::
   Schema.TableDefinition key writeEntity readEntity ->
@@ -956,6 +1034,7 @@ collectTableColumn entry columns =
       TableColumn
         (fieldColumnBytes fieldDef)
         (raw "t." <> RawSql.identifier (fieldColumnBytes fieldDef))
+        (wireTextRenderingForField fieldDef)
         : columns
     Marshall.Synthetic synthField ->
       TableColumn
@@ -964,6 +1043,7 @@ collectTableColumn entry columns =
             <> RawSql.toRawSql (Marshall.syntheticFieldExpression synthField)
             <> RawSql.rightParen
         )
+        CastToText
         : columns
 
 fieldColumnBytes :: Marshall.FieldDefinition nullability a -> BS8.ByteString
@@ -973,8 +1053,70 @@ fieldColumnBytes =
 compileJsonPlan ::
   (forall ref. JsonPlan ref param result) ->
   NEL.NonEmpty param ->
-  RawSql.RawSql
+  Either JsonPlanError RawSql.RawSql
 compileJsonPlan plan params =
+  case planRenderingError plan of
+    Just err ->
+      Left err
+    Nothing ->
+      Right (compileCheckedJsonPlan plan params)
+
+{- | Finds the first column without a wire-text rendering among the tables
+  whose rows cross a boundary of this plan, if any.
+-}
+planRenderingError :: JsonPlan CteRef param result -> Maybe JsonPlanError
+planRenderingError plan =
+  case plan of
+    FindOne tableDef _ _ ->
+      tableRenderingError tableDef
+    FindMaybeOne tableDef _ _ ->
+      tableRenderingError tableDef
+    FindAll tableDef _ _ ->
+      tableRenderingError tableDef
+    FindAllWhere tableDef _ _ _ ->
+      tableRenderingError tableDef
+    SelectWhere tableDef _ ->
+      tableRenderingError tableDef
+    FindAllEach tableDef _ _ innerPlan ->
+      case tableRenderingError tableDef of
+        Just err -> Just err
+        Nothing -> planRenderingError (innerPlan (CteRef 0))
+    Bind step continue ->
+      case planRenderingError step of
+        Just err -> Just err
+        Nothing -> planRenderingError (continue (CteRef 0))
+    Use _ ->
+      Nothing
+    Result _ ->
+      Nothing
+    Flat _ ->
+      Nothing
+
+tableRenderingError ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  Maybe JsonPlanError
+tableRenderingError tableDef =
+  let
+    hasNoRendering column =
+      case tableColumnWireRendering column of
+        NoWireTextRendering -> True
+        CastToText -> False
+        RenderWireTextVia _ -> False
+
+    tableNameString =
+      BS8.unpack (RawSql.toExampleBytes (RawSql.toRawSql (Schema.tableName tableDef)))
+  in
+    case List.filter hasNoRendering (tableColumns tableDef) of
+      [] ->
+        Nothing
+      column : _ ->
+        Just (ColumnNotWireRenderable tableNameString (BS8.unpack (tableColumnName column)))
+
+compileCheckedJsonPlan ::
+  (forall ref. JsonPlan ref param result) ->
+  NEL.NonEmpty param ->
+  RawSql.RawSql
+compileCheckedJsonPlan plan params =
   let
     rootCte = cteName 0
 
@@ -1095,6 +1237,9 @@ data JsonPlanError
     --   were input parameters. The compiler guarantees these counts match,
     --   so this indicates a bug in the compiler itself.
     ResultRowCountMismatch Int Int
+  | -- | A column (table name, column name) has a SQL type without a known
+    --   wire-text rendering, so the plan cannot be compiled.
+    ColumnNotWireRenderable String String
   deriving Show
 
 instance Exception.Exception JsonPlanError where
@@ -1114,6 +1259,12 @@ renderJsonPlanError err =
         <> " rows for "
         <> show expected
         <> " parameters; this is a bug in the jsonplan compiler"
+    ColumnNotWireRenderable tableName columnName ->
+      "jsonplan: column "
+        <> columnName
+        <> " of table "
+        <> tableName
+        <> " has a SQL type with no known wire-text rendering, so the plan cannot be compiled; it can still be executed natively via toPlan"
 
 -- | Why a jsonb boundary value could not be decoded.
 data DecodeError
