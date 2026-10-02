@@ -10,6 +10,7 @@ Stability : Stable
 module Orville.PostgreSQL.Expr.ValueExpression
   ( ValueExpression
   , cast
+  , arraySubscript
   , ParameterName
   , columnReference
   , valueExpression
@@ -57,6 +58,22 @@ cast value dataType =
     RawSql.toRawSql value
       <> RawSql.fromString "::"
       <> RawSql.toRawSql dataType
+
+{- | Selects one element of an array value by its index. PostgreSQL array
+indexes start at 1 by default, and an index outside the array gives @NULL@.
+E.G.
+
+> (foo)[1]
+
+@since 1.2.0.0
+-}
+arraySubscript :: ValueExpression -> ValueExpression -> ValueExpression
+arraySubscript array index =
+  ValueExpression $
+    RawSql.parenthesized array
+      <> RawSql.fromString "["
+      <> RawSql.toRawSql index
+      <> RawSql.fromString "]"
 
 {- | Uses a 'ColumnName' to reference a column as a 'ValueExpression'. This
 is the equivalent of simply writing the column name as the expression. E.G.

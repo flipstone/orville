@@ -36,6 +36,10 @@ whereTests pool =
     , prop_valueNotIn pool
     , prop_tupleIn pool
     , prop_tupleNotIn pool
+    , prop_matchesRegex pool
+    , prop_matchesRegexInsensitive pool
+    , prop_notMatchesRegex pool
+    , prop_notMatchesRegexInsensitive pool
     ]
 
 prop_noWhereClauseSpecified :: Property.NamedDBProperty
@@ -220,6 +224,50 @@ prop_tupleNotIn =
               ( (int32ValueExpr 1 :| [textValueExpr "dog"])
                   :| [int32ValueExpr 2 :| [textValueExpr "dingo"]]
               )
+      }
+
+prop_matchesRegex :: Property.NamedDBProperty
+prop_matchesRegex =
+  whereConditionTest "matchesRegex requires the column's value to match the pattern case sensitively" $
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 1 "dog"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.matchesRegex barColumnRef (textValueExpr "^d.g$")
+      }
+
+prop_matchesRegexInsensitive :: Property.NamedDBProperty
+prop_matchesRegexInsensitive =
+  whereConditionTest "matchesRegexInsensitive requires the column's value to match the pattern case insensitively" $
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "Dog"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.matchesRegexInsensitive barColumnRef (textValueExpr "^d.g$")
+      }
+
+prop_notMatchesRegex :: Property.NamedDBProperty
+prop_notMatchesRegex =
+  whereConditionTest "notMatchesRegex requires the column's value to not match the pattern case sensitively" $
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.notMatchesRegex barColumnRef (textValueExpr "^d.g$")
+      }
+
+prop_notMatchesRegexInsensitive :: Property.NamedDBProperty
+prop_notMatchesRegexInsensitive =
+  whereConditionTest "notMatchesRegexInsensitive requires the column's value to not match the pattern case insensitively" $
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 2 "dingo"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.notMatchesRegexInsensitive barColumnRef (textValueExpr "^d.g$")
       }
 
 int32ValueExpr :: Int32 -> Expr.ValueExpression

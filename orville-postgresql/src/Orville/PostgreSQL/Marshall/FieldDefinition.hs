@@ -51,15 +51,22 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , fieldIsNotNull
   , fieldLike
   , fieldLikeInsensitive
+  , fieldMatchesRegex
+  , fieldMatchesRegexInsensitive
+  , fieldNotMatchesRegex
+  , fieldNotMatchesRegexInsensitive
   , fieldIn
   , (.<-)
   , fieldNotIn
   , (.</-)
+  , fieldInSubquery
+  , fieldNotInSubquery
   , fieldTupleIn
   , fieldTupleNotIn
   , setField
   , (.:=)
   , orderByField
+  , groupByField
   , FieldNullability (..)
   , fieldValueToExpression
   , fieldValueToSqlValue
@@ -1054,6 +1061,38 @@ fieldLike = SqlComparable.like
 fieldLikeInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
 fieldLikeInsensitive = SqlComparable.likeInsensitive
 
+{- | Checks that the value in a field matches a POSIX regular expression case sensitively.
+
+@since 1.2.0.0
+-}
+fieldMatchesRegex :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldMatchesRegex = SqlComparable.matchesRegex
+
+{- | Checks that the value in a field matches a POSIX regular expression case insensitively.
+
+@since 1.2.0.0
+-}
+fieldMatchesRegexInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldMatchesRegexInsensitive = SqlComparable.matchesRegexInsensitive
+
+{- | Checks that the value in a field does not match a POSIX regular expression case sensitively.
+A @NULL@ value neither matches nor fails to match, so rows where the field is
+@NULL@ are excluded.
+
+@since 1.2.0.0
+-}
+fieldNotMatchesRegex :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldNotMatchesRegex = SqlComparable.notMatchesRegex
+
+{- | Checks that the value in a field does not match a POSIX regular expression case insensitively.
+A @NULL@ value neither matches nor fails to match, so rows where the field is
+@NULL@ are excluded.
+
+@since 1.2.0.0
+-}
+fieldNotMatchesRegexInsensitive :: FieldDefinition nullability a -> T.Text -> Expr.BooleanExpr
+fieldNotMatchesRegexInsensitive = SqlComparable.notMatchesRegexInsensitive
+
 {- | Checks that the value in a field is null.
 
 @since 1.0.0.0
@@ -1099,6 +1138,25 @@ fieldNotIn = SqlComparable.isNotIn
 (.</-) = fieldNotIn
 
 infixl 9 .</-
+
+{- | Checks that the value in a field is in the rows returned by a subquery. It
+is up to the caller to ensure the subquery selects a single column of a
+compatible type.
+
+@since 1.2.0.0
+-}
+fieldInSubquery :: FieldDefinition nullability a -> Expr.QueryExpr -> Expr.BooleanExpr
+fieldInSubquery = SqlComparable.isInSubquery
+
+{- | Checks that the value in a field is not in the rows returned by a subquery.
+It is up to the caller to ensure the subquery selects a single column of a
+compatible type. If the subquery returns any @NULL@, the condition is never
+true, so no rows match.
+
+@since 1.2.0.0
+-}
+fieldNotInSubquery :: FieldDefinition nullability a -> Expr.QueryExpr -> Expr.BooleanExpr
+fieldNotInSubquery = SqlComparable.isNotInSubquery
 
 {- | Checks that a tuple of two fields is in the list of specified tuples.
 
@@ -1147,6 +1205,16 @@ orderByField ::
   Expr.OrderByExpr
 orderByField =
   SqlComparable.orderBySqlComparable
+
+{- | Groups a query by the column name for the given field.
+
+@since 1.2.0.0
+-}
+groupByField ::
+  FieldDefinition nullability value ->
+  Expr.GroupByExpr
+groupByField =
+  Expr.groupByColumnsExpr . pure . Expr.unqualified . fieldColumnName
 
 {- | A type class that allows different types to be used as qualifiers for column names.
 This is often used in conjuction with 'QualifiedFieldDefinition' to represent a
