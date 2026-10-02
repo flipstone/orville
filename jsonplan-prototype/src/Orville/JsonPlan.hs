@@ -62,8 +62,8 @@ module Orville.JsonPlan
 
 import Prelude hiding ((>>), (>>=))
 
-import Control.Exception (Exception (displayException), throwIO)
-import Control.Monad.IO.Class (liftIO)
+import qualified Control.Exception as Exception
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as AesonKey
 import qualified Data.Aeson.KeyMap as AesonKeyMap
@@ -481,7 +481,7 @@ executeJsonPlan plan planParam = do
   results <- executeJsonPlanList plan [planParam]
   case results of
     [one] -> pure one
-    _ -> liftIO . throwIO $ ResultRowCountMismatch 1 (length results)
+    _ -> MIO.liftIO . Exception.throwIO $ ResultRowCountMismatch 1 (length results)
 
 {- | Runs the compiled form of the plan for many parameters in one SQL query.
   Results are returned in parameter order. Failures are thrown as
@@ -510,10 +510,10 @@ executeJsonPlanList plan params =
               (Marshall.annotateSqlMarshallerEmptyAnnotation (flatRowMarshaller flatRow))
           Nothing -> do
             jsonTexts <- Exec.executeAndDecode Exec.SelectQuery query resultTextMarshaller
-            liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
+            MIO.liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
       if length results == expectedCount
         then pure results
-        else liftIO . throwIO $ ResultRowCountMismatch expectedCount (length results)
+        else MIO.liftIO . Exception.throwIO $ ResultRowCountMismatch expectedCount (length results)
 
 -- | Renders the SQL that 'executeJsonPlanList' would run, for inspection.
 compiledSqlText ::
@@ -894,37 +894,77 @@ fieldCastExpr fieldDef =
         (Marshall.sqlTypeExpr sqlType)
         (Marshall.sqlTypeReferenceExpr sqlType)
 
-{- | Builds the jsonb_build_object expression for a table row, with every
-  column cast to text so the client can replay the strings through the
-  table's marshaller.
+{- | Builds the jsonb object expression for a table row, with every column
+  cast to text so the client can replay the strings through the table's
+  marshaller. The columns are built in chunks of jsonb_build_object calls
+  concatenated with @||@ to stay under PostgreSQL's 100-argument limit on
+  function calls.
 -}
 entityJsonExpr ::
   Schema.TableDefinition key writeEntity readEntity ->
   RawSql.RawSql
 entityJsonExpr tableDef =
   let
-    fieldPair name =
-      RawSql.stringLiteral name
+    fieldPair column =
+      RawSql.stringLiteral (tableColumnName column)
         <> RawSql.commaSpace
-        <> raw "t."
-        <> RawSql.identifier name
+        <> tableColumnSelectSql column
         <> raw "::text"
-  in
-    raw "jsonb_build_object("
-      <> RawSql.intercalate RawSql.commaSpace (fmap fieldPair (tableColumnNames tableDef))
-      <> raw ")"
 
-tableColumnNames ::
+    buildObject chunk =
+      raw "jsonb_build_object("
+        <> RawSql.intercalate RawSql.commaSpace (fmap fieldPair chunk)
+        <> raw ")"
+  in
+    RawSql.leftParen
+      <> RawSql.intercalate
+        (raw " || ")
+        (fmap buildObject (columnChunks (tableColumns tableDef)))
+      <> RawSql.rightParen
+
+columnChunks :: [TableColumn] -> [[TableColumn]]
+columnChunks columns =
+  case columns of
+    [] -> []
+    _ -> List.take 25 columns : columnChunks (List.drop 25 columns)
+
+{- | One column of a table's jsonb entity boundary: the key it is stored
+  under (also the column name the decoder replays it as) and the expression
+  that selects it, relative to the table alias @t@.
+-}
+data TableColumn = TableColumn
+  { tableColumnName :: BS8.ByteString
+  , tableColumnSelectSql :: RawSql.RawSql
+  }
+
+tableColumns ::
   Schema.TableDefinition key writeEntity readEntity ->
-  [BS8.ByteString]
-tableColumnNames tableDef =
+  [TableColumn]
+tableColumns tableDef =
   Marshall.foldMarshallerFields
     (Marshall.unannotatedSqlMarshaller (Schema.tableMarshaller tableDef))
     []
-    ( Marshall.collectFromField
-        Marshall.IncludeReadOnlyColumns
-        (\_ fieldDef -> fieldColumnBytes fieldDef)
-    )
+    collectTableColumn
+
+collectTableColumn ::
+  Marshall.MarshallerField writeEntity ->
+  [TableColumn] ->
+  [TableColumn]
+collectTableColumn entry columns =
+  case entry of
+    Marshall.Natural _ fieldDef _ ->
+      TableColumn
+        (fieldColumnBytes fieldDef)
+        (raw "t." <> RawSql.identifier (fieldColumnBytes fieldDef))
+        : columns
+    Marshall.Synthetic synthField ->
+      TableColumn
+        (Marshall.fieldNameToByteString (Marshall.syntheticFieldName synthField))
+        ( RawSql.leftParen
+            <> RawSql.toRawSql (Marshall.syntheticFieldExpression synthField)
+            <> RawSql.rightParen
+        )
+        : columns
 
 fieldColumnBytes :: Marshall.FieldDefinition nullability a -> BS8.ByteString
 fieldColumnBytes =
@@ -1057,7 +1097,7 @@ data JsonPlanError
     ResultRowCountMismatch Int Int
   deriving Show
 
-instance Exception JsonPlanError where
+instance Exception.Exception JsonPlanError where
   displayException =
     renderJsonPlanError
 
@@ -1079,8 +1119,10 @@ renderJsonPlanError err =
 data DecodeError
   = -- | A 'findOne' step matched no row.
     NoRowMatched
-  | ExpectedJsonArray
-  | ExpectedJsonObject
+  | -- | A boundary was not the expected JSON array; carries the step kind.
+    ExpectedJsonArray String
+  | -- | A boundary was not the expected JSON object; carries the context.
+    ExpectedJsonObject String
   | MissingResultKey String
   | -- | An entity object held an unexpected number of rows.
     UnexpectedEntityCount Int
@@ -1095,10 +1137,10 @@ renderDecodeError err =
   case err of
     NoRowMatched ->
       "findOne: no row matched the argument"
-    ExpectedJsonArray ->
-      "findAll: expected a JSON array"
-    ExpectedJsonObject ->
-      "expected a JSON object"
+    ExpectedJsonArray stepKind ->
+      stepKind <> ": expected a JSON array"
+    ExpectedJsonObject context ->
+      context <> ": expected a JSON object"
     MissingResultKey key ->
       "result: missing key " <> key
     UnexpectedEntityCount count ->
@@ -1131,11 +1173,11 @@ decodeBoundaryText :: JsonDecoder a -> T.Text -> IO a
 decodeBoundaryText decoder jsonText =
   case Aeson.eitherDecodeStrict (Enc.encodeUtf8 jsonText) of
     Left err ->
-      throwIO (ServerReturnedInvalidJson err)
+      Exception.throwIO (ServerReturnedInvalidJson err)
     Right value -> do
       decoded <- runJsonDecoder decoder value
       case decoded of
-        Left err -> throwIO (BoundaryDecodeFailed err)
+        Left err -> Exception.throwIO (BoundaryDecodeFailed err)
         Right decodedValue -> pure decodedValue
 
 planDecoder :: JsonPlan JsonDecoder param result -> JsonDecoder result
@@ -1157,11 +1199,11 @@ planDecoder plan =
             decoded <- runJsonDecoder (entityDecoder tableDef) value
             pure (fmap Just decoded)
     FindAll tableDef _ _ ->
-      entityArrayDecoder tableDef
+      entityArrayDecoder "findAll" tableDef
     FindAllWhere tableDef _ _ _ ->
-      entityArrayDecoder tableDef
+      entityArrayDecoder "findAllWhere" tableDef
     SelectWhere tableDef _ ->
-      entityArrayDecoder tableDef
+      entityArrayDecoder "selectWhere" tableDef
     FindAllEach tableDef _ _ innerPlan ->
       let
         innerDecoder = planDecoder (innerPlan (entityDecoder tableDef))
@@ -1171,7 +1213,7 @@ planDecoder plan =
             Aeson.Array elements ->
               decodeElements innerDecoder (Vector.toList elements)
             _ ->
-              pure (Left ExpectedJsonArray)
+              pure (Left (ExpectedJsonArray "findAllEach"))
     Bind step continue ->
       planDecoder (continue (planDecoder step))
     Use decoder ->
@@ -1232,17 +1274,21 @@ decodeElements decoder elements =
           pure (fmap (value :) decodedRest)
 
 entityArrayDecoder ::
+  String ->
   Schema.TableDefinition key writeEntity readEntity ->
   JsonDecoder [readEntity]
-entityArrayDecoder tableDef =
-  JsonDecoder $ \value ->
-    case value of
-      Aeson.Array elements ->
-        case traverse asObject (Vector.toList elements) of
-          Left err -> pure (Left err)
-          Right objects -> decodeEntityObjects tableDef objects
-      _ ->
-        pure (Left ExpectedJsonArray)
+entityArrayDecoder stepKind tableDef =
+  let
+    columnNames = fmap tableColumnName (tableColumns tableDef)
+  in
+    JsonDecoder $ \value ->
+      case value of
+        Aeson.Array elements ->
+          case traverse asObject (Vector.toList elements) of
+            Left err -> pure (Left err)
+            Right objects -> decodeEntityObjects tableDef columnNames objects
+        _ ->
+          pure (Left (ExpectedJsonArray stepKind))
 
 resultDecoder :: JsonResult JsonDecoder a -> JsonDecoder a
 resultDecoder jsonResult =
@@ -1255,7 +1301,7 @@ resultDecoder jsonResult =
       case value of
         Aeson.Object obj -> decodeFromObject obj
         Aeson.Null -> decodeFromObject AesonKeyMap.empty
-        _ -> pure (Left ExpectedJsonObject)
+        _ -> pure (Left (ExpectedJsonObject "result"))
 
 {- | Decodes a result assembly against its boundary object, assigning keys to
   references in spine order, matching how the assembly was compiled.
@@ -1293,23 +1339,26 @@ entityDecoder ::
   Schema.TableDefinition key writeEntity readEntity ->
   JsonDecoder readEntity
 entityDecoder tableDef =
-  JsonDecoder $ \value ->
-    case value of
-      Aeson.Object obj -> do
-        decoded <- decodeEntityObjects tableDef [obj]
-        pure $
-          case decoded of
-            Left err -> Left err
-            Right [entity] -> Right entity
-            Right entities -> Left (UnexpectedEntityCount (length entities))
-      _ ->
-        pure (Left ExpectedJsonObject)
+  let
+    columnNames = fmap tableColumnName (tableColumns tableDef)
+  in
+    JsonDecoder $ \value ->
+      case value of
+        Aeson.Object obj -> do
+          decoded <- decodeEntityObjects tableDef columnNames [obj]
+          pure $
+            case decoded of
+              Left err -> Left err
+              Right [entity] -> Right entity
+              Right entities -> Left (UnexpectedEntityCount (length entities))
+        _ ->
+          pure (Left (ExpectedJsonObject "entity"))
 
 asObject :: Aeson.Value -> Either DecodeError Aeson.Object
 asObject value =
   case value of
     Aeson.Object obj -> Right obj
-    _ -> Left ExpectedJsonObject
+    _ -> Left (ExpectedJsonObject "entity element")
 
 {- | The heart of the @::text@ trick: each jsonb entity object holds every
   column's text-mode rendering (or JSON null). Replaying those strings
@@ -1318,12 +1367,11 @@ asObject value =
 -}
 decodeEntityObjects ::
   Schema.TableDefinition key writeEntity readEntity ->
+  [BS8.ByteString] ->
   [Aeson.Object] ->
   IO (Either DecodeError [readEntity])
-decodeEntityObjects tableDef objects =
+decodeEntityObjects tableDef columnNames objects =
   let
-    columnNames = tableColumnNames tableDef
-
     columnValue obj name =
       case AesonKeyMap.lookup (AesonKey.fromText (Enc.decodeUtf8 name)) obj of
         Just (Aeson.String textValue) -> SqlValue.fromText textValue

@@ -4,7 +4,7 @@ module Main
   ( main
   ) where
 
-import Control.Monad.IO.Class (liftIO)
+import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Int as Int
 import qualified Data.List as List
 import Data.List.NonEmpty (NonEmpty ((:|)))
@@ -202,11 +202,11 @@ runDemo = do
     names = fmap T.pack ["Ann", "Bob", "Cid"]
     nonEmptyNames = T.pack "Ann" :| fmap T.pack ["Bob", "Cid"]
 
-  liftIO (putStrLn "--- native plan explain (batched) ---")
-  liftIO . mapM_ putStrLn $ Plan.explain (Plan.planList (JP.toPlan authorWithBooks))
+  MIO.liftIO (putStrLn "--- native plan explain (batched) ---")
+  MIO.liftIO . mapM_ putStrLn $ Plan.explain (Plan.planList (JP.toPlan authorWithBooks))
 
-  liftIO (putStrLn "\n--- compiled single query ---")
-  liftIO (putStrLn (JP.compiledSqlText authorWithBooks nonEmptyNames))
+  MIO.liftIO (putStrLn "\n--- compiled single query ---")
+  MIO.liftIO (putStrLn (JP.compiledSqlText authorWithBooks nonEmptyNames))
 
   nativeResults <- Plan.execute (Plan.planList (JP.toPlan authorWithBooks)) names
   compiledResults <- JP.executeJsonPlanList authorWithBooks names
@@ -229,8 +229,8 @@ runDemo = do
   nativeLibraries <- Plan.execute (Plan.planList (JP.toPlan authorLibrary)) names
   compiledLibraries <- JP.executeJsonPlanList authorLibrary names
 
-  liftIO (putStrLn "\n--- compiled flat report query ---")
-  liftIO (putStrLn (JP.compiledSqlText authorReportPlan nonEmptyNames))
+  MIO.liftIO (putStrLn "\n--- compiled flat report query ---")
+  MIO.liftIO (putStrLn (JP.compiledSqlText authorReportPlan nonEmptyNames))
   nativeFlatReport <- Plan.execute (Plan.planList (JP.toPlan authorReportPlan)) names
   compiledFlatReport <- JP.executeJsonPlanList authorReportPlan names
 
@@ -250,22 +250,22 @@ runDemo = do
       fmap normalizeLibrary nativeLibraries == fmap normalizeLibrary compiledLibraries
     flatMatch = nativeFlatReport == compiledFlatReport
 
-  liftIO (putStrLn "\n--- results ---")
-  liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
-  liftIO (putStrLn ("compiled (batched): " <> show (normalize compiledResults)))
-  liftIO (putStrLn ("native   (single) : " <> show (normalizeOne nativeSingle)))
-  liftIO (putStrLn ("compiled (single) : " <> show (normalizeOne compiledSingle)))
-  liftIO (putStrLn ("native   (maybe)  : " <> show nativeMaybes))
-  liftIO (putStrLn ("compiled (maybe)  : " <> show compiledMaybes))
-  liftIO (putStrLn ("native   (dimap)  : " <> show nativeCounts))
-  liftIO (putStrLn ("compiled (dimap)  : " <> show compiledCounts))
-  liftIO (putStrLn ("native   (3-ary)  : " <> show (fmap normalizeOverview nativeOverviews)))
-  liftIO (putStrLn ("compiled (3-ary)  : " <> show (fmap normalizeOverview compiledOverviews)))
-  liftIO (putStrLn ("native   (each)   : " <> show (fmap normalizeLibrary nativeLibraries)))
-  liftIO (putStrLn ("compiled (each)   : " <> show (fmap normalizeLibrary compiledLibraries)))
-  liftIO (putStrLn ("native   (flat)   : " <> show nativeFlatReport))
-  liftIO (putStrLn ("compiled (flat)   : " <> show compiledFlatReport))
-  liftIO . putStrLn $
+  MIO.liftIO (putStrLn "\n--- results ---")
+  MIO.liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
+  MIO.liftIO (putStrLn ("compiled (batched): " <> show (normalize compiledResults)))
+  MIO.liftIO (putStrLn ("native   (single) : " <> show (normalizeOne nativeSingle)))
+  MIO.liftIO (putStrLn ("compiled (single) : " <> show (normalizeOne compiledSingle)))
+  MIO.liftIO (putStrLn ("native   (maybe)  : " <> show nativeMaybes))
+  MIO.liftIO (putStrLn ("compiled (maybe)  : " <> show compiledMaybes))
+  MIO.liftIO (putStrLn ("native   (dimap)  : " <> show nativeCounts))
+  MIO.liftIO (putStrLn ("compiled (dimap)  : " <> show compiledCounts))
+  MIO.liftIO (putStrLn ("native   (3-ary)  : " <> show (fmap normalizeOverview nativeOverviews)))
+  MIO.liftIO (putStrLn ("compiled (3-ary)  : " <> show (fmap normalizeOverview compiledOverviews)))
+  MIO.liftIO (putStrLn ("native   (each)   : " <> show (fmap normalizeLibrary nativeLibraries)))
+  MIO.liftIO (putStrLn ("compiled (each)   : " <> show (fmap normalizeLibrary compiledLibraries)))
+  MIO.liftIO (putStrLn ("native   (flat)   : " <> show nativeFlatReport))
+  MIO.liftIO (putStrLn ("compiled (flat)   : " <> show compiledFlatReport))
+  MIO.liftIO . putStrLn $
     "\nbatched match: " <> show batchedMatch
       <> ", single match: " <> show singleMatch
       <> ", maybe match: " <> show maybeMatch
@@ -281,5 +281,5 @@ runDemo = do
     && overviewMatch
     && libraryMatch
     && flatMatch
-    then liftIO (putStrLn "PASS")
-    else liftIO (putStrLn "FAIL" >> Exit.exitFailure)
+    then MIO.liftIO (putStrLn "PASS")
+    else MIO.liftIO (putStrLn "FAIL" >> Exit.exitFailure)
