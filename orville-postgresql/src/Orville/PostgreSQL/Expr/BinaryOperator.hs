@@ -24,6 +24,10 @@ module Orville.PostgreSQL.Expr.BinaryOperator
   , lessThanOrEqualsOp
   , likeOp
   , iLikeOp
+  , regexMatchOp
+  , regexMatchInsensitiveOp
+  , notRegexMatchOp
+  , notRegexMatchInsensitiveOp
   , orOp
   , andOp
   , plusOp
@@ -147,6 +151,46 @@ likeOp =
 iLikeOp :: BinaryOperator
 iLikeOp =
   binaryOperator "ILIKE"
+
+{- | The SQL @~@ binary operator. It is true when the value on the left
+matches the POSIX regular expression on the right, compared case
+sensitively.
+
+@since 1.2.0.0
+-}
+regexMatchOp :: BinaryOperator
+regexMatchOp =
+  binaryOperator "~"
+
+{- | The SQL @~*@ binary operator. It is true when the value on the left
+matches the POSIX regular expression on the right, compared case
+insensitively.
+
+@since 1.2.0.0
+-}
+regexMatchInsensitiveOp :: BinaryOperator
+regexMatchInsensitiveOp =
+  binaryOperator "~*"
+
+{- | The SQL @!~@ binary operator. It is true when the value on the left
+does not match the POSIX regular expression on the right, compared case
+sensitively.
+
+@since 1.2.0.0
+-}
+notRegexMatchOp :: BinaryOperator
+notRegexMatchOp =
+  binaryOperator "!~"
+
+{- | The SQL @!~*@ binary operator. It is true when the value on the left
+does not match the POSIX regular expression on the right, compared case
+insensitively.
+
+@since 1.2.0.0
+-}
+notRegexMatchInsensitiveOp :: BinaryOperator
+notRegexMatchInsensitiveOp =
+  binaryOperator "!~*"
 
 {- | The SQL logical or binary operator.
 

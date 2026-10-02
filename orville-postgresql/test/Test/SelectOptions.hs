@@ -41,6 +41,10 @@ selectOptionsTests =
     , prop_fieldIsNotNull
     , prop_fieldLike
     , prop_fieldLikeInsensitive
+    , prop_fieldMatchesRegex
+    , prop_fieldMatchesRegexInsensitive
+    , prop_fieldNotMatchesRegex
+    , prop_fieldNotMatchesRegexInsensitive
     , prop_andExpr
     , prop_andExprOperator
     , prop_orExpr
@@ -52,12 +56,15 @@ selectOptionsTests =
     , prop_fieldInOperator
     , prop_fieldNotIn
     , prop_fieldNotInOperator
+    , prop_fieldInSubquery
+    , prop_fieldNotInSubquery
     , prop_distinct
     , prop_orderBy
     , prop_orderByQualified
     , prop_orderByCombined
     , prop_groupBy
     , prop_groupByCombined
+    , prop_groupByField
     , prop_forRowLock
     ]
 
@@ -180,6 +187,34 @@ prop_fieldLikeInsensitive =
       (Just "WHERE (\"foo\") ILIKE ($1)")
       (O.where_ $ O.fieldLikeInsensitive fooField $ T.pack "%0%")
 
+prop_fieldMatchesRegex :: Property.NamedProperty
+prop_fieldMatchesRegex =
+  Property.singletonNamedProperty "fieldMatchesRegex generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") ~ ($1)")
+      (O.where_ $ O.fieldMatchesRegex fooField $ T.pack "^0")
+
+prop_fieldMatchesRegexInsensitive :: Property.NamedProperty
+prop_fieldMatchesRegexInsensitive =
+  Property.singletonNamedProperty "fieldMatchesRegexInsensitive generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") ~* ($1)")
+      (O.where_ $ O.fieldMatchesRegexInsensitive fooField $ T.pack "^0")
+
+prop_fieldNotMatchesRegex :: Property.NamedProperty
+prop_fieldNotMatchesRegex =
+  Property.singletonNamedProperty "fieldNotMatchesRegex generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") !~ ($1)")
+      (O.where_ $ O.fieldNotMatchesRegex fooField $ T.pack "^0")
+
+prop_fieldNotMatchesRegexInsensitive :: Property.NamedProperty
+prop_fieldNotMatchesRegexInsensitive =
+  Property.singletonNamedProperty "fieldNotMatchesRegexInsensitive generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") !~* ($1)")
+      (O.where_ $ O.fieldNotMatchesRegexInsensitive fooField $ T.pack "^0")
+
 prop_fieldIsNull :: Property.NamedProperty
 prop_fieldIsNull =
   Property.singletonNamedProperty "fieldIsNull generates expected sql" $
@@ -281,6 +316,20 @@ prop_fieldInOperator =
       (Just "WHERE (\"foo\") IN ($1)")
       (O.where_ $ fooField .<- (10 :| []))
 
+prop_fieldInSubquery :: Property.NamedProperty
+prop_fieldInSubquery =
+  Property.singletonNamedProperty "fieldInSubquery generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") IN (SELECT \"bar\" FROM \"baz\")")
+      (O.where_ $ O.fieldInSubquery fooField selectBarFromBaz)
+
+prop_fieldNotInSubquery :: Property.NamedProperty
+prop_fieldNotInSubquery =
+  Property.singletonNamedProperty "fieldNotInSubquery generates expected sql" $
+    assertWhereClauseEquals
+      (Just "WHERE (\"foo\") NOT IN (SELECT \"bar\" FROM \"baz\")")
+      (O.where_ $ O.fieldNotInSubquery fooField selectBarFromBaz)
+
 prop_fieldNotIn :: Property.NamedProperty
 prop_fieldNotIn =
   Property.singletonNamedProperty "fieldNotIn generates expected sql" $
@@ -352,6 +401,13 @@ prop_groupByCombined =
           <> (O.groupBy . Expr.groupByColumnsExpr $ ((Expr.unqualified (FieldDef.fieldColumnName barField)) :| []))
       )
 
+prop_groupByField :: Property.NamedProperty
+prop_groupByField =
+  Property.singletonNamedProperty "groupByField generates expected sql" $
+    assertGroupByClauseEquals
+      (Just "GROUP BY \"foo\", \"bar\"")
+      (O.groupBy $ O.groupByField fooField <> O.groupByField barField)
+
 prop_forRowLock :: Property.NamedProperty
 prop_forRowLock =
   Property.singletonNamedProperty "forRowLock generates expected sql" $
@@ -383,6 +439,13 @@ assertRowLockingClauseEquals :: (HH.MonadTest m, HasCallStack) => Maybe String -
 assertRowLockingClauseEquals mbRowLockingClause selectOptions =
   withFrozenCallStack $
     fmap RawSql.toExampleBytes (O.selectRowLockingClause selectOptions) HH.=== fmap B8.pack mbRowLockingClause
+
+selectBarFromBaz :: Expr.QueryExpr
+selectBarFromBaz =
+  Expr.queryExpr
+    (Expr.selectClause $ Expr.selectExpr Nothing)
+    (Expr.selectColumns [Expr.unqualified (FieldDef.fieldColumnName barField)])
+    (Just $ Expr.tableExpr (Expr.singleTableReferenceList . Expr.unqualified $ Expr.tableName "baz") Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 fooField :: FieldDef.FieldDefinition FieldDef.NotNull Int.Int32
 fooField =

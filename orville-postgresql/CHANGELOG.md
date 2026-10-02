@@ -23,6 +23,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   both defined and marked for dropping, `USING` on `INSERT` policies,
   `WITH CHECK` on `SELECT`/`DELETE` policies, policy names over PostgreSQL's
   63-byte identifier limit, and policy expressions containing bind parameters.
+- `fieldInSubquery` and `fieldNotInSubquery` (with `isInSubquery` and
+  `isNotInSubquery` for any `SqlComparable`) check a field against the rows of a
+  subquery.
+- `groupByField` builds a `GroupByExpr` from a field's column, in the same way
+  `orderByField` builds an `OrderByExpr`.
+- POSIX regular expression matching: `fieldMatchesRegex`,
+  `fieldMatchesRegexInsensitive`, `fieldNotMatchesRegex` and
+  `fieldNotMatchesRegexInsensitive`, with the corresponding `SqlComparable`
+  functions, `BooleanExpr` builders (`matchesRegex` etc.) and binary operators
+  (`regexMatchOp` etc.).
 
 ### Changed
 - Changed policies are always dropped and recreated rather than altered, since
@@ -32,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Deprecated
 ### Removed
 ### Fixed
+- Aggregate expressions with an `ORDER BY` clause now put a space before
+  `ORDER BY`. Previously a bind parameter as the last argument (for example the
+  delimiter of `string_agg`) produced `$1ORDER BY`, which PostgreSQL 15 and
+  later reject.
 - Decoding a large result set is much faster. Rows are now decoded in constant
   stack space; previously the stack grew by one frame per row, which made each
   decoded value cost several microseconds on results with tens of thousands of
