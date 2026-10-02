@@ -28,6 +28,7 @@ module Orville.JsonPlan
   , findMaybeOne
   , findAll
   , findAllWhere
+  , findAllEach
   , selectWhere
   , use
   , pair
@@ -112,6 +113,13 @@ data JsonPlan ref param result where
     Schema.TableDefinition key writeEntity readEntity ->
     Expr.BooleanExpr ->
     JsonPlan ref param [readEntity]
+  FindAllEach ::
+    Ord a =>
+    Schema.TableDefinition key writeEntity readEntity ->
+    Marshall.FieldDefinition nullability a ->
+    Arg ref param a ->
+    (forall innerRef innerParam. innerRef readEntity -> JsonPlan innerRef innerParam b) ->
+    JsonPlan ref param [b]
   Bind ::
     JsonPlan ref param a ->
     (ref a -> JsonPlan ref param b) ->
@@ -219,6 +227,22 @@ findAllWhere ::
 findAllWhere =
   FindAllWhere
 
+{- | Finds all rows whose field matches the argument and runs a sub-plan for
+  each found row, producing the sub-plan results in one list. The sub-plan
+  receives the found row as a bound reference and is parametric in its
+  reference brand and parameter type, so it can only reach its own bindings:
+  outer references and the outer parameter are out of scope by construction.
+-}
+findAllEach ::
+  Ord a =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability a ->
+  Arg ref param a ->
+  (forall innerRef innerParam. innerRef readEntity -> JsonPlan innerRef innerParam b) ->
+  JsonPlan ref param [b]
+findAllEach =
+  FindAllEach
+
 {- | Finds all rows satisfying the given condition, independent of the plan's
   parameter and of any bound reference.
 -}
@@ -298,6 +322,10 @@ toPlanNode plan =
     SelectWhere tableDef cond ->
       Plan.focusParam (const ()) $
         Plan.planSelect (Exec.selectTable tableDef (O.where_ cond))
+    FindAllEach tableDef fieldDef arg innerPlan ->
+      Plan.chain
+        (Plan.chain (argToPlan arg) (Plan.findAll tableDef fieldDef))
+        (Plan.planList (Plan.bind Plan.askParam (toPlanNode . innerPlan)))
     Bind step continue ->
       Plan.bind (toPlanNode step) (toPlanNode . continue)
     Use planned ->
@@ -461,51 +489,78 @@ cteName index =
   raw ("jp" <> show index)
 
 {- | Compiles a plan node into a list of (name, body) CTEs. Every CTE has the
-  shape @(i, v)@: @i@ is the input parameter's position and @v@ is the jsonb
-  boundary value for that parameter at this node. Each node preserves the set
-  of @i@ values exactly, so later nodes can join earlier ones on @i@. Returns
-  the CTEs the node adds, the index of the CTE holding the node's result, and
-  the next free index.
+  shape @(i, v)@: @i@ is the key of the row the value belongs to and @v@ is
+  the jsonb boundary value for that row at this node. Each node preserves the
+  set of @i@ values of its root CTE exactly, so later nodes can join earlier
+  ones on @i@. At the top level the root CTE is the parameter CTE and @i@ is
+  the parameter's position; inside a 'findAllEach' sub-plan the root CTE is
+  the element CTE and @i@ is a synthetic per-element key. Takes the index of
+  the node's root CTE and the next free index; returns the CTEs the node
+  adds, the index of the CTE holding the node's result, and the next free
+  index.
 -}
 compileNode ::
   JsonPlan CteRef param result ->
   Int ->
+  Int ->
   ([(RawSql.RawSql, RawSql.RawSql)], Int, Int)
-compileNode plan nextIndex =
+compileNode plan rootIndex nextIndex =
   case plan of
     FindOne tableDef fieldDef arg ->
-      ([(cteName nextIndex, findOneCteBody tableDef fieldDef arg)], nextIndex, nextIndex + 1)
+      ([(cteName nextIndex, findOneCteBody tableDef fieldDef rootIndex arg)], nextIndex, nextIndex + 1)
     FindMaybeOne tableDef fieldDef arg ->
-      ([(cteName nextIndex, findOneCteBody tableDef fieldDef arg)], nextIndex, nextIndex + 1)
+      ([(cteName nextIndex, findOneCteBody tableDef fieldDef rootIndex arg)], nextIndex, nextIndex + 1)
     FindAll tableDef fieldDef arg ->
       let
-        body = findAllCteBody tableDef (fieldMatchesArg fieldDef arg) (argSourceCte arg)
+        body = findAllCteBody tableDef (fieldMatchesArg fieldDef rootIndex arg) (argSourceCte rootIndex arg)
       in
         ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
     FindAllWhere tableDef fieldDef cond arg ->
       let
         whereSql =
-          fieldMatchesArg fieldDef arg
+          fieldMatchesArg fieldDef rootIndex arg
             <> raw " AND (" <> RawSql.toRawSql cond <> RawSql.rightParen
-        body = findAllCteBody tableDef whereSql (argSourceCte arg)
+        body = findAllCteBody tableDef whereSql (argSourceCte rootIndex arg)
       in
         ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
     SelectWhere tableDef cond ->
       let
         whereSql = RawSql.leftParen <> RawSql.toRawSql cond <> RawSql.rightParen
-        body = findAllCteBody tableDef whereSql (cteName 0)
+        body = findAllCteBody tableDef whereSql (cteName rootIndex)
       in
         ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+    FindAllEach tableDef fieldDef arg innerPlan ->
+      let
+        sourceCte = argSourceCte rootIndex arg
+        elementIndex = nextIndex
+        elementBody =
+          raw "SELECT " <> sourceCte <> raw ".i AS outer_i, row_number() OVER () AS i, "
+            <> entityJsonExpr tableDef
+            <> raw " AS v FROM " <> sourceCte
+            <> raw " JOIN " <> RawSql.toRawSql (Schema.tableName tableDef)
+            <> raw " t ON " <> fieldMatchesArg fieldDef rootIndex arg
+        (innerCtes, innerOut, afterInner) =
+          compileNode (innerPlan (CteRef elementIndex)) elementIndex (elementIndex + 1)
+        aggBody =
+          raw "SELECT " <> sourceCte <> raw ".i, coalesce((SELECT jsonb_agg(innerVals.v ORDER BY innerVals.i) FROM "
+            <> cteName elementIndex <> raw " elemRows JOIN "
+            <> cteName innerOut <> raw " innerVals ON innerVals.i = elemRows.i WHERE elemRows.outer_i = "
+            <> sourceCte <> raw ".i), '[]'::jsonb) AS v FROM " <> sourceCte
+        ctes =
+          (cteName elementIndex, elementBody)
+            : innerCtes <> [(cteName afterInner, aggBody)]
+      in
+        (ctes, afterInner, afterInner + 1)
     Bind step continue ->
       let
-        (stepCtes, stepOut, afterStep) = compileNode step nextIndex
-        (bodyCtes, bodyOut, afterBody) = compileNode (continue (CteRef stepOut)) afterStep
+        (stepCtes, stepOut, afterStep) = compileNode step rootIndex nextIndex
+        (bodyCtes, bodyOut, afterBody) = compileNode (continue (CteRef stepOut)) rootIndex afterStep
       in
         (stepCtes <> bodyCtes, bodyOut, afterBody)
     Use ref ->
       ([], cteRefIndex ref, nextIndex)
     Result jsonResult ->
-      ([(cteName nextIndex, resultCteBody (resultLeafRefs jsonResult))], nextIndex, nextIndex + 1)
+      ([(cteName nextIndex, resultCteBody rootIndex (resultLeafRefs jsonResult))], nextIndex, nextIndex + 1)
 
 -- | The shared CTE body for the list-producing steps: the matched rows become
 --   a jsonb array boundary value, empty when nothing matches.
@@ -538,11 +593,11 @@ resultLeafRefs jsonResult =
   only pure values has a null boundary and keeps the row indexes from the
   parameter CTE.
 -}
-resultCteBody :: [Int] -> RawSql.RawSql
-resultCteBody leafIndexes =
+resultCteBody :: Int -> [Int] -> RawSql.RawSql
+resultCteBody rootIndex leafIndexes =
   case leafIndexes of
     [] ->
-      raw "SELECT " <> cteName 0 <> raw ".i, 'null'::jsonb AS v FROM " <> cteName 0
+      raw "SELECT " <> cteName rootIndex <> raw ".i, 'null'::jsonb AS v FROM " <> cteName rootIndex
     firstIndex : restIndexes ->
       let
         alias position = raw ("r" <> show (position :: Int))
@@ -571,32 +626,33 @@ resultKeyName position =
 findOneCteBody ::
   Schema.TableDefinition key writeEntity readEntity ->
   Marshall.FieldDefinition nullability a ->
+  Int ->
   Arg CteRef param a ->
   RawSql.RawSql
-findOneCteBody tableDef fieldDef arg =
-  raw "SELECT " <> argSourceCte arg <> raw ".i, coalesce((SELECT "
+findOneCteBody tableDef fieldDef rootIndex arg =
+  raw "SELECT " <> argSourceCte rootIndex arg <> raw ".i, coalesce((SELECT "
     <> entityJsonExpr tableDef
     <> raw " FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
-    <> raw " t WHERE " <> fieldMatchesArg fieldDef arg
-    <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> argSourceCte arg
+    <> raw " t WHERE " <> fieldMatchesArg fieldDef rootIndex arg
+    <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> argSourceCte rootIndex arg
 
 -- | The CTE an argument's value is read from, which is also the source of the
 --   @i@ values for the step consuming the argument.
-argSourceCte :: Arg CteRef param a -> RawSql.RawSql
-argSourceCte arg =
+argSourceCte :: Int -> Arg CteRef param a -> RawSql.RawSql
+argSourceCte rootIndex arg =
   case arg of
     RootParam ->
-      cteName 0
+      cteName rootIndex
     RefField _ _ ref ->
       cteName (cteRefIndex ref)
 
 -- | The jsonb expression holding an argument's boundary value, relative to
 --   the argument's source CTE.
-argJsonbExpr :: Arg CteRef param a -> RawSql.RawSql
-argJsonbExpr arg =
+argJsonbExpr :: Int -> Arg CteRef param a -> RawSql.RawSql
+argJsonbExpr rootIndex arg =
   case arg of
     RootParam ->
-      cteName 0 <> raw ".v"
+      cteName rootIndex <> raw ".v"
     RefField _ fieldDef ref ->
       cteName (cteRefIndex ref) <> raw ".v -> "
         <> RawSql.stringLiteral (fieldColumnBytes fieldDef)
@@ -608,11 +664,12 @@ argJsonbExpr arg =
 -}
 fieldMatchesArg ::
   Marshall.FieldDefinition nullability a ->
+  Int ->
   Arg CteRef param a ->
   RawSql.RawSql
-fieldMatchesArg fieldDef arg =
+fieldMatchesArg fieldDef rootIndex arg =
   raw "t." <> RawSql.toRawSql (Marshall.fieldColumnName fieldDef)
-    <> raw " = (((" <> argJsonbExpr arg <> raw ") #>> '{}')::"
+    <> raw " = (((" <> argJsonbExpr rootIndex arg <> raw ") #>> '{}')::"
     <> RawSql.toRawSql (Marshall.sqlTypeExpr (Marshall.fieldType fieldDef))
     <> raw ")"
 
@@ -681,7 +738,7 @@ compileJsonPlan plan params =
         RawSql.commaSpace
         (zipWith valuesRow [0 ..] (NEL.toList params))
 
-    (steps, outIndex, _) = compileNode plan 1
+    (steps, outIndex, _) = compileNode plan 0 1
 
     renderStep (name, body) =
       name <> raw " AS (" <> body <> RawSql.rightParen
@@ -719,6 +776,8 @@ rootParamEncoder plan =
       argParamEncoder fieldDef arg
     SelectWhere _ _ ->
       Nothing
+    FindAllEach _ fieldDef arg _ ->
+      argParamEncoder fieldDef arg
     Bind step continue ->
       case rootParamEncoder step of
         Just encoder -> Just encoder
@@ -856,12 +915,36 @@ planDecoder plan =
       entityArrayDecoder tableDef
     SelectWhere tableDef _ ->
       entityArrayDecoder tableDef
+    FindAllEach tableDef _ _ innerPlan ->
+      let
+        innerDecoder = planDecoder (innerPlan (entityDecoder tableDef))
+      in
+        JsonDecoder $ \value ->
+          case value of
+            Aeson.Array elements ->
+              decodeElements innerDecoder (Vector.toList elements)
+            _ ->
+              pure (Left ExpectedJsonArray)
     Bind step continue ->
       planDecoder (continue (planDecoder step))
     Use decoder ->
       decoder
     Result jsonResult ->
       resultDecoder jsonResult
+
+decodeElements :: JsonDecoder a -> [Aeson.Value] -> IO (Either DecodeError [a])
+decodeElements decoder elements =
+  case elements of
+    [] ->
+      pure (Right [])
+    element : rest -> do
+      decoded <- runJsonDecoder decoder element
+      case decoded of
+        Left err ->
+          pure (Left err)
+        Right value -> do
+          decodedRest <- decodeElements decoder rest
+          pure (fmap (value :) decodedRest)
 
 entityArrayDecoder ::
   Schema.TableDefinition key writeEntity readEntity ->

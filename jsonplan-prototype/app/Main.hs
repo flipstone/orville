@@ -102,6 +102,15 @@ authorOverview = JP.do
         <*> JP.refValue otherAuthors
     )
 
+authorLibrary :: JP.JsonPlan ref T.Text [(Book, Author)]
+authorLibrary = JP.do
+  author <- JP.findOne authorTable authorNameField JP.rootParam
+  JP.findAllEach bookTable bookAuthorIdField (JP.refField authorId authorIdField author) $
+    \book -> JP.do
+      bookAuthor <-
+        JP.findOne authorTable authorIdField (JP.refField bookAuthorId bookAuthorIdField book)
+      JP.result ((,) <$> JP.refValue book <*> JP.refValue bookAuthor)
+
 authorBookCount :: JP.JsonQuery T.Text (T.Text, Int)
 authorBookCount =
   Profunctor.dimap
@@ -186,6 +195,9 @@ runDemo = do
   nativeOverviews <- Plan.execute (Plan.planList (JP.toPlan authorOverview)) overviewNames
   compiledOverviews <- JP.executeJsonPlanList authorOverview overviewNames
 
+  nativeLibraries <- Plan.execute (Plan.planList (JP.toPlan authorLibrary)) names
+  compiledLibraries <- JP.executeJsonPlanList authorLibrary names
+
   let
     normalize = fmap (\(author, books) -> (author, List.sortOn bookId books))
     normalizeOne (author, books) = (author, List.sortOn bookId books)
@@ -197,6 +209,9 @@ runDemo = do
       (author, List.sortOn bookId books, List.sortOn authorId authors)
     overviewMatch =
       fmap normalizeOverview nativeOverviews == fmap normalizeOverview compiledOverviews
+    normalizeLibrary = List.sortOn (bookId . fst)
+    libraryMatch =
+      fmap normalizeLibrary nativeLibraries == fmap normalizeLibrary compiledLibraries
 
   liftIO (putStrLn "\n--- results ---")
   liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
@@ -209,13 +224,16 @@ runDemo = do
   liftIO (putStrLn ("compiled (dimap)  : " <> show compiledCounts))
   liftIO (putStrLn ("native   (3-ary)  : " <> show (fmap normalizeOverview nativeOverviews)))
   liftIO (putStrLn ("compiled (3-ary)  : " <> show (fmap normalizeOverview compiledOverviews)))
+  liftIO (putStrLn ("native   (each)   : " <> show (fmap normalizeLibrary nativeLibraries)))
+  liftIO (putStrLn ("compiled (each)   : " <> show (fmap normalizeLibrary compiledLibraries)))
   liftIO . putStrLn $
     "\nbatched match: " <> show batchedMatch
       <> ", single match: " <> show singleMatch
       <> ", maybe match: " <> show maybeMatch
       <> ", dimap match: " <> show countMatch
       <> ", 3-ary match: " <> show overviewMatch
+      <> ", each match: " <> show libraryMatch
 
-  if batchedMatch && singleMatch && maybeMatch && countMatch && overviewMatch
+  if batchedMatch && singleMatch && maybeMatch && countMatch && overviewMatch && libraryMatch
     then liftIO (putStrLn "PASS")
     else liftIO (putStrLn "FAIL" >> Exit.exitFailure)
