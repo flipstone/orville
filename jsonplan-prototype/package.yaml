@@ -24,3 +24,13 @@ executables:
     source-dirs: app
     dependencies:
       - jsonplan-prototype
+
+tests:
+  jsonplan-test:
+    main: Main.hs
+    source-dirs: test
+    dependencies:
+      - jsonplan-prototype
+      - hedgehog
+      - postgresql-libpq
+      - time

@@ -44,3 +44,30 @@ executable jsonplan-demo
     , text
     , vector
   default-language: Haskell2010
+
+test-suite jsonplan-test
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Test.CompileChecks
+      Test.Decoders
+      Test.Equivalence
+      Test.Fixtures
+      Test.WireTextLaw
+      Paths_jsonplan_prototype
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , hedgehog
+    , jsonplan-prototype
+    , orville-postgresql
+    , postgresql-libpq
+    , profunctors
+    , text
+    , time
+    , vector
+  default-language: Haskell2010

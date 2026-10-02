@@ -58,6 +58,9 @@ module Orville.JsonPlan
   , renderJsonPlanError
   , DecodeError (..)
   , renderDecodeError
+  , checkWireTextLaw
+  , JsonDecoder (..)
+  , planDecoder
   ) where
 
 import Prelude hiding ((>>), (>>=))
@@ -593,6 +596,71 @@ jsonQuerySqlText ::
   Either JsonPlanError String
 jsonQuerySqlText (JsonQuery pre plan _) queryParams =
   compiledSqlText plan (fmap pre queryParams)
+
+{- | Checks the wire-text law for a field against the database: rendering a
+  value of the field's type to wire text server-side must be byte-identical
+  to libpq's text-mode output for the same value, and decoding the rendering
+  must give the same Haskell value as decoding the text-mode output. This is
+  the invariant compiled plan execution rests on; test suites should check it
+  for custom field types.
+-}
+checkWireTextLaw ::
+  (O.MonadOrville m, Eq a) =>
+  Marshall.FieldDefinition nullability a ->
+  a ->
+  m (Either String ())
+checkWireTextLaw fieldDef value =
+  case wireTextRenderingForField fieldDef of
+    NoWireTextRendering ->
+      pure (Left "the field's SQL type has no wire-text rendering")
+    rendering -> do
+      let
+        typedValue =
+          RawSql.leftParen
+            <> RawSql.parameter (Marshall.fieldValueToSqlValue fieldDef value)
+            <> raw "::"
+            <> fieldCastExpr fieldDef
+            <> RawSql.rightParen
+        query =
+          raw "SELECT "
+            <> typedValue
+            <> raw " AS wire, ("
+            <> applyWireTextRendering rendering typedValue
+            <> raw ")::text AS rendered"
+      probeRows <- Exec.executeAndDecode Exec.SelectQuery query wireProbeMarshaller
+      pure $
+        case probeRows of
+          [(wireText, renderedText)] ->
+            if wireText /= renderedText
+              then
+                Left $
+                  "wire text " <> show wireText
+                    <> " differs from rendered text " <> show renderedText
+              else
+                let
+                  decodeText probeText =
+                    Marshall.sqlTypeFromSql
+                      (Marshall.fieldType fieldDef)
+                      (SqlValue.fromText probeText)
+                in
+                  case (decodeText wireText, decodeText renderedText) of
+                    (Right fromWire, Right fromRendered) ->
+                      if fromWire == fromRendered
+                        then Right ()
+                        else Left "decoding the rendering differs from decoding the wire text"
+                    (Left err, _) ->
+                      Left ("decoding the wire text failed: " <> err)
+                    (_, Left err) ->
+                      Left ("decoding the rendering failed: " <> err)
+          _ ->
+            Left "expected exactly one probe row"
+
+wireProbeMarshaller :: Marshall.AnnotatedSqlMarshaller (T.Text, T.Text) (T.Text, T.Text)
+wireProbeMarshaller =
+  Marshall.annotateSqlMarshallerEmptyAnnotation $
+    (,)
+      <$> Marshall.marshallReadOnlyField (Marshall.unboundedTextField "wire")
+      <*> Marshall.marshallReadOnlyField (Marshall.unboundedTextField "rendered")
 
 --
 -- Compilation to SQL
