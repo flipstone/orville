@@ -80,6 +80,10 @@ authorWithBooks = JP.do
   books <- JP.findAll bookTable bookAuthorIdField (JP.refField authorId authorIdField author)
   JP.pair author books
 
+maybeAuthor :: JP.JsonPlan ref T.Text (Maybe Author)
+maybeAuthor =
+  JP.findMaybeOne authorTable authorNameField JP.rootParam
+
 main :: IO ()
 main = do
   mbConnString <- Env.lookupEnv "JSONPLAN_CONN"
@@ -145,20 +149,29 @@ runDemo = do
   nativeSingle <- Plan.execute (JP.toPlan authorWithBooks) (T.pack "Ann")
   compiledSingle <- JP.executeJsonPlan authorWithBooks (T.pack "Ann")
 
+  let maybeNames = fmap T.pack ["Ann", "Dee"]
+  nativeMaybes <- Plan.execute (Plan.planList (JP.toPlan maybeAuthor)) maybeNames
+  compiledMaybes <- JP.executeJsonPlanList maybeAuthor maybeNames
+
   let
     normalize = fmap (\(author, books) -> (author, List.sortOn bookId books))
     normalizeOne (author, books) = (author, List.sortOn bookId books)
     batchedMatch = normalize nativeResults == normalize compiledResults
     singleMatch = normalizeOne nativeSingle == normalizeOne compiledSingle
+    maybeMatch = nativeMaybes == compiledMaybes
 
   liftIO (putStrLn "\n--- results ---")
   liftIO (putStrLn ("native   (batched): " <> show (normalize nativeResults)))
   liftIO (putStrLn ("compiled (batched): " <> show (normalize compiledResults)))
   liftIO (putStrLn ("native   (single) : " <> show (normalizeOne nativeSingle)))
   liftIO (putStrLn ("compiled (single) : " <> show (normalizeOne compiledSingle)))
+  liftIO (putStrLn ("native   (maybe)  : " <> show nativeMaybes))
+  liftIO (putStrLn ("compiled (maybe)  : " <> show compiledMaybes))
   liftIO . putStrLn $
-    "\nbatched match: " <> show batchedMatch <> ", single match: " <> show singleMatch
+    "\nbatched match: " <> show batchedMatch
+      <> ", single match: " <> show singleMatch
+      <> ", maybe match: " <> show maybeMatch
 
-  if batchedMatch && singleMatch
+  if batchedMatch && singleMatch && maybeMatch
     then liftIO (putStrLn "PASS")
     else liftIO (putStrLn "FAIL" >> Exit.exitFailure)

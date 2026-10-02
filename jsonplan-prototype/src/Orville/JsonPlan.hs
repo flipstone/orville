@@ -25,6 +25,7 @@ module Orville.JsonPlan
   , (>>=)
   , (>>)
   , findOne
+  , findMaybeOne
   , findAll
   , use
   , pair
@@ -35,11 +36,15 @@ module Orville.JsonPlan
   , executeJsonPlan
   , executeJsonPlanList
   , compiledSqlText
+  , JsonPlanError (..)
+  , renderJsonPlanError
+  , DecodeError (..)
+  , renderDecodeError
   ) where
 
 import Prelude hiding ((>>), (>>=))
 
-import Control.Exception (throwIO)
+import Control.Exception (Exception (displayException), throwIO)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Key as AesonKey
@@ -71,6 +76,12 @@ data JsonPlan ref param result where
     Marshall.FieldDefinition nullability a ->
     Arg ref param a ->
     JsonPlan ref param readEntity
+  FindMaybeOne ::
+    Ord a =>
+    Schema.TableDefinition key writeEntity readEntity ->
+    Marshall.FieldDefinition nullability a ->
+    Arg ref param a ->
+    JsonPlan ref param (Maybe readEntity)
   FindAll ::
     Ord a =>
     Schema.TableDefinition key writeEntity readEntity ->
@@ -127,6 +138,19 @@ findOne ::
   JsonPlan ref param readEntity
 findOne =
   FindOne
+
+{- | Finds the single row whose field matches the argument, or 'Nothing' if
+  none does. Unlike 'findOne', a missing row is a result rather than an
+  error.
+-}
+findMaybeOne ::
+  Ord a =>
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability a ->
+  Arg ref param a ->
+  JsonPlan ref param (Maybe readEntity)
+findMaybeOne =
+  FindMaybeOne
 
 -- | Finds all rows whose field matches the argument.
 findAll ::
@@ -188,6 +212,8 @@ toPlanNode plan =
   case plan of
     FindOne tableDef fieldDef arg ->
       Plan.chain (argToPlan arg) (Plan.findOne tableDef fieldDef)
+    FindMaybeOne tableDef fieldDef arg ->
+      Plan.chain (argToPlan arg) (Plan.findMaybeOne tableDef fieldDef)
     FindAll tableDef fieldDef arg ->
       Plan.chain (argToPlan arg) (Plan.findAll tableDef fieldDef)
     Bind step continue ->
@@ -221,11 +247,12 @@ executeJsonPlan plan planParam = do
   results <- executeJsonPlanList plan [planParam]
   case results of
     [one] -> pure one
-    _ -> liftIO . throwIO . userError $ "jsonplan: expected exactly one result row"
+    _ -> liftIO . throwIO $ ResultRowCountMismatch 1 (length results)
 
 {- | Runs the compiled form of the plan for many parameters in one SQL query.
-  Results are returned in parameter order. Decoding failures are thrown as
-  exceptions, mirroring how native plan execution throws 'Plan.AssertionFailed'.
+  Results are returned in parameter order. Failures are thrown as
+  'JsonPlanError' exceptions, mirroring how native plan execution throws
+  'Plan.AssertionFailed' and 'Marshall.MarshallError'.
 -}
 executeJsonPlanList ::
   O.MonadOrville m =>
@@ -239,8 +266,11 @@ executeJsonPlanList plan params =
     Just someParams -> do
       let
         query = compileJsonPlan plan someParams
+        expectedCount = NEL.length someParams
       jsonTexts <- Exec.executeAndDecode Exec.SelectQuery query resultTextMarshaller
-      liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
+      if length jsonTexts == expectedCount
+        then liftIO $ traverse (decodeBoundaryText (planDecoder plan)) jsonTexts
+        else liftIO . throwIO $ ResultRowCountMismatch expectedCount (length jsonTexts)
 
 -- | Renders the SQL that 'executeJsonPlanList' would run, for inspection.
 compiledSqlText ::
@@ -282,15 +312,9 @@ compileNode ::
 compileNode plan nextIndex =
   case plan of
     FindOne tableDef fieldDef arg ->
-      let
-        body =
-          raw "SELECT " <> argSourceCte arg <> raw ".i, coalesce((SELECT "
-            <> entityJsonExpr tableDef
-            <> raw " FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
-            <> raw " t WHERE " <> fieldMatchesArg fieldDef arg
-            <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> argSourceCte arg
-      in
-        ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+      ([(cteName nextIndex, findOneCteBody tableDef fieldDef arg)], nextIndex, nextIndex + 1)
+    FindMaybeOne tableDef fieldDef arg ->
+      ([(cteName nextIndex, findOneCteBody tableDef fieldDef arg)], nextIndex, nextIndex + 1)
     FindAll tableDef fieldDef arg ->
       let
         body =
@@ -317,6 +341,20 @@ compileNode plan nextIndex =
             <> cteName (cteRefIndex refB) <> raw " r ON r.i = l.i"
       in
         ([(cteName nextIndex, body)], nextIndex, nextIndex + 1)
+
+-- | The shared CTE body for the single-row lookups: a missing row becomes a
+--   jsonb null boundary value.
+findOneCteBody ::
+  Schema.TableDefinition key writeEntity readEntity ->
+  Marshall.FieldDefinition nullability a ->
+  Arg CteRef param a ->
+  RawSql.RawSql
+findOneCteBody tableDef fieldDef arg =
+  raw "SELECT " <> argSourceCte arg <> raw ".i, coalesce((SELECT "
+    <> entityJsonExpr tableDef
+    <> raw " FROM " <> RawSql.toRawSql (Schema.tableName tableDef)
+    <> raw " t WHERE " <> fieldMatchesArg fieldDef arg
+    <> raw " LIMIT 1), 'null'::jsonb) AS v FROM " <> argSourceCte arg
 
 -- | The CTE an argument's value is read from, which is also the source of the
 --   @i@ values for the step consuming the argument.
@@ -449,6 +487,8 @@ rootParamEncoder plan =
   case plan of
     FindOne _ fieldDef arg ->
       argParamEncoder fieldDef arg
+    FindMaybeOne _ fieldDef arg ->
+      argParamEncoder fieldDef arg
     FindAll _ fieldDef arg ->
       argParamEncoder fieldDef arg
     Bind step continue ->
@@ -472,6 +512,71 @@ argParamEncoder fieldDef arg =
       Nothing
 
 --
+-- Errors
+--
+
+-- | An error raised while executing the compiled form of a plan.
+data JsonPlanError
+  = -- | The query's result column could not be parsed as JSON at all.
+    ServerReturnedInvalidJson String
+  | -- | A jsonb boundary value did not decode to the expected Haskell value.
+    BoundaryDecodeFailed DecodeError
+  | -- | The compiled query returned a different number of rows than there
+    --   were input parameters. The compiler guarantees these counts match,
+    --   so this indicates a bug in the compiler itself.
+    ResultRowCountMismatch Int Int
+  deriving Show
+
+instance Exception JsonPlanError where
+  displayException =
+    renderJsonPlanError
+
+renderJsonPlanError :: JsonPlanError -> String
+renderJsonPlanError err =
+  case err of
+    ServerReturnedInvalidJson msg ->
+      "jsonplan: server returned invalid JSON: " <> msg
+    BoundaryDecodeFailed decodeError ->
+      "jsonplan: " <> renderDecodeError decodeError
+    ResultRowCountMismatch expected actual ->
+      "jsonplan: compiled query returned "
+        <> show actual
+        <> " rows for "
+        <> show expected
+        <> " parameters; this is a bug in the jsonplan compiler"
+
+-- | Why a jsonb boundary value could not be decoded.
+data DecodeError
+  = -- | A 'findOne' step matched no row.
+    NoRowMatched
+  | ExpectedJsonArray
+  | ExpectedJsonObject
+  | MissingPairKey String
+  | -- | An entity object held an unexpected number of rows.
+    UnexpectedEntityCount Int
+  | -- | The table's marshaller rejected the replayed column values.
+    EntityMarshallError Marshall.MarshallError
+  deriving Show
+
+renderDecodeError :: DecodeError -> String
+renderDecodeError err =
+  case err of
+    NoRowMatched ->
+      "findOne: no row matched the argument"
+    ExpectedJsonArray ->
+      "findAll: expected a JSON array"
+    ExpectedJsonObject ->
+      "expected a JSON object"
+    MissingPairKey key ->
+      "pair: missing key " <> key
+    UnexpectedEntityCount count ->
+      "expected exactly one decoded row, got " <> show count
+    EntityMarshallError marshallError ->
+      Marshall.renderMarshallError
+        ErrorDetailLevel.maximalErrorDetailLevel
+        marshallError
+
+--
 -- Decoding results
 --
 
@@ -480,7 +585,7 @@ argParamEncoder fieldDef arg =
   underlying 'Marshall.marshallResultFromSql' does.
 -}
 newtype JsonDecoder a = JsonDecoder
-  { runJsonDecoder :: Aeson.Value -> IO (Either String a)
+  { runJsonDecoder :: Aeson.Value -> IO (Either DecodeError a)
   }
 
 resultTextMarshaller :: Marshall.AnnotatedSqlMarshaller T.Text T.Text
@@ -492,11 +597,11 @@ decodeBoundaryText :: JsonDecoder a -> T.Text -> IO a
 decodeBoundaryText decoder jsonText =
   case Aeson.eitherDecodeStrict (Enc.encodeUtf8 jsonText) of
     Left err ->
-      throwIO . userError $ "jsonplan: server returned invalid JSON: " <> err
+      throwIO (ServerReturnedInvalidJson err)
     Right value -> do
       decoded <- runJsonDecoder decoder value
       case decoded of
-        Left err -> throwIO . userError $ "jsonplan: " <> err
+        Left err -> throwIO (BoundaryDecodeFailed err)
         Right result -> pure result
 
 planDecoder :: JsonPlan JsonDecoder param result -> JsonDecoder result
@@ -506,9 +611,17 @@ planDecoder plan =
       JsonDecoder $ \value ->
         case value of
           Aeson.Null ->
-            pure (Left "findOne: no row matched the argument")
+            pure (Left NoRowMatched)
           _ ->
             runJsonDecoder (entityDecoder tableDef) value
+    FindMaybeOne tableDef _ _ ->
+      JsonDecoder $ \value ->
+        case value of
+          Aeson.Null ->
+            pure (Right Nothing)
+          _ -> do
+            decoded <- runJsonDecoder (entityDecoder tableDef) value
+            pure (fmap Just decoded)
     FindAll tableDef _ _ ->
       JsonDecoder $ \value ->
         case value of
@@ -517,7 +630,7 @@ planDecoder plan =
               Left err -> pure (Left err)
               Right objects -> decodeEntityObjects tableDef objects
           _ ->
-            pure (Left "findAll: expected a JSON array")
+            pure (Left ExpectedJsonArray)
     Bind step continue ->
       planDecoder (continue (planDecoder step))
     Use decoder ->
@@ -529,7 +642,7 @@ planDecoder plan =
             let
               lookupKey key =
                 case AesonKeyMap.lookup (AesonKey.fromString key) obj of
-                  Nothing -> Left ("pair: missing key " <> key)
+                  Nothing -> Left (MissingPairKey key)
                   Just el -> Right el
             in
               case (,) <$> lookupKey "fst" <*> lookupKey "snd" of
@@ -540,7 +653,7 @@ planDecoder plan =
                   decodedSnd <- runJsonDecoder decoderB sndValue
                   pure ((,) <$> decodedFst <*> decodedSnd)
           _ ->
-            pure (Left "pair: expected a JSON object")
+            pure (Left ExpectedJsonObject)
 
 -- | Decodes a jsonb object built by the compiled query for a table's row.
 entityDecoder ::
@@ -555,15 +668,15 @@ entityDecoder tableDef =
           case decoded of
             Left err -> Left err
             Right [entity] -> Right entity
-            Right _ -> Left "entityDecoder: expected exactly one decoded row"
+            Right entities -> Left (UnexpectedEntityCount (length entities))
       _ ->
-        pure (Left "entityDecoder: expected a JSON object")
+        pure (Left ExpectedJsonObject)
 
-asObject :: Aeson.Value -> Either String Aeson.Object
+asObject :: Aeson.Value -> Either DecodeError Aeson.Object
 asObject value =
   case value of
     Aeson.Object obj -> Right obj
-    _ -> Left "expected a JSON object"
+    _ -> Left ExpectedJsonObject
 
 {- | The heart of the @::text@ trick: each jsonb entity object holds every
   column's text-mode rendering (or JSON null). Replaying those strings
@@ -573,7 +686,7 @@ asObject value =
 decodeEntityObjects ::
   Schema.TableDefinition key writeEntity readEntity ->
   [Aeson.Object] ->
-  IO (Either String [readEntity])
+  IO (Either DecodeError [readEntity])
 decodeEntityObjects tableDef objects =
   let
     columnNames = tableColumnNames tableDef
@@ -595,5 +708,5 @@ decodeEntityObjects tableDef objects =
         fakeResult
     pure $
       case marshalled of
-        Left err -> Left (show err)
+        Left err -> Left (EntityMarshallError err)
         Right entities -> Right entities
