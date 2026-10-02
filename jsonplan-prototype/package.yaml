@@ -1,0 +1,25 @@
+name: jsonplan-prototype
+version: 0.0.0.1
+synopsis: Scratch prototype of a server-compilable JsonPlan DSL for Orville
+
+ghc-options: -Wall
+
+dependencies:
+  - base
+  - aeson
+  - bytestring
+  - orville-postgresql
+  - text
+  - vector
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Orville.JsonPlan
+
+executables:
+  jsonplan-demo:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+      - jsonplan-prototype

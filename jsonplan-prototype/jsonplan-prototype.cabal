@@ -1,0 +1,44 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.39.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           jsonplan-prototype
+version:        0.0.0.1
+synopsis:       Scratch prototype of a server-compilable JsonPlan DSL for Orville
+build-type:     Simple
+
+library
+  exposed-modules:
+      Orville.JsonPlan
+  other-modules:
+      Paths_jsonplan_prototype
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , orville-postgresql
+    , text
+    , vector
+  default-language: Haskell2010
+
+executable jsonplan-demo
+  main-is: Main.hs
+  other-modules:
+      Paths_jsonplan_prototype
+  hs-source-dirs:
+      app
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , jsonplan-prototype
+    , orville-postgresql
+    , text
+    , vector
+  default-language: Haskell2010
