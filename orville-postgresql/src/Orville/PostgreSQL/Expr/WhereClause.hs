@@ -12,6 +12,7 @@ module Orville.PostgreSQL.Expr.WhereClause
   , whereClause
   , BooleanExpr
   , literalBooleanExpr
+  , booleanValueExpression
   , andExpr
   , (.&&)
   , orExpr
@@ -109,7 +110,7 @@ literalBooleanExpr bool =
 {- | Converts a 'BooleanExpr' to a 'ValueExpression' so that it can be used
   anywhere 'ValueExpression' is allowed.
 
-  @since 1.0.0.0
+  @since 1.2.0.0
 -}
 booleanValueExpression :: BooleanExpr -> ValueExpression
 booleanValueExpression (BooleanExpr rawSql) =
