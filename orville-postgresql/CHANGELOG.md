@@ -53,6 +53,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `addTableConstraints`, `addTableIndexes` and `addTableTriggers` now keep the
   last item when a single call passes multiple items with the same migration
   key, as documented. Previously the first item in the list won.
+- `integralDefault` now renders each default the way PostgreSQL does. It uses a
+  bare literal for non-negative values within the 32-bit range, `::integer` for
+  negative values within it, and `::bigint` outside it. Previously a default
+  below the 32-bit range failed with an out-of-range error, and a default above
+  it caused spurious auto-migrations.
 ### Security
 - **Auto-migration now manages row-level security on migrated tables.** A
   table definition that does not call `setRowLevelSecurityEnabled` declares

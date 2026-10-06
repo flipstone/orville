@@ -11,7 +11,7 @@ import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Foldable as Fold
 import qualified Data.Function as Function
-import Data.Int (Int32)
+import Data.Int (Int32, Int64)
 import Data.List ((\\))
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NEL
@@ -53,6 +53,7 @@ autoMigrationTests pool =
     , prop_columnsWithSystemNameConflictsRaiseError pool
     , prop_altersColumnDataType pool
     , prop_altersColumnDefaultValue_TextNumeric pool
+    , prop_altersColumnDefaultValue_IntegralBoundaries pool
     , prop_altersColumnDefaultValue_Bool pool
     , prop_altersColumnDefaultValue_Timelike pool
     , prop_respectsImplicitDefaultOnSerialFields pool
@@ -532,9 +533,9 @@ prop_altersColumnDefaultValue_TextNumeric =
       genDefaultText =
         PgGen.pgText (Range.linear 0 10)
 
-      genDefaultIntegral :: Integral n => HH.Gen n
+      genDefaultIntegral :: (Integral n, Bounded n) => HH.Gen n
       genDefaultIntegral =
-        Gen.integral (Range.linear (-10) 10)
+        Gen.integral Range.linearBounded
 
       genDefaultDouble =
         PgGen.pgDouble
@@ -549,6 +550,30 @@ prop_altersColumnDefaultValue_TextNumeric =
         , SomeField <$> genFieldWithMaybeDefault genDefaultIntegral Orville.bigIntegerDefault (Orville.bigIntegerField "column")
         , SomeField <$> genFieldWithMaybeDefault genDefaultDouble Orville.doubleDefault (Orville.doubleField "column")
         ]
+
+prop_altersColumnDefaultValue_IntegralBoundaries :: Property.NamedDBProperty
+prop_altersColumnDefaultValue_IntegralBoundaries =
+  Property.namedDBProperty "Alters default value on existing column (integral boundaries)" $ \pool -> do
+    let
+      int32Min, int32Max :: Int64
+      int32Min = fromIntegral (minBound :: Int32)
+      int32Max = fromIntegral (maxBound :: Int32)
+
+      genBoundary =
+        Gen.element
+          [ minBound
+          , int32Min - 1
+          , int32Min
+          , -1
+          , 0
+          , 1
+          , int32Max
+          , int32Max + 1
+          , maxBound
+          ]
+
+    assertDefaultValuesMigrateProperly pool $
+      SomeField <$> genFieldWithMaybeDefault genBoundary Orville.bigIntegerDefault (Orville.bigIntegerField "column")
 
 prop_altersColumnAddIdentity :: Property.NamedDBProperty
 prop_altersColumnAddIdentity =

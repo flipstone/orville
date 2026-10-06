@@ -56,30 +56,41 @@ newtype DefaultValue a
   = DefaultValue Expr.ValueExpression
 
 {- | Builds a default value for any 'Integral' type @n@ by converting it to an
-  'Integer'.
+  'Integer'. Note that this is only safe to use with 'Integral' values that fit into
+  a 64bit PostgreSQL @bigint@.
 
 @since 1.0.0.0
 -}
 integralDefault :: Integral n => n -> DefaultValue n
 integralDefault n =
   let
+    asInteger =
+      toInteger n
+
     decimalBytes =
       LBS.toStrict
         . BSB.toLazyByteString
         . BSB.integerDec
-        . toInteger
-        $ n
+        $ asInteger
+
+    -- PostgreSQL's @pg_get_expr@ renders an integer default based on the
+    -- magnitude and sign of the literal, not the column type.
+    -- This matches the rendering so that auto-migration doesn't generate
+    -- unnecessary @ALTER COLUMN ... SET DEFAULT@ statements.
+    rendered
+      | asInteger > toInteger (maxBound :: Int32)
+          || asInteger < toInteger (minBound :: Int32) =
+          RawSql.stringLiteral decimalBytes <> RawSql.fromString "::bigint"
+      | asInteger < 0 =
+          RawSql.stringLiteral decimalBytes <> RawSql.fromString "::integer"
+      | otherwise =
+          RawSql.fromBytes decimalBytes
   in
-    if n < 0
-      then
-        DefaultValue . RawSql.unsafeFromRawSql $
-          RawSql.stringLiteral decimalBytes
-            <> RawSql.fromString "::integer"
-      else DefaultValue . RawSql.unsafeFromRawSql . RawSql.fromBytes $ decimalBytes
+    DefaultValue . RawSql.unsafeFromRawSql $ rendered
 
 {- | Builds a default value from an 'Int16' for use with small integer fields.
 
-  This is a specialization of 'integerDefault'.
+  This is a specialization of 'integralDefault'.
 
 @since 1.0.0.0
 -}
@@ -88,16 +99,16 @@ smallIntegerDefault = integralDefault
 
 {- | Builds a default value from an 'Int32' for use with integer fields.
 
-  This is a specialization of 'integerDefault'.
+  This is a specialization of 'integralDefault'.
 
 @since 1.0.0.0
 -}
 integerDefault :: Int32 -> DefaultValue Int32
 integerDefault = integralDefault
 
-{- | Builds a default value from an 'Int16' for use with big integer fields.
+{- | Builds a default value from an 'Int64' for use with big integer fields.
 
-  This is a specialization of 'integerDefault'.
+  This is a specialization of 'integralDefault'.
 
 @since 1.0.0.0
 -}
