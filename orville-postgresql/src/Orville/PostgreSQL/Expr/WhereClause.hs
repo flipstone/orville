@@ -29,6 +29,10 @@ module Orville.PostgreSQL.Expr.WhereClause
   , lessThanOrEqualTo
   , like
   , likeInsensitive
+  , matchesRegex
+  , matchesRegexInsensitive
+  , notMatchesRegex
+  , notMatchesRegexInsensitive
   , isNull
   , isNotNull
   , valueIn
@@ -44,7 +48,7 @@ where
 
 import qualified Data.List.NonEmpty as NE
 
-import Orville.PostgreSQL.Expr.BinaryOperator (andOp, binaryOpExpression, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, isDistinctFromOp, isNotDistinctFromOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp, orOp)
+import Orville.PostgreSQL.Expr.BinaryOperator (andOp, binaryOpExpression, equalsOp, greaterThanOp, greaterThanOrEqualsOp, iLikeOp, isDistinctFromOp, isNotDistinctFromOp, lessThanOp, lessThanOrEqualsOp, likeOp, notEqualsOp, notRegexMatchInsensitiveOp, notRegexMatchOp, orOp, regexMatchInsensitiveOp, regexMatchOp)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, rowValueConstructor)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -357,6 +361,42 @@ like =
 likeInsensitive :: ValueExpression -> ValueExpression -> BooleanExpr
 likeInsensitive =
   binaryOpExpression iLikeOp
+
+{- | The SQL @~@ operator. Checks that the first value matches the
+  POSIX regular expression given as the second, compared case sensitively.
+
+  @since 1.2.0.0
+-}
+matchesRegex :: ValueExpression -> ValueExpression -> BooleanExpr
+matchesRegex =
+  binaryOpExpression regexMatchOp
+
+{- | The SQL @~*@ operator. Checks that the first value matches the
+  POSIX regular expression given as the second, compared case insensitively.
+
+  @since 1.2.0.0
+-}
+matchesRegexInsensitive :: ValueExpression -> ValueExpression -> BooleanExpr
+matchesRegexInsensitive =
+  binaryOpExpression regexMatchInsensitiveOp
+
+{- | The SQL @!~@ operator. Checks that the first value does not match the
+  POSIX regular expression given as the second, compared case sensitively.
+
+  @since 1.2.0.0
+-}
+notMatchesRegex :: ValueExpression -> ValueExpression -> BooleanExpr
+notMatchesRegex =
+  binaryOpExpression notRegexMatchOp
+
+{- | The SQL @!~*@ operator. Checks that the first value does not match the
+  POSIX regular expression given as the second, compared case insensitively.
+
+  @since 1.2.0.0
+-}
+notMatchesRegexInsensitive :: ValueExpression -> ValueExpression -> BooleanExpr
+notMatchesRegexInsensitive =
+  binaryOpExpression notRegexMatchInsensitiveOp
 
 {- | The SQL @IS NULL@ condition.
 

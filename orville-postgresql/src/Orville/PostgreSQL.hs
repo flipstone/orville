@@ -331,12 +331,18 @@ module Orville.PostgreSQL
   , (FieldDefinition..<=)
   , FieldDefinition.fieldLike
   , FieldDefinition.fieldLikeInsensitive
+  , FieldDefinition.fieldMatchesRegex
+  , FieldDefinition.fieldMatchesRegexInsensitive
+  , FieldDefinition.fieldNotMatchesRegex
+  , FieldDefinition.fieldNotMatchesRegexInsensitive
   , FieldDefinition.fieldIsNull
   , FieldDefinition.fieldIsNotNull
   , FieldDefinition.fieldIn
   , (FieldDefinition..<-)
   , FieldDefinition.fieldNotIn
   , (FieldDefinition..</-)
+  , FieldDefinition.fieldInSubquery
+  , FieldDefinition.fieldNotInSubquery
   , FieldDefinition.fieldTupleIn
   , FieldDefinition.fieldTupleNotIn
   , Expr.OrderByDirection
@@ -346,6 +352,7 @@ module Orville.PostgreSQL
   , Expr.descendingOrder
   , Expr.descendingOrderWith
   , FieldDefinition.orderByField
+  , FieldDefinition.groupByField
   , Marshall.SqlComparable (toComparableSqlValue, referenceValueExpression)
   , Marshall.orderBySqlComparable
   , Expr.orderByColumnName

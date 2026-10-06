@@ -39,6 +39,10 @@ whereTests pool =
     , TastyHH.testProperty "valueNotIn requires the column's value to not be in the list" (prop_valueNotIn pool)
     , TastyHH.testProperty "tupleIn requires the column value combination to be in the list" (prop_tupleIn pool)
     , TastyHH.testProperty "tupleNotIn requires the column value combination to not be in the list" (prop_tupleNotIn pool)
+    , TastyHH.testProperty "matchesRegex requires the column's value to match the pattern case sensitively" (prop_matchesRegex pool)
+    , TastyHH.testProperty "matchesRegexInsensitive requires the column's value to match the pattern case insensitively" (prop_matchesRegexInsensitive pool)
+    , TastyHH.testProperty "notMatchesRegex requires the column's value to not match the pattern case sensitively" (prop_notMatchesRegex pool)
+    , TastyHH.testProperty "notMatchesRegexInsensitive requires the column's value to not match the pattern case insensitively" (prop_notMatchesRegexInsensitive pool)
     ]
 
 prop_noWhereClauseSpecified :: Orville.ConnectionPool -> HH.Property
@@ -237,6 +241,54 @@ prop_tupleNotIn pool =
               ( (int32ValueExpr 1 :| [textValueExpr "dog"])
                   :| [int32ValueExpr 2 :| [textValueExpr "dingo"]]
               )
+      }
+
+prop_matchesRegex :: Orville.ConnectionPool -> HH.Property
+prop_matchesRegex pool =
+  whereConditionTest
+    pool
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 1 "dog"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.matchesRegex barColumnRef (textValueExpr "^d.g$")
+      }
+
+prop_matchesRegexInsensitive :: Orville.ConnectionPool -> HH.Property
+prop_matchesRegexInsensitive pool =
+  whereConditionTest
+    pool
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 1 "dog", mkFooBar 3 "Dog"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.matchesRegexInsensitive barColumnRef (textValueExpr "^d.g$")
+      }
+
+prop_notMatchesRegex :: Orville.ConnectionPool -> HH.Property
+prop_notMatchesRegex pool =
+  whereConditionTest
+    pool
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.notMatchesRegex barColumnRef (textValueExpr "^d.g$")
+      }
+
+prop_notMatchesRegexInsensitive :: Orville.ConnectionPool -> HH.Property
+prop_notMatchesRegexInsensitive pool =
+  whereConditionTest
+    pool
+    WhereConditionTest
+      { whereValuesToInsert = NE.fromList [mkFooBar 1 "dog", mkFooBar 2 "dingo", mkFooBar 3 "Dog"]
+      , whereExpectedQueryResults = [mkFooBar 2 "dingo"]
+      , whereClause =
+          Just . Expr.whereClause $
+            Expr.notMatchesRegexInsensitive barColumnRef (textValueExpr "^d.g$")
       }
 
 int32ValueExpr :: Int32 -> Expr.ValueExpression

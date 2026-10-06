@@ -88,17 +88,12 @@ aggregateExpression function mbAggOption parameters mbOrderByClause mbFilter =
                     <> RawSql.space
             )
               <> RawSql.intercalate RawSql.comma parameters
-              <> maybe mempty RawSql.toRawSql mbOrderByClause
+              <> spacePrefixed mbOrderByClause
           )
-
-    filtering =
-      case mbFilter of
-        Nothing -> mempty
-        Just filterExpr -> RawSql.space <> RawSql.toRawSql filterExpr
   in
     RawSql.unsafeFromRawSql $
       fnCall
-        <> filtering
+        <> spacePrefixed mbFilter
 
 {- | Builds an aggregate expression with a * as the function argument. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
 
@@ -109,14 +104,10 @@ aggregateStarExpression function mbFilter =
   let
     parameters :: [ValueExpression.ValueExpression]
     parameters = pure . RawSql.unsafeFromRawSql $ RawSql.fromString "*"
-    filtering =
-      case mbFilter of
-        Nothing -> mempty
-        Just filterExpr -> RawSql.space <> RawSql.toRawSql filterExpr
   in
     RawSql.unsafeFromRawSql $
       RawSql.toRawSql (ValueExpression.functionCall function parameters)
-        <> filtering
+        <> spacePrefixed mbFilter
 
 {- | Builds an orderd-set aggregate expression. These have the 'OrderBy.OrderByClause' as an argument to the aggregating function. Note that it is up to the caller to ensure the validity of all of the arguments and that the resulting 'ValueExpression.ValueExpression' is used in an appropriate manner.
 
@@ -128,15 +119,11 @@ aggregateWithinGroupExpression function parameters orderByClause mbFilter =
     within =
       RawSql.fromString " WITHIN GROUP "
         <> RawSql.parenthesized (RawSql.toRawSql orderByClause)
-    filtering =
-      case mbFilter of
-        Nothing -> mempty
-        Just filterExpr -> RawSql.space <> RawSql.toRawSql filterExpr
   in
     RawSql.unsafeFromRawSql $
       RawSql.toRawSql (ValueExpression.functionCall function parameters)
         <> within
-        <> filtering
+        <> spacePrefixed mbFilter
 
 {- | The SQL @array_agg@ aggregate function.
 
@@ -500,3 +487,7 @@ singleParameterAggregateFunction ::
   ValueExpression.ValueExpression
 singleParameterAggregateFunction function mbAggOption parameter =
   aggregateExpression function mbAggOption (pure parameter)
+
+spacePrefixed :: RawSql.SqlExpression sql => Maybe sql -> RawSql.RawSql
+spacePrefixed =
+  foldMap (\sql -> RawSql.space <> RawSql.toRawSql sql)

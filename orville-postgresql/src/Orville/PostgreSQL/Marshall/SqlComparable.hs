@@ -24,6 +24,12 @@ module Orville.PostgreSQL.Marshall.SqlComparable
   , isNotNull
   , like
   , likeInsensitive
+  , matchesRegex
+  , matchesRegexInsensitive
+  , notMatchesRegex
+  , notMatchesRegexInsensitive
+  , isInSubquery
+  , isNotInSubquery
   , tupleIn
   , tupleNotIn
   , orderBySqlComparable
@@ -257,6 +263,95 @@ likeInsensitive a =
     (referenceValueExpression a)
     . Expr.valueExpression
     . SqlValue.fromText
+
+{- | Checks that the referenced item matches the given POSIX regular expression case sensitively.
+  This is commonly used with columns as you might in a @WHERE@ clause such as
+  @WHERE foo ~ '^bar'@. Frequently you would not want to use this directly, but instead
+  use 'Orville.PostgreSQL.Marshall.FieldDefinition.fieldMatchesRegex'.
+
+@since 1.2.0.0
+-}
+matchesRegex :: SqlComparable a b => a -> T.Text -> Expr.BooleanExpr
+matchesRegex a =
+  Expr.matchesRegex
+    (referenceValueExpression a)
+    . Expr.valueExpression
+    . SqlValue.fromText
+
+{- | Checks that the referenced item matches the given POSIX regular expression case insensitively.
+  This is commonly used with columns as you might in a @WHERE@ clause such as
+  @WHERE foo ~* '^bar'@. Frequently you would not want to use this directly, but instead
+  use 'Orville.PostgreSQL.Marshall.FieldDefinition.fieldMatchesRegexInsensitive'.
+
+@since 1.2.0.0
+-}
+matchesRegexInsensitive :: SqlComparable a b => a -> T.Text -> Expr.BooleanExpr
+matchesRegexInsensitive a =
+  Expr.matchesRegexInsensitive
+    (referenceValueExpression a)
+    . Expr.valueExpression
+    . SqlValue.fromText
+
+{- | Checks that the referenced item does not match the given POSIX regular expression case sensitively.
+  This is commonly used with columns as you might in a @WHERE@ clause such as
+  @WHERE foo !~ '^bar'@. Frequently you would not want to use this directly, but instead
+  use 'Orville.PostgreSQL.Marshall.FieldDefinition.fieldNotMatchesRegex'.
+
+@since 1.2.0.0
+-}
+notMatchesRegex :: SqlComparable a b => a -> T.Text -> Expr.BooleanExpr
+notMatchesRegex a =
+  Expr.notMatchesRegex
+    (referenceValueExpression a)
+    . Expr.valueExpression
+    . SqlValue.fromText
+
+{- | Checks that the referenced item does not match the given POSIX regular expression case insensitively.
+  This is commonly used with columns as you might in a @WHERE@ clause such as
+  @WHERE foo !~* '^bar'@. Frequently you would not want to use this directly, but instead
+  use 'Orville.PostgreSQL.Marshall.FieldDefinition.fieldNotMatchesRegexInsensitive'.
+
+@since 1.2.0.0
+-}
+notMatchesRegexInsensitive :: SqlComparable a b => a -> T.Text -> Expr.BooleanExpr
+notMatchesRegexInsensitive a =
+  Expr.notMatchesRegexInsensitive
+    (referenceValueExpression a)
+    . Expr.valueExpression
+    . SqlValue.fromText
+
+{- | Checks that the referenced item is in the rows returned by the given
+  subquery. This is commonly used with columns as you might in a @WHERE@ clause
+  such as @WHERE foo IN (SELECT id FROM bar)@. It is up to the caller to ensure
+  the subquery selects a single column of a compatible type, or one column per
+  writable column when the comparable is a 'Orville.PostgreSQL.SqlMarshaller'.
+  Frequently you would not want to use this directly, but instead use
+  'Orville.PostgreSQL.Marshall.FieldDefinition.fieldInSubquery'.
+
+@since 1.2.0.0
+-}
+isInSubquery :: SqlComparable a b => a -> Expr.QueryExpr -> Expr.BooleanExpr
+isInSubquery =
+  Expr.inSubquery . referenceValueExpression
+
+{- | Checks that the referenced item is not in the rows returned by the given
+  subquery. This is commonly used with columns as you might in a @WHERE@ clause
+  such as @WHERE foo NOT IN (SELECT id FROM bar)@. It is up to the caller to
+  ensure the subquery selects a single column of a compatible type, or one
+  column per writable column when the comparable is a
+  'Orville.PostgreSQL.SqlMarshaller'. When comparing a single column, if the
+  subquery returns any @NULL@, the condition is never true, so no rows match.
+  When comparing a 'Orville.PostgreSQL.SqlMarshaller' row, a returned row
+  containing @NULL@ has this effect only if all of its non-@NULL@ columns equal
+  the compared row. Frequently you would not want to use this directly, but
+  instead use
+  'Orville.PostgreSQL.Marshall.FieldDefinition.fieldNotInSubquery'.
+
+@since 1.2.0.0
+-}
+isNotInSubquery :: SqlComparable a b => a -> Expr.QueryExpr -> Expr.BooleanExpr
+isNotInSubquery =
+  Expr.notInSubquery . referenceValueExpression
 
 {- | Checks that the referenced items from the first two arguments are in the SQL values of the
   given list of tuples. This is commonly used with columns as you might in a @WHERE@ clause such as
