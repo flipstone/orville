@@ -81,15 +81,21 @@
   <section>
     <p>An N+1 query problem is a slow data access pattern. Your code runs one query
 to get a list of rows. Then it runs one more query for each of those rows. For
-100 rows, the database receives 101 separate queries. One query with a join or
-an <code>IN</code> condition gives the same data in a single round trip.</p>
+100 rows, the database receives 101 separate queries. Each query is a round
+trip: the program sends it to the database and waits for the answer. If a
+round trip takes 1 millisecond, 1,000 rows cost a full second of waiting. One
+query with a join or an <code>IN</code> condition, such as
+<code>SELECT * FROM authors WHERE id IN (1, 2, 3)</code>, gives the same data in a single
+round trip.</p>
 <p>This page explains why the N+1 problem is so easy to create, and what causes
-it. It then explains how Orville’s <code>Plan</code> API removes the cause. The
+it. It then explains how you can use Orville’s <code>Plan</code> API to stop yourself
+from accidentally creating N+1 problems in the first place. The
 <a href="../tutorials/using-plans.html">Using Plans</a> tutorial shows the API step by
-step. This page explains why plans have the shape that they have.</p>
-<p>All code on this page comes from one sample program. It uses three tables:
-authors, books, and reviews. Each book has one author, and each book has zero
-or more reviews.</p>
+step. This page explains why plans are structured the way that they are.</p>
+<p>The sample code for this page uses three tables: authors, books, and
+reviews. Each book has one author, and each book has zero or more reviews.
+You can skim the table definitions and the <code>main</code> function for now. The
+N+1 problem starts in the next section.</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -217,7 +223,7 @@ src/Main.hs : haskell
 <span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a>  <span class="op">$</span> O.mkTableDefinition <span class="st">&quot;n_plus_one_review&quot;</span> (O.primaryKey reviewIdField) reviewMarshaller</span>
 <span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
 <p>The <code>main</code> function creates the tables and adds two authors, five books, and
-six reviews:</p>
+six reviews that will be used later:</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -242,39 +248,41 @@ src/Main.hs : haskell
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    O.deleteEntities reviewTable <span class="dt">Nothing</span></span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    O.deleteEntities bookTable <span class="dt">Nothing</span></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    O.deleteEntities authorTable <span class="dt">Nothing</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mapM_</span> (O.insertEntity authorTable)</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">Author</span> <span class="dv">1</span> (T.pack <span class="st">&quot;Fyodor Dostoyevsky&quot;</span>)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Author</span> <span class="dv">2</span> (T.pack <span class="st">&quot;Frank Herbert&quot;</span>)</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>      ]</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mapM_</span> (O.insertEntity bookTable)</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">Book</span> <span class="dv">1</span> (T.pack <span class="st">&quot;Brothers Karamazov&quot;</span>) <span class="dv">1</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">2</span> (T.pack <span class="st">&quot;The Idiot&quot;</span>) <span class="dv">1</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">3</span> (T.pack <span class="st">&quot;Crime and Punishment&quot;</span>) <span class="dv">1</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">4</span> (T.pack <span class="st">&quot;Dune&quot;</span>) <span class="dv">2</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Book</span> <span class="dv">5</span> (T.pack <span class="st">&quot;God Emperor of Dune&quot;</span>) <span class="dv">2</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>      ]</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mapM_</span> (O.insertEntity reviewTable)</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>      [ <span class="dt">Review</span> <span class="dv">1</span> <span class="dv">1</span> <span class="dv">5</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">2</span> <span class="dv">1</span> <span class="dv">4</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">5</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">5</span></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">5</span> <span class="dv">4</span> <span class="dv">5</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>      , <span class="dt">Review</span> <span class="dv">6</span> <span class="dv">4</span> <span class="dv">3</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>      ]</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    O.insertEntities authorTable <span class="op">$</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Author</span> <span class="dv">1</span> (T.pack <span class="st">&quot;Fyodor Dostoyevsky&quot;</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">:|</span> [ <span class="dt">Author</span> <span class="dv">2</span> (T.pack <span class="st">&quot;Frank Herbert&quot;</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>           ]</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    O.insertEntities bookTable <span class="op">$</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Book</span> <span class="dv">1</span> (T.pack <span class="st">&quot;Brothers Karamazov&quot;</span>) <span class="dv">1</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        <span class="op">:|</span> [ <span class="dt">Book</span> <span class="dv">2</span> (T.pack <span class="st">&quot;The Idiot&quot;</span>) <span class="dv">1</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Book</span> <span class="dv">3</span> (T.pack <span class="st">&quot;Crime and Punishment&quot;</span>) <span class="dv">1</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Book</span> <span class="dv">4</span> (T.pack <span class="st">&quot;Dune&quot;</span>) <span class="dv">2</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Book</span> <span class="dv">5</span> (T.pack <span class="st">&quot;God Emperor of Dune&quot;</span>) <span class="dv">2</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>           ]</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    O.insertEntities reviewTable <span class="op">$</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>      <span class="dt">Review</span> <span class="dv">1</span> <span class="dv">1</span> <span class="dv">5</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="op">:|</span> [ <span class="dt">Review</span> <span class="dv">2</span> <span class="dv">1</span> <span class="dv">4</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Review</span> <span class="dv">3</span> <span class="dv">2</span> <span class="dv">5</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Review</span> <span class="dv">4</span> <span class="dv">4</span> <span class="dv">5</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Review</span> <span class="dv">5</span> <span class="dv">4</span> <span class="dv">5</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>           , <span class="dt">Review</span> <span class="dv">6</span> <span class="dv">4</span> <span class="dv">3</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>           ]</span>
 <span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
 <h2 id="how-an-n1-problem-starts">How an N+1 problem starts</h2>
-<p>In many object-relational mappers (ORMs), the problem hides behind normal
-field access. In Python, the code <code>book.author.name</code> looks like a read from
-memory. But the ORM can send a query to the database to load <code>author</code>. If you
-put that line in a <code>for</code> loop over all books, you get one query for the books
-and one query for each book. Nothing in the code tells you this. GraphQL
-resolvers have the same risk, because one field of a result can require a
-query of its own.</p>
-<p>If you access a record field, Orville does not load data. A <code>Book</code> is a plain
-Haskell record, and <code>bookAuthorId</code> is a plain function. Every query is an
-explicit call in a <code>MonadOrville</code> monad. This makes queries easier to see, but
-it does not stop N+1 queries. The code below gets all the books, and then it
-gets the author of each book, one book at a time:</p>
+<p>N+1 problems happen when you loop over a list of entities and execute a
+query for each one. Usually the second query is to load some other entity
+that is related to the first one. In some object-relational mappers (ORMs)
+this second query can hide behind normal field access. In Python, the code
+<code>book.author.name</code> looks like a read from memory, but the ORM can send
+a query to the database to load <code>author</code>. Access a field like this in a
+<code>for</code> loop over all books and the ORM will run a separate query for each
+book in the list.</p>
+<p>In Orville, entities are normal Haskell records, so accessing a record
+field will never cause a database query to be run. Queries can only be run
+within a <code>MonadOrville</code> monad, so a function can only run queries if the type
+makes it evident. This makes queries easier to see, but doesn’t eliminate N+1
+queries. The code below gets all the books, and then it gets the author of each
+book, one book at a time:</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -289,9 +297,10 @@ src/Main.hs : haskell
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    maybeAuthor <span class="ot">&lt;-</span> O.findEntity authorTable (bookAuthorId book)</span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pure</span> (<span class="fu">maybe</span> (T.pack <span class="st">&quot;unknown&quot;</span>) authorName maybeAuthor)</span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
-<p>To count the queries, the sample adds a SQL execution callback. Orville calls
-the callback for each SQL statement that it sends. The callback adds one to a
-counter for each <code>SELECT</code>:</p>
+<p>To help demonstrate the problem, we will need to be able to count how
+many queries the code is executing. We’ll use Orville’s SQL execution
+callbacks to do this. Orville calls the callback for each SQL statement
+that it sends. The callback adds one to a counter for each <code>SELECT</code>:</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -310,6 +319,7 @@ src/Main.hs : haskell
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  count <span class="ot">&lt;-</span> liftIO (IORef.readIORef counter)</span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pure</span> (result, count)</span>
 <span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<p>Running the code above with the counter shows how many queries it sends:</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -317,36 +327,41 @@ src/Main.hs : haskell
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span> naiveNames</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">putStrLn</span> (<span class="st">&quot;Loop: &quot;</span> <span class="op">&lt;&gt;</span> <span class="fu">show</span> naiveCount <span class="op">&lt;&gt;</span> <span class="st">&quot; SELECT queries&quot;</span>)</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
-<p>With five books, the loop sends six <code>SELECT</code> queries: one for the books and
-five for the authors. The code is correct, and with test data it is fast. With
-production data, the number of queries grows with the number of rows.</p>
-<h2 id="the-cause-is-the-loop-not-the-objects">The cause is the loop, not the objects</h2>
-<p>The same problem occurs in languages that have no objects. PL/pgSQL runs
-inside PostgreSQL and has no ORM, but a <code>FOR</code> loop can still run a query for
+<p>With five books, the loop above executes six <code>SELECT</code> queries: one
+to get the list of books and then five (one for each book) to get the
+authors. With our small set of test data this is fast. In production,
+however, there could be thousands of books and this code will run
+thousands of queries to fetch all their authors.</p>
+<h2 id="the-ability-to-loop-is-the-source-of-the-problem">The ability to loop is the source of the problem</h2>
+<p>The core issue is that we were able to loop over the results of the first
+query and run another query based on each individual result. This is
+not specific to our Haskell code in any way. Even PL/pgSQL, the language
+built into PostgreSQL, lets us write a <code>FOR</code> loop that runs a query for
 each row of another query:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode sql"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">FOR</span> book <span class="kw">IN</span> <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> books <span class="cf">LOOP</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">RETURN</span> <span class="kw">QUERY</span> <span class="kw">SELECT</span> name <span class="kw">FROM</span> authors <span class="kw">WHERE</span> <span class="kw">id</span> <span class="op">=</span> book.author_id;</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">END</span> <span class="cf">LOOP</span>;</span></code></pre></div>
-<p>The cause of the N+1 problem is one capability: the program can look at the
-rows from one query and decide which queries to run next. A monad gives you
-exactly this capability. In a <code>MonadOrville</code> block, the result of one query is
-a normal Haskell value. You can loop over it, pattern match on it, or recurse
-on it. Code review and discipline are the only protection. Each <code>forM</code>, each
-helper function that runs a query, and each call to that helper from a loop is
-a possible N+1 problem.</p>
-<p>One way to remove the problem is to remove the capability. The Datalog query
-language is an example of this idea. Datalog removes unbounded recursion from
-Prolog. As a result, every Datalog query terminates in polynomial time. A
-language with less power gives stronger guarantees. The Acadia query language
-uses the same idea to prevent N+1 queries. Evan Czaplicki describes it in
+<p>The cause of the N+1 problem is one program capability: the program can
+look at the rows from one query and decide which queries to run next. A
+monad gives you exactly this capability. Monads are what make <code>do</code> blocks
+work in Haskell, and they let each step see the result of the previous
+step and choose what to do next. In a <code>MonadOrville</code> block, the result of
+one query is a normal Haskell value. You can loop over it, pattern match
+on it, or recurse on it. Code review and discipline are the only
+protection. Each <code>forM</code>, each helper function that runs a query, and each
+call to that helper from a loop is a possible N+1 problem.</p>
+<p>One way to remove the problem is to remove this capability from
+the program. The Acadia query language prevents N+1 queries by being
+too restrictive to express them at all. Evan Czaplicki describes it in
 <a href="https://acadia.engineering/blog/solving-the-1-plus-N-query-problem">Solving the 1+N Query
 Problem</a>.</p>
-<p>Orville cannot remove loops from Haskell. Instead, it gives you a smaller
+<p>Orville cannot remove loops from Haskell. Instead, it has a more restrictive
 language inside Haskell for loading related data. That language is <code>Plan</code>.</p>
 <h2 id="a-plan-works-on-one-input-or-on-many-inputs">A plan works on one input or on many inputs</h2>
 <p>A <code>Plan scope param result</code> is a description of queries. It is not an action.
 When you execute it, it takes a <code>param</code> value and produces a <code>result</code> value.
-This plan finds the author of a book:</p>
+This plan finds the author of a book, using functions introduced in the
+<a href="../tutorials/using-plans.html">Using Plans</a> tutorial:</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -379,38 +394,54 @@ author, each book still gets its own result.</p>
 <p>The books query in this example is not part of a plan. You do not need to
 write your whole program with plans. You can use a plan at the place where
 code starts to load related data for many rows.</p>
-<h2 id="why-a-plan-cannot-become-a-loop">Why a plan cannot become a loop</h2>
-<p>A plan is safe because of the things that it does not let you do. The types
-make the restriction, so the compiler enforces it.</p>
-<p><code>Plan</code> has <code>Functor</code> and <code>Applicative</code> instances. It has no <code>Monad</code> instance.
-To use the result of one step in a later step, you use <code>Plan.bind</code>, or the
-<code>do</code> notation from <code>Orville.PostgreSQL.Plan.Syntax</code>. The value that <code>bind</code>
-gives you is not the result. It is a <code>Planned scope param a</code> value, which
-represents the result. When the plan runs for one input, the <code>Planned</code> value
-contains one result. When it runs for many inputs, it contains one result for
-each input. When <code>Plan.explain</code> looks at the plan, it contains no data at all.</p>
-<p>Your code does not know which of these cases applies. Because of this,
-<code>Planned</code> supports only two operations. You can change the values inside it
-with <code>fmap</code>, and you can give it to a later step with <code>Plan.use</code> or
-<code>Plan.using</code>. You cannot pattern match on it, and you cannot loop over it. The
-next step of the plan cannot depend on the data in a result. It can only
-receive that data as input.</p>
+<h2 id="why-a-plan-cannot-loop-over-query-results">Why a plan cannot loop over query results</h2>
+<p>A plan is safe from N+1 queries because of the things that it does not let
+you do. The types make code that could cause an N+1 query impossible to
+compile.</p>
+<p><code>Plan</code> has <code>Functor</code> and <code>Applicative</code> instances but no <code>Monad</code> instance.
+<code>Applicative</code> lets you combine steps that do not depend on each other’s
+results. <code>Monad</code> would let a step look at an earlier result and decide what
+to run next. If <code>Plan</code> had a <code>Monad</code> instance, you would be able to use
+functions like <code>mapM</code> to loop and introduce an N+1 query.</p>
+<p>To use the result of one step in a later step, you use <code>Plan.bind</code>. It is
+spiritually similar to the bind operator (<code>&gt;&gt;=</code>) from <code>Monad</code>, and
+<code>PlanSyntax.do</code> from <code>Orville.PostgreSQL.Plan.Syntax</code> uses GHC’s
+<code>QualifiedDo</code> extension so that a <code>do</code> block calls <code>Plan.bind</code> instead of
+<code>&gt;&gt;=</code>. The difference is that the value <code>bind</code> gives you is not the result.
+It is a <code>Planned scope param a</code> value, which represents the result. When the
+plan runs for one input, the <code>Planned</code> value contains one result. When it runs
+for many inputs, it contains one result for each input. When <code>Plan.explain</code>
+looks at the plan, it contains no data at all.</p>
+<p>Your code can never tell whether a <code>Planned</code> value has one or many results.
+Because of this, <code>Planned</code> supports only two operations. You can change
+the values inside it with <code>fmap</code>, and you can give it to a later step.
+<code>Plan.use</code> makes it the result of a step, and <code>Plan.using</code> makes it the
+input of another plan. You cannot pattern match on it, and
+you cannot loop over it. The next step of the plan cannot depend on the
+data in a result. It can only pass that data to a later step, which uses
+it in the SQL condition of its query.</p>
 <p>This code does not compile, because <code>books</code> is a <code>Planned</code> value and not a
 list:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- This does not compile.</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ot">authorsOneByOne ::</span> <span class="dt">Plan.Plan</span> scope <span class="dt">AuthorId</span> [<span class="dt">Author</span>]</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>authorsOneByOne <span class="ot">=</span> PlanSyntax.do</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ot">reviewsOfEachBook ::</span> <span class="dt">Plan.Plan</span> scope <span class="dt">AuthorId</span> [[<span class="dt">Review</span>]]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>reviewsOfEachBook <span class="ot">=</span> PlanSyntax.do</span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  books <span class="ot">&lt;-</span> Plan.findAll bookTable bookAuthorIdField</span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">traverse</span> (\book <span class="ot">-&gt;</span> <span class="op">...</span>) books</span></code></pre></div>
-<p>The <code>scope</code> type variable closes one more gap. <code>Plan.planList</code> and
-<code>Plan.planMany</code> accept only a plan that works for every <code>scope</code>. A plan that
-you wrote for exactly one input cannot be given to them. Thus each plan that
-you can use with many inputs is also correct with many inputs.</p>
-<p>Plans can still branch. <code>Plan.planEither</code> takes one plan for <code>Left</code> inputs and
-one plan for <code>Right</code> inputs. With many inputs, Orville splits the inputs into
-two groups and runs each plan one time for its group. <code>Plan.planMaybe</code> and
-<code>Plan.chainMaybe</code> use <code>planEither</code> for optional values. If a group is empty,
-Orville does not send its query.</p>
+<p>Instead, you give <code>books</code> to a plan written for one book that has been
+changed with <code>Plan.planList</code>. The <code>authorBibliographyPlan</code> example below
+does this with <code>Plan.using</code>.</p>
+<p>The <code>scope</code> type variable allows Orville to keep track internally of whether
+a <code>Plan</code> is being executed with one input or many. You should never write
+plans using a concrete type for <code>scope</code>. If you do, you won’t be able to use
+them with <code>Plan.planList</code>, because it requires its argument to work with
+every scope. This means a plan that only works for one input can never be run
+for many inputs by mistake.</p>
+<p>Even though they cannot directly inspect the results of queries, plans can
+still branch. <code>Plan.planEither</code> takes one plan for <code>Left</code> inputs and one
+plan for <code>Right</code> inputs. With many inputs, Orville splits the inputs into
+two groups and runs each plan one time for its group. <code>Plan.planMaybe</code>
+and <code>Plan.chainMaybe</code> use <code>planEither</code> for optional values. If a group is
+empty, Orville does not send its query.</p>
 <h2 id="plans-compose">Plans compose</h2>
 <p>A plan is a normal Haskell value. You can give it a name, put it in a module,
 and use it in larger plans. The plan below loads a book with its author and
@@ -434,9 +465,9 @@ src/Main.hs : haskell
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> Plan.use author</span>
 <span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;*&gt;</span> Plan.use reviews</span>
 <span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
-<p><code>Plan.explain</code> shows the SQL that a plan sends, without a connection to the
-database. The sample explains the plan for one book, and then the same plan
-for a list of books:</p>
+<p><code>Plan.explain</code> shows the SQL that a plan sends, without needing any
+connection to the database. The sample explains the plan for one book,
+and then the same plan for a list of books:</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -444,10 +475,13 @@ src/Main.hs : haskell
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">putStrLn</span> <span class="st">&quot;---&quot;</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mapM_</span> <span class="fu">putStrLn</span> (Plan.explain (Plan.planList bookDetailsPlan))</span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
-<p>Both explanations contain two queries. Only the <code>WHERE</code> condition changes,
-from <code>=</code> to <code>IN</code>. The number of queries comes from the structure of the plan,
-so you know it before you run the plan. You can also put this number in a unit
-test. If a change adds a query to a plan, the test fails.</p>
+<p>Both explanations contain two queries. Only the <code>WHERE</code> condition changes, from
+<code>=</code> to <code>IN</code>. The number of queries comes from the structure of the plan, so you
+know it before you run the plan. You could even put this number in a unit test
+to catch a change that adds a query to a plan. (In case you’re curious, each
+query above selects the input column from its <code>WHERE</code> condition one extra time, at the
+start of the column list. Orville reads that column to match each row to the
+input that asked for it.)</p>
 <p>Plans also nest. The next plan loads an author, the books of that author, and
 the details of each book. The inner step is <code>Plan.planList bookDetailsPlan</code>:</p>
 <div class="codeblock-label">
@@ -495,26 +529,29 @@ the loop version sends more queries. The plan version still sends four.</p>
 step in its structure, and the number of rows does not change this number.
 Some other things are not guaranteed.</p>
 <p>Orville does not make joins from plans. Each step is a separate query, and
-Orville runs the steps in order. A plan with four steps needs four round trips
-to the database. A single hand-written join can need only one. If a step must
-be a join, you can write the query yourself and add it to a plan with
-<code>Plan.planOperation</code> or <code>Plan.planSelect</code>.</p>
-<p>Plans do not guarantee that a query terminates or that it is fast. A plan is a
-Haskell value, and Haskell lets you define a plan that refers to itself
-without end. A single query can also be slow, e.g. if the column in the
-<code>WHERE</code> condition has no index. Orville does not make sure that an index exists. A very large
-input list also makes a very large <code>IN</code> condition.</p>
-<p>Plans do not protect code that is outside a plan. If you call <code>Plan.execute</code>
-inside a <code>forM</code> loop, you have an N+1 problem again. But the place that you
-must examine is smaller: the calls to <code>execute</code>, and not every function that
-loads data.</p>
+Orville runs the steps in order. A plan with four steps needs four round
+trips to the database. A single hand-written join can need only one. If
+a step of a <code>Plan</code> must be a join, you can write the query yourself and
+incorporate it into a plan with <code>Plan.planOperation</code> or <code>Plan.planSelect</code>.</p>
+<p>Plans do not guarantee that a query is fast. A single query can be slow, e.g. if
+the column in the <code>WHERE</code> condition has no index. Orville does not make sure
+that an index exists. A very large input list also makes a very large <code>IN</code>
+condition.</p>
+<p>Plans do not protect code that is outside a plan. If you call
+<code>Plan.execute</code> (or any other Orville function) inside a <code>forM</code> loop,
+you have an N+1 problem again. You still need to be vigilant to make
+sure N+1 queries don’t creep in. <code>Plan</code> gives you an answer for
+what to do when you find one.</p>
 <h2 id="summary">Summary</h2>
-<p>The N+1 problem comes from one capability: code that uses query results to
-decide which queries to run next. A <code>Plan</code> does not have this capability. The
+<p>The N+1 problem comes from one source: code that uses query results to
+decide which queries to run next. <code>Plan</code> does not let this happen. The
 results of a step are available only as <code>Planned</code> values. Your code can
 transform them and give them to later steps, but it cannot loop over them.
 Because of this restriction, Orville can run a plan for one input or for many
 inputs with the same number of queries.</p>
+<p>A good rule of thumb: when you see a loop over query results whose body runs
+another query, write a plan for one item instead. Then run it for all the
+items with <code>Plan.planList</code>.</p>
 <p>To learn the API step by step, read the <a href="../tutorials/using-plans.html">Using
 Plans</a> tutorial. For the full list of plan
 functions, read the documentation of the <code>Orville.PostgreSQL.Plan</code> module on
@@ -530,22 +567,22 @@ shell
 <div class="codeblock-label">
 output : plaintext
 </div>
-<div class="sourceCode" id="cb15"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>[&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Octavia E. Butler&quot;,&quot;Octavia E. Butler&quot;]</span>
+<div class="sourceCode" id="cb15"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>[&quot;Fyodor Dostoyevsky&quot;,&quot;Fyodor Dostoyevsky&quot;,&quot;Fyodor Dostoyevsky&quot;,&quot;Frank Herbert&quot;,&quot;Frank Herbert&quot;]</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>Loop: 6 SELECT queries</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>[&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Ursula K. Le Guin&quot;,&quot;Octavia E. Butler&quot;,&quot;Octavia E. Butler&quot;]</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>[&quot;Fyodor Dostoyevsky&quot;,&quot;Fyodor Dostoyevsky&quot;,&quot;Fyodor Dostoyevsky&quot;,&quot;Frank Herbert&quot;,&quot;Frank Herbert&quot;]</span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>Plan: 2 SELECT queries</span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>SELECT &quot;id&quot;,&quot;id&quot;,&quot;name&quot; FROM &quot;n_plus_one_author&quot; WHERE (&quot;id&quot;) = ($1)</span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>SELECT &quot;book_id&quot;,&quot;id&quot;,&quot;book_id&quot;,&quot;stars&quot; FROM &quot;n_plus_one_review&quot; WHERE (&quot;book_id&quot;) = ($1)</span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>---</span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>SELECT &quot;id&quot;,&quot;id&quot;,&quot;name&quot; FROM &quot;n_plus_one_author&quot; WHERE (&quot;id&quot;) IN ($1, $2)</span>
 <span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>SELECT &quot;book_id&quot;,&quot;id&quot;,&quot;book_id&quot;,&quot;stars&quot; FROM &quot;n_plus_one_review&quot; WHERE (&quot;book_id&quot;) IN ($1, $2)</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>Ursula K. Le Guin</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  A Wizard of Earthsea by Ursula K. Le Guin, 2 review(s)</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  The Dispossessed by Ursula K. Le Guin, 1 review(s)</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  The Left Hand of Darkness by Ursula K. Le Guin, 0 review(s)</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>Octavia E. Butler</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  Kindred by Octavia E. Butler, 3 review(s)</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  Parable of the Sower by Octavia E. Butler, 0 review(s)</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>Fyodor Dostoyevsky</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  Brothers Karamazov by Fyodor Dostoyevsky, 2 review(s)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  The Idiot by Fyodor Dostoyevsky, 1 review(s)</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  Crime and Punishment by Fyodor Dostoyevsky, 0 review(s)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>Frank Herbert</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>  Dune by Frank Herbert, 3 review(s)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>  God Emperor of Dune by Frank Herbert, 0 review(s)</span>
 <span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>Bibliographies: 4 SELECT queries</span></code></pre></div>
   </section>
 </article>

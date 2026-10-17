@@ -213,25 +213,25 @@ main = do
     O.deleteEntities reviewTable Nothing
     O.deleteEntities bookTable Nothing
     O.deleteEntities authorTable Nothing
-    mapM_ (O.insertEntity authorTable)
-      [ Author 1 (T.pack "Fyodor Dostoyevsky")
-      , Author 2 (T.pack "Frank Herbert")
-      ]
-    mapM_ (O.insertEntity bookTable)
-      [ Book 1 (T.pack "Brothers Karamazov") 1
-      , Book 2 (T.pack "The Idiot") 1
-      , Book 3 (T.pack "Crime and Punishment") 1
-      , Book 4 (T.pack "Dune") 2
-      , Book 5 (T.pack "God Emperor of Dune") 2
-      ]
-    mapM_ (O.insertEntity reviewTable)
-      [ Review 1 1 5
-      , Review 2 1 4
-      , Review 3 2 5
-      , Review 4 4 5
-      , Review 5 4 5
-      , Review 6 4 3
-      ]
+    O.insertEntities authorTable $
+      Author 1 (T.pack "Fyodor Dostoyevsky")
+        :| [ Author 2 (T.pack "Frank Herbert")
+           ]
+    O.insertEntities bookTable $
+      Book 1 (T.pack "Brothers Karamazov") 1
+        :| [ Book 2 (T.pack "The Idiot") 1
+           , Book 3 (T.pack "Crime and Punishment") 1
+           , Book 4 (T.pack "Dune") 2
+           , Book 5 (T.pack "God Emperor of Dune") 2
+           ]
+    O.insertEntities reviewTable $
+      Review 1 1 5
+        :| [ Review 2 1 4
+           , Review 3 2 5
+           , Review 4 4 5
+           , Review 5 4 5
+           , Review 6 4 3
+           ]
 -- SNIPPET: runNaiveAuthorNames
   (naiveNames, naiveCount) <- O.runOrville pool (countSelectQueries naiveAuthorNames)
   print naiveNames
