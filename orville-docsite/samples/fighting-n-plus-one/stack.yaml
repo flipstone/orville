@@ -1,0 +1,5 @@
+resolver: lts-24.12
+packages:
+- .
+extra-deps:
+  - orville-postgresql-1.1.0.0
