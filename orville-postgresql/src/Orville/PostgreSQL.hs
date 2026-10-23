@@ -112,6 +112,30 @@ module Orville.PostgreSQL
   , TableDefinition.TableDefinition
   , TableDefinition.mkTableDefinition
   , TableDefinition.mkTableDefinitionWithoutKey
+  , ReadOnlyTableDefinition.ReadOnlyTableDefinition
+  , ReadOnlyTableDefinition.mkReadOnlyTableDefinition
+  , ReadOnlyTableDefinition.readOnlyTableDefinitionReference
+  , ReadOnlyTableDefinition.readOnlyTableDefinitionMarshaller
+  , ReadOnlyTableDefinition.mapReadOnlyTableMarshaller
+  , TableReferenceDefinition.TableReferenceDefinition
+  , TableReferenceDefinition.tableReferenceDefinition
+  , TableReferenceDefinition.aliasedTableReferenceDefinition
+  , TableReferenceDefinition.tableReferenceDefinitionReference
+  , TableReferenceDefinition.tableReferenceDefinitionQualifier
+  , TableReferenceDefinition.tableReferenceDefinitionResultPrefix
+  , TableReferenceDefinition.tableReferenceDefinitionMarshaller
+  , TableReferenceDefinition.mapTableReferenceMarshaller
+  , TableReferenceDefinition.tableReferenceDefinitionReadOnlyTable
+  , TableReferenceDefinition.qualifyTableField
+  , TableReferenceDefinition.marshallTableReferenceFields
+  , TableReferenceDefinition.tableReferenceQualifiedMarshaller
+  , TableReferenceDefinition.tableReferenceRowIdFieldNames
+  , TableReferenceDefinition.joinTables
+  , TableReferenceDefinition.joinOnFieldsEqual
+  , TableReferenceDefinition.innerJoinOnFieldsEqual
+  , TableReferenceDefinition.leftJoinOnFieldsEqual
+  , TableReferenceDefinition.joinOnCondition
+  , Select.Selectable (selectTable)
   , TableDefinition.setTableSchema
   , TableDefinition.setTableComment
   , TableDefinition.tableComment
@@ -207,6 +231,7 @@ module Orville.PostgreSQL
   , SqlMarshaller.marshallPartial
   , SqlMarshaller.marshallMaybe
   , SqlMarshaller.marshallQualifyFields
+  , SqlMarshaller.marshallAliasFields
   , SqlMarshaller.prefixMarshaller
   , SqlMarshaller.foldMarshallerFields
   , SqlMarshaller.collectFromField
@@ -272,6 +297,7 @@ module Orville.PostgreSQL
   , FieldDefinition.qualifyField
   , FieldDefinition.qualifiedFieldColumnName
   , FieldDefinition.FieldQualifier (qualifyColumnName)
+  , FieldDefinition.SomeFieldQualifier (SomeFieldQualifier)
   , FieldDefinition.markAsIdentity
   , FieldDefinition.unmarkIdentity
   , Marshall.AliasName
@@ -279,6 +305,7 @@ module Orville.PostgreSQL
   , Marshall.aliasNameToString
   , Marshall.aliasNameToAliasExpr
   , Marshall.aliasNameAndFieldNameToColumnName
+  , Marshall.aliasNameAndFieldNameToResultFieldName
   , Marshall.aliasNameToByteString
   , Marshall.byteStringToAliasName
   , Marshall.marshallerConflictTargetExpr
@@ -496,6 +523,7 @@ import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
+import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Execution.Sequence as Sequence
 import qualified Orville.PostgreSQL.Execution.Transaction as Transaction
@@ -519,8 +547,10 @@ import qualified Orville.PostgreSQL.Schema.FunctionIdentifier as FunctionIdentif
 import qualified Orville.PostgreSQL.Schema.IndexDefinition as IndexDefinition
 import qualified Orville.PostgreSQL.Schema.PolicyDefinition as PolicyDefinition
 import qualified Orville.PostgreSQL.Schema.PrimaryKey as PrimaryKey
+import qualified Orville.PostgreSQL.Schema.ReadOnlyTableDefinition as ReadOnlyTableDefinition
 import qualified Orville.PostgreSQL.Schema.SequenceDefinition as SequenceDefinition
 import qualified Orville.PostgreSQL.Schema.SequenceIdentifier as SequenceIdentifier
 import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
+import qualified Orville.PostgreSQL.Schema.TableReferenceDefinition as TableReferenceDefinition
 import qualified Orville.PostgreSQL.Schema.TriggerDefinition as TriggerDefinition

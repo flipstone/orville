@@ -21,8 +21,9 @@ module Orville.PostgreSQL.Execution.Select
   , executeSelect
   , useSelect
   , selectToQueryExpr
-  , selectTable
+  , Selectable (selectTable)
   , selectMarshalledColumns
+  , selectMarshalledColumnsFromTableReference
   , rawSelectQueryExpr
   )
 where
@@ -33,7 +34,7 @@ import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
-import Orville.PostgreSQL.Schema (TableDefinition, tableMarshaller, tableName)
+import Orville.PostgreSQL.Schema (ReadOnlyTableDefinition, TableDefinition, readOnlyTableDefinitionMarshaller, readOnlyTableDefinitionReference, tableMarshaller, tableName)
 
 {- | Represents a @SELECT@ statement that can be executed against a database. A
   'Select' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that will be
@@ -79,20 +80,47 @@ useSelect ::
 useSelect f (Select marshaller query) =
   f query marshaller
 
-{- | Builds a 'Select' that will select all the columns described in the
-  'TableDefinition'. This is the safest way to build a 'Select', because table
-  name and columns are all read from the 'TableDefinition'. If the table is
-  being managed with Orville auto-migrations, this will match the schema in the
-  database.
+{- | Definitions that rows can be selected from using 'SelectOptions.SelectOptions'.
+  The entity select functions in "Orville.PostgreSQL.Execution.EntityOperations",
+  such as @findEntitiesBy@, work with any instance.
 
-@since 1.0.0.0
+@since 1.2.0.0
 -}
-selectTable ::
-  TableDefinition key writeEntity readEntity ->
-  SelectOptions.SelectOptions ->
-  Select readEntity
-selectTable tableDef =
-  selectMarshalledColumns (tableMarshaller tableDef) (tableName tableDef)
+class Selectable table where
+  {- | Builds a 'Select' that will select all the columns described by the
+    definition's marshaller from the definition's table (or tables).
+
+    This has been a method of 'Selectable' since 1.2.0.0. Before that it was a
+    function on 'TableDefinition' only.
+
+  @since 1.0.0.0
+  -}
+  selectTable ::
+    table readEntity ->
+    SelectOptions.SelectOptions ->
+    Select readEntity
+
+{- | Selects all the columns described in the 'TableDefinition'. This is the
+  safest way to build a 'Select', because table name and columns are all read
+  from the 'TableDefinition'. If the table is being managed with Orville
+  auto-migrations, this will match the schema in the database.
+
+@since 1.2.0.0
+-}
+instance Selectable (TableDefinition key writeEntity) where
+  selectTable tableDef =
+    selectMarshalledColumns (tableMarshaller tableDef) (tableName tableDef)
+
+{- | Selects the columns described by the definition's marshaller from its
+  table reference.
+
+@since 1.2.0.0
+-}
+instance Selectable ReadOnlyTableDefinition where
+  selectTable readOnlyTable =
+    selectMarshalledColumnsFromTableReference
+      (readOnlyTableDefinitionMarshaller readOnlyTable)
+      (readOnlyTableDefinitionReference readOnlyTable)
 
 {- | Builds a 'Select' that will select the columns described by the marshaller
   from the specified table. It is up to the caller to ensure that the columns
@@ -108,11 +136,26 @@ selectMarshalledColumns ::
   Expr.QualifiedOrUnqualified Expr.TableName ->
   SelectOptions.SelectOptions ->
   Select readEntity
-selectMarshalledColumns marshaller qualifiedTableName selectOptions =
+selectMarshalledColumns marshaller qualifiedTableName =
+  selectMarshalledColumnsFromTableReference marshaller (Expr.tableNameReference qualifiedTableName Nothing)
+
+{- | Builds a 'Select' that will select the columns described by the marshaller
+  from the specified table reference, which may be a single table (possibly
+  aliased) or a join of several tables. It is up to the caller to ensure that
+  the columns in the marshaller make sense for the table reference.
+
+@since 1.2.0.0
+-}
+selectMarshalledColumnsFromTableReference ::
+  AnnotatedSqlMarshaller writeEntity readEntity ->
+  Expr.TableReference ->
+  SelectOptions.SelectOptions ->
+  Select readEntity
+selectMarshalledColumnsFromTableReference marshaller tableReference selectOptions =
   rawSelectQueryExpr marshaller $
     SelectOptions.selectOptionsQueryExpr
       (Expr.selectDerivedColumns (marshallerDerivedColumns . unannotatedSqlMarshaller $ marshaller))
-      (Expr.singleTableReferenceList qualifiedTableName)
+      (Expr.tableReferenceList [tableReference])
       selectOptions
 
 {- | Builds a 'Select' that will execute the specified query and use the given

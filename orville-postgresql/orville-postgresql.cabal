@@ -44,6 +44,7 @@ library
       Orville.PostgreSQL.Execution.QueryType
       Orville.PostgreSQL.Execution.ReturningOption
       Orville.PostgreSQL.Execution.Select
+      Orville.PostgreSQL.Execution.SelectableEntityOperations
       Orville.PostgreSQL.Execution.SelectOptions
       Orville.PostgreSQL.Execution.Sequence
       Orville.PostgreSQL.Execution.Transaction
@@ -136,10 +137,12 @@ library
       Orville.PostgreSQL.Schema.IndexDefinition
       Orville.PostgreSQL.Schema.PolicyDefinition
       Orville.PostgreSQL.Schema.PrimaryKey
+      Orville.PostgreSQL.Schema.ReadOnlyTableDefinition
       Orville.PostgreSQL.Schema.SequenceDefinition
       Orville.PostgreSQL.Schema.SequenceIdentifier
       Orville.PostgreSQL.Schema.TableDefinition
       Orville.PostgreSQL.Schema.TableIdentifier
+      Orville.PostgreSQL.Schema.TableReferenceDefinition
       Orville.PostgreSQL.Schema.TriggerDefinition
       Orville.PostgreSQL.UnliftIO
   other-modules:
@@ -261,6 +264,7 @@ test-suite spec
       Test.PostgreSQLAxioms
       Test.Property
       Test.RawSql
+      Test.ReadOnlyTableDefinition
       Test.ReservedWords
       Test.SelectOptions
       Test.Sequence
