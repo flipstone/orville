@@ -55,13 +55,12 @@ import qualified Data.DList as DList
 import Data.Foldable (traverse_)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NEL
-import Data.Maybe (listToMaybe)
 
 import Orville.PostgreSQL.Batchable (BatchSize, Batchable, toBatched, toUnbatched)
 import qualified Orville.PostgreSQL.Execution.Delete as Delete
 import qualified Orville.PostgreSQL.Execution.Insert as Insert
-import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
+import qualified Orville.PostgreSQL.Execution.SelectableEntityOperations as SelectableEntityOperations
 import qualified Orville.PostgreSQL.Execution.Transaction as Transaction
 import qualified Orville.PostgreSQL.Execution.Update as Update
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -461,8 +460,10 @@ deleteAndReturnEntities entityTable whereCondition =
     Delete.deleteFromTableReturning entityTable whereCondition
 
 {- | Finds all the entities in the given table according to the specified
-  'SelectOptions.SelectOptions', which may include where conditions to
-  match, ordering specifications, etc.
+  'SelectOptions.SelectOptions', which may include where conditions to match, ordering
+  specifications, etc.
+
+  This is a type specialized version of 'SelectableEntityOperations.findSelectableEntitiesBy'.
 
 @since 1.0.0.0
 -}
@@ -471,14 +472,14 @@ findEntitiesBy ::
   Schema.TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   m [readEntity]
-findEntitiesBy entityTable selectOptions =
-  Select.executeSelect $
-    Select.selectTable entityTable selectOptions
+findEntitiesBy =
+  SelectableEntityOperations.findSelectableEntitiesBy
 
-{- | Like 'findEntitiesBy', but adds a 'LIMIT 1' to the query and then returns
-  the first item from the list. Usually when you use this you will want to
-  provide an order by clause in the 'SelectOptions.SelectOptions' because the
-  database will not guarantee ordering.
+{- | Like 'findEntitiesBy', but adds a 'LIMIT 1' to the query and then returns the first item from the
+  list. Usually when you use this you will want to provide an order by clause in the
+  'SelectOptions.SelectOptions' because the database will not guarantee ordering.
+
+  This is a type specialized version of 'SelectableEntityOperations.findFirstSelectableEntityBy'.
 
 @since 1.0.0.0
 -}
@@ -487,9 +488,8 @@ findFirstEntityBy ::
   Schema.TableDefinition key writeEntity readEntity ->
   SelectOptions.SelectOptions ->
   m (Maybe readEntity)
-findFirstEntityBy entityTable selectOptions =
-  listToMaybe
-    <$> findEntitiesBy entityTable (SelectOptions.limit 1 <> selectOptions)
+findFirstEntityBy =
+  SelectableEntityOperations.findFirstSelectableEntityBy
 
 {- | Finds a single entity by the table's primary key value.
 
@@ -507,7 +507,7 @@ findEntity entityTable key =
         (Schema.tablePrimaryKey entityTable)
         key
   in
-    findFirstEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
+    SelectableEntityOperations.findFirstSelectableEntityBy entityTable (SelectOptions.where_ primaryKeyCondition)
 
 {- | Finds multiple entities by the table's primary key.
 

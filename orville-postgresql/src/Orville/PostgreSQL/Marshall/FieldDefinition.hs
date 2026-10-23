@@ -111,6 +111,7 @@ module Orville.PostgreSQL.Marshall.FieldDefinition
   , qualifyField
   , qualifiedFieldColumnName
   , FieldQualifier (qualifyColumnName)
+  , SomeFieldQualifier (SomeFieldQualifier)
   , FieldIdentityGeneration (GeneratedAlways, GeneratedByDefault)
   , markAsIdentity
   , unmarkIdentity
@@ -1246,6 +1247,24 @@ instance FieldQualifier TableIdentifier.TableIdentifier where
 instance FieldQualifier AliasName.AliasName where
   qualifyColumnName =
     Expr.aliasQualifyColumn . AliasName.aliasNameToAliasExpr
+
+{- | Any 'FieldQualifier', with its concrete type hidden. This lets functions
+  return whichever kind of qualifier a table is referred to by (its
+  'TableIdentifier.TableIdentifier' or an 'AliasName.AliasName') without
+  exposing the choice in their types.
+
+@since 1.2.0.0
+-}
+data SomeFieldQualifier where
+  SomeFieldQualifier :: FieldQualifier qualifier => qualifier -> SomeFieldQualifier
+
+{- |
+
+@since 1.2.0.0
+-}
+instance FieldQualifier SomeFieldQualifier where
+  qualifyColumnName (SomeFieldQualifier qualifier) =
+    qualifyColumnName qualifier
 
 {- | A 'FieldDefinition' paired with a 'qualifier' so SQL references to the field
 will be qualified. A 'SqlComparable.SqlComparable' instance is provided so that

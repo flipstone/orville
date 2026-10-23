@@ -17,6 +17,8 @@ module Orville.PostgreSQL.Schema
     module Orville.PostgreSQL.Schema.TableDefinition
   , module Orville.PostgreSQL.Schema.TableIdentifier
   , module Orville.PostgreSQL.Schema.PrimaryKey
+  , module Orville.PostgreSQL.Schema.ReadOnlyTableDefinition
+  , module Orville.PostgreSQL.Schema.TableReferenceDefinition
   , module Orville.PostgreSQL.Schema.IndexDefinition
   , module Orville.PostgreSQL.Schema.ConstraintDefinition
   , module Orville.PostgreSQL.Schema.ConstraintIdentifier
@@ -47,8 +49,10 @@ import Orville.PostgreSQL.Schema.FunctionIdentifier
 import Orville.PostgreSQL.Schema.IndexDefinition
 import Orville.PostgreSQL.Schema.PolicyDefinition
 import Orville.PostgreSQL.Schema.PrimaryKey
+import Orville.PostgreSQL.Schema.ReadOnlyTableDefinition
 import Orville.PostgreSQL.Schema.SequenceDefinition
 import Orville.PostgreSQL.Schema.SequenceIdentifier
 import Orville.PostgreSQL.Schema.TableDefinition
 import Orville.PostgreSQL.Schema.TableIdentifier
+import Orville.PostgreSQL.Schema.TableReferenceDefinition
 import Orville.PostgreSQL.Schema.TriggerDefinition

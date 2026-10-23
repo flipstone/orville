@@ -42,6 +42,7 @@ import qualified Test.PgTime as PgTime
 import qualified Test.Plan as Plan
 import qualified Test.PostgreSQLAxioms as PostgreSQLAxioms
 import qualified Test.RawSql as RawSql
+import qualified Test.ReadOnlyTableDefinition as ReadOnlyTableDefinition
 import qualified Test.ReservedWords as ReservedWords
 import qualified Test.SelectOptions as SelectOptions
 import qualified Test.Sequence as Sequence
@@ -89,6 +90,7 @@ main = do
       , SqlMarshaller.sqlMarshallerTests
       , MarshallError.marshallErrorTests pool
       , TableDefinition.tableDefinitionTests pool
+      , ReadOnlyTableDefinition.readOnlyTableDefinitionTests pool
       , EntityOperations.entityOperationsTests pool
       , SelectOptions.selectOptionsTests
       , ReservedWords.reservedWordsTests pool

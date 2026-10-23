@@ -23,6 +23,7 @@ import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.ExecutionResult as Result
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.Marshall as Marshall
+import qualified Orville.PostgreSQL.Marshall.MarshallError as MarshallError
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
 import Test.Expr.TestSchema (assertEqualSqlRows)
@@ -73,6 +74,36 @@ sqlMarshallerTests =
     , TastyHH.testProperty
         "referenceValueExpression returns a row value containing references to the marshaller's write fields"
         prop_referenceValueExpression
+    , TastyHH.testProperty
+        "marshallerDerivedColumns selects unaliased fields by their column names"
+        prop_marshallerDerivedColumns_unaliased
+    , TastyHH.testProperty
+        "marshallerDerivedColumns selects qualified fields by their qualified column names without renaming"
+        prop_marshallerDerivedColumns_qualified
+    , TastyHH.testProperty
+        "marshallAliasFields selects each field qualified by the alias and renamed with the alias as a prefix"
+        prop_marshallAliasFields_derivedColumns
+    , TastyHH.testProperty
+        "marshallAliasFields decodes fields from the prefixed result columns"
+        prop_marshallAliasFields_decodes
+    , TastyHH.testProperty
+        "marshallAliasFields keeps the innermost alias when nested"
+        prop_marshallAliasFields_innermostAliasWins
+    , TastyHH.testProperty
+        "marshallAliasFields keeps an inner qualifier for references but names results with the alias"
+        prop_marshallAliasFields_innerQualifier
+    , TastyHH.testProperty
+        "marshallAliasFields composes with marshallMaybe"
+        prop_marshallAliasFields_marshallMaybe
+    , TastyHH.testProperty
+        "marshallAliasFields references fields by their qualified column names"
+        prop_marshallAliasFields_referenceValueExpression
+    , TastyHH.testProperty
+        "foldMarshallerFields reports the result names of aliased fields"
+        prop_marshallAliasFields_foldReportsResultNames
+    , TastyHH.testProperty
+        "marshallPartial reports values under their result names when aliased"
+        prop_marshallAliasFields_partialErrorValues
     ]
 
 property_returnPureValue :: HH.Property
@@ -243,9 +274,9 @@ prop_foldMarshallerFields =
     let
       addField entry fields =
         case entry of
-          Marshall.Natural _ fieldDef (Just getValue) ->
+          Marshall.Natural _ fieldDef _ (Just getValue) ->
             (Marshall.fieldName fieldDef, Marshall.fieldValueToSqlValue fieldDef (getValue foo)) : fields
-          Marshall.Natural _ _ Nothing ->
+          Marshall.Natural _ _ _ Nothing ->
             fields
           Marshall.Synthetic _ ->
             fields
@@ -354,6 +385,167 @@ prop_referenceValueExpression =
       actual = Marshall.referenceValueExpression (Marshall.marshallQualifyFields alias fooMarshaller)
 
     RawSql.toExampleBytes actual === RawSql.toExampleBytes expected
+
+prop_marshallerDerivedColumns_unaliased :: HH.Property
+prop_marshallerDerivedColumns_unaliased =
+  Property.singletonProperty $
+    assertDerivedColumnsEqual
+      "\"name\",\"size\",\"option\""
+      fooMarshaller
+
+prop_marshallerDerivedColumns_qualified :: HH.Property
+prop_marshallerDerivedColumns_qualified =
+  Property.singletonProperty $
+    assertDerivedColumnsEqual
+      "\"f\".\"name\",\"f\".\"size\",\"f\".\"option\""
+      (Marshall.marshallQualifyFields fAlias fooMarshaller)
+
+prop_marshallAliasFields_derivedColumns :: HH.Property
+prop_marshallAliasFields_derivedColumns =
+  Property.singletonProperty $
+    assertDerivedColumnsEqual
+      "\"f\".\"name\" AS \"f_name\",\"f\".\"size\" AS \"f_size\",\"f\".\"option\" AS \"f_option\""
+      (Marshall.marshallAliasFields fAlias fooMarshaller)
+
+prop_marshallAliasFields_decodes :: HH.Property
+prop_marshallAliasFields_decodes =
+  HH.property $ do
+    foos <- HH.forAll $ Gen.list (Range.linear 0 10) generateFoo
+
+    let
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "f_name", B8.pack "f_size", B8.pack "f_option"]
+          (map fooRowValues foos)
+
+    result <- marshallTestRowFromSql (Marshall.marshallAliasFields fAlias fooMarshaller) input
+    Bifunctor.first show result === Right foos
+
+prop_marshallAliasFields_innermostAliasWins :: HH.Property
+prop_marshallAliasFields_innermostAliasWins =
+  Property.singletonProperty $
+    assertDerivedColumnsEqual
+      "\"f\".\"name\" AS \"f_name\",\"f\".\"size\" AS \"f_size\",\"f\".\"option\" AS \"f_option\""
+      ( Marshall.marshallAliasFields (Marshall.stringToAliasName "outer") $
+          Marshall.marshallAliasFields fAlias fooMarshaller
+      )
+
+prop_marshallAliasFields_innerQualifier :: HH.Property
+prop_marshallAliasFields_innerQualifier =
+  Property.singletonProperty $
+    assertDerivedColumnsEqual
+      "\"f\".\"name\" AS \"outer_name\",\"f\".\"size\" AS \"outer_size\",\"f\".\"option\" AS \"outer_option\""
+      ( Marshall.marshallAliasFields (Marshall.stringToAliasName "outer") $
+          Marshall.marshallQualifyFields fAlias fooMarshaller
+      )
+
+prop_marshallAliasFields_marshallMaybe :: HH.Property
+prop_marshallAliasFields_marshallMaybe =
+  HH.property $ do
+    mbFoos <- HH.forAll $ Gen.list (Range.linear 0 10) (Gen.maybe generateFoo)
+
+    let
+      mkRowValues :: Maybe Foo -> [SqlValue.SqlValue]
+      mkRowValues mbFoo =
+        case mbFoo of
+          Nothing -> [SqlValue.sqlNull, SqlValue.sqlNull, SqlValue.sqlNull]
+          Just foo -> fooRowValues foo
+
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "f_name", B8.pack "f_size", B8.pack "f_option"]
+          (map mkRowValues mbFoos)
+
+      marshaller =
+        Marshall.marshallMaybe (Marshall.marshallAliasFields fAlias fooMarshaller)
+
+    result <- marshallTestRowFromSql marshaller input
+    Bifunctor.first show result === Right mbFoos
+
+prop_marshallAliasFields_referenceValueExpression :: HH.Property
+prop_marshallAliasFields_referenceValueExpression =
+  Property.singletonProperty $ do
+    let
+      expected =
+        Marshall.referenceValueExpression (Marshall.marshallQualifyFields fAlias fooMarshaller)
+      actual =
+        Marshall.referenceValueExpression (Marshall.marshallAliasFields fAlias fooMarshaller)
+
+    RawSql.toExampleBytes actual === RawSql.toExampleBytes expected
+
+prop_marshallAliasFields_foldReportsResultNames :: HH.Property
+prop_marshallAliasFields_foldReportsResultNames =
+  Property.singletonProperty $ do
+    let
+      collectResultName :: Marshall.MarshallerField writeEntity -> [Marshall.FieldName] -> [Marshall.FieldName]
+      collectResultName entry names =
+        case entry of
+          Marshall.Natural _ _ resultName _ -> resultName : names
+          Marshall.Synthetic _ -> names
+
+      actual =
+        Marshall.foldMarshallerFields
+          (Marshall.marshallAliasFields fAlias fooMarshaller)
+          []
+          collectResultName
+
+    actual === map Marshall.stringToFieldName ["f_name", "f_size", "f_option"]
+
+prop_marshallAliasFields_partialErrorValues :: HH.Property
+prop_marshallAliasFields_partialErrorValues =
+  HH.property $ do
+    foo <- HH.forAll generateFoo
+
+    let
+      input =
+        Result.mkFakeLibPQResult
+          [B8.pack "f_name", B8.pack "f_size", B8.pack "f_option"]
+          [fooRowValues foo]
+
+      alwaysFail :: Marshall.SqlMarshaller Foo (Either String Foo)
+      alwaysFail =
+        fmap (const (Left "always fails")) fooMarshaller
+
+      marshaller =
+        Marshall.marshallAliasFields fAlias (Marshall.marshallPartial alwaysFail)
+
+    result <- marshallTestRowFromSql marshaller input
+
+    case result of
+      Left err ->
+        case Marshall.marshallErrorDetails err of
+          MarshallError.DecodingError details ->
+            map fst (MarshallError.decodingErrorValues details)
+              === map B8.pack ["f_name", "f_size", "f_option"]
+          otherDetails -> do
+            HH.annotate (MarshallError.renderMarshallErrorDetails ErrorDetailLevel.maximalErrorDetailLevel otherDetails)
+            HH.failure
+      Right decoded -> do
+        HH.annotateShow decoded
+        HH.failure
+
+assertDerivedColumnsEqual ::
+  HH.MonadTest m =>
+  String ->
+  Marshall.SqlMarshaller writeEntity readEntity ->
+  m ()
+assertDerivedColumnsEqual expected marshaller =
+  let
+    actual =
+      Expr.selectDerivedColumns (Marshall.marshallerDerivedColumns marshaller)
+  in
+    RawSql.toExampleBytes actual === B8.pack expected
+
+fAlias :: Marshall.AliasName
+fAlias =
+  Marshall.stringToAliasName "f"
+
+fooRowValues :: Foo -> [SqlValue.SqlValue]
+fooRowValues foo =
+  [ SqlValue.fromText (fooName foo)
+  , SqlValue.fromInt32 (fooSize foo)
+  , maybe SqlValue.sqlNull SqlValue.fromBool (fooOption foo)
+  ]
 
 data Foo = Foo
   { fooName :: T.Text

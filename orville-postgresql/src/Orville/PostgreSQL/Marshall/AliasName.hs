@@ -11,6 +11,7 @@ module Orville.PostgreSQL.Marshall.AliasName
   , aliasNameToString
   , aliasNameToAliasExpr
   , aliasNameAndFieldNameToColumnName
+  , aliasNameAndFieldNameToResultFieldName
   , aliasNameToByteString
   , byteStringToAliasName
   ) where
@@ -18,9 +19,10 @@ module Orville.PostgreSQL.Marshall.AliasName
 import qualified Data.ByteString.Char8 as B8
 
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Internal.FieldName (FieldName, fieldNameToColumnName)
+import Orville.PostgreSQL.Internal.FieldName (FieldName, byteStringToFieldName, fieldNameToByteString, fieldNameToColumnName)
 
-{- | A simple type to represent the name of a field.
+{- | The name a table (or other table reference) is referred to by in a query
+  that gives it an alias, as in @FROM "book" AS "b"@.
 
 @since 1.1.0.0
 -}
@@ -46,6 +48,20 @@ aliasNameAndFieldNameToColumnName aliasName =
     (aliasNameToAliasExpr aliasName)
     . fieldNameToColumnName
 
+{- | Builds the name a column will have in a result set when its field has been
+  aliased with the given 'AliasName'. The result is the alias, followed by an
+  underscore, followed by the field name. For instance, an alias of @b@ and a
+  field named @id@ gives the result field name @b_id@.
+
+@since 1.2.0.0
+-}
+aliasNameAndFieldNameToResultFieldName :: AliasName -> FieldName -> FieldName
+aliasNameAndFieldNameToResultFieldName aliasName fieldName =
+  byteStringToFieldName $
+    aliasNameToByteString aliasName
+      <> B8.pack "_"
+      <> fieldNameToByteString fieldName
+
 {- | Constructs a 'AliasName' from a 'String'.
 
 @since 1.1.0.0
@@ -54,7 +70,7 @@ stringToAliasName :: String -> AliasName
 stringToAliasName =
   AliasName . B8.pack
 
-{- | Converts a 'AliasName' to an 'AliasExpr'.
+{- | Converts a 'AliasName' to an 'Expr.AliasExpr'.
 
 @since 1.1.0.0
 -}

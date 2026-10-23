@@ -565,8 +565,8 @@ mkInsertExpr returningOption tableDef maybeOnConflict =
     countInsertField :: MarshallerField writeEntity -> Int -> Int
     countInsertField field =
       case field of
-        Natural _qualfier _fieldDef (Just _writeAccessor) -> (+ 1)
-        Natural _qualfier _fieldDef Nothing -> id
+        Natural _qualfier _fieldDef _resultName (Just _writeAccessor) -> (+ 1)
+        Natural _qualfier _fieldDef _resultName Nothing -> id
         Synthetic _syntheticField -> id
 
     insertColumnCount =
@@ -666,7 +666,7 @@ collectSqlValue ::
   Maybe (NE.NonEmpty Expr.ValueExpression)
 collectSqlValue entry encodeRest entity =
   case entry of
-    Natural _ fieldDef (Just accessor) ->
+    Natural _ fieldDef _ (Just accessor) ->
       let
         self = Expr.valueExpression $ fieldValueToSqlValue fieldDef (accessor entity)
       in
@@ -674,7 +674,7 @@ collectSqlValue entry encodeRest entity =
           (Just $ pure self)
           (Just . NE.cons self)
           (encodeRest entity)
-    Natural _ _ Nothing ->
+    Natural _ _ _ Nothing ->
       encodeRest entity
     Synthetic _ ->
       encodeRest entity

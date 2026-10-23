@@ -16,6 +16,7 @@ executed.
 module Orville.PostgreSQL.Execution
   ( -- * High-level modules for most common tasks
     module Orville.PostgreSQL.Execution.EntityOperations
+  , module Orville.PostgreSQL.Execution.SelectableEntityOperations
   , module Orville.PostgreSQL.Execution.SelectOptions
   , module Orville.PostgreSQL.Execution.Sequence
   , module Orville.PostgreSQL.Execution.Transaction
@@ -48,6 +49,7 @@ import Orville.PostgreSQL.Execution.QueryType
 import Orville.PostgreSQL.Execution.ReturningOption
 import Orville.PostgreSQL.Execution.Select
 import Orville.PostgreSQL.Execution.SelectOptions
+import Orville.PostgreSQL.Execution.SelectableEntityOperations
 import Orville.PostgreSQL.Execution.Sequence
 import Orville.PostgreSQL.Execution.Transaction
 import Orville.PostgreSQL.Execution.Update
