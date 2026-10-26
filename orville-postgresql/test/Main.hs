@@ -23,6 +23,7 @@ import qualified Test.Expr.GroupBy as ExprGroupBy
 import qualified Test.Expr.GroupByOrderBy as ExprGroupByOrderBy
 import qualified Test.Expr.InsertUpdateDelete as ExprInsertUpdateDelete
 import qualified Test.Expr.Join as ExprJoin
+import qualified Test.Expr.MaterializedViewDefinition as ExprMaterializedViewDefinition
 import qualified Test.Expr.Math as ExprMath
 import qualified Test.Expr.OrderBy as ExprOrderBy
 import qualified Test.Expr.Policy as ExprPolicy
@@ -33,6 +34,7 @@ import qualified Test.Expr.TextSearch as ExprTextSearch
 import qualified Test.Expr.Time as ExprTime
 import qualified Test.Expr.Trigger as ExprTrigger
 import qualified Test.Expr.Vacuum as ExprVacuum
+import qualified Test.Expr.ViewDefinition as ExprViewDefinition
 import qualified Test.Expr.Where as ExprWhere
 import qualified Test.Expr.Window as ExprWindow
 import qualified Test.FieldDefinition as FieldDefinition
@@ -80,6 +82,8 @@ main = do
       , ExprTrigger.triggerTests pool
       , ExprPolicy.policyTests pool
       , ExprVacuum.vacuumTests
+      , ExprViewDefinition.viewDefinitionTests pool
+      , ExprMaterializedViewDefinition.materializedViewDefinitionTests pool
       , ExprJoin.joinTests
       , ExprTableReferenceList.tableReferenceListTests
       , ExprConditional.conditionalTests

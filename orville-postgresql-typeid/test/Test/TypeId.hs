@@ -51,7 +51,7 @@ prop_checkKindIDDefaultValue pool =
           (Orville.marshallReadOnlyField idField)
 
     insertedEntity <- HH.evalIO . Orville.runOrville pool $ do
-      Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) tableName
+      Orville.executeVoid Orville.DDLQuery $ Expr.dropTableExpr (Just Expr.ifExists) tableName Nothing
       Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateTableExpr table
       Orville.insertAndReturnEntity table ()
 

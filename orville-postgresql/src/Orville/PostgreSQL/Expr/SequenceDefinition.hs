@@ -45,6 +45,7 @@ import Data.Int (Int64)
 import Data.Maybe (catMaybes)
 import Prelude (Bool, Maybe (Just), fmap, ($), (.), (<>))
 
+import Orville.PostgreSQL.Expr.DropBehavior (DropBehavior)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified, SequenceName, functionName)
 import Orville.PostgreSQL.Expr.ValueExpression (ValueExpression, functionCall, valueExpression)
@@ -408,12 +409,13 @@ newtype DropSequenceExpr
 
 {- | Constructs a 'DropSequenceExpr' that will drop sequence with the given name.
   You may specify an 'IfExists' argument if you want to include an @IF EXISTS@
-  condition in the statement.
+  condition in the statement. The 'DropBehavior' has been taken as an argument
+  since 1.2.0.0.
 
   @since 1.0.0.0
 -}
-dropSequenceExpr :: Maybe IfExists -> QualifiedOrUnqualified SequenceName -> DropSequenceExpr
-dropSequenceExpr maybeIfExists sequenceName =
+dropSequenceExpr :: Maybe IfExists -> QualifiedOrUnqualified SequenceName -> Maybe DropBehavior -> DropSequenceExpr
+dropSequenceExpr maybeIfExists sequenceName maybeDropBehavior =
   DropSequenceExpr $
     RawSql.intercalate
       RawSql.space
@@ -421,6 +423,7 @@ dropSequenceExpr maybeIfExists sequenceName =
           [ Just (RawSql.fromString "DROP SEQUENCE")
           , fmap RawSql.toRawSql maybeIfExists
           , Just (RawSql.toRawSql sequenceName)
+          , fmap RawSql.toRawSql maybeDropBehavior
           ]
       )
 

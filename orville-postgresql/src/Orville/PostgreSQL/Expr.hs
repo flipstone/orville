@@ -81,6 +81,16 @@ module Orville.PostgreSQL.Expr
   , module Orville.PostgreSQL.Expr.Values
   , module Orville.PostgreSQL.Expr.TextSearch
   , module Orville.PostgreSQL.Expr.PolicyExpr
+  , module Orville.PostgreSQL.Expr.ViewDefinition
+  , module Orville.PostgreSQL.Expr.MaterializedViewDefinition
+  , module Orville.PostgreSQL.Expr.ColumnStorage
+  , module Orville.PostgreSQL.Expr.DropBehavior
+  , module Orville.PostgreSQL.Expr.ExtensionDependency
+  , module Orville.PostgreSQL.Expr.NoWait
+  , module Orville.PostgreSQL.Expr.Recursive
+  , module Orville.PostgreSQL.Expr.RelationOption
+  , module Orville.PostgreSQL.Expr.RoleSpecification
+  , module Orville.PostgreSQL.Expr.Temporary
   )
 where
 
@@ -90,13 +100,16 @@ where
 import Orville.PostgreSQL.Expr.Aggregate
 import Orville.PostgreSQL.Expr.BinaryOperator
 import Orville.PostgreSQL.Expr.ColumnDefinition
+import Orville.PostgreSQL.Expr.ColumnStorage
 import Orville.PostgreSQL.Expr.Comment
 import Orville.PostgreSQL.Expr.ConditionalExpr
 import Orville.PostgreSQL.Expr.Count
 import Orville.PostgreSQL.Expr.Cursor
 import Orville.PostgreSQL.Expr.DataType
 import Orville.PostgreSQL.Expr.Delete
+import Orville.PostgreSQL.Expr.DropBehavior
 import Orville.PostgreSQL.Expr.Extension
+import Orville.PostgreSQL.Expr.ExtensionDependency
 import Orville.PostgreSQL.Expr.FetchClause
 import Orville.PostgreSQL.Expr.Filter
 import Orville.PostgreSQL.Expr.Function
@@ -108,21 +121,27 @@ import Orville.PostgreSQL.Expr.Index
 import Orville.PostgreSQL.Expr.Insert
 import Orville.PostgreSQL.Expr.Join
 import Orville.PostgreSQL.Expr.LimitExpr
+import Orville.PostgreSQL.Expr.MaterializedViewDefinition
 import Orville.PostgreSQL.Expr.Math
 import Orville.PostgreSQL.Expr.Name
+import Orville.PostgreSQL.Expr.NoWait
 import Orville.PostgreSQL.Expr.OffsetExpr
 import Orville.PostgreSQL.Expr.OnConflict
 import Orville.PostgreSQL.Expr.OrReplace
 import Orville.PostgreSQL.Expr.OrderBy
 import Orville.PostgreSQL.Expr.PolicyExpr
 import Orville.PostgreSQL.Expr.Query
+import Orville.PostgreSQL.Expr.Recursive
+import Orville.PostgreSQL.Expr.RelationOption
 import Orville.PostgreSQL.Expr.ReturningExpr
+import Orville.PostgreSQL.Expr.RoleSpecification
 import Orville.PostgreSQL.Expr.RowLocking
 import Orville.PostgreSQL.Expr.Select
 import Orville.PostgreSQL.Expr.SequenceDefinition
 import Orville.PostgreSQL.Expr.TableConstraint
 import Orville.PostgreSQL.Expr.TableDefinition
 import Orville.PostgreSQL.Expr.TableReferenceList
+import Orville.PostgreSQL.Expr.Temporary
 import Orville.PostgreSQL.Expr.TextSearch
 import Orville.PostgreSQL.Expr.Time
 import Orville.PostgreSQL.Expr.Transaction
@@ -131,5 +150,6 @@ import Orville.PostgreSQL.Expr.Update
 import Orville.PostgreSQL.Expr.Vacuum
 import Orville.PostgreSQL.Expr.ValueExpression
 import Orville.PostgreSQL.Expr.Values
+import Orville.PostgreSQL.Expr.ViewDefinition
 import Orville.PostgreSQL.Expr.WhereClause
 import Orville.PostgreSQL.Expr.Window

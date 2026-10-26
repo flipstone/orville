@@ -51,7 +51,6 @@ services:
       POSTGRES_USER: orville_test
       POSTGRES_PASSWORD: orville
 
-
 volumes:
   stack-root:
   stack-work:

@@ -45,6 +45,7 @@ import Data.Maybe (catMaybes, maybeToList)
 
 import Orville.PostgreSQL.Expr.ColumnDefinition (ColumnDefinition, ColumnIdentityGeneration)
 import Orville.PostgreSQL.Expr.DataType (DataType)
+import Orville.PostgreSQL.Expr.DropBehavior (DropBehavior)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (ColumnName, ConstraintName, QualifiedOrUnqualified, TableName)
 import Orville.PostgreSQL.Expr.TableConstraint (TableConstraint)
@@ -202,14 +203,16 @@ addColumn columnDef =
     RawSql.fromString "ADD COLUMN " <> RawSql.toRawSql columnDef
 
 {- | Constructs an 'AlterTableAction' that will drop the specified column from the
-  table.
+  table. The 'DropBehavior' has been taken as an argument since 1.2.0.0.
 
   @since 1.0.0.0
 -}
-dropColumn :: ColumnName -> AlterTableAction
-dropColumn columnName =
+dropColumn :: ColumnName -> Maybe DropBehavior -> AlterTableAction
+dropColumn columnName maybeDropBehavior =
   AlterTableAction $
-    RawSql.fromString "DROP COLUMN " <> RawSql.toRawSql columnName
+    RawSql.fromString "DROP COLUMN "
+      <> RawSql.toRawSql columnName
+      <> maybe mempty ((RawSql.space <>) . RawSql.toRawSql) maybeDropBehavior
 
 {- | Constructs an 'AlterTableAction' that will add the specified constraint to the
   table.
@@ -222,14 +225,16 @@ addConstraint constraint =
     RawSql.fromString "ADD " <> RawSql.toRawSql constraint
 
 {- | Constructs an 'AlterTableAction' that will drop the specified constraint from the
-  table.
+  table. The 'DropBehavior' has been taken as an argument since 1.2.0.0.
 
   @since 1.0.0.0
 -}
-dropConstraint :: ConstraintName -> AlterTableAction
-dropConstraint constraintName =
+dropConstraint :: ConstraintName -> Maybe DropBehavior -> AlterTableAction
+dropConstraint constraintName maybeDropBehavior =
   AlterTableAction $
-    RawSql.fromString "DROP CONSTRAINT " <> RawSql.toRawSql constraintName
+    RawSql.fromString "DROP CONSTRAINT "
+      <> RawSql.toRawSql constraintName
+      <> maybe mempty ((RawSql.space <>) . RawSql.toRawSql) maybeDropBehavior
 
 {- | Constructs an 'AlterTableAction' that will alter the type of the specified
   column.
@@ -419,12 +424,13 @@ newtype DropTableExpr
       RawSql.SqlExpression
     )
 
-{- | Constructs a 'DropTableExpr' that will drop the specified table.
+{- | Constructs a 'DropTableExpr' that will drop the specified table. The
+  'DropBehavior' has been taken as an argument since 1.2.0.0.
 
   @since 1.0.0.0
 -}
-dropTableExpr :: Maybe IfExists -> QualifiedOrUnqualified TableName -> DropTableExpr
-dropTableExpr maybeIfExists tableName =
+dropTableExpr :: Maybe IfExists -> QualifiedOrUnqualified TableName -> Maybe DropBehavior -> DropTableExpr
+dropTableExpr maybeIfExists tableName maybeDropBehavior =
   DropTableExpr $
     RawSql.intercalate
       RawSql.space
@@ -432,6 +438,7 @@ dropTableExpr maybeIfExists tableName =
           [ Just (RawSql.fromString "DROP TABLE")
           , fmap RawSql.toRawSql maybeIfExists
           , Just (RawSql.toRawSql tableName)
+          , fmap RawSql.toRawSql maybeDropBehavior
           ]
       )
 
@@ -453,13 +460,18 @@ newtype TruncateTableExpr
     )
 
 {- | Constructs a 'TruncateTableExpr' that will truncate the specified tables.
+  The 'DropBehavior' is PostgreSQL's extension to @TRUNCATE@ and decides
+  whether tables with foreign key references to the truncated tables are
+  truncated as well. It has been taken as an argument since 1.2.0.0.
 
   @since 1.1.0.0
 -}
-truncateTablesExpr :: NonEmpty (QualifiedOrUnqualified TableName) -> TruncateTableExpr
-truncateTablesExpr tableNames =
+truncateTablesExpr :: NonEmpty (QualifiedOrUnqualified TableName) -> Maybe DropBehavior -> TruncateTableExpr
+truncateTablesExpr tableNames maybeDropBehavior =
   TruncateTableExpr $
-    RawSql.fromString "TRUNCATE TABLE " <> RawSql.intercalate RawSql.commaSpace tableNames
+    RawSql.fromString "TRUNCATE TABLE "
+      <> RawSql.intercalate RawSql.commaSpace tableNames
+      <> maybe mempty ((RawSql.space <>) . RawSql.toRawSql) maybeDropBehavior
 
 {- | Constructs an 'AlterTableExpr' that will enable row level security on the
   specified table.

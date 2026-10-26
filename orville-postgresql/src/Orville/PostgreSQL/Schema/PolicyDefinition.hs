@@ -295,14 +295,14 @@ policyDefinitionCommandExpr command =
     PolicyCommandUpdate -> Expr.policyCommandUpdate
     PolicyCommandDelete -> Expr.policyCommandDelete
 
-policyDefinitionRoleExpr :: PolicyRole -> Expr.PolicyRoleExpr
+policyDefinitionRoleExpr :: PolicyRole -> Expr.RoleSpecification
 policyDefinitionRoleExpr role =
   case role of
-    PolicyRolePublic -> Expr.publicPolicyRole
-    PolicyRoleCurrentRole -> Expr.currentRolePolicyRole
-    PolicyRoleCurrentUser -> Expr.currentUserPolicyRole
-    PolicyRoleSessionUser -> Expr.sessionUserPolicyRole
-    PolicyRoleNamed name -> Expr.namedPolicyRole name
+    PolicyRolePublic -> Expr.public
+    PolicyRoleCurrentRole -> Expr.currentRole
+    PolicyRoleCurrentUser -> Expr.currentUser
+    PolicyRoleSessionUser -> Expr.sessionUser
+    PolicyRoleNamed name -> Expr.roleSpecification (Expr.roleName name)
 
 {- | Builds the 'Expr.AlterPolicyExpr' that will update the given policy on the
   table identified by the 'TableIdentifier' to match the 'PolicyDefinition'.
