@@ -53,6 +53,7 @@ import qualified Test.SqlMarshaller as SqlMarshaller
 import qualified Test.SqlType as SqlType
 import qualified Test.TableDefinition as TableDefinition
 import qualified Test.Transaction as Transaction
+import qualified Test.ViewDefinition as ViewDefinition
 
 main :: IO ()
 main = do
@@ -95,6 +96,7 @@ main = do
       , MarshallError.marshallErrorTests pool
       , TableDefinition.tableDefinitionTests pool
       , ReadOnlyTableDefinition.readOnlyTableDefinitionTests pool
+      , ViewDefinition.viewDefinitionTests pool
       , EntityOperations.entityOperationsTests pool
       , SelectOptions.selectOptionsTests
       , ReservedWords.reservedWordsTests pool

@@ -120,6 +120,8 @@ module Orville.PostgreSQL
   , TableReferenceDefinition.TableReferenceDefinition
   , TableReferenceDefinition.tableReferenceDefinition
   , TableReferenceDefinition.aliasedTableReferenceDefinition
+  , TableReferenceDefinition.viewReferenceDefinition
+  , TableReferenceDefinition.aliasedViewReferenceDefinition
   , TableReferenceDefinition.tableReferenceDefinitionReference
   , TableReferenceDefinition.tableReferenceDefinitionQualifier
   , TableReferenceDefinition.tableReferenceDefinitionResultPrefix
@@ -431,6 +433,19 @@ module Orville.PostgreSQL
   , SequenceIdentifier.sequenceIdSchemaNameString
   , SequenceIdentifier.sequenceIdToString
 
+    -- * Functions for defining and working with views
+  , ViewDefinition.ViewDefinition
+  , ViewDefinition.mkViewDefinition
+  , ViewDefinition.readOnlyTableToViewDefinition
+  , ViewDefinition.viewDefinitionIdentifier
+  , ViewDefinition.viewDefinitionQuery
+  , ViewDefinition.viewDefinitionMarshaller
+  , ViewDefinition.viewDefinitionName
+  , ViewDefinition.viewDefinitionColumnNames
+  , ViewDefinition.setViewSchema
+  , ViewDefinition.mapViewMarshaller
+  , ViewDefinition.mkCreateViewExpr
+
     -- * Functions for defining and working with policies
   , PolicyDefinition.PolicyDefinition
   , PolicyDefinition.PolicyPermission (PolicyPermissive, PolicyRestrictive)
@@ -554,3 +569,4 @@ import qualified Orville.PostgreSQL.Schema.TableDefinition as TableDefinition
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
 import qualified Orville.PostgreSQL.Schema.TableReferenceDefinition as TableReferenceDefinition
 import qualified Orville.PostgreSQL.Schema.TriggerDefinition as TriggerDefinition
+import qualified Orville.PostgreSQL.Schema.ViewDefinition as ViewDefinition

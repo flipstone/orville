@@ -8,6 +8,8 @@ module Orville.PostgreSQL.Schema.TableReferenceDefinition
   ( TableReferenceDefinition
   , tableReferenceDefinition
   , aliasedTableReferenceDefinition
+  , viewReferenceDefinition
+  , aliasedViewReferenceDefinition
   , tableReferenceDefinitionReadOnlyTable
   , tableReferenceDefinitionReference
   , tableReferenceDefinitionQualifier
@@ -32,8 +34,9 @@ import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, 
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, SqlMarshaller, marshallAliasFields, marshallQualifyFields, marshallReadOnly, rowIdFieldNames, unannotatedSqlMarshaller)
 import Orville.PostgreSQL.Schema.ReadOnlyTableDefinition (ReadOnlyTableDefinition, mapReadOnlyTableMarshaller, mkReadOnlyTableDefinition, readOnlyTableDefinitionMarshaller, readOnlyTableDefinitionReference)
-import Orville.PostgreSQL.Schema.TableDefinition (TableDefinition, tableIdentifier, tableMarshaller, tableName)
+import Orville.PostgreSQL.Schema.TableDefinition (TableDefinition, tableIdentifier, tableMarshaller)
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
+import Orville.PostgreSQL.Schema.ViewDefinition (ViewDefinition, viewDefinitionIdentifier, viewDefinitionMarshaller)
 
 {- | Contains the definition of a SQL item, such as a table, for Orville to use generating queries
    that involve one or more such items. For example this is the building block for creating queries
@@ -43,7 +46,8 @@ import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
     from the result set when entities are queried.
 
   See 'tableReferenceDefinition' and 'aliasedTableReferenceDefinition' for constructing values of
-  this type.
+  this type from a 'TableDefinition', and 'viewReferenceDefinition' and
+  'aliasedViewReferenceDefinition' for constructing them from a 'ViewDefinition'.
 
 @since 1.2.0.0
 -}
@@ -128,26 +132,7 @@ tableReferenceDefinition ::
   TableDefinition key writeEntity readEntity ->
   TableReferenceDefinition readEntity
 tableReferenceDefinition tableDef =
-  let
-    tableId =
-      tableIdentifier tableDef
-
-    unqualifiedName =
-      TableIdentifier.tableIdUnqualifiedNameString tableId
-
-    resultPrefix =
-      case TableIdentifier.tableIdSchemaNameString tableId of
-        Nothing -> unqualifiedName
-        Just schemaName -> schemaName <> "_" <> unqualifiedName
-  in
-    TableReferenceDefinition
-      { i_tableReferenceDefinitionReadOnlyTable =
-          mkReadOnlyTableDefinition
-            (Expr.tableNameReference (tableName tableDef) Nothing)
-            (tableMarshaller tableDef)
-      , i_tableReferenceDefinitionQualifier = SomeFieldQualifier tableId
-      , i_tableReferenceDefinitionResultPrefix = AliasName.stringToAliasName resultPrefix
-      }
+  identifierReferenceDefinition (tableIdentifier tableDef) (tableMarshaller tableDef)
 
 {- | Builds a 'TableReferenceDefinition' for a 'TableDefinition' where the it will be refered to by an
   alias, as in @"book" AS "b"@. Column references are qualified by the alias and result columns are
@@ -161,11 +146,74 @@ aliasedTableReferenceDefinition ::
   TableDefinition key writeEntity readEntity ->
   TableReferenceDefinition readEntity
 aliasedTableReferenceDefinition alias tableDef =
+  aliasedIdentifierReferenceDefinition alias (tableIdentifier tableDef) (tableMarshaller tableDef)
+
+{- | Builds a 'TableReferenceDefinition' from a 'ViewDefinition' using its own name, in the same way
+  that 'tableReferenceDefinition' does for a table: column references are qualified by the view's
+  'TableIdentifier.TableIdentifier' and result columns are prefixed with the view name, preceded by
+  the schema name when there is one.
+
+  The fields of the view's marshaller must refer to the view's columns by their own names, as they
+  do when the marshaller was written for the view or built from a single table. The marshaller of a
+  view built with 'Orville.PostgreSQL.Schema.readOnlyTableToViewDefinition' from a join qualifies
+  and prefixes its fields for the tables of the join, which are not in scope when selecting from
+  the view.
+
+@since 1.2.0.0
+-}
+viewReferenceDefinition ::
+  ViewDefinition readEntity ->
+  TableReferenceDefinition readEntity
+viewReferenceDefinition viewDef =
+  identifierReferenceDefinition (viewDefinitionIdentifier viewDef) (viewDefinitionMarshaller viewDef)
+
+{- | Builds a 'TableReferenceDefinition' for a 'ViewDefinition' where it will be referred to by an
+  alias, in the same way that 'aliasedTableReferenceDefinition' does for a table. The view's
+  marshaller is subject to the same requirement as for 'viewReferenceDefinition'.
+
+@since 1.2.0.0
+-}
+aliasedViewReferenceDefinition ::
+  AliasName.AliasName ->
+  ViewDefinition readEntity ->
+  TableReferenceDefinition readEntity
+aliasedViewReferenceDefinition alias viewDef =
+  aliasedIdentifierReferenceDefinition alias (viewDefinitionIdentifier viewDef) (viewDefinitionMarshaller viewDef)
+
+identifierReferenceDefinition ::
+  TableIdentifier.TableIdentifier ->
+  AnnotatedSqlMarshaller writeEntity readEntity ->
+  TableReferenceDefinition readEntity
+identifierReferenceDefinition tableId marshaller =
+  let
+    unqualifiedName =
+      TableIdentifier.tableIdUnqualifiedNameString tableId
+
+    resultPrefix =
+      case TableIdentifier.tableIdSchemaNameString tableId of
+        Nothing -> unqualifiedName
+        Just schemaName -> schemaName <> "_" <> unqualifiedName
+  in
+    TableReferenceDefinition
+      { i_tableReferenceDefinitionReadOnlyTable =
+          mkReadOnlyTableDefinition
+            (Expr.tableNameReference (TableIdentifier.tableIdQualifiedName tableId) Nothing)
+            marshaller
+      , i_tableReferenceDefinitionQualifier = SomeFieldQualifier tableId
+      , i_tableReferenceDefinitionResultPrefix = AliasName.stringToAliasName resultPrefix
+      }
+
+aliasedIdentifierReferenceDefinition ::
+  AliasName.AliasName ->
+  TableIdentifier.TableIdentifier ->
+  AnnotatedSqlMarshaller writeEntity readEntity ->
+  TableReferenceDefinition readEntity
+aliasedIdentifierReferenceDefinition alias tableId marshaller =
   TableReferenceDefinition
     { i_tableReferenceDefinitionReadOnlyTable =
         mkReadOnlyTableDefinition
-          (Expr.tableNameReference (tableName tableDef) (Just (AliasName.aliasNameToAliasExpr alias)))
-          (tableMarshaller tableDef)
+          (Expr.tableNameReference (TableIdentifier.tableIdQualifiedName tableId) (Just (AliasName.aliasNameToAliasExpr alias)))
+          marshaller
     , i_tableReferenceDefinitionQualifier = SomeFieldQualifier alias
     , i_tableReferenceDefinitionResultPrefix = alias
     }

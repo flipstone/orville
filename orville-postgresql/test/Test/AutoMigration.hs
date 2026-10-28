@@ -29,6 +29,7 @@ import qualified Test.Tasty.Hedgehog as TastyHH
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
+import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
@@ -106,6 +107,36 @@ autoMigrationTests pool =
     , TastyHH.testProperty
         "Alters modified sequences"
         (prop_altersModifiedSequences pool)
+    , TastyHH.testProperty
+        "Creates missing views after the tables they select from"
+        (prop_createsMissingViews pool)
+    , TastyHH.testProperty
+        "Drops requested views"
+        (prop_dropsRequestedViews pool)
+    , TastyHH.testProperty
+        "Does not recreate an existing view whose definition has changed"
+        (prop_ignoresChangedViewDefinitions pool)
+    , TastyHH.testProperty
+        "Drops a view before dropping a column it selected"
+        (prop_dropsChangedViewBeforeDroppingColumns pool)
+    , TastyHH.testProperty
+        "Recreates an unchanged view when the type of a column it selects changes"
+        (prop_recreatesViewsWhenSourceColumnTypeChanges pool)
+    , TastyHH.testProperty
+        "Drops a dependent view before the view it selects from when their source table changes"
+        (prop_dropsDependentViewsBeforeBaseViews pool)
+    , TastyHH.testProperty
+        "Recreates a view before a function it uses is dropped"
+        (prop_recreatesViewsWhenFunctionsAreDropped pool)
+    , TastyHH.testProperty
+        "Drops requested views in reverse schema item order with other views"
+        (prop_dropsRequestedViewsInReverseItemOrder pool)
+    , TastyHH.testProperty
+        "An error is raised for view definitions with bind parameters"
+        (prop_invalidViewDefinitionsRaiseError pool)
+    , TastyHH.testProperty
+        "An error is raised when a table has the name of a view"
+        (prop_viewNameUsedByTableRaisesError pool)
     , TastyHH.testProperty
         "Adds and removes named indexes"
         (prop_addsAndRemovesMixedIndexes pool)
@@ -1286,6 +1317,425 @@ prop_dropsRequestedSequences pool =
     length (AutoMigration.migrationPlanSteps firstTimePlan) === 1
     PgAssert.assertSequenceDoesNotExist pool (Orville.sequenceIdUnqualifiedNameString sequenceId)
     migrationPlanStepStrings secondTimePlan === []
+
+prop_createsMissingViews :: Orville.ConnectionPool -> HH.Property
+prop_createsMissingViews pool =
+  Property.singletonProperty $ do
+    let
+      schemaItems =
+        [AutoMigration.SchemaView fooView, AutoMigration.SchemaTable Foo.table]
+
+    (firstTimePlan, secondTimePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
+        firstTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+        mbView <- describeView viewTestViewName
+        pure (firstTimePlan, secondTimePlan, mbView)
+
+    case migrationPlanStepStrings firstTimePlan of
+      [createTable, createView] -> do
+        HH.assert $ B8.isPrefixOf (B8.pack "CREATE TABLE \"foo\"") createTable
+        createView === B8.pack "CREATE VIEW \"migration_test_view\" AS SELECT \"id\",\"name\",\"age\" FROM \"foo\""
+      steps -> do
+        HH.annotateShow steps
+        HH.failure
+
+    assertViewColumnNames mbView ["id", "name", "age"]
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_dropsRequestedViews :: Orville.ConnectionPool -> HH.Property
+prop_dropsRequestedViews pool =
+  Property.singletonProperty $ do
+    let
+      schemaItems =
+        [AutoMigration.SchemaDropView (Orville.viewDefinitionIdentifier fooView)]
+
+    (firstTimePlan, secondTimePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable Foo.table]
+        Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateViewExpr fooView Nothing
+        firstTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions firstTimePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions schemaItems
+        mbView <- describeView viewTestViewName
+        pure (firstTimePlan, secondTimePlan, mbView)
+
+    migrationPlanStepStrings firstTimePlan === [B8.pack "DROP VIEW \"migration_test_view\""]
+    HH.assert (Maybe.isNothing mbView)
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_ignoresChangedViewDefinitions :: Orville.ConnectionPool -> HH.Property
+prop_ignoresChangedViewDefinitions pool =
+  Property.singletonProperty $ do
+    (changePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql Foo.table
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable Foo.table, AutoMigration.SchemaView fooNamesView]
+        changePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaTable Foo.table, AutoMigration.SchemaView fooView]
+        mbView <- describeView viewTestViewName
+        pure (changePlan, mbView)
+
+    migrationPlanStepStrings changePlan === []
+    assertViewColumnNames mbView ["name"]
+
+prop_dropsChangedViewBeforeDroppingColumns :: Orville.ConnectionPool -> HH.Property
+prop_dropsChangedViewBeforeDroppingColumns pool =
+  Property.singletonProperty $ do
+    let
+      originalTable =
+        mkIntListTable viewSourceTableName ["foo", "bar"]
+
+      narrowedTable =
+        Orville.dropColumns ["bar"] (mkIntListTable viewSourceTableName ["foo"])
+
+      originalItems =
+        [AutoMigration.SchemaTable originalTable, AutoMigration.SchemaView (mkSourceView originalTable)]
+
+      narrowedItems =
+        [AutoMigration.SchemaTable narrowedTable, AutoMigration.SchemaView (mkSourceView narrowedTable)]
+
+    (changePlan, secondTimePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTable
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions originalItems
+        changePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions narrowedItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions changePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions narrowedItems
+        mbView <- describeView viewSourceViewName
+        pure (changePlan, secondTimePlan, mbView)
+
+    migrationPlanStepStrings changePlan
+      === [ B8.pack "DROP VIEW \"migration_test_source_view\""
+          , B8.pack "ALTER TABLE \"migration_test_view_source\" DROP COLUMN \"bar\""
+          , B8.pack "CREATE VIEW \"migration_test_source_view\" AS SELECT \"foo\" FROM \"migration_test_view_source\""
+          ]
+
+    assertViewColumnNames mbView ["foo"]
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_recreatesViewsWhenSourceColumnTypeChanges :: Orville.ConnectionPool -> HH.Property
+prop_recreatesViewsWhenSourceColumnTypeChanges pool =
+  Property.singletonProperty $ do
+    let
+      integerTable =
+        mkIntListTable viewSourceTableName ["foo"]
+
+      bigIntegerTable :: Orville.TableDefinition Orville.NoKey Int64 Int64
+      bigIntegerTable =
+        Orville.mkTableDefinitionWithoutKey viewSourceTableName (Orville.marshallField id (Orville.bigIntegerField "foo"))
+
+      integerItems =
+        [AutoMigration.SchemaTable integerTable, AutoMigration.SchemaView (mkSourceView integerTable)]
+
+      bigIntegerItems =
+        [AutoMigration.SchemaTable bigIntegerTable, AutoMigration.SchemaView (mkSourceView bigIntegerTable)]
+
+    (changePlan, secondTimePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql integerTable
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions integerItems
+        changePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions bigIntegerItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions changePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions bigIntegerItems
+        mbView <- describeView viewSourceViewName
+        pure (changePlan, secondTimePlan, mbView)
+
+    migrationPlanStepStrings changePlan
+      === [ B8.pack "DROP VIEW \"migration_test_source_view\""
+          , B8.pack "ALTER TABLE \"migration_test_view_source\" ALTER COLUMN \"foo\" TYPE BIGINT USING \"foo\"::BIGINT"
+          , B8.pack "CREATE VIEW \"migration_test_source_view\" AS SELECT \"foo\" FROM \"migration_test_view_source\""
+          ]
+
+    assertViewColumnNames mbView ["foo"]
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_dropsDependentViewsBeforeBaseViews :: Orville.ConnectionPool -> HH.Property
+prop_dropsDependentViewsBeforeBaseViews pool =
+  Property.singletonProperty $ do
+    let
+      originalTable =
+        mkIntListTable viewSourceTableName ["foo"]
+
+      widenedTable =
+        mkIntListTable viewSourceTableName ["foo", "bar"]
+
+      originalItems =
+        [AutoMigration.SchemaTable originalTable, AutoMigration.SchemaView (mkSourceView originalTable), AutoMigration.SchemaView (mkDependentView (mkSourceView originalTable))]
+
+      widenedItems =
+        [AutoMigration.SchemaTable widenedTable, AutoMigration.SchemaView (mkSourceView widenedTable), AutoMigration.SchemaView (mkDependentView (mkSourceView widenedTable))]
+
+    (changePlan, secondTimePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTable
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions originalItems
+        changePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions widenedItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions changePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions widenedItems
+        mbView <- describeView viewDependentViewName
+        pure (changePlan, secondTimePlan, mbView)
+
+    migrationPlanStepStrings changePlan
+      === [ B8.pack "DROP VIEW \"migration_test_dependent_view\""
+          , B8.pack "DROP VIEW \"migration_test_source_view\""
+          , B8.pack "ALTER TABLE \"migration_test_view_source\" ADD COLUMN \"bar\" INT NOT NULL"
+          , B8.pack "CREATE VIEW \"migration_test_source_view\" AS SELECT \"foo\",\"bar\" FROM \"migration_test_view_source\""
+          , B8.pack "CREATE VIEW \"migration_test_dependent_view\" AS SELECT \"foo\",\"bar\" FROM \"migration_test_source_view\""
+          ]
+
+    assertViewColumnNames mbView ["foo", "bar"]
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_recreatesViewsWhenFunctionsAreDropped :: Orville.ConnectionPool -> HH.Property
+prop_recreatesViewsWhenFunctionsAreDropped pool =
+  Property.singletonProperty $ do
+    let
+      sourceTable =
+        mkIntListTable viewSourceTableName ["foo"]
+
+      functionDef =
+        Orville.mkFunction
+          viewFunctionName
+          []
+          Expr.returnTypeText
+          Schema.BeforeTableMigration
+          Orville.plpgsql
+          "BEGIN return 'from function'; END"
+
+      mkTextView :: String -> Orville.ViewDefinition T.Text
+      mkTextView selectSql =
+        Orville.mkViewDefinition
+          viewSourceViewName
+          (RawSql.unsafeSqlExpression selectSql)
+          (Orville.annotateSqlMarshallerEmptyAnnotation (Orville.marshallField id (Orville.unboundedTextField "name")))
+
+      originalItems =
+        [ AutoMigration.SchemaFunction functionDef
+        , AutoMigration.SchemaTable sourceTable
+        , AutoMigration.SchemaView (mkTextView ("SELECT " <> viewFunctionName <> "() AS name FROM " <> viewSourceTableName))
+        ]
+
+      changedItems =
+        [ AutoMigration.SchemaDropFunction (Orville.functionIdentifier functionDef)
+        , AutoMigration.SchemaTable sourceTable
+        , AutoMigration.SchemaView (mkTextView ("SELECT 'literal' AS name FROM " <> viewSourceTableName))
+        ]
+
+    (changePlan, secondTimePlan, mbView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql sourceTable
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions originalItems
+        changePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions changedItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions changePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions changedItems
+        mbView <- describeView viewSourceViewName
+        pure (changePlan, secondTimePlan, mbView)
+
+    migrationPlanStepStrings changePlan
+      === [ B8.pack "DROP VIEW \"migration_test_source_view\""
+          , B8.pack "DROP FUNCTION \"migration_test_view_function\" CASCADE"
+          , B8.pack "CREATE VIEW \"migration_test_source_view\" AS SELECT 'literal' AS name FROM migration_test_view_source"
+          ]
+
+    assertViewColumnNames mbView ["name"]
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_dropsRequestedViewsInReverseItemOrder :: Orville.ConnectionPool -> HH.Property
+prop_dropsRequestedViewsInReverseItemOrder pool =
+  Property.singletonProperty $ do
+    let
+      originalTable =
+        mkIntListTable viewSourceTableName ["foo"]
+
+      widenedTable =
+        mkIntListTable viewSourceTableName ["foo", "bar"]
+
+      originalItems =
+        [AutoMigration.SchemaTable originalTable, AutoMigration.SchemaView (mkSourceView originalTable), AutoMigration.SchemaView (mkDependentView (mkSourceView originalTable))]
+
+      changedItems =
+        [AutoMigration.SchemaTable widenedTable, AutoMigration.SchemaView (mkSourceView widenedTable), AutoMigration.SchemaDropView (Orville.unqualifiedNameToTableId viewDependentViewName)]
+
+    (changePlan, secondTimePlan, mbDependentView) <-
+      withViewTestCleanup pool $ do
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql originalTable
+        AutoMigration.autoMigrateSchema AutoMigration.defaultOptions originalItems
+        changePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions changedItems
+        AutoMigration.executeMigrationPlan AutoMigration.defaultOptions changePlan
+        secondTimePlan <- AutoMigration.generateMigrationPlan AutoMigration.defaultOptions changedItems
+        mbDependentView <- describeView viewDependentViewName
+        pure (changePlan, secondTimePlan, mbDependentView)
+
+    migrationPlanStepStrings changePlan
+      === [ B8.pack "DROP VIEW \"migration_test_dependent_view\""
+          , B8.pack "DROP VIEW \"migration_test_source_view\""
+          , B8.pack "ALTER TABLE \"migration_test_view_source\" ADD COLUMN \"bar\" INT NOT NULL"
+          , B8.pack "CREATE VIEW \"migration_test_source_view\" AS SELECT \"foo\",\"bar\" FROM \"migration_test_view_source\""
+          ]
+
+    HH.assert (Maybe.isNothing mbDependentView)
+    migrationPlanStepStrings secondTimePlan === []
+
+prop_invalidViewDefinitionsRaiseError :: Orville.ConnectionPool -> HH.Property
+prop_invalidViewDefinitionsRaiseError pool =
+  Property.singletonProperty $ do
+    let
+      viewWithParameter =
+        Orville.mkViewDefinition
+          viewTestViewName
+          ( Execution.selectToQueryExpr $
+              Execution.selectTable Foo.table (Orville.where_ (Orville.fieldEquals Foo.fooAgeField 21))
+          )
+          (Orville.tableMarshaller Foo.table)
+
+    result <-
+      withViewTestCleanup pool $
+        ExSafe.try $
+          AutoMigration.generateMigrationPlan
+            AutoMigration.defaultOptions
+            [AutoMigration.SchemaTable Foo.table, AutoMigration.SchemaView viewWithParameter]
+
+    assertMigrationDataError "InvalidViewDefinition" result
+
+prop_viewNameUsedByTableRaisesError :: Orville.ConnectionPool -> HH.Property
+prop_viewNameUsedByTableRaisesError pool =
+  Property.singletonProperty $ do
+    let
+      tableWithViewName =
+        mkIntListTable viewTestViewName ["foo"]
+
+      dropTableWithViewName =
+        Orville.executeVoid Orville.DDLQuery $ TestTable.dropTableDefSql tableWithViewName
+
+    (viewResult, dropViewResult) <-
+      HH.evalIO $
+        ExSafe.finally
+          ( Orville.runOrville pool $ do
+              dropTableWithViewName
+              dropViewTestViews
+              AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [AutoMigration.SchemaTable tableWithViewName]
+              viewResult <-
+                ExSafe.try $
+                  AutoMigration.generateMigrationPlan
+                    AutoMigration.defaultOptions
+                    [AutoMigration.SchemaView fooView]
+              dropViewResult <-
+                ExSafe.try $
+                  AutoMigration.generateMigrationPlan
+                    AutoMigration.defaultOptions
+                    [AutoMigration.SchemaDropView (Orville.viewDefinitionIdentifier fooView)]
+              pure (viewResult, dropViewResult)
+          )
+          (Orville.runOrville pool dropTableWithViewName)
+
+    assertMigrationDataError "RelationIsNotAView" viewResult
+    assertMigrationDataError "RelationIsNotAView" dropViewResult
+
+assertMigrationDataError ::
+  String ->
+  Either AutoMigration.MigrationDataError AutoMigration.MigrationPlan ->
+  HH.PropertyT IO ()
+assertMigrationDataError expectedConstructor result =
+  case result of
+    Left err -> do
+      HH.annotate (show err)
+      HH.assert $ List.isInfixOf expectedConstructor (show err)
+    Right plan -> do
+      HH.annotate ("Expected plan generation to fail, but got steps: " <> show (migrationPlanStepStrings plan))
+      HH.failure
+
+viewTestViewName :: String
+viewTestViewName =
+  "migration_test_view"
+
+viewDependentViewName :: String
+viewDependentViewName =
+  "migration_test_dependent_view"
+
+viewSourceViewName :: String
+viewSourceViewName =
+  "migration_test_source_view"
+
+viewSourceTableName :: String
+viewSourceTableName =
+  "migration_test_view_source"
+
+viewFunctionName :: String
+viewFunctionName =
+  "migration_test_view_function"
+
+fooView :: Orville.ViewDefinition Foo.Foo
+fooView =
+  Orville.mkViewDefinition
+    viewTestViewName
+    (Execution.selectToQueryExpr (Execution.selectTable Foo.table Orville.emptySelectOptions))
+    (Orville.tableMarshaller Foo.table)
+
+fooNamesView :: Orville.ViewDefinition Foo.FooName
+fooNamesView =
+  Orville.mkViewDefinition
+    viewTestViewName
+    ( Execution.selectToQueryExpr $
+        Execution.selectMarshalledColumns
+          (Orville.annotateSqlMarshallerEmptyAnnotation (Orville.marshallField id Foo.fooNameField))
+          (Orville.tableName Foo.table)
+          Orville.emptySelectOptions
+    )
+    (Orville.annotateSqlMarshallerEmptyAnnotation (Orville.marshallField id Foo.fooNameField))
+
+mkDependentView :: Orville.ViewDefinition readEntity -> Orville.ViewDefinition readEntity
+mkDependentView baseView =
+  Orville.mkViewDefinition
+    viewDependentViewName
+    (Execution.selectToQueryExpr (Execution.selectTable baseView Orville.emptySelectOptions))
+    (Orville.viewDefinitionMarshaller baseView)
+
+mkSourceView :: Orville.TableDefinition key writeEntity readEntity -> Orville.ViewDefinition readEntity
+mkSourceView tableDef =
+  Orville.mkViewDefinition
+    viewSourceViewName
+    (Execution.selectToQueryExpr (Execution.selectTable tableDef Orville.emptySelectOptions))
+    (Orville.tableMarshaller tableDef)
+
+describeView :: String -> Orville.Orville (Maybe PgCatalog.RelationDescription)
+describeView viewName =
+  let
+    catalogNames =
+      (String.fromString "public", String.fromString viewName)
+  in
+    fmap (PgCatalog.lookupRelationOfKind PgCatalog.View catalogNames) $
+      PgCatalog.describeDatabase [catalogNames] [] []
+
+assertViewColumnNames :: Maybe PgCatalog.RelationDescription -> [String] -> HH.PropertyT IO ()
+assertViewColumnNames mbView expectedColumns =
+  case mbView of
+    Nothing -> do
+      HH.annotate "Expected the view to exist, but it was not found"
+      HH.failure
+    Just relation ->
+      PgAssert.assertColumnNamesEqual relation expectedColumns
+
+{- The foo table is shared with other tests, which drop and recreate it, so
+   views over it must be gone before the table is dropped and again when a
+   test finishes, whether or not it succeeded.
+-}
+withViewTestCleanup :: Orville.ConnectionPool -> Orville.Orville a -> HH.PropertyT IO a
+withViewTestCleanup pool operation =
+  HH.evalIO $
+    ExSafe.finally
+      (Orville.runOrville pool (dropViewTestViews *> operation))
+      (Orville.runOrville pool dropViewTestViews)
+
+dropViewTestViews :: Orville.Orville ()
+dropViewTestViews = do
+  Fold.traverse_
+    (\name -> Orville.executeVoid Orville.DDLQuery $ Expr.dropViewExpr (Just Expr.ifExists) (pure (Expr.unqualified (Expr.tableName name))) Nothing)
+    [viewDependentViewName, viewTestViewName, viewSourceViewName]
+  Orville.executeVoid Orville.DDLQuery $
+    Expr.dropFunction (Just Expr.ifExists) (Expr.unqualified (Expr.functionName viewFunctionName)) (Just Expr.cascade)
 
 prop_altersModifiedSequences :: Orville.ConnectionPool -> HH.Property
 prop_altersModifiedSequences pool =

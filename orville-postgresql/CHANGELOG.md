@@ -98,6 +98,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `ColumnStorage` and
   `CompressionMethod`, `ExtensionDependency`, `NoWait`, and the names
   `RoleName`, `TablespaceName` and `AccessMethodName`.
+- `ViewDefinition` describes a SQL view: a `TableIdentifier`-style name
+  (schema-qualifiable with `setViewSchema`), the `QueryExpr` that defines it
+  and a read-only marshaller for its columns. It is built with
+  `mkViewDefinition`, or with `readOnlyTableToViewDefinition` from a
+  `ReadOnlyTableDefinition`, whose select becomes the view's query and whose
+  marshaller becomes the view's marshaller. `viewDefinitionColumnNames` lists
+  the view's columns (the result names of the marshaller's fields),
+  `mapViewMarshaller` reshapes the decoded entity and `mkCreateViewExpr`
+  builds the `CREATE VIEW` statement. A `ViewDefinition` is `Selectable`, so
+  `findSelectableEntitiesBy` selects its columns from the view, and
+  `viewReferenceDefinition` and `aliasedViewReferenceDefinition` build the
+  `TableReferenceDefinition` for joining it like a table.
+- Auto-migration of views: `SchemaView` creates a view from a
+  `ViewDefinition` and `SchemaDropView` drops one. As with triggers, a view
+  is identified by name only, so a change to the definition of an existing
+  view is applied by renaming the view. A view is dropped and created again
+  when the same migration alters or drops an existing table or function.
+  Views are created after tables, columns and functions in schema item
+  order and dropped before other changes in reverse order, so a view or
+  drop item that selects from another view is listed after it. Plan
+  generation fails with `MigrationDataError` for a view whose query
+  contains bind parameters, or when a relation of another kind has the
+  view's name.
 - POSIX regular expression matching: `fieldMatchesRegex`,
   `fieldMatchesRegexInsensitive`, `fieldNotMatchesRegex` and
   `fieldNotMatchesRegexInsensitive`, with the corresponding `SqlComparable`
