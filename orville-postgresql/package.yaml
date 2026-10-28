@@ -42,6 +42,7 @@ library:
     - Orville.PostgreSQL.Execution.Select
     - Orville.PostgreSQL.Execution.SelectableEntityOperations
     - Orville.PostgreSQL.Execution.SelectOptions
+    - Orville.PostgreSQL.Execution.MaterializedView
     - Orville.PostgreSQL.Execution.Sequence
     - Orville.PostgreSQL.Execution.Transaction
     - Orville.PostgreSQL.Execution.Update
@@ -140,6 +141,7 @@ library:
     - Orville.PostgreSQL.Schema.FunctionDefinition
     - Orville.PostgreSQL.Schema.FunctionIdentifier
     - Orville.PostgreSQL.Schema.IndexDefinition
+    - Orville.PostgreSQL.Schema.MaterializedViewDefinition
     - Orville.PostgreSQL.Schema.PolicyDefinition
     - Orville.PostgreSQL.Schema.PrimaryKey
     - Orville.PostgreSQL.Schema.ReadOnlyTableDefinition

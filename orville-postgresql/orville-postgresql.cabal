@@ -46,6 +46,7 @@ library
       Orville.PostgreSQL.Execution.Select
       Orville.PostgreSQL.Execution.SelectableEntityOperations
       Orville.PostgreSQL.Execution.SelectOptions
+      Orville.PostgreSQL.Execution.MaterializedView
       Orville.PostgreSQL.Execution.Sequence
       Orville.PostgreSQL.Execution.Transaction
       Orville.PostgreSQL.Execution.Update
@@ -144,6 +145,7 @@ library
       Orville.PostgreSQL.Schema.FunctionDefinition
       Orville.PostgreSQL.Schema.FunctionIdentifier
       Orville.PostgreSQL.Schema.IndexDefinition
+      Orville.PostgreSQL.Schema.MaterializedViewDefinition
       Orville.PostgreSQL.Schema.PolicyDefinition
       Orville.PostgreSQL.Schema.PrimaryKey
       Orville.PostgreSQL.Schema.ReadOnlyTableDefinition
@@ -183,6 +185,7 @@ library
       Orville.PostgreSQL.Internal.MonadOrville
       Orville.PostgreSQL.Internal.OrvilleState
       Orville.PostgreSQL.Internal.PgArrayText
+      Orville.PostgreSQL.Internal.QueryRelationDefinition
       Orville.PostgreSQL.Internal.RowCountExpectation
       Orville.PostgreSQL.Internal.TypeMap
       Orville.PostgreSQL.PgCatalog.DatabaseDescription
@@ -270,6 +273,7 @@ test-suite spec
       Test.Expr.Window
       Test.FieldDefinition
       Test.MarshallError
+      Test.MaterializedViewDefinition
       Test.Orphans
       Test.PgAssert
       Test.PgCatalog

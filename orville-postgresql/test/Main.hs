@@ -39,6 +39,7 @@ import qualified Test.Expr.Where as ExprWhere
 import qualified Test.Expr.Window as ExprWindow
 import qualified Test.FieldDefinition as FieldDefinition
 import qualified Test.MarshallError as MarshallError
+import qualified Test.MaterializedViewDefinition as MaterializedViewDefinition
 import qualified Test.PgCatalog as PgCatalog
 import qualified Test.PgTime as PgTime
 import qualified Test.Plan as Plan
@@ -97,6 +98,7 @@ main = do
       , TableDefinition.tableDefinitionTests pool
       , ReadOnlyTableDefinition.readOnlyTableDefinitionTests pool
       , ViewDefinition.viewDefinitionTests pool
+      , MaterializedViewDefinition.materializedViewDefinitionTests pool
       , EntityOperations.entityOperationsTests pool
       , SelectOptions.selectOptionsTests
       , ReservedWords.reservedWordsTests pool

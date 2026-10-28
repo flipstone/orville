@@ -34,7 +34,7 @@ import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Expr as Expr
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, marshallerDerivedColumns, unannotatedSqlMarshaller)
 import qualified Orville.PostgreSQL.Monad as Monad
-import Orville.PostgreSQL.Schema (ReadOnlyTableDefinition, TableDefinition, ViewDefinition, readOnlyTableDefinitionMarshaller, readOnlyTableDefinitionReference, tableMarshaller, tableName, viewDefinitionColumnNames, viewDefinitionMarshaller, viewDefinitionName)
+import Orville.PostgreSQL.Schema (MaterializedViewDefinition, ReadOnlyTableDefinition, TableDefinition, ViewDefinition, materializedViewDefinitionColumnNames, materializedViewDefinitionMarshaller, materializedViewDefinitionName, readOnlyTableDefinitionMarshaller, readOnlyTableDefinitionReference, tableMarshaller, tableName, viewDefinitionColumnNames, viewDefinitionMarshaller, viewDefinitionName)
 
 {- | Represents a @SELECT@ statement that can be executed against a database. A
   'Select' has a 'Orville.PostgreSQL.SqlMarshaller' bound to it that will be
@@ -129,12 +129,37 @@ instance Selectable ReadOnlyTableDefinition where
 @since 1.2.0.0
 -}
 instance Selectable ViewDefinition where
-  selectTable viewDef selectOptions =
-    rawSelectQueryExpr (viewDefinitionMarshaller viewDef) $
-      SelectOptions.selectOptionsQueryExpr
-        (Expr.selectColumns (fmap Expr.unqualified (viewDefinitionColumnNames viewDef)))
-        (Expr.singleTableReferenceList (viewDefinitionName viewDef))
-        selectOptions
+  selectTable viewDef =
+    selectNamedColumns
+      (viewDefinitionMarshaller viewDef)
+      (viewDefinitionName viewDef)
+      (viewDefinitionColumnNames viewDef)
+
+{- | Selects the materialized view's columns (see
+  'Orville.PostgreSQL.Schema.materializedViewDefinitionColumnNames') from the
+  materialized view, and decodes them with its marshaller.
+
+@since 1.2.0.0
+-}
+instance Selectable MaterializedViewDefinition where
+  selectTable viewDef =
+    selectNamedColumns
+      (materializedViewDefinitionMarshaller viewDef)
+      (materializedViewDefinitionName viewDef)
+      (materializedViewDefinitionColumnNames viewDef)
+
+selectNamedColumns ::
+  AnnotatedSqlMarshaller writeEntity readEntity ->
+  Expr.QualifiedOrUnqualified Expr.TableName ->
+  [Expr.ColumnName] ->
+  SelectOptions.SelectOptions ->
+  Select readEntity
+selectNamedColumns marshaller relationName columnNames selectOptions =
+  rawSelectQueryExpr marshaller $
+    SelectOptions.selectOptionsQueryExpr
+      (Expr.selectColumns (fmap Expr.unqualified columnNames))
+      (Expr.singleTableReferenceList relationName)
+      selectOptions
 
 {- | Builds a 'Select' that will select the columns described by the marshaller
   from the specified table. It is up to the caller to ensure that the columns

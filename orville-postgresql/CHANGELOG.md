@@ -110,6 +110,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `findSelectableEntitiesBy` selects its columns from the view, and
   `viewReferenceDefinition` and `aliasedViewReferenceDefinition` build the
   `TableReferenceDefinition` for joining it like a table.
+- `MaterializedViewDefinition` describes a materialized view in the same
+  terms as `ViewDefinition` (`mkMaterializedViewDefinition`,
+  `readOnlyTableToMaterializedViewDefinition`, `setMaterializedViewSchema`,
+  `mapMaterializedViewMarshaller`, `materializedViewDefinitionColumnNames`,
+  `mkCreateMaterializedViewExpr`), is `Selectable`, and joins via
+  `materializedViewReferenceDefinition` and
+  `aliasedMaterializedViewReferenceDefinition`. `refreshMaterializedView`
+  in `Orville.PostgreSQL.Execution.MaterializedView` runs
+  `REFRESH MATERIALIZED VIEW`, with `MaterializedViewRefresh` choosing
+  between `CONCURRENTLY`, an exclusive refresh and `WITH NO DATA`.
 - Auto-migration of views: `SchemaView` creates a view from a
   `ViewDefinition` and `SchemaDropView` drops one. As with triggers, a view
   is identified by name only, so a change to the definition of an existing
@@ -117,10 +127,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   when the same migration alters or drops an existing table or function.
   Views are created after tables, columns and functions in schema item
   order and dropped before other changes in reverse order, so a view or
-  drop item that selects from another view is listed after it. Plan
-  generation fails with `MigrationDataError` for a view whose query
+  drop item that selects from another view is listed after it.
+  Plan generation fails with `MigrationDataError` for a view whose query
   contains bind parameters, or when a relation of another kind has the
   view's name.
+- Auto-migration of materialized views: `SchemaMaterializedView` and
+  `SchemaDropMaterializedView` follow the same strategy as views, with the
+  materialized view always created `WITH DATA`. Materialized views are
+  dropped before views and created after them, so a materialized view may
+  select from views listed before it.
 - POSIX regular expression matching: `fieldMatchesRegex`,
   `fieldMatchesRegexInsensitive`, `fieldNotMatchesRegex` and
   `fieldNotMatchesRegexInsensitive`, with the corresponding `SqlComparable`
