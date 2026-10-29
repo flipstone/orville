@@ -34,7 +34,6 @@ import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Builder as LTB
 import qualified Data.Text.Lazy.Builder.Int as LTBI
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Marshall as Marshall
@@ -49,7 +48,7 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
 @since 1.0.0.0
 -}
 data PgAttribute = PgAttribute
-  { pgAttributeRelationOid :: LibPQ.Oid
+  { pgAttributeRelationOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ for the relation that this
   attribute belongs to. References @pg_class.oid@.
   -}
@@ -57,7 +56,7 @@ data PgAttribute = PgAttribute
   -- ^ The name of the attribute.
   , pgAttributeNumber :: AttributeNumber
   -- ^ The PostgreSQL number of the attribute.
-  , pgAttributeTypeOid :: LibPQ.Oid
+  , pgAttributeTypeOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ for the type of this attribute. References
   @pg_type.oid@.
   -}
@@ -94,9 +93,9 @@ pgAttributeMaxLength attr =
   --
   let
     charTypes =
-      [LibPQ.Oid 1042, LibPQ.Oid 1043] -- char, varchar
+      [Orville.Oid 1042, Orville.Oid 1043] -- char, varchar
     bitTypes =
-      [LibPQ.Oid 1560, LibPQ.Oid 1562] -- bit, varbit
+      [Orville.Oid 1560, Orville.Oid 1562] -- bit, varbit
     typeOid =
       pgAttributeTypeOid attr
 
@@ -230,7 +229,7 @@ pgAttributeMarshaller =
 
 @since 1.0.0.0
 -}
-attributeRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+attributeRelationOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 attributeRelationOidField =
   oidTypeField "attrelid"
 
@@ -263,7 +262,7 @@ attributeNumberTypeField =
 
 @since 1.0.0.0
 -}
-attributeTypeOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+attributeTypeOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 attributeTypeOidField =
   oidTypeField "atttypid"
 

@@ -6,6 +6,7 @@ where
 
 import qualified Hedgehog as HH
 import qualified Orville.PostgreSQL as Orville
+import qualified Pqi.Ffi as PqiFfi
 import qualified System.Environment as Env
 import qualified Test.Tasty as Tasty
 
@@ -29,6 +30,7 @@ createTestConnectionPool = do
   Orville.createConnectionPool $
     Orville.ConnectionOptions
       { Orville.connectionString = connStr
+      , Orville.connectionAdapter = PqiFfi.adapter
       , Orville.connectionNoticeReporting = Orville.DisableNoticeReporting
       , Orville.connectionPoolStripes = Orville.OneStripePerCapability
       , Orville.connectionPoolLingerTime = 10

@@ -18,7 +18,6 @@ module Orville.PostgreSQL.PgCatalog.PgDescription
 
 import Data.Int (Int32)
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
@@ -30,9 +29,9 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
 @since 1.1.0.0
 -}
 data PgDescription = PgDescription
-  { pgDescriptionObjOid :: LibPQ.Oid
+  { pgDescriptionObjOid :: Orville.Oid
   -- ^ @since 1.1.0.0
-  , pgDescriptionClassOid :: LibPQ.Oid
+  , pgDescriptionClassOid :: Orville.Oid
   -- ^ @since 1.1.0.0
   , pgDescriptionObjSubId :: ObjectSubId
   -- ^ @since 1.1.0.0
@@ -73,7 +72,7 @@ objectSubIdZero :: ObjectSubId
 objectSubIdZero = ObjectSubId 0
 
 -- | @since 1.1.0.0
-pgDescriptionTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgDescription PgDescription
+pgDescriptionTable :: Orville.TableDefinition (Orville.HasKey Orville.Oid) PgDescription PgDescription
 pgDescriptionTable =
   Orville.mkTableDefinition "pg_description" (Orville.primaryKey objOidField) pgDescriptionMarshaller
 
@@ -87,11 +86,11 @@ pgDescriptionMarshaller =
     <*> Orville.marshallField pgDescriptionDescription descriptionField
 
 -- | @since 1.1.0.0
-objOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+objOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 objOidField = oidTypeField "objoid"
 
 -- | @since 1.1.0.0
-classOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+classOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 classOidField = oidTypeField "classoid"
 
 -- | @since 1.1.0.0

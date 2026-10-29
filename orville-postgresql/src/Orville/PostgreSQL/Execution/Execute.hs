@@ -21,7 +21,7 @@ where
 import Control.Exception (Exception, throwIO)
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
-import qualified Database.PostgreSQL.LibPQ as LibPQ
+import qualified Pqi
 
 import Orville.PostgreSQL.Execution.QueryType (QueryType)
 import qualified Orville.PostgreSQL.Marshall.SqlMarshaller as SqlMarshaller
@@ -148,7 +148,7 @@ executeAndReturnAffectedRowsIO ::
   IO Int
 executeAndReturnAffectedRowsIO queryType sql orvilleState conn = do
   libPqResult <- executeWithCallbacksIO queryType sql orvilleState conn
-  mbTupleCount <- LibPQ.cmdTuples libPqResult
+  mbTupleCount <- Pqi.cmdTuples libPqResult
   case mbTupleCount of
     Nothing ->
       throwIO
@@ -184,7 +184,7 @@ executeWithCallbacksIO ::
   sql ->
   OrvilleState ->
   Connection ->
-  IO LibPQ.Result
+  IO Pqi.Result
 executeWithCallbacksIO queryType sql orvilleState conn =
   let
     rawSql =

@@ -12,6 +12,7 @@ module Orville.PostgreSQL.Raw.Connection
   ( ConnectionOptions
       ( ConnectionOptions
       , connectionString
+      , connectionAdapter
       , connectionNoticeReporting
       , connectionPoolStripes
       , connectionPoolLingerTime
@@ -33,12 +34,14 @@ module Orville.PostgreSQL.Raw.Connection
   , SqlExecutionError (..)
   , transactionStatus
   , transactionStatusOrThrow
+  , Pqi.TransactionStatus (..)
+  , Pqi.ExecStatus (..)
   )
 where
 
 import Control.Concurrent (getNumCapabilities, threadWaitRead, threadWaitWrite)
 import Control.Concurrent.MVar (MVar, newMVar, tryTakeMVar, withMVar)
-import Control.Exception (Exception, mask, throwIO)
+import Control.Exception (Exception, bracketOnError, mask, throwIO)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Builder as BSB
 import qualified Data.ByteString.Char8 as B8
@@ -52,7 +55,8 @@ import Data.Pool (Pool, createPool, withResource, destroyAllResources)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import Data.Time (NominalDiffTime)
-import qualified Database.PostgreSQL.LibPQ as LibPQ
+import Data.Word (Word32)
+import qualified Pqi
 
 import Orville.PostgreSQL.Raw.PgTextFormatValue (NULByteFoundError (NULByteFoundError), PgTextFormatValue, toBytesForLibPQ)
 
@@ -83,6 +87,7 @@ createConnectionPool options = do
   let
     open =
       connect
+        (connectionAdapter options)
         (connectionNoticeReporting options)
         (B8.pack $ connectionString options)
 
@@ -181,6 +186,12 @@ parameters for the pool and the connections that it creates.
 data ConnectionOptions = ConnectionOptions
   { connectionString :: String
   -- ^ A PostgreSQL connection string.
+  , connectionAdapter :: Pqi.Adapter
+  {- ^ The @pqi@ backend used to talk to PostgreSQL. Use @Pqi.Ffi.adapter@
+  from the @pqi-ffi@ package to use the libpq C library.
+
+  @since 1.2.0.0
+  -}
   , connectionNoticeReporting :: NoticeReporting
   -- ^ Whether or not notice reporting from LibPQ should be enabled.
   , connectionPoolStripes :: StripeOption
@@ -229,7 +240,7 @@ withPoolConnection (ConnectionPool pool) action =
     assertConnectionIdle connection mkMsg = do
       status <- transactionStatusOrThrow connection
       case status of
-        LibPQ.TransIdle ->
+        Pqi.TransIdle ->
           pure ()
         _ ->
           withLibPQConnectionOrFailIfClosed connection $ \libPQConn -> do
@@ -256,7 +267,7 @@ executeRaw ::
   Connection ->
   BS.ByteString ->
   [Maybe PgTextFormatValue] ->
-  IO LibPQ.Result
+  IO Pqi.Result
 executeRaw connection bs params =
   case traverse (traverse toBytesForLibPQ) params of
     Left NULByteFoundError ->
@@ -265,7 +276,7 @@ executeRaw connection bs params =
       underlyingExecute bs paramBytes connection
 
 data ConnectionState
-  = OpenConnection LibPQ.Connection
+  = OpenConnection Pqi.Connection
   | ClosedConnection
 
 data ConnectionContext = ConnectionContext
@@ -296,11 +307,11 @@ newtype Connection = Connection (IORef ConnectionContext)
 
 @since 1.0.0.0
 -}
-connect :: NoticeReporting -> BS.ByteString -> IO Connection
-connect noticeReporting connString =
+connect :: Pqi.Adapter -> NoticeReporting -> BS.ByteString -> IO Connection
+connect adapter noticeReporting connString =
   let
     checkSocketAndThreadWait conn threadWaitFn = do
-      fd <- LibPQ.socket conn
+      fd <- Pqi.socket conn
       case fd of
         Nothing -> do
           throwConnectionError "connect: failed to get file descriptor for socket" conn
@@ -309,31 +320,38 @@ connect noticeReporting connString =
           poll conn
 
     poll conn = do
-      pollStatus <- LibPQ.connectPoll conn
+      pollStatus <- Pqi.connectPoll conn
       case pollStatus of
-        LibPQ.PollingFailed -> do
+        Pqi.PollingFailed -> do
           throwConnectionError "connect: polling failed while connecting to database server" conn
-        LibPQ.PollingReading ->
+        Pqi.PollingReading ->
           checkSocketAndThreadWait conn threadWaitRead
-        LibPQ.PollingWriting ->
+        Pqi.PollingWriting ->
           checkSocketAndThreadWait conn threadWaitWrite
-        LibPQ.PollingOk -> do
-          connUseLock <- newMVar ()
-          connCloseLock <- newMVar ()
-          connectionHandle <-
-            newIORef
-              ConnectionContext
-                { i_connUtilizationLock = connUseLock
-                , i_connCloseLock = connCloseLock
-                , i_connState = OpenConnection conn
-                }
-          pure (Connection connectionHandle)
+        Pqi.PollingOk -> do
+          connStatus <- Pqi.status conn
+          case connStatus of
+            Pqi.ConnectionOk ->
+              wrapConnection conn
+            _ ->
+              throwConnectionError "connect: connection was not established after polling completed" conn
+
+    wrapConnection conn = do
+      connUseLock <- newMVar ()
+      connCloseLock <- newMVar ()
+      connectionHandle <-
+        newIORef
+          ConnectionContext
+            { i_connUtilizationLock = connUseLock
+            , i_connCloseLock = connCloseLock
+            , i_connState = OpenConnection conn
+            }
+      pure (Connection connectionHandle)
   in
-    do
-      connection <- LibPQ.connectStart connString
+    bracketOnError (Pqi.connectStart adapter connString) Pqi.finish $ \connection -> do
       case noticeReporting of
-        DisableNoticeReporting -> LibPQ.disableNoticeReporting connection
-        EnableNoticeReporting -> LibPQ.enableNoticeReporting connection
+        DisableNoticeReporting -> Pqi.disableNoticeReporting connection
+        EnableNoticeReporting -> Pqi.enableNoticeReporting connection
       poll connection
 
 {- | 'close' has many subtleties to it.
@@ -363,7 +381,7 @@ close (Connection handle) =
       case (mCloseLock, i_connState connCtx) of
         (Just (), OpenConnection underlyingConnection) -> do
           writeIORef handle connCtx {i_connState = ClosedConnection}
-          restore (LibPQ.finish underlyingConnection)
+          restore (Pqi.finish underlyingConnection)
         _ -> pure ()
   in
     mask underlyingFinish
@@ -379,17 +397,17 @@ underlyingExecute ::
   BS.ByteString ->
   [Maybe BS.ByteString] ->
   Connection ->
-  IO LibPQ.Result
+  IO Pqi.Result
 underlyingExecute bs params connection =
   withLibPQConnectionOrFailIfClosed connection $ \libPQConn -> do
     mbResult <-
-      LibPQ.execParams libPQConn bs (fmap mkInferredTextParam params) LibPQ.Text
+      Pqi.execParams libPQConn bs (fmap mkInferredTextParam params) Pqi.Text
 
     case mbResult of
       Nothing -> do
         throwExecutionErrorWithoutResult libPQConn bs
       Just result -> do
-        execStatus <- LibPQ.resultStatus result
+        execStatus <- Pqi.resultStatus result
 
         if isRowReadableStatus execStatus
           then pure result
@@ -412,7 +430,7 @@ underlyingExecute bs params connection =
 quoteStringLiteral :: Connection -> BS.ByteString -> IO BSB.Builder
 quoteStringLiteral connection unquotedString =
   withLibPQConnectionOrFailIfClosed connection $ \libPQConn -> do
-    mbEscapedString <- LibPQ.escapeStringConn libPQConn unquotedString
+    mbEscapedString <- Pqi.escapeStringConn libPQConn unquotedString
 
     case mbEscapedString of
       Nothing ->
@@ -438,7 +456,7 @@ quoteStringLiteral connection unquotedString =
 quoteIdentifier :: Connection -> BS.ByteString -> IO BSB.Builder
 quoteIdentifier connection unquotedString =
   withLibPQConnectionOrFailIfClosed connection $ \libPQConn -> do
-    mbEscapedString <- LibPQ.escapeIdentifier libPQConn unquotedString
+    mbEscapedString <- Pqi.escapeIdentifier libPQConn unquotedString
 
     case mbEscapedString of
       Nothing ->
@@ -453,7 +471,7 @@ quoteIdentifier connection unquotedString =
   Do not nest calls to this function with the same connection or it will
   dead-lock on the MVar.
 -}
-withLibPQConnectionOrFailIfClosed :: Connection -> (LibPQ.Connection -> IO a) -> IO a
+withLibPQConnectionOrFailIfClosed :: Connection -> (Pqi.Connection -> IO a) -> IO a
 withLibPQConnectionOrFailIfClosed (Connection handle) withConnection = do
   connCtx <- readIORef handle
   withMVar (i_connUtilizationLock connCtx) $ \() ->
@@ -464,12 +482,12 @@ withLibPQConnectionOrFailIfClosed (Connection handle) withConnection = do
         withConnection conn
 
 {- | Returns 'Just' the transaction status of the current connection, as reported by @libpq@, or
-  'Nothing' if the connection is currently closed. See 'Database.PostgreSQL.LibPQ.transactionStatus',
-  'Database.PostgreSQL.LibPQ.TransactionStatus' for more information.
+  'Nothing' if the connection is currently closed. See 'Pqi.transactionStatus',
+  'Pqi.TransactionStatus' for more information.
 
 @since 1.1.0.0
 -}
-transactionStatus :: Connection -> IO (Maybe LibPQ.TransactionStatus)
+transactionStatus :: Connection -> IO (Maybe Pqi.TransactionStatus)
 transactionStatus (Connection handle) = do
   connCtx <- readIORef handle
   withMVar (i_connUtilizationLock connCtx) $ \() ->
@@ -477,19 +495,19 @@ transactionStatus (Connection handle) = do
       ClosedConnection ->
         pure Nothing
       OpenConnection conn ->
-        fmap Just (LibPQ.transactionStatus conn)
+        fmap Just (Pqi.transactionStatus conn)
 
 {- | Similar to 'transactionStatus', but throws a 'ConnectionUsedAfterCloseError' if the connection is closed.
 
 @since 1.1.0.0
 -}
-transactionStatusOrThrow :: Connection -> IO LibPQ.TransactionStatus
+transactionStatusOrThrow :: Connection -> IO Pqi.TransactionStatus
 transactionStatusOrThrow conn =
-  withLibPQConnectionOrFailIfClosed conn LibPQ.transactionStatus
+  withLibPQConnectionOrFailIfClosed conn Pqi.transactionStatus
 
-throwConnectionError :: String -> LibPQ.Connection -> IO a
+throwConnectionError :: String -> Pqi.Connection -> IO a
 throwConnectionError message conn = do
-  mbLibPQError <- LibPQ.errorMessage conn
+  mbLibPQError <- Pqi.errorMessage conn
 
   throwIO $
     ConnectionError
@@ -498,11 +516,11 @@ throwConnectionError message conn = do
       }
 
 throwExecutionErrorWithoutResult ::
-  LibPQ.Connection ->
+  Pqi.Connection ->
   BS.ByteString ->
   IO a
 throwExecutionErrorWithoutResult conn queryBS = do
-  mbLibPQError <- LibPQ.errorMessage conn
+  mbLibPQError <- Pqi.errorMessage conn
 
   throwIO $
     SqlExecutionError
@@ -513,13 +531,13 @@ throwExecutionErrorWithoutResult conn queryBS = do
       }
 
 throwExecutionErrorWithResult ::
-  LibPQ.Result ->
-  LibPQ.ExecStatus ->
+  Pqi.Result ->
+  Pqi.ExecStatus ->
   BS.ByteString ->
   IO a
 throwExecutionErrorWithResult result execStatus queryBS = do
-  mbLibPQError <- LibPQ.resultErrorMessage result
-  mbSqlState <- LibPQ.resultErrorField result LibPQ.DiagSqlstate
+  mbLibPQError <- Pqi.resultErrorMessage result
+  mbSqlState <- Pqi.resultErrorField result Pqi.DiagSqlstate
 
   throwIO $
     SqlExecutionError
@@ -529,23 +547,21 @@ throwExecutionErrorWithResult result execStatus queryBS = do
       , sqlExecutionErrorSqlQuery = queryBS
       }
 
-isRowReadableStatus :: LibPQ.ExecStatus -> Bool
+isRowReadableStatus :: Pqi.ExecStatus -> Bool
 isRowReadableStatus status =
   case status of
-    LibPQ.CommandOk -> True -- ??
-    LibPQ.TuplesOk -> True -- Returned on successful query, even if there are 0 rows.
-    LibPQ.SingleTuple -> True -- Only returned when a query is executed is single row mode
-    LibPQ.EmptyQuery -> False
-    LibPQ.CopyOut -> False
-    LibPQ.CopyIn -> False
-    LibPQ.CopyBoth -> False -- CopyBoth is only used for streaming replication, so should not occur in ordinary applications
-    LibPQ.BadResponse -> False
-    LibPQ.NonfatalError -> False -- NonfatalError never returned from LibPQ query execution functions. It passes them to the notice processor instead.
-    LibPQ.FatalError -> False
-#if MIN_VERSION_postgresql_libpq(0,11,0)
-    LibPQ.PipelineSync -> False
-    LibPQ.PipelineAbort -> False
-#endif
+    Pqi.CommandOk -> True -- ??
+    Pqi.TuplesOk -> True -- Returned on successful query, even if there are 0 rows.
+    Pqi.SingleTuple -> True -- Only returned when a query is executed is single row mode
+    Pqi.EmptyQuery -> False
+    Pqi.CopyOut -> False
+    Pqi.CopyIn -> False
+    Pqi.CopyBoth -> False -- CopyBoth is only used for streaming replication, so should not occur in ordinary applications
+    Pqi.BadResponse -> False
+    Pqi.NonfatalError -> False -- NonfatalError never returned from LibPQ query execution functions. It passes them to the notice processor instead.
+    Pqi.FatalError -> False
+    Pqi.PipelineSync -> False
+    Pqi.PipelineAbort -> False
 
 {- | Packages a bytestring parameter value (which is assumed to be a value encoded
   as text that the database can use) as a parameter for executing a query.
@@ -554,13 +570,13 @@ isRowReadableStatus status =
 
 @since 1.0.0.0
 -}
-mkInferredTextParam :: Maybe BS.ByteString -> Maybe (LibPQ.Oid, BS.ByteString, LibPQ.Format)
+mkInferredTextParam :: Maybe BS.ByteString -> Maybe (Word32, BS.ByteString, Pqi.Format)
 mkInferredTextParam mbValue =
   case mbValue of
     Nothing ->
       Nothing
     Just value ->
-      Just (LibPQ.Oid 0, value, LibPQ.Text)
+      Just (0, value, Pqi.Text)
 
 {- | Orville throws a 'ConnectionError' on an error reported by the underlying
   LibPQ connection that does not come directly from executing SQL. This could
@@ -600,7 +616,7 @@ instance Exception ConnectionError
 @since 1.0.0.0
 -}
 data SqlExecutionError = SqlExecutionError
-  { sqlExecutionErrorExecStatus :: Maybe LibPQ.ExecStatus
+  { sqlExecutionErrorExecStatus :: Maybe Pqi.ExecStatus
   -- ^ The underlying LibPQ execution status.
   , sqlExecutionErrorMessage :: BS.ByteString
   -- ^ Error message reported by PostgreSQL.

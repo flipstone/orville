@@ -68,6 +68,7 @@ module Orville.PostgreSQL
   , Connection.ConnectionOptions
     ( ConnectionOptions
     , connectionString
+    , connectionAdapter
     , connectionNoticeReporting
     , connectionPoolStripes
     , connectionPoolLingerTime
@@ -480,6 +481,7 @@ module Orville.PostgreSQL
     , SqlType.sqlTypeFromSql
     , SqlType.sqlTypeDontDropImplicitDefaultDuringMigrate
     )
+  , SqlType.Oid (SqlType.Oid)
   , Expr.QueryExpr
   , Execute.executeAndDecode
   , Execute.executeAndReturnAffectedRows

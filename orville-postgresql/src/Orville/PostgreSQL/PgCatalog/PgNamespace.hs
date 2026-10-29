@@ -18,7 +18,6 @@ where
 
 import qualified Data.String as String
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField)
@@ -30,7 +29,7 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField)
 @since 1.0.0.0
 -}
 data PgNamespace = PgNamespace
-  { pgNamespaceOid :: LibPQ.Oid
+  { pgNamespaceOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ for the namespace. This is referenced from
   other tables, such as @pg_class@.
   -}
@@ -68,7 +67,7 @@ namespaceNameToString (NamespaceName text) =
 
 @since 1.0.0.0
 -}
-pgNamespaceTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgNamespace PgNamespace
+pgNamespaceTable :: Orville.TableDefinition (Orville.HasKey Orville.Oid) PgNamespace PgNamespace
 pgNamespaceTable =
   Orville.setTableSchema "pg_catalog" $
     Orville.mkTableDefinition

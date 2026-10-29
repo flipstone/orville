@@ -17,7 +17,6 @@ module Orville.PostgreSQL.PgCatalog.PgTrigger
 
 import qualified Data.String as String
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
@@ -28,9 +27,9 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 @since 1.1.0.0
 -}
 data PgTrigger = PgTrigger
-  { pgTriggerOid :: LibPQ.Oid
+  { pgTriggerOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ for the relation.
-  , pgTriggerRelationOid :: LibPQ.Oid
+  , pgTriggerRelationOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ of the relation that the trigger is onto.
   References @pg_class.oid@.
   -}
@@ -89,7 +88,7 @@ pgTriggerMarshaller =
 
 @since 1.1.0.0
 -}
-triggerRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+triggerRelationOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 triggerRelationOidField =
   oidTypeField "tgrelid"
 

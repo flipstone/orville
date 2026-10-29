@@ -11,8 +11,6 @@ module Orville.PostgreSQL.PgCatalog.OidField
   )
 where
 
-import qualified Database.PostgreSQL.LibPQ as LibPQ
-
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 
@@ -20,7 +18,7 @@ import qualified Orville.PostgreSQL.Marshall.SqlType as SqlType
 
 @since 1.0.0.0
 -}
-oidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+oidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 oidField =
   oidTypeField "oid"
 
@@ -29,6 +27,6 @@ oidField =
 
 @since 1.0.0.0
 -}
-oidTypeField :: String -> Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+oidTypeField :: String -> Orville.FieldDefinition Orville.NotNull Orville.Oid
 oidTypeField =
   Orville.fieldOfType SqlType.oid

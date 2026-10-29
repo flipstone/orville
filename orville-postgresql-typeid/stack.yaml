@@ -5,6 +5,8 @@ packages:
 extra-deps:
   - ../orville-postgresql
   - mmzk-typeid-0.7.0.2
+  - pqi-1.1.0.2
+  - pqi-ffi-1.0.1.0
 
 flags:
   orville-postgresql-typeid:

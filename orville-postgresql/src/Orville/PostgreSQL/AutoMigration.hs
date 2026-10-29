@@ -51,7 +51,6 @@ import qualified Data.Set as Set
 import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
@@ -1348,7 +1347,7 @@ mkAddIndexSteps existingIndexes tableName indexDef =
 -}
 mkDropIndexSteps ::
   Set.Set IndexDefinition.IndexMigrationKey ->
-  Set.Set LibPQ.Oid ->
+  Set.Set Orville.Oid ->
   Maybe Expr.SchemaName ->
   PgCatalog.IndexDescription ->
   [MigrationStepWithType]
@@ -1493,7 +1492,7 @@ mkCommentColumnStep relationDesc tableId fieldDef =
 
 @since 1.0.0.0
 -}
-pgConstraintImpliedIndexOid :: PgCatalog.PgConstraint -> Maybe LibPQ.Oid
+pgConstraintImpliedIndexOid :: PgCatalog.PgConstraint -> Maybe Orville.Oid
 pgConstraintImpliedIndexOid pgConstraint =
   case PgCatalog.pgConstraintType pgConstraint of
     PgCatalog.PrimaryKeyConstraint ->

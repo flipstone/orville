@@ -22,7 +22,6 @@ where
 
 import qualified Data.String as String
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
@@ -34,9 +33,9 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 @since 1.0.0.0
 -}
 data PgClass = PgClass
-  { pgClassOid :: LibPQ.Oid
+  { pgClassOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ for the relation.
-  , pgClassNamespaceOid :: LibPQ.Oid
+  , pgClassNamespaceOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
   References @pg_namespace.oid@.
   -}
@@ -101,7 +100,7 @@ data RelationKind
 
 @since 1.0.0.0
 -}
-pgClassTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgClass PgClass
+pgClassTable :: Orville.TableDefinition (Orville.HasKey Orville.Oid) PgClass PgClass
 pgClassTable =
   Orville.setTableSchema "pg_catalog" $
     Orville.mkTableDefinition
@@ -122,7 +121,7 @@ pgClassMarshaller =
 
 @since 1.0.0.0
 -}
-namespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+namespaceOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 namespaceOidField =
   oidTypeField "relnamespace"
 

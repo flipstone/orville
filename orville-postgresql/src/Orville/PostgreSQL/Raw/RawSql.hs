@@ -67,7 +67,7 @@ import qualified Data.List as List
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TextEnc
-import qualified Database.PostgreSQL.LibPQ as LibPQ
+import qualified Pqi
 
 import qualified Orville.PostgreSQL.Raw.Connection as Conn
 import Orville.PostgreSQL.Raw.PgTextFormatValue (PgTextFormatValue)
@@ -467,7 +467,7 @@ intercalate separator =
 
 @since 1.0.0.0
 -}
-execute :: SqlExpression sql => Conn.Connection -> sql -> IO LibPQ.Result
+execute :: SqlExpression sql => Conn.Connection -> sql -> IO Pqi.Result
 execute connection sql = do
   (sqlBytes, params) <- toBytesAndParams (connectionQuoting connection) sql
   Conn.executeRaw connection sqlBytes params

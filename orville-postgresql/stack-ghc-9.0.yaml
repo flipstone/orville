@@ -1,2 +1,7 @@
 <<: !include stack.yaml
 resolver: lts-19.33
+extra-deps:
+  - postgresql-libpq-0.11.0.0
+  - postgresql-libpq-configure-0.11
+  - pqi-1.1.0.2
+  - pqi-ffi-1.0.1.0

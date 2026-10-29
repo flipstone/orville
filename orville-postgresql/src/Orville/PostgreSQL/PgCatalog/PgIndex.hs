@@ -18,7 +18,6 @@ import qualified Data.List as List
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LTB
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidTypeField)
@@ -31,9 +30,9 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
 @since 1.0.0.0
 -}
 data PgIndex = PgIndex
-  { pgIndexPgClassOid :: LibPQ.Oid
+  { pgIndexPgClassOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ of the @pg_class@ entry for this index.
-  , pgIndexRelationOid :: LibPQ.Oid
+  , pgIndexRelationOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ of the @pg_class@ entry for the table that this
   index is for.
   -}
@@ -82,7 +81,7 @@ pgIndexMarshaller =
 
 @since 1.0.0.0
 -}
-indexPgClassOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+indexPgClassOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 indexPgClassOidField =
   oidTypeField "indexrelid"
 
@@ -90,7 +89,7 @@ indexPgClassOidField =
 
 @since 1.0.0.0
 -}
-indexRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+indexRelationOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 indexRelationOidField =
   oidTypeField "indrelid"
 

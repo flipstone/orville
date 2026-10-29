@@ -13,7 +13,6 @@ module Orville.PostgreSQL.PgCatalog.PgAttributeDefault
 where
 
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Marshall as Marshall
@@ -27,9 +26,9 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 @since 1.0.0.0
 -}
 data PgAttributeDefault = PgAttributeDefault
-  { pgAttributeDefaultOid :: LibPQ.Oid
+  { pgAttributeDefaultOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ for the default value.
-  , pgAttributeDefaultRelationOid :: LibPQ.Oid
+  , pgAttributeDefaultRelationOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ for the relation that this
   attribute belongs to. References @pg_class.oid@.
   -}
@@ -67,7 +66,7 @@ pgAttributeDefaultMarshaller =
 
 @since 1.0.0.0
 -}
-attributeDefaultRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+attributeDefaultRelationOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 attributeDefaultRelationOidField =
   oidTypeField "adrelid"
 

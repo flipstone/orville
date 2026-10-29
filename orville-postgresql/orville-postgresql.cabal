@@ -123,6 +123,7 @@ library
       Orville.PostgreSQL.Plan.Operation
       Orville.PostgreSQL.Plan.Syntax
       Orville.PostgreSQL.Raw.Connection
+      Orville.PostgreSQL.Raw.Oid
       Orville.PostgreSQL.Raw.PgTextFormatValue
       Orville.PostgreSQL.Raw.PgTime
       Orville.PostgreSQL.Raw.RawSql
@@ -194,7 +195,7 @@ library
     , containers >=0.6 && <0.9
     , dlist >=0.8 && <1.1
     , network-uri ==2.6.*
-    , postgresql-libpq >=0.9.4.2 && <0.12
+    , pqi ==1.1.*
     , random >=1.0 && <2
     , resource-pool >=0.2.2.0 && <0.3 || >=0.4 && <0.6
     , safe-exceptions >=0.1.7 && <0.2
@@ -281,7 +282,8 @@ test-suite spec
     , containers >=0.6 && <0.9
     , hedgehog >=1.0.5 && <1.8
     , orville-postgresql
-    , postgresql-libpq >=0.9.4.2 && <0.12
+    , pqi ==1.1.*
+    , pqi-ffi ==1.0.*
     , resource-pool >=0.2.2.0 && <0.3 || >=0.4 && <0.6
     , safe-exceptions >=0.1.7 && <0.2
     , tasty >=1.4 && <1.6

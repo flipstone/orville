@@ -22,7 +22,6 @@ import qualified Data.String as String
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Builder as LTB
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Internal.PgArrayText as PgArrayText
@@ -36,19 +35,19 @@ import Orville.PostgreSQL.PgCatalog.PgAttribute (AttributeNumber, attributeNumbe
 @since 1.0.0.0
 -}
 data PgConstraint = PgConstraint
-  { pgConstraintOid :: LibPQ.Oid
+  { pgConstraintOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ for the constraint.
   , pgConstraintName :: ConstraintName
   -- ^ The constraint name (which may not be unique).
-  , pgConstraintNamespaceOid :: LibPQ.Oid
+  , pgConstraintNamespaceOid :: Orville.Oid
   -- ^ The oid of the namespace that contains the constraint.
   , pgConstraintType :: ConstraintType
   -- ^ The type of constraint.
-  , pgConstraintRelationOid :: LibPQ.Oid
+  , pgConstraintRelationOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ of the table that the constraint is on
   (or @0@ if not a table constraint).
   -}
-  , pgConstraintIndexOid :: LibPQ.Oid
+  , pgConstraintIndexOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ ef the index supporting this constraint, if it's a
   unique, primary key, foreign key or exclusion constraint. Otherwise @0@.
   -}
@@ -57,7 +56,7 @@ data PgConstraint = PgConstraint
   These correspond to the 'Orville.PostgreSQL.PGCatalog.pgAttributeNumber'
   field of 'Orville.PostgreSQL.PGCatalog.PgAttribute'.
   -}
-  , pgConstraintForeignRelationOid :: LibPQ.Oid
+  , pgConstraintForeignRelationOid :: Orville.Oid
   {- ^ For foreign key constraints, the PostgreSQL @oid@ of the table the
   foreign key references.
   -}
@@ -198,7 +197,7 @@ pgTextToForeignKeyAction text =
 
 @since 1.0.0.0
 -}
-pgConstraintTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgConstraint PgConstraint
+pgConstraintTable :: Orville.TableDefinition (Orville.HasKey Orville.Oid) PgConstraint PgConstraint
 pgConstraintTable =
   Orville.setTableSchema "pg_catalog" $
     Orville.mkTableDefinition
@@ -234,7 +233,7 @@ constraintNameField =
 
 @since 1.0.0.0
 -}
-constraintNamespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+constraintNamespaceOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 constraintNamespaceOidField =
   oidTypeField "connamespace"
 
@@ -252,7 +251,7 @@ constraintTypeField =
 
 @since 1.0.0.0
 -}
-constraintRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+constraintRelationOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 constraintRelationOidField =
   oidTypeField "conrelid"
 
@@ -260,7 +259,7 @@ constraintRelationOidField =
 
 @since 1.0.0.0
 -}
-constraintIndexOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+constraintIndexOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 constraintIndexOidField =
   oidTypeField "conindid"
 
@@ -279,7 +278,7 @@ constraintKeyField =
 
 @since 1.0.0.0
 -}
-constraintForeignRelationOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+constraintForeignRelationOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 constraintForeignRelationOidField =
   oidTypeField "confrelid"
 

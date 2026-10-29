@@ -9,10 +9,10 @@ import qualified Control.Exception as E
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.ByteString.Char8 as B8
 import qualified Data.Text.Encoding as Enc
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Range as Range
+import qualified Pqi
 import qualified Test.Tasty as Tasty
 import qualified Test.Tasty.Hedgehog as TastyHH
 
@@ -67,7 +67,7 @@ prop_safeOrUnsafeNonNullBytes pool =
             , Just $ PgTextFormatValue.unsafeFromByteString notNulBytes
             ]
 
-        LibPQ.getvalue' result 0 0
+        Pqi.getvalue' result 0 0
 
     value === Just (B8.pack "t")
 
@@ -126,7 +126,7 @@ prop_truncateValuesAtUnsafeNulByte pool =
             [ Just $ PgTextFormatValue.unsafeFromByteString bytesWithNul
             ]
 
-        LibPQ.getvalue' result 0 0
+        Pqi.getvalue' result 0 0
 
     value === Just bytesBefore
 
@@ -146,7 +146,7 @@ prop_errorOnInvalidSql pool =
 
     case result of
       Left err -> do
-        Conn.sqlExecutionErrorExecStatus err === Just LibPQ.FatalError
+        Conn.sqlExecutionErrorExecStatus err === Just Conn.FatalError
 
         let
           syntaxErrorState = B8.pack "42601"
@@ -188,7 +188,7 @@ prop_acquiredConnectionNotDestroyed pool =
             [ Just $ PgTextFormatValue.fromByteString textBytes
             ]
 
-        LibPQ.getvalue' result 0 0
+        Pqi.getvalue' result 0 0
 
     value === Just textBytes
 
@@ -207,7 +207,7 @@ prop_poolUsableAfterDestroyingConnections pool =
             [ Just $ PgTextFormatValue.fromByteString textBytes1
             ]
 
-        LibPQ.getvalue' result 0 0
+        Pqi.getvalue' result 0 0
 
     MIO.liftIO $ Conn.destroyIdleConnections pool
 
@@ -220,7 +220,7 @@ prop_poolUsableAfterDestroyingConnections pool =
             [ Just $ PgTextFormatValue.fromByteString textBytes2
             ]
 
-        LibPQ.getvalue' result 0 0
+        Pqi.getvalue' result 0 0
 
     value1 === Just textBytes1
     value2 === Just textBytes2

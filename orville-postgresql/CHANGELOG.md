@@ -35,6 +35,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`regexMatchOp` etc.).
 
 ### Changed
+- **Breaking:** `sqlTypeOid`, the `oid` `SqlType` and the `PgCatalog` records
+  now use Orville's own `Oid` type (a newtype over `Word32`, exported from
+  `Orville.PostgreSQL`, `Orville.PostgreSQL.Marshall` and
+  `Orville.PostgreSQL.Raw.Oid`) instead of `Oid` from `postgresql-libpq`.
+  Replace `LibPQ.Oid n` with `Oid n` when constructing a custom `SqlType`.
+- **Breaking:** Orville now talks to PostgreSQL through
+  [`pqi`](https://hackage.haskell.org/package/pqi) instead of depending on
+  `postgresql-libpq` directly. `ConnectionOptions` has a new
+  `connectionAdapter` field that selects the backend. Set it to
+  `Pqi.Ffi.adapter` from `pqi-ffi` to use the libpq C library as before.
+  `executeRaw`, `RawSql.execute`, `transactionStatus`,
+  `transactionStatusOrThrow`, `SqlExecutionError` and
+  `UnexpectedTransactionStatusError` now use the `pqi` types, and the
+  `ExecutionResult` instance is for `Pqi.Result`.
+  `Orville.PostgreSQL.Raw.Connection` re-exports `TransactionStatus` and
+  `ExecStatus`.
+- **Upgrading from 1.1:** the two breaking changes above need these steps.
+  - Add `pqi-ffi` to your package's dependencies. It uses the libpq C library,
+    so `libpq-dev` (or your platform's equivalent) is still required.
+  - With Stack, add `pqi-1.1.0.2` and `pqi-ffi-1.0.1.0` to `extra-deps`. On
+    snapshots older than LTS 23 (GHC 9.8), also add
+    `postgresql-libpq-0.11.0.0` and `postgresql-libpq-configure-0.11`, since
+    `pqi-ffi` needs `postgresql-libpq >= 0.11`.
+  - Import `Pqi.Ffi` and set `connectionAdapter = Pqi.Ffi.adapter` in every
+    `ConnectionOptions` you build.
+  - Replace `LibPQ.Oid` with Orville's `Oid`, for example in a custom
+    `SqlType`'s `sqlTypeOid`.
+  - Import `TransactionStatus` and `ExecStatus` from
+    `Orville.PostgreSQL.Raw.Connection` instead of
+    `Database.PostgreSQL.LibPQ`, for example to match on `transactionStatus` or
+    `sqlExecutionErrorExecStatus`.
+  - Code that reads the result of `executeRaw` or `RawSql.execute` with
+    `Database.PostgreSQL.LibPQ` functions should use the `Pqi.Result` fields
+    of the same name from the `pqi` package instead (for example
+    `Pqi.ntuples result`), adding `pqi` as a dependency. Row and column
+    indexes there are `Int32` rather than `Row` and `Column`.
+  - Drop the `postgresql-libpq` dependency if Orville was the only reason for
+    it.
 - Changed policies are always dropped and recreated rather than altered, since
   `ALTER POLICY` cannot change a policy's permissive/restrictive setting or
   command, nor remove a `USING`/`WITH CHECK` clause, and recreation orders

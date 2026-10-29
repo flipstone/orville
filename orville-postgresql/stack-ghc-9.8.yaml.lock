@@ -3,7 +3,21 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: pqi-1.1.0.2@sha256:fbce7865a545cc640cbc0273f9066180e1f37ef3f31d84f9adcf510e1a012f16,2730
+    pantry-tree:
+      sha256: 861f2f3302cd818b6846c08c40803a176aa7889c40145a6c32b1dae66616d8e1
+      size: 261
+  original:
+    hackage: pqi-1.1.0.2
+- completed:
+    hackage: pqi-ffi-1.0.1.0@sha256:b4a9bb95999faa599ed26d1df37ccb4b979db06ddadd464d134282ccc2a70177,2322
+    pantry-tree:
+      sha256: 700d4d18c6304f4c2b52af867622740ea70dcc699ef4281ad0cfd59dacae41b6
+      size: 396
+  original:
+    hackage: pqi-ffi-1.0.1.0
 snapshots:
 - completed:
     sha256: 9444fadfa30b67a93080254d53872478c087592ad64443e47c546cdcd13149ae

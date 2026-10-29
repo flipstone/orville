@@ -2,6 +2,10 @@ resolver: lts-24.12
 packages:
   - .
 
+extra-deps:
+  - pqi-1.1.0.2
+  - pqi-ffi-1.0.1.0
+
 flags:
   orville-postgresql:
     ci: true

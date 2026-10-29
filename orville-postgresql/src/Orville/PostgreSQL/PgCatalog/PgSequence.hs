@@ -13,7 +13,6 @@ module Orville.PostgreSQL.PgCatalog.PgSequence
 where
 
 import Data.Int (Int64)
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
@@ -24,9 +23,9 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 @since 1.0.0.0
 -}
 data PgSequence = PgSequence
-  { pgSequenceClassOid :: LibPQ.Oid
+  { pgSequenceClassOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ of the @pg_class@ for this sequence.
-  , pgSequenceTypeOid :: LibPQ.Oid
+  , pgSequenceTypeOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ of the data type of the sequence. References
   @pg_type.oid@.
   -}
@@ -49,7 +48,7 @@ data PgSequence = PgSequence
 
 @since 1.0.0.0
 -}
-pgSequenceTable :: Orville.TableDefinition (Orville.HasKey LibPQ.Oid) PgSequence PgSequence
+pgSequenceTable :: Orville.TableDefinition (Orville.HasKey Orville.Oid) PgSequence PgSequence
 pgSequenceTable =
   Orville.setTableSchema "pg_catalog" $
     Orville.mkTableDefinition
@@ -73,7 +72,7 @@ pgSequenceMarshaller =
 
 @since 1.0.0.0
 -}
-sequencePgClassOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+sequencePgClassOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 sequencePgClassOidField =
   oidTypeField "seqrelid"
 
@@ -81,7 +80,7 @@ sequencePgClassOidField =
 
 @since 1.0.0.0
 -}
-sequenceTypeOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+sequenceTypeOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 sequenceTypeOidField =
   oidTypeField "seqtypid"
 

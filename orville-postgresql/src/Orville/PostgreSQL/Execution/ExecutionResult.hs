@@ -20,7 +20,7 @@ where
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
-import qualified Database.PostgreSQL.LibPQ as LibPQ
+import qualified Pqi
 
 import Orville.PostgreSQL.Raw.SqlValue (SqlValue)
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
@@ -61,7 +61,7 @@ newtype Row
 
 {- | 'ExecutionResult' is a common interface for types that represent a result set
   returned from the database. For real, live database interactions, the
-  concrete type will be a 'LibPQ.Result', but the 'FakeLibPQResult' may be
+  concrete type will be a 'Pqi.Result', but the 'FakeLibPQResult' may be
   useful as well if you are writing custom code for decoding result sets and
   want to test aspects of the decoding that don't require a real database.
 
@@ -111,30 +111,30 @@ readRows res = do
   traverse readRow rowIndices
 
 -- | @since 1.0.0.0
-instance ExecutionResult LibPQ.Result where
+instance ExecutionResult Pqi.Result where
   maxRowNumber result = do
-    rowCount <- fmap fromEnum (LibPQ.ntuples result)
+    rowCount <- fmap fromIntegral (Pqi.ntuples result)
     pure $
       if rowCount > 0
         then Just $ Row (rowCount - 1)
         else Nothing
 
   maxColumnNumber result = do
-    columnCount <- fmap fromEnum (LibPQ.nfields result)
+    columnCount <- fmap fromIntegral (Pqi.nfields result)
     pure $
       if columnCount > 0
         then Just $ Column (columnCount - 1)
         else Nothing
 
-  columnName result =
-    LibPQ.fname result . LibPQ.toColumn . fromEnum
+  columnName result (Column column) =
+    Pqi.fname result (fromIntegral column)
 
   getValue result (Row row) (Column column) =
     -- N.B. the usage of `getvalue'` here is important as this version returns a
     -- _copy_ of the data in the 'Result' rather than a _reference_.
     -- This allows the 'Result' to be garbage collected instead of being held onto indefinitely.
     SqlValue.fromRawBytesNullable
-      <$> LibPQ.getvalue' result (LibPQ.toRow row) (LibPQ.toColumn column)
+      <$> Pqi.getvalue' result (fromIntegral row) (fromIntegral column)
 
 {- | `FakeLibPQResult` provides a fake, in-memory implementation of
   `ExecutionResult`.  This is mostly useful for writing automated tests that

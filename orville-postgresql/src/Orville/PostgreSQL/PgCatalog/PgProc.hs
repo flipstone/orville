@@ -17,7 +17,6 @@ module Orville.PostgreSQL.PgCatalog.PgProc
 
 import qualified Data.String as String
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
@@ -30,9 +29,9 @@ import Orville.PostgreSQL.PgCatalog.OidField (oidField, oidTypeField)
 @since 1.1.0.0
 -}
 data PgProc = PgProc
-  { pgProcOid :: LibPQ.Oid
+  { pgProcOid :: Orville.Oid
   -- ^ The PostgreSQL @oid@ for the relation.
-  , pgProcNamespaceOid :: LibPQ.Oid
+  , pgProcNamespaceOid :: Orville.Oid
   {- ^ The PostgreSQL @oid@ of the namespace that the relation belongs to.
   References @pg_namespace.oid@.
   -}
@@ -86,7 +85,7 @@ pgProcMarshaller =
 
 @since 1.0.0.0
 -}
-procNamespaceOidField :: Orville.FieldDefinition Orville.NotNull LibPQ.Oid
+procNamespaceOidField :: Orville.FieldDefinition Orville.NotNull Orville.Oid
 procNamespaceOidField =
   oidTypeField "pronamespace"
 

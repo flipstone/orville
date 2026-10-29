@@ -11,7 +11,6 @@ import qualified Control.Monad.Trans.Reader as Reader
 import qualified Data.ByteString as BS
 import qualified Data.IORef as IORef
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Hedgehog.Gen as Gen
@@ -321,7 +320,7 @@ prop_transactionCleanupRunsAfterBeginTransactionFails pool =
             UnliftIO.takeMVar block
           _ -> pure ()
 
-      action :: Reader.ReaderT Orville.OrvilleState IO (Maybe LibPQ.TransactionStatus)
+      action :: Reader.ReaderT Orville.OrvilleState IO (Maybe Conn.TransactionStatus)
       action = Orville.withConnection $ \conn -> do
         t <- UnliftIO.async . Orville.withTransaction $ pure ()
         UnliftIO.takeMVar cancel
@@ -330,7 +329,7 @@ prop_transactionCleanupRunsAfterBeginTransactionFails pool =
 
     status <- HH.evalIO . run $ Orville.localOrvilleState callback action
 
-    status === Just LibPQ.TransIdle
+    status === Just Conn.TransIdle
 
 prop_transactionCleanupCannotBeInterrupted :: Orville.ConnectionPool -> HH.Property
 prop_transactionCleanupCannotBeInterrupted pool =
@@ -350,7 +349,7 @@ prop_transactionCleanupCannotBeInterrupted pool =
               act
             _ -> act
 
-      action :: Reader.ReaderT Orville.OrvilleState IO (Maybe LibPQ.TransactionStatus)
+      action :: Reader.ReaderT Orville.OrvilleState IO (Maybe Conn.TransactionStatus)
       action = Orville.withConnection $ \conn -> do
         t <- UnliftIO.async . Orville.withTransaction $ pure ()
         UnliftIO.takeMVar cancel
@@ -359,7 +358,7 @@ prop_transactionCleanupCannotBeInterrupted pool =
 
     status <- HH.evalIO . run $ Orville.localOrvilleState callback action
 
-    status === Just LibPQ.TransIdle
+    status === Just Conn.TransIdle
 
 captureTransactionCallbackEvents ::
   Orville.ConnectionPool ->

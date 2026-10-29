@@ -31,7 +31,6 @@ import Control.Applicative (liftA2)
 #endif
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 
 import qualified Orville.PostgreSQL as Orville
 import Orville.PostgreSQL.PgCatalog.OidField (oidField)
@@ -303,7 +302,7 @@ findRelation =
     . Plan.planOperation
     $ Op.findOne pgClassTable byNamespaceOidAndRelationName
 
-byNamespaceOidAndRelationName :: Op.WherePlanner (LibPQ.Oid, RelationName)
+byNamespaceOidAndRelationName :: Op.WherePlanner (Orville.Oid, RelationName)
 byNamespaceOidAndRelationName =
   Op.byFieldTuple namespaceOidField relationNameField
 
@@ -388,7 +387,7 @@ findConstraintForeignRelationClass =
   let
     relationId constraint =
       case pgConstraintForeignRelationOid constraint of
-        LibPQ.Oid 0 -> Nothing
+        Orville.Oid 0 -> Nothing
         nonZero -> Just nonZero
   in
     Plan.focusParam relationId
@@ -541,7 +540,7 @@ findProc =
     . Plan.planOperation
     $ Op.findOne pgProcTable byNamespaceOidAndProcName
 
-byNamespaceOidAndProcName :: Op.WherePlanner (LibPQ.Oid, ProcName)
+byNamespaceOidAndProcName :: Op.WherePlanner (Orville.Oid, ProcName)
 byNamespaceOidAndProcName =
   Op.byFieldTuple procNamespaceOidField procNameField
 

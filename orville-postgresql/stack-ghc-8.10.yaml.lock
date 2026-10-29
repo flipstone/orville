@@ -3,7 +3,35 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: postgresql-libpq-0.11.0.0@sha256:682d17c7bce588902dc01dc255328d8de4c633f98c7837eed8e5f1cc8b445af5,2717
+    pantry-tree:
+      sha256: e5a4c7e98a9758394f835c1aabc4c5aaaa8e7d55976cdad2b05379818cfc6999
+      size: 1048
+  original:
+    hackage: postgresql-libpq-0.11.0.0
+- completed:
+    hackage: postgresql-libpq-configure-0.11@sha256:019c5d83da0b4dc0b4487e0e868f2eed5efa25e0688f5cfc2ba8191a80e527aa,1309
+    pantry-tree:
+      sha256: 04a70f52cfacce71901efb1eafe3ae3103d133c1c4ee89ba7a51877c67503041
+      size: 353
+  original:
+    hackage: postgresql-libpq-configure-0.11
+- completed:
+    hackage: pqi-1.1.0.2@sha256:fbce7865a545cc640cbc0273f9066180e1f37ef3f31d84f9adcf510e1a012f16,2730
+    pantry-tree:
+      sha256: 861f2f3302cd818b6846c08c40803a176aa7889c40145a6c32b1dae66616d8e1
+      size: 261
+  original:
+    hackage: pqi-1.1.0.2
+- completed:
+    hackage: pqi-ffi-1.0.1.0@sha256:b4a9bb95999faa599ed26d1df37ccb4b979db06ddadd464d134282ccc2a70177,2322
+    pantry-tree:
+      sha256: 700d4d18c6304f4c2b52af867622740ea70dcc699ef4281ad0cfd59dacae41b6
+      size: 396
+  original:
+    hackage: pqi-ffi-1.0.1.0
 snapshots:
 - completed:
     sha256: 428ec8d5ce932190d3cbe266b9eb3c175cd81e984babf876b64019e2cbe4ea68

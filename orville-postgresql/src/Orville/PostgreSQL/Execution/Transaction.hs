@@ -20,8 +20,8 @@ where
 
 import Control.Exception (Exception, finally, onException, throwIO, try, uninterruptibleMask)
 import Control.Monad.IO.Class (liftIO)
-import qualified Database.PostgreSQL.LibPQ as LibPQ
 import Numeric.Natural (Natural)
+import qualified Pqi
 
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
@@ -111,7 +111,7 @@ withTransactionInstruction action =
             callback openEvent
           transactionError = UnexpectedTransactionStatusError status openEvent
         case status of
-          LibPQ.TransIdle -> case openEvent of
+          Pqi.TransIdle -> case openEvent of
             OrvilleState.BeginTransaction -> do
               let
                 execRollback :: (IO () -> IO a) -> IO a
@@ -121,24 +121,24 @@ withTransactionInstruction action =
                 rollback = uninterruptibleMask $ \restore -> do
                   postBeginStatus <- Connection.transactionStatusOrThrow conn
                   case postBeginStatus of
-                    LibPQ.TransInTrans -> execRollback restore
-                    LibPQ.TransInError -> execRollback restore
-                    LibPQ.TransActive -> execRollback restore
-                    LibPQ.TransIdle -> pure ()
-                    LibPQ.TransUnknown -> pure ()
+                    Pqi.TransInTrans -> execRollback restore
+                    Pqi.TransInError -> execRollback restore
+                    Pqi.TransActive -> execRollback restore
+                    Pqi.TransIdle -> pure ()
+                    Pqi.TransUnknown -> pure ()
               beginAction `onException` rollback
             _ ->
               throwIO transactionError
-          LibPQ.TransInTrans -> case openEvent of
+          Pqi.TransInTrans -> case openEvent of
             OrvilleState.NewSavepoint _ ->
               beginAction
             _ ->
               throwIO transactionError
-          LibPQ.TransActive ->
+          Pqi.TransActive ->
             throwIO transactionError
-          LibPQ.TransInError ->
+          Pqi.TransInError ->
             throwIO transactionError
-          LibPQ.TransUnknown ->
+          Pqi.TransUnknown ->
             throwIO transactionError
 
       doAction () =
@@ -160,7 +160,7 @@ withTransactionInstruction action =
             Bracket.BracketSuccess (_, Rollback) -> rollbackEvent
             Bracket.BracketError -> rollbackEvent
         case status of
-          LibPQ.TransInTrans -> case result of
+          Pqi.TransInTrans -> case result of
             Bracket.BracketSuccess (_, Commit) -> do
               eSuccess <- try $ executeTransactionSql (transactionEventSql state successEvent)
               case eSuccess of
@@ -172,13 +172,13 @@ withTransactionInstruction action =
               rollback
             Bracket.BracketError ->
               rollback
-          LibPQ.TransInError ->
+          Pqi.TransInError ->
             rollback
-          LibPQ.TransActive ->
+          Pqi.TransActive ->
             throwIO transactionError
-          LibPQ.TransIdle ->
+          Pqi.TransIdle ->
             throwIO transactionError
-          LibPQ.TransUnknown ->
+          Pqi.TransUnknown ->
             throwIO transactionError
 
     fmap fst $
@@ -193,7 +193,7 @@ withTransactionInstruction action =
 @since 1.1.0.0
 -}
 data UnexpectedTransactionStatusError = UnexpectedTransactionStatusError
-  { unexpectedTransactionStatusErrorTransactionStatus :: LibPQ.TransactionStatus
+  { unexpectedTransactionStatusErrorTransactionStatus :: Pqi.TransactionStatus
   , unexpectedTransactionStatusErrorTransactionEvent :: OrvilleState.TransactionEvent
   }
 
