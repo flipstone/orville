@@ -14,7 +14,7 @@ apt install -y hostname
 # overwrite the pg_config that libpq-dev already installed. Pin the server to
 # the exact build libpq-dev resolved to; both come from the same source
 # package, so this tracks patch releases on its own.
-apt install -y postgresql "postgresql-17=$(dpkg-query -W -f='${Version}' libpq-dev)"
+apt install -y --no-install-recommends postgresql "postgresql-17=$(dpkg-query -W -f='${Version}' libpq-dev)"
 sed \
   -i \
   "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost' /" \
