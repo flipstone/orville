@@ -7,6 +7,7 @@ import qualified Control.Monad.Reader as Reader
 import qualified Control.Monad.IO.Class as MIO
 import qualified Data.Text as T
 import qualified Orville.PostgreSQL as O
+import qualified Pqi.Ffi as PqiFfi
 
 newtype Application a =
   Application (Reader.ReaderT O.OrvilleState IO a)
@@ -48,6 +49,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10

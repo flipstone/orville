@@ -8,6 +8,7 @@ import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
 
 import qualified Data.Int as Int
 import qualified Data.Text as T
+import qualified Pqi.Ffi as PqiFfi
 -- SNIPPET: dataTypes
 type FooId = Int.Int32
 type FooName = T.Text
@@ -49,6 +50,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10

@@ -1,8 +1,8 @@
 *** Main.hs (Old)
 --- Main.hs (New)
 ***************
-*** 24,25 ****
---- 24,39 ----
+*** 25,26 ****
+--- 25,40 ----
   
 + instance O.HasOrvilleState Application where
 +   askOrvilleState =

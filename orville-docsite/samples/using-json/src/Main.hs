@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as Enc
 import qualified Data.Text.Lazy as LazyText
 import qualified Data.Vector as Vector
+import qualified Pqi.Ffi as PqiFfi
 -- SNIPPET: dataTypes
 data Foo = Foo
   { fooId :: Int.Int32
@@ -62,6 +63,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10

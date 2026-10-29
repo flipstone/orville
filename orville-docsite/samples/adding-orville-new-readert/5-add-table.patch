@@ -7,13 +7,13 @@
 + import qualified Data.Text as T
   import qualified Orville.PostgreSQL as O
 ***************
-*** 31,35 ****
+*** 32,36 ****
   
   myApplication :: Application ()
 ! myApplication =
 !   MIO.liftIO . putStrLn $ "Hello Application"
   
---- 32,44 ----
+--- 33,45 ----
   
 + messagesTable :: O.TableDefinition O.NoKey T.Text T.Text
 + messagesTable =

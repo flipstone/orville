@@ -13,6 +13,7 @@ import           Data.List (sort)
 import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Int as Int
 import qualified Data.Text as T
+import qualified Pqi.Ffi as PqiFfi
 
 -------------
 -- Student --
@@ -125,6 +126,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10

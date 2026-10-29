@@ -4,9 +4,10 @@ navOrder: 1
 ---
 
 This guide will show you how to add Orville to your already existing
-application monad in the simplest way possible. It relies on the `mtl` package
-in addition to `orville-postgresql`, so you should make sure these packages are
-in your package dependencies in either your `.cabal` or `package.yaml` file.
+application monad in the simplest way possible. It relies on the `mtl` and
+`pqi-ffi` packages in addition to `orville-postgresql`, so you should make sure
+these packages are in your package dependencies in either your `.cabal` or
+`package.yaml` file.
 
 The file listing below shows a simple, minimal application with its own
 `Application` monad. Your application is certainly more complicated than this,
@@ -48,7 +49,8 @@ $sample("adding-orville-new-readert/3-update-runApplication.patch", "filename=Ma
 Since we added a parameter to `runApplication`, we need to go to each place
 it's called and pass a `ConnectionPool` parameter now. In this guide that's
 just a single place in the `main` function. We'll use `createConnectionPool` as
-normal to make the pool we want to use.
+normal to make the pool we want to use, with the adapter from the `Pqi.Ffi`
+module (from the `pqi-ffi` package) as its `connectionAdapter`.
 
 $sample("adding-orville-new-readert/4-update-main.patch", "filename=Main.hs")$
 

@@ -19,6 +19,7 @@ executable using-migrations
 
   build-depends:       base >= 4.7 && < 5,
                        orville-postgresql,
+                       pqi-ffi,
                        text
 
   ghc-options:         -Wall

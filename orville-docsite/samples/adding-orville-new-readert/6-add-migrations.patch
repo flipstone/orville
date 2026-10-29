@@ -5,10 +5,10 @@
 --- 9,11 ----
   import qualified Orville.PostgreSQL as O
 + import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
-  
+  import qualified Pqi.Ffi as PqiFfi
 ***************
-*** 44,45 ****
---- 45,51 ----
+*** 45,46 ****
+--- 46,52 ----
   
 + schema :: [AutoMigration.SchemaItem]
 + schema =
@@ -17,8 +17,8 @@
 + 
   main :: IO ()
 ***************
-*** 56,57 ****
---- 62,64 ----
+*** 58,59 ****
+--- 64,66 ----
   
 +   runApplication pool (AutoMigration.autoMigrateSchema AutoMigration.defaultOptions schema)
     runApplication pool myApplication

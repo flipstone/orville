@@ -9,6 +9,7 @@ import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
 import           Control.Monad.IO.Class (MonadIO(liftIO))
 import qualified Data.Int as Int
+import qualified Pqi.Ffi as PqiFfi
 
 data Foo1 = Foo1
   { foo1Id :: Int.Int32
@@ -70,6 +71,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10

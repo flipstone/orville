@@ -16,6 +16,7 @@ import           Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Int as Int
 import qualified Data.IORef as IORef
 import qualified Data.Text as T
+import qualified Pqi.Ffi as PqiFfi
 -- SNIPPET: tableDefinitions
 ------------
 -- Author --
@@ -198,6 +199,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10
@@ -213,18 +215,18 @@ main = do
     O.deleteEntities reviewTable Nothing
     O.deleteEntities bookTable Nothing
     O.deleteEntities authorTable Nothing
-    O.insertEntities authorTable $
+    O.insertEntities O.InOneStatement authorTable $
       Author 1 (T.pack "Fyodor Dostoyevsky")
         :| [ Author 2 (T.pack "Frank Herbert")
            ]
-    O.insertEntities bookTable $
+    O.insertEntities O.InOneStatement bookTable $
       Book 1 (T.pack "Brothers Karamazov") 1
         :| [ Book 2 (T.pack "The Idiot") 1
            , Book 3 (T.pack "Crime and Punishment") 1
            , Book 4 (T.pack "Dune") 2
            , Book 5 (T.pack "God Emperor of Dune") 2
            ]
-    O.insertEntities reviewTable $
+    O.insertEntities O.InOneStatement reviewTable $
       Review 1 1 5
         :| [ Review 2 1 4
            , Review 3 2 5

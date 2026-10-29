@@ -19,6 +19,7 @@ executable using-json
 
   build-depends:       base >= 4.7 && < 5,
                        orville-postgresql,
+                       pqi-ffi,
                        aeson,
                        vector,
                        text

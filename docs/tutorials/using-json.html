@@ -110,7 +110,8 @@ src/Main.hs : haskell
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.Encoding</span> <span class="kw">as</span> <span class="dt">Enc</span></span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text.Lazy</span> <span class="kw">as</span> <span class="dt">LazyText</span></span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Vector</span> <span class="kw">as</span> <span class="dt">Vector</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Pqi.Ffi</span> <span class="kw">as</span> <span class="dt">PqiFfi</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
 <p>Let’s suppose we have an example entity with an ID, and some arbitrary JSON
 data in a column called ‘tags’.</p>
 <p>Note how <code>fooTagsField</code> below uses the <code>Value</code> type from the Aeson library.</p>
@@ -182,16 +183,17 @@ src/Main.hs : haskell
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    O.createConnectionPool</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">O.ConnectionOptions</span></span>
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>          { O.connectionString <span class="ot">=</span> <span class="st">&quot;host=localhost user=postgres password=postgres&quot;</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>          }</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  O.runOrville pool <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ <span class="dt">AutoMigration.SchemaTable</span> table ]</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">&lt;-</span> O.deleteEntity table <span class="dv">0</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>          , O.connectionAdapter <span class="ot">=</span> PqiFfi.adapter</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  O.runOrville pool <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [ <span class="dt">AutoMigration.SchemaTable</span> table ]</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">&lt;-</span> O.deleteEntity table <span class="dv">0</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
 <p>We’ll construct a JSON value using the Aeson library, which makes this look
 fairly verbose. But imagine that the <code>Array</code> value below was read from a file,
 or received over HTTP from a web browser.</p>

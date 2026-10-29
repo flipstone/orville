@@ -1,5 +1,7 @@
-42c42,43
+42c42,45
 < # extra-deps: []
 ---
 > extra-deps:
->  - orville-postgresql-1.1.0.0
+>  - orville-postgresql-1.2.0.0
+>  - pqi-1.1.0.2
+>  - pqi-ffi-1.0.1.0

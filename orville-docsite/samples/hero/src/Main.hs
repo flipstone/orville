@@ -4,6 +4,7 @@ import Data.Int (Int32)
 import qualified Data.Text as T
 import qualified Orville.PostgreSQL as O
 import qualified Orville.PostgreSQL.AutoMigration as AutoMigration
+import qualified Pqi.Ffi as PqiFfi
 
 {- | Pet is a plain old Haskell record that will be marshalled to and from the
   @pet@ table.
@@ -60,6 +61,7 @@ main = do
     O.createConnectionPool
       O.ConnectionOptions
         { O.connectionString = "host=localhost user=postgres password=postgres"
+        , O.connectionAdapter = PqiFfi.adapter
         , O.connectionNoticeReporting = O.DisableNoticeReporting
         , O.connectionPoolStripes = O.OneStripePerCapability
         , O.connectionPoolMaxConnections = O.MaxConnectionsPerStripe 1

@@ -25,7 +25,9 @@ $sample("adding-orville-existing-readert/1-add-orville-state.patch", "filename=M
 
 This requires that the new `applicationOrvilleState` field be populated in the
 `runApplication` function using a `ConnectionPool`. The `ConnectionPool` is
-created in the `main` function and passed in where `runApplication` is called.
+created in the `main` function, using the adapter from the `Pqi.Ffi` module (from
+the `pqi-ffi` package) as its `connectionAdapter`, and passed in where
+`runApplication` is called.
 
 $sample("adding-orville-existing-readert/2-update-runApplication.patch", "filename=Main.hs")$
 

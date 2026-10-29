@@ -1,13 +1,19 @@
 *** Main.hs (Old)
 --- Main.hs (New)
 ***************
+*** 8,9 ****
+--- 8,10 ----
+  import qualified Orville.PostgreSQL as O
++ import qualified Pqi.Ffi as PqiFfi
+  
+***************
 *** 28,32 ****
   
 ! runApplication :: String -> Application a -> IO a
 ! runApplication greeting (Application io) =
     let
       context =
---- 28,37 ----
+--- 29,38 ----
   
 ! runApplication :: O.ConnectionPool -> String -> Application a -> IO a
 ! runApplication pool greeting (Application io) =
@@ -20,7 +26,7 @@
       context =
 ***************
 *** 34,35 ****
---- 39,41 ----
+--- 40,42 ----
           { applicationGreeting = greeting
 +         , applicationOrvilleState = orvilleState
           }
@@ -29,13 +35,14 @@
   main :: IO ()
 ! main =
 !   runApplication "Hello Application" myApplication
---- 50,62 ----
+--- 51,64 ----
   main :: IO ()
 ! main = do
 !   pool <-
 !     O.createConnectionPool
 !         O.ConnectionOptions
 !           { O.connectionString = "host=localhost user=postgres password=postgres"
+!           , O.connectionAdapter = PqiFfi.adapter
 !           , O.connectionNoticeReporting = O.DisableNoticeReporting
 !           , O.connectionPoolStripes = O.OneStripePerCapability
 !           , O.connectionPoolLingerTime = 10

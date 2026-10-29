@@ -102,7 +102,8 @@ src/Main.hs : haskell
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Int</span> <span class="kw">as</span> <span class="dt">Int</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Data.Text</span> <span class="kw">as</span> <span class="dt">T</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Pqi.Ffi</span> <span class="kw">as</span> <span class="dt">PqiFfi</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
 <p>Next, let’s declare some type aliases and the Haskell record itself. We’ll
 enable storing values of this record in the SQL database.</p>
 <div class="codeblock-label">
@@ -181,19 +182,20 @@ src/Main.hs : haskell
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    O.createConnectionPool</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">O.ConnectionOptions</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>          { O.connectionString <span class="ot">=</span> <span class="st">&quot;host=localhost user=postgres password=postgres&quot;</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>          }</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  mbFoo <span class="ot">&lt;-</span> O.runOrville pool <span class="op">$</span> <span class="kw">do</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [<span class="dt">AutoMigration.SchemaTable</span> table]</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">&lt;-</span> O.deleteEntity table <span class="dv">0</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">&lt;-</span> O.insertEntity table <span class="dt">Foo</span> { fooId <span class="ot">=</span> <span class="dv">0</span>, fooName <span class="ot">=</span> T.pack <span class="st">&quot;Name&quot;</span>, fooAge <span class="ot">=</span> <span class="dv">91</span> }</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    O.findEntity table <span class="dv">0</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span> mbFoo</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>          , O.connectionAdapter <span class="ot">=</span> PqiFfi.adapter</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  mbFoo <span class="ot">&lt;-</span> O.runOrville pool <span class="op">$</span> <span class="kw">do</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    AutoMigration.autoMigrateSchema AutoMigration.defaultOptions [<span class="dt">AutoMigration.SchemaTable</span> table]</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">&lt;-</span> O.deleteEntity table <span class="dv">0</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    _ <span class="ot">&lt;-</span> O.insertEntity table <span class="dt">Foo</span> { fooId <span class="ot">=</span> <span class="dv">0</span>, fooName <span class="ot">=</span> T.pack <span class="st">&quot;Name&quot;</span>, fooAge <span class="ot">=</span> <span class="dv">91</span> }</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    O.findEntity table <span class="dv">0</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span> mbFoo</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
 <p>The program is now complete, let’s compile and run!</p>
 <div class="codeblock-label">
 shell

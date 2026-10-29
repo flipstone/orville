@@ -83,10 +83,11 @@
 to work. This tutorial assumes that PostgreSQL in running on <code>localhost</code>,
 listening on port <code>5432</code> and that the user <code>postgres</code> exists with password
 <code>postgres</code>.</p>
-<p>Orville itself depends on the native LibPQ library being installed to
-communicate with the server, so we need to install it before building
-everything. If you’re on Debian-like distribution that uses <code>apt</code>, this command
-will do that.</p>
+<p>Orville talks to the server through the <code>pqi</code> interface, and this tutorial
+uses the <code>pqi-ffi</code> package to connect. <code>pqi-ffi</code> depends on the native LibPQ
+library being installed to communicate with the server, so we need to install
+it before building everything. If you’re on Debian-like distribution that uses
+<code>apt</code>, this command will do that.</p>
 <div class="codeblock-label">
 shell
 </div>
@@ -101,26 +102,30 @@ shell
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> orville-getting-started</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">stack</span> new orville-getting-started <span class="at">--bare</span> simple <span class="at">--resolver</span> lts-24.12</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span></code></pre></div>
-<p>Now we need to edit <code>stack.yaml</code> and add <code>orville-postgresql</code> as an extra-dep.</p>
+<p>Now we need to edit <code>stack.yaml</code> and add <code>orville-postgresql</code>, <code>pqi</code> and
+<code>pqi-ffi</code> as extra-deps.</p>
 <div class="codeblock-label">
 stack.yaml : diff
 </div>
-<div class="sourceCode" id="cb3"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">42c42,43</span></span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">42c42,45</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="st">&lt; # extra-deps: []</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">---</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="va">&gt; extra-deps:</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;  - orville-postgresql-1.1.0.0</span></span></code></pre></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;  - orville-postgresql-1.2.0.0</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;  - pqi-1.1.0.2</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;  - pqi-ffi-1.0.1.0</span></span></code></pre></div>
 <p>Next, edit the <code>orville-getting-started.cabal</code> file to make it depend on
-Orville.</p>
+Orville and <code>pqi-ffi</code>.</p>
 <div class="codeblock-label">
 orville-getting-started.cabal : diff
 </div>
 <div class="sourceCode" id="cb4"><pre class="sourceCode diff"><code class="sourceCode diff"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">22c22</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="st">&lt;   build-depends:       base &gt;= 4.7 &amp;&amp; &lt; 5</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">---</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;   build-depends:       base &gt;= 4.7 &amp;&amp; &lt; 5, orville-postgresql ^&gt;= 1.1.0.0</span></span></code></pre></div>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">&gt;   build-depends:       base &gt;= 4.7 &amp;&amp; &lt; 5, orville-postgresql ^&gt;= 1.2.0.0, pqi-ffi ^&gt;= 1.0.1.0</span></span></code></pre></div>
 <p>Here is a minimal program that simply computes 1+1 on the database. Replace
-the <code>src/Main.hs</code> with it.</p>
+the <code>src/Main.hs</code> with it. The <code>connectionAdapter</code> field tells Orville to
+connect using <code>pqi-ffi</code>.</p>
 <div class="codeblock-label">
 src/Main.hs : haskell
 </div>
@@ -133,23 +138,25 @@ src/Main.hs : haskell
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL.Raw.Connection</span> <span class="kw">as</span> <span class="dt">Connection</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL.Raw.RawSql</span> <span class="kw">as</span> <span class="dt">RawSql</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Orville.PostgreSQL.Raw.SqlValue</span> <span class="kw">as</span> <span class="dt">SqlValue</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>  pool <span class="ot">&lt;-</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    O.createConnectionPool</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">O.ConnectionOptions</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>          { O.connectionString <span class="ot">=</span> <span class="st">&quot;host=localhost user=postgres password=postgres&quot;</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>          }</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  Connection.withPoolConnection pool <span class="op">$</span> \connection <span class="ot">-&gt;</span> <span class="kw">do</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> RawSql.execute connection (RawSql.fromString <span class="st">&quot;SELECT 1+1&quot;</span>)</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    [[(_, sqlValue)]] <span class="ot">&lt;-</span> Execution.readRows result</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span> (SqlValue.toInt sqlValue)</span></code></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="kw">qualified</span> <span class="dt">Pqi.Ffi</span> <span class="kw">as</span> <span class="dt">PqiFfi</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="ot">main ::</span> <span class="dt">IO</span> ()</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>main <span class="ot">=</span> <span class="kw">do</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  pool <span class="ot">&lt;-</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    O.createConnectionPool</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">O.ConnectionOptions</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>          { O.connectionString <span class="ot">=</span> <span class="st">&quot;host=localhost user=postgres password=postgres&quot;</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>          , O.connectionAdapter <span class="ot">=</span> PqiFfi.adapter</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>          , O.connectionNoticeReporting <span class="ot">=</span> <span class="dt">O.DisableNoticeReporting</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolStripes <span class="ot">=</span> <span class="dt">O.OneStripePerCapability</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolLingerTime <span class="ot">=</span> <span class="dv">10</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>          , O.connectionPoolMaxConnections <span class="ot">=</span> <span class="dt">O.MaxConnectionsPerStripe</span> <span class="dv">1</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  Connection.withPoolConnection pool <span class="op">$</span> \connection <span class="ot">-&gt;</span> <span class="kw">do</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> RawSql.execute connection (RawSql.fromString <span class="st">&quot;SELECT 1+1&quot;</span>)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    [[(_, sqlValue)]] <span class="ot">&lt;-</span> Execution.readRows result</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span> (SqlValue.toInt sqlValue)</span></code></pre></div>
 <p>All that’s left is to build the executable and run it. When it runs it will
 connect to the PostgreSQL server, run the SQL to calculate <code>1 + 1</code> and then
 print the result out.</p>

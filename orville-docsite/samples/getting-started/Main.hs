@@ -7,6 +7,7 @@ import qualified Orville.PostgreSQL.Execution as Execution
 import qualified Orville.PostgreSQL.Raw.Connection as Connection
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Orville.PostgreSQL.Raw.SqlValue as SqlValue
+import qualified Pqi.Ffi as PqiFfi
 
 main :: IO ()
 main = do
@@ -14,6 +15,7 @@ main = do
     O.createConnectionPool
         O.ConnectionOptions
           { O.connectionString = "host=localhost user=postgres password=postgres"
+          , O.connectionAdapter = PqiFfi.adapter
           , O.connectionNoticeReporting = O.DisableNoticeReporting
           , O.connectionPoolStripes = O.OneStripePerCapability
           , O.connectionPoolLingerTime = 10
