@@ -35,7 +35,7 @@ import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Word as Word
 
 import Orville.PostgreSQL.Expr.Name (PolicyName, QualifiedOrUnqualified, TableName)
-import Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole (PolicyRoleExpr)
+import Orville.PostgreSQL.Expr.RoleSpecification (RoleSpecification)
 import Orville.PostgreSQL.Expr.WhereClause (BooleanExpr)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -268,7 +268,7 @@ createPolicyExpr ::
   QualifiedOrUnqualified TableName ->
   Maybe PolicyPermissionExpr ->
   Maybe PolicyCommandExpr ->
-  Maybe (NonEmpty PolicyRoleExpr) ->
+  Maybe (NonEmpty RoleSpecification) ->
   Maybe PolicyUsingExpr ->
   Maybe PolicyCheckExpr ->
   CreatePolicyExpr
@@ -312,7 +312,7 @@ createPolicyExpr name tableName mbPermission mbCommand mbRoles mbUsing mbCheck =
 alterPolicyExpr ::
   PolicyName ->
   QualifiedOrUnqualified TableName ->
-  Maybe (NonEmpty PolicyRoleExpr) ->
+  Maybe (NonEmpty RoleSpecification) ->
   Maybe PolicyUsingExpr ->
   Maybe PolicyCheckExpr ->
   AlterPolicyExpr
@@ -331,7 +331,7 @@ alterPolicyExpr name tableName mbRoles mbUsing mbCheck =
 @CREATE POLICY@ and @ALTER POLICY@ statements.
 -}
 policyClauses ::
-  Maybe (NonEmpty PolicyRoleExpr) ->
+  Maybe (NonEmpty RoleSpecification) ->
   Maybe PolicyUsingExpr ->
   Maybe PolicyCheckExpr ->
   [RawSql.RawSql]

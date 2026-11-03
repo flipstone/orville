@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `CURRENT_USER` and `SESSION_USER` (`PolicyRole`), and `USING` / `WITH CHECK`
   expressions. Auto-migration creates, recreates and drops policies by
   comparing definitions against the `pg_policies` catalog view. Corresponding
-  SQL builders are available in `Orville.PostgreSQL.Expr`.
+  support for writing this SQL is available in `Orville.PostgreSQL.Expr`.
 - `setRowLevelSecurityEnabled` on table definitions. Auto-migration keeps the
   table's row-level security setting in sync with the definition (see the
   Security section below).
@@ -64,13 +64,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `selectMarshalledColumnsFromTableReference` builds a `Select` from a
   marshaller and any `TableReference`, where `selectMarshalledColumns` only
   accepts a table name.
+- `Orville.PostgreSQL.Expr` layer support for SQL views covering the full
+  PostgreSQL 15 grammar: `createViewExpr` (`CREATE [OR REPLACE] [TEMPORARY]
+  [RECURSIVE] VIEW name [(columns)] [WITH (options)] AS query [WITH
+  [CASCADED | LOCAL] CHECK OPTION]`, with `checkOption`, `CheckOptionLevel`
+  and the `viewOptionCheckOption`, `viewOptionSecurityBarrier` and
+  `viewOptionSecurityInvoker` options), `dropViewExpr` (`DROP VIEW [IF
+  EXISTS] name [, ...] [CASCADE | RESTRICT]`), `alterViewExpr` with the
+  `AlterViewAction`s `alterViewColumnSetDefault`, `alterViewColumnDropDefault`,
+  `alterViewOwnerTo`, `alterViewSetOptions` and `alterViewResetOptions`, the
+  dedicated `renameViewExpr`, `renameViewColumnExpr` and `setViewSchemaExpr`,
+  and `commentViewExpr` (`COMMENT ON VIEW`).
+- `Orville.PostgreSQL.Expr` layer support for SQL materialized views covering
+  the full PostgreSQL 15 grammar: `createMaterializedViewExpr` (`CREATE
+  MATERIALIZED VIEW [IF NOT EXISTS] name [(columns)] [USING method] [WITH
+  (options)] [TABLESPACE name] AS query [WITH [NO] DATA]`, with `withData`
+  and `withNoData`), `dropMaterializedViewExpr`, `refreshMaterializedViewExpr`
+  (`REFRESH MATERIALIZED VIEW [CONCURRENTLY] name [WITH [NO] DATA]`),
+  `alterMaterializedViewExpr` with an `AlterMaterializedViewAction` for each
+  of the twelve actions (column statistics, options, storage and compression,
+  cluster, access method, tablespace, options and owner), the dedicated
+  `renameMaterializedViewExpr`, `renameMaterializedViewColumnExpr`,
+  `setMaterializedViewSchemaExpr`,
+  `alterMaterializedViewExtensionDependencyExpr` and
+  `alterAllMaterializedViewsInTablespaceExpr`, and
+  `commentMaterializedViewExpr` (`COMMENT ON MATERIALIZED VIEW`).
+- New `Orville.PostgreSQL.Expr` layer types and functions supporting the other
+  changes above: `DropBehavior` (`cascade`, `restrict`), `Temporary`,
+  `Recursive`, `RelationOption` with `RelationOptionName` and
+  `RelationOptionValue`, `RoleSpecification` (`roleSpecification`, `public`,
+  `currentRole`, `currentUser`, `sessionUser`), which is also the role type
+  of the `TO` clause in `createPolicyExpr` and `alterPolicyExpr`,
+  `ColumnStorage` and
+  `CompressionMethod`, `ExtensionDependency`, `NoWait`, and the names
+  `RoleName`, `TablespaceName` and `AccessMethodName`.
 - POSIX regular expression matching: `fieldMatchesRegex`,
   `fieldMatchesRegexInsensitive`, `fieldNotMatchesRegex` and
   `fieldNotMatchesRegexInsensitive`, with the corresponding `SqlComparable`
-  functions, `BooleanExpr` builders (`matchesRegex` etc.) and binary operators
+  functions, `BooleanExpr` functions (`matchesRegex` etc.) and binary operators
   (`regexMatchOp` etc.).
 
 ### Changed
+- The `DROP` functions in `Orville.PostgreSQL.Expr` take a `Maybe DropBehavior`
+  (`cascade` or `restrict`) as their last argument: `dropTableExpr`,
+  `dropSequenceExpr`, `dropIndexExpr`, `dropTrigger`, `dropFunction`,
+  `dropColumn` and `dropConstraint`, as does `truncateTablesExpr`, where
+  PostgreSQL accepts the same clause. Pass `Nothing` to keep the previous
+  statements.
 - The `Natural` constructor of `MarshallerField` has a new argument after the
   `FieldDefinition` giving the name the field will have in a result set. It is
   the field's own name unless the field was aliased with `marshallAliasFields`.

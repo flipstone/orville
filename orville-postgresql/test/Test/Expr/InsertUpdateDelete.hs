@@ -340,7 +340,7 @@ prop_truncateTablesExpr pool =
         MIO.liftIO $
           Conn.withPoolConnection pool $ \connection -> do
             RawSql.executeVoid connection $
-              Expr.truncateTablesExpr (fooBarTable NE.:| (pure fooBar2Table))
+              Expr.truncateTablesExpr (fooBarTable NE.:| (pure fooBar2Table)) Nothing
 
     _ <- recreateAndInsert
     _ <- truncateTables

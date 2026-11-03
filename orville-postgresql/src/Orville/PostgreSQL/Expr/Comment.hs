@@ -12,6 +12,8 @@ module Orville.PostgreSQL.Expr.Comment
   , commentText
   , CommentExpr
   , commentTableExpr
+  , commentViewExpr
+  , commentMaterializedViewExpr
   , commentColumnExpr
   ) where
 
@@ -62,6 +64,34 @@ commentTableExpr tableName mbComment =
       , RawSql.fromString "IS"
       , maybe RawSql.nullLiteral RawSql.toRawSql mbComment
       ]
+
+{- | Construct a 'CommentExpr' for a @COMMENT ON VIEW@ statement. A view is
+  referred to by a 'TableName' because it is selected from in the same way as
+  a table.
+
+@since 1.2.0.0
+-}
+commentViewExpr :: QualifiedOrUnqualified TableName -> Maybe Comment -> CommentExpr
+commentViewExpr viewName mbComment =
+  CommentExpr $
+    RawSql.fromString "COMMENT ON VIEW "
+      <> RawSql.toRawSql viewName
+      <> RawSql.fromString " IS "
+      <> maybe RawSql.nullLiteral RawSql.toRawSql mbComment
+
+{- | Construct a 'CommentExpr' for a @COMMENT ON MATERIALIZED VIEW@ statement.
+  A materialized view is referred to by a 'TableName' because it is selected
+  from in the same way as a table.
+
+@since 1.2.0.0
+-}
+commentMaterializedViewExpr :: QualifiedOrUnqualified TableName -> Maybe Comment -> CommentExpr
+commentMaterializedViewExpr viewName mbComment =
+  CommentExpr $
+    RawSql.fromString "COMMENT ON MATERIALIZED VIEW "
+      <> RawSql.toRawSql viewName
+      <> RawSql.fromString " IS "
+      <> maybe RawSql.nullLiteral RawSql.toRawSql mbComment
 
 {- | Construct a 'CommentExpr' for a @COMMENT ON COLUMN@ statement.
 

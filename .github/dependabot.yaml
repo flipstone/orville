@@ -40,7 +40,7 @@ updates:
   # within the pinned GHC version, since the GHC version sits in the part of
   # the tag Dependabot treats as an opaque prefix.
   #
-  # postgres is ignored deliberately. The testdb-pg13..pg18 services are a
+  # postgres is ignored deliberately. The testdb-pg14..pg18 services are a
   # version matrix: each one pins the oldest patch of a major on purpose so the
   # suite proves Orville still supports that major. Letting Dependabot bump
   # them would collapse the matrix onto whatever is newest, which is precisely

@@ -13,4 +13,3 @@ module Orville.PostgreSQL.Expr.PolicyExpr
 
 import Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr as Export
 import Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr as Export
-import Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole as Export

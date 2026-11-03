@@ -4,6 +4,7 @@ module Test.Expr.SequenceDefinition
 where
 
 import qualified Control.Monad.IO.Class as MIO
+import qualified Data.ByteString.Char8 as B8
 import Hedgehog ((===))
 import qualified Hedgehog as HH
 import qualified Test.Tasty as Tasty
@@ -12,6 +13,7 @@ import qualified Test.Tasty.Hedgehog as TastyHH
 import qualified Orville.PostgreSQL as Orville
 import qualified Orville.PostgreSQL.Expr as Expr
 import qualified Orville.PostgreSQL.PgCatalog as PgCatalog
+import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 import qualified Test.PgAssert as PgAssert
 import qualified Test.Property as Property
 
@@ -21,14 +23,21 @@ sequenceDefinitionTests pool =
     "Expr - SequenceDefinition"
     [ TastyHH.testProperty "Create sequence with no options" (prop_createWithNoOptions pool)
     , TastyHH.testProperty "Create sequence with options" (prop_createWithWithOptions pool)
+    , TastyHH.testProperty "dropSequenceExpr renders the drop behavior" prop_dropSequenceSql
     ]
+
+prop_dropSequenceSql :: HH.Property
+prop_dropSequenceSql =
+  Property.singletonProperty $
+    RawSql.toExampleBytes (Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName (Just Expr.cascade))
+      === B8.pack "DROP SEQUENCE IF EXISTS \"sequence_definition_test\" CASCADE"
 
 prop_createWithNoOptions :: Orville.ConnectionPool -> HH.Property
 prop_createWithNoOptions pool =
   Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
-        Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName
+        Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName Nothing
         Orville.executeVoid Orville.DDLQuery $ Expr.createSequenceExpr exprSequenceName Nothing Nothing Nothing Nothing Nothing Nothing
 
     _ <- PgAssert.assertSequenceExists pool sequenceNameString
@@ -39,7 +48,7 @@ prop_createWithWithOptions pool =
   Property.singletonProperty $ do
     MIO.liftIO $
       Orville.runOrville pool $ do
-        Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName
+        Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) exprSequenceName Nothing
         Orville.executeVoid Orville.DDLQuery $
           Expr.createSequenceExpr
             exprSequenceName

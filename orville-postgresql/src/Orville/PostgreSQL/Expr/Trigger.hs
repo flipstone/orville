@@ -30,6 +30,7 @@ module Orville.PostgreSQL.Expr.Trigger
 import qualified Data.List.NonEmpty as NEL
 import Data.Maybe (catMaybes)
 
+import Orville.PostgreSQL.Expr.DropBehavior (DropBehavior)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (ColumnName, FunctionName, QualifiedOrUnqualified, TableName, TriggerName)
 import Orville.PostgreSQL.Expr.OrReplace (OrReplace)
@@ -52,7 +53,8 @@ newtype DropTriggerExpr
       RawSql.SqlExpression
     )
 
-{- | Constructs a SQL @DROP TRIGGER@ statement from the trigger name and table name
+{- | Constructs a SQL @DROP TRIGGER@ statement from the trigger name and table
+  name. The 'DropBehavior' has been taken as an argument since 1.2.0.0.
 
 @since 1.1.0.0
 -}
@@ -60,8 +62,9 @@ dropTrigger ::
   Maybe IfExists ->
   TriggerName ->
   QualifiedOrUnqualified TableName ->
+  Maybe DropBehavior ->
   DropTriggerExpr
-dropTrigger maybeIfExists name tableName =
+dropTrigger maybeIfExists name tableName maybeDropBehavior =
   DropTriggerExpr $
     RawSql.intercalate
       RawSql.space
@@ -71,6 +74,7 @@ dropTrigger maybeIfExists name tableName =
           , Just (RawSql.toRawSql name)
           , Just (RawSql.fromString "ON")
           , Just (RawSql.toRawSql tableName)
+          , fmap RawSql.toRawSql maybeDropBehavior
           ]
       )
 

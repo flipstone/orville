@@ -571,6 +571,7 @@ calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
                   Expr.dropTableExpr
                     Nothing
                     (Orville.tableIdQualifiedName tableId)
+                    Nothing
               in
                 [mkMigrationStepWithType AddRemoveTablesAndColumns dropTableExpr]
     SchemaSequence sequenceDef ->
@@ -611,7 +612,7 @@ calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
             Just _ ->
               [ mkMigrationStepWithType
                   AddRemoveTablesAndColumns
-                  (Expr.dropSequenceExpr Nothing (Orville.sequenceIdQualifiedName sequenceId))
+                  (Expr.dropSequenceExpr Nothing (Orville.sequenceIdQualifiedName sequenceId) Nothing)
               ]
     SchemaFunction functionDef ->
       Right $
@@ -648,7 +649,7 @@ calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
             Just _proc ->
               [ mkMigrationStepWithType
                   DropFunctions
-                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId) (Just Expr.dropFunctionCascadeExpr))
+                  (Expr.dropFunction Nothing (Orville.functionIdQualifiedName functionId) (Just Expr.cascade))
               ]
     SchemaExtension extension ->
       Right $
@@ -1150,7 +1151,7 @@ mkDropColumnActions tableDef attr = do
 
   guard $ Set.member attrName (Orville.columnsToDrop tableDef)
 
-  [Expr.dropColumn $ Expr.columnName attrName]
+  [Expr.dropColumn (Expr.columnName attrName) Nothing]
 
 {- | Builds 'Expr.AlterTableAction' expressions to create the given table
   constraint if it does not exist.
@@ -1194,7 +1195,7 @@ mkDropConstraintActions constraintsToKeep constraint =
         . PgCatalog.constraintRecord
         $ constraint
     mkStepAndAction stepType =
-      [(stepType, Expr.dropConstraint constraintName)]
+      [(stepType, Expr.dropConstraint constraintName Nothing)]
   in
     if any (\ck -> Set.member ck constraintsToKeep) constraintKeys
       then []
@@ -1377,7 +1378,7 @@ mkDropIndexSteps indexesToKeep systemIndexOids mSchema indexDesc =
         if any (flip Set.member indexesToKeep) indexKeys
           || Set.member indexOid systemIndexOids
           then []
-          else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr qualifiedIndexName)]
+          else [mkMigrationStepWithType DropIndexes (Expr.dropIndexExpr qualifiedIndexName Nothing)]
 
 {- | Builds migration steps to create a trigger if it does not exist.
 
@@ -1419,7 +1420,7 @@ mkDropTriggerSteps triggersToKeep tableName pgTrigger =
   in
     if Set.member migrationKey triggersToKeep || PgCatalog.pgTriggerIsInternal pgTrigger
       then []
-      else [mkMigrationStepWithType DropTriggers (Expr.dropTrigger Nothing triggerName tableName)]
+      else [mkMigrationStepWithType DropTriggers (Expr.dropTrigger Nothing triggerName tableName Nothing)]
 
 mkCommentSteps ::
   PgCatalog.RelationDescription ->

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           orville-postgresql
-version:        1.1.1.0.5
+version:        1.1.1.0.6
 synopsis:       A Haskell library for PostgreSQL
 description:    Orville's goal is to provide a powerful API for applications to access PostgreSQL databases with minimal use of sophisticated language techniques or extensions. See https://github.com/flipstone/orville for more details.
 category:       database, library, postgresql
@@ -53,13 +53,16 @@ library
       Orville.PostgreSQL.Expr.Aggregate
       Orville.PostgreSQL.Expr.BinaryOperator
       Orville.PostgreSQL.Expr.ColumnDefinition
+      Orville.PostgreSQL.Expr.ColumnStorage
       Orville.PostgreSQL.Expr.Comment
       Orville.PostgreSQL.Expr.ConditionalExpr
       Orville.PostgreSQL.Expr.Count
       Orville.PostgreSQL.Expr.Cursor
       Orville.PostgreSQL.Expr.DataType
       Orville.PostgreSQL.Expr.Delete
+      Orville.PostgreSQL.Expr.DropBehavior
       Orville.PostgreSQL.Expr.Extension
+      Orville.PostgreSQL.Expr.ExtensionDependency
       Orville.PostgreSQL.Expr.FetchClause
       Orville.PostgreSQL.Expr.Filter
       Orville.PostgreSQL.Expr.Function
@@ -71,8 +74,10 @@ library
       Orville.PostgreSQL.Expr.Insert
       Orville.PostgreSQL.Expr.Join
       Orville.PostgreSQL.Expr.LimitExpr
+      Orville.PostgreSQL.Expr.MaterializedViewDefinition
       Orville.PostgreSQL.Expr.Math
       Orville.PostgreSQL.Expr.Name
+      Orville.PostgreSQL.Expr.NoWait
       Orville.PostgreSQL.Expr.OffsetExpr
       Orville.PostgreSQL.Expr.OnConflict
       Orville.PostgreSQL.Expr.OrReplace
@@ -80,15 +85,18 @@ library
       Orville.PostgreSQL.Expr.PolicyExpr
       Orville.PostgreSQL.Expr.PolicyExpr.CreatePolicyExpr
       Orville.PostgreSQL.Expr.PolicyExpr.DropPolicyExpr
-      Orville.PostgreSQL.Expr.PolicyExpr.PolicyRole
       Orville.PostgreSQL.Expr.Query
+      Orville.PostgreSQL.Expr.Recursive
+      Orville.PostgreSQL.Expr.RelationOption
       Orville.PostgreSQL.Expr.ReturningExpr
+      Orville.PostgreSQL.Expr.RoleSpecification
       Orville.PostgreSQL.Expr.RowLocking
       Orville.PostgreSQL.Expr.Select
       Orville.PostgreSQL.Expr.SequenceDefinition
       Orville.PostgreSQL.Expr.TableConstraint
       Orville.PostgreSQL.Expr.TableDefinition
       Orville.PostgreSQL.Expr.TableReferenceList
+      Orville.PostgreSQL.Expr.Temporary
       Orville.PostgreSQL.Expr.TextSearch
       Orville.PostgreSQL.Expr.Time
       Orville.PostgreSQL.Expr.Transaction
@@ -97,6 +105,7 @@ library
       Orville.PostgreSQL.Expr.Vacuum
       Orville.PostgreSQL.Expr.ValueExpression
       Orville.PostgreSQL.Expr.Values
+      Orville.PostgreSQL.Expr.ViewDefinition
       Orville.PostgreSQL.Expr.WhereClause
       Orville.PostgreSQL.Expr.Window
       Orville.PostgreSQL.Expr.Window.WindowClause
@@ -146,6 +155,7 @@ library
       Orville.PostgreSQL.Schema.TriggerDefinition
       Orville.PostgreSQL.UnliftIO
   other-modules:
+      Orville.PostgreSQL.Expr.Internal.Name.AccessMethodName
       Orville.PostgreSQL.Expr.Internal.Name.Alias
       Orville.PostgreSQL.Expr.Internal.Name.ColumnName
       Orville.PostgreSQL.Expr.Internal.Name.ConstraintName
@@ -156,10 +166,12 @@ library
       Orville.PostgreSQL.Expr.Internal.Name.IndexName
       Orville.PostgreSQL.Expr.Internal.Name.PolicyName
       Orville.PostgreSQL.Expr.Internal.Name.Qualified
+      Orville.PostgreSQL.Expr.Internal.Name.RoleName
       Orville.PostgreSQL.Expr.Internal.Name.SavepointName
       Orville.PostgreSQL.Expr.Internal.Name.SchemaName
       Orville.PostgreSQL.Expr.Internal.Name.SequenceName
       Orville.PostgreSQL.Expr.Internal.Name.TableName
+      Orville.PostgreSQL.Expr.Internal.Name.TablespaceName
       Orville.PostgreSQL.Expr.Internal.Name.TriggerName
       Orville.PostgreSQL.Expr.Internal.Name.WindowName
       Orville.PostgreSQL.Internal.Bracket
@@ -240,6 +252,7 @@ test-suite spec
       Test.Expr.GroupByOrderBy
       Test.Expr.InsertUpdateDelete
       Test.Expr.Join
+      Test.Expr.MaterializedViewDefinition
       Test.Expr.Math
       Test.Expr.OrderBy
       Test.Expr.Policy
@@ -251,6 +264,7 @@ test-suite spec
       Test.Expr.Time
       Test.Expr.Trigger
       Test.Expr.Vacuum
+      Test.Expr.ViewDefinition
       Test.Expr.Where
       Test.Expr.Window
       Test.FieldDefinition

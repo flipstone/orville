@@ -66,5 +66,5 @@ sequenceNameString =
 
 createTestSequence :: Orville.Orville ()
 createTestSequence = do
-  Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName testSequence)
+  Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName testSequence) Nothing
   Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateSequenceExpr testSequence

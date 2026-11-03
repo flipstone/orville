@@ -30,7 +30,7 @@ jobs:
     strategy:
       max-parallel: 6
       matrix:
-        pg-version: ["pg13", "pg17"]
+        pg-version: ["pg14", "pg18"]
         stack-yaml: ${{ fromJson(needs.find-stack-yamls.outputs.stack-yamls) }}
 
         include:

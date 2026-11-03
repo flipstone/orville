@@ -23,6 +23,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 
+import Orville.PostgreSQL.Expr.DropBehavior (DropBehavior)
 import Orville.PostgreSQL.Expr.Name (ColumnName, IndexName, QualifiedOrUnqualified, TableName)
 import qualified Orville.PostgreSQL.Raw.RawSql as RawSql
 
@@ -90,7 +91,8 @@ createNamedIndexExpr uniqueness mbConcurrently tableName indexName bodyExpr =
       <> RawSql.space
       <> RawSql.toRawSql bodyExpr
 
-{- | Type to represent the @CONCURRENTLY@ keyword for index creation. E.G.
+{- | Type to represent the @CONCURRENTLY@ keyword for index creation and for
+refreshing a materialized view. E.G.
 
 > CONCURRENTLY
 
@@ -108,7 +110,7 @@ newtype ConcurrentlyExpr
     )
 
 {- | The @CONCURRENTLY@ keyword indicates to PostgreSQL that an index should be
-created concurrently.
+created, or a materialized view refreshed, concurrently.
 
 @since 1.0.0.0
 -}
@@ -191,11 +193,14 @@ newtype DropIndexExpr
       RawSql.SqlExpression
     )
 
-{- | Construct a SQL DROP INDEX for a given 'IndexName'.
+{- | Construct a SQL DROP INDEX for a given 'IndexName'. The 'DropBehavior' has
+  been taken as an argument since 1.2.0.0.
 
 @since 1.0.0.0
 -}
-dropIndexExpr :: QualifiedOrUnqualified IndexName -> DropIndexExpr
-dropIndexExpr indexName =
+dropIndexExpr :: QualifiedOrUnqualified IndexName -> Maybe DropBehavior -> DropIndexExpr
+dropIndexExpr indexName maybeDropBehavior =
   DropIndexExpr $
-    RawSql.fromString "DROP INDEX " <> RawSql.toRawSql indexName
+    RawSql.fromString "DROP INDEX "
+      <> RawSql.toRawSql indexName
+      <> maybe mempty ((RawSql.space <>) . RawSql.toRawSql) maybeDropBehavior

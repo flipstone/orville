@@ -44,7 +44,7 @@ prop_createPolicyWithAllClauses pool =
           testTableName
           (Just Expr.policyRestrictive)
           (Just Expr.policyCommandUpdate)
-          (Just (Expr.namedPolicyRole "orville_test" :| []))
+          (Just (Expr.roleSpecification (Expr.roleName "orville_test") :| []))
           (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr True)
           (Just . Expr.policyCheckExpr $ Expr.literalBooleanExpr False)
 
@@ -78,10 +78,10 @@ prop_specialRoleTargets pool =
       HH.evalIO $
         Orville.runOrville pool $ do
           recreateTestTable
-          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_a_current_role" Expr.currentRolePolicyRole
-          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_b_current_user" Expr.currentUserPolicyRole
-          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_c_session_user" Expr.sessionUserPolicyRole
-          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_d_public" Expr.publicPolicyRole
+          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_a_current_role" Expr.currentRole
+          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_b_current_user" Expr.currentUser
+          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_c_session_user" Expr.sessionUser
+          Orville.executeVoid Orville.DDLQuery $ mkPolicy "policy_d_public" Expr.public
           findTestPolicies
 
     -- PostgreSQL resolves CURRENT_ROLE, CURRENT_USER and SESSION_USER to the
@@ -104,7 +104,7 @@ prop_alterPolicy pool =
           testTableName
           Nothing
           Nothing
-          (Just (Expr.namedPolicyRole "orville_test" :| []))
+          (Just (Expr.roleSpecification (Expr.roleName "orville_test") :| []))
           (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr True)
           Nothing
 
@@ -112,7 +112,7 @@ prop_alterPolicy pool =
         Expr.alterPolicyExpr
           (Expr.policyName "expr_test_policy")
           testTableName
-          (Just (Expr.publicPolicyRole :| []))
+          (Just (Expr.public :| []))
           (Just . Expr.policyUsingExpr $ Expr.literalBooleanExpr False)
           (Just . Expr.policyCheckExpr $ Expr.literalBooleanExpr True)
 

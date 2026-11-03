@@ -8,6 +8,8 @@ module Test.PgAssert
   , assertSequenceDoesNotExist
   , assertSequenceDoesNotExistInSchema
   , assertRelationHasPgSequence
+  , assertViewExists
+  , assertViewDoesNotExist
   , assertColumnNamesEqual
   , assertColumnExists
   , assertColumnDefaultExists
@@ -131,6 +133,22 @@ assertRelationHasPgSequence relationDesc =
         HH.failure
     Just pgSequence ->
       pure pgSequence
+
+assertViewExists ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m PgCatalog.RelationDescription
+assertViewExists pool viewName =
+  assertRelationExistsInSchema pool "public" viewName PgCatalog.View
+
+assertViewDoesNotExist ::
+  (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>
+  Orville.ConnectionPool ->
+  String ->
+  m ()
+assertViewDoesNotExist pool viewName =
+  assertRelationDoesNotExistInSchema pool "public" viewName PgCatalog.View
 
 assertRelationExistsInSchema ::
   (HH.MonadTest m, MIO.MonadIO m, HasCallStack) =>

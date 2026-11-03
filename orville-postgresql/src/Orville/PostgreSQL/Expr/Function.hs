@@ -10,8 +10,6 @@ Stability : Stable
 module Orville.PostgreSQL.Expr.Function
   ( DropFunctionExpr
   , dropFunction
-  , dropFunctionRestrictExpr
-  , dropFunctionCascadeExpr
   , CreateFunctionExpr
   , createFunction
   , FunctionReturns
@@ -31,6 +29,7 @@ module Orville.PostgreSQL.Expr.Function
 import qualified Data.ByteString.Char8 as BS8
 import Data.Maybe (catMaybes)
 
+import Orville.PostgreSQL.Expr.DropBehavior (DropBehavior)
 import Orville.PostgreSQL.Expr.FunctionArgument (FunctionArgument)
 import Orville.PostgreSQL.Expr.IfExists (IfExists)
 import Orville.PostgreSQL.Expr.Name (FunctionName, QualifiedOrUnqualified)
@@ -58,7 +57,7 @@ newtype DropFunctionExpr
 
 @since 1.1.0.0
 -}
-dropFunction :: Maybe IfExists -> QualifiedOrUnqualified FunctionName -> Maybe DropFunctionActionExpr -> DropFunctionExpr
+dropFunction :: Maybe IfExists -> QualifiedOrUnqualified FunctionName -> Maybe DropBehavior -> DropFunctionExpr
 dropFunction maybeIfExists name dropAction =
   DropFunctionExpr $
     RawSql.intercalate
@@ -70,38 +69,6 @@ dropFunction maybeIfExists name dropAction =
           , fmap RawSql.toRawSql dropAction
           ]
       )
-
-{- | Type to represent a drop function action on a @DROP FUNCTION@ statement. E.G.
-the @CASCADE@ in
-
-> DROP FUNCTION function_name CASCADE
-
-'DropFunctionActionExpr' provides a 'RawSql.SqlExpression' instance. See
-'RawSql.unsafeSqlExpression' for how to construct a value with your own custom
-SQL.
-
-@since 1.2.0.0
--}
-newtype DropFunctionActionExpr
-  = DropFunctionActionExpr RawSql.RawSql
-  deriving
-    ( -- | @since 1.2.0.0
-      RawSql.SqlExpression
-    )
-
-{- | The drop function action @RESTRICT@.
-
-  @since 1.2.0.0
--}
-dropFunctionRestrictExpr :: DropFunctionActionExpr
-dropFunctionRestrictExpr = DropFunctionActionExpr $ RawSql.fromString "RESTRICT"
-
-{- | The drop function action @CASCADE@.
-
-  @since 1.2.0.0
--}
-dropFunctionCascadeExpr :: DropFunctionActionExpr
-dropFunctionCascadeExpr = DropFunctionActionExpr $ RawSql.fromString "CASCADE"
 
 {- | Type to represent a SQL "CREATE FUNCTION" statement. E.G.
 

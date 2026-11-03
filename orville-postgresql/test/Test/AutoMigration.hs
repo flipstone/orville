@@ -1245,7 +1245,7 @@ prop_createsMissingSequences pool =
     firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef) Nothing
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaSequence sequenceDef]
 
     secondTimePlan <-
@@ -1273,7 +1273,7 @@ prop_dropsRequestedSequences pool =
     firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef)
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName sequenceDef) Nothing
           Orville.executeVoid Orville.DDLQuery $ Orville.mkCreateSequenceExpr sequenceDef
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaDropSequence sequenceId]
 
@@ -1345,7 +1345,7 @@ prop_altersModifiedSequences pool =
     firstTimePlan <-
       HH.evalIO $
         Orville.runOrville pool $ do
-          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName originalSequenceDef)
+          Orville.executeVoid Orville.DDLQuery $ Expr.dropSequenceExpr (Just Expr.ifExists) (Orville.sequenceName originalSequenceDef) Nothing
           AutoMigration.generateMigrationPlan AutoMigration.defaultOptions [AutoMigration.SchemaSequence originalSequenceDef]
 
     HH.annotate ("First time steps: " <> show (migrationPlanStepStrings firstTimePlan))
