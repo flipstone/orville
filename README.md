@@ -37,7 +37,7 @@ may be the right choice for you.
 ## PostgreSQL Versions Supported
 
 Orville is tested against and supports major versions of PostgreSQL that are currently
-maintained. This is currently versions 14,15,16,17, and 18.
+maintained. This is currently versions 15,16,17,18 and 19.
 
 ## Tutorials
 
