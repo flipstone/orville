@@ -25,6 +25,9 @@ module Orville.PostgreSQL.Schema
   , module Orville.PostgreSQL.Schema.TriggerDefinition
   , module Orville.PostgreSQL.Schema.PolicyDefinition
 
+    -- * Defining Views
+  , module Orville.PostgreSQL.Schema.ViewDefinition
+
     -- * Defining Sequences
   , module Orville.PostgreSQL.Schema.SequenceDefinition
   , module Orville.PostgreSQL.Schema.SequenceIdentifier
@@ -56,3 +59,4 @@ import Orville.PostgreSQL.Schema.TableDefinition
 import Orville.PostgreSQL.Schema.TableIdentifier
 import Orville.PostgreSQL.Schema.TableReferenceDefinition
 import Orville.PostgreSQL.Schema.TriggerDefinition
+import Orville.PostgreSQL.Schema.ViewDefinition

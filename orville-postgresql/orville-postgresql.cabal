@@ -153,6 +153,7 @@ library
       Orville.PostgreSQL.Schema.TableIdentifier
       Orville.PostgreSQL.Schema.TableReferenceDefinition
       Orville.PostgreSQL.Schema.TriggerDefinition
+      Orville.PostgreSQL.Schema.ViewDefinition
       Orville.PostgreSQL.UnliftIO
   other-modules:
       Orville.PostgreSQL.Expr.Internal.Name.AccessMethodName
@@ -289,6 +290,7 @@ test-suite spec
       Test.TestTable
       Test.Transaction
       Test.Transaction.Util
+      Test.ViewDefinition
       Paths_orville_postgresql
   hs-source-dirs:
       test

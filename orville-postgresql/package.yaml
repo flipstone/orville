@@ -149,6 +149,7 @@ library:
     - Orville.PostgreSQL.Schema.TableIdentifier
     - Orville.PostgreSQL.Schema.TableReferenceDefinition
     - Orville.PostgreSQL.Schema.TriggerDefinition
+    - Orville.PostgreSQL.Schema.ViewDefinition
     - Orville.PostgreSQL.UnliftIO
 
   when:
