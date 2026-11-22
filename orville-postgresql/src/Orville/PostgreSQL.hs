@@ -122,6 +122,8 @@ module Orville.PostgreSQL
   , TableReferenceDefinition.aliasedTableReferenceDefinition
   , TableReferenceDefinition.viewReferenceDefinition
   , TableReferenceDefinition.aliasedViewReferenceDefinition
+  , TableReferenceDefinition.materializedViewReferenceDefinition
+  , TableReferenceDefinition.aliasedMaterializedViewReferenceDefinition
   , TableReferenceDefinition.tableReferenceDefinitionReference
   , TableReferenceDefinition.tableReferenceDefinitionQualifier
   , TableReferenceDefinition.tableReferenceDefinitionResultPrefix
@@ -445,6 +447,19 @@ module Orville.PostgreSQL
   , ViewDefinition.setViewSchema
   , ViewDefinition.mapViewMarshaller
   , ViewDefinition.mkCreateViewExpr
+  , MaterializedViewDefinition.MaterializedViewDefinition
+  , MaterializedViewDefinition.mkMaterializedViewDefinition
+  , MaterializedViewDefinition.readOnlyTableToMaterializedViewDefinition
+  , MaterializedViewDefinition.materializedViewDefinitionIdentifier
+  , MaterializedViewDefinition.materializedViewDefinitionQuery
+  , MaterializedViewDefinition.materializedViewDefinitionMarshaller
+  , MaterializedViewDefinition.materializedViewDefinitionName
+  , MaterializedViewDefinition.materializedViewDefinitionColumnNames
+  , MaterializedViewDefinition.setMaterializedViewSchema
+  , MaterializedViewDefinition.mapMaterializedViewMarshaller
+  , MaterializedViewDefinition.mkCreateMaterializedViewExpr
+  , MaterializedView.refreshMaterializedView
+  , MaterializedView.MaterializedViewRefresh (RefreshConcurrently, RefreshExclusively, RefreshWithNoData)
 
     -- * Functions for defining and working with policies
   , PolicyDefinition.PolicyDefinition
@@ -537,6 +552,7 @@ import qualified Orville.PostgreSQL.Batchable as Batchable
 import qualified Orville.PostgreSQL.ErrorDetailLevel as ErrorDetailLevel
 import qualified Orville.PostgreSQL.Execution.EntityOperations as EntityOperations
 import qualified Orville.PostgreSQL.Execution.Execute as Execute
+import qualified Orville.PostgreSQL.Execution.MaterializedView as MaterializedView
 import qualified Orville.PostgreSQL.Execution.QueryType as QueryType
 import qualified Orville.PostgreSQL.Execution.Select as Select
 import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
@@ -560,6 +576,7 @@ import qualified Orville.PostgreSQL.Schema.ExtensionIdentifier as ExtensionIdent
 import qualified Orville.PostgreSQL.Schema.FunctionDefinition as FunctionDefinition
 import qualified Orville.PostgreSQL.Schema.FunctionIdentifier as FunctionIdentifier
 import qualified Orville.PostgreSQL.Schema.IndexDefinition as IndexDefinition
+import qualified Orville.PostgreSQL.Schema.MaterializedViewDefinition as MaterializedViewDefinition
 import qualified Orville.PostgreSQL.Schema.PolicyDefinition as PolicyDefinition
 import qualified Orville.PostgreSQL.Schema.PrimaryKey as PrimaryKey
 import qualified Orville.PostgreSQL.Schema.ReadOnlyTableDefinition as ReadOnlyTableDefinition

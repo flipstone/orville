@@ -20,20 +20,21 @@ module Orville.PostgreSQL.Schema.ViewDefinition
   )
 where
 
-import qualified Orville.PostgreSQL.Execution.SelectOptions as SelectOptions
 import qualified Orville.PostgreSQL.Expr as Expr
-import Orville.PostgreSQL.Marshall.FieldDefinition (fieldNameToColumnName)
-import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, MarshallerField (Natural, Synthetic), SqlMarshaller, foldMarshallerFields, mapSqlMarshaller, marshallReadOnly, marshallerDerivedColumns, unannotatedSqlMarshaller)
-import Orville.PostgreSQL.Marshall.SyntheticField (syntheticFieldName)
-import Orville.PostgreSQL.Schema.ReadOnlyTableDefinition (ReadOnlyTableDefinition, readOnlyTableDefinitionMarshaller, readOnlyTableDefinitionReference)
-import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSchema, tableIdQualifiedName, unqualifiedNameToTableId)
+import qualified Orville.PostgreSQL.Internal.QueryRelationDefinition as QueryRelation
+import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, SqlMarshaller)
+import Orville.PostgreSQL.Schema.ReadOnlyTableDefinition (ReadOnlyTableDefinition)
+import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier)
 
 {- | The definition of a SQL view: a named query stored in the database whose
   result set can be selected from like a table. Unlike a
   'Orville.PostgreSQL.TableDefinition', a view cannot be inserted into,
   updated or deleted from through Orville, and unlike a
   'ReadOnlyTableDefinition' it is a schema object that auto-migration creates
-  and drops (see 'Orville.PostgreSQL.AutoMigration.SchemaView').
+  and drops (see 'Orville.PostgreSQL.AutoMigration.SchemaView'). A view is
+  computed from its query every time it is selected from; see
+  'Orville.PostgreSQL.Schema.MaterializedViewDefinition' for a view whose
+  result set is stored.
 
   Rows are selected from a view by the columns the marshaller decodes, which
   are the result columns of the defining query. A 'ViewDefinition' is an
@@ -44,28 +45,8 @@ import Orville.PostgreSQL.Schema.TableIdentifier (TableIdentifier, setTableIdSch
 
 @since 1.2.0.0
 -}
-data ViewDefinition readEntity = ViewDefinition
-  { viewDefinitionIdentifier :: TableIdentifier
-  {- ^ The name of the view and, optionally, the schema it belongs to. A view
-  is identified in the same way as a table because it is a relation in the
-  same namespace as tables.
-
-  @since 1.2.0.0
-  -}
-  , viewDefinitionQuery :: Expr.QueryExpr
-  {- ^ The query that defines the view, used in @CREATE VIEW ... AS@.
-
-  @since 1.2.0.0
-  -}
-  , viewDefinitionMarshaller :: AnnotatedSqlMarshaller () readEntity
-  {- ^ The marshaller that decodes rows selected from the view. Its fields are
-  decoded by the names they have in a result set, which are the view's column
-  names. Nothing is ever written through a 'ViewDefinition', so the marshaller
-  has no write entity.
-
-  @since 1.2.0.0
-  -}
-  }
+newtype ViewDefinition readEntity
+  = ViewDefinition (QueryRelation.QueryRelationDefinition readEntity)
 
 {- | Constructs a 'ViewDefinition' from the view's name, the query that defines
   it and the marshaller that decodes its rows. The view's columns are the
@@ -86,11 +67,7 @@ mkViewDefinition ::
   AnnotatedSqlMarshaller writeEntity readEntity ->
   ViewDefinition readEntity
 mkViewDefinition name query marshaller =
-  ViewDefinition
-    { viewDefinitionIdentifier = unqualifiedNameToTableId name
-    , viewDefinitionQuery = query
-    , viewDefinitionMarshaller = mapSqlMarshaller marshallReadOnly marshaller
-    }
+  ViewDefinition (QueryRelation.mkQueryRelationDefinition name query marshaller)
 
 {- | Constructs a 'ViewDefinition' whose query selects the columns described by
   the marshaller of the 'ReadOnlyTableDefinition' from its table reference, as
@@ -111,17 +88,36 @@ readOnlyTableToViewDefinition ::
   ReadOnlyTableDefinition readEntity ->
   ViewDefinition readEntity
 readOnlyTableToViewDefinition name readOnlyTable =
-  let
-    marshaller =
-      readOnlyTableDefinitionMarshaller readOnlyTable
+  ViewDefinition (QueryRelation.readOnlyTableToQueryRelationDefinition name readOnlyTable)
 
-    query =
-      SelectOptions.selectOptionsQueryExpr
-        (Expr.selectDerivedColumns (marshallerDerivedColumns (unannotatedSqlMarshaller marshaller)))
-        (Expr.tableReferenceList [readOnlyTableDefinitionReference readOnlyTable])
-        SelectOptions.emptySelectOptions
-  in
-    mkViewDefinition name query marshaller
+{- | The name of the view and, optionally, the schema it belongs to. A view
+  is identified in the same way as a table because it is a relation in the
+  same namespace as tables.
+
+@since 1.2.0.0
+-}
+viewDefinitionIdentifier :: ViewDefinition readEntity -> TableIdentifier
+viewDefinitionIdentifier (ViewDefinition relationDef) =
+  QueryRelation.queryRelationIdentifier relationDef
+
+{- | The query that defines the view, used in @CREATE VIEW ... AS@.
+
+@since 1.2.0.0
+-}
+viewDefinitionQuery :: ViewDefinition readEntity -> Expr.QueryExpr
+viewDefinitionQuery (ViewDefinition relationDef) =
+  QueryRelation.queryRelationQuery relationDef
+
+{- | The marshaller that decodes rows selected from the view. Its fields are
+  decoded by the names they have in a result set, which are the view's column
+  names. Nothing is ever written through a 'ViewDefinition', so the marshaller
+  has no write entity.
+
+@since 1.2.0.0
+-}
+viewDefinitionMarshaller :: ViewDefinition readEntity -> AnnotatedSqlMarshaller () readEntity
+viewDefinitionMarshaller (ViewDefinition relationDef) =
+  QueryRelation.queryRelationMarshaller relationDef
 
 {- | Retrieves the 'Expr.QualifiedOrUnqualified' 'Expr.TableName' that should be
   used to refer to the view in SQL expressions. It is qualified by the schema
@@ -130,8 +126,8 @@ readOnlyTableToViewDefinition name readOnlyTable =
 @since 1.2.0.0
 -}
 viewDefinitionName :: ViewDefinition readEntity -> Expr.QualifiedOrUnqualified Expr.TableName
-viewDefinitionName =
-  tableIdQualifiedName . viewDefinitionIdentifier
+viewDefinitionName (ViewDefinition relationDef) =
+  QueryRelation.queryRelationName relationDef
 
 {- | The names of the view's columns, in the order the marshaller decodes
   them. These are the names the marshaller's fields have in a result set:
@@ -142,20 +138,8 @@ viewDefinitionName =
 @since 1.2.0.0
 -}
 viewDefinitionColumnNames :: ViewDefinition readEntity -> [Expr.ColumnName]
-viewDefinitionColumnNames viewDef =
-  let
-    collectColumnName :: MarshallerField () -> [Expr.ColumnName] -> [Expr.ColumnName]
-    collectColumnName entry columns =
-      case entry of
-        Natural _ _ resultName _ ->
-          fieldNameToColumnName resultName : columns
-        Synthetic synthField ->
-          fieldNameToColumnName (syntheticFieldName synthField) : columns
-  in
-    foldMarshallerFields
-      (unannotatedSqlMarshaller (viewDefinitionMarshaller viewDef))
-      []
-      collectColumnName
+viewDefinitionColumnNames (ViewDefinition relationDef) =
+  QueryRelation.queryRelationColumnNames relationDef
 
 {- | Sets the view's schema to the name in the given 'String', which will be
   treated as a SQL identifier. If a view has a schema name set, it will be
@@ -168,10 +152,8 @@ setViewSchema ::
   String ->
   ViewDefinition readEntity ->
   ViewDefinition readEntity
-setViewSchema schemaName viewDef =
-  viewDef
-    { viewDefinitionIdentifier = setTableIdSchema schemaName (viewDefinitionIdentifier viewDef)
-    }
+setViewSchema schemaName (ViewDefinition relationDef) =
+  ViewDefinition (QueryRelation.setQueryRelationSchema schemaName relationDef)
 
 {- | Applies the provided function to the underlying 'SqlMarshaller' of the
   'ViewDefinition', for instance to reshape the decoded entity with @fmap@.
@@ -183,11 +165,8 @@ mapViewMarshaller ::
   (SqlMarshaller () readEntityA -> SqlMarshaller () readEntityB) ->
   ViewDefinition readEntityA ->
   ViewDefinition readEntityB
-mapViewMarshaller f viewDef =
-  viewDef
-    { viewDefinitionMarshaller =
-        mapSqlMarshaller f (viewDefinitionMarshaller viewDef)
-    }
+mapViewMarshaller f (ViewDefinition relationDef) =
+  ViewDefinition (QueryRelation.mapQueryRelationMarshaller f relationDef)
 
 {- | Builds a 'Expr.CreateViewExpr' that will create a SQL view matching the
   given 'ViewDefinition' when it is executed.

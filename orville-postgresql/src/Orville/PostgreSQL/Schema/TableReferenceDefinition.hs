@@ -10,6 +10,8 @@ module Orville.PostgreSQL.Schema.TableReferenceDefinition
   , aliasedTableReferenceDefinition
   , viewReferenceDefinition
   , aliasedViewReferenceDefinition
+  , materializedViewReferenceDefinition
+  , aliasedMaterializedViewReferenceDefinition
   , tableReferenceDefinitionReadOnlyTable
   , tableReferenceDefinitionReference
   , tableReferenceDefinitionQualifier
@@ -33,6 +35,7 @@ import qualified Orville.PostgreSQL.Marshall.AliasName as AliasName
 import Orville.PostgreSQL.Marshall.FieldDefinition (FieldDefinition, FieldName, FieldQualifier, QualifiedFieldDefinition, SomeFieldQualifier (SomeFieldQualifier), qualifyField)
 import qualified Orville.PostgreSQL.Marshall.SqlComparable as SqlComparable
 import Orville.PostgreSQL.Marshall.SqlMarshaller (AnnotatedSqlMarshaller, SqlMarshaller, marshallAliasFields, marshallQualifyFields, marshallReadOnly, rowIdFieldNames, unannotatedSqlMarshaller)
+import Orville.PostgreSQL.Schema.MaterializedViewDefinition (MaterializedViewDefinition, materializedViewDefinitionIdentifier, materializedViewDefinitionMarshaller)
 import Orville.PostgreSQL.Schema.ReadOnlyTableDefinition (ReadOnlyTableDefinition, mapReadOnlyTableMarshaller, mkReadOnlyTableDefinition, readOnlyTableDefinitionMarshaller, readOnlyTableDefinitionReference)
 import Orville.PostgreSQL.Schema.TableDefinition (TableDefinition, tableIdentifier, tableMarshaller)
 import qualified Orville.PostgreSQL.Schema.TableIdentifier as TableIdentifier
@@ -46,8 +49,10 @@ import Orville.PostgreSQL.Schema.ViewDefinition (ViewDefinition, viewDefinitionI
     from the result set when entities are queried.
 
   See 'tableReferenceDefinition' and 'aliasedTableReferenceDefinition' for constructing values of
-  this type from a 'TableDefinition', and 'viewReferenceDefinition' and
-  'aliasedViewReferenceDefinition' for constructing them from a 'ViewDefinition'.
+  this type from a 'TableDefinition', 'viewReferenceDefinition' and
+  'aliasedViewReferenceDefinition' for constructing them from a 'ViewDefinition', and
+  'materializedViewReferenceDefinition' and 'aliasedMaterializedViewReferenceDefinition' for
+  constructing them from a 'MaterializedViewDefinition'.
 
 @since 1.2.0.0
 -}
@@ -179,6 +184,36 @@ aliasedViewReferenceDefinition ::
   TableReferenceDefinition readEntity
 aliasedViewReferenceDefinition alias viewDef =
   aliasedIdentifierReferenceDefinition alias (viewDefinitionIdentifier viewDef) (viewDefinitionMarshaller viewDef)
+
+{- | Builds a 'TableReferenceDefinition' from a 'MaterializedViewDefinition' using its own name, in
+  the same way that 'viewReferenceDefinition' does for a view. The fields of the materialized view's
+  marshaller must refer to its columns by their own names, as for 'viewReferenceDefinition': the
+  marshaller of a materialized view built with
+  'Orville.PostgreSQL.Schema.readOnlyTableToMaterializedViewDefinition' from a join qualifies and
+  prefixes its fields for the tables of the join, which are not in scope when selecting from the
+  materialized view.
+
+@since 1.2.0.0
+-}
+materializedViewReferenceDefinition ::
+  MaterializedViewDefinition readEntity ->
+  TableReferenceDefinition readEntity
+materializedViewReferenceDefinition viewDef =
+  identifierReferenceDefinition (materializedViewDefinitionIdentifier viewDef) (materializedViewDefinitionMarshaller viewDef)
+
+{- | Builds a 'TableReferenceDefinition' for a 'MaterializedViewDefinition' where it will be referred
+  to by an alias, in the same way that 'aliasedViewReferenceDefinition' does for a view. The
+  materialized view's marshaller is subject to the same requirement as for
+  'materializedViewReferenceDefinition'.
+
+@since 1.2.0.0
+-}
+aliasedMaterializedViewReferenceDefinition ::
+  AliasName.AliasName ->
+  MaterializedViewDefinition readEntity ->
+  TableReferenceDefinition readEntity
+aliasedMaterializedViewReferenceDefinition alias viewDef =
+  aliasedIdentifierReferenceDefinition alias (materializedViewDefinitionIdentifier viewDef) (materializedViewDefinitionMarshaller viewDef)
 
 identifierReferenceDefinition ::
   TableIdentifier.TableIdentifier ->

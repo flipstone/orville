@@ -27,6 +27,7 @@ module Orville.PostgreSQL.Schema
 
     -- * Defining Views
   , module Orville.PostgreSQL.Schema.ViewDefinition
+  , module Orville.PostgreSQL.Schema.MaterializedViewDefinition
 
     -- * Defining Sequences
   , module Orville.PostgreSQL.Schema.SequenceDefinition
@@ -50,6 +51,7 @@ import Orville.PostgreSQL.Schema.ExtensionIdentifier
 import Orville.PostgreSQL.Schema.FunctionDefinition
 import Orville.PostgreSQL.Schema.FunctionIdentifier
 import Orville.PostgreSQL.Schema.IndexDefinition
+import Orville.PostgreSQL.Schema.MaterializedViewDefinition
 import Orville.PostgreSQL.Schema.PolicyDefinition
 import Orville.PostgreSQL.Schema.PrimaryKey
 import Orville.PostgreSQL.Schema.ReadOnlyTableDefinition

@@ -105,9 +105,9 @@ data SchemaItem where
     SchemaItem
   {- | Constructs a 'SchemaItem' from a 'Orville.ViewDefinition'. The view is
   created when no view of its name exists, and is dropped and created again
-  when the same migration alters or drops an existing table or function.
-  Like a trigger, a view is identified by name only: a change to the
-  definition of an existing view is not detected, so the view must be
+  when the same migration alters or drops an existing table or function, or
+  drops a view. Like a trigger, a view is identified by name only: a change
+  to the definition of an existing view is not detected, so the view must be
   renamed (dropping the old name with 'SchemaDropView') for the new
   definition to be applied. Views are created in the order they appear in
   the schema items and dropped in reverse, so a view must be listed after
@@ -127,6 +127,29 @@ data SchemaItem where
   @since 1.2.0.0
   -}
   SchemaDropView ::
+    Orville.TableIdentifier ->
+    SchemaItem
+  {- | Constructs a 'SchemaItem' from a 'Orville.MaterializedViewDefinition'.
+  The materialized view is managed in the same way as a view is by
+  'SchemaView', and is created @WITH DATA@. Keep it current afterwards with
+  'Orville.PostgreSQL.Execution.refreshMaterializedView'. Materialized views
+  are dropped before views and created after them, so a materialized view
+  may select from a view but not the other way around.
+
+  @since 1.2.0.0
+  -}
+  SchemaMaterializedView ::
+    Orville.MaterializedViewDefinition readEntity ->
+    SchemaItem
+  {- | Constructs a 'SchemaItem' that will drop the specified materialized
+  view if it is found in the database. The drop is ordered with those of
+  'SchemaMaterializedView' items, in reverse order of the schema items, so
+  the item must be listed after any view the dropped materialized view
+  selects from.
+
+  @since 1.2.0.0
+  -}
+  SchemaDropMaterializedView ::
     Orville.TableIdentifier ->
     SchemaItem
   {- | Constructs a 'SchemaItem' from a 'Orville.FunctionDefinition'.
@@ -183,6 +206,10 @@ schemaItemSummary item =
       "View " <> Orville.tableIdToString (Orville.viewDefinitionIdentifier viewDef)
     SchemaDropView viewId ->
       "Drop view " <> Orville.tableIdToString viewId
+    SchemaMaterializedView viewDef ->
+      "Materialized view " <> Orville.tableIdToString (Orville.materializedViewDefinitionIdentifier viewDef)
+    SchemaDropMaterializedView viewId ->
+      "Drop materialized view " <> Orville.tableIdToString viewId
     SchemaFunction functionDef ->
       "Function " <> Orville.functionIdToString (Orville.functionIdentifier functionDef)
     SchemaDropFunction functionId ->
@@ -274,6 +301,7 @@ isMigrationStepTransactional :: MigrationStepWithType -> Bool
 isMigrationStepTransactional stepWithType =
   case migrationStepType stepWithType of
     DropPolicyDefinitions -> True
+    DropMaterializedViews -> True
     DropViews -> True
     DropForeignKeys -> True
     DropConstraints -> True
@@ -286,6 +314,7 @@ isMigrationStepTransactional stepWithType =
     AddRemoveTablesAndColumns -> True
     AddFunctionsAfterTables -> True
     AddViews -> True
+    AddMaterializedViews -> True
     AddTriggers -> True
     AddIndexesTransactionally -> True
     AddConstraints -> True
@@ -304,6 +333,8 @@ isMigrationStepTransactional stepWithType =
 data StepType
   = -- | @since 1.2.0.0
     DropPolicyDefinitions
+  | -- | @since 1.2.0.0
+    DropMaterializedViews -- Materialized views may select from views, so they are dropped first
   | -- | @since 1.2.0.0
     DropViews -- Views must be dropped before the columns and functions they depend on are changed
   | -- | @since 1.1.0.0.3
@@ -328,6 +359,8 @@ data StepType
     AddFunctionsAfterTables
   | -- | @since 1.2.0.0
     AddViews -- Views must be created after the tables and functions they depend on
+  | -- | @since 1.2.0.0
+    AddMaterializedViews -- Materialized views may select from views, so they are created after them
   | -- | @since 1.1.0.0
     AddTriggers
   | -- | @since 1.0.0.0
@@ -366,6 +399,8 @@ data MigrationDataError
     InvalidViewDefinition Orville.TableIdentifier String
   | -- | @since 1.2.0.0
     RelationIsNotAView Orville.TableIdentifier PgCatalog.RelationKind
+  | -- | @since 1.2.0.0
+    RelationIsNotAMaterializedView Orville.TableIdentifier PgCatalog.RelationKind
   deriving
     ( -- | @since 1.0.0.0
       Show
@@ -670,6 +705,10 @@ calculateMigrationSteps currentNamespace dbDesc existingPolicies schemaItem =
       Right []
     SchemaDropView _viewId ->
       Right []
+    SchemaMaterializedView _viewDef ->
+      Right []
+    SchemaDropMaterializedView _viewId ->
+      Right []
     SchemaFunction functionDef ->
       Right $
         let
@@ -779,20 +818,46 @@ viewDependencyChanges currentNamespace dbDesc itemsWithSteps =
       then ViewDependenciesChanged
       else ViewDependenciesUnchanged
 
-{- | The steps needed for a 'SchemaView' or 'SchemaDropView' item, kept apart
-  so that the drop steps of all views can be ordered in reverse of their
-  creation order.
+{- | A 'SchemaView', 'SchemaDropView', 'SchemaMaterializedView' or
+  'SchemaDropMaterializedView' item reduced to what planning needs: where to
+  look for the relation, which kind it must have, how to drop it and, for a
+  definition, how to create it.
+-}
+data ViewItem = ViewItem
+  { viewItemIdentifier :: Orville.TableIdentifier
+  , viewItemRelationKind :: PgCatalog.RelationKind
+  , viewItemKindMismatchError :: Orville.TableIdentifier -> PgCatalog.RelationKind -> MigrationDataError
+  , viewItemDropStep :: MigrationStepWithType
+  , viewItemCreateStep :: Maybe MigrationStepWithType
+  }
+
+data ViewItemStatus
+  = ViewItemMissing
+  | ViewItemPresent
+  deriving (Eq)
+
+{- | Whether every existing view and materialized view in the plan must be
+  dropped and created again, which is the case whenever a change in the plan
+  could invalidate a relation that one of them selects from.
+-}
+data ViewRecreation
+  = RecreateAllViews
+  | CreateMissingViewsOnly
+
+{- | The steps needed for a view item, kept apart so that the drop steps of
+  all views can be ordered in reverse of their creation order.
 -}
 data ViewMigrationSteps = ViewMigrationSteps
   { viewMigrationDropSteps :: [MigrationStepWithType]
   , viewMigrationCreateSteps :: [MigrationStepWithType]
   }
 
-{- | Plans the views of the schema items together, after the other items,
-  because whether an existing view must be dropped and created again depends
-  on whether the plan alters existing tables or functions, and because views
-  must be dropped in the reverse of the order they are created in so that a
-  view is dropped before the views it selects from.
+{- | Plans the views and materialized views of the schema items together,
+  after the other items, because whether an existing view must be dropped
+  and created again depends on whether the plan alters existing tables or
+  functions or drops other views, and because views must be dropped in the
+  reverse of the order they are created in so that a view is dropped before
+  the views it selects from.
 -}
 mkViewMigrationSteps ::
   PgCatalog.NamespaceName ->
@@ -800,39 +865,41 @@ mkViewMigrationSteps ::
   ViewDependencyChanges ->
   [SchemaItem] ->
   Either MigrationDataError [MigrationStepWithType]
-mkViewMigrationSteps currentNamespace dbDesc dependencyChanges schemaItems =
-  let
-    collectSteps :: [ViewMigrationSteps] -> [MigrationStepWithType]
-    collectSteps viewSteps =
-      reverse (concatMap viewMigrationDropSteps viewSteps)
-        <> concatMap viewMigrationCreateSteps viewSteps
-  in
-    fmap collectSteps $
-      traverse (mkViewItemSteps currentNamespace dbDesc dependencyChanges) schemaItems
+mkViewMigrationSteps currentNamespace dbDesc dependencyChanges schemaItems = do
+  viewItems <- fmap Maybe.catMaybes (traverse (schemaItemViewItem currentNamespace) schemaItems)
+  statuses <- traverse (viewItemStatus currentNamespace dbDesc) viewItems
 
-mkViewItemSteps ::
+  let
+    itemsWithStatus =
+      zip viewItems statuses
+
+    dropsExistingView (item, status) =
+      status == ViewItemPresent && Maybe.isNothing (viewItemCreateStep item)
+
+    recreation =
+      if dependencyChanges == ViewDependenciesChanged || any dropsExistingView itemsWithStatus
+        then RecreateAllViews
+        else CreateMissingViewsOnly
+
+    steps =
+      fmap (viewItemSteps recreation) itemsWithStatus
+
+  pure $
+    reverse (concatMap viewMigrationDropSteps steps)
+      <> concatMap viewMigrationCreateSteps steps
+
+schemaItemViewItem ::
   PgCatalog.NamespaceName ->
-  PgCatalog.DatabaseDescription ->
-  ViewDependencyChanges ->
   SchemaItem ->
-  Either MigrationDataError ViewMigrationSteps
-mkViewItemSteps currentNamespace dbDesc dependencyChanges item =
+  Either MigrationDataError (Maybe ViewItem)
+schemaItemViewItem currentNamespace item =
   let
-    noSteps =
-      ViewMigrationSteps [] []
-
-    lookupView viewId =
-      case PgCatalog.lookupRelation (tableIdToPgCatalogNames currentNamespace viewId) dbDesc of
-        Nothing ->
-          Right Nothing
-        Just relationDesc ->
-          let
-            kind =
-              PgCatalog.pgClassRelationKind (PgCatalog.relationRecord relationDesc)
-          in
-            if kind == PgCatalog.View
-              then Right (Just relationDesc)
-              else Left (RelationIsNotAView (setSchemaNameOnTableId currentNamespace viewId) kind)
+    validatedCreateStep viewId query createStep =
+      case validateViewQuery query of
+        Left reason ->
+          Left (InvalidViewDefinition (setSchemaNameOnTableId currentNamespace viewId) reason)
+        Right () ->
+          Right createStep
   in
     case item of
       SchemaView viewDef -> do
@@ -840,47 +907,110 @@ mkViewItemSteps currentNamespace dbDesc dependencyChanges item =
           viewId =
             Orville.viewDefinitionIdentifier viewDef
 
-          dropStep =
-            mkMigrationStepWithType DropViews (Expr.dropViewExpr Nothing (pure (Orville.viewDefinitionName viewDef)) Nothing)
+        createStep <-
+          validatedCreateStep
+            viewId
+            (Orville.viewDefinitionQuery viewDef)
+            (mkMigrationStepWithType AddViews (Orville.mkCreateViewExpr viewDef Nothing))
 
-          createStep =
-            mkMigrationStepWithType AddViews (Orville.mkCreateViewExpr viewDef Nothing)
+        pure . Just $
+          ViewItem
+            { viewItemIdentifier = viewId
+            , viewItemRelationKind = PgCatalog.View
+            , viewItemKindMismatchError = RelationIsNotAView
+            , viewItemDropStep = mkDropViewStep (Orville.tableIdQualifiedName viewId)
+            , viewItemCreateStep = Just createStep
+            }
+      SchemaDropView viewId ->
+        pure . Just $
+          ViewItem
+            { viewItemIdentifier = viewId
+            , viewItemRelationKind = PgCatalog.View
+            , viewItemKindMismatchError = RelationIsNotAView
+            , viewItemDropStep = mkDropViewStep (Orville.tableIdQualifiedName viewId)
+            , viewItemCreateStep = Nothing
+            }
+      SchemaMaterializedView viewDef -> do
+        let
+          viewId =
+            Orville.materializedViewDefinitionIdentifier viewDef
 
-        either
-          (Left . InvalidViewDefinition (setSchemaNameOnTableId currentNamespace viewId))
-          Right
-          (validateViewDefinition viewDef)
+        createStep <-
+          validatedCreateStep
+            viewId
+            (Orville.materializedViewDefinitionQuery viewDef)
+            (mkMigrationStepWithType AddMaterializedViews (Orville.mkCreateMaterializedViewExpr viewDef (Just Expr.withData)))
 
-        mbRelationDesc <- lookupView viewId
-
-        pure $
-          case mbRelationDesc of
-            Nothing ->
-              ViewMigrationSteps [] [createStep]
-            Just _ ->
-              if dependencyChanges == ViewDependenciesUnchanged
-                then noSteps
-                else ViewMigrationSteps [dropStep] [createStep]
-      SchemaDropView viewId -> do
-        mbRelationDesc <- lookupView viewId
-
-        pure $
-          case mbRelationDesc of
-            Nothing ->
-              noSteps
-            Just _ ->
-              ViewMigrationSteps
-                [mkMigrationStepWithType DropViews (Expr.dropViewExpr Nothing (pure (Orville.tableIdQualifiedName viewId)) Nothing)]
-                []
+        pure . Just $
+          ViewItem
+            { viewItemIdentifier = viewId
+            , viewItemRelationKind = PgCatalog.MaterializedView
+            , viewItemKindMismatchError = RelationIsNotAMaterializedView
+            , viewItemDropStep = mkDropMaterializedViewStep (Orville.tableIdQualifiedName viewId)
+            , viewItemCreateStep = Just createStep
+            }
+      SchemaDropMaterializedView viewId ->
+        pure . Just $
+          ViewItem
+            { viewItemIdentifier = viewId
+            , viewItemRelationKind = PgCatalog.MaterializedView
+            , viewItemKindMismatchError = RelationIsNotAMaterializedView
+            , viewItemDropStep = mkDropMaterializedViewStep (Orville.tableIdQualifiedName viewId)
+            , viewItemCreateStep = Nothing
+            }
       _ ->
-        Right noSteps
+        pure Nothing
 
-{- | Returns a description of the problem when the query of a view cannot be
-  used in @CREATE VIEW@.
+viewItemStatus ::
+  PgCatalog.NamespaceName ->
+  PgCatalog.DatabaseDescription ->
+  ViewItem ->
+  Either MigrationDataError ViewItemStatus
+viewItemStatus currentNamespace dbDesc item =
+  let
+    viewId =
+      viewItemIdentifier item
+  in
+    case PgCatalog.lookupRelation (tableIdToPgCatalogNames currentNamespace viewId) dbDesc of
+      Nothing ->
+        Right ViewItemMissing
+      Just relationDesc ->
+        let
+          kind =
+            PgCatalog.pgClassRelationKind (PgCatalog.relationRecord relationDesc)
+        in
+          if kind == viewItemRelationKind item
+            then Right ViewItemPresent
+            else Left (viewItemKindMismatchError item (setSchemaNameOnTableId currentNamespace viewId) kind)
+
+viewItemSteps :: ViewRecreation -> (ViewItem, ViewItemStatus) -> ViewMigrationSteps
+viewItemSteps recreation (item, status) =
+  let
+    createSteps =
+      Maybe.maybeToList (viewItemCreateStep item)
+  in
+    case status of
+      ViewItemMissing ->
+        ViewMigrationSteps [] createSteps
+      ViewItemPresent ->
+        case recreation of
+          RecreateAllViews -> ViewMigrationSteps [viewItemDropStep item] createSteps
+          CreateMissingViewsOnly -> ViewMigrationSteps [] []
+
+mkDropViewStep :: Expr.QualifiedOrUnqualified Expr.TableName -> MigrationStepWithType
+mkDropViewStep viewName =
+  mkMigrationStepWithType DropViews (Expr.dropViewExpr Nothing (pure viewName) Nothing)
+
+mkDropMaterializedViewStep :: Expr.QualifiedOrUnqualified Expr.TableName -> MigrationStepWithType
+mkDropMaterializedViewStep viewName =
+  mkMigrationStepWithType DropMaterializedViews (Expr.dropMaterializedViewExpr Nothing (pure viewName) Nothing)
+
+{- | Returns a description of the problem when the query of a view or
+  materialized view cannot be used to create the relation.
 -}
-validateViewDefinition :: Orville.ViewDefinition readEntity -> Either String ()
-validateViewDefinition viewDef =
-  if RawSql.toParamCount (Orville.viewDefinitionQuery viewDef) > 0
+validateViewQuery :: Expr.QueryExpr -> Either String ()
+validateViewQuery query =
+  if RawSql.toParamCount query > 0
     then Left "the view query cannot contain bind parameters because CREATE VIEW is DDL; values must be rendered inline as literals"
     else Right ()
 
@@ -1804,6 +1934,10 @@ schemaItemPgCatalogRelation currentNamespace item =
       Just $ tableIdToPgCatalogNames currentNamespace (Orville.viewDefinitionIdentifier viewDef)
     SchemaDropView viewId ->
       Just $ tableIdToPgCatalogNames currentNamespace viewId
+    SchemaMaterializedView viewDef ->
+      Just $ tableIdToPgCatalogNames currentNamespace (Orville.materializedViewDefinitionIdentifier viewDef)
+    SchemaDropMaterializedView viewId ->
+      Just $ tableIdToPgCatalogNames currentNamespace viewId
     SchemaFunction _functionDef ->
       Nothing
     SchemaDropFunction _functionId ->
@@ -1835,6 +1969,10 @@ schemaItemPgCatalogFunction currentNamespace item =
       Nothing
     SchemaDropView _viewId ->
       Nothing
+    SchemaMaterializedView _viewDef ->
+      Nothing
+    SchemaDropMaterializedView _viewId ->
+      Nothing
     SchemaFunction functionDef ->
       Just $ functionIdToPgCatalogNames currentNamespace (Orville.functionIdentifier functionDef)
     SchemaDropFunction functionId ->
@@ -1864,6 +2002,10 @@ schemaItemPgCatalogExtension item =
     SchemaView _viewDef ->
       Nothing
     SchemaDropView _viewId ->
+      Nothing
+    SchemaMaterializedView _viewDef ->
+      Nothing
+    SchemaDropMaterializedView _viewId ->
       Nothing
     SchemaFunction _functionDef ->
       Nothing
