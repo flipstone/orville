@@ -33,14 +33,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `fieldNotMatchesRegexInsensitive`, with the corresponding `SqlComparable`
   functions, `BooleanExpr` builders (`matchesRegex` etc.) and binary operators
   (`regexMatchOp` etc.).
+- Tests against PostgreSQL version 19.
 
 ### Changed
 - Changed policies are always dropped and recreated rather than altered, since
   `ALTER POLICY` cannot change a policy's permissive/restrictive setting or
   command, nor remove a `USING`/`WITH CHECK` clause, and recreation orders
   correctly around column additions and drops.
+- Edited dependency bounds to allow for time-1.16.
+
 ### Deprecated
+
 ### Removed
+
+- No longer tests against PostgreSQL 14, since it is not officially
+maintained anymore.
+
 ### Fixed
 - Aggregate expressions with an `ORDER BY` clause now put a space before
   `ORDER BY`. Previously a bind parameter as the last argument (for example the
